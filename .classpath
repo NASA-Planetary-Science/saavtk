@@ -7,7 +7,8 @@
 	<classpathentry kind="lib" path="lib/vtk-6.2.jar"/>
 	<classpathentry kind="lib" path="lib/guava-13.0.1.jar"/>
 	<classpathentry kind="lib" path="lib/miglayout-3.7.1-swing.jar"/>
-	<classpathentry kind="lib" path="lib/jogl-all-2.1.5.jar"/>
+	<classpathentry kind="lib" path="lib/jogl-all-2.1.5.jar" sourcepath="/Users/turnerj1/.m2/repository/org/jogamp/jogl/jogl-all/2.2.4/jogl-all-2.2.4-sources.jar"/>
 	<classpathentry kind="lib" path="lib/fits-1.04.0.jar"/>
+	<classpathentry kind="lib" path="lib/jgoodies-looks-2.4.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
