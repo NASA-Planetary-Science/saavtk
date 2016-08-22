@@ -1,15 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
-	<classpathentry kind="lib" path="lib/commons-math3-3.2.jar"/>
-	<classpathentry kind="lib" path="lib/commons-io-2.0.jar"/>
-	<classpathentry kind="lib" path="lib/vtk-6.2.jar"/>
-	<classpathentry kind="lib" path="lib/guava-13.0.1.jar"/>
-	<classpathentry kind="lib" path="lib/miglayout-3.7.1-swing.jar"/>
-	<classpathentry kind="lib" path="lib/jogl-all-2.1.5.jar" sourcepath="/Users/turnerj1/.m2/repository/org/jogamp/jogl/jogl-all/2.2.4/jogl-all-2.2.4-sources.jar"/>
-	<classpathentry kind="lib" path="lib/fits-1.04.0.jar"/>
-	<classpathentry kind="lib" path="lib/jgoodies-looks-2.4.0.jar"/>
-	<classpathentry kind="lib" path="lib/gluegen-rt-2.1.5.jar"/>
+	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry exported="true" kind="lib" path="lib/commons-math3-3.2.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/commons-io-2.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/guava-13.0.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/miglayout-3.7.1-swing.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/fits-1.04.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/jgoodies-looks-2.4.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/gluegen-rt-2.1.5.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/RelativeLayout-v1.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/jfreechart-1.0.13.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/Jama-1.0.2.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/quaqua-7.3.4.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/quaqua-7.3.4-filechooser-only.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/vtk6.2/vtk-6.2-natives-Darwin-i386.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/vtk6.2/vtk-6.2.jar"/>
+	<classpathentry kind="lib" path="lib/jogl-all-2.1.5.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
