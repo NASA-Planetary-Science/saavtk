@@ -7,7 +7,7 @@
 <listEntry value="1"/>
 </listAttribute>
 <mapAttribute key="org.eclipse.debug.core.environmentVariables">
-<mapEntry key="DYLD_LIBRARY_PATH" value="../saavtk/lib/vtk6.2/mac64"/>
+<mapEntry key="DYLD_LIBRARY_PATH" value="lib/vtk6.2/mac64"/>
 </mapAttribute>
 <listAttribute key="org.eclipse.debug.ui.favoriteGroups">
 <listEntry value="org.eclipse.debug.ui.launchGroup.debug"/>
