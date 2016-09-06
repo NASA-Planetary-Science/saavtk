@@ -389,7 +389,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
 
             // Create a new frame/window with profile
             profileWindow = new JFrame();
-            ImageIcon icon = new ImageIcon(getClass().getResource("/edu/jhuapl/near/data/black-sphere.png"));
+            ImageIcon icon = new ImageIcon(getClass().getResource("/edu/jhuapl/saavtk/data/black-sphere.png"));
             profileWindow.setTitle("Profile Plot");
             profileWindow.setIconImage(icon.getImage());
             profileWindow.add(profilePlot.getChartPanel());
