@@ -20,10 +20,10 @@ import javax.swing.JOptionPane;
 import com.google.common.base.Joiner;
 import com.google.common.primitives.Ints;
 
-import edu.jhuapl.near.pick.PickManager;
 import edu.jhuapl.saavtk.gui.Renderer.InteractorStyleType;
 import edu.jhuapl.saavtk.gui.Renderer.LightingType;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.util.ColorUtil;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.Preferences;

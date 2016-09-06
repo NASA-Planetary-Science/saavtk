@@ -5,12 +5,12 @@ import java.awt.event.ComponentEvent;
 
 import javax.swing.JTabbedPane;
 
-import edu.jhuapl.near.pick.PickManager;
-import edu.jhuapl.near.popupmenus.PopupManager;
-import edu.jhuapl.near.popupmenus.StructuresPopupMenu;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.StructureModel;
+import edu.jhuapl.saavtk.pick.PickManager;
+import edu.jhuapl.saavtk.popupmenus.PopupManager;
+import edu.jhuapl.saavtk.popupmenus.StructuresPopupMenu;
 
 public class StructuresControlPanel extends JTabbedPane
 {

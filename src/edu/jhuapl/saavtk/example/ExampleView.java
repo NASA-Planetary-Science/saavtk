@@ -2,8 +2,6 @@ package edu.jhuapl.saavtk.example;
 
 import java.util.HashMap;
 
-import edu.jhuapl.near.pick.StructuresPickManager;
-import edu.jhuapl.near.popupmenus.StructuresPopupManager;
 import edu.jhuapl.saavtk.gui.PolyhedralModelControlPanel;
 import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.StructuresControlPanel;
@@ -20,6 +18,8 @@ import edu.jhuapl.saavtk.model.PolygonModel;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.PolyhedralModelConfig;
 import edu.jhuapl.saavtk.model.ShapeModelAuthor;
+import edu.jhuapl.saavtk.pick.StructuresPickManager;
+import edu.jhuapl.saavtk.popupmenus.StructuresPopupManager;
 
 
 /**

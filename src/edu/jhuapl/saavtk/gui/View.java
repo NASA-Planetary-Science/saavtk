@@ -17,13 +17,13 @@ import javax.swing.JPopupMenu;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 
-import edu.jhuapl.near.pick.PickManager;
-import edu.jhuapl.near.popupmenus.PopupManager;
-import edu.jhuapl.near.popupmenus.PopupMenu;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModelConfig;
+import edu.jhuapl.saavtk.pick.PickManager;
+import edu.jhuapl.saavtk.popupmenus.PopupManager;
+import edu.jhuapl.saavtk.popupmenus.PopupMenu;
 import edu.jhuapl.saavtk.util.Preferences;
 
 

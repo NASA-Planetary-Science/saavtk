@@ -44,15 +44,15 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
 import net.miginfocom.swing.MigLayout;
-import edu.jhuapl.near.pick.PickEvent;
-import edu.jhuapl.near.pick.PickManager;
-import edu.jhuapl.near.pick.Picker;
-import edu.jhuapl.near.popupmenus.StructuresPopupMenu;
 import edu.jhuapl.saavtk.model.LineModel;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
+import edu.jhuapl.saavtk.pick.PickEvent;
+import edu.jhuapl.saavtk.pick.PickManager;
+import edu.jhuapl.saavtk.pick.Picker;
+import edu.jhuapl.saavtk.popupmenus.StructuresPopupMenu;
 import edu.jhuapl.saavtk.util.Properties;
 
 public abstract class AbstractStructureMappingControlPanel extends JPanel implements

@@ -11,12 +11,12 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import edu.jhuapl.near.pick.PickManager;
-import edu.jhuapl.near.popupmenus.StructuresPopupMenu;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PointModel;
 import edu.jhuapl.saavtk.model.StructureModel;
+import edu.jhuapl.saavtk.pick.PickManager;
+import edu.jhuapl.saavtk.popupmenus.StructuresPopupMenu;
 
 public class PointsMappingControlPanel extends
         AbstractStructureMappingControlPanel implements ChangeListener

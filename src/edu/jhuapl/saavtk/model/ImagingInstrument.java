@@ -1,6 +1,6 @@
 package edu.jhuapl.saavtk.model;
 
-import edu.jhuapl.near.query.QueryBase;
+import edu.jhuapl.saavtk.query.QueryBase;
 
 public class ImagingInstrument
 {
