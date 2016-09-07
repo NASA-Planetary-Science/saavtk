@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.AbstractButton;
@@ -17,11 +18,11 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JRadioButtonMenuItem;
 
-import edu.jhuapl.saavtk.model.Config;
+import edu.jhuapl.saavtk.config.ViewConfig;
+import edu.jhuapl.saavtk.gui.dialog.ShapeModelImporterManagerDialog;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.PolyhedralModelConfig;
 import edu.jhuapl.saavtk.util.Properties;
 
 public class ViewMenu extends JMenu implements PropertyChangeListener
@@ -102,13 +103,13 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
             if (i==0)
                 mi.setSelected(true);
 
-                PolyhedralModelConfig smallBodyConfig = view.getPolyhedralModelConfig();
+                ViewConfig smallBodyConfig = view.getConfig();
 
                 addMenuItem(mi, smallBodyConfig);
         }
     }
 
-    protected void addMenuItem(JMenuItem mi, Config config)
+    protected void addMenuItem(JMenuItem mi, ViewConfig config)
     {
          add(mi);
     }
@@ -117,7 +118,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
     {
         // First create a list of the custom menu items and remove them
         // from the menu.
-        ArrayList<JMenuItem> customMenuItems = new ArrayList<JMenuItem>();
+        List<JMenuItem> customMenuItems = new ArrayList<JMenuItem>();
         int numberItems = customImageMenu.getItemCount();
         for (int i=numberItems-1; i>=0; --i)
         {

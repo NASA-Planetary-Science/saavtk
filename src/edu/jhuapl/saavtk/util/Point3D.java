@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 public class Point3D
@@ -37,7 +38,7 @@ public class Point3D
         return MathUtil.distanceBetween(pt1.xyz, pt2.xyz);
     }
 
-    static public void savePointArray(ArrayList<Point3D> pointArray, File file) throws IOException
+    static public void savePointArray(List<Point3D> pointArray, File file) throws IOException
     {
         FileWriter fstream = new FileWriter(file);
         BufferedWriter out = new BufferedWriter(fstream);
@@ -50,7 +51,7 @@ public class Point3D
         out.close();
     }
 
-    public static ArrayList<Point3D> loadPointArray(String filename) throws IOException
+    public static List<Point3D> loadPointArray(String filename) throws IOException
     {
         InputStream fs = new FileInputStream(filename);
         if (filename.toLowerCase().endsWith(".gz"))
@@ -58,7 +59,7 @@ public class Point3D
         InputStreamReader isr = new InputStreamReader(fs);
         BufferedReader in = new BufferedReader(isr);
 
-        ArrayList<Point3D> values = new ArrayList<Point3D>();
+        List<Point3D> values = new ArrayList<Point3D>();
         String line;
 
         while ((line = in.readLine()) != null)

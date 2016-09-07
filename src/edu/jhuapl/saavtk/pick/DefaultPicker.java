@@ -9,7 +9,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.beans.PropertyChangeEvent;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.List;
 
 import vtk.vtkActor;
@@ -18,14 +18,15 @@ import vtk.vtkCellPicker;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
 import vtk.vtkRenderer;
+
 import edu.jhuapl.saavtk.gui.Renderer;
 import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.Renderer.AxisType;
-import edu.jhuapl.saavtk.gui.joglrendering.vtksbmtJoglCanvas;
+import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.popupmenus.PopupManager;
+import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Properties;
@@ -270,7 +271,7 @@ public class DefaultPicker extends Picker
             // as parts of the small body and we want the picker to pick these other
             // actors rather than the small body. Note that this exclusion only applies
             // to the following picker.
-            ArrayList<vtkProp> actors = modelManager.getPropsExceptSmallBody();
+            List<vtkProp> actors = modelManager.getPropsExceptSmallBody();
             vtkPropCollection mousePressNonSmallBodyCellPickList = mousePressNonSmallBodyCellPicker.GetPickList();
             mousePressNonSmallBodyCellPickList.RemoveAllItems();
             for (vtkProp act : actors)

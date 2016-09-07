@@ -7,6 +7,10 @@ import javax.swing.JFrame;
 import javax.swing.JMenuBar;
 import javax.swing.JSeparator;
 
+import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
+import edu.jhuapl.saavtk.gui.menu.FileMenu;
+import edu.jhuapl.saavtk.gui.menu.HelpMenu;
+
 
 /**
  * This class contains the "main" function called at the start of the program.

@@ -2,7 +2,7 @@ package edu.jhuapl.saavtk.model;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.HashMap;
 
 import vtk.vtkProp;
@@ -15,9 +15,9 @@ public interface ModelManager extends Model, PropertyChangeListener
 
     public void setModels(HashMap<ModelNames, Model> models);
 
-    public ArrayList<vtkProp> getProps();
+    public List<vtkProp> getProps();
 
-    public ArrayList<vtkProp> getPropsExceptSmallBody();
+    public List<vtkProp> getPropsExceptSmallBody();
 
     public void propertyChange(PropertyChangeEvent evt);
 

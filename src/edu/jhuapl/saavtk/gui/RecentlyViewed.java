@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 import javax.swing.AbstractAction;
@@ -18,7 +19,7 @@ import edu.jhuapl.saavtk.util.Configuration;
 public class RecentlyViewed extends JMenu
 {
     ViewManager manager;
-    ArrayList<JMenuItem> items= new ArrayList<JMenuItem>();
+    List<JMenuItem> items= new ArrayList<JMenuItem>();
 
     public RecentlyViewed(ViewManager m)
     {
@@ -95,7 +96,7 @@ public class RecentlyViewed extends JMenu
 
         public void actionPerformed(ActionEvent e)
         {
-            ArrayList<View> check = manager.getAllViews();
+            List<View> check = manager.getAllViews();
             for (View v : check)
             {
                 if (v.getUniqueName().equals(viewName))

@@ -1,11 +1,11 @@
 package edu.jhuapl.saavtk.example;
 
+import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
-import edu.jhuapl.saavtk.model.PolyhedralModelConfig;
 
 public class ExamplePolyhedralModel extends GenericPolyhedralModel
 {
-    public ExamplePolyhedralModel(PolyhedralModelConfig config)
+    public ExamplePolyhedralModel(ViewConfig config)
     {
         super(config,
                 new String[] { config.customName },
@@ -24,7 +24,7 @@ public class ExamplePolyhedralModel extends GenericPolyhedralModel
         return false;
     }
 
-    private static String getModelFilename(PolyhedralModelConfig config)
+    private static String getModelFilename(ViewConfig config)
     {
         return config.customName;
     }

@@ -2,7 +2,6 @@ package edu.jhuapl.saavtk.model;
 
 public enum ModelNames
 {
-    TORSO,
     SCENARIO_COLLECTION,
     SMALL_BODY,
     LINE_STRUCTURES,

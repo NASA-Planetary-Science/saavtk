@@ -16,6 +16,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -36,7 +37,7 @@ public class FileUtil
      * @return contents of file as list of strings
      * @throws IOException
      */
-    public static ArrayList<String> getFileLinesAsStringList(String filename) throws IOException
+    public static List<String> getFileLinesAsStringList(String filename) throws IOException
     {
         InputStream fs = new FileInputStream(filename);
         if (filename.toLowerCase().endsWith(".gz"))
@@ -44,7 +45,7 @@ public class FileUtil
         InputStreamReader isr = new InputStreamReader(fs);
         BufferedReader in = new BufferedReader(isr);
 
-        ArrayList<String> lines = new ArrayList<String>();
+        List<String> lines = new ArrayList<String>();
         String line;
 
         while ((line = in.readLine()) != null)
@@ -64,7 +65,7 @@ public class FileUtil
      * @return contents of file as list of strings
      * @throws IOException
      */
-    public static ArrayList<Double> getFileLinesAsDoubleList(String filename) throws IOException
+    public static List<Double> getFileLinesAsDoubleList(String filename) throws IOException
     {
         InputStream fs = new FileInputStream(filename);
         if (filename.toLowerCase().endsWith(".gz"))
@@ -72,7 +73,7 @@ public class FileUtil
         InputStreamReader isr = new InputStreamReader(fs);
         BufferedReader in = new BufferedReader(isr);
 
-        ArrayList<Double> values = new ArrayList<Double>();
+        List<Double> values = new ArrayList<Double>();
         String line;
 
         while ((line = in.readLine()) != null)
@@ -134,7 +135,7 @@ public class FileUtil
     }
 
 
-    public static <T> void saveList(ArrayList<T> array, String filename) throws IOException
+    public static <T> void saveList(List<T> array, String filename) throws IOException
     {
         FileWriter fstream = new FileWriter(filename);
         BufferedWriter out = new BufferedWriter(fstream);
@@ -178,7 +179,7 @@ public class FileUtil
      * @return contents of file as list of strings
      * @throws IOException
      */
-    public static ArrayList<String> getFileWordsAsStringList(String filename) throws IOException
+    public static List<String> getFileWordsAsStringList(String filename) throws IOException
     {
         InputStream fs = new FileInputStream(filename);
         if (filename.toLowerCase().endsWith(".gz"))
@@ -186,7 +187,7 @@ public class FileUtil
         InputStreamReader isr = new InputStreamReader(fs);
         BufferedReader in = new BufferedReader(isr);
 
-        ArrayList<String> words = new ArrayList<String>();
+        List<String> words = new ArrayList<String>();
         String line;
 
         while ((line = in.readLine()) != null)
@@ -202,7 +203,7 @@ public class FileUtil
         return words;
     }
 
-    public static ArrayList<String> getFileWordsAsStringList(String filename, String separator) throws IOException
+    public static List<String> getFileWordsAsStringList(String filename, String separator) throws IOException
     {
         InputStream fs = new FileInputStream(filename);
         if (filename.toLowerCase().endsWith(".gz"))
@@ -210,7 +211,7 @@ public class FileUtil
         InputStreamReader isr = new InputStreamReader(fs);
         BufferedReader in = new BufferedReader(isr);
 
-        ArrayList<String> words = new ArrayList<String>();
+        List<String> words = new ArrayList<String>();
         String line;
 
         while ((line = in.readLine()) != null)

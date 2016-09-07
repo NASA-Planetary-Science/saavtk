@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import vtk.vtkAbstractPointLocator;
 import vtk.vtkAlgorithmOutput;
@@ -75,7 +76,7 @@ public class PolyDataUtil
             vtkPolyData polyData,
             vtksbCellLocator locator,
             vtkPointLocator pointLocator,
-            ArrayList<Frustum> frustums)
+            List<Frustum> frustums)
     {
         Frustum f = frustums.get(0);
         polyData = computeFrustumIntersection(polyData, locator, pointLocator, f.origin, f.ul, f.ur, f.ll, f.lr);
@@ -464,12 +465,12 @@ public class PolyDataUtil
 
         vtkPoints points = polygonSource.GetOutput().GetPoints();
 
-        ArrayList<vtkPlane> clipPlanes = new ArrayList<vtkPlane>();
-        ArrayList<vtkClipPolyData> clipFilters = new ArrayList<vtkClipPolyData>();
-        ArrayList<vtkPolyData> clipOutputs = new ArrayList<vtkPolyData>();
+        List<vtkPlane> clipPlanes = new ArrayList<vtkPlane>();
+        List<vtkClipPolyData> clipFilters = new ArrayList<vtkClipPolyData>();
+        List<vtkPolyData> clipOutputs = new ArrayList<vtkPolyData>();
 
         // randomly shuffling the order of the sides we process can speed things up
-        ArrayList<Integer> sides = new ArrayList<Integer>();
+        List<Integer> sides = new ArrayList<Integer>();
         for (int i=0; i<numberOfSides; ++i)
             sides.add(i);
         Collections.shuffle(sides);
@@ -597,7 +598,7 @@ public class PolyDataUtil
             vtkPolyData outputBoundary)
     {
         // List holding vtk objects to delete at end of function
-        ArrayList<vtkObject> d = new ArrayList<vtkObject>();
+        List<vtkObject> d = new ArrayList<vtkObject>();
 
         double[] normal = getPolyDataNormalAtPoint(center, polyData, pointLocator);
 
@@ -676,12 +677,12 @@ public class PolyDataUtil
         vtkPoints points = transformFilterOutput.GetPoints();
         d.add(points);
 
-//        ArrayList<vtkPlane> clipPlanes = new ArrayList<vtkPlane>();
-//        ArrayList<vtkClipPolyData> clipFilters = new ArrayList<vtkClipPolyData>();
-//        ArrayList<vtkPolyData> clipOutputs = new ArrayList<vtkPolyData>();
+//        List<vtkPlane> clipPlanes = new ArrayList<vtkPlane>();
+//        List<vtkClipPolyData> clipFilters = new ArrayList<vtkClipPolyData>();
+//        List<vtkPolyData> clipOutputs = new ArrayList<vtkPolyData>();
 
         // randomly shuffling the order of the sides we process can speed things up
-        ArrayList<Integer> sides = new ArrayList<Integer>();
+        List<Integer> sides = new ArrayList<Integer>();
         for (int i=0; i<numberOfSides; ++i)
             sides.add(i);
         Collections.shuffle(sides);
@@ -913,7 +914,7 @@ public class PolyDataUtil
     private static boolean determineIfPolygonIsClockwise(
             vtkPolyData polyData,
             vtkAbstractPointLocator pointLocator,
-            ArrayList<LatLon> controlPoints)
+            List<LatLon> controlPoints)
     {
         // To determine if a polygon is clockwise or counterclockwise we do the following:
         // 1. First compute the mean normal of the polygon by averaging the shape model
@@ -979,7 +980,7 @@ public class PolyDataUtil
     private static boolean determineIfPolygonIsClockwise(
             vtkPolyData polyData,
             vtkAbstractPointLocator pointLocator,
-            ArrayList<LatLon> controlPoints)
+            List<LatLon> controlPoints)
     {
         // To determine if a polygon is clockwise or counterclockwise we do the following:
         // 1. First compute the centroid and mean normal of the polygon by averaging the shape model
@@ -1014,7 +1015,7 @@ public class PolyDataUtil
         // Step 2
         double dist = -Double.MAX_VALUE;
         int farthestProjectedPointIdx = 0;
-        ArrayList<Object> projectedPoints = new ArrayList<Object>();
+        List<Object> projectedPoints = new ArrayList<Object>();
         for (int i=0; i<numPoints; ++i)
         {
             double[] pt1 = MathUtil.latrec(controlPoints.get(i));
@@ -1076,7 +1077,7 @@ public class PolyDataUtil
     private static boolean determineIfTriangleContainsReflexVertex(
             vtkPolyData polyData,
             vtkAbstractPointLocator pointLocator,
-            ArrayList<LatLon> controlPoints,
+            List<LatLon> controlPoints,
             boolean isClockwise)
     {
         // First compute mean normal to shape model at vertices
@@ -1106,7 +1107,7 @@ public class PolyDataUtil
     private static boolean determineIfNeedToReverseTriangleVertices(
             vtkPolyData polyData,
             vtkAbstractPointLocator pointLocator,
-            ArrayList<LatLon> controlPoints)
+            List<LatLon> controlPoints)
     {
         // Determine if we need to reverse the ordering of the triangle vertices.
         // Do this as follows: Compute the mean normal to the shape model at the 3 vertices.
@@ -1137,7 +1138,7 @@ public class PolyDataUtil
     public static void drawTriangleOnPolyData(
             vtkPolyData polyData,
             vtkAbstractPointLocator pointLocator,
-            ArrayList<LatLon> controlPoints,
+            List<LatLon> controlPoints,
             vtkPolyData outputInterior,
             vtkPolyData outputBoundary)
     {
@@ -1151,14 +1152,14 @@ public class PolyDataUtil
         if (determineIfNeedToReverseTriangleVertices(polyData, pointLocator, controlPoints))
         {
             // First clone the control points so we don't modify array passed into function
-            ArrayList<LatLon> clone = new ArrayList<LatLon>(controlPoints.size());
+            List<LatLon> clone = new ArrayList<LatLon>(controlPoints.size());
             for (LatLon llr : controlPoints) clone.add((LatLon)llr.clone());
             controlPoints = clone;
             Collections.reverse(controlPoints);
         }
 
         // List holding vtk objects to delete at end of function
-        ArrayList<vtkObject> d = new ArrayList<vtkObject>();
+        List<vtkObject> d = new ArrayList<vtkObject>();
 
         int numberOfSides = controlPoints.size();
 
@@ -1261,7 +1262,7 @@ public class PolyDataUtil
     public static void drawPolygonOnPolyData(
             vtkPolyData polyData,
             vtkAbstractPointLocator pointLocator,
-            ArrayList<LatLon> controlPoints,
+            List<LatLon> controlPoints,
             vtkPolyData outputInterior,
             vtkPolyData outputBoundary)
     {
@@ -1277,8 +1278,8 @@ public class PolyDataUtil
             return;
         }
 
-        ArrayList<LatLon> originalControlPoints = controlPoints;
-        ArrayList<LatLon> clone = new ArrayList<LatLon>(controlPoints.size());
+        List<LatLon> originalControlPoints = controlPoints;
+        List<LatLon> clone = new ArrayList<LatLon>(controlPoints.size());
         for (LatLon llr : controlPoints) clone.add((LatLon)llr.clone());
         controlPoints = clone;
 
@@ -1296,8 +1297,8 @@ public class PolyDataUtil
         vtkGenericCell genericCell = new vtkGenericCell();
 
         int[] ids = new int[3];
-        ArrayList<LatLon> cp = new ArrayList<LatLon>();
-        ArrayList<vtkPolyData> triangles = new ArrayList<vtkPolyData>();
+        List<LatLon> cp = new ArrayList<LatLon>();
+        List<vtkPolyData> triangles = new ArrayList<vtkPolyData>();
 
         // Preallocate these arrays
         for (int i=0;i<3;++i) cp.add(null);
@@ -1440,7 +1441,7 @@ public class PolyDataUtil
     public static void drawClosedLoopOnPolyData(
             vtkPolyData polyData,
             vtkAbstractPointLocator pointLocator,
-            ArrayList<LatLon> controlPoints,
+            List<LatLon> controlPoints,
             vtkPolyData outputBoundary)
     {
         int numPoints = controlPoints.size();
@@ -1536,12 +1537,12 @@ public class PolyDataUtil
 
         vtkPoints points = polygonSource.GetOutput().GetPoints();
 
-        ArrayList<vtkClipPolyData> clipFilters = new ArrayList<vtkClipPolyData>();
-        ArrayList<vtkPlane> clipPlanes = new ArrayList<vtkPlane>();
-        ArrayList<vtkAlgorithmOutput> clipOutputs = new ArrayList<vtkAlgorithmOutput>(); // not sure is this one is really needed
+        List<vtkClipPolyData> clipFilters = new ArrayList<vtkClipPolyData>();
+        List<vtkPlane> clipPlanes = new ArrayList<vtkPlane>();
+        List<vtkAlgorithmOutput> clipOutputs = new ArrayList<vtkAlgorithmOutput>(); // not sure is this one is really needed
 
         // randomly shuffling the order of the sides we process can speed things up
-        ArrayList<Integer> sides = new ArrayList<Integer>();
+        List<Integer> sides = new ArrayList<Integer>();
         for (int i=0; i<numberOfSides; ++i)
             sides.add(i);
         Collections.shuffle(sides);
@@ -1875,7 +1876,7 @@ public class PolyDataUtil
             return false;
         }
 
-        ArrayList<IdPair> lines = new ArrayList<IdPair>();
+        List<IdPair> lines = new ArrayList<IdPair>();
         for (int i=0; i<size; i+=3)
         {
             //System.out.println(idArray.GetValue(i));
@@ -1938,7 +1939,7 @@ public class PolyDataUtil
 
         // First do first direction ("left")
         IdPair line = lines.get(0);
-        ArrayList<Integer> idListLeft = new ArrayList<Integer>();
+        List<Integer> idListLeft = new ArrayList<Integer>();
         idListLeft.add(line.id1);
         idListLeft.add(line.id2);
         boolean leftDirectionSuccess = true;
@@ -1998,7 +1999,7 @@ public class PolyDataUtil
 
         // Then do second direction ("right")
         line = lines.get(0);
-        ArrayList<Integer> idListRight = new ArrayList<Integer>();
+        List<Integer> idListRight = new ArrayList<Integer>();
         idListRight.add(line.id1);
         boolean rightDirectionSuccess = true;
 
@@ -2059,7 +2060,7 @@ public class PolyDataUtil
         //System.out.println("id right " + idListRight);
         //if (idListLeft.size() < idListRight.size())
         //    idList = idListLeft;
-        ArrayList<Integer> idList = idListRight;
+        List<Integer> idList = idListRight;
         if (leftDirectionSuccess && rightDirectionSuccess)
         {
             if (computePathLength(points_orig, idListLeft) < computePathLength(points_orig, idListRight))
@@ -2105,7 +2106,7 @@ public class PolyDataUtil
         return true;
     }
 
-    private static double computePathLength(vtkPoints points, ArrayList<Integer> ids)
+    private static double computePathLength(vtkPoints points, List<Integer> ids)
     {
         int size = ids.size();
         double length = 0.0;

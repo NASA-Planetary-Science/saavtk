@@ -7,14 +7,15 @@ import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 
 import vtk.vtkPropPicker;
-import edu.jhuapl.saavtk.gui.joglrendering.vtksbmtJoglCanvas;
+
+import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
 import edu.jhuapl.saavtk.model.Model;
 
 public abstract class ModelInfoWindow extends JFrame implements PropertyChangeListener
 {
     public ModelInfoWindow()
     {
-        ImageIcon erosIcon = new ImageIcon(getClass().getResource("/edu/jhuapl/near/data/eros.png"));
+        ImageIcon erosIcon = new ImageIcon(getClass().getResource("/edu/jhuapl/sbmt/data/eros.png"));
         setIconImage(erosIcon.getImage());
     }
 

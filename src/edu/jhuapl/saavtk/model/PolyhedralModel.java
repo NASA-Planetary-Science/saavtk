@@ -2,13 +2,15 @@ package edu.jhuapl.saavtk.model;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.List;
 import java.util.TreeSet;
 
 import vtk.vtkDataArray;
 import vtk.vtkPolyData;
 import vtk.vtksbCellLocator;
+
+import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.LatLon;
 
@@ -55,10 +57,10 @@ public abstract class PolyhedralModel extends AbstractModel
     static public final String FlatShadingStr = "Flat";
     static public final String SmoothShadingStr = "Smooth";
 
-    private PolyhedralModelConfig polyhedralModelConfig;
-    public PolyhedralModel(PolyhedralModelConfig polyhedralModelConfig)
+    private ViewConfig config;
+    public PolyhedralModel(ViewConfig config)
     {
-        this.polyhedralModelConfig = polyhedralModelConfig;
+        this.config = config;
     }
 
     public abstract void updateScaleBarValue(double pixelSizeInKm);
@@ -84,7 +86,7 @@ public abstract class PolyhedralModel extends AbstractModel
 
     public abstract vtkDataArray getGravityVectorData();
 
-    public abstract ArrayList<LidarDatasourceInfo> getLidarDasourceInfoList();
+    public abstract List<LidarDatasourceInfo> getLidarDasourceInfoList();
 
     public abstract int getLidarDatasourceIndex();
 
@@ -117,7 +119,7 @@ public abstract class PolyhedralModel extends AbstractModel
 
     public abstract void removeCustomPlateData(int index) throws IOException;
 
-    public abstract ArrayList<ColoringInfo> getColoringInfoList();
+    public abstract List<ColoringInfo> getColoringInfoList();
 
     public abstract int getNumberOfCustomColors();
 
@@ -131,7 +133,7 @@ public abstract class PolyhedralModel extends AbstractModel
 
     public abstract int getNumberResolutionLevels();
 
-//    public abstract PolyhedralModelConfig getSmallBodyConfig();
+//    public abstract Config getSmallBodyConfig();
 
     public abstract void drawRegularPolygonLowRes(
             double[] center,
@@ -174,11 +176,10 @@ public abstract class PolyhedralModel extends AbstractModel
 
     public abstract void reloadShapeModel() throws IOException;
 
-    public PolyhedralModelConfig getPolyhedralModelConfig()
+    public ViewConfig getConfig()
     {
-        return polyhedralModelConfig;
+        return config;
     }
-
 
     public void setOpacity(double opacity)
     {
@@ -286,7 +287,7 @@ public abstract class PolyhedralModel extends AbstractModel
     public abstract double[] getClosestNormal(double[] point);
 
     public abstract void drawPolygon(
-            ArrayList<LatLon> controlPoints,
+            List<LatLon> controlPoints,
             vtkPolyData outputInterior,
             vtkPolyData outputBoundary);
 

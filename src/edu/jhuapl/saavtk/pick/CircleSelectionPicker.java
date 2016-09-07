@@ -8,13 +8,14 @@ import vtk.vtkActor;
 import vtk.vtkCellPicker;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
+
 import edu.jhuapl.saavtk.gui.Renderer;
-import edu.jhuapl.saavtk.gui.joglrendering.vtksbmtJoglCanvas;
-import edu.jhuapl.saavtk.model.AbstractEllipsePolygonModel;
+import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
 
 public class CircleSelectionPicker extends Picker
 {

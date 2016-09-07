@@ -5,10 +5,10 @@ import java.util.HashMap;
 
 import edu.jhuapl.saavtk.gui.Renderer;
 import edu.jhuapl.saavtk.gui.StatusBar;
-import edu.jhuapl.saavtk.gui.joglrendering.vtksbmtJoglCanvas;
+import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
-import edu.jhuapl.saavtk.popupmenus.PopupManager;
+import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.util.Preferences;
 
 public class PickManager extends Picker

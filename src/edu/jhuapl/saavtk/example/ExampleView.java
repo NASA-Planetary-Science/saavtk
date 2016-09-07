@@ -2,24 +2,24 @@ package edu.jhuapl.saavtk.example;
 
 import java.util.HashMap;
 
-import edu.jhuapl.saavtk.gui.PolyhedralModelControlPanel;
+import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.gui.StatusBar;
-import edu.jhuapl.saavtk.gui.StructuresControlPanel;
 import edu.jhuapl.saavtk.gui.View;
-import edu.jhuapl.saavtk.model.CircleModel;
-import edu.jhuapl.saavtk.model.CircleSelectionModel;
-import edu.jhuapl.saavtk.model.EllipseModel;
+import edu.jhuapl.saavtk.gui.panel.PolyhedralModelControlPanel;
+import edu.jhuapl.saavtk.gui.panel.StructuresControlPanel;
 import edu.jhuapl.saavtk.model.Graticule;
-import edu.jhuapl.saavtk.model.LineModel;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelNames;
-import edu.jhuapl.saavtk.model.PointModel;
-import edu.jhuapl.saavtk.model.PolygonModel;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.PolyhedralModelConfig;
 import edu.jhuapl.saavtk.model.ShapeModelAuthor;
+import edu.jhuapl.saavtk.model.structure.CircleModel;
+import edu.jhuapl.saavtk.model.structure.CircleSelectionModel;
+import edu.jhuapl.saavtk.model.structure.EllipseModel;
+import edu.jhuapl.saavtk.model.structure.LineModel;
+import edu.jhuapl.saavtk.model.structure.PointModel;
+import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.pick.StructuresPickManager;
-import edu.jhuapl.saavtk.popupmenus.StructuresPopupManager;
+import edu.jhuapl.saavtk.popup.StructuresPopupManager;
 
 
 /**
@@ -38,27 +38,27 @@ public class ExampleView extends View
      * this function should be called prior to first time the View is
      * shown in order to cause it
      */
-    public ExampleView(StatusBar statusBar, PolyhedralModelConfig polyhedralModelConfig)
+    public ExampleView(StatusBar statusBar, ViewConfig config)
     {
-        super(statusBar, polyhedralModelConfig);
+        super(statusBar, config);
     }
 
     public String getDisplayName()
     {
-        if (getPolyhedralModelConfig().author == ShapeModelAuthor.CUSTOM)
-            return getPolyhedralModelConfig().customName;
+        if (getConfig().author == ShapeModelAuthor.CUSTOM)
+            return getConfig().customName;
         else
         {
             String version = "";
-            if (getPolyhedralModelConfig().version != null)
-                version += " (" + getPolyhedralModelConfig().version + ")";
-            return getPolyhedralModelConfig().author.toString() + version;
+            if (getConfig().version != null)
+                version += " (" + getConfig().version + ")";
+            return getConfig().author.toString() + version;
         }
     }
 
     protected void setupModelManager()
     {
-        PolyhedralModel smallBodyModel = new ExamplePolyhedralModel((PolyhedralModelConfig)getPolyhedralModelConfig());
+        PolyhedralModel smallBodyModel = new ExamplePolyhedralModel(getConfig());
         setModelManager(new ExampleModelManager(smallBodyModel));
         Graticule graticule = new Graticule(smallBodyModel);
 
@@ -66,7 +66,7 @@ public class ExampleView extends View
         allModels.put(ModelNames.SMALL_BODY, smallBodyModel);
         allModels.put(ModelNames.GRATICULE, graticule);
 
-//        if (getPolyhedralModelConfig().hasLidarData)
+//        if (getConfig().hasLidarData)
 //        {
 //            allModels.putAll(ModelFactory.createLidarModels(smallBodyModel));
 //        }
@@ -87,7 +87,7 @@ public class ExampleView extends View
     {
         setPopupManager(new StructuresPopupManager(getModelManager(), getRenderer()));
 
-//        if (getPolyhedralModelConfig().hasLidarData)
+//        if (getConfig().hasLidarData)
 //        {
 //            LidarSearchDataCollection lidarSearch = (LidarSearchDataCollection)getModel(ModelNames.LIDAR_SEARCH);
 //            PopupMenu popupMenu = new LidarPopupMenu(lidarSearch, getRenderer());
@@ -97,21 +97,21 @@ public class ExampleView extends View
 
     protected void setupTabs()
     {
-        addTab(getPolyhedralModelConfig().getShapeModelName(), new PolyhedralModelControlPanel(getModelManager(), getPolyhedralModelConfig().getShapeModelName()));
+        addTab(getConfig().getShapeModelName(), new PolyhedralModelControlPanel(getModelManager(), getConfig().getShapeModelName()));
 
-//        if (getPolyhedralModelConfig().hasLidarData)
+//        if (getConfig().hasLidarData)
 //        {
-//            JComponent component = new LidarPanel(getPolyhedralModelConfig(), getModelManager(), getPickManager(), getRenderer());
-//            addTab(getPolyhedralModelConfig().lidarInstrumentName.toString(), component);
+//            JComponent component = new LidarPanel(getConfig(), getModelManager(), getPickManager(), getRenderer());
+//            addTab(getConfig().lidarInstrumentName.toString(), component);
 //        }
 
 
         addTab("Structures", new StructuresControlPanel(getModelManager(), getPickManager()));
 
-//        if (!getPolyhedralModelConfig().customTemporary)
+//        if (!getConfig().customTemporary)
 //        {
 //            ImagingInstrument instrument = null;
-//            for (ImagingInstrument i : getPolyhedralModelConfig().imagingInstruments)
+//            for (ImagingInstrument i : getConfig().imagingInstruments)
 //            {
 //                instrument = i;
 //                break;
@@ -121,7 +121,7 @@ public class ExampleView extends View
 //        }
 //
 
-//        addTab("Tracks", new TrackPanel(getPolyhedralModelConfig(), getModelManager(), getPickManager(), getRenderer()));
+//        addTab("Tracks", new TrackPanel(getConfig(), getModelManager(), getPickManager(), getRenderer()));
 
     }
 

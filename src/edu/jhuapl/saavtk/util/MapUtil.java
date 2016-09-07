@@ -3,7 +3,7 @@ package edu.jhuapl.saavtk.util;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -186,7 +186,7 @@ public class MapUtil
     {
         LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
 
-        ArrayList<String> lines = FileUtil.getFileLinesAsStringList(filename);
+        List<String> lines = FileUtil.getFileLinesAsStringList(filename);
         for (String line : lines)
         {
             int equalsIdx = line.indexOf('=');

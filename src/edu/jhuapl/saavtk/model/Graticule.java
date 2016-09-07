@@ -18,6 +18,7 @@ import vtk.vtkPolyDataMapper;
 import vtk.vtkPolyDataReader;
 import vtk.vtkProp;
 import vtk.vtkTransform;
+
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
@@ -26,7 +27,7 @@ import edu.jhuapl.saavtk.util.Properties;
 public class Graticule extends AbstractModel implements PropertyChangeListener
 {
     private PolyhedralModel smallBodyModel;
-    private ArrayList<vtkProp> actors = new ArrayList<vtkProp>();
+    private List<vtkProp> actors = new ArrayList<vtkProp>();
     private vtkActor actor;
     private boolean generated = false;
     private vtkPolyDataMapper mapper;

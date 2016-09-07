@@ -4,17 +4,19 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import vtk.vtkProp;
 import vtk.vtksbCellLocator;
+
 import edu.jhuapl.saavtk.util.Properties;
 
 public class AbstractModelManager extends DefaultDatasourceModel implements ModelManager, PropertyChangeListener
 {
     private PolyhedralModel mainModel;
-    private ArrayList<vtkProp> props = new ArrayList<vtkProp>();
-    private ArrayList<vtkProp> propsExceptSmallBody = new ArrayList<vtkProp>();
+    private List<vtkProp> props = new ArrayList<vtkProp>();
+    private List<vtkProp> propsExceptSmallBody = new ArrayList<vtkProp>();
     private HashMap<vtkProp, Model> propToModelMap = new HashMap<vtkProp, Model>();
     private HashMap<ModelNames, Model> allModels = new HashMap<ModelNames, Model>();
     private boolean mode2D = false;
@@ -69,12 +71,12 @@ public class AbstractModelManager extends DefaultDatasourceModel implements Mode
         updateProps();
     }
 
-    public ArrayList<vtkProp> getProps()
+    public List<vtkProp> getProps()
     {
         return props;
     }
 
-    public ArrayList<vtkProp> getPropsExceptSmallBody()
+    public List<vtkProp> getPropsExceptSmallBody()
     {
         return propsExceptSmallBody;
     }

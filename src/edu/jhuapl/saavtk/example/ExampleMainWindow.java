@@ -2,12 +2,12 @@ package edu.jhuapl.saavtk.example;
 
 import javax.swing.ImageIcon;
 
-import edu.jhuapl.saavtk.gui.HelpMenu;
 import edu.jhuapl.saavtk.gui.MainWindow;
 import edu.jhuapl.saavtk.gui.RecentlyViewed;
 import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.ViewMenu;
+import edu.jhuapl.saavtk.gui.menu.HelpMenu;
 
 
 
@@ -35,7 +35,7 @@ public class ExampleMainWindow extends MainWindow
 
     protected ImageIcon createImageIcon()
     {
-//        return new ImageIcon(getClass().getResource("/edu/jhuapl/near/data/black-sphere.png"));
+//        return new ImageIcon(getClass().getResource("/edu/jhuapl/saavtk/data/black-sphere.png"));
         return new ImageIcon("black-sphere.png");
     }
 

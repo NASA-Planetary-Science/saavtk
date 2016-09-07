@@ -19,7 +19,7 @@ public class ExampleRunnable implements Runnable
 
     public void run()
     {
-        ExampleConfig.initialize();
+        ExampleViewConfig.initialize();
 
         String tempShapeModelPath = null;
         // Parse options that come first

@@ -18,7 +18,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 import vtk.vtkCellPicker;
-import edu.jhuapl.saavtk.gui.joglrendering.vtksbmtJoglCanvas;
+
+import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
 import edu.jhuapl.saavtk.util.Configuration;
 
 /**

@@ -9,18 +9,19 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 
-import edu.jhuapl.saavtk.model.Config;
+import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.util.Configuration;
 
 public abstract class ViewManager extends JPanel
 {
-    private ArrayList<View> builtInViews = new ArrayList<View>();
-    private ArrayList<View> customViews = new ArrayList<View>();
+    private List<View> builtInViews = new ArrayList<View>();
+    private List<View> customViews = new ArrayList<View>();
     private View currentView;
     private final StatusBar statusBar;
     private final Frame frame;
@@ -84,7 +85,7 @@ public abstract class ViewManager extends JPanel
         {
             int idxToShow=0;
             for (int i=0; i<getBuiltInViews().size(); i++)
-                if (getBuiltInViews().get(i).getPolyhedralModelConfig().getUniqueName().equals(getDefaultBodyToLoad()))
+                if (getBuiltInViews().get(i).getConfig().getUniqueName().equals(getDefaultBodyToLoad()))
                     idxToShow=i;
             setCurrentView(getBuiltInViews().get(idxToShow));
         }
@@ -93,7 +94,7 @@ public abstract class ViewManager extends JPanel
         {
             int idxToShow=0;
             for (int i=0; i<getCustomViews().size(); i++)
-                if (getCustomViews().get(i).getPolyhedralModelConfig().getUniqueName().equals(getDefaultBodyToLoad()))
+                if (getCustomViews().get(i).getConfig().getUniqueName().equals(getDefaultBodyToLoad()))
                     idxToShow=i;
             setCurrentView(getCustomViews().get(idxToShow));
         }
@@ -123,7 +124,7 @@ public abstract class ViewManager extends JPanel
         try
         {
             if (!defaultModelFile.toFile().exists())
-                return Config.getBuiltInConfigs().get(0).getUniqueName();
+                return ViewConfig.getBuiltInConfigs().get(0).getUniqueName();
             //
             Scanner scanner=new Scanner(ViewManager.defaultModelFile.toFile());
             if (scanner.hasNextLine())
@@ -174,22 +175,22 @@ public abstract class ViewManager extends JPanel
         addCustomView(createCustomView(statusBar, shapeModelPath, true));
     }
 
-    public ArrayList<View> getBuiltInViews()
+    public List<View> getBuiltInViews()
     {
         return builtInViews;
     }
 
-    public void setBuiltInViews(ArrayList<View> builtInViews)
+    public void setBuiltInViews(List<View> builtInViews)
     {
         this.builtInViews = builtInViews;
     }
 
-    public ArrayList<View> getCustomViews()
+    public List<View> getCustomViews()
     {
         return customViews;
     }
 
-    public void setCustomViews(ArrayList<View> customViews)
+    public void setCustomViews(List<View> customViews)
     {
         this.customViews = customViews;
     }
@@ -216,7 +217,7 @@ public abstract class ViewManager extends JPanel
 
         currentView = view;
 
-        frame.setTitle(currentView.getPolyhedralModelConfig().getPathRepresentation());
+        frame.setTitle(currentView.getConfig().getPathRepresentation());
     }
 
     public View getBuiltInView(int i)
@@ -256,7 +257,7 @@ public abstract class ViewManager extends JPanel
     {
         for (View view : customViews)
         {
-            if (view.getPolyhedralModelConfig().getShapeModelName().equals(name))
+            if (view.getConfig().getShapeModelName().equals(name))
             {
                 customViews.remove(view);
                 remove(view);
@@ -282,9 +283,9 @@ public abstract class ViewManager extends JPanel
         return null;
     }
 
-    public ArrayList<View> getAllViews()
+    public List<View> getAllViews()
     {
-        ArrayList<View> allViews = new ArrayList<View>();
+        List<View> allViews = new ArrayList<View>();
         allViews.addAll(builtInViews);
         allViews.addAll(customViews);
         return allViews;

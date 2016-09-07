@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.util;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.TreeSet;
 
 import vtk.vtkPolyData;
@@ -12,7 +13,7 @@ import vtk.vtkPolyData;
 public class SmallBodyCubes
 {
     private BoundingBox boundingBox;
-    private ArrayList<BoundingBox> allCubes = new ArrayList<BoundingBox>();
+    private List<BoundingBox> allCubes = new ArrayList<BoundingBox>();
     private final double cubeSize;
     private final double buffer;
 
@@ -91,7 +92,7 @@ public class SmallBodyCubes
         TreeSet<Integer> intersectingCubes = getIntersectingCubes(smallBodyPolyData);
         //System.out.println("Time elapsed:  " + ((double)System.currentTimeMillis()-t0)/1000.0);
 
-        ArrayList<BoundingBox> tmpCubes = new ArrayList<BoundingBox>();
+        List<BoundingBox> tmpCubes = new ArrayList<BoundingBox>();
         for (Integer i : intersectingCubes)
         {
             tmpCubes.add(allCubes.get(i));
@@ -126,7 +127,7 @@ public class SmallBodyCubes
         // Store all the bounding boxes of all the individual polygons in an array first
         // since the call to GetCellBounds is very slow.
         double[] cellBounds = new double[6];
-        ArrayList<BoundingBox> polyCellsBB = new ArrayList<BoundingBox>();
+        List<BoundingBox> polyCellsBB = new ArrayList<BoundingBox>();
         for (int j=0; j<numberPolygons; ++j)
         {
             polydata.GetCellBounds(j, cellBounds);
