@@ -224,10 +224,11 @@ public abstract class Picker implements
         // Note that on some displays, such as a retina display, the height used by
         // OpenGL is different than the height used by Java. Therefore we need
         // scale the mouse coordinates to get the right position for OpenGL.
-       double openGlHeight = renWin.getComponent().getSurfaceHeight();
+//       double openGlHeight = renWin.getComponent().getSurfaceHeight();
 //        double openGlHeight = renWin.getComponent().getHeight();
         double javaHeight = renWin.getComponent().getHeight();
-        double scale = openGlHeight / javaHeight;
+//        double scale = openGlHeight / javaHeight;
+        double scale = 1.0;
         int pickSucceeded = picker.Pick(scale * x, scale * (javaHeight-y-1), 0.0, renWin.getRenderer());
 
         renWin.getVTKLock().unlock();
