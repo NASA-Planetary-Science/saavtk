@@ -7,9 +7,10 @@ import java.util.List;
 import java.util.TreeSet;
 
 import vtk.vtkDataArray;
+import vtk.vtkLookupTable;
 import vtk.vtkPolyData;
 import vtk.vtksbCellLocator;
-
+import edu.jhuapl.saavtk.color.Colormap;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -156,6 +157,8 @@ public abstract class PolyhedralModel extends AbstractModel
 
     public abstract void setFalseColoring(int redChannel, int greenChannel, int blueChannel) throws IOException;
 
+    public abstract void setColormap(Colormap map);
+    
     public abstract String[] getImageMapNames();
 
     public abstract boolean isFalseColoringEnabled();

@@ -12,6 +12,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import vtk.vtkAbstractPointLocator;
 import vtk.vtkAlgorithmOutput;
 import vtk.vtkAppendPolyData;
@@ -45,6 +47,7 @@ import vtk.vtkSTLReader;
 import vtk.vtkSTLWriter;
 import vtk.vtkSphere;
 import vtk.vtkTransform;
+import vtk.vtkTransformFilter;
 import vtk.vtkTransformPolyDataFilter;
 import vtk.vtkTriangle;
 import vtk.vtksbCellLocator;
@@ -1674,6 +1677,30 @@ public class PolyDataUtil
         polyData.Modified();
     }
 
+    public static void shiftPolyDataInMeanNormalDirection(vtkPolyData polyData, double shiftAmount)
+    {
+        vtkPolyDataNormals normalsFilter = new vtkPolyDataNormals();
+        normalsFilter.SetInputData(polyData);
+        normalsFilter.SetComputeCellNormals(0);
+        normalsFilter.SetComputePointNormals(1);
+        normalsFilter.SplittingOff();
+        normalsFilter.Update();
+    	
+    	Vector3D meanNormal=new Vector3D(computePolyDataNormal(normalsFilter.GetOutput()));
+    	shiftPolyData(polyData, meanNormal.scalarMultiply(shiftAmount));
+    }
+    
+    public static void shiftPolyData(vtkPolyData polyData, Vector3D shift)
+    {
+        vtkPoints points = polyData.GetPoints();
+        for (int i=0; i<points.GetNumberOfPoints(); ++i)
+        {
+            Vector3D newPoint=new Vector3D(points.GetPoint(i)).add(shift);
+            points.SetPoint(i, newPoint.toArray());
+        }
+        polyData.Modified();
+    }
+
     /**
      * Unlike the next function, this one takes a point locator to search for
      * closest points. This version is more useful for shifting lines and polylines
@@ -1773,6 +1800,8 @@ public class PolyDataUtil
     }
 
 
+    
+    
     /**
      * Compute and return the surface area of a polydata. This function assumes
      * the cells of the polydata are all triangles.
