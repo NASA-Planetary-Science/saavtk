@@ -250,6 +250,7 @@ public class FileCache
             else
             {
                 FileInfo fi = getFileInfoFromServer(path, true);
+                
                 if (fi != null)
                     return fi.file;
                 else
