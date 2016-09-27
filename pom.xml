@@ -167,6 +167,7 @@
             				</goals>
           			</execution>
           			   <execution>
+          			        <id>moveVTKFiles</id>
                             <phase>compile</phase>
                             <configuration>
                                 <tasks>
