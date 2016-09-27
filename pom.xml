@@ -158,7 +158,7 @@
 						<tasks>
 							<mkdir dir="${project.build.directory}/classes/edu/jhuapl/saavtk/data"/>
               						<copy todir="${project.build.directory}/classes/edu/jhuapl/saavtk/data">
-								<fileset dir="${project.build.directory}/src/edu/jhuapl/saavtk/data"/>
+								<fileset dir="src/edu/jhuapl/saavtk/data"/>
 							</copy>
 						</tasks>
             				</configuration>
