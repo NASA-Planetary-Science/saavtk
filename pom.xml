@@ -171,7 +171,7 @@
                             <phase>compile</phase>
                             <configuration>
                                 <tasks>
-                                    <copy todir="/Users/apluser/vtkLibs/vtk6.3">
+                                    <copy todir="/home/apluser/vtkLibs/vtk6.3">
                                         <fileset dir="lib-bamt/vtk6.3"/>
                                     </copy>
                                 </tasks>
