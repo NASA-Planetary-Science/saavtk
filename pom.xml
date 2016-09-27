@@ -120,8 +120,8 @@
     <developerConnection>scm:git:http://hardin:8080/scm/git/vtk/saavtk</developerConnection>
   </scm>
   <build>
-<!-- 	<sourceDirectory>${project.build.directory}/checkout</sourceDirectory>
- 	<testSourceDirectory>${project.build.directory}/checkout</testSourceDirectory> -->
+ 	<sourceDirectory>.</sourceDirectory>
+ 	<testSourceDirectory>.</testSourceDirectory>
 	  <plugins>
 	  	<plugin>
 	    		<groupId>org.apache.maven.plugins</groupId>
@@ -138,6 +138,7 @@
 		<plugin>
         		<groupId>org.apache.maven.plugins</groupId>
         		<artifactId>maven-jar-plugin</artifactId>
+        		<version>3.0.2</version>
         		<configuration>
           			<archive>
             				<manifest>
