@@ -238,7 +238,10 @@ public class GenericPolyhedralModel extends PolyhedralModel
             String[] coloringUnits,
             ColoringValueType coloringValueType)
     {
-        smallBodyPolyData.DeepCopy(polydata);
+    	if(polydata != null)
+    	{
+    		smallBodyPolyData.DeepCopy(polydata);
+    	}
         coloringInfo.clear();
         for (int i=0; i<coloringNames.length; ++i)
         {

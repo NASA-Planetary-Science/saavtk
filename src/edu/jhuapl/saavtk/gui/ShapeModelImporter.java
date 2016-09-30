@@ -1,7 +1,10 @@
 package edu.jhuapl.saavtk.gui;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
 
@@ -13,6 +16,7 @@ import vtk.vtkTransformPolyDataFilter;
 import edu.jhuapl.saavtk.model.Graticule;
 import edu.jhuapl.saavtk.model.ShapeModel;
 import edu.jhuapl.saavtk.util.Configuration;
+import edu.jhuapl.saavtk.util.FileUtil;
 import edu.jhuapl.saavtk.util.MapUtil;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
 
@@ -25,7 +29,8 @@ public class ShapeModelImporter
     {
         PDS,
         OBJ,
-        VTK
+        VTK,
+        FIT
     }
 
     /**
@@ -62,11 +67,14 @@ public class ShapeModelImporter
         }
 
         LinkedHashMap<String, String> configMap = new LinkedHashMap<String, String>();
-
+        LinkedHashMap<String, String> copyMap = new LinkedHashMap<String, String>();
+        
         configMap.put(ShapeModel.NAME, name);
 
         vtkPolyData shapePoly = null;
 
+        File newModelDir = new File(Configuration.getImportedShapeModelsDir() + File.separator + name);
+        
         // First either load a shape model from file or create ellipsoidal shape model
         if (shapeModelType == ShapeModelType.ELLIPSOID)
         {
@@ -153,14 +161,30 @@ public class ShapeModelImporter
 
                 configMap.put(ShapeModel.CUSTOM_SHAPE_MODEL_FORMAT, ShapeModel.VTK_FORMAT);
             }
+            else if (format == FormatType.FIT)
+            {
+                try
+                {
+                    // Parse the ALTWG FITs file and turn it into polydata
+                    shapePoly = PolyDataUtil.loadFITShapeModel(modelPath);
+                    
+                    // Make a copy of the FITs file for loading in the future
+                    copyMap.put(modelPath, newModelDir.getAbsolutePath() + File.separator + "model.fit");
+                }
+                catch (Exception ex)
+                {
+                    errorMessage[0] = "The was an error loading " + modelPath + ".\nAre you sure you specified the right format?";
+                    return false;
+                }
+
+                configMap.put(ShapeModel.CUSTOM_SHAPE_MODEL_FORMAT, ShapeModel.FIT_FORMAT);
+            }
         }
 
         // Now save the shape model to the users home folder within the
         // custom-shape-models folders
-        File newModelDir = new File(Configuration.getImportedShapeModelsDir() + File.separator + name);
         FileUtils.deleteQuietly(newModelDir);
         newModelDir.mkdirs();
-
 
         vtkPolyDataWriter writer = new vtkPolyDataWriter();
         writer.SetInputData(shapePoly);
@@ -179,6 +203,18 @@ public class ShapeModelImporter
         writer.SetFileTypeToBinary();
         writer.Write();
 
+        // Copy any files as needed
+        for(String key : copyMap.keySet())
+        {   
+            // Copy the file to the model directory
+            try {
+				FileUtil.copyFile(key, copyMap.get(key));
+			} catch (IOException e) {
+                errorMessage[0] = "The was an error copying " + modelPath + " to " + copyMap.get(key);
+                return false;
+			}            
+        }
+        
         // Save out all information about this shape model to the config.txt file
         MapUtil map = new MapUtil(newModelDir.getAbsolutePath() + File.separator + "config.txt");
         map.put(configMap);
