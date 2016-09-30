@@ -12,6 +12,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import nom.tam.fits.BasicHDU;
+import nom.tam.fits.Fits;
+import nom.tam.fits.Header;
+import nom.tam.fits.HeaderCard;
+
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import vtk.vtkAbstractPointLocator;
@@ -3126,6 +3131,153 @@ public class PolyDataUtil
         smallBodyReader.Delete();
 
         addPointNormalsToShapeModel(shapeModel);
+
+        return shapeModel;
+    }
+    
+    static public vtkPolyData loadFITShapeModel(String filename) throws Exception
+    {
+    	vtkPoints points = new vtkPoints();
+        vtkCellArray polys = new vtkCellArray();
+        vtkPolyData shapeModel = new vtkPolyData();
+        vtkIdList idList = new vtkIdList();
+        shapeModel.SetPoints(points);
+        shapeModel.SetPolys(polys);
+
+        Fits f = new Fits(filename);
+        BasicHDU hdu = f.getHDU(0);
+
+        // First pass, figure out number of planes and grab size and scale information
+        Header header = hdu.getHeader();
+        HeaderCard headerCard;
+        int xIdx = -1;
+        int yIdx = -1;
+        int zIdx = -1;
+        int planeCount = 0;
+        while((headerCard = header.nextCard()) != null)
+        {
+            String headerKey = headerCard.getKey();
+            String headerValue = headerCard.getValue();
+
+            if(headerKey.startsWith("PLANE"))
+            {
+                // Determine if we are looking at a coordinate or a backplane
+                if(headerValue.startsWith("X"))
+                {
+                    // This plane is the X coordinate, save the index
+                    xIdx = planeCount;
+                }
+                else if(headerValue.startsWith("Y"))
+                {
+                    // This plane is the Y coordinate, save the index
+                    yIdx = planeCount;
+                }
+                else if(headerValue.startsWith("Z"))
+                {
+                    // This plane is the Z coordinate, save the index
+                    zIdx = planeCount;
+                }
+
+                // Increment plane count
+                planeCount++;
+            }
+        }
+
+        // Check to see if x,y,z planes were all defined
+        if(xIdx < 0)
+        {
+            throw new IOException("FITS file does not contain plane for X coordinate");
+        }
+        else if(yIdx < 0)
+        {
+            throw new IOException("FITS file does not contain plane for Y coordinate");
+        }
+        else if(zIdx < 0)
+        {
+            throw new IOException("FITS file does not contain plane for Z coordinate");
+        }
+
+        // Check dimensions of actual data
+        int[] axes = hdu.getAxes();
+        if (axes.length != 3 ||  axes[1] != axes[2])
+        {
+            throw new IOException("FITS file has incorrect dimensions");
+        }
+
+        int liveSize = axes[1];
+
+        float[][][] data = (float[][][])hdu.getData().getData();
+        f.getStream().close();
+
+        int[][] indices = new int[liveSize][liveSize];
+        int c = 0;
+        float x, y, z;
+        float INVALID_VALUE = -1.0e38f;
+    	
+        // First add points to the vtkPoints array
+        for (int m=0; m<liveSize; ++m)
+            for (int n=0; n<liveSize; ++n)
+            {
+                indices[m][n] = -1;
+
+                // A pixel value of -1.0e38 means that pixel is invalid and should be skipped
+                x = data[xIdx][m][n];
+                y = data[yIdx][m][n];
+                z = data[zIdx][m][n];
+
+                // Check to see if x,y,z values are all valid
+                boolean valid = x != INVALID_VALUE && y != INVALID_VALUE && z != INVALID_VALUE;
+
+                // Only add point if everything is valid
+                if (valid)
+                {
+                    points.InsertNextPoint(x, y, z);
+                    indices[m][n] = c;
+                    ++c;
+                }
+            }
+
+        idList.SetNumberOfIds(3);
+
+        // Now add connectivity information
+        int i0, i1, i2, i3;
+        for (int m=1; m<liveSize; ++m)
+            for (int n=1; n<liveSize; ++n)
+            {
+                // Get the indices of the 4 corners of the rectangle to the upper left
+                i0 = indices[m-1][n-1];
+                i1 = indices[m][n-1];
+                i2 = indices[m-1][n];
+                i3 = indices[m][n];
+
+                // Add upper left triangle
+                if (i0>=0 && i1>=0 && i2>=0)
+                {
+                    idList.SetId(0, i0);
+                    idList.SetId(1, i2);
+                    idList.SetId(2, i1);
+                    polys.InsertNextCell(idList);
+                }
+                // Add bottom right triangle
+                if (i2>=0 && i1>=0 && i3>=0)
+                {
+                    idList.SetId(0, i2);
+                    idList.SetId(1, i3);
+                    idList.SetId(2, i1);
+                    polys.InsertNextCell(idList);
+                }
+            }
+
+        vtkPolyDataNormals normalsFilter = new vtkPolyDataNormals();
+        normalsFilter.SetInputData(shapeModel);
+        normalsFilter.SetComputeCellNormals(0);
+        normalsFilter.SetComputePointNormals(1);
+        normalsFilter.SplittingOff();
+        normalsFilter.FlipNormalsOn();
+        normalsFilter.Update();
+
+        vtkPolyData normalsFilterOutput = normalsFilter.GetOutput();
+        shapeModel.DeepCopy(normalsFilterOutput);
 
         return shapeModel;
     }

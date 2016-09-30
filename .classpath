@@ -19,5 +19,6 @@
 	<classpathentry exported="true" kind="lib" path="lib/quaqua-7.3.4-filechooser-only.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/quaqua-7.3.4.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/Jama-1.0.2.jar"/>
+	<classpathentry kind="lib" path="lib/nom-tam-fits-1.13.1m0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
