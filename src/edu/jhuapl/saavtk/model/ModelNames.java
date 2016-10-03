@@ -26,5 +26,6 @@ public enum ModelNames
     DEM_BOUNDARY,
     TRACKS,
     DEM,
-    STATISTICS
+    STATISTICS,
+    SIMULATION_RUN_COLLECTION
 }
