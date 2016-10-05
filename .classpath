@@ -15,13 +15,10 @@
 	<classpathentry exported="true" kind="lib" path="lib/miglayout-3.7.1-swing.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/quaqua-7.3.4-filechooser-only.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/quaqua-7.3.4.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/RelativeLayout-v1.0.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/jogl/gluegen-rt-natives-macosx-universal.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/jogl/gluegen-rt.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/jogl/jogl-all-natives-macosx-universal.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/jogl/jogl-all.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/vtk6.3/vtk-6.3.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/nom-tam-fits-1.13.1m0.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/Jama-1.0.2.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib-bamt/vtk6.3/vtk-6.3.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib-bamt/jogl/gluegen-rt.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib-bamt/jogl/jogl-all.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/nom-tam-fits-1.13.1m0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
