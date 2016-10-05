@@ -19,5 +19,6 @@
 	<classpathentry exported="true" kind="lib" path="lib-bamt/vtk6.3/vtk-6.3.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib-bamt/jogl/gluegen-rt.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib-bamt/jogl/jogl-all.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/nom-tam-fits-1.13.1m0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
