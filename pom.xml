@@ -183,7 +183,7 @@
                             <configuration>
                                 <tasks>
                                     <copy todir="/home/apluser/vtkLibs/vtk6.3">
-                                        <fileset dir="lib-bamt/vtk6.3"/>
+                                        <fileset dir="lib/vtk6.3"/>
                                     </copy>
                                 </tasks>
                             </configuration>
