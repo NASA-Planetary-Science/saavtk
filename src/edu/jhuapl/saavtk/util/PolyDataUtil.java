@@ -12,11 +12,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import nom.tam.fits.BasicHDU;
+import nom.tam.fits.Fits;
+import nom.tam.fits.Header;
+import nom.tam.fits.HeaderCard;
+
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import vtk.vtkAbstractPointLocator;
 import vtk.vtkAlgorithmOutput;
 import vtk.vtkAppendPolyData;
+import vtk.vtkBooleanOperationPolyDataFilter;
 import vtk.vtkCell;
 import vtk.vtkCellArray;
 import vtk.vtkCleanPolyData;
@@ -27,13 +33,16 @@ import vtk.vtkDecimatePro;
 import vtk.vtkExtractPolyDataGeometry;
 import vtk.vtkFeatureEdges;
 import vtk.vtkFloatArray;
+import vtk.vtkFrustumSource;
 import vtk.vtkGenericCell;
 import vtk.vtkIdList;
 import vtk.vtkIdTypeArray;
+import vtk.vtkMassProperties;
 import vtk.vtkOBJReader;
 import vtk.vtkObject;
 import vtk.vtkPLYReader;
 import vtk.vtkPlane;
+import vtk.vtkPlaneSource;
 import vtk.vtkPointData;
 import vtk.vtkPointLocator;
 import vtk.vtkPoints;
@@ -45,6 +54,7 @@ import vtk.vtkPolyDataWriter;
 import vtk.vtkRegularPolygonSource;
 import vtk.vtkSTLReader;
 import vtk.vtkSTLWriter;
+import vtk.vtkSelectEnclosedPoints;
 import vtk.vtkSphere;
 import vtk.vtkTransform;
 import vtk.vtkTransformFilter;
@@ -339,6 +349,174 @@ public class PolyDataUtil
         return tmpPolyData;
     }
 
+    public static double[] computeFrustumAxisVector(
+    		double[] origin,
+            double[] ul,
+            double[] ur,
+            double[] lr,
+            double[] ll
+    		)	
+    {
+    	double[] ctr=new double[3];
+    	for (int i=0; i<3; i++)
+    		ctr[i]=origin[i]+(ul[i]+ur[i]+lr[i]+ll[i])/4.;
+    	return ctr;
+    }
+    
+    public static double[] computePolydataPointsBarycenter(vtkPolyData polyData)
+    {
+    	Vector3D center=Vector3D.ZERO;
+    	for (int i=0; i<polyData.GetNumberOfPoints(); i++)
+    		center=center.add(new Vector3D(polyData.GetPoint(i)));
+    	return center.scalarMultiply(1./(double)polyData.GetNumberOfPoints()).toArray();
+    }
+
+    public static double computeFarthestFrustumPlaneDepth(
+    		vtkPolyData polyData,
+    		double[] origin,
+            double[] ul,
+            double[] ur,
+            double[] lr,
+            double[] ll)
+    {
+    	Vector3D originVec=new Vector3D(origin);
+    	Vector3D farPlaneCenterVec=new Vector3D(computeFrustumAxisVector(origin, ul, ur, lr, ll));
+    	Vector3D axialVec=farPlaneCenterVec.subtract(originVec).normalize();
+    	double maxDepth=Double.NEGATIVE_INFINITY;
+    	for (int i=0; i<polyData.GetNumberOfPoints(); i++)
+    	{
+    		Vector3D dVec=new Vector3D(polyData.GetPoint(i)).subtract(originVec);
+    		double depth=dVec.dotProduct(axialVec);
+    		if (depth>maxDepth)
+    			maxDepth=depth;
+    	}
+    	return maxDepth;
+    }
+    
+    public static vtkPolyData generateFrustumPlane(            double[] origin,
+            double[] ul,
+            double[] ur,
+            double[] lr,
+            double[] ll,
+            double depth,
+            int[] resolution)
+    {
+    	vtkPoints points=new vtkPoints();
+    	int[][] ids=new int[resolution[0]][resolution[1]];
+
+    	// set up points for plane
+    	Vector3D originVec=new Vector3D(origin);
+    	Vector3D farPlaneCenterVec=new Vector3D(computeFrustumAxisVector(origin, ul, ur, lr, ll));
+    	double depthNorm=depth/farPlaneCenterVec.subtract(originVec).getNorm();
+    	Vector3D llCrn=new Vector3D(ll).scalarMultiply(depthNorm).add(originVec);
+    	Vector3D lrCrn=new Vector3D(lr).scalarMultiply(depthNorm).add(originVec);
+    	Vector3D ulCrn=new Vector3D(ul).scalarMultiply(depthNorm).add(originVec);
+    	Vector3D lxVec=lrCrn.subtract(llCrn);
+    	Vector3D lyVec=ulCrn.subtract(llCrn);
+    	for (int i=0; i<resolution[0]; i++)
+    		for (int j=0; j<resolution[1]; j++)
+    		{
+    			double dx=(double)i/((double)resolution[0]-1);
+    			double dy=(double)j/((double)resolution[1]-1);
+    			ids[i][j]=points.InsertNextPoint(llCrn.add(lxVec.scalarMultiply(dx)).add(lyVec.scalarMultiply(dy)).toArray());
+    		}
+
+    	// set up triangles for plane
+    	vtkCellArray cells=new vtkCellArray();
+    	for (int i=0; i<resolution[0]-1; i++)
+    		for (int j=0; j<resolution[1]-1; j++)
+    		{
+    			vtkTriangle tri1=new vtkTriangle();
+    			tri1.GetPointIds().SetId(0, ids[i][j]);
+    			tri1.GetPointIds().SetId(1, ids[i+1][j]);
+    			tri1.GetPointIds().SetId(2, ids[i+1][j+1]);
+    			cells.InsertNextCell(tri1);
+    			//
+    			vtkTriangle tri2=new vtkTriangle();
+    			tri2.GetPointIds().SetId(0, ids[i+1][j+1]);
+    			tri2.GetPointIds().SetId(1, ids[i][j+1]);
+    			tri2.GetPointIds().SetId(2, ids[i][j]);
+    			cells.InsertNextCell(tri2);
+    		}
+
+    	// init plane polydata
+    	vtkPolyData plane=new vtkPolyData();
+    	plane.SetPoints(points);
+    	plane.SetPolys(cells);
+
+    	return plane;
+    }
+    
+/*    public static vtkPolyData cutFrustumPlaneWithPolyData(
+    		vtkPolyData polyData,
+            double[] origin,
+            double[] ul,
+            double[] ur,
+            double[] lr,
+            double[] ll,
+            double depth,
+            int[] resolution)
+    {
+    	vtkPoints points=new vtkPoints();
+    	int[][] ids=new int[resolution[0]][resolution[1]];
+
+    	// set up points for plane
+    	Vector3D originVec=new Vector3D(origin);
+    	double[] ctr=new double[3];
+    	for (int i=0; i<3; i++)
+    		ctr[i]=(ul[i]+ur[i]+lr[i]+ll[i])/4.;
+    	Vector3D farPlaneCenterVec=new Vector3D(ctr);
+    	double depthNorm=depth/farPlaneCenterVec.subtract(originVec).getNorm();
+    	Vector3D llCrn=new Vector3D(ll).subtract(originVec).scalarMultiply(depthNorm).add(originVec);
+    	Vector3D lrCrn=new Vector3D(lr).subtract(originVec).scalarMultiply(depthNorm).add(originVec);
+    	Vector3D ulCrn=new Vector3D(ul).subtract(originVec).scalarMultiply(depthNorm).add(originVec);
+    	Vector3D lxVec=lrCrn.subtract(llCrn);
+    	Vector3D lyVec=ulCrn.subtract(llCrn);
+    	for (int i=0; i<resolution[0]; i++)
+    		for (int j=0; j<resolution[1]; j++)
+    		{
+    			double dx=(double)i/(double)resolution[0];
+    			double dy=(double)j/(double)resolution[1];
+    			ids[i][j]=points.InsertNextPoint(llCrn.add(lxVec.scalarMultiply(dx)).add(lyVec.scalarMultiply(dy)).toArray());
+    		}
+
+    	// set up triangles for plane
+    	vtkCellArray cells=new vtkCellArray();
+    	for (int i=0; i<resolution[0]-1; i++)
+    		for (int j=0; j<resolution[1]-1; j++)
+    		{
+    			vtkTriangle tri1=new vtkTriangle();
+    			tri1.GetPointIds().SetId(0, ids[i][j]);
+    			tri1.GetPointIds().SetId(1, ids[i+1][j]);
+    			tri1.GetPointIds().SetId(2, ids[i+1][j+1]);
+    			cells.InsertNextCell(tri1);
+    			//
+    			vtkTriangle tri2=new vtkTriangle();
+    			tri2.GetPointIds().SetId(0, ids[i+1][j+1]);
+    			tri2.GetPointIds().SetId(1, ids[i][j+1]);
+    			tri2.GetPointIds().SetId(2, ids[i][j]);
+    			cells.InsertNextCell(tri2);
+    		}
+
+    	// init plane polydata
+    	vtkPolyData plane=new vtkPolyData();
+    	plane.SetPoints(points);
+    	plane.SetPolys(cells);
+    	
+    	// subtract body polydata from plane polydata
+    	vtkBooleanOperationPolyDataFilter booleanFilter=new vtkBooleanOperationPolyDataFilter();
+    	booleanFilter.SetInputData(0, polyData);
+    	booleanFilter.SetInputData(1, plane);
+    	booleanFilter.SetTolerance(1e-12);
+    	booleanFilter.SetOperationToDifference();
+    	booleanFilter.Update();
+    	
+    	// return result
+    	vtkPolyData result=new vtkPolyData();
+    	result.DeepCopy(booleanFilter.GetOutput());
+    	return result;
+    }*/
+    
     /*
      * This is an older version of that uses a vtkCylinder to do
      * the intersection rather than a series of planes. Unfortunately, the results
@@ -3126,6 +3304,153 @@ public class PolyDataUtil
         smallBodyReader.Delete();
 
         addPointNormalsToShapeModel(shapeModel);
+
+        return shapeModel;
+    }
+    
+    static public vtkPolyData loadFITShapeModel(String filename) throws Exception
+    {
+    	vtkPoints points = new vtkPoints();
+        vtkCellArray polys = new vtkCellArray();
+        vtkPolyData shapeModel = new vtkPolyData();
+        vtkIdList idList = new vtkIdList();
+        shapeModel.SetPoints(points);
+        shapeModel.SetPolys(polys);
+
+        Fits f = new Fits(filename);
+        BasicHDU hdu = f.getHDU(0);
+
+        // First pass, figure out number of planes and grab size and scale information
+        Header header = hdu.getHeader();
+        HeaderCard headerCard;
+        int xIdx = -1;
+        int yIdx = -1;
+        int zIdx = -1;
+        int planeCount = 0;
+        while((headerCard = header.nextCard()) != null)
+        {
+            String headerKey = headerCard.getKey();
+            String headerValue = headerCard.getValue();
+
+            if(headerKey.startsWith("PLANE"))
+            {
+                // Determine if we are looking at a coordinate or a backplane
+                if(headerValue.startsWith("X"))
+                {
+                    // This plane is the X coordinate, save the index
+                    xIdx = planeCount;
+                }
+                else if(headerValue.startsWith("Y"))
+                {
+                    // This plane is the Y coordinate, save the index
+                    yIdx = planeCount;
+                }
+                else if(headerValue.startsWith("Z"))
+                {
+                    // This plane is the Z coordinate, save the index
+                    zIdx = planeCount;
+                }
+
+                // Increment plane count
+                planeCount++;
+            }
+        }
+
+        // Check to see if x,y,z planes were all defined
+        if(xIdx < 0)
+        {
+            throw new IOException("FITS file does not contain plane for X coordinate");
+        }
+        else if(yIdx < 0)
+        {
+            throw new IOException("FITS file does not contain plane for Y coordinate");
+        }
+        else if(zIdx < 0)
+        {
+            throw new IOException("FITS file does not contain plane for Z coordinate");
+        }
+
+        // Check dimensions of actual data
+        int[] axes = hdu.getAxes();
+        if (axes.length != 3 ||  axes[1] != axes[2])
+        {
+            throw new IOException("FITS file has incorrect dimensions");
+        }
+
+        int liveSize = axes[1];
+
+        float[][][] data = (float[][][])hdu.getData().getData();
+        f.getStream().close();
+
+        int[][] indices = new int[liveSize][liveSize];
+        int c = 0;
+        float x, y, z;
+        float INVALID_VALUE = -1.0e38f;
+    	
+        // First add points to the vtkPoints array
+        for (int m=0; m<liveSize; ++m)
+            for (int n=0; n<liveSize; ++n)
+            {
+                indices[m][n] = -1;
+
+                // A pixel value of -1.0e38 means that pixel is invalid and should be skipped
+                x = data[xIdx][m][n];
+                y = data[yIdx][m][n];
+                z = data[zIdx][m][n];
+
+                // Check to see if x,y,z values are all valid
+                boolean valid = x != INVALID_VALUE && y != INVALID_VALUE && z != INVALID_VALUE;
+
+                // Only add point if everything is valid
+                if (valid)
+                {
+                    points.InsertNextPoint(x, y, z);
+                    indices[m][n] = c;
+                    ++c;
+                }
+            }
+
+        idList.SetNumberOfIds(3);
+
+        // Now add connectivity information
+        int i0, i1, i2, i3;
+        for (int m=1; m<liveSize; ++m)
+            for (int n=1; n<liveSize; ++n)
+            {
+                // Get the indices of the 4 corners of the rectangle to the upper left
+                i0 = indices[m-1][n-1];
+                i1 = indices[m][n-1];
+                i2 = indices[m-1][n];
+                i3 = indices[m][n];
+
+                // Add upper left triangle
+                if (i0>=0 && i1>=0 && i2>=0)
+                {
+                    idList.SetId(0, i0);
+                    idList.SetId(1, i2);
+                    idList.SetId(2, i1);
+                    polys.InsertNextCell(idList);
+                }
+                // Add bottom right triangle
+                if (i2>=0 && i1>=0 && i3>=0)
+                {
+                    idList.SetId(0, i2);
+                    idList.SetId(1, i3);
+                    idList.SetId(2, i1);
+                    polys.InsertNextCell(idList);
+                }
+            }
+
+        vtkPolyDataNormals normalsFilter = new vtkPolyDataNormals();
+        normalsFilter.SetInputData(shapeModel);
+        normalsFilter.SetComputeCellNormals(0);
+        normalsFilter.SetComputePointNormals(1);
+        normalsFilter.SplittingOff();
+        normalsFilter.FlipNormalsOn();
+        normalsFilter.Update();
+
+        vtkPolyData normalsFilterOutput = normalsFilter.GetOutput();
+        shapeModel.DeepCopy(normalsFilterOutput);
 
         return shapeModel;
     }

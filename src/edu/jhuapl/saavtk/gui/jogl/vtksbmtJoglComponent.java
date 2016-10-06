@@ -102,7 +102,7 @@ class vtksbmtJoglComponent<T extends java.awt.Component> extends vtkAbstractComp
    */
   public void Render() {
     // Make sure we can render
-    if (!inRenderCall) {
+    if (!inRenderCall && this.uiComponent!=null) {
         uiComponent.repaint();
     }
   }

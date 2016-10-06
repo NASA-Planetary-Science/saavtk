@@ -21,6 +21,7 @@ public class ViewConfig implements Cloneable
     public ShapeModelAuthor author; // e.g. Gaskell
     public String version; // e.g. 2.0
     public ShapeModelBody body; // e.g. EROS or ITOKAWA
+    public boolean hasFlybyData; // for flyby path data
 
     public boolean useMinimumReferencePotential = false; // uses average otherwise
     public boolean hasCustomBodyCubeSize = false;
