@@ -7,7 +7,7 @@
 <listEntry value="1"/>
 </listAttribute>
 <mapAttribute key="org.eclipse.debug.core.environmentVariables">
-<mapEntry key="PATH" value=".\lib\win64"/>
+<mapEntry key="PATH" value=".\lib\vtk6.3\win64"/>
 </mapAttribute>
 <listAttribute key="org.eclipse.debug.ui.favoriteGroups">
 <listEntry value="org.eclipse.debug.ui.launchGroup.debug"/>
@@ -17,5 +17,5 @@
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="edu.jhuapl.saavtk.example.ExampleTool"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="--model &quot;data/brain.obj&quot;"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="saavtk"/>
-<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Djava.library.path=lib/win64  -Xmx4096M -Dcom.apple.mrj.application.apple.menu.about.name=&quot;Example SAAVTK Tool&quot;"/>
+<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Djava.library.path=lib/vtk6.3/win64  -Xmx4096M -Dcom.apple.mrj.application.apple.menu.about.name=&quot;Example SAAVTK Tool&quot;"/>
 </launchConfiguration>
