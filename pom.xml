@@ -30,11 +30,6 @@
     		<version>13.0.1</version>
 	</dependency>
 	<dependency>
-    		<groupId>gov.nist.math</groupId>
-    		<artifactId>jama</artifactId>
-    		<version>1.0.2</version>
-	</dependency>
-	<dependency>
     		<groupId>jfree</groupId>
     		<artifactId>jcommon</artifactId>
     		<version>1.0.16</version>
@@ -183,7 +178,7 @@
                             <configuration>
                                 <tasks>
                                     <copy todir="/home/apluser/vtkLibs/vtk6.3">
-                                        <fileset dir="lib-bamt/vtk6.3"/>
+                                        <fileset dir="lib/vtk6.3"/>
                                     </copy>
                                 </tasks>
                             </configuration>
