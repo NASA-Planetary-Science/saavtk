@@ -11,6 +11,7 @@ import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -22,6 +23,9 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 
 import vtk.vtkAxesActor;
@@ -42,6 +46,7 @@ import vtk.vtkPostScriptWriter;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
 import vtk.vtkProperty;
+import vtk.vtkRenderWindow;
 import vtk.vtkRenderer;
 import vtk.vtkTIFFWriter;
 import vtk.vtkTextProperty;
@@ -240,6 +245,10 @@ public class Renderer extends JPanel implements
         mainCanvas.Render();
         if (mirrorFrameOpen)
             mirrorCanvas.Render();
+        
+        
+        if (ch=='r')
+        	toggleRotation();
         //
 /*        if (stereoOn && mirrorFrame!=null)
         {
@@ -380,6 +389,128 @@ public class Renderer extends JPanel implements
         }
     }*/
 
+    boolean rotationOn=false;
+    int rotationTimerId=-1;
+    double rotationPerFrameDeg=0.25;
+    final int rotationIntervalMillis=250;
+    
+    public void toggleRotation()
+    {
+    	rotationOn=!rotationOn;
+    }
+
+    public void enableFlyTo()
+    {
+    	flyToOn=true;
+    	flyToStartMillis=System.currentTimeMillis();
+    }
+    
+    protected void autoMoveCamera()
+    {
+    	if (rotationOn)
+    	{
+    		mainCanvas.getRenderer().GetActiveCamera().Azimuth(rotationPerFrameDeg);
+    		mainCanvas.Render();
+    	}
+    	else if (flyToOn)
+    	{
+    		long flyToElapsedMillis=System.currentTimeMillis()-flyToStartMillis;
+    		double interpfac=(double)flyToElapsedMillis/(double)flyToMaxElapsedMillis;
+    		if (interpfac>1 || interpfac<0)
+    		{
+    			interpfac=1;
+    			flyToOn=false;
+    		}
+    		mainCanvas.getVTKLock().lock();
+    		CameraState.smoothInterpolate(oldCameraState, newCameraState, interpfac).applyTo(mainCanvas.getActiveCamera());
+    		//System.out.println(new Vector3D(mainCanvas.getActiveCamera().GetPosition())+" "+new Vector3D(mainCanvas.getActiveCamera().GetFocalPoint())+" "+new Vector3D(up));
+            mainCanvas.resetCameraClippingRange();
+            mainCanvas.Render();
+    		mainCanvas.getVTKLock().unlock();
+    	}
+    }
+    
+    boolean flyToOn=false;
+    CameraState oldCameraState,newCameraState;
+    long flyToStartMillis;
+    long flyToMaxElapsedMillis=1000;
+    
+    static class CameraState
+    {
+    	Vector3D position;
+    	Vector3D focalPoint;
+    	Vector3D up;
+    	double viewAngle;
+    	
+    	public CameraState(Vector3D pos, Vector3D focPt, Vector3D up, double viewAngle)
+    	{
+			this.position=pos;
+			this.focalPoint=focPt;
+			this.up=up;
+			this.viewAngle=viewAngle;
+		}
+    	
+    	public void applyTo(vtkCamera cam)
+    	{
+    		cam.SetPosition(position.toArray());
+    		cam.SetFocalPoint(focalPoint.toArray());
+    		cam.SetViewUp(up.toArray());
+    		cam.SetViewAngle(viewAngle);
+    	}
+    	
+    	static CameraState linearInterpolate(CameraState state1, CameraState state2, double interpFac)
+    	{
+    		return new CameraState
+    				(
+    						linearInterpolateVector(state1.position, state2.position, interpFac),
+    						linearInterpolateVector(state1.focalPoint, state2.focalPoint, interpFac),
+    						linearInterpolateVector(state1.up, state2.up, interpFac),
+    						linearInterpolateScalar(state1.viewAngle, state2.viewAngle, interpFac)
+    				);
+    	}
+    	
+    	static CameraState smoothInterpolate(CameraState state1, CameraState state2, double interpFac)
+    	{
+    		return new CameraState
+    				(
+    						smoothInterpolateVector(state1.position, state2.position, interpFac),
+    						smoothInterpolateVector(state1.focalPoint, state2.focalPoint, interpFac),
+    						smoothInterpolateVector(state1.up, state2.up, interpFac),
+    						smoothInterpolateScalar(state1.viewAngle, state2.viewAngle, interpFac)
+    				);
+    	}
+
+    	private static Vector3D linearInterpolateVector(Vector3D v1, Vector3D v2, double interpFac)	// interpfac should be between 0 and 1
+    	{
+    		return v1.scalarMultiply(1-interpFac).add(v2.scalarMultiply(interpFac));
+    	}
+    	
+    	private static double linearInterpolateScalar(double s1, double s2, double interpFac)
+    	{
+    		return s1*(1-interpFac)+s2*interpFac;
+    	}
+    	
+    	private static Vector3D smoothInterpolateVector(Vector3D v1, Vector3D v2, double interpFac)
+    	{
+    		return linearInterpolateVector(v1, v2, getSmoothInterpFac(interpFac));
+    	}
+    	
+    	private static double smoothInterpolateScalar(double s1, double s2, double interpFac)
+    	{
+    		return linearInterpolateScalar(s1, s2, getSmoothInterpFac(interpFac));
+    	}
+    	
+    	private static double getSmoothInterpFac(double interpFac)
+    	{
+    		return Math.exp(-5*(1-interpFac)*(1-interpFac));
+//    		return Math.atan((interpFac-0.5)*20.)/Math.PI+1/2.;
+    	}
+    }
+    
+    
+    
+    int startInteractionObserver,endInteractionObserver;
+    
     public Renderer(final ModelManager modelManager, StatusBar statusBar)
     {
         this(modelManager);
@@ -420,8 +551,12 @@ public class Renderer extends JPanel implements
   //      mainCanvas.getRenderWindowInteractor().AddObserver("TimerEvent", this, "checkStereoModeSynchronization");
 
         // Setup observers for start/stop interaction events
-        mainCanvas.getRenderWindowInteractor().AddObserver("StartInteractionEvent", this, "onStartInteraction");
-        mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
+        startInteractionObserver=mainCanvas.getRenderWindowInteractor().AddObserver("StartInteractionEvent", this, "onStartInteraction");
+        endInteractionObserver=mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
+
+
+		rotationTimerId=mainCanvas.getRenderWindowInteractor().CreateRepeatingTimer(rotationIntervalMillis);
+		mainCanvas.getRenderWindowInteractor().AddObserver("TimerEvent", this, "autoMoveCamera");
 
         initOrientationAxes();
 
@@ -841,16 +976,14 @@ public class Renderer extends JPanel implements
             double viewAngle)
     {
 //        orientationWidget.EnabledOff();
-        mainCanvas.getVTKLock().lock();
+//        mainCanvas.getVTKLock().lock();
         vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
-        cam.SetPosition(position);
-        cam.SetFocalPoint(focalPoint);
-        cam.SetViewUp(upVector);
-        cam.SetViewAngle(viewAngle);
-        mainCanvas.getVTKLock().unlock();
-        mainCanvas.resetCameraClippingRange();
+        oldCameraState=new CameraState(new Vector3D(cam.GetPosition()),new Vector3D(cam.GetFocalPoint()),new Vector3D(cam.GetViewUp()),cam.GetViewAngle());
+        newCameraState=new CameraState(new Vector3D(position), new Vector3D(focalPoint), new Vector3D(upVector), viewAngle);
+        enableFlyTo();
+//        mainCanvas.getVTKLock().unlock();
 //        orientationWidget.EnabledOn();
-        mainCanvas.Render();
+//        mainCanvas.Render();
     }
 
     public void setCameraViewAngle(
@@ -1040,10 +1173,10 @@ public class Renderer extends JPanel implements
         {
             this.setProps(modelManager.getProps());
         }
-        else
-        {
+//        else
+//        {
             mainCanvas.Render();
-        }
+ //       }
     }
 
     public void setDefaultInteractorStyleType(InteractorStyleType interactorStyleType)
