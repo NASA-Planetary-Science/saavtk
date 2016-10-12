@@ -433,7 +433,7 @@ public class Renderer extends JPanel implements
     boolean flyToOn=false;
     CameraState oldCameraState,newCameraState;
     long flyToStartMillis;
-    long flyToMaxElapsedMillis=1000;
+    long flyToMaxElapsedMillis=1250;
     
     static class CameraState
     {

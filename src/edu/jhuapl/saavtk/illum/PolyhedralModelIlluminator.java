@@ -89,4 +89,9 @@ public class PolyhedralModelIlluminator
 	{
 		return illuminationFactor[c];
 	}
+	
+	public double[] getIlluminationFactorArray()
+	{
+		return illuminationFactor;
+	}
 }
