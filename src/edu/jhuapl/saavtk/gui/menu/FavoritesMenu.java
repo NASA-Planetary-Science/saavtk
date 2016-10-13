@@ -15,7 +15,7 @@ public class FavoritesMenu extends JMenu
 {
     FavoritesFile favoritesFile;
     ViewManager manager;
-    private static final char viewNameSpaceReplacementChar='-';
+    private static final char viewNameSpaceReplacementChar='|';
 
     public FavoritesMenu(FavoritesFile file, ViewManager manager)
     {
@@ -32,9 +32,12 @@ public class FavoritesMenu extends JMenu
         JMenuItem add=new JMenuItem();
         JMenuItem rem=new JMenuItem();
         JMenuItem def=new JMenuItem();
+        JMenuItem clr=new JMenuItem();
         add.setAction(new AddFavoriteAction("Add current model to favorites"));
         rem.setAction(new RemoveFavoriteAction("Remove current model from favorites"));
         def.setAction(new SetDefaultModelAction("Set current model as default",manager));
+        clr.setAction(new ClearFavoritesAction("Clear favorites"));
+        
         //
 
         // favorites
@@ -65,6 +68,8 @@ public class FavoritesMenu extends JMenu
         add(menuItem);
 
         //
+        add(new JSeparator());
+        add(clr);
         add(new JSeparator());
         add(add);
         add(rem);
@@ -135,6 +140,23 @@ public class FavoritesMenu extends JMenu
             favoritesFile.removeFavorite(filterViewName(manager.getCurrentView().getUniqueName()));
             if (manager.getDefaultBodyToLoad().equals(manager.getCurrentView().getUniqueName()))
                 manager.resetDefaultBodyToLoad();
+            rebuild();
+        }
+    }
+
+
+    private class ClearFavoritesAction extends AbstractAction
+    {
+        public ClearFavoritesAction(String desc)
+        {
+            super(desc);
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e)
+        {
+            favoritesFile.clear();
+            manager.resetDefaultBodyToLoad();
             rebuild();
         }
     }
