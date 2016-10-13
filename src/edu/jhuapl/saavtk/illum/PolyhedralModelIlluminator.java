@@ -44,7 +44,7 @@ public class PolyhedralModelIlluminator
 
 	public double[] illuminate(IlluminationField illumField, List<Integer> faceIndices)	// get illumination just for a subset of the faces
 	{
-		double[] illumFac=new double[faceIndices.size()];
+		illuminationFactor=new double[faceIndices.size()];
 		for (int m=0; m<faceIndices.size(); m++)
 		{
 			int c=faceIndices.get(m);
@@ -61,7 +61,7 @@ public class PolyhedralModelIlluminator
 			Vector3D invIllumUnitVec=illumField.getUnobstructedFlux(centerVec).negate().normalize();
 			if (invIllumUnitVec.dotProduct(normalVec)<0)
 			{
-				illumFac[m]=0;
+				illuminationFactor[m]=0;
 				continue;
 			}
 			//
@@ -80,9 +80,9 @@ public class PolyhedralModelIlluminator
 					hit=true;	// but catch intersections with other faces
 			}
 			if (hit)
-				illumFac[m]=0;
+				illuminationFactor[m]=0;
 		}
-		return illumFac;
+		return illuminationFactor;
 	}
 
 	public double getIlluminationFactor(int c)
