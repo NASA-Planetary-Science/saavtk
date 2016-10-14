@@ -32,11 +32,11 @@ public class FavoritesMenu extends JMenu
         JMenuItem add=new JMenuItem();
         JMenuItem rem=new JMenuItem();
         JMenuItem def=new JMenuItem();
-        JMenuItem clr=new JMenuItem();
+        JMenuItem remall=new JMenuItem();
         add.setAction(new AddFavoriteAction("Add current model to favorites"));
         rem.setAction(new RemoveFavoriteAction("Remove current model from favorites"));
         def.setAction(new SetDefaultModelAction("Set current model as default",manager));
-        clr.setAction(new ClearFavoritesAction("Clear favorites"));
+        remall.setAction(new ClearFavoritesAction("Clear all favorites"));
         
         //
 
@@ -69,10 +69,9 @@ public class FavoritesMenu extends JMenu
 
         //
         add(new JSeparator());
-        add(clr);
-        add(new JSeparator());
         add(add);
         add(rem);
+        add(remall);
         add(def);
 
     }
