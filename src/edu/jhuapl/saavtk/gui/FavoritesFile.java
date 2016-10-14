@@ -109,7 +109,6 @@ public class FavoritesFile
 
     public void removeFavorite(String string)
     {
-    	System.out.println("testing remove");
         List<String> stringsOnFile=getAllFavorites();
         if (stringsOnFile.contains(string))
         {

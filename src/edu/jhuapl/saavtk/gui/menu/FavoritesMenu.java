@@ -35,9 +35,8 @@ public class FavoritesMenu extends JMenu
         JMenuItem remall=new JMenuItem();
         add.setAction(new AddFavoriteAction("Add current model to favorites"));
         rem.setAction(new RemoveFavoriteAction("Remove current model from favorites"));
-        remall.setAction(new RemoveFavoriteAction("Remove all models from favorites"));
         def.setAction(new SetDefaultModelAction("Set current model as default",manager));
-        remall.setAction(new ClearFavoritesAction("Clear favorites"));
+        remall.setAction(new ClearFavoritesAction("Clear all favorites"));
         
         //
 
