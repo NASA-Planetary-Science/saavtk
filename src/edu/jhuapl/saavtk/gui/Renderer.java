@@ -249,6 +249,7 @@ public class Renderer extends JPanel implements
         
         if (ch=='r')
         	toggleRotation();
+        
         //
 /*        if (stereoOn && mirrorFrame!=null)
         {
@@ -1067,11 +1068,10 @@ public class Renderer extends JPanel implements
         pos[1] *= distance;
         pos[2] *= distance;
 
-        mainCanvas.getVTKLock().lock();
-        cam.SetPosition(pos);
-        mainCanvas.getVTKLock().unlock();
-        mainCanvas.resetCameraClippingRange();
-        mainCanvas.Render();
+        oldCameraState=new CameraState(cam.GetPosition(), cam.GetFocalPoint(), cam.GetViewUp(), cam.GetViewAngle());
+        newCameraState=new CameraState(pos, cam.GetFocalPoint(), cam.GetViewUp(), cam.GetViewAngle());
+        enableFlyTo();
+        
     }
 
     public double getCameraDistance()
@@ -1144,8 +1144,10 @@ public class Renderer extends JPanel implements
         pos[1] *= distance;
         pos[2] *= distance;
         
-        CameraState finalState=new CameraState(pos, cam.GetFocalPoint(), cam.GetViewUp(), cam.GetViewAngle());
-        finalState.applyTo(cam);
+        oldCameraState=new CameraState(cam.GetPosition(), cam.GetFocalPoint(), cam.GetViewUp(), cam.GetViewAngle());
+        newCameraState=new CameraState(pos, cam.GetFocalPoint(), cam.GetViewUp(), cam.GetViewAngle());
+        enableFlyTo();
+
     }
 
     // Set camera's focal point
@@ -1153,8 +1155,9 @@ public class Renderer extends JPanel implements
     {
         vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
 
-        CameraState finalState=new CameraState(cam.GetPosition(), focalPoint, cam.GetViewUp(), cam.GetViewAngle());
-        finalState.applyTo(cam);
+        oldCameraState=new CameraState(cam.GetPosition(), cam.GetFocalPoint(), cam.GetViewUp(), cam.GetViewAngle());
+        newCameraState=new CameraState(cam.GetPosition(), focalPoint, cam.GetViewUp(), cam.GetViewAngle());
+        enableFlyTo();
 }
 
     // Sets the camera roll with roll as defined by vtkCamera

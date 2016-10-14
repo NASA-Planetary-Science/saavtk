@@ -460,14 +460,15 @@ public class DefaultPicker extends Picker
                 if (pickSucceeded == 1)
                 {
                     double[] pos = allPropsCellPicker.GetPickPosition();
-
-                    renWin.getVTKLock().lock();
+                    renderer.setCameraFocalPoint(pos);
+                    
+/*                    renWin.getVTKLock().lock();
                     vtkCamera activeCamera = renWin.getRenderer().GetActiveCamera();
                     activeCamera.SetFocalPoint(pos);
                     renWin.getVTKLock().unlock();
 
                     renWin.resetCameraClippingRange();
-                    renWin.Render();
+                    renWin.Render();*/
                 }
             }
         }
