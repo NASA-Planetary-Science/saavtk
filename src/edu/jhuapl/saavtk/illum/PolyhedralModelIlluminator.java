@@ -3,6 +3,8 @@ package edu.jhuapl.saavtk.illum;
 import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.commons.math3.transform.FastHadamardTransformer;
+import org.apache.commons.math3.util.FastMath;
 
 import com.google.common.collect.Lists;
 
@@ -59,7 +61,8 @@ public class PolyhedralModelIlluminator
 			Vector3D normalVec=new Vector3D(normal);
 			Vector3D centerVec=new Vector3D(center);
 			Vector3D invIllumUnitVec=illumField.getUnobstructedFlux(centerVec).negate().normalize();
-			if (invIllumUnitVec.dotProduct(normalVec)<0)
+			double incidenceCosine=invIllumUnitVec.dotProduct(normalVec);
+			if (incidenceCosine<0)
 			{
 				illuminationFactor[m]=0;
 				continue;
@@ -81,6 +84,8 @@ public class PolyhedralModelIlluminator
 			}
 			if (hit)
 				illuminationFactor[m]=0;
+			else
+				illuminationFactor[m]=incidenceCosine;
 		}
 		return illuminationFactor;
 	}
