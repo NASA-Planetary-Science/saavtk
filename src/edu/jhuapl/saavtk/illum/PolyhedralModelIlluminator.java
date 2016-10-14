@@ -3,6 +3,8 @@ package edu.jhuapl.saavtk.illum;
 import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.commons.math3.transform.FastHadamardTransformer;
+import org.apache.commons.math3.util.FastMath;
 
 import com.google.common.collect.Lists;
 
@@ -44,7 +46,7 @@ public class PolyhedralModelIlluminator
 
 	public double[] illuminate(IlluminationField illumField, List<Integer> faceIndices)	// get illumination just for a subset of the faces
 	{
-		double[] illumFac=new double[faceIndices.size()];
+		illuminationFactor=new double[faceIndices.size()];
 		for (int m=0; m<faceIndices.size(); m++)
 		{
 			int c=faceIndices.get(m);
@@ -59,9 +61,10 @@ public class PolyhedralModelIlluminator
 			Vector3D normalVec=new Vector3D(normal);
 			Vector3D centerVec=new Vector3D(center);
 			Vector3D invIllumUnitVec=illumField.getUnobstructedFlux(centerVec).negate().normalize();
-			if (invIllumUnitVec.dotProduct(normalVec)<0)
+			double incidenceCosine=invIllumUnitVec.dotProduct(normalVec);
+			if (incidenceCosine<0)
 			{
-				illumFac[m]=0;
+				illuminationFactor[m]=0;
 				continue;
 			}
 			//
@@ -80,9 +83,11 @@ public class PolyhedralModelIlluminator
 					hit=true;	// but catch intersections with other faces
 			}
 			if (hit)
-				illumFac[m]=0;
+				illuminationFactor[m]=0;
+			else
+				illuminationFactor[m]=incidenceCosine;
 		}
-		return illumFac;
+		return illuminationFactor;
 	}
 
 	public double getIlluminationFactor(int c)

@@ -145,4 +145,11 @@ public class FavoritesFile
                 e.printStackTrace();
             }
     }
+    
+    public void clear()
+    {
+        if (favoritesFilePath.toFile().exists())
+        	favoritesFilePath.toFile().delete();
+        touchFavoritesFile();
+    }
 }

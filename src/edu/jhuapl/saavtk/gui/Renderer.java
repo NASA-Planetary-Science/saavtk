@@ -249,6 +249,7 @@ public class Renderer extends JPanel implements
         
         if (ch=='r')
         	toggleRotation();
+        
         //
 /*        if (stereoOn && mirrorFrame!=null)
         {
@@ -422,7 +423,7 @@ public class Renderer extends JPanel implements
     			flyToOn=false;
     		}
     		mainCanvas.getVTKLock().lock();
-    		CameraState.smoothInterpolate(oldCameraState, newCameraState, interpfac).applyTo(mainCanvas.getActiveCamera());
+    		CameraState.linearInterpolate(oldCameraState, newCameraState, interpfac).applyTo(mainCanvas.getActiveCamera());
     		//System.out.println(new Vector3D(mainCanvas.getActiveCamera().GetPosition())+" "+new Vector3D(mainCanvas.getActiveCamera().GetFocalPoint())+" "+new Vector3D(up));
             mainCanvas.resetCameraClippingRange();
             mainCanvas.Render();
@@ -441,6 +442,14 @@ public class Renderer extends JPanel implements
     	Vector3D focalPoint;
     	Vector3D up;
     	double viewAngle;
+    	
+    	public CameraState(double[] pos, double[] focPt, double[] up, double viewAngle)
+    	{
+    		this.position=new Vector3D(pos);
+    		this.focalPoint=new Vector3D(focPt);
+    		this.up=new Vector3D(up);
+    		this.viewAngle=viewAngle;
+    	}
     	
     	public CameraState(Vector3D pos, Vector3D focPt, Vector3D up, double viewAngle)
     	{
@@ -479,6 +488,17 @@ public class Renderer extends JPanel implements
     						smoothInterpolateScalar(state1.viewAngle, state2.viewAngle, interpFac)
     				);
     	}
+    	
+    	static CameraState hybridInterpolate(CameraState state1, CameraState state2, double interpFac)
+    	{
+    		return new CameraState
+    				(
+    						smoothInterpolateVector(state1.position, state2.position, interpFac),
+    						linearInterpolateVector(state1.focalPoint, state2.focalPoint, interpFac),
+    						linearInterpolateVector(state1.up, state2.up, interpFac),
+    						smoothInterpolateScalar(state1.viewAngle, state2.viewAngle, interpFac)
+    				);    		
+    	}
 
     	private static Vector3D linearInterpolateVector(Vector3D v1, Vector3D v2, double interpFac)	// interpfac should be between 0 and 1
     	{
@@ -502,7 +522,7 @@ public class Renderer extends JPanel implements
     	
     	private static double getSmoothInterpFac(double interpFac)
     	{
-    		return Math.exp(-5*(1-interpFac)*(1-interpFac));
+    		return Math.exp(-2*(1-interpFac)*(1-interpFac));
 //    		return Math.atan((interpFac-0.5)*20.)/Math.PI+1/2.;
     	}
     }
@@ -1048,11 +1068,10 @@ public class Renderer extends JPanel implements
         pos[1] *= distance;
         pos[2] *= distance;
 
-        mainCanvas.getVTKLock().lock();
-        cam.SetPosition(pos);
-        mainCanvas.getVTKLock().unlock();
-        mainCanvas.resetCameraClippingRange();
-        mainCanvas.Render();
+        oldCameraState=new CameraState(cam.GetPosition(), cam.GetFocalPoint(), cam.GetViewUp(), cam.GetViewAngle());
+        newCameraState=new CameraState(pos, cam.GetFocalPoint(), cam.GetViewUp(), cam.GetViewAngle());
+        enableFlyTo();
+        
     }
 
     public double getCameraDistance()
@@ -1124,26 +1143,22 @@ public class Renderer extends JPanel implements
         pos[0] *= distance;
         pos[1] *= distance;
         pos[2] *= distance;
+        
+        oldCameraState=new CameraState(cam.GetPosition(), cam.GetFocalPoint(), cam.GetViewUp(), cam.GetViewAngle());
+        newCameraState=new CameraState(pos, cam.GetFocalPoint(), cam.GetViewUp(), cam.GetViewAngle());
+        enableFlyTo();
 
-        // Set the new camera position
-        mainCanvas.getVTKLock().lock();
-        cam.SetPosition(pos);
-        mainCanvas.getVTKLock().unlock();
-        mainCanvas.resetCameraClippingRange();
-        mainCanvas.Render();
     }
 
     // Set camera's focal point
     public void setCameraFocalPoint(double[] focalPoint)
     {
-        // Obtain lock
-        mainCanvas.getVTKLock().lock();
         vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
-        cam.SetFocalPoint(focalPoint);
-        mainCanvas.getVTKLock().unlock();
-        mainCanvas.resetCameraClippingRange();
-        mainCanvas.Render();
-    }
+
+        oldCameraState=new CameraState(cam.GetPosition(), cam.GetFocalPoint(), cam.GetViewUp(), cam.GetViewAngle());
+        newCameraState=new CameraState(cam.GetPosition(), focalPoint, cam.GetViewUp(), cam.GetViewAngle());
+        enableFlyTo();
+}
 
     // Sets the camera roll with roll as defined by vtkCamera
     public void setCameraRoll(double angle)
