@@ -217,19 +217,50 @@ public abstract class Picker implements
         if (currentTime - when > 333)
             return 0;
 
+        renWin.Render();
+        
         renWin.getVTKLock().lock();
 
-        picker.SetTolerance(pickTolerance);
 
         // Note that on some displays, such as a retina display, the height used by
         // OpenGL is different than the height used by Java. Therefore we need
         // scale the mouse coordinates to get the right position for OpenGL.
 //       double openGlHeight = renWin.getComponent().getSurfaceHeight();
 //        double openGlHeight = renWin.getComponent().getHeight();
+        double openGlHeight=renWin.getComponent().getDelegatedDrawable().getHeight();
         double javaHeight = renWin.getComponent().getHeight();
-//        double scale = openGlHeight / javaHeight;
-        double scale = 1.0;
-        int pickSucceeded = picker.Pick(scale * x, scale * (javaHeight-y-1), 0.0, renWin.getRenderer());
+        double scale = openGlHeight / javaHeight;
+//        double scale = 1.0;
+
+        // *** this adaptive picking method has been copied from the commented-out doPick method just above (why was it commented out in the first place, since that seems to have broken the selection mechanism?)
+
+        // When picking, choosing the right tolerance is not simple. If it's too small, then
+        // the pick will only work well if we are zoomed in very close to the object. If it's
+        // too large, the pick will only work well when we are zoomed out a lot. To deal
+        // with this situation, do a series of picks starting out with a low tolerance
+        // and increase the tolerance after each new pick. Stop as soon as the pick succeeds
+        // or we reach the maximum tolerance.
+
+        int pickSucceeded = 0;
+        double tolerance = 0.0002;
+        final double originalTolerance = picker.GetTolerance();
+        final double maxTolerance = 0.004;
+        final double incr = 0.0002;
+        picker.SetTolerance(tolerance);
+        while (tolerance <= maxTolerance)
+        {
+            picker.SetTolerance(tolerance);
+
+            pickSucceeded = picker.Pick(scale*x, scale*(javaHeight-y-1), 0.0, renWin.getRenderer());
+
+            if (pickSucceeded == 1)
+                break;
+
+            tolerance += incr;
+        }
+        picker.SetTolerance(originalTolerance);
+
+//        int pickSucceeded = picker.Pick(scale * x, scale * (javaHeight-y-1), 0.0, renWin.getRenderer());
 
         renWin.getVTKLock().unlock();
 

@@ -22,7 +22,9 @@ import vtk.vtkCoordinate;
 import vtk.vtkDataArray;
 import vtk.vtkFloatArray;
 import vtk.vtkGenericCell;
+import vtk.vtkIdFilter;
 import vtk.vtkIdList;
+import vtk.vtkIdTypeArray;
 import vtk.vtkLookupTable;
 import vtk.vtkMassProperties;
 import vtk.vtkPointLocator;
@@ -121,6 +123,10 @@ public class GenericPolyhedralModel extends PolyhedralModel
     private int scaleBarWidthInPixels = 0;
     private double scaleBarWidthInKm = -1.0;
     private boolean showScaleBar = true;
+    
+    vtkIdTypeArray cellIds=new vtkIdTypeArray();
+    public static final String cellIdsArrayName="cellIds";
+    
 
     /**
      * Default constructor. Must be followed by a call to setSmallBodyPolyData.
@@ -260,11 +266,20 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
         initializeLocators();
         initializeColoringRanges();
-
+        initializeCellIds();
+        
         lowResSmallBodyPolyData = smallBodyPolyData;
         lowResPointLocator = pointLocator;
     }
 
+    private void initializeCellIds()
+    {
+    	cellIds.SetName(cellIdsArrayName);
+    	for (int i=0; i<smallBodyPolyData.GetNumberOfCells(); i++)
+    		cellIds.InsertNextValue(i);
+    	smallBodyPolyData.GetCellData().AddArray(cellIds);
+    }
+    
     public ViewConfig getDefaultModelConfig()
     {
         return getConfig();
@@ -510,6 +525,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         }
 
         initializeLocators();
+        initializeCellIds();
 
         this.computeShapeModelStatistics();
 

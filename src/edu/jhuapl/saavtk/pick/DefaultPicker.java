@@ -1,6 +1,8 @@
 package edu.jhuapl.saavtk.pick;
 
 import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.InputEvent;
@@ -10,6 +12,9 @@ import java.awt.event.MouseWheelEvent;
 import java.beans.PropertyChangeEvent;
 import java.text.DecimalFormat;
 import java.util.List;
+
+import javax.swing.Timer;
+
 import java.util.List;
 
 import vtk.vtkActor;
@@ -118,6 +123,7 @@ public class DefaultPicker extends Picker
         // need to shut off LODs to make sure pick is done on correct geometry
         boolean wasShowingLODs=renderer.showingLODs;
         renderer.hideLODs();
+        
 
         // First try picking on the non-small-body picker. If that fails try the small body picker.
         int pickSucceeded = doPick(e, mousePressNonSmallBodyCellPicker, renWin);
@@ -454,14 +460,15 @@ public class DefaultPicker extends Picker
                 if (pickSucceeded == 1)
                 {
                     double[] pos = allPropsCellPicker.GetPickPosition();
-
-                    renWin.getVTKLock().lock();
+                    renderer.setCameraFocalPoint(pos);
+                    
+/*                    renWin.getVTKLock().lock();
                     vtkCamera activeCamera = renWin.getRenderer().GetActiveCamera();
                     activeCamera.SetFocalPoint(pos);
                     renWin.getVTKLock().unlock();
 
                     renWin.resetCameraClippingRange();
-                    renWin.Render();
+                    renWin.Render();*/
                 }
             }
         }
