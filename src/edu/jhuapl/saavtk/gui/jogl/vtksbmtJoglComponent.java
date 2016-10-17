@@ -114,5 +114,6 @@ class vtksbmtJoglComponent<T extends java.awt.Component> extends vtkAbstractComp
   public boolean isWindowSet() {
     return this.isWindowCreated;
   }
+  
 
 }
