@@ -1,7 +1,6 @@
 package edu.jhuapl.saavtk.gui;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -9,39 +8,26 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import javax.imageio.ImageIO;
-import javax.media.opengl.GLAutoDrawable;
-import javax.media.opengl.GLEventListener;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 
 import vtk.vtkAxesActor;
 import vtk.vtkBMPWriter;
 import vtk.vtkCamera;
 import vtk.vtkCaptionActor2D;
-import vtk.vtkFloatArray;
 import vtk.vtkInteractorStyle;
 import vtk.vtkInteractorStyleImage;
 import vtk.vtkInteractorStyleJoystickCamera;
@@ -56,11 +42,9 @@ import vtk.vtkPostScriptWriter;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
 import vtk.vtkProperty;
-import vtk.vtkRenderWindow;
 import vtk.vtkRenderer;
 import vtk.vtkTIFFWriter;
 import vtk.vtkTextProperty;
-import vtk.vtkUnsignedCharArray;
 import vtk.vtkWindowToImageFilter;
 
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
@@ -256,14 +240,6 @@ public class Renderer extends JPanel implements
         mainCanvas.Render();
         if (mirrorFrameOpen)
             mirrorCanvas.Render();
-        
-        
-        if (ch=='R')
-        	toggleRotation();
-        
-/*        if (ch=='B')
-        	printStereoPair(null);
-        
         //
 /*        if (stereoOn && mirrorFrame!=null)
         {
@@ -404,274 +380,6 @@ public class Renderer extends JPanel implements
         }
     }*/
 
-    boolean rotationOn=false;
-    int rotationTimerId=-1;
-    double rotationPerFrameDeg=0.25;
-    final int rotationIntervalMillis=250;
-    
-    public void toggleRotation()
-    {
-    	rotationOn=!rotationOn;
-    	
-    }
-
-    public void enableFlyTo()
-    {
-    	flyToOn=true;
-    	flyToStartMillis=System.currentTimeMillis();
-    }
-    
-    protected void autoMoveCamera()
-    {
-    	if (rotationOn)
-    	{
-    		mainCanvas.getRenderer().GetActiveCamera().Azimuth(rotationPerFrameDeg);
-    		mainCanvas.Render();
-    	}
-    	else if (flyToOn)
-    	{
-    		long flyToElapsedMillis=System.currentTimeMillis()-flyToStartMillis;
-    		double interpfac=(double)flyToElapsedMillis/(double)flyToMaxElapsedMillis;
-    		if (interpfac>1 || interpfac<0)
-    		{
-    			interpfac=1;
-    			flyToOn=false;
-    		}
-    		mainCanvas.getVTKLock().lock();
-    		CameraState.linearInterpolate(oldCameraState, newCameraState, interpfac).applyTo(mainCanvas.getActiveCamera());
-    		//System.out.println(new Vector3D(mainCanvas.getActiveCamera().GetPosition())+" "+new Vector3D(mainCanvas.getActiveCamera().GetFocalPoint())+" "+new Vector3D(up));
-            mainCanvas.resetCameraClippingRange();
-            mainCanvas.Render();
-    		mainCanvas.getVTKLock().unlock();
-    	}
-    }
-    
-    boolean flyToOn=false;
-    CameraState oldCameraState,newCameraState;
-    long flyToStartMillis;
-    long flyToMaxElapsedMillis=1250;
-    
-    static class CameraState
-    {
-    	Vector3D position;
-    	Vector3D focalPoint;
-    	Vector3D up;
-    	double viewAngle;
-    	
-    	public CameraState(double[] pos, double[] focPt, double[] up, double viewAngle)
-    	{
-    		this.position=new Vector3D(pos);
-    		this.focalPoint=new Vector3D(focPt);
-    		this.up=new Vector3D(up);
-    		this.viewAngle=viewAngle;
-    	}
-    	
-    	public CameraState(Vector3D pos, Vector3D focPt, Vector3D up, double viewAngle)
-    	{
-			this.position=pos;
-			this.focalPoint=focPt;
-			this.up=up;
-			this.viewAngle=viewAngle;
-		}
-    	
-    	public CameraState(vtkCamera cam)
-    	{
-    		this.position=new Vector3D(cam.GetPosition());
-    		this.focalPoint=new Vector3D(cam.GetFocalPoint());
-    		this.up=new Vector3D(cam.GetViewUp());
-    		this.viewAngle=cam.GetViewAngle();
-    	}
-    	
-    	public void applyTo(vtkCamera cam)
-    	{
-    		cam.SetPosition(position.toArray());
-    		cam.SetFocalPoint(focalPoint.toArray());
-    		cam.SetViewUp(up.toArray());
-    		cam.SetViewAngle(viewAngle);
-    	}
-    	
-    	public CameraState getLeftEye(double eyeSeparation)
-    	{
-    		Vector3D lookUnitVec=focalPoint.subtract(position).normalize();
-    		Vector3D leftVec=up.crossProduct(lookUnitVec).normalize();
-    		return new CameraState(position.add(leftVec.scalarMultiply(eyeSeparation/2.)),focalPoint,up, viewAngle);
-    	}
-    	
-    	public CameraState getRightEye(double eyeSeparation)
-    	{
-    		return getLeftEye(-eyeSeparation);
-    	}
-
-    	static CameraState linearInterpolate(CameraState state1, CameraState state2, double interpFac)
-    	{
-    		return new CameraState
-    				(
-    						linearInterpolateVector(state1.position, state2.position, interpFac),
-    						linearInterpolateVector(state1.focalPoint, state2.focalPoint, interpFac),
-    						linearInterpolateVector(state1.up, state2.up, interpFac),
-    						linearInterpolateScalar(state1.viewAngle, state2.viewAngle, interpFac)
-    				);
-    	}
-    	
-    	static CameraState smoothInterpolate(CameraState state1, CameraState state2, double interpFac)
-    	{
-    		return new CameraState
-    				(
-    						smoothInterpolateVector(state1.position, state2.position, interpFac),
-    						smoothInterpolateVector(state1.focalPoint, state2.focalPoint, interpFac),
-    						smoothInterpolateVector(state1.up, state2.up, interpFac),
-    						smoothInterpolateScalar(state1.viewAngle, state2.viewAngle, interpFac)
-    				);
-    	}
-    	
-    	static CameraState hybridInterpolate(CameraState state1, CameraState state2, double interpFac)
-    	{
-    		return new CameraState
-    				(
-    						smoothInterpolateVector(state1.position, state2.position, interpFac),
-    						linearInterpolateVector(state1.focalPoint, state2.focalPoint, interpFac),
-    						linearInterpolateVector(state1.up, state2.up, interpFac),
-    						smoothInterpolateScalar(state1.viewAngle, state2.viewAngle, interpFac)
-    				);    		
-    	}
-
-    	private static Vector3D linearInterpolateVector(Vector3D v1, Vector3D v2, double interpFac)	// interpfac should be between 0 and 1
-    	{
-    		return v1.scalarMultiply(1-interpFac).add(v2.scalarMultiply(interpFac));
-    	}
-    	
-    	private static double linearInterpolateScalar(double s1, double s2, double interpFac)
-    	{
-    		return s1*(1-interpFac)+s2*interpFac;
-    	}
-    	
-    	private static Vector3D smoothInterpolateVector(Vector3D v1, Vector3D v2, double interpFac)
-    	{
-    		return linearInterpolateVector(v1, v2, getSmoothInterpFac(interpFac));
-    	}
-    	
-    	private static double smoothInterpolateScalar(double s1, double s2, double interpFac)
-    	{
-    		return linearInterpolateScalar(s1, s2, getSmoothInterpFac(interpFac));
-    	}
-    	
-    	private static double getSmoothInterpFac(double interpFac)
-    	{
-    		return Math.exp(-2*(1-interpFac)*(1-interpFac));
-//    		return Math.atan((interpFac-0.5)*20.)/Math.PI+1/2.;
-    	}
-    }
-    
-    int stereoPairMode=0;
-    Path stereoPairImageDirectory=Paths.get("/Users/zimmemi1/Desktop/");
-    
-    
-    GLEventListener stereoRenderEventListener=new GLEventListener()
-	{
-		
-		@Override
-		public void reshape(GLAutoDrawable arg0, int arg1, int arg2, int arg3, int arg4)
-		{
-			// TODO Auto-generated method stub
-			
-		}
-		
-		@Override
-		public void init(GLAutoDrawable arg0)
-		{
-			// TODO Auto-generated method stub
-			
-		}
-		
-		@Override
-		public void dispose(GLAutoDrawable arg0)
-		{
-			// TODO Auto-generated method stub
-			
-		}
-		
-		@Override
-		public void display(GLAutoDrawable arg0)
-		{
-			File outputFile=null;
-			if (stereoPairMode==1)
-				outputFile=stereoPairImageDirectory.resolve("left.png").toFile();
-			if (stereoPairMode==2)
-				outputFile=stereoPairImageDirectory.resolve("right.png").toFile();
-				
-			if (stereoPairMode!=0)
-			{
-				
-				int w=arg0.getWidth();
-				int h=arg0.getHeight();
-				vtkUnsignedCharArray array=new vtkUnsignedCharArray();
-				System.out.println("viewpoint "+new Vector3D(cam.GetPosition())+" --> "+outputFile.toString());
-				mainCanvas.getRenderWindow().GetRGBACharPixelData(0, 0, w-1, h-1, 0, array);
-				//
-				BufferedImage image=new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
-				image.createGraphics();
-				int cnt=0;
-				for (int j=h-1; j>=0; j--)
-					for (int i=0; i<w; i++)
-					{
-						double[] rgba=array.GetTuple4(cnt);
-						image.setRGB(i, j, new Color((int)rgba[0],(int)rgba[1],(int)rgba[2]).getRGB());
-						cnt++;
-					}
-
-				if (stereoPairMode==1)
-				{
-					stereoPairMode=2;
-					originalState.getRightEye(eyeSeparation).applyTo(cam);
-				}
-				else
-				{
-					stereoPairMode=0;
-					originalState.applyTo(cam);
-				}
-				getRenderWindowPanel().Render();
-
-				try
-				{
-					ImageIO.write(image, "png", outputFile);
-				} catch (IOException e)
-				{
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}
-	};
-    
-	CameraState originalState;
-	double eyeSeparation=0.12;
-	vtkCamera cam;
-	
-    public void printStereoPair(Path filePath)
-    {
-    	JFileChooser chooser=new JFileChooser();
-    	chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-    	int result=chooser.showOpenDialog(this);
-    	if (result == JFileChooser.APPROVE_OPTION)
-    		stereoPairImageDirectory=chooser.getSelectedFile().toPath();
-    	else
-    		return;
-    	
-    	stereoPairMode=1;	// start with left; the approach is a bit convoluted but we have to cheat the vtkRenderWindow threading model...
-    		// Basically, we set the camera state to "left" here, which updates the vtkCamera and fires a render event.
-    		// This triggers the display method of the stereoPair GLEventListener (defined as a member of the present (Renderer) class).
-    		// The display method grabs the vtk pixel buffer, writes it to a PNG, advances the stereo mode to "2", and syncs the camera to the right eye view.
-    		// Finally, the display method tells the render window to render again, which fires a render event, calls display one more time (with the stereo mode now at "2").
-    		// This causes the right-eye view (which has just been rendered) to be dumped to file.
-    		// The stereo mode is now set to "0" so further render events don't trigger the display method (until the user hits 'B' again).
-    	cam=getRenderWindowPanel().getActiveCamera();
-    	originalState=new CameraState(cam);
-    	originalState.getLeftEye(eyeSeparation).applyTo(cam);
-    }
-    
-    
-    int startInteractionObserver,endInteractionObserver;
-    
     public Renderer(final ModelManager modelManager, StatusBar statusBar)
     {
         this(modelManager);
@@ -712,13 +420,8 @@ public class Renderer extends JPanel implements
   //      mainCanvas.getRenderWindowInteractor().AddObserver("TimerEvent", this, "checkStereoModeSynchronization");
 
         // Setup observers for start/stop interaction events
-        startInteractionObserver=mainCanvas.getRenderWindowInteractor().AddObserver("StartInteractionEvent", this, "onStartInteraction");
-        endInteractionObserver=mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
-
-        mainCanvas.getRenderWindowInteractor().CreateRepeatingTimer(250);
-        mainCanvas.getRenderWindowInteractor().AddObserver("TimerEvent", this, "autoMoveCamera");
-        mainCanvas.getComponent().addGLEventListener(stereoRenderEventListener);
-        mainCanvas.getComponent().addGLEventListener(sixViewEventListener);
+        mainCanvas.getRenderWindowInteractor().AddObserver("StartInteractionEvent", this, "onStartInteraction");
+        mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
 
         initOrientationAxes();
 
@@ -734,7 +437,6 @@ public class Renderer extends JPanel implements
             }
         });
     }
-    
 
     public void setProps(List<vtkProp> props)
     {
@@ -806,7 +508,7 @@ public class Renderer extends JPanel implements
     public void showLODs()
     {
         // LOD switching control for SaavtkLODActor
-        if(enableLODs && modelManager != null)
+        if(enableLODs && modelManager != null && !showingLODs)
         {
             showingLODs=true;
             List<vtkProp> props = modelManager.getProps();
@@ -823,7 +525,7 @@ public class Renderer extends JPanel implements
 
     public void hideLODs()
     {
-        if(enableLODs && modelManager != null)
+        if(enableLODs && modelManager != null && showingLODs)
         {
             showingLODs=false;
             List<vtkProp> props = modelManager.getProps();
@@ -957,13 +659,7 @@ public class Renderer extends JPanel implements
             }
         }
 
-    	cam=getRenderWindowPanel().getActiveCamera();
-    	originalState=new CameraState(cam);
-
-        sixViewMode=1;
-        setCameraOrientationInDirectionOfAxis(AxisType.values()[0], true);
-
-/*        cameraFrameQueue = new LinkedBlockingQueue<CameraFrame>();
+        cameraFrameQueue = new LinkedBlockingQueue<CameraFrame>();
 
         for (int i=0; i<6; i++)
         {
@@ -975,172 +671,9 @@ public class Renderer extends JPanel implements
 
         // start off the timer
         this.actionPerformed(null);
-*/
+
     }
-    
-    int sixViewMode=0;
-    
-    GLEventListener sixViewEventListener = new GLEventListener()
-	{
-		
-		@Override
-		public void reshape(GLAutoDrawable arg0, int arg1, int arg2, int arg3, int arg4)
-		{
-			// TODO Auto-generated method stub
-			
-		}
-		
-		@Override
-		public void init(GLAutoDrawable arg0)
-		{
-			// TODO Auto-generated method stub
-			
-		}
-		
-		@Override
-		public void dispose(GLAutoDrawable arg0)
-		{
-			// TODO Auto-generated method stub
-			
-		}
-		
-		@Override
-		public void display(GLAutoDrawable arg0)
-		{
-			if (sixViewMode!=0)
-			{
-				int sixViewIndex=sixViewMode-1;
-				
-				int w=arg0.getWidth();
-				int h=arg0.getHeight();
-				vtkUnsignedCharArray array=new vtkUnsignedCharArray();
-				System.out.println("viewpoint "+new Vector3D(cam.GetPosition())+" --> "+sixFiles[sixViewIndex].toString());
-				mainCanvas.getRenderWindow().GetRGBACharPixelData(0, 0, w-1, h-1, 0, array);
-				//
-				BufferedImage image=new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
-				image.createGraphics();
-				int cnt=0;
-				for (int j=h-1; j>=0; j--)
-					for (int i=0; i<w; i++)
-					{
-						double[] rgba=array.GetTuple4(cnt);
-						image.setRGB(i, j, new Color((int)rgba[0],(int)rgba[1],(int)rgba[2]).getRGB());
-						cnt++;
-					}
 
-				try
-				{
-					ImageIO.write(image, "png", sixFiles[sixViewIndex]);
-				} catch (IOException e)
-				{
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
-				if (sixViewMode==5)
-				{
-					sixViewMode=0;
-					originalState.applyTo(cam);
-				}
-				else
-				{
-					sixViewMode++;
-					sixViewIndex++;
-					setCameraOrientationInDirectionOfAxis(AxisType.values()[sixViewIndex], true);
-				}
-				
-				getRenderWindowPanel().Render();
-			}
-		}
-	};
-
-	public void interpolateCameraOrientationInDirectionOfAxis(AxisType axisType, boolean preserveCurrentDistance)
-	{
-        vtkRenderer ren = mainCanvas.getRenderer();
-        if (ren.VisibleActorCount() == 0) return;
-
-//        mainCanvas.getVTKLock().lock();
-
-        double[] bounds = modelManager.getPolyhedralModel().getBoundingBox().getBounds();
-        double xSize = Math.abs(bounds[1] - bounds[0]);
-        double ySize = Math.abs(bounds[3] - bounds[2]);
-        double zSize = Math.abs(bounds[5] - bounds[4]);
-        double maxSize = Math.max(Math.max(xSize, ySize), zSize);
-
-        double cameraDistance = getCameraDistance();
-        cam.SetFocalPoint(0.0, 0.0, 0.0);
-
-        CameraState state1=new CameraState(cam);
-        CameraState state2=null;
-        
-        if (axisType == AxisType.NEGATIVE_X)
-        {
-            double xpos = xSize / Math.tan(Math.PI/6.0) + 2.0*maxSize;
-            /*cam.SetPosition(xpos, 0.0, 0.0);
-            cam.SetViewUp(0.0, 0.0, 1.0);*/
-        	state2=new CameraState(new double[]{xpos,0,0},new double[]{0,0,0},new double[]{0,0,1},cam.GetViewAngle());
-        }
-        else if (axisType == AxisType.POSITIVE_X)
-        {
-            double xpos = -xSize / Math.tan(Math.PI/6.0) - 2.0*maxSize;
-            /*cam.SetPosition(xpos, 0.0, 0.0);
-            cam.SetViewUp(0.0, 0.0, 1.0);*/
-        	state2=new CameraState(new double[]{xpos,0,0},new double[]{0,0,0},new double[]{0,0,1},cam.GetViewAngle());
-        }
-        else if (axisType == AxisType.NEGATIVE_Y)
-        {
-            double ypos = ySize / Math.tan(Math.PI/6.0) + 2.0*maxSize;
-            /*cam.SetPosition(0.0, ypos, 0.0);
-            cam.SetViewUp(0.0, 0.0, 1.0);*/
-        	state2=new CameraState(new double[]{0,ypos,0},new double[]{0,0,0},new double[]{0,0,1},cam.GetViewAngle());
-        }
-        else if (axisType == AxisType.POSITIVE_Y)
-        {
-            double ypos = -ySize / Math.tan(Math.PI/6.0) - 2.0*maxSize;
-            /*cam.SetPosition(0.0, ypos, 0.0);
-            cam.SetViewUp(0.0, 0.0, 1.0);*/
-        	state2=new CameraState(new double[]{0,ypos,0},new double[]{0,0,0},new double[]{0,0,1},cam.GetViewAngle());
-        }
-        else if (axisType == AxisType.NEGATIVE_Z)
-        {
-            double zpos = zSize / Math.tan(Math.PI/6.0) + 2.0*maxSize;
-            /*cam.SetPosition(0.0, 0.0, zpos);
-            cam.SetViewUp(0.0, 1.0, 0.0);*/
-        	state2=new CameraState(new double[]{0,0,zpos},new double[]{0,0,0},new double[]{0,1,0},cam.GetViewAngle());
-        }
-        else if (axisType == AxisType.POSITIVE_Z)
-        {
-            double zpos = -zSize / Math.tan(Math.PI/6.0) - 2.0*maxSize;
-            /*cam.SetPosition(0.0, 0.0, zpos);
-            cam.SetViewUp(0.0, 1.0, 0.0);*/
-        	state2=new CameraState(new double[]{0,0,zpos},new double[]{0,0,0},new double[]{0,1,0},cam.GetViewAngle());
-        }
-
-        if (preserveCurrentDistance)
-        {
-            /*double[] pos = cam.GetPosition();
-
-            MathUtil.unorm(pos, pos);
-
-            pos[0] *= cameraDistance;
-            pos[1] *= cameraDistance;
-            pos[2] *= cameraDistance;
-
-            cam.SetPosition(pos);*/
-            state2.position=state2.position.normalize().scalarMultiply(cameraDistance);
-        }
-
-  //      mainCanvas.getVTKLock().unlock();
-
-        mainCanvas.resetCameraClippingRange();
-        
-        oldCameraState=state1;
-        newCameraState=state2;
-        enableFlyTo();
-        
-    //    mainCanvas.Render();		
-	}
-	
     public void setCameraOrientationInDirectionOfAxis(AxisType axisType, boolean preserveCurrentDistance)
     {
         vtkRenderer ren = mainCanvas.getRenderer();
@@ -1214,29 +747,6 @@ public class Renderer extends JPanel implements
         mainCanvas.resetCameraClippingRange();
         mainCanvas.Render();
     }
-    
-    public void setCameraFocalPoint(double[] focalPoint)
-    {    	
-        mainCanvas.getVTKLock().lock();
-        vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
-        cam.SetFocalPoint(focalPoint);
-        mainCanvas.getVTKLock().unlock();
-        mainCanvas.resetCameraClippingRange();
-        mainCanvas.Render();
-    }
-
-    public void setCameraOrientation(double[] position, double[] focalPoint, double[] up, double viewAngle)
-    {    	
-        mainCanvas.getVTKLock().lock();
-        vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
-        cam.SetPosition(position);
-        cam.SetFocalPoint(focalPoint);
-        cam.SetViewUp(up);
-        cam.SetViewAngle(viewAngle);
-        mainCanvas.getVTKLock().unlock();
-        mainCanvas.resetCameraClippingRange();
-        mainCanvas.Render();
-    }
 
     public CameraFrame createCameraFrameInDirectionOfAxis(AxisType axisType, boolean preserveCurrentDistance, File file, int delayMilliseconds)
     {
@@ -1305,13 +815,6 @@ public class Renderer extends JPanel implements
         return result;
     }
 
-    public void interpolateToCameraFrame(CameraFrame frame)
-    {
-    	oldCameraState=new CameraState(cam);
-    	newCameraState=new CameraState(frame.position,frame.focalPoint,frame.upDirection,cam.GetViewAngle());
-    	enableFlyTo();
-    }
-    
     public void setCameraFrame(CameraFrame frame)
     {
         vtkRenderer ren = mainCanvas.getRenderer();
@@ -1331,21 +834,23 @@ public class Renderer extends JPanel implements
         mainCanvas.Render();
     }
 
-    public void interpolateToCameraOrientation(
+    public void setCameraOrientation(
             double[] position,
             double[] focalPoint,
             double[] upVector,
             double viewAngle)
     {
 //        orientationWidget.EnabledOff();
-//        mainCanvas.getVTKLock().lock();
+        mainCanvas.getVTKLock().lock();
         vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
-        oldCameraState=new CameraState(new Vector3D(cam.GetPosition()),new Vector3D(cam.GetFocalPoint()),new Vector3D(cam.GetViewUp()),cam.GetViewAngle());
-        newCameraState=new CameraState(new Vector3D(position), new Vector3D(focalPoint), new Vector3D(upVector), viewAngle);
-        enableFlyTo();
-//        mainCanvas.getVTKLock().unlock();
+        cam.SetPosition(position);
+        cam.SetFocalPoint(focalPoint);
+        cam.SetViewUp(upVector);
+        cam.SetViewAngle(viewAngle);
+        mainCanvas.getVTKLock().unlock();
+        mainCanvas.resetCameraClippingRange();
 //        orientationWidget.EnabledOn();
-//        mainCanvas.Render();
+        mainCanvas.Render();
     }
 
     public void setCameraViewAngle(
@@ -1359,14 +864,6 @@ public class Renderer extends JPanel implements
         mainCanvas.Render();
     }
 
-    public void interpolateToCameraViewAngle(
-            double viewAngle)
-    {
-    	oldCameraState=new CameraState(cam);
-    	newCameraState=new CameraState(cam.GetPosition(),cam.GetFocalPoint(),cam.GetViewUp(),viewAngle);
-    	enableFlyTo();
-    }
-
     public double getCameraViewAngle()
     {
         return mainCanvas.getRenderer().GetActiveCamera().GetViewAngle();
@@ -1375,11 +872,6 @@ public class Renderer extends JPanel implements
     public void resetToDefaultCameraViewAngle()
     {
         setCameraViewAngle(30.0);
-    }
-    
-    public void interpolateToDefaultCameraViewAngle()
-    {
-    	interpolateToCameraViewAngle(30.0);
     }
 
     public void setProjectionType(ProjectionType projectionType)
@@ -1411,7 +903,7 @@ public class Renderer extends JPanel implements
      *
      * @param distance
      */
-    public void interpolateToCameraDistance(double distance)
+    public void setCameraDistance(double distance)
     {
         vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
 
@@ -1423,20 +915,11 @@ public class Renderer extends JPanel implements
         pos[1] *= distance;
         pos[2] *= distance;
 
-        oldCameraState=new CameraState(cam.GetPosition(), cam.GetFocalPoint(), cam.GetViewUp(), cam.GetViewAngle());
-        newCameraState=new CameraState(pos, cam.GetFocalPoint(), cam.GetViewUp(), cam.GetViewAngle());
-        enableFlyTo();
-        
-    }
-    
-    public void setCameraDistance(double distance)
-    {
-    	mainCanvas.getVTKLock().lock();
-    	vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
-    	cam.SetPosition(new Vector3D(cam.GetPosition()).normalize().scalarMultiply(distance).toArray());
-    	mainCanvas.getVTKLock().unlock();
-    	mainCanvas.resetCameraClippingRange();
-    	mainCanvas.Render();
+        mainCanvas.getVTKLock().lock();
+        cam.SetPosition(pos);
+        mainCanvas.getVTKLock().unlock();
+        mainCanvas.resetCameraClippingRange();
+        mainCanvas.Render();
     }
 
     public double getCameraDistance()
@@ -1496,7 +979,7 @@ public class Renderer extends JPanel implements
     }
 
     // Sets the lat/lon (degrees) position of the camera
-    public void interpolateToCameraLatLon(LatLon latLon)
+    public void setCameraLatLon(LatLon latLon)
     {
         // Get active camera and current distance from origin
         vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
@@ -1508,33 +991,26 @@ public class Renderer extends JPanel implements
         pos[0] *= distance;
         pos[1] *= distance;
         pos[2] *= distance;
-        
-        oldCameraState=new CameraState(cam.GetPosition(), cam.GetFocalPoint(), cam.GetViewUp(), cam.GetViewAngle());
-        newCameraState=new CameraState(pos, cam.GetFocalPoint(), cam.GetViewUp(), cam.GetViewAngle());
-        enableFlyTo();
 
-    }
-    
-    public void setCameraLatLon(LatLon latLon)
-    {    	
+        // Set the new camera position
         mainCanvas.getVTKLock().lock();
-        vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
-        cam.SetPosition(new Vector3D(MathUtil.latrec(latLon.toRadians())).normalize().scalarMultiply(getCameraDistance()).toArray());
+        cam.SetPosition(pos);
         mainCanvas.getVTKLock().unlock();
         mainCanvas.resetCameraClippingRange();
         mainCanvas.Render();
     }
 
-
     // Set camera's focal point
-    public void interpolateToCameraFocalPoint(double[] focalPoint)
+    public void setCameraFocalPoint(double[] focalPoint)
     {
+        // Obtain lock
+        mainCanvas.getVTKLock().lock();
         vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
-
-        oldCameraState=new CameraState(cam.GetPosition(), cam.GetFocalPoint(), cam.GetViewUp(), cam.GetViewAngle());
-        newCameraState=new CameraState(cam.GetPosition(), focalPoint, cam.GetViewUp(), cam.GetViewAngle());
-        enableFlyTo();
-}
+        cam.SetFocalPoint(focalPoint);
+        mainCanvas.getVTKLock().unlock();
+        mainCanvas.resetCameraClippingRange();
+        mainCanvas.Render();
+    }
 
     // Sets the camera roll with roll as defined by vtkCamera
     public void setCameraRoll(double angle)
@@ -1564,10 +1040,10 @@ public class Renderer extends JPanel implements
         {
             this.setProps(modelManager.getProps());
         }
-//        else
-//        {
+        else
+        {
             mainCanvas.Render();
- //       }
+        }
     }
 
     public void setDefaultInteractorStyleType(InteractorStyleType interactorStyleType)
