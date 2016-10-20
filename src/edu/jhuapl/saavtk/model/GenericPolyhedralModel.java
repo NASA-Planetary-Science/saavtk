@@ -274,6 +274,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
     private void initializeCellIds()
     {
+    	cellIds=new vtkIdTypeArray();
     	cellIds.SetName(cellIdsArrayName);
     	for (int i=0; i<smallBodyPolyData.GetNumberOfCells(); i++)
     		cellIds.InsertNextValue(i);
