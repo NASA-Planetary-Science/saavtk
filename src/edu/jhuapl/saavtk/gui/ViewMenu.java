@@ -1,6 +1,9 @@
 package edu.jhuapl.saavtk.gui;
 
+import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -14,15 +17,25 @@ import javax.swing.AbstractAction;
 import javax.swing.AbstractButton;
 import javax.swing.Action;
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JRadioButtonMenuItem;
+import javax.swing.JSlider;
+import javax.swing.border.Border;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.gui.dialog.ShapeModelImporterManagerDialog;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.pick.Picker;
 import edu.jhuapl.saavtk.util.Properties;
 
 public class ViewMenu extends JMenu implements PropertyChangeListener
@@ -66,6 +79,9 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
         JCheckBoxMenuItem cbmi = new JCheckBoxMenuItem(new EnableLODsAction());
         cbmi.setSelected(true);
         this.add(cbmi);
+        
+        JMenuItem ptmi=new JMenuItem(new PickToleranceMenuAction());
+        this.add(ptmi);
     }
 
     protected void initialize()
@@ -295,9 +311,10 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
         public void actionPerformed(ActionEvent actionEvent)
         {
             Renderer.enableLODs = ((AbstractButton)actionEvent.getSource()).getModel().isSelected();
+            
         }
     }
-
+    
     protected JMenu getChildMenu(JMenu menu, String childName)
     {
         Component[] components = menu.getMenuComponents();
@@ -313,5 +330,50 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
         return null;
     }
 
+    class PickToleranceMenuAction extends AbstractAction implements ChangeListener
+    {
+		JSlider slider=new JSlider(0, 100);
 
+		public PickToleranceMenuAction()
+		{
+			super("Set pick accuracy...");
+			slider.setValue(convertPickToleranceToSliderValue(Picker.DEFAULT_PICK_TOLERANCE));
+			slider.addChangeListener(this);
+		}
+    	
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			
+			JLabel label=new JLabel("Pick accuracy");
+			JPanel panel=new JPanel(new BorderLayout());
+			panel.add(label, BorderLayout.WEST);
+			panel.add(slider, BorderLayout.CENTER);
+						
+			JFrame frame=new JFrame();
+			frame.getContentPane().add(panel);
+			frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+			frame.setVisible(true);
+			frame.pack();
+		}
+		
+		public int convertPickToleranceToSliderValue(double tol)
+		{
+			return (int)(1-(tol-Picker.MINIMUM_PICK_TOLERANCE)/(Picker.MAXIMUM_PICK_TOLERANCE-Picker.MINIMUM_PICK_TOLERANCE)*(double)(slider.getMaximum()-slider.getMinimum()))+slider.getMinimum();
+		}
+
+		public double convertSliderValueToPickTolerance(int val)
+		{
+			return Picker.MAXIMUM_PICK_TOLERANCE-(double)(slider.getValue()-slider.getMinimum())/(double)(slider.getMaximum()-slider.getMinimum())*(Picker.MAXIMUM_PICK_TOLERANCE-Picker.MINIMUM_PICK_TOLERANCE);
+		}
+		
+		@Override
+		public void stateChanged(ChangeEvent e)
+		{
+			rootPanel.getCurrentView().getPickManager().setPickTolerance(convertSliderValueToPickTolerance(slider.getValue()));
+		}
+    	
+    }
+    
+   
 }

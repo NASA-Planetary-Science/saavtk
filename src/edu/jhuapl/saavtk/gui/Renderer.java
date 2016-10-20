@@ -121,7 +121,7 @@ public class Renderer extends JPanel implements
 
     public static boolean enableLODs = true; // This is temporary to show off the LOD feature, very soon we will replace this with an actual menu
     public boolean showingLODs = false;
-
+    
     private JFrame mirrorFrame;
     private StereoCapableMirrorCanvas mirrorCanvas;
     private boolean mirrorFrameOpen=false;
