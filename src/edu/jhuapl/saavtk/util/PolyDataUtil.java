@@ -2296,6 +2296,9 @@ public class PolyDataUtil
         else if (!leftDirectionSuccess && !rightDirectionSuccess)
         {
             System.out.println("Error: Could not find other line segment");
+            System.out.println("There is likely something wrong with the shape model that is preventing");
+            System.out.println("VTK from finding a connected path between the two vertices along the model.");
+            System.out.println("Make sure faces have correct orientation and are connected without holes.");
             return false;
         }
 
