@@ -37,7 +37,6 @@ public class ProfilePlot implements ChartMouseListener, PropertyChangeListener
     private ChartPanel chartPanel;
     private PolyhedralModel smallBodyModel;
     private int coloringIndex;
-    private int defaultColoringIndex;
 
     private int numberOfProfilesCreated = 0;
 
@@ -72,29 +71,12 @@ public class ProfilePlot implements ChartMouseListener, PropertyChangeListener
         }
 
         // Set the coloring index last
-        setDefaultColoringIndex();
         setColoringIndex(smallBodyModel.getColoringIndex());
     }
 
     public JPanel getChartPanel()
     {
         return chartPanel;
-    }
-
-    // Sets the default coloring index to use when an invalid selection is made
-    private void setDefaultColoringIndex()
-    {
-        // At Olivier's request, use Elevation by default (if it exists)
-        defaultColoringIndex = -1;
-        int numColors = smallBodyModel.getNumberOfColors();
-        for(int i=0; i<numColors; i++)
-        {
-            if(smallBodyModel.getColoringName(i).toLowerCase().contains("elevation"))
-            {
-                defaultColoringIndex = i;
-                break;
-            }
-        }
     }
 
     private void setSeriesColor(int lineId)
@@ -127,21 +109,28 @@ public class ProfilePlot implements ChartMouseListener, PropertyChangeListener
         List<Double> distance = new ArrayList<Double>();
         try
         {
-            if(!line.hidden && line.controlPoints.size() == 2 && coloringIndex >= 0 &&
-                    coloringIndex < smallBodyModel.getNumberOfColors())
+            if(!line.hidden && line.controlPoints.size() == 2)
             {
-                // Get value of plate coloring "coloringIndex" along the profile specified in line.xyzPointList
-                lineModel.generateProfile(line.xyzPointList, value, distance, coloringIndex);
-            }
+            	if(coloringIndex >= 0 && coloringIndex < smallBodyModel.getNumberOfColors())
+            	{
+            		// Get value of plate coloring "coloringIndex" along the profile specified in line.xyzPointList
+            		lineModel.generateProfile(line.xyzPointList, value, distance, coloringIndex);
+            	}
+            	else
+            	{
+            		// Default is to create a profile of the radius
+            		lineModel.generateProfile(line.xyzPointList, value, distance, -1);            		
+            	}
 
-            XYSeries series = ((XYSeriesCollection)valueDistanceDataset).getSeries(lineId);
-            series.clear();
-            int N = value.size();
-            for (int i=0; i<N; ++i)
-            {
-                series.add((double)distance.get(i), value.get(i)/1000, false);
+            	XYSeries series = ((XYSeriesCollection)valueDistanceDataset).getSeries(lineId);
+            	series.clear();
+            	int N = value.size();
+            	for (int i=0; i<N; ++i)
+            	{
+            		series.add((double)distance.get(i), value.get(i)/1000, false);
+            	}
+            	series.fireSeriesChanged();
             }
-            series.fireSeriesChanged();
         }
         catch(Exception e)
         {
@@ -155,17 +144,20 @@ public class ProfilePlot implements ChartMouseListener, PropertyChangeListener
 
         if(coloringIndex >= 0 && coloringIndex < smallBodyModel.getNumberOfColors())
         {
-            title = smallBodyModel.getColoringName(coloringIndex) + " vs. Distance";
+            title = smallBodyModel.getColoringName(coloringIndex);
             rangeLabel = smallBodyModel.getColoringName(coloringIndex) + " (" +
                 smallBodyModel.getColoringUnits(coloringIndex) + ")";
-            domainLabel = "Distance (m)";
         }
         else
         {
-            title = "";
-            rangeLabel = "";
+            title = "Radius";
+            rangeLabel = "Radius (m)";
             domainLabel = "";
         }
+
+        // Common elements in labels
+        title += " vs. Distance";
+        domainLabel = "Distance (m)";
 
         // Apply the labels to the chart
         chartPanel.getChart().setTitle(title);;
@@ -185,16 +177,8 @@ public class ProfilePlot implements ChartMouseListener, PropertyChangeListener
         // Save value of index
         int numColoringIndices = smallBodyModel.getNumberOfColors();
 
-        if(index < 0 || index >= numColoringIndices)
-        {
-            // Use default if we are trying to set an index that is outside of the valid range
-            coloringIndex = defaultColoringIndex;
-        }
-        else
-        {
-            // Otherwise, use the index if it is valid
-            coloringIndex = index;
-        }
+        // Use the index, even if it is invalid
+        coloringIndex = index;
 
         // Update chart labels
         updateChartLabels();
