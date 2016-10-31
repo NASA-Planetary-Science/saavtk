@@ -1010,8 +1010,17 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
             // Save out the distance
             profileDistances.add(distance);
 
-            // Save out the plate coloring value
-            val = 1000.0 * smallBodyModel.getColoringValue(coloringIndex, p.xyz);
+            // Save out the profile value
+            if(coloringIndex >= 0)
+            {
+            	// Base the value off the plate coloring
+            	val = 1000.0 * smallBodyModel.getColoringValue(coloringIndex, p.xyz);
+            }
+            else
+            {
+            	// Base the value off the radius (m)
+            	val = 1000.0 * 1000.0 * MathUtil.reclat(p.xyz).rad;
+            }
             profileValues.add(val);
         }
     }
