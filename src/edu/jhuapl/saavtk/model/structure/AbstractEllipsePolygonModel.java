@@ -18,15 +18,19 @@ import vtk.vtkAppendPolyData;
 import vtk.vtkCaptionActor2D;
 import vtk.vtkCellArray;
 import vtk.vtkCellData;
+import vtk.vtkDecimatePolylineFilter;
+import vtk.vtkDecimatePro;
 import vtk.vtkIdTypeArray;
+import vtk.vtkMaskPoints;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
 import vtk.vtkProp;
 import vtk.vtkProperty;
+import vtk.vtkQuadricClustering;
+import vtk.vtkQuadricDecimation;
 import vtk.vtkTransform;
 import vtk.vtkUnsignedCharArray;
-
 import edu.jhuapl.saavtk.model.CommonData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
@@ -36,6 +40,7 @@ import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
 import edu.jhuapl.saavtk.util.Properties;
+import edu.jhuapl.saavtk.util.SaavtkLODActor;
 
 /**
  * Model of regular polygon structures drawn on a body.
@@ -47,17 +52,25 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
     private List<vtkProp> actors = new ArrayList<vtkProp>();
 
     private vtkPolyData boundaryPolyData;
+    private vtkPolyData decimatedBoundaryPolyData;
     private vtkAppendPolyData boundaryAppendFilter;
+    private vtkAppendPolyData decimatedBoundaryAppendFilter;
     private vtkPolyDataMapper boundaryMapper;
+    private vtkPolyDataMapper decimatedBoundaryMapper;
     private vtkActor boundaryActor;
 
     private vtkPolyData interiorPolyData;
+    private vtkPolyData decimatedInteriorPolyData;
     private vtkAppendPolyData interiorAppendFilter;
+    private vtkAppendPolyData decimatedInteriorAppendFilter;
     private vtkPolyDataMapper interiorMapper;
+    private vtkPolyDataMapper decimatedInteriorMapper;
     private vtkActor interiorActor;
 
     private vtkUnsignedCharArray boundaryColors;
+    private vtkUnsignedCharArray decimatedBoundaryColors;
     private vtkUnsignedCharArray interiorColors;
+    private vtkUnsignedCharArray decimatedInteriorColors;
 
     private vtkPolyData emptyPolyData;
     private PolyhedralModel smallBodyModel;
@@ -98,7 +111,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
         public boolean labelHidden = false;
 
         public vtkPolyData boundaryPolyData;
+        public vtkPolyData decimatedBoundaryPolyData;
         public vtkPolyData interiorPolyData;
+        public vtkPolyData decimatedInteriorPolyData;
         public int numberOfSides;
         public String type;
         public int[] color;
@@ -112,7 +127,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
         {
             this.id = id;
             boundaryPolyData = new vtkPolyData();
+            decimatedBoundaryPolyData = new vtkPolyData();
             interiorPolyData = new vtkPolyData();
+            decimatedInteriorPolyData = new vtkPolyData();
             this.numberOfSides = numberOfSides;
             this.type = type;
             this.color = (int[])color.clone();
@@ -196,11 +213,35 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
             if (!hidden)
             {
                 sbModel.drawEllipticalPolygon(center, radius, flattening, angle, numberOfSides, interiorPolyData, boundaryPolyData);
+                
+                // Setup decimator
+                vtkQuadricClustering decimator = new vtkQuadricClustering();
+                
+                // Decimate interior
+                decimator.SetInputData(interiorPolyData);
+                decimator.AutoAdjustNumberOfDivisionsOn();
+                decimator.CopyCellDataOn();
+                decimator.Update();
+                decimatedInteriorPolyData.DeepCopy(decimator.GetOutput());
+
+                // Decimate boundary
+                decimator.SetInputData(boundaryPolyData);
+                decimator.SetNumberOfXDivisions(2);
+                decimator.SetNumberOfYDivisions(2);
+                decimator.SetNumberOfZDivisions(2);
+                decimator.CopyCellDataOn();
+                decimator.Update();
+                decimatedBoundaryPolyData.DeepCopy(decimator.GetOutput());
+
+                // Destroy decimator
+                decimator.Delete();
             }
             else
             {
                 PolyDataUtil.clearPolyData(interiorPolyData);
+                PolyDataUtil.clearPolyData(decimatedInteriorPolyData);
                 PolyDataUtil.clearPolyData(boundaryPolyData);
+                PolyDataUtil.clearPolyData(decimatedBoundaryPolyData);
             }
         }
 
@@ -265,16 +306,24 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
         this.type = type;
 
         boundaryColors = new vtkUnsignedCharArray();
-        boundaryColors.SetNumberOfComponents(3);
-
+        decimatedBoundaryColors = new vtkUnsignedCharArray();
+        boundaryColors.SetNumberOfComponents(3);        
+        decimatedBoundaryColors.SetNumberOfComponents(3);
+        
         interiorColors = new vtkUnsignedCharArray();
+        decimatedInteriorColors = new vtkUnsignedCharArray();
         interiorColors.SetNumberOfComponents(3);
-
+        decimatedInteriorColors.SetNumberOfComponents(3);
+        
         boundaryPolyData = new vtkPolyData();
+        decimatedBoundaryPolyData = new vtkPolyData();
         boundaryAppendFilter = new vtkAppendPolyData();
         boundaryAppendFilter.UserManagedInputsOn();
+        decimatedBoundaryAppendFilter = new vtkAppendPolyData();
+        decimatedBoundaryAppendFilter.UserManagedInputsOn();
         boundaryMapper = new vtkPolyDataMapper();
-        boundaryActor = new vtkActor();
+        decimatedBoundaryMapper = new vtkPolyDataMapper();
+        boundaryActor = new SaavtkLODActor();
         vtkProperty boundaryProperty = boundaryActor.GetProperty();
         boundaryProperty.LightingOff();
         boundaryProperty.SetLineWidth(2.0);
@@ -282,10 +331,14 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
         actors.add(boundaryActor);
 
         interiorPolyData = new vtkPolyData();
+        decimatedInteriorPolyData = new vtkPolyData();
         interiorAppendFilter = new vtkAppendPolyData();
         interiorAppendFilter.UserManagedInputsOn();
+        decimatedInteriorAppendFilter = new vtkAppendPolyData();
+        decimatedInteriorAppendFilter.UserManagedInputsOn();
         interiorMapper = new vtkPolyDataMapper();
-        interiorActor = new vtkActor();
+        decimatedInteriorMapper = new vtkPolyDataMapper();
+        interiorActor = new SaavtkLODActor();
         vtkProperty interiorProperty = interiorActor.GetProperty();
         interiorProperty.LightingOff();
         interiorProperty.SetOpacity(interiorOpacity);
@@ -349,37 +402,54 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
     }
 
-
     private void updatePolyData()
     {
         if (polygons.size() > 0)
         {
             boundaryAppendFilter.SetNumberOfInputs(polygons.size());
+            decimatedBoundaryAppendFilter.SetNumberOfInputs(polygons.size());
             interiorAppendFilter.SetNumberOfInputs(polygons.size());
+            decimatedInteriorAppendFilter.SetNumberOfInputs(polygons.size());
 
             for (int i=0; i<polygons.size(); ++i)
             {
                 vtkPolyData poly = polygons.get(i).boundaryPolyData;
                 if (poly != null)
                     boundaryAppendFilter.SetInputDataByNumber(i, poly);
+                poly = polygons.get(i).decimatedBoundaryPolyData;
+                if (poly != null)
+                    decimatedBoundaryAppendFilter.SetInputDataByNumber(i, poly);
                 poly = polygons.get(i).interiorPolyData;
                 if (poly != null)
                     interiorAppendFilter.SetInputDataByNumber(i, poly);
+                poly = polygons.get(i).decimatedInteriorPolyData;
+                if (poly != null)
+                    decimatedInteriorAppendFilter.SetInputDataByNumber(i, poly);
             }
 
             boundaryAppendFilter.Update();
+            decimatedBoundaryAppendFilter.Update();
             interiorAppendFilter.Update();
+            decimatedInteriorAppendFilter.Update();
 
             vtkPolyData boundaryAppendFilterOutput = boundaryAppendFilter.GetOutput();
+            vtkPolyData decimatedBoundaryAppendFilterOutput = decimatedBoundaryAppendFilter.GetOutput();
             vtkPolyData interiorAppendFilterOutput = interiorAppendFilter.GetOutput();
+            vtkPolyData decimatedInteriorAppendFilterOutput = decimatedInteriorAppendFilter.GetOutput();
             boundaryPolyData.DeepCopy(boundaryAppendFilterOutput);
+            decimatedBoundaryPolyData.DeepCopy(decimatedBoundaryAppendFilterOutput);
             interiorPolyData.DeepCopy(interiorAppendFilterOutput);
+            decimatedInteriorPolyData.DeepCopy(decimatedInteriorAppendFilterOutput);
 
             smallBodyModel.shiftPolyLineInNormalDirection(boundaryPolyData, offset);
+            smallBodyModel.shiftPolyLineInNormalDirection(decimatedBoundaryPolyData, offset);
             PolyDataUtil.shiftPolyDataInNormalDirection(interiorPolyData, offset);
+            PolyDataUtil.shiftPolyDataInNormalDirection(decimatedInteriorPolyData, offset);
 
             boundaryColors.SetNumberOfTuples(boundaryPolyData.GetNumberOfCells());
+            decimatedBoundaryColors.SetNumberOfTuples(decimatedBoundaryPolyData.GetNumberOfCells());
             interiorColors.SetNumberOfTuples(interiorPolyData.GetNumberOfCells());
+            decimatedInteriorColors.SetNumberOfTuples(decimatedInteriorPolyData.GetNumberOfCells());
             for (int i=0; i<polygons.size(); ++i)
             {
                 int[] color = polygons.get(i).color;
@@ -395,37 +465,54 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
                 for (int j=range.id1; j<range.id2; ++j)
                     boundaryColors.SetTuple3(j, color[0], color[1], color[2]);
 
+                range = this.getCellIdRangeOfDecimatedPolygon(i, false);
+                for (int j=range.id1; j<range.id2; ++j)
+                    decimatedBoundaryColors.SetTuple3(j, color[0], color[1], color[2]);
+                
                 range = this.getCellIdRangeOfPolygon(i, true);
                 for (int j=range.id1; j<range.id2; ++j)
                     interiorColors.SetTuple3(j, color[0], color[1], color[2]);
+
+                range = this.getCellIdRangeOfDecimatedPolygon(i, true);
+                for (int j=range.id1; j<range.id2; ++j)
+                    decimatedInteriorColors.SetTuple3(j, color[0], color[1], color[2]);
             }
             vtkCellData boundaryCellData = boundaryPolyData.GetCellData();
+            vtkCellData decimatedBoundaryCellData = decimatedBoundaryPolyData.GetCellData();
             vtkCellData interiorCellData = interiorPolyData.GetCellData();
+            vtkCellData decimatedInteriorCellData = decimatedInteriorPolyData.GetCellData();
 
             boundaryCellData.SetScalars(boundaryColors);
+            decimatedBoundaryCellData.SetScalars(decimatedBoundaryColors);
             interiorCellData.SetScalars(interiorColors);
+            decimatedInteriorCellData.SetScalars(decimatedInteriorColors);
 
             boundaryAppendFilterOutput.Delete();
+            decimatedBoundaryAppendFilterOutput.Delete();
             interiorAppendFilterOutput.Delete();
+            decimatedInteriorAppendFilterOutput.Delete();
             boundaryCellData.Delete();
+            decimatedBoundaryCellData.Delete();
             interiorCellData.Delete();
+            decimatedInteriorCellData.Delete();
         }
         else
         {
             boundaryPolyData.DeepCopy(emptyPolyData);
+            decimatedBoundaryPolyData.DeepCopy(emptyPolyData);
             interiorPolyData.DeepCopy(emptyPolyData);
+            decimatedInteriorPolyData.DeepCopy(emptyPolyData);
         }
 
-
         boundaryMapper.SetInputData(boundaryPolyData);
-        boundaryMapper.Update();
+        decimatedBoundaryMapper.SetInputData(decimatedBoundaryPolyData);
         interiorMapper.SetInputData(interiorPolyData);
-        interiorMapper.Update();
+        decimatedInteriorMapper.SetInputData(decimatedInteriorPolyData);
 
         boundaryActor.SetMapper(boundaryMapper);
-        boundaryActor.Modified();
+        ((SaavtkLODActor)boundaryActor).setLODMapper(decimatedBoundaryMapper);
         interiorActor.SetMapper(interiorMapper);
-        interiorActor.Modified();
+        ((SaavtkLODActor)interiorActor).setLODMapper(decimatedInteriorMapper);
     }
 
     public List<vtkProp> getProps()
@@ -777,6 +864,26 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
         return new IdPair(startCell, endCell);
     }
 
+    private IdPair getCellIdRangeOfDecimatedPolygon(int polygonId, boolean interior)
+    {
+        int startCell = 0;
+        for (int i=0; i<polygonId; ++i)
+        {
+            if (interior)
+                startCell += polygons.get(i).decimatedInteriorPolyData.GetNumberOfCells();
+            else
+                startCell += polygons.get(i).decimatedBoundaryPolyData.GetNumberOfCells();
+        }
+
+        int endCell = startCell;
+        if (interior)
+            endCell += polygons.get(polygonId).decimatedInteriorPolyData.GetNumberOfCells();
+        else
+            endCell += polygons.get(polygonId).decimatedBoundaryPolyData.GetNumberOfCells();
+
+        return new IdPair(startCell, endCell);
+    }
+    
     public void loadModel(File file, boolean append) throws IOException
     {
         List<String> lines = FileUtil.getFileLinesAsStringList(file.getAbsolutePath());

@@ -524,7 +524,7 @@ public class Renderer extends JPanel implements
             {
                 if(prop instanceof SaavtkLODActor)
                 {
-                    ((SaavtkLODActor)prop).selectMapper(Integer.MIN_VALUE);
+                    ((SaavtkLODActor)prop).showLOD();
                 }
             }
         }
@@ -541,7 +541,7 @@ public class Renderer extends JPanel implements
             {
                 if(prop instanceof SaavtkLODActor)
                 {
-                    ((SaavtkLODActor)prop).selectMapper(Integer.MAX_VALUE);
+                    ((SaavtkLODActor)prop).hideLOD();
                 }
             }
         }
