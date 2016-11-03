@@ -32,11 +32,11 @@ public abstract class MainWindow extends JFrame
      * which will be shown first. This temporary view is not saved into the custom application
      * folder and will not be available unless explicitely imported.
      */
-    public MainWindow(String tempCustomShapeModelPath)
+    public MainWindow(String tempCustomShapeModelPath, boolean editableLeftStatusLabel)
     {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        createStatusBar();
+        createStatusBar(editableLeftStatusLabel);
 
         rootPanel = createViewManager(statusBar, this, tempCustomShapeModelPath);
 
@@ -119,9 +119,9 @@ public abstract class MainWindow extends JFrame
         setJMenuBar(menuBar);
     }
 
-    protected void createStatusBar()
+    protected void createStatusBar(boolean editableLeftLabel)
     {
-        statusBar = new StatusBar();
+        statusBar = new StatusBar(editableLeftLabel);
         this.getContentPane().add(statusBar, BorderLayout.PAGE_END);
     }
 }
