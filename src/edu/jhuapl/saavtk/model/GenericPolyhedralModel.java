@@ -1055,7 +1055,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
             smallBodyActor.SetMapper(smallBodyMapper);
 
             vtkPolyDataMapper decimatedMapper =
-                    ((SaavtkLODActor)smallBodyActor).addQuadricDecimatedLODMapper(smallBodyPolyData);
+                    ((SaavtkLODActor)smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
             decimatedMapper.SetLookupTable(lookupTable);
             decimatedMapper.UseLookupTableScalarRangeOn();
             vtkProperty smallBodyProperty = smallBodyActor.GetProperty();

@@ -4,13 +4,14 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import vtk.vtkPolyData;
-
+import vtk.vtkQuadricClustering;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
 
 public class Polygon extends Line
 {
     public vtkPolyData interiorPolyData;
+    public vtkPolyData decimatedInteriorPolyData;
     private PolyhedralModel smallBodyModel;
     private double surfaceArea = 0.0;
     private boolean showInterior = false;
@@ -24,6 +25,7 @@ public class Polygon extends Line
 
         this.smallBodyModel = smallBodyModel;
         interiorPolyData = new vtkPolyData();
+        decimatedInteriorPolyData = new vtkPolyData();
     }
 
     public String getType()
@@ -52,10 +54,20 @@ public class Polygon extends Line
         {
             smallBodyModel.drawPolygon(controlPoints, interiorPolyData, null);
             surfaceArea = PolyDataUtil.computeSurfaceArea(interiorPolyData);
+            
+            // Decimate interiorPolyData for LODs
+            vtkQuadricClustering decimator = new vtkQuadricClustering();
+            decimator.SetInputData(interiorPolyData);
+            decimator.AutoAdjustNumberOfDivisionsOn();
+            decimator.CopyCellDataOn();
+            decimator.Update();
+            decimatedInteriorPolyData.DeepCopy(decimator.GetOutput());
+            decimator.Delete();
         }
         else
         {
             PolyDataUtil.clearPolyData(interiorPolyData);
+            PolyDataUtil.clearPolyData(decimatedInteriorPolyData);
             surfaceArea = 0.0;
         }
     }

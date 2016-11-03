@@ -40,13 +40,13 @@ import vtk.vtkPolyDataMapper;
 import vtk.vtkProp;
 import vtk.vtkProperty;
 import vtk.vtkUnsignedCharArray;
-
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Point3D;
 import edu.jhuapl.saavtk.util.Properties;
+import edu.jhuapl.saavtk.util.SaavtkLODActor;
 
 /**
  * Model of line structures drawn on a body.
@@ -64,10 +64,12 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
     public List<Line> getLines() { return lines; }
 
     private vtkPolyData linesPolyData;
+    private vtkPolyData decimatedLinesPolyData;
     private vtkPolyData activationPolyData;
 
     private List<vtkProp> actors = new ArrayList<vtkProp>();
     private vtkPolyDataMapper lineMapper;
+    private vtkPolyDataMapper decimatedLineMapper;
     private vtkPolyDataMapper lineActivationMapper;
     private vtkActor lineActor;
     private vtkActor lineActivationActor;
@@ -77,6 +79,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
     private int[] selectedStructures = {};
     private int maximumVerticesPerLine = Integer.MAX_VALUE;
     private vtkIdList idList;
+    private vtkIdList decimatedIdList;
     private int maxPolygonId = 0;
 
     private vtkPolyData emptyPolyData;
@@ -114,8 +117,9 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
         this.smallBodyModel.addPropertyChangeListener(this);
 
         idList = new vtkIdList();
-
-        lineActor = new vtkActor();
+        decimatedIdList = new vtkIdList();
+        
+        lineActor = new SaavtkLODActor();
         vtkProperty lineProperty = lineActor.GetProperty();
 
         lineProperty.SetLineWidth(2.0);
@@ -141,11 +145,16 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
         cellData.SetScalars(colors);
 
         linesPolyData = new vtkPolyData();
+        decimatedLinesPolyData = new vtkPolyData();
         linesPolyData.DeepCopy(emptyPolyData);
+        decimatedLinesPolyData.DeepCopy(emptyPolyData);
 
         activationPolyData = new vtkPolyData();
         activationPolyData.DeepCopy(emptyPolyData);
 
+        lineMapper = new vtkPolyDataMapper();
+        decimatedLineMapper = new vtkPolyDataMapper();
+        
         lineActivationMapper = new vtkPolyDataMapper();
         lineActivationMapper.SetInputData(activationPolyData);
         lineActivationMapper.Update();
@@ -212,7 +221,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
         vtkCellArray lineCells = linesPolyData.GetLines();
         vtkCellData cellData = linesPolyData.GetCellData();
         vtkUnsignedCharArray colors = (vtkUnsignedCharArray)cellData.GetScalars();
-
+        
         int c=0;
         for (int j=0; j<this.lines.size(); ++j)
         {
@@ -255,17 +264,70 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
             colors.InsertNextTuple4(color[0],color[1],color[2],255);
         }
 
+        // Repeat for decimated data
+        decimatedLinesPolyData.DeepCopy(emptyPolyData);
+        vtkPoints decimatedPoints = decimatedLinesPolyData.GetPoints();
+        vtkCellArray decimatedLineCells = decimatedLinesPolyData.GetLines();
+        vtkCellData decimatedCellData = decimatedLinesPolyData.GetCellData();
+        vtkUnsignedCharArray decimatedColors = (vtkUnsignedCharArray)decimatedCellData.GetScalars();
+
+        c=0;
+        for (int j=0; j<this.lines.size(); ++j)
+        {
+            Line lin = this.lines.get(j);
+
+            int[] color = lin.color;
+
+            if (Arrays.binarySearch(this.selectedStructures, j) >= 0)
+                color = getCommonData().getSelectionColor();
+            
+            int size = lin.controlPointIds.size();
+            //int size = lin.xyzPointList.size();
+            if (mode == Mode.CLOSED && size > 2)
+                decimatedIdList.SetNumberOfIds(size + 1);
+            else
+                decimatedIdList.SetNumberOfIds(size);
+
+            int startId = 0;
+            for (int i=0;i<size;++i)
+            {
+                if (i == 0)
+                    startId = c;
+
+                decimatedPoints.InsertNextPoint(lin.xyzPointList.get(lin.controlPointIds.get(i)).xyz);
+                if (lin.hidden)
+                    decimatedIdList.SetId(i, 0); // set to degenerate line if hidden
+                else
+                    decimatedIdList.SetId(i, c);
+                ++c;
+            }
+
+            if (mode == Mode.CLOSED && size > 2)
+            {
+                if (lin.hidden)
+                    decimatedIdList.SetId(size, 0);
+                else
+                    decimatedIdList.SetId(size, startId);
+            }
+
+            decimatedLineCells.InsertNextCell(decimatedIdList);
+            decimatedColors.InsertNextTuple4(color[0],color[1],color[2],255);
+        }
+        
+        // Setup mapper, actor, etc.
         smallBodyModel.shiftPolyLineInNormalDirection(linesPolyData, offset);
-
-        if (lineMapper == null)
-            lineMapper = new vtkPolyDataMapper();
+        smallBodyModel.shiftPolyLineInNormalDirection(decimatedLinesPolyData, offset);
+        
         lineMapper.SetInputData(linesPolyData);
+        decimatedLineMapper.SetInputData(decimatedLinesPolyData);
         lineMapper.Update();
-
+        decimatedLineMapper.Update();
+        
         if (!actors.contains(lineActor))
             actors.add(lineActor);
 
         lineActor.SetMapper(lineMapper);
+        ((SaavtkLODActor)lineActor).setLODMapper(decimatedLineMapper);
         lineActor.Modified();
     }
 
