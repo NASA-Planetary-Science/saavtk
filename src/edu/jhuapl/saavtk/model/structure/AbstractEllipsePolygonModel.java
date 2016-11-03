@@ -513,6 +513,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
         ((SaavtkLODActor)boundaryActor).setLODMapper(decimatedBoundaryMapper);
         interiorActor.SetMapper(interiorMapper);
         ((SaavtkLODActor)interiorActor).setLODMapper(decimatedInteriorMapper);
+        
+        boundaryActor.Modified();
+        interiorActor.Modified();
     }
 
     public List<vtkProp> getProps()
