@@ -29,7 +29,8 @@ public class SaavtkLODActor extends vtkActor
     // Keeps track of the actor's LOD mapper
 	protected vtkMapper normalMapper;
 	protected vtkMapper lodMapper;
-
+	protected boolean useLodMapper;
+	
     /**
      * Constructor
      */
@@ -40,46 +41,68 @@ public class SaavtkLODActor extends vtkActor
         // By default no mapper has been assigned
         normalMapper = null;
         lodMapper = null;
+        useLodMapper = false;
     }
 
     /**
-     * Add the LOD mapper
+     * Saves passed in argument as the actor's LOD mapper and then applies a mapper to the actor
+     * The actual mapper that is applied depends based on whether LODs are enabled or not 
      * @param mapper
      * @return
      */
     public void setLODMapper(vtkMapper mapper)
     {
-        // If we made it here, we don't currently have the mapper
-        // Go ahead and add it
+    	// Keep track of the LOD actor
     	lodMapper = mapper;
+    	
+    	// Update mapper actually being used by actor
+    	updateMapper();
     }
 
     /**
-     * Adds the mapper (if not already added) and sets it
+     * Saves passed in argument as the actor's regular mapper and then applies a mapper to the actor
+     * The actual mapper that is applied depends on whether LODs are enabled or not
      * Naming of this method matches that of parent class instead of standard Java convention
      * @override Same as parent class's SetMapper() but also adds mapper to list
      */
     public void SetMapper(vtkMapper mapper)
-    {
-        // Set the mapper as usual
-        super.SetMapper(mapper);
-        
+    {        
         // Keep track of it
         normalMapper = mapper;
+        
+        // Update mapper actually being used by actor
+        updateMapper();
     }
     
     public void showLOD()
     {
-    	if(lodMapper != null)
-    	{
-    		super.SetMapper(lodMapper);
-    	}
+    	// We want to show LODs
+    	useLodMapper = true;
+    	
+    	// Update mapper actually being used by actor
+    	updateMapper();
     }
     
     public void hideLOD()
     {
-    	if(normalMapper != null)
+    	// We want to not show LODs
+    	useLodMapper = false;
+    	
+    	// Update mapper actually being used by actor
+    	updateMapper();
+    }
+    
+    private void updateMapper()
+    {
+    	if(useLodMapper && lodMapper != null)
     	{
+    		super.SetMapper(lodMapper);
+    	}
+    	else if(normalMapper != null)
+    	{
+    		// Use the normal mapper by default if either LOD 
+    		// is not activated or LOD is activated but no LOD 
+    		// mapper has been set for this actor
     		super.SetMapper(normalMapper);
     	}
     }
