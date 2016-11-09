@@ -20,7 +20,7 @@ public class ExampleMainWindow extends MainWindow
 {
     public ExampleMainWindow(String tempCustomShapeModelPath)
     {
-        super(tempCustomShapeModelPath);
+        super(tempCustomShapeModelPath, false);
    }
 
     protected ViewManager createViewManager(StatusBar statusBar, MainWindow mainWindow, String tempCustomShapeModelPath)

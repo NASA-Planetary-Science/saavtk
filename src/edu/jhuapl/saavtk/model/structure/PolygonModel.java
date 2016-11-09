@@ -16,12 +16,12 @@ import vtk.vtkPolyDataMapper;
 import vtk.vtkProp;
 import vtk.vtkProperty;
 import vtk.vtkUnsignedCharArray;
-
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.util.IdPair;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
 import edu.jhuapl.saavtk.util.Properties;
+import edu.jhuapl.saavtk.util.SaavtkLODActor;
 
 /**
  * Model of polygon structures drawn on a body.
@@ -29,11 +29,15 @@ import edu.jhuapl.saavtk.util.Properties;
 public class PolygonModel extends LineModel
 {
     private vtkPolyData interiorPolyData;
+    private vtkPolyData decimatedInteriorPolyData;
     private vtkAppendPolyData interiorAppendFilter;
+    private vtkAppendPolyData decimatedInteriorAppendFilter;
     private vtkPolyDataMapper interiorMapper;
+    private vtkPolyDataMapper decimatedInteriorMapper;
     private vtkActor interiorActor;
 
     private vtkUnsignedCharArray interiorColors;
+    private vtkUnsignedCharArray decimatedInteriorColors;
 
     private List<vtkProp> actors = new ArrayList<vtkProp>();
 
@@ -53,13 +57,19 @@ public class PolygonModel extends LineModel
         this.smallBodyModel = smallBodyModel;
 
         interiorColors = new vtkUnsignedCharArray();
+        decimatedInteriorColors = new vtkUnsignedCharArray();
         interiorColors.SetNumberOfComponents(3);
+        decimatedInteriorColors.SetNumberOfComponents(3);
 
         interiorPolyData = new vtkPolyData();
+        decimatedInteriorPolyData = new vtkPolyData();
         interiorAppendFilter = new vtkAppendPolyData();
+        decimatedInteriorAppendFilter = new vtkAppendPolyData();
         interiorAppendFilter.UserManagedInputsOn();
+        decimatedInteriorAppendFilter.UserManagedInputsOn();
         interiorMapper = new vtkPolyDataMapper();
-        interiorActor = new vtkActor();
+        decimatedInteriorMapper = new vtkPolyDataMapper();
+        interiorActor = new SaavtkLODActor();
         vtkProperty interiorProperty = interiorActor.GetProperty();
         interiorProperty.LightingOff();
         interiorProperty.SetOpacity(interiorOpacity);
@@ -92,26 +102,40 @@ public class PolygonModel extends LineModel
         if (numberOfStructures > 0)
         {
             interiorAppendFilter.SetNumberOfInputs(numberOfStructures);
+            decimatedInteriorAppendFilter.SetNumberOfInputs(numberOfStructures);
 
             for (int i=0; i<numberOfStructures; ++i)
             {
                 Polygon polygon = getPolygon(i);
                 vtkPolyData poly = polygon.interiorPolyData;
+                vtkPolyData decimatedPoly = polygon.decimatedInteriorPolyData;
+                
                 if (polygon.hidden)
+                {
                     poly = emptyPolyData;
-
+                    decimatedPoly = emptyPolyData;
+                }              
+                
                 if (poly != null)
                     interiorAppendFilter.SetInputDataByNumber(i, poly);
+
+                if (decimatedPoly != null)
+                    decimatedInteriorAppendFilter.SetInputDataByNumber(i, decimatedPoly);
             }
 
             interiorAppendFilter.Update();
+            decimatedInteriorAppendFilter.Update();
 
             vtkPolyData interiorAppendFilterOutput = interiorAppendFilter.GetOutput();
+            vtkPolyData decimatedInteriorAppendFilterOutput = decimatedInteriorAppendFilter.GetOutput();
             interiorPolyData.DeepCopy(interiorAppendFilterOutput);
+            decimatedInteriorPolyData.DeepCopy(decimatedInteriorAppendFilterOutput);
 
             PolyDataUtil.shiftPolyDataInNormalDirection(interiorPolyData, getOffset());
+            PolyDataUtil.shiftPolyDataInNormalDirection(decimatedInteriorPolyData, getOffset());
 
             interiorColors.SetNumberOfTuples(interiorPolyData.GetNumberOfCells());
+            decimatedInteriorColors.SetNumberOfTuples(decimatedInteriorPolyData.GetNumberOfCells());
             for (int i=0; i<numberOfStructures; ++i)
             {
                 int[] color = getPolygon(i).color;
@@ -122,25 +146,37 @@ public class PolygonModel extends LineModel
                 IdPair range = this.getCellIdRangeOfPolygon(i);
                 for (int j=range.id1; j<range.id2; ++j)
                     interiorColors.SetTuple3(j, color[0], color[1], color[2]);
+       
+                range = this.getCellIdRangeOfDecimatedPolygon(i);
+                for (int j=range.id1; j<range.id2; ++j)
+                    decimatedInteriorColors.SetTuple3(j, color[0], color[1], color[2]);
             }
             vtkCellData interiorCellData = interiorPolyData.GetCellData();
+            vtkCellData decimatedInteriorCellData = decimatedInteriorPolyData.GetCellData();
 
             interiorCellData.SetScalars(interiorColors);
+            decimatedInteriorCellData.SetScalars(decimatedInteriorColors);
 
             interiorAppendFilterOutput.Delete();
+            decimatedInteriorAppendFilterOutput.Delete();
             interiorCellData.Delete();
+            decimatedInteriorCellData.Delete();
         }
         else
         {
             interiorPolyData.DeepCopy(emptyPolyData);
+            decimatedInteriorPolyData.DeepCopy(emptyPolyData);
         }
 
         interiorMapper.SetInputData(interiorPolyData);
         interiorMapper.Update();
+        
+        decimatedInteriorMapper.SetInputData(decimatedInteriorPolyData);
+        decimatedInteriorMapper.Update();
 
         interiorActor.SetMapper(interiorMapper);
+        ((SaavtkLODActor)interiorActor).setLODMapper(decimatedInteriorMapper);
         interiorActor.Modified();
-
     }
 
     public List<vtkProp> getProps()
@@ -241,6 +277,20 @@ public class PolygonModel extends LineModel
 
         int endCell = startCell;
         endCell += getPolygon(polygonId).interiorPolyData.GetNumberOfCells();
+
+        return new IdPair(startCell, endCell);
+    }
+    
+    private IdPair getCellIdRangeOfDecimatedPolygon(int polygonId)
+    {
+        int startCell = 0;
+        for (int i=0; i<polygonId; ++i)
+        {
+            startCell += getPolygon(i).decimatedInteriorPolyData.GetNumberOfCells();
+        }
+
+        int endCell = startCell;
+        endCell += getPolygon(polygonId).decimatedInteriorPolyData.GetNumberOfCells();
 
         return new IdPair(startCell, endCell);
     }

@@ -1,5 +1,8 @@
 package edu.jhuapl.saavtk.gui.jogl;
 
+import java.lang.reflect.Method;
+
+import javax.annotation.PostConstruct;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLContext;
 import javax.media.opengl.GLEventListener;
@@ -53,8 +56,8 @@ class vtksbmtJoglComponent<T extends java.awt.Component> extends vtkAbstractComp
         // Init VTK OpenGL RenderWindow
         vtksbmtJoglComponent.this.glRenderWindow.SetMapped(1);
         vtksbmtJoglComponent.this.glRenderWindow.SetPosition(0, 0);
-        vtksbmtJoglComponent.this.setSize(drawable.getSurfaceWidth(), drawable.getSurfaceHeight());
-//        vtksbmtJoglComponent.this.setSize(drawable.getHeight(),drawable.getWidth());
+//        vtksbmtJoglComponent.this.setSize(drawable.getSurfaceWidth(), drawable.getSurfaceHeight());
+        vtksbmtJoglComponent.this.setSize(drawable.getHeight(),drawable.getWidth());
         vtksbmtJoglComponent.this.glRenderWindow.OpenGLInit();
       }
 
@@ -99,7 +102,7 @@ class vtksbmtJoglComponent<T extends java.awt.Component> extends vtkAbstractComp
    */
   public void Render() {
     // Make sure we can render
-    if (!inRenderCall) {
+    if (!inRenderCall && this.uiComponent!=null) {
         uiComponent.repaint();
     }
   }
@@ -111,5 +114,6 @@ class vtksbmtJoglComponent<T extends java.awt.Component> extends vtkAbstractComp
   public boolean isWindowSet() {
     return this.isWindowCreated;
   }
+  
 
 }

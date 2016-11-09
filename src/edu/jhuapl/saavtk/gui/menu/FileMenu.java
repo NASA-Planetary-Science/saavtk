@@ -14,6 +14,7 @@ import edu.jhuapl.saavtk.gui.OSXAdapter;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CameraDialog;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
+import edu.jhuapl.saavtk.gui.dialog.DirectoryChooser;
 import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
 import edu.jhuapl.saavtk.util.Configuration;
 
@@ -41,6 +42,7 @@ public class FileMenu extends JMenu
         saveShapeModelMenu.add(mi);
         mi = new JMenuItem(new SaveShapeModelAsSTLAction());
         saveShapeModelMenu.add(mi);
+        
         mi = new JMenuItem(new ShowCameraOrientationAction());
         this.add(mi);
         mi = new JMenuItem(new CopyToClipboardAction());
@@ -304,4 +306,7 @@ public class FileMenu extends JMenu
             exitTool();
         }
     }
+    
 }
+
+

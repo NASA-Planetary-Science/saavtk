@@ -48,6 +48,7 @@ public class PickManager extends Picker
             PopupManager popupManager)
     {
         this.renderer = renderer;
+        this.statusBar = statusBar;
         this.renWin = renderer.getRenderWindowPanel();
         this.popupManager = popupManager;
 

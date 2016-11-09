@@ -22,6 +22,7 @@ public class ViewConfig implements Cloneable
     public String version; // e.g. 2.0
     public ShapeModelBody body; // e.g. EROS or ITOKAWA
     public boolean hasFlybyData; // for flyby path data
+    public boolean hasStateHistory; // for bodies with state history tabs
 
     public boolean useMinimumReferencePotential = false; // uses average otherwise
     public boolean hasCustomBodyCubeSize = false;

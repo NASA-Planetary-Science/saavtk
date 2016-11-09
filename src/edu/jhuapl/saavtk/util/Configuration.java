@@ -121,6 +121,18 @@ public class Configuration
         return getApplicationDataDir() + File.separator + "models";
     }
 
+    static public String getCustomGalleriesDir()
+    {
+        String tmpDir = getApplicationDataDir() + File.separator + "custom-galleries";
+        File dir = new File(tmpDir);
+        if (!dir.exists())
+        {
+            dir.mkdirs();
+        }
+
+        return tmpDir;
+    }
+    
     static public String getMapmakerDir()
     {
         return mapMaperDir;

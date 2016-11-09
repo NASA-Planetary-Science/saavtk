@@ -12,8 +12,8 @@ import vtk.vtkPolyDataMapper;
 import vtk.vtkQuadricClustering;
 
 /**
- * VTK actor which stores multiple mappers and where user can switch
- * between them dynamically.  User can switch between the them dynamically.
+ * VTK actor which stores a LOD mapper and where user can switch
+ * between them dynamically.
  *
  * For Paraview-like LOD switching, add observers to the render window
  * interactor for StartInteractionEvent and EndInteractionEvent that
@@ -26,9 +26,11 @@ import vtk.vtkQuadricClustering;
 public class SaavtkLODActor extends vtkActor
 {
 
-    // Keeps track of the actor's mappers
-    protected List<vtkMapper> mappers;
-
+    // Keeps track of the actor's LOD mapper
+	protected vtkMapper normalMapper;
+	protected vtkMapper lodMapper;
+	protected boolean useLodMapper;
+	
     /**
      * Constructor
      */
@@ -36,73 +38,75 @@ public class SaavtkLODActor extends vtkActor
     {
         super();
 
-        // By default no mappers have been assigned
-        mappers = new ArrayList<vtkMapper>();
+        // By default no mapper has been assigned
+        normalMapper = null;
+        lodMapper = null;
+        useLodMapper = false;
     }
 
     /**
-     * Get all mappers currently associated with actor
-     * @return
-     */
-    public List<vtkMapper> getMappers()
-    {
-        return new ArrayList<vtkMapper>(mappers);
-    }
-
-    /**
-     * Add a mapper without setting it
+     * Saves passed in argument as the actor's LOD mapper and then applies a mapper to the actor
+     * The actual mapper that is applied depends based on whether LODs are enabled or not 
      * @param mapper
      * @return
      */
-    public boolean addMapper(vtkMapper mapper)
+    public void setLODMapper(vtkMapper mapper)
     {
-        // Check if we already have this exact mapper
-        for(vtkMapper m : mappers)
-        {
-            if(m == mapper)
-            {
-                return false;
-            }
-        }
-
-        // If we made it here, we don't currently have the mapper
-        // Go ahead and add it
-        mappers.add(mapper);
-        return true;
+    	// Keep track of the LOD actor
+    	lodMapper = mapper;
+    	
+    	// Update mapper actually being used by actor
+    	updateMapper();
     }
 
     /**
-     * Remove a specific mapper
-     * @param mapper
-     * @return
-     */
-    public boolean removeMapper(vtkMapper mapper)
-    {
-        return mappers.remove(mapper);
-    }
-
-    /**
-     * Removes all mappers
-     */
-    public void removeAllMappers()
-    {
-        mappers.clear();
-    }
-
-    /**
-     * Adds the mapper (if not already added) and sets it
+     * Saves passed in argument as the actor's regular mapper and then applies a mapper to the actor
+     * The actual mapper that is applied depends on whether LODs are enabled or not
      * Naming of this method matches that of parent class instead of standard Java convention
      * @override Same as parent class's SetMapper() but also adds mapper to list
      */
     public void SetMapper(vtkMapper mapper)
-    {
-        // Set the mapper as usual
-        super.SetMapper(mapper);
-
-        // Add it to the list
-        addMapper(mapper);
+    {        
+        // Keep track of it
+        normalMapper = mapper;
+        
+        // Update mapper actually being used by actor
+        updateMapper();
     }
-
+    
+    public void showLOD()
+    {
+    	// We want to show LODs
+    	useLodMapper = true;
+    	
+    	// Update mapper actually being used by actor
+    	updateMapper();
+    }
+    
+    public void hideLOD()
+    {
+    	// We want to not show LODs
+    	useLodMapper = false;
+    	
+    	// Update mapper actually being used by actor
+    	updateMapper();
+    }
+    
+    private void updateMapper()
+    {
+    	if(useLodMapper && lodMapper != null)
+    	{
+    		super.SetMapper(lodMapper);
+    	}
+    	else if(normalMapper != null)
+    	{
+    		// Use the normal mapper by default if either LOD 
+    		// is not activated or LOD is activated but no LOD 
+    		// mapper has been set for this actor
+    		super.SetMapper(normalMapper);
+    	}
+    }
+    
     /**
      * Activates the mapper with largest cell count that does not exceed maxCellCount
      * If no such mapper is found, will try to use mapper with smallest cell count
@@ -110,8 +114,9 @@ public class SaavtkLODActor extends vtkActor
      * @param maxCellCount
      * @return
      */
-    public boolean selectMapper(int maxCellCount)
+    /*public boolean selectMapper(int maxCellCount)
     {
+    	System.out.println("START");
         // Variables for keeping track of mappers
         vtkMapper currMaxMapper = null;
         vtkMapper currMinMapper = null;
@@ -119,7 +124,7 @@ public class SaavtkLODActor extends vtkActor
         int currMinCells = Integer.MAX_VALUE;
 
         // Check out each mapper
-        for(vtkMapper m : mappers)
+        for(vtkMapper m : lodMappers)
         {
             // Only consider non-null mappers
             if(m != null)
@@ -155,37 +160,39 @@ public class SaavtkLODActor extends vtkActor
         if(currMaxMapper != null)
         {
             // Found a mapper with max cell count that satisfies constraints, set it
-            SetMapper(currMaxMapper);
+            super.SetMapper(currMaxMapper);
+            Modified();
             return true;
         }
         else if(currMinMapper != null)
         {
             // No mapper found with cell count that could satisfy constraint
             // Going with mapper that has smallest cell coutn instead
-            SetMapper(currMinMapper);
+            super.SetMapper(currMinMapper);
+            Modified();
             return false;
         }
         else
         {
             // No valid mappers (with datasets) have been found in general
             // Can't do anything
-            return false;
+        	return false;
         }
-    }
+    }*/
 
     /**
      * Takes input data object and sets the LOD mapper as a decimated version using
      * quadric clustering where the number of divisions is auto selected
      * @return
      */
-    public vtkPolyDataMapper addQuadricDecimatedLODMapper(vtkDataObject dataObject)
+    public vtkPolyDataMapper setQuadricDecimatedLODMapper(vtkDataObject dataObject)
     {
         // Set decimator input
         vtkQuadricClustering decimator = new vtkQuadricClustering();
         decimator.SetInputDataObject(dataObject);
 
         // Call helper
-        return addQuadricDecimatedLODMapper(decimator);
+        return setQuadricDecimatedLODMapper(decimator);
     }
 
     /**
@@ -193,14 +200,14 @@ public class SaavtkLODActor extends vtkActor
      * quadric clustering where the number of divisions is auto selected
      * @return
      */
-    public vtkPolyDataMapper addQuadricDecimatedLODMapper(vtkAlgorithmOutput algorithmOutput)
+    public vtkPolyDataMapper setQuadricDecimatedLODMapper(vtkAlgorithmOutput algorithmOutput)
     {
         // Set decimator input
         vtkQuadricClustering decimator = new vtkQuadricClustering();
         decimator.SetInputConnection(algorithmOutput);
 
         // Call helper
-        return addQuadricDecimatedLODMapper(decimator);
+        return setQuadricDecimatedLODMapper(decimator);
     }
 
     /**
@@ -208,7 +215,7 @@ public class SaavtkLODActor extends vtkActor
      * quadric clustering where the number of divisions is auto selected
      * @param decimator Assumed to already have input data/connection set
      */
-    private vtkPolyDataMapper addQuadricDecimatedLODMapper(vtkQuadricClustering decimator)
+    private vtkPolyDataMapper setQuadricDecimatedLODMapper(vtkQuadricClustering decimator)
     {
         // Decimate the input data
         decimator.CopyCellDataOn();
@@ -220,7 +227,7 @@ public class SaavtkLODActor extends vtkActor
         lodMapper.SetInputConnection(decimator.GetOutputPort());
 
         // Add the mapper
-        addMapper(lodMapper);
+        setLODMapper(lodMapper);
         return lodMapper;
     }
 
@@ -230,14 +237,14 @@ public class SaavtkLODActor extends vtkActor
      * @param numDivisions
      * @return
      */
-    public vtkPolyDataMapper addQuadricDecimatedLODMapper(vtkDataObject dataObject, int divX, int divY, int divZ)
+    public vtkPolyDataMapper setQuadricDecimatedLODMapper(vtkDataObject dataObject, int divX, int divY, int divZ)
     {
         // Set decimator input
         vtkQuadricClustering decimator = new vtkQuadricClustering();
         decimator.SetInputDataObject(dataObject);
 
         // Call helper
-        return addQuadricDecimatedLODMapper(decimator, divX, divY, divZ);
+        return setQuadricDecimatedLODMapper(decimator, divX, divY, divZ);
     }
 
     /**
@@ -246,14 +253,14 @@ public class SaavtkLODActor extends vtkActor
      * @param numDivisions
      * @return
      */
-    public vtkPolyDataMapper addQuadricDecimatedLODMapper(vtkAlgorithmOutput algorithmOutput, int divX, int divY, int divZ)
+    public vtkPolyDataMapper setQuadricDecimatedLODMapper(vtkAlgorithmOutput algorithmOutput, int divX, int divY, int divZ)
     {
         // Set decimator input
         vtkQuadricClustering decimator = new vtkQuadricClustering();
         decimator.SetInputConnection(algorithmOutput);
 
         // Call helper
-        return addQuadricDecimatedLODMapper(decimator, divX, divY, divZ);
+        return setQuadricDecimatedLODMapper(decimator, divX, divY, divZ);
     }
 
     /**
@@ -265,7 +272,7 @@ public class SaavtkLODActor extends vtkActor
      * @param divZ
      * @return
      */
-    private vtkPolyDataMapper addQuadricDecimatedLODMapper(vtkQuadricClustering decimator, int divX, int divY, int divZ)
+    private vtkPolyDataMapper setQuadricDecimatedLODMapper(vtkQuadricClustering decimator, int divX, int divY, int divZ)
     {
         if(divX > 1 && divY > 1 && divZ > 1)
         {
@@ -279,7 +286,7 @@ public class SaavtkLODActor extends vtkActor
             lodMapper.SetInputConnection(decimator.GetOutputPort());
 
             // Add the mapper
-            addMapper(lodMapper);
+            setLODMapper(lodMapper);
 
             // Let user know we were successful
             return lodMapper;

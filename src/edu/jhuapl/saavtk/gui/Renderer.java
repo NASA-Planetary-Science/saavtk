@@ -11,8 +11,10 @@ import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -23,7 +25,9 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
+import vtk.vtkActor;
 import vtk.vtkAxesActor;
 import vtk.vtkBMPWriter;
 import vtk.vtkCamera;
@@ -38,11 +42,14 @@ import vtk.vtkLightKit;
 import vtk.vtkOrientationMarkerWidget;
 import vtk.vtkPNGWriter;
 import vtk.vtkPNMWriter;
+import vtk.vtkPolyData;
+import vtk.vtkPolyDataMapper;
 import vtk.vtkPostScriptWriter;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
 import vtk.vtkProperty;
 import vtk.vtkRenderer;
+import vtk.vtkSTLWriter;
 import vtk.vtkTIFFWriter;
 import vtk.vtkTextProperty;
 import vtk.vtkWindowToImageFilter;
@@ -53,6 +60,7 @@ import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas.StereoMode;
 import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
+import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Preferences;
@@ -121,7 +129,7 @@ public class Renderer extends JPanel implements
 
     public static boolean enableLODs = true; // This is temporary to show off the LOD feature, very soon we will replace this with an actual menu
     public boolean showingLODs = false;
-
+    
     private JFrame mirrorFrame;
     private StereoCapableMirrorCanvas mirrorCanvas;
     private boolean mirrorFrameOpen=false;
@@ -409,7 +417,7 @@ public class Renderer extends JPanel implements
 
         setMouseWheelMotionFactor(Preferences.getInstance().getAsDouble(Preferences.MOUSE_WHEEL_MOTION_FACTOR, 1.0));
 
-        setBackgroundColor(Preferences.getInstance().getAsIntArray(Preferences.BACKGROUND_COLOR, new int[]{0, 0, 0}));
+        setBackgroundColor(new int[]{0,0,0});//Preferences.getInstance().getAsIntArray(Preferences.BACKGROUND_COLOR, new int[]{0, 0, 0}));
 
         initLights();
 
@@ -508,7 +516,7 @@ public class Renderer extends JPanel implements
     public void showLODs()
     {
         // LOD switching control for SaavtkLODActor
-        if(enableLODs && modelManager != null)
+        if(enableLODs && modelManager != null && !showingLODs)
         {
             showingLODs=true;
             List<vtkProp> props = modelManager.getProps();
@@ -516,7 +524,7 @@ public class Renderer extends JPanel implements
             {
                 if(prop instanceof SaavtkLODActor)
                 {
-                    ((SaavtkLODActor)prop).selectMapper(Integer.MIN_VALUE);
+                    ((SaavtkLODActor)prop).showLOD();
                 }
             }
         }
@@ -525,7 +533,7 @@ public class Renderer extends JPanel implements
 
     public void hideLODs()
     {
-        if(enableLODs && modelManager != null)
+        if(enableLODs && modelManager != null && showingLODs)
         {
             showingLODs=false;
             List<vtkProp> props = modelManager.getProps();
@@ -533,7 +541,7 @@ public class Renderer extends JPanel implements
             {
                 if(prop instanceof SaavtkLODActor)
                 {
-                    ((SaavtkLODActor)prop).selectMapper(Integer.MAX_VALUE);
+                    ((SaavtkLODActor)prop).hideLOD();
                 }
             }
         }
@@ -601,6 +609,36 @@ public class Renderer extends JPanel implements
         renWin.Render();
     }
     */
+    
+/*    public void exportPolyDataAsStlFiles(Path outputDirectory)
+    {
+    	Set<vtkPolyData> polyDataToOutput=Sets.newHashSet();
+    	List<vtkProp> props=modelManager.getProps();
+    	for (int i=0; i<props.size(); i++)
+    	{
+    		if (props.get(i) instanceof vtkActor)
+    		{
+    			vtkActor actor=(vtkActor)props.get(i);
+    			if (actor.GetMapper() instanceof vtkPolyDataMapper)
+    			{
+    				vtkPolyDataMapper mapper=(vtkPolyDataMapper)actor.GetMapper();
+    				polyDataToOutput.add(mapper.GetInput());	// there tend to be duplicate references to polydata objects in the list of props, and here the duplicates are automatically filtered out (some still survive, however... this needs to be fixed)
+    			}
+    		}
+    	}
+    	
+    	int cnt=0;
+    	for (vtkPolyData polyData : polyDataToOutput)
+    	{
+    		vtkSTLWriter writer=new vtkSTLWriter();
+    		writer.SetFileName(outputDirectory.resolve("object."+cnt+".stl").toString());
+    		writer.SetFileTypeToBinary();
+    		writer.SetInputData(polyData);
+    		writer.Write();
+    		cnt++;
+    	}
+    	
+    }*/
 
     public void saveToFile()
     {
