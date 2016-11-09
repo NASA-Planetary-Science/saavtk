@@ -23,7 +23,7 @@ public abstract class MainWindow extends JFrame
     private FileMenu fileMenu;
     private ViewMenu viewMenu;
     private HelpMenu helpMenu;
-    private ViewManager rootPanel;
+    protected ViewManager rootPanel;
     private FavoritesMenu favoritesMenu;
     private RecentlyViewed recentsMenu;
     /**
@@ -59,6 +59,11 @@ public abstract class MainWindow extends JFrame
 //        this.setLocation(x, y);
 //        this.setResizable(true);
     }
+    
+    public MainWindow(String tempCustomShapeModelPath)
+	{
+		this(tempCustomShapeModelPath,true);
+	}
 
     protected ImageIcon createImageIcon()
     {
