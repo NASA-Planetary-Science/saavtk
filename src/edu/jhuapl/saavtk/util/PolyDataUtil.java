@@ -2,23 +2,26 @@ package edu.jhuapl.saavtk.util;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
 import nom.tam.fits.Header;
 import nom.tam.fits.HeaderCard;
-
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
 import vtk.vtkAbstractPointLocator;
 import vtk.vtkAlgorithmOutput;
 import vtk.vtkAppendPolyData;
@@ -52,7 +55,6 @@ import vtk.vtkSTLReader;
 import vtk.vtkSTLWriter;
 import vtk.vtkSphere;
 import vtk.vtkTransform;
-import vtk.vtkTransformFilter;
 import vtk.vtkTransformPolyDataFilter;
 import vtk.vtkTriangle;
 import vtk.vtksbCellLocator;
@@ -3416,9 +3418,23 @@ public class PolyDataUtil
 
     static public void saveShapeModelAsOBJ(vtkPolyData polydata, String filename) throws IOException
     {
+    	FileOutputStream fos = null;
+    	try {
+    		fos = new FileOutputStream(new File(filename));
+    		saveShapeModelAsOBJ(polydata, fos);
+    	} catch (Throwable th) {
+    		th.printStackTrace();
+    	} finally {
+    		if (fos != null) {
+    			fos.close();
+    		}
+    	}
+    }
+    
+	public static void saveShapeModelAsOBJ(vtkPolyData polydata, OutputStream stream) throws IOException {
         // This saves it out in OBJ format
 
-        FileWriter fstream = new FileWriter(filename);
+        OutputStreamWriter fstream = new OutputStreamWriter(stream);
         BufferedWriter out = new BufferedWriter(fstream);
 
         vtkPoints points = polydata.GetPoints();
