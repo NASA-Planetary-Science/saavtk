@@ -184,6 +184,20 @@
                                 <goal>run</goal>
                             </goals>
                         </execution>
+                        <execution>
+                            <id>zipVTKNativeLibs</id>
+                            <phase>install</phase>
+                            <configuration>
+                                <tasks>
+                                     <zip destfile="${project.build.directory}/vtkNativeLibs-${version}.zip"
+                                        basedir="lib/vtk6.3/"
+                                     />
+                                </tasks>
+                            </configuration>
+                            <goals>
+                                <goal>run</goal>
+                            </goals>
+                        </execution>
         		</executions>
       		</plugin>
 	  </plugins>
