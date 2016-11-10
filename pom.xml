@@ -134,10 +134,8 @@
 	    		<version>1.9.5</version>
 	    		<configuration>
 	      			<username>steelrj1</username>
-	      			<password>Tardis14!</password>
+	      			<password>Tardis15!</password>
 	      			<connectionType>developerConnection</connectionType>
-	      			<scmVersion>vtk6.3</scmVersion>
-	      			<scmVersionType>branch</scmVersionType>
 	    		</configuration>
 	    	</plugin>
 		<plugin>
