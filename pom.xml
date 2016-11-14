@@ -134,10 +134,8 @@
 	    		<version>1.9.5</version>
 	    		<configuration>
 	      			<username>steelrj1</username>
-	      			<password>Tardis14!</password>
+	      			<password>Tardis15!</password>
 	      			<connectionType>developerConnection</connectionType>
-	      			<scmVersion>vtk6.3</scmVersion>
-	      			<scmVersionType>branch</scmVersionType>
 	    		</configuration>
 	    	</plugin>
 		<plugin>
@@ -180,6 +178,20 @@
                                     <copy todir="/home/apluser/vtkLibs/vtk6.3">
                                         <fileset dir="lib/vtk6.3"/>
                                     </copy>
+                                </tasks>
+                            </configuration>
+                            <goals>
+                                <goal>run</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>zipVTKNativeLibs</id>
+                            <phase>install</phase>
+                            <configuration>
+                                <tasks>
+                                     <zip destfile="${project.build.directory}/vtkNativeLibs-${version}.zip"
+                                        basedir="lib/vtk6.3/"
+                                     />
                                 </tasks>
                             </configuration>
                             <goals>

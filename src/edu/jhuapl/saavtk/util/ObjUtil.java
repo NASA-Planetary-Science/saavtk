@@ -11,43 +11,122 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import vtk.vtkAppendPolyData;
 import vtk.vtkCell;
 import vtk.vtkCubeSource;
+import vtk.vtkFloatArray;
 import vtk.vtkIdList;
+import vtk.vtkImageData;
+import vtk.vtkLine;
+import vtk.vtkPNGWriter;
+import vtk.vtkPoints;
 import vtk.vtkPolyData;
+import vtk.vtkPolyLine;
 import vtk.vtkTransform;
 import vtk.vtkTransformFilter;
 import vtk.vtkTriangleFilter;
 
 public class ObjUtil
 {
+
     public static void writePolyDataToObj(vtkPolyData rawPolyData, Path objFile)
     {
         //System.out.print("Writing to "+objFile+"... ");
-        writePolyDataToObj(rawPolyData, objFile, 0, 0);
-        //System.out.println("Done.");
+        writePolyDataToObj(rawPolyData, objFile, 0, 0, null, null, null);
+        //System.out.println("Do1ne.");
     }
     
-	public static void writePolyDataToObj(vtkPolyData rawPolyData, Path objFile, double pointRadius, double lineRadius)
+    public static void writePolyDataToObj(vtkPolyData rawPolyData, Path objFile, String header)
+    {
+        //System.out.print("Writing to "+objFile+"... ");
+        writePolyDataToObj(rawPolyData, objFile, 0, 0, null, null, header);
+        //System.out.println("Do1ne.");
+    }
+
+    public static void writePolyDataToObj(vtkPolyData rawPolyData, vtkImageData imageData, Path objFile, String header)
+    {
+    	String mtlFileName=objFile.toString().replace(".obj",".mtl");
+    	String mtlName=objFile.getFileName().toString().replaceAll(".obj", "");
+        writeImageToMtl(imageData,mtlFileName,mtlName);
+        writePolyDataToObj(rawPolyData, objFile, 0, 0, mtlFileName, mtlName, header);
+    }
+    
+    public static void writeImageToMtl(vtkImageData imageData, String mtlFileName, String mtlName)
+    {
+    	String imageFileName=mtlFileName+".png";
+    	
+    	vtkPNGWriter pngWriter=new vtkPNGWriter();
+    	pngWriter.SetInputData(imageData);
+    	pngWriter.SetFileName(imageFileName);
+    	pngWriter.Write();
+    	
+		try
+		{
+			BufferedWriter writer=new BufferedWriter(new FileWriter(mtlFileName));
+			writer.write("newmtl "+mtlName+"\n");
+			writer.write("  d 1.000 \n");	// opacity
+			writer.write("  Ka 1.000 1.000 1.000 \n");	// ambient color
+			writer.write("  Kd 1.000 1.000 1.000 \n");	// diffuse color
+			writer.write("  Ks 1.000 1.000 1.000 \n");	// diffuse color
+			writer.write("  map_Ka "+imageFileName+"\n");	// specify ambient texture 
+			writer.write("  map_Kd "+imageFileName+"\n");	// specify diffuse texture
+			writer.close();
+		} catch (IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+    
+	public static void writePolyDataToObj(vtkPolyData rawPolyData, Path objFile, double pointRadius, double lineRadius, String mtlFileName, String mtlName, String header)
 	{
 	    vtkTriangleFilter triangleFilter=new vtkTriangleFilter();
 	    triangleFilter.SetInputData(rawPolyData);
 	    triangleFilter.Update();
 	    vtkPolyData polyData=triangleFilter.GetOutput();
-        
+     
 	    try
 		{
 			BufferedWriter writer=new BufferedWriter(new FileWriter(objFile.toString()));
+			
+			if (header!=null)
+				writer.write("# "+header+"\n");
+			if (mtlFileName != null)
+			{
+				writer.write("mtllib "+mtlFileName+"\n");
+				writer.write("usemtl "+mtlName+"\n");
+			}
+			
 			for (int i=0; i<polyData.GetNumberOfPoints(); i++)
 			{
 			    double[] pt=polyData.GetPoint(i);
 			    writer.write("v "+pt[0]+" "+pt[1]+" "+pt[2]+"\n");
 			}
+			vtkFloatArray texCoords=(vtkFloatArray)polyData.GetPointData().GetTCoords();
+			if (texCoords!=null)
+			{
+				for (int i=0; i<polyData.GetNumberOfPoints(); i++)
+				{
+					double[] uv=texCoords.GetTuple2(i);
+					writer.write("vt "+uv[0]+" "+uv[1]+"\n");
+				}
+			}
 			for (int i=0; i<polyData.GetNumberOfCells(); i++)
 			{
-			    vtkIdList ids=polyData.GetCell(i).GetPointIds();
-                int id0=ids.GetId(0)+1;
-                int id1=ids.GetId(1)+1;
-                int id2=ids.GetId(2)+1;
-                writer.write("f "+id0+" "+id1+" "+id2+"\n");
+				vtkCell cell=polyData.GetCell(i);
+				if (cell.GetNumberOfPoints()==1)
+					writer.write("p ");
+				else if (cell.GetNumberOfPoints()==2)
+					writer.write("l ");
+				else 
+					writer.write("f ");
+				for (int j=0; j<cell.GetNumberOfPoints(); j++)
+				{
+					vtkIdList ids=polyData.GetCell(i).GetPointIds();
+					int id=ids.GetId(j)+1;
+					if (cell.GetNumberOfPoints()<3)
+						writer.write(id+" ");
+					else
+						writer.write(id+"/"+id+" ");
+				}
+				writer.write("\n");
 			}
 			writer.close();
 		} catch (IOException e)
