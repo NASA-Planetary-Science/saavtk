@@ -10,7 +10,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import vtk.vtkAppendPolyData;
 import vtk.vtkCell;
-import vtk.vtkCellArray;
 import vtk.vtkCubeSource;
 import vtk.vtkFloatArray;
 import vtk.vtkIdList;
@@ -22,7 +21,6 @@ import vtk.vtkPolyData;
 import vtk.vtkPolyLine;
 import vtk.vtkTransform;
 import vtk.vtkTransformFilter;
-import vtk.vtkTriangle;
 import vtk.vtkTriangleFilter;
 
 public class ObjUtil
