@@ -97,12 +97,12 @@
 	<dependency>
 	    <groupId>quaqua</groupId>
 	    <artifactId>quaqua</artifactId>
-	    <version>7.34</version>
+	    <version>7.3.4</version>
 	</dependency>
 	<dependency>
 	    <groupId>quaqua</groupId>
 	    <artifactId>quaqua-filechooser-only</artifactId>
-	    <version>7.34</version>
+	    <version>7.3.4</version>
 	</dependency>
 	<dependency>
 	    <groupId>RelativeLayout</groupId>
