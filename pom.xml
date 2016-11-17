@@ -118,6 +118,11 @@
 	    <artifactId>Jama</artifactId>
 	    <version>1.0.2</version>
 	</dependency>
+	<dependency>
+        <groupId>nom-tam-fits</groupId>
+        <artifactId>nom-tam-fits</artifactId>
+        <version>1.13.1m0</version>
+    </dependency>
   </dependencies>
   <scm>
     <connection>scm:git:http://hardin:8080/scm/git/vtk/saavtk</connection>
