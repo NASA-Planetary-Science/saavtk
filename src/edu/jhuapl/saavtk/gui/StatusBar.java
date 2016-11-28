@@ -2,6 +2,8 @@ package edu.jhuapl.saavtk.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Font;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
@@ -12,12 +14,26 @@ import javax.swing.border.BevelBorder;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 
-public class StatusBar extends JPanel
+import vtk.vtkProp;
+import edu.jhuapl.saavtk.model.Model;
+import edu.jhuapl.saavtk.util.Properties;
+
+public class StatusBar extends JPanel implements PropertyChangeListener
 {
     private JLabel leftLabel;
     private JEditorPane leftEditorPane;
     private JLabel rightLabel;
     private boolean selectableLeftLabel;
+    
+    private Model leftModel = null;
+    private vtkProp leftProp;
+    private int leftCellId;
+    private double[] leftPickPosition;
+    
+    private Model rightModel = null;
+    private vtkProp rightProp;
+    private int rightCellId;
+    private double[] rightPickPosition;
 
     public StatusBar()
     {
@@ -67,6 +83,18 @@ public class StatusBar extends JPanel
 
     public void setLeftText(String text)
     {
+    	// Set the left text while removing any registered models
+    	setLeftText(text, true);
+    }
+    
+    private void setLeftText(String text, boolean removeModel)
+    {
+    	if(removeModel && leftModel != null)
+    	{
+    		leftModel.removePropertyChangeListener(this);
+    		leftModel = null;
+    	}
+    	
         if (text.length() == 0)
             text = "Ready.";
 //        System.out.println("StatusBar: setLeftText: left label is " + leftLabel + " and text is " + text);
@@ -78,8 +106,91 @@ public class StatusBar extends JPanel
 
     public void setRightText(String text)
     {
+    	// Set the right text while removing any registered models
+    	setRightText(text, true);
+    }
+
+    private void setRightText(String text, boolean removeModel)
+    {
+    	if(removeModel && rightModel != null)
+    	{
+    		rightModel.removePropertyChangeListener(this);
+    		rightModel = null;
+    	}
+    	
         if (text.length() == 0)
             text = " ";
         rightLabel.setText(text);
+    }
+    
+    // Sets up auto-refreshing left status text
+    public void setLeftTextSource(Model model, vtkProp prop, int cellId, double[] pickPosition)
+    {    	
+    	// Determine if model has changed
+    	boolean isNewModel = (leftModel != model);
+    	if(isNewModel && leftModel != null)
+    	{
+    		// This status bar is no longer the property change listener for the old left model
+    		leftModel.removePropertyChangeListener(this);
+    	}
+
+    	// Save references to arguments
+    	leftModel = model;
+    	leftProp = prop;
+    	leftCellId = cellId;
+    	leftPickPosition = pickPosition.clone();
+    	if(isNewModel && leftModel != null)
+    	{
+        	// Set the status bar as the property change listener for the new left model
+    		leftModel.addPropertyChangeListener(this);
+    	}
+    	
+    	// Regenerate left status text
+		setLeftText(leftModel.getClickStatusBarText(leftProp, leftCellId, leftPickPosition), false);
+    }
+
+    // Sets up auto-refreshing right status text
+    public void setRightTextSource(Model model, vtkProp prop, int cellId, double[] pickPosition)
+    {
+	    // Determine if model has changed
+    	boolean isNewModel = (rightModel != model);
+    	if(isNewModel && rightModel != null)
+    	{
+    		// This status bar is no longer the property change listener for the old right model
+    		rightModel.removePropertyChangeListener(this);
+    	}
+
+    	// Save references to arguments
+    	rightModel = model;
+    	rightProp = prop;
+    	rightCellId = cellId;
+    	rightPickPosition = pickPosition.clone();
+    	if(isNewModel && rightModel != null)
+    	{
+        	// Set the status bar as the property change listener for the new right model
+    		rightModel.addPropertyChangeListener(this);
+    	}
+    	
+    	// Regenerate right status text
+		setRightText(rightModel.getClickStatusBarText(rightProp, rightCellId, rightPickPosition), false);
+    }
+
+	@Override
+	public void propertyChange(PropertyChangeEvent evt) 
+	{
+        if (Properties.MODEL_CHANGED.equals(evt.getPropertyName()))
+        {
+        	if(leftModel != null)
+        	{
+        		// Regenerate left status text
+        		setLeftText(leftModel.getClickStatusBarText(leftProp, leftCellId, leftPickPosition), false);
+        	}
+        	
+        	if(rightModel != null)
+        	{
+        		// Regenerate right status text
+        		setRightText(rightModel.getClickStatusBarText(rightProp, rightCellId, rightPickPosition), false);        		
+        	}
+        }
     }
 }
