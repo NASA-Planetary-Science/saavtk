@@ -41,7 +41,7 @@ import vtk.vtkTextProperty;
 import vtk.vtkTriangle;
 import vtk.vtkUnsignedCharArray;
 import vtk.vtksbCellLocator;
-import edu.jhuapl.saavtk.color.Colormap;
+import edu.jhuapl.saavtk.colormaps.Colormap;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
@@ -1500,13 +1500,6 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
         lookupTable.SetTable(table);
         smallBodyMapper.Modified();
-    }
-
-    @Override
-    public void setColormap(Colormap map)
-    {
-    	// TODO Auto-generated method stub
-    	
     }
     
     public void setColoringIndex(int index) throws IOException

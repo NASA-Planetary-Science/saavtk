@@ -351,7 +351,7 @@ public class PolyDataUtil
         return tmpPolyData;
     }
 
-    public static double computeOverlapFraction(vtkTriangle surfaceTriangle, Frustum frustum)  // how much of a triangle is inside the frustum?
+    public static double approximateOverlapFraction(vtkTriangle surfaceTriangle, Frustum frustum)  // estimate how much of a triangle is inside the frustum?
     {
         double overlap=0;
         int nPoints=3;  // this can be replaced with some other number if face subdivision is used
@@ -361,9 +361,9 @@ public class PolyDataUtil
             double[] uv=new double[2];
             frustum.computeTextureCoordinatesFromPoint(pt, 1, 1, uv, false);
             if (uv[0]>=0 && uv[0]<=1 && uv[1]>=0 && uv[1]<=1)
-                overlap+=1./(double)nPoints;
+                overlap+=1;
         }
-        return overlap;
+        return overlap/(double)nPoints;
     }
 
     

@@ -37,7 +37,8 @@ import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 
 import net.miginfocom.swing.MigLayout;
-
+import edu.jhuapl.saavtk.colormaps.Colormap;
+import edu.jhuapl.saavtk.colormaps.Colormaps;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomPlateDataDialog;
 import edu.jhuapl.saavtk.gui.dialog.ScaleDataRangeDialog;
