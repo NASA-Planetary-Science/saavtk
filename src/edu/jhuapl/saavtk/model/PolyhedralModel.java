@@ -10,7 +10,6 @@ import vtk.vtkDataArray;
 import vtk.vtkLookupTable;
 import vtk.vtkPolyData;
 import vtk.vtksbCellLocator;
-import edu.jhuapl.saavtk.colormaps.Colormap;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.LatLon;

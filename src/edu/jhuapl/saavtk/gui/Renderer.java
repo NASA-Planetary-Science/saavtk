@@ -50,6 +50,7 @@ import vtk.vtkPropCollection;
 import vtk.vtkProperty;
 import vtk.vtkRenderer;
 import vtk.vtkSTLWriter;
+import vtk.vtkScalarBarActor;
 import vtk.vtkTIFFWriter;
 import vtk.vtkTextProperty;
 import vtk.vtkWindowToImageFilter;
@@ -66,6 +67,7 @@ import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Preferences;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
+import edu.jhuapl.saavtk.util.SmallBodyCubes;
 
 public class Renderer extends JPanel implements
             PropertyChangeListener, ActionListener
@@ -404,6 +406,7 @@ public class Renderer extends JPanel implements
 
         this.modelManager = modelManager;
 
+        
         modelManager.addPropertyChangeListener(this);
 
         trackballCameraInteractorStyle = new vtkInteractorStyleTrackballCamera();
@@ -461,6 +464,7 @@ public class Renderer extends JPanel implements
         // do nothing. If not, add it. If an prop not listed is
         // in the renderer, remove it from the renderer.
 
+    	
         // First remove the props not in the specified list that are currently rendered.
         vtkPropCollection propCollection = renderWindow.getRenderer().GetViewProps();
         int size = propCollection.GetNumberOfItems();
