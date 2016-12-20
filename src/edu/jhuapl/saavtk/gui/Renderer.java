@@ -54,7 +54,7 @@ import vtk.vtkScalarBarActor;
 import vtk.vtkTIFFWriter;
 import vtk.vtkTextProperty;
 import vtk.vtkWindowToImageFilter;
-
+import edu.jhuapl.saavtk.colormap.Colorbar;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas.StereoMode;
@@ -62,6 +62,7 @@ import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
+import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Preferences;
@@ -138,6 +139,7 @@ public class Renderer extends JPanel implements
     private StereoMode mode=StereoMode.NONE;
 
     private StatusBar statusBar=null;
+    private Colorbar smallBodyColorbar;
 
     void initOrientationAxes()
     {
@@ -403,6 +405,8 @@ public class Renderer extends JPanel implements
 
         mainCanvas = new vtksbmtJoglCanvas();
         mainCanvas.getRenderWindowInteractor().AddObserver("KeyPressEvent", this, "localKeypressHandler");
+
+        smallBodyColorbar=new Colorbar(this);
 
         this.modelManager = modelManager;
 
@@ -1081,6 +1085,20 @@ public class Renderer extends JPanel implements
         if (e.getPropertyName().equals(Properties.MODEL_CHANGED))
         {
             this.setProps(modelManager.getProps());
+            
+            PolyhedralModel sbModel=(PolyhedralModel)modelManager.getModel(ModelNames.SMALL_BODY);
+            if (sbModel.isColoringDataAvailable() && sbModel.getColoringIndex()>=0)
+            {
+                if (!smallBodyColorbar.isVisible())
+                    smallBodyColorbar.setVisible(true);
+                smallBodyColorbar.setColormap(sbModel.getColormap());
+                smallBodyColorbar.setTitle(sbModel.getColoringName(sbModel.getColoringIndex()));
+                if (mainCanvas.getRenderer().HasViewProp(smallBodyColorbar.getActor())==0)
+                    mainCanvas.getRenderer().AddActor(smallBodyColorbar.getActor());
+            }
+            else
+                smallBodyColorbar.setVisible(false);
+
         }
         else
         {

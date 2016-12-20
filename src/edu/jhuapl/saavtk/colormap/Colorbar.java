@@ -157,10 +157,4 @@ public class Colorbar implements PropertyChangeListener
     }
 
 
-	/*public void refresh()
-	{
-	    this.setVisible(!visible);
-	    this.setVisible(!visible);
-	}*/
-
 }

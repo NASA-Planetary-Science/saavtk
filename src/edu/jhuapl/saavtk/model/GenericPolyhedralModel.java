@@ -1,5 +1,8 @@
 package edu.jhuapl.saavtk.model;
 
+import java.awt.Color;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -57,7 +60,7 @@ import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
 import edu.jhuapl.saavtk.util.SmallBodyCubes;
 
-public class GenericPolyhedralModel extends PolyhedralModel
+public class GenericPolyhedralModel extends PolyhedralModel implements PropertyChangeListener
 {
 
     private List<ColoringInfo> coloringInfo = new ArrayList<ColoringInfo>();
@@ -127,7 +130,8 @@ public class GenericPolyhedralModel extends PolyhedralModel
     vtkIdTypeArray cellIds=new vtkIdTypeArray();
     public static final String cellIdsArrayName="cellIds";
     
-    Colormap colormap=null;
+    private Colormap colormap=null;
+    private boolean colormapInitialized=false;
 
     /**
      * Default constructor. Must be followed by a call to setSmallBodyPolyData.
@@ -229,8 +233,56 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
     public void setColormap(Colormap colormap)
     {
-    	
+        if (this.colormap!=null)
+            this.colormap.removePropertyChangeListener(this);
+        this.colormap=colormap;
+        this.colormap.addPropertyChangeListener(this);
+        try
+        {
+            paintBody();
+        }
+        catch (IOException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
+    
+    public Colormap getColormap()
+    {
+    	return colormap;
+    }
+    
+    protected void initColormap()
+    {
+        if (!colormapInitialized && !(colormap==null))
+        {
+            double[] range = getCurrentColoringRange(coloringIndex);
+            colormap.removePropertyChangeListener(this);
+            colormap.setRangeMin(range[0]);
+            colormap.setRangeMax(range[1]);
+            colormapInitialized=true;
+            colormap.addPropertyChangeListener(this);
+        }
+    }
+    
+    @Override
+    public void propertyChange(PropertyChangeEvent evt)
+    {
+        if (evt.getSource().equals(colormap))
+            try
+            {
+                paintBody();
+            }
+            catch (IOException e)
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+
+    }
+
+
     
     public List<vtkPolyData> getSmallBodyPolyDatas()
     {
@@ -1917,27 +1969,21 @@ public class GenericPolyhedralModel extends PolyhedralModel
         }
         else
         {
-            double[] range = getCurrentColoringRange(coloringIndex);
-            smallBodyMapper.GetLookupTable().SetRange(range);
-            ((vtkLookupTable)smallBodyMapper.GetLookupTable()).ForceBuild();
-            this.invertLookupTable();
-
+        	
+            initColormap();
             ColoringInfo info = coloringInfo.get(coloringIndex);
-
-            // If there's missing data (invalid data), we need to set the
-            // color data manually rather than using the lookup table of
-            // the mapper
-            if (info.coloringHasNulls)
+            colorData=new vtkUnsignedCharArray();
+            colorData.SetNumberOfComponents(3);
+            for (int i=0; i<info.coloringValues.GetNumberOfTuples(); i++)
             {
-                vtkLookupTable lookupTable = (vtkLookupTable)smallBodyMapper.GetLookupTable();
-                mapScalarsThroughLookupTable(info.coloringValues, lookupTable, colorData);
-                array = colorData;
+                double value=info.coloringValues.GetValue(i);
+                Color c=colormap.getColor(value);
+                colorData.InsertNextTuple3(c.getRed(), c.getGreen(), c.getBlue());
             }
+            array=colorData;
 
-            if (!smallBodyActors.contains(scalarBarActor))
-                smallBodyActors.add(scalarBarActor);
+            smallBodyMapper.SetLookupTable(colormap.getLookupTable());
 
-            scalarBarActor.SetLookupTable(smallBodyMapper.GetLookupTable());
         }
 
         if (coloringValueType == ColoringValueType.POINT_DATA)
@@ -1966,30 +2012,6 @@ public class GenericPolyhedralModel extends PolyhedralModel
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
     }
 
-    private void mapScalarsThroughLookupTable(vtkDataArray scalarData,
-            vtkLookupTable lookupTable,
-            vtkUnsignedCharArray colorArray)
-    {
-        double nullValue = scalarData.GetRange()[0];
-        int numberValues = scalarData.GetNumberOfTuples();
-        colorArray.SetNumberOfComponents(3);
-        colorArray.SetNumberOfTuples(numberValues);
-        double[] rgb = new double[3];
-        for (int i=0; i<numberValues; ++i)
-        {
-            double v = scalarData.GetTuple1(i);
-            if (v != nullValue)
-            {
-                lookupTable.GetColor(v, rgb);
-                colorArray.SetTuple3(i, 255.0*rgb[0], 255.0*rgb[1], 255.0*rgb[2]);
-            }
-            else
-            {
-                // Map null values to white
-                colorArray.SetTuple3(i, 255.0, 255.0, 255.0);
-            }
-        }
-    }
 
     public void setOpacity(double opacity)
     {

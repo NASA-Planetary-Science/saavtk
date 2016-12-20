@@ -548,6 +548,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         customColorRedLabel.setEnabled(selected);
         customColorGreenLabel.setEnabled(selected);
         customColorBlueLabel.setEnabled(selected);
+        colormapController.setEnabled(selected);
     }
 
     protected void setColoring()

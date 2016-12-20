@@ -50,7 +50,7 @@ public class Colormaps
 	private static void initBuiltInColorMaps()
 	{
 		builtInColormaps=Maps.newTreeMap();
-		loadFromXml("/edu/jhuapl/near/colormap/ColorMaps.xml");
+		loadFromXml("/edu/jhuapl/saavtk/colormap/ColorMaps.xml");
 	}
 
 	private static void loadFromXml(String resourceName)
