@@ -10,6 +10,7 @@ import vtk.vtkDataArray;
 import vtk.vtkLookupTable;
 import vtk.vtkPolyData;
 import vtk.vtksbCellLocator;
+import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -132,6 +133,8 @@ public abstract class PolyhedralModel extends AbstractModel
     public abstract void saveAsSTL(File file) throws IOException;
 
     public abstract int getNumberResolutionLevels();
+    
+    public abstract void setColormap(Colormap colormap);
 
 //    public abstract Config getSmallBodyConfig();
 

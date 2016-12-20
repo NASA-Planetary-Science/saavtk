@@ -41,6 +41,7 @@ import vtk.vtkTextProperty;
 import vtk.vtkTriangle;
 import vtk.vtkUnsignedCharArray;
 import vtk.vtksbCellLocator;
+import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
@@ -126,6 +127,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
     vtkIdTypeArray cellIds=new vtkIdTypeArray();
     public static final String cellIdsArrayName="cellIds";
     
+    Colormap colormap=null;
 
     /**
      * Default constructor. Must be followed by a call to setSmallBodyPolyData.
@@ -225,6 +227,11 @@ public class GenericPolyhedralModel extends PolyhedralModel
         initialize(defaultModelFile);
     }
 
+    public void setColormap(Colormap colormap)
+    {
+    	
+    }
+    
     public List<vtkPolyData> getSmallBodyPolyDatas()
     {
         return null;

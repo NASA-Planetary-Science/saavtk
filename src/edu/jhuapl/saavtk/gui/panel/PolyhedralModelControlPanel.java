@@ -8,6 +8,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,6 +39,7 @@ import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 
 import net.miginfocom.swing.MigLayout;
+import edu.jhuapl.saavtk.colormap.ColormapController;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomPlateDataDialog;
 import edu.jhuapl.saavtk.gui.dialog.ScaleDataRangeDialog;
@@ -71,13 +74,15 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
     private JCheckBox imageMapCheckBox;
     private JLabel opacityLabel;
     private JSpinner imageMapOpacitySpinner;
+    
+    ColormapController colormapController;
+
 
     public void setSaveColoringButton(JButton saveColoringButton)
     {
         this.saveColoringButton = saveColoringButton;
     }
 
-    private JButton scaleColoringButton;
     private JButton saveColoringButton;
     private JButton customizeColoringButton;
     private JEditorPane statisticsLabel;
@@ -181,11 +186,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         return opacityLabel;
     }
 
-    public JButton getScaleColoringButton()
-    {
-        return scaleColoringButton;
-    }
-
     public JButton getCustomizeColoringButton()
     {
         return customizeColoringButton;
@@ -287,17 +287,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         rgbColoringButton.addItemListener(this);
         rgbColoringButton.setEnabled(smallBodyModel.getNumberOfColors() > 0);
 
-        scaleColoringButton = new JButton("Rescale Data Range...");
-        scaleColoringButton.setEnabled(false);
-        scaleColoringButton.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                ScaleDataRangeDialog scaleDataDialog = new ScaleDataRangeDialog(smallBodyModel);
-                scaleDataDialog.setLocationRelativeTo(JOptionPane.getFrameForComponent(scaleColoringButton));
-                scaleDataDialog.setVisible(true);
-            }
-        });
 
         customColorRedLabel = new JLabel("Red: ");
         customColorGreenLabel = new JLabel("Green: ");
@@ -382,6 +371,19 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             for (JRadioButton rb : resModelButtons)
                 panel.add(rb, "wrap, gapleft 25");
         }
+        
+        colormapController=new ColormapController();
+        smallBodyModel.setColormap(colormapController.getColormap());
+        colormapController.addPropertyChangeListener(new PropertyChangeListener()
+        {
+
+            @Override
+            public void propertyChange(PropertyChangeEvent evt)
+            {
+                smallBodyModel.setColormap(colormapController.getColormap());
+            }
+        });
+
 
         // Only show coloring in APL version or if there are built in colors.
         // In the non-APL version, do not allow customization.
@@ -391,7 +393,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             panel.add(noColoringButton, "wrap, gapleft 25");
             panel.add(standardColoringButton, "split 2, gapleft 25");
             panel.add(coloringComboBox, "width 200!, wrap");
-            panel.add(scaleColoringButton, "wrap, gapleft 75");
+            panel.add(colormapController);
             if (Configuration.isAPLVersion())
             {
                 panel.add(rgbColoringButton, "wrap, gapleft 25");
@@ -539,7 +541,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
     {
         boolean selected = standardColoringButton.isSelected();
         coloringComboBox.setEnabled(selected);
-        scaleColoringButton.setEnabled(selected);
         selected = rgbColoringButton.isSelected();
         customColorRedComboBox.setEnabled(selected);
         customColorGreenComboBox.setEnabled(selected);
@@ -564,7 +565,12 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             }
             else if (standardColoringButton.isSelected())
             {
-                smallBodyModel.setColoringIndex(coloringComboBox.getSelectedIndex());
+                int idx=coloringComboBox.getSelectedIndex();
+                smallBodyModel.setColoringIndex(idx);
+                double[] range=smallBodyModel.getCurrentColoringRange(idx);
+                colormapController.setMinMax(range[0],range[1]);
+                smallBodyModel.setColormap(colormapController.getColormap());
+                colormapController.refresh();
             }
         }
         catch (IOException e1)
