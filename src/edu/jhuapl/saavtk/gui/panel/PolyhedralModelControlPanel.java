@@ -75,7 +75,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
     private JLabel opacityLabel;
     private JSpinner imageMapOpacitySpinner;
     
-    ColormapController colormapController;
+    ColormapController colormapController=new ColormapController();
 
 
     public void setSaveColoringButton(JButton saveColoringButton)
@@ -282,6 +282,17 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         standardColoringButton.addItemListener(this);
         standardColoringButton.setEnabled(smallBodyModel.getNumberOfColors() > 0);
 
+        smallBodyModel.setColormap(colormapController.getColormap());
+        colormapController.addPropertyChangeListener(new PropertyChangeListener()
+        {
+
+            @Override
+            public void propertyChange(PropertyChangeEvent evt)
+            {
+                smallBodyModel.setColormap(colormapController.getColormap());
+            }
+        });
+
         rgbColoringButton = new JRadioButton(RGB_COLORING);
         rgbColoringButton.setActionCommand(RGB_COLORING);
         rgbColoringButton.addItemListener(this);
@@ -372,17 +383,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                 panel.add(rb, "wrap, gapleft 25");
         }
         
-        colormapController=new ColormapController();
-        smallBodyModel.setColormap(colormapController.getColormap());
-        colormapController.addPropertyChangeListener(new PropertyChangeListener()
-        {
-
-            @Override
-            public void propertyChange(PropertyChangeEvent evt)
-            {
-                smallBodyModel.setColormap(colormapController.getColormap());
-            }
-        });
 
 
         // Only show coloring in APL version or if there are built in colors.
@@ -541,6 +541,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
     {
         boolean selected = standardColoringButton.isSelected();
         coloringComboBox.setEnabled(selected);
+        colormapController.setEnabled(selected);
         selected = rgbColoringButton.isSelected();
         customColorRedComboBox.setEnabled(selected);
         customColorGreenComboBox.setEnabled(selected);
@@ -548,7 +549,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         customColorRedLabel.setEnabled(selected);
         customColorGreenLabel.setEnabled(selected);
         customColorBlueLabel.setEnabled(selected);
-        colormapController.setEnabled(selected);
     }
 
     protected void setColoring()
