@@ -406,8 +406,6 @@ public class Renderer extends JPanel implements
         mainCanvas = new vtksbmtJoglCanvas();
         mainCanvas.getRenderWindowInteractor().AddObserver("KeyPressEvent", this, "localKeypressHandler");
 
-        smallBodyColorbar=new Colorbar(this);
-
         this.modelManager = modelManager;
 
         
@@ -437,6 +435,8 @@ public class Renderer extends JPanel implements
         // Setup observers for start/stop interaction events
         mainCanvas.getRenderWindowInteractor().AddObserver("StartInteractionEvent", this, "onStartInteraction");
         mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
+
+        smallBodyColorbar=new Colorbar(this);
 
         initOrientationAxes();
 

@@ -20,6 +20,8 @@ public class Colorbar implements PropertyChangeListener
 	boolean hovering=false;
 	Colormap cmap;
 
+	boolean widgetInitialized=false;
+	
 	public Colorbar(Renderer renderer)
 	{
 /*		chooser.addPropertyChangeListener(new PropertyChangeListener()
@@ -59,9 +61,6 @@ public class Colorbar implements PropertyChangeListener
         //actor.SetTitleTextProperty(tp);
 
         widget.CreateDefaultRepresentation();
-        widget.GetScalarBarRepresentation().SetOrientation(0);
-        widget.GetScalarBarRepresentation().SetPosition(0.2, 0.01);
-        widget.GetScalarBarRepresentation().SetPosition2(0.6,0.1275);
         widget.ResizableOn();
 
         actor.SetOrientationToHorizontal();
@@ -79,6 +78,8 @@ public class Colorbar implements PropertyChangeListener
 
 	public void synchronizationKludge()
 	{
+		//if (!widgetInitialized)
+		//	initializeWidget();
 		if (actor.GetLookupTable()!=null && cmap!=null)
 		{
 	        actor.SetLookupTable(cmap.getLookupTable());
@@ -86,8 +87,23 @@ public class Colorbar implements PropertyChangeListener
 		}
 	}
 
+/*	private void initializeWidget()	// this is presently commented out because it causes the colorbar to be rendered in the wrong location on the screen, and if included in the constructor it generates a harmless error that worries users 
+	{
+		if (visible)
+		{
+			widget.GetScalarBarRepresentation().SetOrientation(0);
+			widget.GetScalarBarRepresentation().SetPosition(0.2, 0.01);
+			widget.GetScalarBarRepresentation().SetPosition2(0.6,0.1275);
+			actor.Modified();
+			widgetInitialized=true;
+		}
+		
+	}*/
+	
 	public void interactionKludge()
 	{
+		//if (!widgetInitialized)
+		//	initializeWidget();
 		if (widget.GetBorderRepresentation().GetInteractionState()>0 && visible)
 		{
 			hovering=true;
