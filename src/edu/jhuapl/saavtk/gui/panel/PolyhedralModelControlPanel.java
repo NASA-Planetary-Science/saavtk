@@ -290,6 +290,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             public void propertyChange(PropertyChangeEvent evt)
             {
                 smallBodyModel.setColormap(colormapController.getColormap());
+                // this is a bit of a hack, but it sets the colorbar's default coloring range from the smallBodyModel data anytime there is a change detected; this doesn't propagate the range to the actual GUI values, it just stores them so that the "Reset Range" button on the colorbarController works
+                double[] range=smallBodyModel.getDefaultColoringRange(smallBodyModel.getColoringIndex());
+                colormapController.setDefaultRange(range[0], range[1]);
             }
         });
 

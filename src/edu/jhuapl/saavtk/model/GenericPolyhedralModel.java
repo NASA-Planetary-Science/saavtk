@@ -12,6 +12,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -21,6 +22,8 @@ import vtk.vtkActor2D;
 import vtk.vtkCell;
 import vtk.vtkCellArray;
 import vtk.vtkCellData;
+import vtk.vtkClipPolyData;
+import vtk.vtkContourFilter;
 import vtk.vtkCoordinate;
 import vtk.vtkDataArray;
 import vtk.vtkFloatArray;
@@ -39,6 +42,8 @@ import vtk.vtkPolyDataNormals;
 import vtk.vtkProp;
 import vtk.vtkProperty;
 import vtk.vtkScalarBarActor;
+import vtk.vtkSelectionNode;
+import vtk.vtkStripper;
 import vtk.vtkTextActor;
 import vtk.vtkTextProperty;
 import vtk.vtkTriangle;
@@ -52,6 +57,7 @@ import edu.jhuapl.saavtk.util.ConvertResourceToFile;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.Frustum;
 import edu.jhuapl.saavtk.util.LatLon;
+import edu.jhuapl.saavtk.util.LinearSpace;
 import edu.jhuapl.saavtk.util.MapUtil;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
@@ -132,7 +138,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     
     private Colormap colormap=null;
     private boolean colormapInitialized=false;
-
+    private boolean showColorsAsContourLines=false;
+    private vtkPolyData linesPolyData;
+    private vtkPolyDataMapper linesMapper=new vtkPolyDataMapper();
+    private vtkActor linesActor=new vtkActor();
+    
     /**
      * Default constructor. Must be followed by a call to setSmallBodyPolyData.
      */
@@ -229,6 +239,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 
         initialize(defaultModelFile);
+        
     }
 
     public void setColormap(Colormap colormap)
@@ -1135,6 +1146,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
             scalarBarActor.SetTitleTextProperty(tp);
 
             setupScaleBar();
+            
+            smallBodyActors.add(linesActor);
         }
     }
 
@@ -1969,41 +1982,64 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         }
         else
         {
-        	
+        
             initColormap();
-            ColoringInfo info = coloringInfo.get(coloringIndex);
-            colorData=new vtkUnsignedCharArray();
-            colorData.SetNumberOfComponents(3);
-            for (int i=0; i<info.coloringValues.GetNumberOfTuples(); i++)
-            {
-                double value=info.coloringValues.GetValue(i);
-                Color c=colormap.getColor(value);
-                colorData.InsertNextTuple3(c.getRed(), c.getGreen(), c.getBlue());
-            }
-            array=colorData;
+        	if (!showColorsAsContourLines)
+        	{
+        		ColoringInfo info = coloringInfo.get(coloringIndex);
+        		colorData=new vtkUnsignedCharArray();
+        		colorData.SetNumberOfComponents(3);
+        		for (int i=0; i<info.coloringValues.GetNumberOfTuples(); i++)
+        		{
+        			double value=info.coloringValues.GetValue(i);
+        			Color c=colormap.getColor(value);
+        			colorData.InsertNextTuple3(c.getRed(), c.getGreen(), c.getBlue());
+        		}
+        		array=colorData;
 
-            smallBodyMapper.SetLookupTable(colormap.getLookupTable());
+        		smallBodyMapper.SetLookupTable(colormap.getLookupTable());
 
-        }
-
-        if (coloringValueType == ColoringValueType.POINT_DATA)
-            this.smallBodyPolyData.GetPointData().SetScalars(array);
-        else
-            this.smallBodyPolyData.GetCellData().SetScalars(array);
+                if (coloringValueType == ColoringValueType.POINT_DATA)
+                    this.smallBodyPolyData.GetPointData().SetScalars(array);
+                else
+                    this.smallBodyPolyData.GetCellData().SetScalars(array);
 
 
-        if (coloringIndex < 0 && useFalseColoring == false)
-        {
-            smallBodyMapper.ScalarVisibilityOff();
-            smallBodyMapper.SetScalarModeToDefault();
-        }
-        else
-        {
-            smallBodyMapper.ScalarVisibilityOn();
-            if (coloringValueType == ColoringValueType.POINT_DATA)
-                smallBodyMapper.SetScalarModeToUsePointData();
-            else
-                smallBodyMapper.SetScalarModeToUseCellData();
+                if (coloringIndex < 0 && useFalseColoring == false)
+                {
+                    smallBodyMapper.ScalarVisibilityOff();
+                    smallBodyMapper.SetScalarModeToDefault();
+                }
+                else
+                {
+                    smallBodyMapper.ScalarVisibilityOn();
+                    if (coloringValueType == ColoringValueType.POINT_DATA)
+                        smallBodyMapper.SetScalarModeToUsePointData();
+                    else
+                        smallBodyMapper.SetScalarModeToUseCellData();
+                }
+
+        	}
+        	else
+        	{
+        		smallBodyMapper.ScalarVisibilityOff();
+        		/*vtkContourFilter contourFilter=new vtkContourFilter();
+        		contourFilter.SetInputData(smallBodyPolyData);
+        		double[] valueRange=colormap.getLookupTable().GetValueRange();
+        		int nLevels=colormap.getNumberOfLevels();
+        		contourFilter.GenerateValues(nLevels, valueRange);
+        		contourFilter.Update();
+        		linesPolyData=new vtkPolyData();
+        		linesPolyData.DeepCopy(contourFilter.GetOutput());
+        		System.out.println(linesPolyData.GetNumberOfCells()+" "+linesPolyData.GetNumberOfPoints());
+        		
+        		linesMapper.SetInputData(linesPolyData);
+        		linesActor.SetMapper(linesMapper);
+        		*/
+        		double[] levels=colormap.getLevels();
+        		vtkContourFilter contourFilter=new vtkContourFilter();
+        		contourFilter.SetInputData(smallBodyPolyData);
+        	}
         }
 
 

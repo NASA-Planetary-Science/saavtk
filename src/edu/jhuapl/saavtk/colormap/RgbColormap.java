@@ -5,6 +5,7 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.List;
 
+import edu.jhuapl.saavtk.util.LinearSpace;
 import vtk.vtkColorTransferFunction;
 import vtk.vtkLookupTable;
 
@@ -254,6 +255,12 @@ public class RgbColormap implements Colormap
 	public boolean isLogScale()
 	{
 	    return isLog;
+	}
+	
+	@Override
+	public double[] getLevels()
+	{
+		return LinearSpace.create(getRangeMin(), getRangeMax(), getNumberOfLevels());
 	}
 
 }

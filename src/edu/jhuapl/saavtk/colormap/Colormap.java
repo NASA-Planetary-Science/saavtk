@@ -22,6 +22,7 @@ public interface Colormap
     public int getNumberOfLevels();
     public boolean isLogScale();
     public vtkLookupTable getLookupTable();
+    public double[] getLevels();
     //
     public void addPropertyChangeListener(PropertyChangeListener l);
 	public void removePropertyChangeListener(PropertyChangeListener l);

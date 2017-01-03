@@ -3,6 +3,7 @@ package edu.jhuapl.saavtk.colormap;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -11,11 +12,13 @@ import java.beans.PropertyChangeSupport;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.JSeparator;
 import javax.swing.JTextField;
 import javax.swing.ListCellRenderer;
 
@@ -25,12 +28,15 @@ public class ColormapController extends JPanel implements ActionListener
     PropertyChangeSupport pcs=new PropertyChangeSupport(this);
     public static final String colormapChanged="Colormap changed";
 
+    double defaultMin,defaultMax;
+    
     Colormap colormap=Colormaps.getNewInstanceOfBuiltInColormap(Colormaps.getDefaultColormapName());
     JComboBox colormapComboBox=new JComboBox<>();
     JCheckBox logScaleCheckbox=new JCheckBox("Log scale");
     JTextField lowTextField=new JTextField("0");
     JTextField highTextField=new JTextField("1");
     JTextField nLevelsTextField=new JTextField("32");
+    JButton resetButton=new JButton("Range Reset");
 
     JPanel panel1=new JPanel();
     JPanel panel2=new JPanel();
@@ -49,19 +55,23 @@ public class ColormapController extends JPanel implements ActionListener
         }
         //
         colormap=Colormaps.getNewInstanceOfBuiltInColormap(Colormaps.getDefaultColormapName());
-        //
         panel1.add(colormapComboBox);
-        panel2.add(new JLabel("Min"));
-        panel2.add(lowTextField);
-        panel2.add(new JLabel("Max"));
-        panel2.add(highTextField);
-        panel3.add(logScaleCheckbox);
-        panel3.add(new JLabel("nLev"));
-        panel3.add(nLevelsTextField);
         //
+        panel2.setLayout(new GridLayout(3, 2));
+        panel2.add(new JLabel("Min Value", JLabel.RIGHT));
+        panel2.add(lowTextField);
+        panel2.add(new JLabel("Max Value", JLabel.RIGHT));
+        panel2.add(highTextField);
+        panel2.add(new JLabel("# Color Levels", JLabel.RIGHT));
+        panel2.add(nLevelsTextField);
+        //
+        //
+        panel3.setLayout(new GridLayout(2, 1));
+        panel3.add(logScaleCheckbox);
+        panel3.add(resetButton);
         this.add(panel1,BorderLayout.NORTH);
         this.add(panel2,BorderLayout.CENTER);
-        this.add(panel3,BorderLayout.SOUTH);
+        this.add(panel3,BorderLayout.EAST);
         //
 
         colormapComboBox.addActionListener(this);
@@ -69,7 +79,9 @@ public class ColormapController extends JPanel implements ActionListener
         lowTextField.addActionListener(this);
         highTextField.addActionListener(this);
         logScaleCheckbox.addActionListener(this);
+        resetButton.addActionListener(this);
 
+        setDefaultRange(0, 1);
         refresh();
     }
 
@@ -149,6 +161,10 @@ public class ColormapController extends JPanel implements ActionListener
             String name=((Colormap)colormapComboBox.getSelectedItem()).getName();
             colormap=Colormaps.getNewInstanceOfBuiltInColormap(name);
         }
+        if (e.getSource().equals(resetButton))
+        {
+        	setMinMax(defaultMin, defaultMax);
+        }
         refresh();
         pcs.firePropertyChange(colormapChanged, null, null);
     }
@@ -163,7 +179,13 @@ public class ColormapController extends JPanel implements ActionListener
             colormap.setNumberOfLevels(Integer.valueOf(nLevelsTextField.getText()));
         }
     }
-
+    
+    public void setDefaultRange(double min, double max)
+    {
+    	this.defaultMin=min;
+    	this.defaultMax=max;
+    }
+    
     public void addPropertyChangeListener(PropertyChangeListener l)
     {
         pcs.addPropertyChangeListener(l);
