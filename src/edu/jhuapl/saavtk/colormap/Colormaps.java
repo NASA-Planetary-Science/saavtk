@@ -2,6 +2,7 @@ package edu.jhuapl.saavtk.colormap;
 
 import java.awt.Color;
 import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -23,6 +24,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import edu.jhuapl.saavtk.colormap.RgbColormap.ColorSpace;
+import edu.jhuapl.saavtk.util.FileCache;
 
 public class Colormaps
 {
@@ -50,7 +52,7 @@ public class Colormaps
 	private static void initBuiltInColorMaps()
 	{
 		builtInColormaps=Maps.newTreeMap();
-		loadFromXml("/edu/jhuapl/saavtk/colormap/ColorMaps.xml");
+		loadFromXml("ColorMaps.xml");
 	}
 
 	private static void loadFromXml(String resourceName)
@@ -59,7 +61,8 @@ public class Colormaps
 		{
 			DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
 			DocumentBuilder builder=factory.newDocumentBuilder();
-			InputStream stream=Colormaps.class.getResourceAsStream(resourceName);
+			//InputStream stream=Colormaps.class.getResourceAsStream(resourceName);
+			InputStream stream=new FileInputStream(FileCache.getFileFromServer("/ColorMaps.xml"));
 			Document doc=builder.parse(new BufferedInputStream(stream));
 			Element elem=doc.getDocumentElement();
 			NodeList nodes=elem.getChildNodes();
