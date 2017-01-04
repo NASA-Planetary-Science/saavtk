@@ -3,6 +3,7 @@ package edu.jhuapl.saavtk.colormap;
 import java.awt.Color;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.util.Arrays;
 import java.util.List;
 
 import edu.jhuapl.saavtk.util.LinearSpace;
@@ -71,6 +72,7 @@ public class RgbColormap implements Colormap
 			return;
 
 		ctf=new vtkColorTransferFunction();
+		ctf.SetAlpha(1);
         if (isLog)
             ctf.SetScaleToLog10();
         else
@@ -132,7 +134,9 @@ public class RgbColormap implements Colormap
 		for (int i=0; i<getNumberOfLevels(); i++)
 		{
 			double val=(double)i/(double)getNumberOfLevels();//*(dataMax-dataMin)+dataMin;
-			lut.SetTableValue(i, ctf.GetColor(val));
+			//lut.SetTableValue(i, ctf.GetColor(val));
+			double[] col=ctf.GetColor(val);
+			lut.SetTableValue(i, col[0], col[1], col[2], 1);
 		}
 
 		pcs.firePropertyChange(colormapPropertyChanged, null, null);

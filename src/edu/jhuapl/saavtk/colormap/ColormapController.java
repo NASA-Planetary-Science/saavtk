@@ -39,7 +39,7 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
     JTextField highTextField=new JTextField("1");
     JTextField nLevelsTextField=new JTextField("32");
     JButton resetButton=new JButton("Range Reset");
-
+    
     JPanel panel1=new JPanel();
     JPanel panel2=new JPanel();
     JPanel panel3=new JPanel();
@@ -85,6 +85,7 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
 
         lowTextField.addFocusListener(this);
         highTextField.addFocusListener(this);
+        nLevelsTextField.addFocusListener(this);
         
         setDefaultRange(0, 1);
         refresh();
@@ -98,6 +99,7 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
         highTextField.setEnabled(enabled);
         logScaleCheckbox.setEnabled(enabled);
         nLevelsTextField.setEnabled(enabled);
+        resetButton.setEnabled(enabled);
     }
 
     public void setMinMax(double min, double max)

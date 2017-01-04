@@ -40,6 +40,7 @@ import javax.swing.text.html.HTMLEditorKit;
 
 import net.miginfocom.swing.MigLayout;
 import edu.jhuapl.saavtk.colormap.ColormapController;
+import edu.jhuapl.saavtk.colormap.ColormapControllerWithContouring;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomPlateDataDialog;
 import edu.jhuapl.saavtk.gui.dialog.ScaleDataRangeDialog;
@@ -75,7 +76,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
     private JLabel opacityLabel;
     private JSpinner imageMapOpacitySpinner;
     
-    ColormapController colormapController=new ColormapController();
+    ColormapControllerWithContouring colormapController=new ColormapControllerWithContouring();
 
 
     public void setSaveColoringButton(JButton saveColoringButton)
@@ -290,6 +291,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             public void propertyChange(PropertyChangeEvent evt)
             {
                 smallBodyModel.setColormap(colormapController.getColormap());
+                smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
+                smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
                 // this is a bit of a hack, but it sets the colorbar's default coloring range from the smallBodyModel data anytime there is a change detected; this doesn't propagate the range to the actual GUI values, it just stores them so that the "Reset Range" button on the colorbarController works
                 double[] range=smallBodyModel.getDefaultColoringRange(smallBodyModel.getColoringIndex());
                 colormapController.setDefaultRange(range[0], range[1]);
@@ -385,6 +388,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             for (JRadioButton rb : resModelButtons)
                 panel.add(rb, "wrap, gapleft 25");
         }
+        
+        
         
 
 
@@ -574,6 +579,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                 double[] range=smallBodyModel.getCurrentColoringRange(idx);
                 colormapController.setMinMax(range[0],range[1]);
                 smallBodyModel.setColormap(colormapController.getColormap());
+                smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
+                smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
+                
                 colormapController.refresh();
             }
         }

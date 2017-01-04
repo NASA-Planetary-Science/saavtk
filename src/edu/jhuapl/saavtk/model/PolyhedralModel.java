@@ -80,7 +80,9 @@ public abstract class PolyhedralModel extends AbstractModel
 
     public abstract boolean isEllipsoid();
 
-
+    public abstract void showScalarsAsContours(boolean flag);
+    public abstract void setContourLineWidth(double width);
+    
     public abstract String getCustomDataFolder();
 
     public abstract String getConfigFilename();
