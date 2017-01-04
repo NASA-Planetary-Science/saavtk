@@ -6,6 +6,8 @@ import java.awt.Component;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -23,7 +25,7 @@ import javax.swing.JTextField;
 import javax.swing.ListCellRenderer;
 
 
-public class ColormapController extends JPanel implements ActionListener
+public class ColormapController extends JPanel implements ActionListener, FocusListener
 {
     PropertyChangeSupport pcs=new PropertyChangeSupport(this);
     public static final String colormapChanged="Colormap changed";
@@ -81,6 +83,9 @@ public class ColormapController extends JPanel implements ActionListener
         logScaleCheckbox.addActionListener(this);
         resetButton.addActionListener(this);
 
+        lowTextField.addFocusListener(this);
+        highTextField.addFocusListener(this);
+        
         setDefaultRange(0, 1);
         refresh();
     }
@@ -196,6 +201,18 @@ public class ColormapController extends JPanel implements ActionListener
     {
         pcs.removePropertyChangeListener(l);
     }
+
+	@Override
+	public void focusGained(FocusEvent e)
+	{
+	}
+
+	@Override
+	public void focusLost(FocusEvent e)
+	{
+		refresh();
+        pcs.firePropertyChange(colormapChanged, null, null);
+	}
 
 
 
