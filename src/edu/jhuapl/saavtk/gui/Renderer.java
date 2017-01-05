@@ -35,6 +35,8 @@ import vtk.vtkAxesActor;
 import vtk.vtkBMPWriter;
 import vtk.vtkCamera;
 import vtk.vtkCaptionActor2D;
+import vtk.vtkCellLocator;
+import vtk.vtkIdList;
 import vtk.vtkInteractorStyle;
 import vtk.vtkInteractorStyleImage;
 import vtk.vtkInteractorStyleJoystickCamera;
@@ -56,12 +58,15 @@ import vtk.vtkSTLWriter;
 import vtk.vtkScalarBarActor;
 import vtk.vtkTIFFWriter;
 import vtk.vtkTextProperty;
+import vtk.vtkTriangle;
 import vtk.vtkWindowToImageFilter;
+import vtk.vtksbTriangle;
 import edu.jhuapl.saavtk.colormap.Colorbar;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas.StereoMode;
 import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
+import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
@@ -525,7 +530,7 @@ public class Renderer extends JPanel implements
     public void onStartInteraction()
     {
         showLODs();
-        hideLabels();
+        occludeLabels();
     }
 
     public void duringInteraction()
@@ -574,18 +579,13 @@ public class Renderer extends JPanel implements
         occludeLabels();
     }
     
-    public void hideLabels()
-    {
-        for (vtkProp prop : modelManager.getProps())
-        	if (prop instanceof OccludingCaptionActor)
-        		prop.VisibilityOff();
-    }
-    
     public void occludeLabels()
     {
 		Vector3D lookat=new Vector3D(getRenderWindowPanel().getActiveCamera().GetFocalPoint());
 		Vector3D campos=new Vector3D(getRenderWindowPanel().getActiveCamera().GetPosition());
 		Vector3D lookdir=lookat.subtract(campos);
+		GenericPolyhedralModel model=(GenericPolyhedralModel)modelManager.getModel(ModelNames.SMALL_BODY);
+		vtkCellLocator locator=model.getCellLocator();
         for (vtkProp prop : modelManager.getProps())
         	if (prop instanceof OccludingCaptionActor)
         	{
@@ -593,7 +593,17 @@ public class Renderer extends JPanel implements
         		if (normal.dotProduct(lookdir)>0)
         			prop.VisibilityOff();
         		else
-        			prop.VisibilityOn();
+        		{
+        			double tolerance=1e-15;
+        			vtkIdList ids=new vtkIdList();
+        			double[] rayStartPoint=((OccludingCaptionActor) prop).getRayStartPoint();
+        			locator.FindCellsAlongLine(rayStartPoint, campos.toArray(), tolerance, ids);
+        			if (ids.GetNumberOfIds()>0)
+        				prop.VisibilityOff();
+        			else
+        				prop.VisibilityOn();
+        		}
+        		        		
         	}
     }
 

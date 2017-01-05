@@ -13,6 +13,10 @@ import java.util.List;
 
 import javax.swing.JOptionPane;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
+import com.jogamp.newt.NewtVersion;
+
 import vtk.vtkActor;
 import vtk.vtkAppendPolyData;
 import vtk.vtkCaptionActor2D;
@@ -20,6 +24,8 @@ import vtk.vtkCellArray;
 import vtk.vtkCellData;
 import vtk.vtkDecimatePolylineFilter;
 import vtk.vtkDecimatePro;
+import vtk.vtkGenericCell;
+import vtk.vtkIdList;
 import vtk.vtkIdTypeArray;
 import vtk.vtkMaskPoints;
 import vtk.vtkPoints;
@@ -30,6 +36,7 @@ import vtk.vtkProperty;
 import vtk.vtkQuadricClustering;
 import vtk.vtkQuadricDecimation;
 import vtk.vtkTransform;
+import vtk.vtkTriangle;
 import vtk.vtkUnsignedCharArray;
 import edu.jhuapl.saavtk.model.CommonData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
@@ -1511,9 +1518,32 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
             {
                 return true;
             }
-            double[] attachmentPoint=polygons.get(idx).center;
-            double[] nml=PolyDataUtil.getPolyDataNormalAtPoint(attachmentPoint, smallBodyModel.getSmallBodyPolyData(), smallBodyModel.getPointLocator());
-            vtkCaptionActor2D v = new OccludingCaptionActor(nml);
+            //double[] attachmentPoint=polygons.get(idx).center;
+            Vector3D polygonCenter=new Vector3D(polygons.get(idx).center);
+            double[] nml=PolyDataUtil.getPolyDataNormalAtPoint(polygons.get(idx).center, smallBodyModel.getSmallBodyPolyData(), smallBodyModel.getPointLocator());
+        	double[] closestPoint=new double[3];
+        	vtkGenericCell cell=new vtkGenericCell();
+        	int[] cellId=new int[1];
+        	int[] subId=new int[1];
+        	double[] dist=new double[1];
+        	smallBodyModel.getCellLocator().FindClosestPoint(polygonCenter.toArray(), closestPoint, cell, cellId, subId, dist);
+        	try
+        	{
+        		if (cellId[0]==-1)
+        			throw new Exception("Closest cell not identifiable for structure "+polygons.get(idx).name);
+        	}
+        	catch (Exception e)
+        	{
+        		e.printStackTrace();
+        	}
+        	vtkTriangle tri=(vtkTriangle)smallBodyModel.getSmallBodyPolyData().GetCell(cellId[0]);
+        	double area=tri.ComputeArea();
+        	double[] faceCenter=new double[3];
+        	tri.TriangleCenter(tri.GetPoints().GetPoint(0), tri.GetPoints().GetPoint(1), tri.GetPoints().GetPoint(2), faceCenter);
+        	// start occlusion rays at some distance above the closest face to the polygon center; this should work for hills as well as valleys
+            double[] rayStartPoint=new Vector3D(faceCenter).add(new Vector3D(nml).scalarMultiply(Math.sqrt(area))).toArray();
+            
+            vtkCaptionActor2D v = new OccludingCaptionActor(nml, rayStartPoint);
             v.GetCaptionTextProperty().SetColor(1.0, 1.0, 1.0);
             v.GetCaptionTextProperty().SetJustificationToCentered();
             v.GetCaptionTextProperty().BoldOn();
@@ -1521,7 +1551,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
             v.VisibilityOn();
             v.BorderOff();
             v.ThreeDimensionalLeaderOn();
-            v.SetAttachmentPoint(attachmentPoint);
+            v.SetAttachmentPoint(polygonCenter.toArray());
             v.SetPosition(0, 0);
             v.SetPosition2(numLetters*0.0025+0.03, numLetters*0.001+0.02);
             
