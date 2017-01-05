@@ -144,6 +144,7 @@ public class Renderer extends JPanel implements
 
     private StatusBar statusBar=null;
     private Colorbar smallBodyColorbar;
+    boolean inInteraction=false;
 
     void initOrientationAxes()
     {
@@ -438,6 +439,7 @@ public class Renderer extends JPanel implements
 
         // Setup observers for start/stop interaction events
         mainCanvas.getRenderWindowInteractor().AddObserver("StartInteractionEvent", this, "onStartInteraction");
+        mainCanvas.getRenderWindowInteractor().AddObserver("InteractionEvent", this, "duringInteraction");
         mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
         
         smallBodyColorbar=new Colorbar(this);
@@ -526,6 +528,11 @@ public class Renderer extends JPanel implements
         hideLabels();
     }
 
+    public void duringInteraction()
+    {
+    	occludeLabels();
+    }
+    
     public void showLODs()
     {
         // LOD switching control for SaavtkLODActor
