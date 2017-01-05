@@ -19,7 +19,7 @@ public class OccludingCaptionActor extends vtkCaptionActor2D
 	{
 		super();
         Vector3D polygonCenter=new Vector3D(polygonCenterPoint);
-        double[] normal=PolyDataUtil.getPolyDataNormalAtPoint(polygonCenterPoint, smallBodyModel.getSmallBodyPolyData(), smallBodyModel.getPointLocator());
+        normal=PolyDataUtil.getPolyDataNormalAtPoint(polygonCenterPoint, smallBodyModel.getSmallBodyPolyData(), smallBodyModel.getPointLocator());
     	double[] closestPoint=new double[3];
     	vtkGenericCell cell=new vtkGenericCell();
     	int[] cellId=new int[1];
