@@ -1518,32 +1518,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
             {
                 return true;
             }
-            //double[] attachmentPoint=polygons.get(idx).center;
-            Vector3D polygonCenter=new Vector3D(polygons.get(idx).center);
-            double[] nml=PolyDataUtil.getPolyDataNormalAtPoint(polygons.get(idx).center, smallBodyModel.getSmallBodyPolyData(), smallBodyModel.getPointLocator());
-        	double[] closestPoint=new double[3];
-        	vtkGenericCell cell=new vtkGenericCell();
-        	int[] cellId=new int[1];
-        	int[] subId=new int[1];
-        	double[] dist=new double[1];
-        	smallBodyModel.getCellLocator().FindClosestPoint(polygonCenter.toArray(), closestPoint, cell, cellId, subId, dist);
-        	try
-        	{
-        		if (cellId[0]==-1)
-        			throw new Exception("Closest cell not identifiable for structure "+polygons.get(idx).name);
-        	}
-        	catch (Exception e)
-        	{
-        		e.printStackTrace();
-        	}
-        	vtkTriangle tri=(vtkTriangle)smallBodyModel.getSmallBodyPolyData().GetCell(cellId[0]);
-        	double area=tri.ComputeArea();
-        	double[] faceCenter=new double[3];
-        	tri.TriangleCenter(tri.GetPoints().GetPoint(0), tri.GetPoints().GetPoint(1), tri.GetPoints().GetPoint(2), faceCenter);
-        	// start occlusion rays at some distance above the closest face to the polygon center; this should work for hills as well as valleys
-            double[] rayStartPoint=new Vector3D(faceCenter).add(new Vector3D(nml).scalarMultiply(Math.sqrt(area))).toArray();
             
-            vtkCaptionActor2D v = new OccludingCaptionActor(nml, rayStartPoint);
+            vtkCaptionActor2D v = new OccludingCaptionActor(polygons.get(idx).center,polygons.get(idx).name,smallBodyModel);
             v.GetCaptionTextProperty().SetColor(1.0, 1.0, 1.0);
             v.GetCaptionTextProperty().SetJustificationToCentered();
             v.GetCaptionTextProperty().BoldOn();
@@ -1551,7 +1527,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
             v.VisibilityOn();
             v.BorderOff();
             v.ThreeDimensionalLeaderOn();
-            v.SetAttachmentPoint(polygonCenter.toArray());
+            v.SetAttachmentPoint(polygons.get(idx).center);
             v.SetPosition(0, 0);
             v.SetPosition2(numLetters*0.0025+0.03, numLetters*0.001+0.02);
             

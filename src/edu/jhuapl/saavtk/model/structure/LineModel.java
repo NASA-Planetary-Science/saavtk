@@ -1341,7 +1341,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
                 return true;
             }
             int numLetters = label.length();
-            vtkCaptionActor2D v = new vtkCaptionActor2D();
+            vtkCaptionActor2D v = new OccludingCaptionActor(lines.get(idx).getCentroid(), lines.get(idx).name, smallBodyModel);
             v.GetCaptionTextProperty().SetColor(1.0, 1.0, 1.0);
             v.GetCaptionTextProperty().SetJustificationToCentered();
             v.GetCaptionTextProperty().BoldOn();
