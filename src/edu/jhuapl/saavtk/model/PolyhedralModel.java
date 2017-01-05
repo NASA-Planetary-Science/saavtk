@@ -8,6 +8,7 @@ import java.util.TreeSet;
 
 import vtk.vtkDataArray;
 import vtk.vtkLookupTable;
+import vtk.vtkPointLocator;
 import vtk.vtkPolyData;
 import vtk.vtksbCellLocator;
 import edu.jhuapl.saavtk.colormap.Colormap;
@@ -69,6 +70,7 @@ public abstract class PolyhedralModel extends AbstractModel
     public abstract void updateScaleBarPosition(int windowWidth, int windowHeight);
 
     public abstract vtksbCellLocator getCellLocator();
+    public abstract vtkPointLocator getPointLocator();
 
     public abstract BoundingBox getBoundingBox();
 

@@ -748,7 +748,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return cellLocator;
 	}
 
-	public vtkAbstractPointLocator getPointLocator()
+	@Override
+	public vtkPointLocator getPointLocator()
 	{
 		return pointLocator;
 	}

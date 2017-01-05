@@ -12,6 +12,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -23,6 +24,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
+
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -63,6 +66,7 @@ import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Preferences;
@@ -435,7 +439,7 @@ public class Renderer extends JPanel implements
         // Setup observers for start/stop interaction events
         mainCanvas.getRenderWindowInteractor().AddObserver("StartInteractionEvent", this, "onStartInteraction");
         mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
-
+        
         smallBodyColorbar=new Colorbar(this);
 
         initOrientationAxes();
@@ -519,6 +523,7 @@ public class Renderer extends JPanel implements
     public void onStartInteraction()
     {
         showLODs();
+        hideLabels();
     }
 
     public void showLODs()
@@ -559,6 +564,30 @@ public class Renderer extends JPanel implements
     public void onEndInteraction()
     {
         hideLODs();
+        occludeLabels();
+    }
+    
+    public void hideLabels()
+    {
+        for (vtkProp prop : modelManager.getProps())
+        	if (prop instanceof OccludingCaptionActor)
+        		prop.VisibilityOff();
+    }
+    
+    public void occludeLabels()
+    {
+		Vector3D lookat=new Vector3D(getRenderWindowPanel().getActiveCamera().GetFocalPoint());
+		Vector3D campos=new Vector3D(getRenderWindowPanel().getActiveCamera().GetPosition());
+		Vector3D lookdir=lookat.subtract(campos);
+        for (vtkProp prop : modelManager.getProps())
+        	if (prop instanceof OccludingCaptionActor)
+        	{
+        		Vector3D normal=new Vector3D(((OccludingCaptionActor) prop).getNormal());
+        		if (normal.dotProduct(lookdir)>0)
+        			prop.VisibilityOff();
+        		else
+        			prop.VisibilityOn();
+        	}
     }
 
     /*

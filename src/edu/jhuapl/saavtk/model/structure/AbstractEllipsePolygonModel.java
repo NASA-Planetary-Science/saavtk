@@ -1511,7 +1511,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
             {
                 return true;
             }
-            vtkCaptionActor2D v = new vtkCaptionActor2D();
+            double[] attachmentPoint=polygons.get(idx).center;
+            double[] nml=PolyDataUtil.getPolyDataNormalAtPoint(attachmentPoint, smallBodyModel.getSmallBodyPolyData(), smallBodyModel.getPointLocator());
+            vtkCaptionActor2D v = new OccludingCaptionActor(nml);
             v.GetCaptionTextProperty().SetColor(1.0, 1.0, 1.0);
             v.GetCaptionTextProperty().SetJustificationToCentered();
             v.GetCaptionTextProperty().BoldOn();
@@ -1519,9 +1521,10 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
             v.VisibilityOn();
             v.BorderOff();
             v.ThreeDimensionalLeaderOn();
-            v.SetAttachmentPoint(polygons.get(idx).center);
+            v.SetAttachmentPoint(attachmentPoint);
             v.SetPosition(0, 0);
             v.SetPosition2(numLetters*0.0025+0.03, numLetters*0.001+0.02);
+            
             v.SetCaption(polygons.get(idx).getLabel());
 
             polygons.get(idx).setLabelID(actors.size()-1);
@@ -1547,6 +1550,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
             polygons.get(index).caption.SetVisibility(1-polygons.get(index).caption.GetVisibility());
         boolean b = (polygons.get(index).caption.GetVisibility() == 0);
         polygons.get(index).labelHidden=b;
+
 
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, index);
     }
