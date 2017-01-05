@@ -1530,7 +1530,6 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
             v.SetAttachmentPoint(polygons.get(idx).center);
             v.SetPosition(0, 0);
             v.SetPosition2(numLetters*0.0025+0.03, numLetters*0.001+0.02);
-            
             v.SetCaption(polygons.get(idx).getLabel());
 
             polygons.get(idx).setLabelID(actors.size()-1);

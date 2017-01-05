@@ -39,8 +39,11 @@ public class OccludingCaptionActor extends vtkCaptionActor2D
     	double area=tri.ComputeArea();
     	double[] faceCenter=new double[3];
     	tri.TriangleCenter(tri.GetPoints().GetPoint(0), tri.GetPoints().GetPoint(1), tri.GetPoints().GetPoint(2), faceCenter);
-    	// start occlusion rays at some distance above the closest face to the polygon center; this should work for hills as well as valleys
-        rayStartPoint=new Vector3D(faceCenter).add(new Vector3D(normal).scalarMultiply(Math.sqrt(area))).toArray();
+    	double[] triBounds=tri.GetBounds();
+    	double normInf=Math.max(triBounds[1]-triBounds[0],Math.max(triBounds[3]-triBounds[2], triBounds[5]-triBounds[4]));
+    	// start occlusion rays at some distance above the closest face to the polygon center; this should work for hills as well as valleys, use the raw area as a distance
+        rayStartPoint=new Vector3D(faceCenter).add(new Vector3D(normal).scalarMultiply(normInf)).toArray();
+        //
 	}
 	
 	public double[] getNormal()
