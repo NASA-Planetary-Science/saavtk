@@ -216,6 +216,9 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
     protected void updatePolyData()
     {
+    	actors.clear();
+    	
+    	
         linesPolyData.DeepCopy(emptyPolyData);
         vtkPoints points = linesPolyData.GetPoints();
         vtkCellArray lineCells = linesPolyData.GetLines();
@@ -262,6 +265,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
             lineCells.InsertNextCell(idList);
             colors.InsertNextTuple4(color[0],color[1],color[2],255);
+            
         }
 
         // Repeat for decimated data
@@ -325,6 +329,12 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
         
         if (!actors.contains(lineActor))
             actors.add(lineActor);
+        for (int j=0; j<this.lines.size(); ++j)
+        {
+            Line lin = this.lines.get(j);
+            if (lin.label!=null && !lin.labelHidden && !lin.hidden && lin.caption!=null)
+            	actors.add(lin.caption);
+        }
 
         lineActor.SetMapper(lineMapper);
         ((SaavtkLODActor)lineActor).setLODMapper(decimatedLineMapper);
@@ -640,7 +650,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
         lines.get(cellId).caption=null;
 
         lines.remove(cellId);
-
+        
         updatePolyData();
 
         if (hasProfileMode())
@@ -1308,6 +1318,8 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
     @Override
     public boolean setStructureLabel(int idx, String label)
     {
+    	if (actors.contains(lines.get(idx).caption))
+    		actors.remove(lines.get(idx).caption);
         lines.get(idx).setLabel(label);
         if(lines.get(idx).editingLabel)
         {
@@ -1341,6 +1353,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
                 return true;
             }
             int numLetters = label.length();
+            
             vtkCaptionActor2D v = new OccludingCaptionActor(lines.get(idx).getCentroid(), lines.get(idx).name, smallBodyModel);
             v.GetCaptionTextProperty().SetColor(1.0, 1.0, 1.0);
             v.GetCaptionTextProperty().SetJustificationToCentered();
@@ -1378,6 +1391,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
         boolean b = (lines.get(index).caption.GetVisibility() == 0);
         lines.get(index).labelHidden=b;
 
+        
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, index);
     }
 

@@ -411,6 +411,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 
     private void updatePolyData()
     {
+    	actors.clear();
+    	
         if (polygons.size() > 0)
         {
             boundaryAppendFilter.SetNumberOfInputs(polygons.size());
@@ -432,6 +434,12 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
                 poly = polygons.get(i).decimatedInteriorPolyData;
                 if (poly != null)
                     decimatedInteriorAppendFilter.SetInputDataByNumber(i, poly);
+            }
+            for (int j=0; j<polygons.size(); ++j)
+            {
+                EllipsePolygon lin = polygons.get(j);
+                if (lin.label!=null && !lin.labelHidden && !lin.hidden && lin.caption!=null)
+                	actors.add(lin.caption);
             }
 
             boundaryAppendFilter.Update();
@@ -489,6 +497,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
             vtkCellData interiorCellData = interiorPolyData.GetCellData();
             vtkCellData decimatedInteriorCellData = decimatedInteriorPolyData.GetCellData();
 
+            actors.add(interiorActor);
+            actors.add(boundaryActor);
+            
             boundaryCellData.SetScalars(boundaryColors);
             decimatedBoundaryCellData.SetScalars(decimatedBoundaryColors);
             interiorCellData.SetScalars(interiorColors);
@@ -601,6 +612,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
         polygons.get(polygonId).setLabelID(-1);
         polygons.get(polygonId).caption=null;
         polygons.remove(polygonId);
+
         updatePolyData();
 
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
@@ -634,6 +646,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
             if(polygons.get(i).caption!=null) polygons.get(i).caption.VisibilityOff();
             polygons.get(i).setLabelID(-1);
             polygons.get(i).caption=null;
+
         }
         polygons.clear();
 
