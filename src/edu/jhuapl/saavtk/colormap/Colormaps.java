@@ -61,8 +61,7 @@ public class Colormaps
 		{
 			DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
 			DocumentBuilder builder=factory.newDocumentBuilder();
-			//InputStream stream=Colormaps.class.getResourceAsStream(resourceName);
-			InputStream stream=new FileInputStream(FileCache.getFileFromServer("/ColorMaps.xml"));
+			InputStream stream=Colormaps.class.getResourceAsStream(resourceName);
 			Document doc=builder.parse(new BufferedInputStream(stream));
 			Element elem=doc.getDocumentElement();
 			NodeList nodes=elem.getChildNodes();
