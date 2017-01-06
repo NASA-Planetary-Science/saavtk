@@ -16,7 +16,7 @@ public class ColormapControllerWithContouring extends ColormapController impleme
 {
 
 	JToggleButton showAsContourLinesButton=new JToggleButton("Enable Contours");
-	JSpinner contourLineWidthTextBox=new JSpinner(new SpinnerNumberModel(2, 1, 50, 1));
+	JSpinner contourLineWidthSpinner=new JSpinner(new SpinnerNumberModel(2, 1, 50, 1));
 	
 	public ColormapControllerWithContouring()
 	{
@@ -24,16 +24,16 @@ public class ColormapControllerWithContouring extends ColormapController impleme
 		
 		JPanel subPanel=new JPanel(new GridLayout(1, 2));
 		subPanel.add(new JLabel("Line width", JLabel.RIGHT));
-		subPanel.add(contourLineWidthTextBox);
-		contourLineWidthTextBox.addFocusListener(this);
+		subPanel.add(contourLineWidthSpinner);
+		contourLineWidthSpinner.addFocusListener(this);
 		
 		JPanel panel=new JPanel(new GridLayout(1, 2));
 		panel.add(showAsContourLinesButton);
 		panel.add(subPanel);
 		this.add(panel,BorderLayout.SOUTH);
 		
-		contourLineWidthTextBox.setEnabled(false);
-		contourLineWidthTextBox.addChangeListener(this);
+		contourLineWidthSpinner.setEnabled(false);
+		contourLineWidthSpinner.addChangeListener(this);
 		showAsContourLinesButton.addActionListener(this);
 	}
 	
@@ -43,8 +43,7 @@ public class ColormapControllerWithContouring extends ColormapController impleme
 	{
 		if (e.getSource().equals(showAsContourLinesButton))
 		{
-			contourLineWidthTextBox.setEnabled(showAsContourLinesButton.isSelected());
-			
+			contourLineWidthSpinner.setEnabled(showAsContourLinesButton.isSelected());
 		}
 		super.actionPerformed(e);
 	}
@@ -54,13 +53,13 @@ public class ColormapControllerWithContouring extends ColormapController impleme
 	public void setEnabled(boolean enabled)
 	{
 		super.setEnabled(enabled);
-		contourLineWidthTextBox.setEnabled(enabled);
 		showAsContourLinesButton.setEnabled(enabled);
+		contourLineWidthSpinner.setEnabled(showAsContourLinesButton.isSelected());
 	}
 	
 	public double getLineWidth()
 	{
-		return (Integer)contourLineWidthTextBox.getValue();
+		return (Integer)contourLineWidthSpinner.getValue();
 	}
 	
 	public boolean getContourLinesRequested()
