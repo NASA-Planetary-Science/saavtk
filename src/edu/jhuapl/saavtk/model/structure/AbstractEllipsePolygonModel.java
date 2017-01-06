@@ -491,6 +491,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
                 range = this.getCellIdRangeOfDecimatedPolygon(i, true);
                 for (int j=range.id1; j<range.id2; ++j)
                     decimatedInteriorColors.SetTuple3(j, color[0], color[1], color[2]);
+
             }
             vtkCellData boundaryCellData = boundaryPolyData.GetCellData();
             vtkCellData decimatedBoundaryCellData = decimatedBoundaryPolyData.GetCellData();
@@ -531,6 +532,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
         ((SaavtkLODActor)boundaryActor).setLODMapper(decimatedBoundaryMapper);
         interiorActor.SetMapper(interiorMapper);
         ((SaavtkLODActor)interiorActor).setLODMapper(decimatedInteriorMapper);
+        
+
         
         boundaryActor.Modified();
         interiorActor.Modified();
@@ -1557,18 +1560,15 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
         return true;
     }
 
-    public void showLabel(int index)
+    public void showLabel(int index, boolean shown)
     {
         if(polygons.get(index).caption==null||polygons.get(index).caption.GetCaption().equals(""))
         {
             setStructureLabel(index, " ");
         }
 
-        if(!polygons.get(index).getHidden())
-            polygons.get(index).caption.SetVisibility(1-polygons.get(index).caption.GetVisibility());
-        boolean b = (polygons.get(index).caption.GetVisibility() == 0);
-        polygons.get(index).labelHidden=b;
-
+        polygons.get(index).labelHidden=!shown;
+        polygons.get(index).caption.SetVisibility(shown?1:0);
 
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, index);
     }

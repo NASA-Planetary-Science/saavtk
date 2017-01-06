@@ -589,6 +589,9 @@ public class Renderer extends JPanel implements
         for (vtkProp prop : modelManager.getProps())
         	if (prop instanceof OccludingCaptionActor)
         	{
+        		if (prop.GetVisibility()==0)
+        			break;
+        		//
         		Vector3D normal=new Vector3D(((OccludingCaptionActor) prop).getNormal());
         		if (normal.dotProduct(lookdir)>0)
         			prop.VisibilityOff();

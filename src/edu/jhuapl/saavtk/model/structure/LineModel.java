@@ -1366,7 +1366,6 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
             v.SetPosition(0, 0);
             v.SetPosition2(numLetters*0.0025+0.03, numLetters*0.001+0.02);
             v.SetCaption(lines.get(idx).getLabel());
-
             lines.get(idx).labelId=(actors.size()-1);
             lines.get(idx).caption=v;
             actors.add(lines.get(idx).caption);
@@ -1379,22 +1378,19 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
         return true;
     }
 
-    public void showLabel(int index)
+    public void showLabel(int index, boolean shown)
     {
         if(lines.get(index).caption==null||lines.get(index).caption.GetCaption().equals(""))
         {
             setStructureLabel(index, " ");
         }
-
-        if(!lines.get(index).getHidden())
-            lines.get(index).caption.SetVisibility(1-lines.get(index).caption.GetVisibility());
-        boolean b = (lines.get(index).caption.GetVisibility() == 0);
-        lines.get(index).labelHidden=b;
-
+        
+        lines.get(index).labelHidden=!shown;
+        lines.get(index).caption.SetVisibility(shown?1:0);
         
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, index);
     }
-
+    
     public boolean isLabelHidden(int id)
     {
         return lines.get(id).labelHidden;

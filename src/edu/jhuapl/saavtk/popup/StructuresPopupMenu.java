@@ -37,7 +37,7 @@ abstract public class StructuresPopupMenu extends PopupMenu
     private JMenuItem centerStructurePreserveDistanceMenuItem;
     private JMenuItem displayInteriorMenuItem;
     private JMenuItem setLabelButton;
-    private JCheckBoxMenuItem showLabelButton;
+    private JCheckBoxMenuItem hideLabelButton;
     private JMenu labelProperties;
     private JMenuItem changeFontButton;
     private JMenuItem changeFontTypeButton;
@@ -73,10 +73,10 @@ abstract public class StructuresPopupMenu extends PopupMenu
         setLabelButton.setText("Edit Label Text");
         this.add(setLabelButton);
 
-        showLabelButton = new JCheckBoxMenuItem(new ShowLabelAction());
-        showLabelButton.setText("Hide Label");
-        this.add(showLabelButton);
-
+/*        hideLabelButton = new JCheckBoxMenuItem(new ShowLabelAction());
+        hideLabelButton.setText("Hide Label");
+        this.add(hideLabelButton);
+*/
         labelProperties= new JMenu();
         labelProperties.setText("Edit Label Properties...");
 
@@ -168,15 +168,15 @@ abstract public class StructuresPopupMenu extends PopupMenu
             }
         }
 
-        showLabelButton.setSelected(true);
+/*        hideLabelButton.setSelected(true);
         for (int i=0; i<selectedStructures.length; ++i)
         {
             if (!model.isLabelHidden(selectedStructures[i]))
             {
-                showLabelButton.setSelected(false);
+                hideLabelButton.setSelected(false);
                 break;
             }
-        }
+        }*/
 
         // If any of the selected structures are displaying interior then show
         // the display interior menu item as unchecked. Otherwise show it checked.
@@ -245,7 +245,7 @@ abstract public class StructuresPopupMenu extends PopupMenu
         public void actionPerformed(ActionEvent e)
         {
             int[] selectedStructures = model.getSelectedStructures();
-            model.setStructuresHidden(selectedStructures, hideMenuItem.isSelected(), showLabelButton.isSelected());
+            model.setStructuresHidden(selectedStructures, hideMenuItem.isSelected(), hideMenuItem.isSelected());//hideLabelButton.isSelected());
         }
     }
 
@@ -389,7 +389,7 @@ abstract public class StructuresPopupMenu extends PopupMenu
         {
             int[] selectedStructures = model.getSelectedStructures();
             for (int idx : selectedStructures)
-                model.showLabel(idx);
+                model.showLabel(idx,!hideLabelButton.isSelected());
         }
     }
 

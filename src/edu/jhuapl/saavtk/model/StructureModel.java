@@ -113,5 +113,5 @@ public abstract class StructureModel extends AbstractModel
 
     public abstract double[] getStructureNormal(int id);
 
-    public abstract void showLabel(int idx);
+    public abstract void showLabel(int idx, boolean shown);
 }
