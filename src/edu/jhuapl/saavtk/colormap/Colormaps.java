@@ -2,6 +2,7 @@ package edu.jhuapl.saavtk.colormap;
 
 import java.awt.Color;
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,6 +63,7 @@ public class Colormaps
 			DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
 			DocumentBuilder builder=factory.newDocumentBuilder();
 			InputStream stream=Colormaps.class.getResourceAsStream(resourceName);
+			//InputStream stream=new FileInputStream(new File(resourceName));	// load as file instead of resource since sbmt build breaks local source tree resource loading
 			Document doc=builder.parse(new BufferedInputStream(stream));
 			Element elem=doc.getDocumentElement();
 			NodeList nodes=elem.getChildNodes();
