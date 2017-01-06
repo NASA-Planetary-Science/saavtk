@@ -6,14 +6,17 @@ import java.awt.event.ActionEvent;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JSpinner;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.event.ChangeListener;
 
-public class ColormapControllerWithContouring extends ColormapController
+public class ColormapControllerWithContouring extends ColormapController implements ChangeListener
 {
 
 	JToggleButton showAsContourLinesButton=new JToggleButton("Enable Contours");
-	JTextField contourLineWidthTextBox=new JTextField();
+	JSpinner contourLineWidthTextBox=new JSpinner(new SpinnerNumberModel(2, 1, 50, 1));
 	
 	public ColormapControllerWithContouring()
 	{
@@ -25,12 +28,12 @@ public class ColormapControllerWithContouring extends ColormapController
 		contourLineWidthTextBox.addFocusListener(this);
 		
 		JPanel panel=new JPanel(new GridLayout(1, 2));
-		panel.add(subPanel);
 		panel.add(showAsContourLinesButton);
+		panel.add(subPanel);
 		this.add(panel,BorderLayout.SOUTH);
 		
-		contourLineWidthTextBox.setText("1");
-		
+		contourLineWidthTextBox.setEnabled(false);
+		contourLineWidthTextBox.addChangeListener(this);
 		showAsContourLinesButton.addActionListener(this);
 	}
 	
@@ -57,10 +60,7 @@ public class ColormapControllerWithContouring extends ColormapController
 	
 	public double getLineWidth()
 	{
-		if (contourLineWidthTextBox.getText().isEmpty())
-			return 1;
-		else
-			return Double.valueOf(contourLineWidthTextBox.getText());
+		return (Integer)contourLineWidthTextBox.getValue();
 	}
 	
 	public boolean getContourLinesRequested()

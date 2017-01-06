@@ -1141,6 +1141,7 @@ public class Renderer extends JPanel implements
                 smallBodyColorbar.setTitle(sbModel.getColoringName(sbModel.getColoringIndex()));
                 if (mainCanvas.getRenderer().HasViewProp(smallBodyColorbar.getActor())==0)
                     mainCanvas.getRenderer().AddActor(smallBodyColorbar.getActor());
+                smallBodyColorbar.getActor().SetNumberOfLabels(sbModel.getColormap().getNumberOfLabels());
             }
             else
                 smallBodyColorbar.setVisible(false);

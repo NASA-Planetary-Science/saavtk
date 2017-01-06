@@ -31,6 +31,8 @@ public class RgbColormap implements Colormap
 	vtkColorTransferFunction ctf;
 	double dataMin,dataMax;
 	boolean isLog=false;
+	
+	int nLabels=5;	// this should be placed in another class, cf. Colormap interface notes
 
 	List<Double> interpLevels;
 	List<Color> colors;
@@ -265,6 +267,19 @@ public class RgbColormap implements Colormap
 	public double[] getLevels()
 	{
 		return LinearSpace.create(getRangeMin(), getRangeMax(), getNumberOfLevels());
+	}
+	
+	
+	@Override
+	public int getNumberOfLabels()
+	{
+		return nLabels;
+	}
+	
+	@Override
+	public void setNumberOfLabels(int n)
+	{
+		nLabels=n;
 	}
 
 }

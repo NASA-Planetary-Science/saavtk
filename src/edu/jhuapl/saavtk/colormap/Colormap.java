@@ -26,4 +26,7 @@ public interface Colormap
     //
     public void addPropertyChangeListener(PropertyChangeListener l);
 	public void removePropertyChangeListener(PropertyChangeListener l);
+	//
+	public int getNumberOfLabels();	// this really should be placed in some other class, since it is a property of the visual representation of a colormap, e.g. a colorbar, rather than the colormap itself
+	public void setNumberOfLabels(int n);
 }

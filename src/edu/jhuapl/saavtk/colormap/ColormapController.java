@@ -21,11 +21,15 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
+import javax.swing.JSpinner;
 import javax.swing.JTextField;
 import javax.swing.ListCellRenderer;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 
-public class ColormapController extends JPanel implements ActionListener, FocusListener
+public class ColormapController extends JPanel implements ActionListener, FocusListener, ChangeListener
 {
     PropertyChangeSupport pcs=new PropertyChangeSupport(this);
     public static final String colormapChanged="Colormap changed";
@@ -39,6 +43,7 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
     JTextField highTextField=new JTextField("1");
     JTextField nLevelsTextField=new JTextField("32");
     JButton resetButton=new JButton("Range Reset");
+    JSpinner nLabelsSpinner=new JSpinner(new SpinnerNumberModel(4, 0, 20, 1));
     
     JPanel panel1=new JPanel();
     JPanel panel2=new JPanel();
@@ -59,13 +64,15 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
         colormap=Colormaps.getNewInstanceOfBuiltInColormap(Colormaps.getDefaultColormapName());
         panel1.add(colormapComboBox);
         //
-        panel2.setLayout(new GridLayout(3, 2));
+        panel2.setLayout(new GridLayout(4, 2));
         panel2.add(new JLabel("Min Value", JLabel.RIGHT));
         panel2.add(lowTextField);
         panel2.add(new JLabel("Max Value", JLabel.RIGHT));
         panel2.add(highTextField);
         panel2.add(new JLabel("# Color Levels", JLabel.RIGHT));
         panel2.add(nLevelsTextField);
+        panel2.add(new JLabel("# Ticks", JLabel.RIGHT));
+        panel2.add(nLabelsSpinner);
         //
         //
         panel3.setLayout(new GridLayout(2, 1));
@@ -86,7 +93,10 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
         lowTextField.addFocusListener(this);
         highTextField.addFocusListener(this);
         nLevelsTextField.addFocusListener(this);
-        
+        nLabelsSpinner.addFocusListener(this);
+
+        nLabelsSpinner.addChangeListener(this);
+
         setDefaultRange(0, 1);
         refresh();
     }
@@ -184,6 +194,7 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
             colormap.setRangeMin(Double.valueOf(lowTextField.getText()));
             colormap.setRangeMax(Double.valueOf(highTextField.getText()));
             colormap.setNumberOfLevels(Integer.valueOf(nLevelsTextField.getText()));
+            colormap.setNumberOfLabels((Integer)nLabelsSpinner.getValue());
         }
     }
     
@@ -216,6 +227,12 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
         pcs.firePropertyChange(colormapChanged, null, null);
 	}
 
+	@Override
+	public void stateChanged(ChangeEvent e)
+	{
+		colormap.setNumberOfLabels((Integer)nLabelsSpinner.getValue());
+        pcs.firePropertyChange(colormapChanged, null, null);
+	}
 
 
 }
