@@ -264,7 +264,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			this.colormap.removePropertyChangeListener(this);
 		this.colormap=colormap;
 		this.colormap.addPropertyChangeListener(this);
-		((SaavtkLODActor)smallBodyActor).GetMapper().SetLookupTable(colormap.getLookupTable());
+		smallBodyActor.GetMapper().SetLookupTable(colormap.getLookupTable());
 		try
 		{
 			paintBody();
@@ -2001,41 +2001,20 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		loadColoringData();
 
-		vtkDataArray array = null;
-
-
 		if (coloringIndex >= 0)
 		{
 			ColoringInfo info = coloringInfo.get(coloringIndex);
-			array = info.coloringValues;
 			String title = info.coloringName;
 			if (!info.coloringUnits.isEmpty())
 				title += " (" + info.coloringUnits + ")";
 			scalarBarActor.SetTitle(title);
-		}
-		else if (useFalseColoring)
-		{
-			updateFalseColorArray();
-			array = falseColorArray;
-		}
 
-		if (coloringIndex < 0)
-		{
-			if (smallBodyActors.contains(scalarBarActor))
-				smallBodyActors.remove(scalarBarActor);
-			if (smallBodyActors.contains(linesActor))
-				smallBodyActors.remove(linesActor);
-		}
-		else
-		{
 			initColormap();
 			if (!showColorsAsContourLines)
 			{
 				if (smallBodyActors.contains(linesActor))
 					smallBodyActors.remove(linesActor);
 				
-				
-				ColoringInfo info = coloringInfo.get(coloringIndex);
 				colorData=new vtkUnsignedCharArray();
 				colorData.SetNumberOfComponents(3);
 				for (int i=0; i<info.coloringValues.GetNumberOfTuples(); i++)
@@ -2044,48 +2023,38 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					Color c=colormap.getColor(value);
 					colorData.InsertNextTuple3(c.getRed(), c.getGreen(), c.getBlue());
 				}
-				array=colorData;
 
 				smallBodyMapper.SetLookupTable(colormap.getLookupTable());
 
+				vtkPolyDataMapper decimatedMapper =
+						((SaavtkLODActor)smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+				decimatedMapper.SetLookupTable(colormap.getLookupTable());
+				decimatedMapper.UseLookupTableScalarRangeOn();
+
 				if (coloringValueType == ColoringValueType.POINT_DATA)
-					this.smallBodyPolyData.GetPointData().SetScalars(array);
+					this.smallBodyPolyData.GetPointData().SetScalars(colorData);
 				else
-					this.smallBodyPolyData.GetCellData().SetScalars(array);
+					this.smallBodyPolyData.GetCellData().SetScalars(colorData);
 
-
-				if (coloringIndex < 0 && useFalseColoring == false)
-				{
-					smallBodyMapper.ScalarVisibilityOff();
-					smallBodyMapper.SetScalarModeToDefault();
-				}
-				else
-				{
-					smallBodyMapper.ScalarVisibilityOn();
-					if (coloringValueType == ColoringValueType.POINT_DATA)
-						smallBodyMapper.SetScalarModeToUsePointData();
-					else
-						smallBodyMapper.SetScalarModeToUseCellData();
-				}
+				smallBodyMapper.ScalarVisibilityOn();
 
 			}
 			else
 			{
+				vtkPolyDataMapper decimatedMapper =
+						((SaavtkLODActor)smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+				decimatedMapper.ScalarVisibilityOff();
 				smallBodyMapper.ScalarVisibilityOff();
-
-
-				ColoringInfo info = coloringInfo.get(coloringIndex);
-				array = info.coloringValues;
 
 				vtkPolyData polyData;
 				if (coloringValueType == ColoringValueType.POINT_DATA)
 				{
-					smallBodyPolyData.GetPointData().SetScalars(array);
+					smallBodyPolyData.GetPointData().SetScalars(info.coloringValues);
 					polyData=smallBodyPolyData;
 				}
 				else
 				{
-					smallBodyPolyData.GetCellData().SetScalars(array);
+					smallBodyPolyData.GetCellData().SetScalars(info.coloringValues);
 					vtkCellDataToPointData converter=new vtkCellDataToPointData();
 					converter.SetInputData(smallBodyPolyData);
 					converter.PassCellDataOff();
@@ -2115,7 +2084,33 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					smallBodyActors.add(linesActor);
 			}
 		}
+		else
+		{
+			if (smallBodyActors.contains(scalarBarActor))
+				smallBodyActors.remove(scalarBarActor);
+			if (smallBodyActors.contains(linesActor))
+				smallBodyActors.remove(linesActor);
 
+			if (useFalseColoring)
+			{
+				updateFalseColorArray();
+				if (coloringValueType == ColoringValueType.POINT_DATA)
+					this.smallBodyPolyData.GetPointData().SetScalars(falseColorArray);
+				else
+					this.smallBodyPolyData.GetCellData().SetScalars(falseColorArray);
+				smallBodyMapper.ScalarVisibilityOn();
+				vtkPolyDataMapper decimatedMapper =
+						((SaavtkLODActor)smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+				
+			}
+			else
+			{
+				vtkPolyDataMapper decimatedMapper =
+						((SaavtkLODActor)smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+				decimatedMapper.ScalarVisibilityOff();
+				smallBodyMapper.ScalarVisibilityOff();
+			}
+		}
 
 		this.smallBodyPolyData.Modified();
 

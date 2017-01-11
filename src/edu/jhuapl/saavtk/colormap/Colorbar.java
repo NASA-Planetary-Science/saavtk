@@ -171,6 +171,5 @@ public class Colorbar implements PropertyChangeListener
         if (evt.getPropertyName().equals(Colormap.colormapPropertyChanged))
             widget.GetScalarBarActor().SetLookupTable(cmap.getLookupTable());
     }
-
-
+   
 }
