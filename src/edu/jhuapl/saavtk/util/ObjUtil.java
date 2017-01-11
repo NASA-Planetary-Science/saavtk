@@ -11,6 +11,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import vtk.vtkAppendPolyData;
 import vtk.vtkCell;
 import vtk.vtkCubeSource;
+import vtk.vtkDoubleArray;
 import vtk.vtkFloatArray;
 import vtk.vtkIdList;
 import vtk.vtkImageData;
@@ -18,10 +19,12 @@ import vtk.vtkLine;
 import vtk.vtkPNGWriter;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
+import vtk.vtkPolyDataNormals;
 import vtk.vtkPolyLine;
 import vtk.vtkTransform;
 import vtk.vtkTransformFilter;
 import vtk.vtkTriangleFilter;
+import vtk.vtkUnsignedCharArray;
 
 public class ObjUtil
 {
@@ -75,17 +78,29 @@ public class ObjUtil
 		}
     }
     
+    public static String pointDataColorArrayName="PointColors";
+    
 	public static void writePolyDataToObj(vtkPolyData rawPolyData, Path objFile, double pointRadius, double lineRadius, String mtlFileName, String mtlName, String header)
 	{
 	    vtkTriangleFilter triangleFilter=new vtkTriangleFilter();
 	    triangleFilter.SetInputData(rawPolyData);
 	    triangleFilter.Update();
-	    vtkPolyData polyData=triangleFilter.GetOutput();
-     
+	    
+	    vtkPolyDataNormals normalFilter=new vtkPolyDataNormals();
+	    normalFilter.SetInputData(triangleFilter.GetOutput());
+	    normalFilter.ComputePointNormalsOn();
+	    normalFilter.ComputeCellNormalsOff();
+	    normalFilter.Update();
+	    
+	    vtkPolyData polyData=normalFilter.GetOutput();
+	    vtkUnsignedCharArray pointColors=(vtkUnsignedCharArray)polyData.GetPointData().GetArray(pointDataColorArrayName);
+	    vtkFloatArray pointNormals=(vtkFloatArray)polyData.GetPointData().GetArray("Normals");
+	    
 	    try
 		{
 			BufferedWriter writer=new BufferedWriter(new FileWriter(objFile.toString()));
 			
+			// write header and material information
 			if (header!=null)
 				writer.write("# "+header+"\n");
 			if (mtlFileName != null)
@@ -93,11 +108,29 @@ public class ObjUtil
 				writer.write("mtllib "+mtlFileName+"\n");
 				writer.write("usemtl "+mtlName+"\n");
 			}
-			
+			// write vertices with optional color
 			for (int i=0; i<polyData.GetNumberOfPoints(); i++)
 			{
 			    double[] pt=polyData.GetPoint(i);
-			    writer.write("v "+pt[0]+" "+pt[1]+" "+pt[2]+"\n");
+			    if (pointColors==null)
+			    	writer.write("v "+pt[0]+" "+pt[1]+" "+pt[2]+"\n");
+			    else
+			    {
+			    	double[] rgb=pointColors.GetTuple3(i);
+			    	double r=rgb[0]/255.;
+			    	double g=rgb[1]/255.;
+			    	double b=rgb[2]/255.;
+			    	writer.write("v "+pt[0]+" "+pt[1]+" "+pt[2]+" "+r+" "+g+" "+b+"\n");
+			    }
+			}
+			// write vertex normals
+			if (pointNormals!=null)
+			{
+				for (int i=0; i<polyData.GetNumberOfPoints(); i++)
+				{
+					double[] nml=pointNormals.GetTuple3(i);
+					writer.write("vn "+nml[0]+" "+nml[1]+" "+nml[2]+"\n");
+				}
 			}
 			vtkFloatArray texCoords=(vtkFloatArray)polyData.GetPointData().GetTCoords();
 			if (texCoords!=null)
@@ -124,7 +157,11 @@ public class ObjUtil
 					if (cell.GetNumberOfPoints()<3)
 						writer.write(id+" ");
 					else
-						writer.write(id+"/"+id+" ");
+					{
+						int nmlIdx=id;
+						int texCoordIdx=id;
+						writer.write(id+"/"+texCoordIdx+"/"+nmlIdx+" ");
+					}
 				}
 				writer.write("\n");
 			}
@@ -208,6 +245,7 @@ public class ObjUtil
 
 	    return transformFilter.GetPolyDataOutput();
 	}
+	
 	
     
 }

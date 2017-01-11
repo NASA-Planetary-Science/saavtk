@@ -65,6 +65,7 @@ import vtk.vtkUnsignedCharArray;
 import vtk.vtkUnstructuredGrid;
 import vtk.vtksbCellLocator;
 import edu.jhuapl.saavtk.colormap.Colormap;
+import edu.jhuapl.saavtk.colormap.Colormaps;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
@@ -282,6 +283,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	protected void initColormap()
 	{
+		if (colormap==null)
+			colormap=Colormaps.getNewInstanceOfBuiltInColormap(Colormaps.getDefaultColormapName());
 		if (!colormapInitialized && !(colormap==null))
 		{
 			double[] range = getCurrentColoringRange(coloringIndex);
