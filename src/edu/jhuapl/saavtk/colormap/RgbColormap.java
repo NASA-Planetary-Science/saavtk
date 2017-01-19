@@ -9,9 +9,12 @@ import java.util.List;
 import edu.jhuapl.saavtk.util.LinearSpace;
 import vtk.vtkColorTransferFunction;
 import vtk.vtkLookupTable;
+import vtk.vtkObject;
+import vtk.vtkOutputWindow;
 
 public class RgbColormap implements Colormap
 {
+
 
     PropertyChangeSupport pcs=new PropertyChangeSupport(this);
 
@@ -112,28 +115,38 @@ public class RgbColormap implements Colormap
 			ctf.AddRGBPoint((interpLevels.get(i)-rangeMin)/(rangeMax-rangeMin), comp[0], comp[1], comp[2]);
 		}
 
-        if (isLog)
-            lut.SetScaleToLog10();
-        else
-            lut.SetScaleToLinear();
 
         float[] comp=nanColor.getRGBColorComponents(null);
 		lut.SetNanColor(comp[0],comp[1],comp[2],1);
 		lut.SetNumberOfTableValues(nLevels);
 		lut.ForceBuild();
-		/*if (isLog)
+
+		if (isLog)
 		{
-            lut.SetTableRange(logDataMin, logDataMax);
-            lut.SetValueRange(logDataMin, logDataMax);
-            lut.SetRange(logDataMin, logDataMax);
+			double minValue=dataMin;
+			double maxValue=dataMax;
+			if (minValue<0)
+				minValue=Double.MIN_VALUE;
+			if (maxValue<0)
+				maxValue=Double.MIN_VALUE;
+		    lut.SetTableRange(minValue, maxValue);
+		    lut.SetValueRange(minValue, maxValue);
+		    lut.SetRange(minValue, maxValue);
+		    System.out.println("Warning: negative values in range clipped to smallest possible value greater than zero ("+Double.MIN_VALUE+")");
 		}
 		else
-		{*/
+		{
 		    lut.SetTableRange(dataMin, dataMax);
 		    lut.SetValueRange(dataMin, dataMax);
 		    lut.SetRange(dataMin, dataMax);
-		//}
-		for (int i=0; i<getNumberOfLevels(); i++)
+		}
+
+        if (isLog)
+            lut.SetScaleToLog10();
+        else
+            lut.SetScaleToLinear();
+
+        for (int i=0; i<getNumberOfLevels(); i++)
 		{
 			double val=(double)i/(double)getNumberOfLevels();//*(dataMax-dataMin)+dataMin;
 			//lut.SetTableValue(i, ctf.GetColor(val));
