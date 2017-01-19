@@ -578,6 +578,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                 smallBodyModel.setColoringIndex(idx);
                 double[] range=smallBodyModel.getCurrentColoringRange(idx);
                 colormapController.setMinMax(range[0],range[1]);
+                colormapController.setDefaultRange(range[0], range[1]);
                 smallBodyModel.setColormap(colormapController.getColormap());
                 smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
                 smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
