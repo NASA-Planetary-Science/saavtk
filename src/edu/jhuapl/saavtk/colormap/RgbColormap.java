@@ -115,6 +115,9 @@ public class RgbColormap implements Colormap
 			ctf.AddRGBPoint((interpLevels.get(i)-rangeMin)/(rangeMax-rangeMin), comp[0], comp[1], comp[2]);
 		}
 
+		lut.GlobalWarningDisplayOff();
+		ctf.GlobalWarningDisplayOff();
+		
 
         float[] comp=nanColor.getRGBColorComponents(null);
 		lut.SetNanColor(comp[0],comp[1],comp[2],1);

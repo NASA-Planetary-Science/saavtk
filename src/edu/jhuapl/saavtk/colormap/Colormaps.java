@@ -26,6 +26,8 @@ import com.google.common.collect.Maps;
 
 import edu.jhuapl.saavtk.colormap.RgbColormap.ColorSpace;
 import edu.jhuapl.saavtk.util.FileCache;
+import vtk.vtkObject;
+import vtk.vtkOutputWindow;
 
 public class Colormaps
 {
