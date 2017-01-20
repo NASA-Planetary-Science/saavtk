@@ -696,6 +696,7 @@ public class Renderer extends JPanel implements
 
     public void saveToFile()
     {
+    	getRenderWindowPanel().Render();
         File file = CustomFileChooser.showSaveDialog(this, "Export to PNG Image", "image.png", "png");
         saveToFile(file, mainCanvas);
     }
