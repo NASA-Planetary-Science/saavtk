@@ -135,7 +135,7 @@ public class RgbColormap implements Colormap
 		    lut.SetTableRange(minValue, maxValue);
 		    lut.SetValueRange(minValue, maxValue);
 		    lut.SetRange(minValue, maxValue);
-		    System.out.println("Warning: negative values in range clipped to smallest possible value greater than zero ("+Double.MIN_VALUE+")");
+		//    System.out.println("Warning: negative values in range clipped to smallest possible value greater than zero ("+Double.MIN_VALUE+")");
 		}
 		else
 		{
