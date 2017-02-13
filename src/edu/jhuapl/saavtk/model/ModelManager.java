@@ -7,13 +7,13 @@ import java.util.HashMap;
 
 import vtk.vtkProp;
 
-public interface ModelManager extends Model, PropertyChangeListener
+public interface ModelManager extends Renderable, PropertyChangeListener
 {
     public boolean isBuiltIn();
 
     public CommonData getCommonData();
 
-    public void setModels(HashMap<ModelNames, Model> models);
+    public void setModels(HashMap<ModelNames, Renderable> models);
 
     public List<vtkProp> getProps();
 
@@ -21,9 +21,9 @@ public interface ModelManager extends Model, PropertyChangeListener
 
     public void propertyChange(PropertyChangeEvent evt);
 
-    public Model getModel(vtkProp prop);
+    public Renderable getModel(vtkProp prop);
 
-    public Model getModel(ModelNames modelName);
+    public Renderable getModel(ModelNames modelName);
 
     public PolyhedralModel getPolyhedralModel();
 

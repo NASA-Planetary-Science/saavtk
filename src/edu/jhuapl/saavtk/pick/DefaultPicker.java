@@ -28,7 +28,7 @@ import edu.jhuapl.saavtk.gui.Renderer;
 import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.Renderer.AxisType;
 import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
-import edu.jhuapl.saavtk.model.Model;
+import edu.jhuapl.saavtk.model.Renderable;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.popup.PopupManager;
@@ -135,7 +135,7 @@ public class DefaultPicker extends Picker
         if (pickSucceeded == 1)
         {
             vtkActor pickedActor = mousePressNonSmallBodyCellPicker.GetActor();
-            Model model = modelManager.getModel(pickedActor);
+            Renderable model = modelManager.getModel(pickedActor);
 
             if (model != null)
             {
@@ -168,7 +168,7 @@ public class DefaultPicker extends Picker
             if (pickSucceeded == 1)
             {
                 vtkActor pickedActor = smallBodyCellPicker.GetActor();
-                Model model = modelManager.getModel(pickedActor);
+                Renderable model = modelManager.getModel(pickedActor);
 
                 if (model != null)
                 {

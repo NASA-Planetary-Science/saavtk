@@ -18,7 +18,7 @@ import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Properties;
 
-public abstract class AbstractModel implements Model
+public abstract class AbstractModel implements Renderable
 {
     protected final PropertyChangeSupport pcs = new PropertyChangeSupport( this );
 

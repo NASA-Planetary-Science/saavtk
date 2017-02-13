@@ -5,7 +5,7 @@ import java.util.List;
 
 import vtk.vtkProp;
 
-public interface Model
+public interface Renderable
 {
     public void addPropertyChangeListener( PropertyChangeListener listener );
     public void removePropertyChangeListener( PropertyChangeListener listener );

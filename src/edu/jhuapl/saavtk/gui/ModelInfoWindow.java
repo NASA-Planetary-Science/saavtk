@@ -9,7 +9,7 @@ import javax.swing.JFrame;
 import vtk.vtkPropPicker;
 
 import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
-import edu.jhuapl.saavtk.model.Model;
+import edu.jhuapl.saavtk.model.Renderable;
 
 public abstract class ModelInfoWindow extends JFrame implements PropertyChangeListener
 {
@@ -19,7 +19,7 @@ public abstract class ModelInfoWindow extends JFrame implements PropertyChangeLi
         setIconImage(erosIcon.getImage());
     }
 
-    public abstract Model getModel();
+    public abstract Renderable getModel();
 
     /**
      * Get the collection model which directly manages the model returned by getModel.
@@ -27,7 +27,7 @@ public abstract class ModelInfoWindow extends JFrame implements PropertyChangeLi
      *
      * @return
      */
-    public abstract Model getCollectionModel();
+    public abstract Renderable getCollectionModel();
 
     protected int doPick(MouseEvent e, vtkPropPicker picker, vtksbmtJoglCanvas renWin)
     {
