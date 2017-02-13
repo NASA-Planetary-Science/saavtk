@@ -11,12 +11,12 @@
 
 package edu.jhuapl.saavtk.gui;
 
-import edu.jhuapl.saavtk.model.Renderable;
+import edu.jhuapl.saavtk.model.Model;
 
 
 public class RadialOffsetChanger extends javax.swing.JPanel
 {
-    private Renderable model;
+    private Model model;
     private double offsetScale = 0.025;
     private int defaultValue = 15;
 
@@ -27,7 +27,7 @@ public class RadialOffsetChanger extends javax.swing.JPanel
         reset();
     }
 
-    public void setModel(Renderable model)
+    public void setModel(Model model)
     {
         this.model = model;
     }

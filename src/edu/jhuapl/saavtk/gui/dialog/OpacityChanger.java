@@ -16,16 +16,16 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import net.miginfocom.swing.MigLayout;
-import edu.jhuapl.saavtk.model.Renderable;
+import edu.jhuapl.saavtk.model.Model;
 
 public class OpacityChanger extends JDialog implements ChangeListener
 {
     private JLabel opacityLabel;
     private JSpinner opacitySpinner;
     private JButton btnNewButton;
-    private Renderable model;
+    private Model model;
 
-    public OpacityChanger(Renderable model)
+    public OpacityChanger(Model model)
     {
         this.model = model;
 

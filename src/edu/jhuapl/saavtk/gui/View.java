@@ -19,7 +19,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 
 import edu.jhuapl.saavtk.config.ViewConfig;
-import edu.jhuapl.saavtk.model.Renderable;
+import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.pick.PickManager;
@@ -276,17 +276,17 @@ public abstract class View extends JPanel
         return pickManager;
     }
 
-    protected void setModels(HashMap<ModelNames, Renderable> models)
+    protected void setModels(HashMap<ModelNames, Model> models)
     {
         modelManager.setModels(models);
     }
 
-    protected void registerPopup(Renderable model, PopupMenu menu)
+    protected void registerPopup(Model model, PopupMenu menu)
     {
         popupManager.registerPopup(model, menu);
     }
 
-    protected Renderable getModel(ModelNames name)
+    protected Model getModel(ModelNames name)
     {
         return modelManager.getModel(name);
     }

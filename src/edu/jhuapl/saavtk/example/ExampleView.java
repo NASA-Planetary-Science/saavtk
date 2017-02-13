@@ -8,7 +8,7 @@ import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.panel.PolyhedralModelControlPanel;
 import edu.jhuapl.saavtk.gui.panel.StructuresControlPanel;
 import edu.jhuapl.saavtk.model.Graticule;
-import edu.jhuapl.saavtk.model.Renderable;
+import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.ShapeModelAuthor;
@@ -62,7 +62,7 @@ public class ExampleView extends View
         setModelManager(new ExampleModelManager(smallBodyModel));
         Graticule graticule = new Graticule(smallBodyModel);
 
-        HashMap<ModelNames, Renderable> allModels = new HashMap<ModelNames, Renderable>();
+        HashMap<ModelNames, Model> allModels = new HashMap<ModelNames, Model>();
         allModels.put(ModelNames.SMALL_BODY, smallBodyModel);
         allModels.put(ModelNames.GRATICULE, graticule);
 

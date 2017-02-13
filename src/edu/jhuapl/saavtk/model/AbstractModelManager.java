@@ -17,8 +17,8 @@ public class AbstractModelManager extends DefaultDatasourceModel implements Mode
     private PolyhedralModel mainModel;
     private List<vtkProp> props = new ArrayList<vtkProp>();
     private List<vtkProp> propsExceptSmallBody = new ArrayList<vtkProp>();
-    private HashMap<vtkProp, Renderable> propToModelMap = new HashMap<vtkProp, Renderable>();
-    private HashMap<ModelNames, Renderable> allModels = new HashMap<ModelNames, Renderable>();
+    private HashMap<vtkProp, Model> propToModelMap = new HashMap<vtkProp, Model>();
+    private HashMap<ModelNames, Model> allModels = new HashMap<ModelNames, Model>();
     private boolean mode2D = false;
 
     public AbstractModelManager(PolyhedralModel mainModel)
@@ -27,7 +27,7 @@ public class AbstractModelManager extends DefaultDatasourceModel implements Mode
         this.mainModel = mainModel;
     }
 
-    protected void addProp(vtkProp prop, Renderable model)
+    protected void addProp(vtkProp prop, Model model)
     {
         propToModelMap.put(prop, model);
     }
@@ -53,7 +53,7 @@ public class AbstractModelManager extends DefaultDatasourceModel implements Mode
         return getPolyhedralModel().isBuiltIn();
     }
 
-    public void setModels(HashMap<ModelNames, Renderable> models)
+    public void setModels(HashMap<ModelNames, Model> models)
     {
         allModels.clear();
 
@@ -62,7 +62,7 @@ public class AbstractModelManager extends DefaultDatasourceModel implements Mode
 
         for (ModelNames modelName : models.keySet())
         {
-            Renderable model = models.get(modelName);
+            Model model = models.get(modelName);
             model.addPropertyChangeListener(this);
             model.setCommonData(commonData);
             allModels.put(modelName, model);
@@ -103,7 +103,7 @@ public class AbstractModelManager extends DefaultDatasourceModel implements Mode
 
         for (ModelNames modelName : allModels.keySet())
         {
-            Renderable model = allModels.get(modelName);
+            Model model = allModels.get(modelName);
             if (model.isVisible())
             {
                 props.addAll(model.getProps());
@@ -131,17 +131,17 @@ public class AbstractModelManager extends DefaultDatasourceModel implements Mode
 //        return null;
     }
 
-    public Renderable getModel(vtkProp prop)
+    public Model getModel(vtkProp prop)
     {
         return propToModelMap.get(prop);
     }
 
-    public Renderable getModel(ModelNames modelName)
+    public Model getModel(ModelNames modelName)
     {
         return allModels.get(modelName);
     }
 
-    public Map<ModelNames, Renderable> getAllModels()
+    public Map<ModelNames, Model> getAllModels()
     {
         return allModels;
     }

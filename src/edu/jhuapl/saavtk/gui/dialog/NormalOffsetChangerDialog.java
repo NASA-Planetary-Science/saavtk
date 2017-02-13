@@ -17,11 +17,11 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
-import edu.jhuapl.saavtk.model.Renderable;
+import edu.jhuapl.saavtk.model.Model;
 
 public class NormalOffsetChangerDialog extends JDialog implements ActionListener
 {
-    private Renderable model;
+    private Model model;
     private JButton applyButton;
     private JButton resetButton;
     private JButton okayButton;
@@ -29,7 +29,7 @@ public class NormalOffsetChangerDialog extends JDialog implements ActionListener
     private JFormattedTextField offsetField;
     private String lastGood = "";
 
-    public NormalOffsetChangerDialog(Renderable model)
+    public NormalOffsetChangerDialog(Model model)
     {
         this.model = model;
 

@@ -1,8 +1,8 @@
 package edu.jhuapl.saavtk.gui;
 
-import edu.jhuapl.saavtk.model.Renderable;
+import edu.jhuapl.saavtk.model.Model;
 
 public interface WindowManager
 {
-    public void addData(final Renderable model) throws Exception;
+    public void addData(final Model model) throws Exception;
 }

@@ -15,7 +15,7 @@ import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 
 import vtk.vtkProp;
-import edu.jhuapl.saavtk.model.Renderable;
+import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.util.Properties;
 
 public class StatusBar extends JPanel implements PropertyChangeListener
@@ -25,12 +25,12 @@ public class StatusBar extends JPanel implements PropertyChangeListener
     private JLabel rightLabel;
     private boolean selectableLeftLabel;
     
-    private Renderable leftModel = null;
+    private Model leftModel = null;
     private vtkProp leftProp;
     private int leftCellId;
     private double[] leftPickPosition;
     
-    private Renderable rightModel = null;
+    private Model rightModel = null;
     private vtkProp rightProp;
     private int rightCellId;
     private double[] rightPickPosition;
@@ -124,7 +124,7 @@ public class StatusBar extends JPanel implements PropertyChangeListener
     }
     
     // Sets up auto-refreshing left status text
-    public void setLeftTextSource(Renderable model, vtkProp prop, int cellId, double[] pickPosition)
+    public void setLeftTextSource(Model model, vtkProp prop, int cellId, double[] pickPosition)
     {    	
     	// Determine if model has changed
     	boolean isNewModel = (leftModel != model);
@@ -150,7 +150,7 @@ public class StatusBar extends JPanel implements PropertyChangeListener
     }
 
     // Sets up auto-refreshing right status text
-    public void setRightTextSource(Renderable model, vtkProp prop, int cellId, double[] pickPosition)
+    public void setRightTextSource(Model model, vtkProp prop, int cellId, double[] pickPosition)
     {
 	    // Determine if model has changed
     	boolean isNewModel = (rightModel != model);

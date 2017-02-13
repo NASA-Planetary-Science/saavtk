@@ -5,7 +5,7 @@ import java.util.HashMap;
 
 import vtk.vtkProp;
 import edu.jhuapl.saavtk.gui.Renderer;
-import edu.jhuapl.saavtk.model.Renderable;
+import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 
@@ -16,8 +16,8 @@ import edu.jhuapl.saavtk.model.ModelNames;
 public class StructuresPopupManager extends PopupManager
 {
     private ModelManager modelManager;
-    private HashMap<Renderable, PopupMenu> modelToPopupMap =
-        new HashMap<Renderable, PopupMenu>();
+    private HashMap<Model, PopupMenu> modelToPopupMap =
+        new HashMap<Model, PopupMenu>();
 
 
     public StructuresPopupManager(ModelManager modelManager, Renderer renderer)
@@ -43,7 +43,7 @@ public class StructuresPopupManager extends PopupManager
         registerPopup(modelManager.getModel(ModelNames.GRATICULE), popupMenu);
     }
 
-    public PopupMenu getPopup(Renderable model)
+    public PopupMenu getPopup(Model model)
     {
         return modelToPopupMap.get(model);
     }
@@ -62,12 +62,12 @@ public class StructuresPopupManager extends PopupManager
             popup.show(e.getComponent(), e.getX(), e.getY());
     }
 
-    protected HashMap<Renderable, PopupMenu> getModelToPopupMap()
+    protected HashMap<Model, PopupMenu> getModelToPopupMap()
     {
         return modelToPopupMap;
     }
 
-    public void registerPopup(Renderable model, PopupMenu menu)
+    public void registerPopup(Model model, PopupMenu menu)
     {
         modelToPopupMap.put(model, menu);
     }

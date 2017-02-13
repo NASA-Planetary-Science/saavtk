@@ -12,7 +12,7 @@ import vtk.vtkPropCollection;
 
 import edu.jhuapl.saavtk.gui.Renderer;
 import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
-import edu.jhuapl.saavtk.model.Renderable;
+import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
@@ -139,7 +139,7 @@ public class ControlPointsStructurePicker extends Picker
             if (pickSucceeded == 1)
             {
                 vtkActor pickedActor = smallBodyPicker.GetActor();
-                Renderable model = modelManager.getModel(pickedActor);
+                Model model = modelManager.getModel(pickedActor);
 
                 if (model == smallBodyModel)
                 {
@@ -183,7 +183,7 @@ public class ControlPointsStructurePicker extends Picker
             if (pickSucceeded == 1)
             {
                 vtkActor pickedActor = smallBodyPicker.GetActor();
-                Renderable model = modelManager.getModel(pickedActor);
+                Model model = modelManager.getModel(pickedActor);
 
                 if (model == smallBodyModel)
                 {

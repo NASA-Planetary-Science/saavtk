@@ -67,7 +67,7 @@ import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas.StereoMode;
 import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
-import edu.jhuapl.saavtk.model.Renderable;
+import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
@@ -511,7 +511,7 @@ public class Renderer extends JPanel implements
             for (int i=size-1; i>=0; --i)
             {
                 vtkProp prop = (vtkProp)propCollection.GetItemAsObject(i);
-                Renderable model = modelManager.getModel(prop);
+                Model model = modelManager.getModel(prop);
                 if (model != null && !model.supports2DMode())
                 {
                     //renderWindow.getVTKLock().lock();
