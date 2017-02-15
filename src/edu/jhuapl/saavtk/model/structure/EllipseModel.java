@@ -69,6 +69,10 @@ public class EllipseModel extends AbstractEllipsePolygonModel
 
         int numPoints = points.GetNumberOfPoints();
 
+        
+        if (!getProps().contains(activationActor))
+        	getProps().add(activationActor);
+
         if (numPoints < 2)
         {
             vtkIdList idList = new vtkIdList();
