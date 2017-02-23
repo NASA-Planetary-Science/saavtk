@@ -11,6 +11,7 @@ import java.awt.event.FocusListener;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -28,11 +29,15 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import com.google.common.collect.Lists;
+
 
 public class ColormapController extends JPanel implements ActionListener, FocusListener, ChangeListener
 {
     PropertyChangeSupport pcs=new PropertyChangeSupport(this);
+    List<ActionListener> actionListeners=Lists.newArrayList();
     public static final String colormapChanged="Colormap changed";
+    public static final String colormapRangeChanged="Colormap range changed";
 
     double defaultMin,defaultMax;
     
@@ -118,6 +123,11 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
         highTextField.setText(String.valueOf(max));
         refresh();
     }
+    
+    public double[] getMinMax()
+    {
+    	return new double[]{Double.valueOf(lowTextField.getText()),Double.valueOf(highTextField.getText())};
+    }
 
     public Colormap getColormap()
     {
@@ -173,6 +183,9 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
     @Override
     public void actionPerformed(ActionEvent e)
     {
+    	for (int i=0; i<actionListeners.size(); i++)
+    		actionListeners.get(i).actionPerformed(e);
+    	//
         if (e.getSource().equals(colormapComboBox))
         {
             String name=((Colormap)colormapComboBox.getSelectedItem()).getName();
@@ -183,7 +196,10 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
         	setMinMax(defaultMin, defaultMax);
         }
         refresh();
-        pcs.firePropertyChange(colormapChanged, null, null);
+        if (e.getSource().equals(colormapComboBox))
+        	pcs.firePropertyChange(colormapChanged, null, null);
+        else if (e.getSource().equals(resetButton))
+        	pcs.firePropertyChange(colormapRangeChanged, null, null);
     }
 
     public void refresh()
@@ -214,6 +230,16 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
     {
         pcs.removePropertyChangeListener(l);
     }
+    
+    public void addActionListener(ActionListener l)
+    {
+    	actionListeners.add(l);
+    }
+    
+    public void removeActionListener(ActionListener l)
+    {
+    	actionListeners.remove(l);
+    }
 
 	@Override
 	public void focusGained(FocusEvent e)
@@ -223,8 +249,11 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
 	@Override
 	public void focusLost(FocusEvent e)
 	{
+		if (e.getSource().equals(lowTextField) | e.getSource().equals(highTextField))
+			pcs.firePropertyChange(colormapRangeChanged, null, null);
+		else
+			pcs.firePropertyChange(colormapChanged, null, null);
 		refresh();
-        pcs.firePropertyChange(colormapChanged, null, null);
 	}
 
 	@Override

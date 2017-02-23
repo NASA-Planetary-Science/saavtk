@@ -293,11 +293,28 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                 smallBodyModel.setColormap(colormapController.getColormap());
                 smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
                 smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
-                // this is a bit of a hack, but it sets the colorbar's default coloring range from the smallBodyModel data anytime there is a change detected; this doesn't propagate the range to the actual GUI values, it just stores them so that the "Reset Range" button on the colorbarController works
-                double[] range=smallBodyModel.getDefaultColoringRange(smallBodyModel.getColoringIndex());
-                colormapController.setDefaultRange(range[0], range[1]);
+                if (evt.getPropertyName().equals(ColormapController.colormapChanged))
+                {
+                	double[] range=smallBodyModel.getCurrentColoringRange(smallBodyModel.getColoringIndex());
+                	colormapController.setMinMax(range[0], range[1]);
+                	range=smallBodyModel.getDefaultColoringRange(smallBodyModel.getColoringIndex());
+                	colormapController.setDefaultRange(range[0], range[1]);
+                }
+                else if (evt.getPropertyName().equals(ColormapController.colormapRangeChanged))
+                {
+                	try
+					{
+						smallBodyModel.setCurrentColoringRange(smallBodyModel.getColoringIndex(), colormapController.getMinMax());
+					} catch (IOException e)
+					{
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+                }
             }
         });
+        
+        
 
         rgbColoringButton = new JRadioButton(RGB_COLORING);
         rgbColoringButton.setActionCommand(RGB_COLORING);
@@ -578,6 +595,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                 smallBodyModel.setColoringIndex(idx);
                 double[] range=smallBodyModel.getCurrentColoringRange(idx);
                 colormapController.setMinMax(range[0],range[1]);
+                range=smallBodyModel.getDefaultColoringRange(idx);
                 colormapController.setDefaultRange(range[0], range[1]);
                 smallBodyModel.setColormap(colormapController.getColormap());
                 smallBodyModel.setContourLineWidth(colormapController.getLineWidth());

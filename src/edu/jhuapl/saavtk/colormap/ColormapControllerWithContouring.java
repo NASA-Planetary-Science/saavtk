@@ -18,6 +18,8 @@ public class ColormapControllerWithContouring extends ColormapController impleme
 	JToggleButton showAsContourLinesButton=new JToggleButton("Enable Contours");
 	JSpinner contourLineWidthSpinner=new JSpinner(new SpinnerNumberModel(2, 1, 50, 1));
 	
+	public static String contourButtonToggled="Contour button toggled";
+	
 	public ColormapControllerWithContouring()
 	{
 		super();
@@ -46,6 +48,7 @@ public class ColormapControllerWithContouring extends ColormapController impleme
 			contourLineWidthSpinner.setEnabled(showAsContourLinesButton.isSelected());
 		}
 		super.actionPerformed(e);
+		pcs.firePropertyChange(contourButtonToggled, null, null);
 	}
 	
 

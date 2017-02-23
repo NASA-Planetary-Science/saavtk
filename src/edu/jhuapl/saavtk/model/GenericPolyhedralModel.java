@@ -66,6 +66,7 @@ import vtk.vtkUnstructuredGrid;
 import vtk.vtksbCellLocator;
 import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.colormap.Colormaps;
+import edu.jhuapl.saavtk.colormap.RgbColormap;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
@@ -263,6 +264,12 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		if (this.colormap!=null)
 			this.colormap.removePropertyChangeListener(this);
 		this.colormap=colormap;
+		if (coloringIndex!=-1)
+		{
+			double[] range=coloringInfo.get(coloringIndex).currentColoringRange;
+			colormap.setRangeMin(range[0]);
+			colormap.setRangeMax(range[1]);
+		}
 		this.colormap.addPropertyChangeListener(this);
 		smallBodyActor.GetMapper().SetLookupTable(colormap.getLookupTable());
 		try
@@ -1621,6 +1628,15 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		{
 			coloringIndex = index;
 			useFalseColoring = false;
+			
+			if (index!=-1)
+			{
+				double[] range=getCurrentColoringRange(coloringIndex);
+				if (colormap==null)
+					initColormap();
+				colormap.setRangeMin(range[0]);
+				colormap.setRangeMax(range[1]);
+			}
 
 			paintBody();
 		}
@@ -1943,6 +1959,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		{
 			info.currentColoringRange[0] = range[0];
 			info.currentColoringRange[1] = range[1];
+
+			if (colormap==null)
+				initColormap();
+			colormap.setRangeMin(range[0]);
+			colormap.setRangeMax(range[1]);
 
 			paintBody();
 		}
