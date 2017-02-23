@@ -263,6 +263,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	{
 		if (this.colormap!=null)
 			this.colormap.removePropertyChangeListener(this);
+		initializeActorsAndMappers();
 		this.colormap=colormap;
 		if (coloringIndex!=-1)
 		{
