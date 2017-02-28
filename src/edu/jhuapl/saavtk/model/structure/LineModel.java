@@ -216,7 +216,6 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
     protected void updatePolyData()
     {
-    	actors.clear();
     	
     	
         linesPolyData.DeepCopy(emptyPolyData);
@@ -326,9 +325,10 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
         decimatedLineMapper.SetInputData(decimatedLinesPolyData);
         lineMapper.Update();
         decimatedLineMapper.Update();
-        
+
         if (!actors.contains(lineActor))
-            actors.add(lineActor);
+        	actors.add(lineActor);
+        
         for (int j=0; j<this.lines.size(); ++j)
         {
             Line lin = this.lines.get(j);
@@ -339,6 +339,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
         lineActor.SetMapper(lineMapper);
         ((SaavtkLODActor)lineActor).setLODMapper(decimatedLineMapper);
         lineActor.Modified();
+
     }
 
     public List<vtkProp> getProps()
