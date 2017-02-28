@@ -9,6 +9,8 @@ import java.net.URLConnection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 
+import javax.swing.JOptionPane;
+
 import org.apache.commons.io.input.CountingInputStream;
 
 public class FileCache
@@ -49,11 +51,12 @@ public class FileCache
         public long length = -1;
 
         public boolean existsOnServer;
+        public boolean existsInCache;
     }
 
     /**
      * This function is used to both download a file from a server as well as to
-     * check if the file is out of data and needs to be downloaded. This depends
+     * check if the file is out of date and needs to be downloaded. This depends
      * on the doDownloadIfNeeded parameter. If set to true it will download
      * the file if needed using the rules described below. If false, nothing
      * will be downloaded, but the server will be queried to see if a newer
@@ -132,6 +135,7 @@ public class FileCache
         // If we've already downloaded the file previously in this process,
         // simply return without making any network connections.
         boolean exists = file.exists();
+        fi.existsInCache = exists;
         if (exists && downloadedFiles.containsKey(path))
         {
             fi.length = file.length();
@@ -155,7 +159,18 @@ public class FileCache
             catch (IOException e)
             {
                 //e.printStackTrace();
-                fi.existsOnServer=false;
+            	if(!exists)
+            	{
+            		// Print an error message if the file does not exist in the cache and we cannot
+            		// connect to the server to download it.
+            		e.printStackTrace();
+            		JOptionPane.showMessageDialog(null,
+                        "File " + path + " does not exist in cache and client is unable to connect to server to download.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            	}
+            	
+            	fi.existsOnServer=false;
                 return fi;
             }
             fi.existsOnServer=true;
