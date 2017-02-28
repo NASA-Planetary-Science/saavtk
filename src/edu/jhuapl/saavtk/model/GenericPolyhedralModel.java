@@ -293,7 +293,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	{
 		if (colormap==null)
 			colormap=Colormaps.getNewInstanceOfBuiltInColormap(Colormaps.getDefaultColormapName());
-		if (!colormapInitialized && !(colormap==null))
+		if (!colormapInitialized && !(colormap==null) && coloringIndex>-1)
 		{
 			double[] range = getCurrentColoringRange(coloringIndex);
 			colormap.removePropertyChangeListener(this);
