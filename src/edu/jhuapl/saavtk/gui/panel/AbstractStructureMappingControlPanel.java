@@ -69,7 +69,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
     //private PickManager pickManager;
     private JButton loadStructuresButton;
     private JLabel structuresFileTextField;
-    private JButton saveStructuresButton;
+    //private JButton saveStructuresButton;
     private JButton saveAsStructuresButton;
     //private JList structuresList;
     private JTable structuresTable;
@@ -118,11 +118,12 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
         this.loadStructuresButton.setEnabled(true);
         this.loadStructuresButton.addActionListener(this);
 
-        this.saveStructuresButton= new JButton("Save");
-        this.saveStructuresButton.setEnabled(true);
-        this.saveStructuresButton.addActionListener(this);
+        // twupy1: Getting rid of "Save" feature at request of Carolyn since we don't have an undo button yet
+        //this.saveStructuresButton= new JButton("Save");
+        //this.saveStructuresButton.setEnabled(true);
+        //this.saveStructuresButton.addActionListener(this);
 
-        this.saveAsStructuresButton= new JButton("Save As...");
+        this.saveAsStructuresButton= new JButton("Save...");
         this.saveAsStructuresButton.setEnabled(true);
         this.saveAsStructuresButton.addActionListener(this);
 
@@ -133,7 +134,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
         add(this.structuresFileTextField, "span");
 
         add(this.loadStructuresButton, "w 100!");
-        add(this.saveStructuresButton, "w 100!");
+        //add(this.saveStructuresButton, "w 100!");
         add(this.saveAsStructuresButton, "w 100!, wrap 15px");
 
         JLabel structureTypeText = new JLabel(" Structures");
@@ -468,12 +469,21 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                 }
             }
         }
-        else if (source == this.saveStructuresButton || source == this.saveAsStructuresButton)
+        else if (/*source == this.saveStructuresButton || */source == this.saveAsStructuresButton)
         {
             File file = structuresFile;
             if (structuresFile == null || source == this.saveAsStructuresButton)
             {
-                file = CustomFileChooser.showSaveDialog(this, "Select File");
+            	if(file != null)
+            	{
+            		// File already exists, use it as the default filename
+                    file = CustomFileChooser.showSaveDialog(this, "Select File", file.getName());            		
+            	}
+            	else
+            	{
+            		// We don't have a default filename to provide
+            	    file = CustomFileChooser.showSaveDialog(this, "Select File");	
+            	}
             }
 
             if (file != null)
