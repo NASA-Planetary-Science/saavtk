@@ -3,7 +3,9 @@ package edu.jhuapl.saavtk.colormap;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.awt.TextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -24,6 +26,7 @@ import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
+import javax.swing.JToggleButton;
 import javax.swing.ListCellRenderer;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
@@ -49,11 +52,15 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
     JTextField nLevelsTextField=new JTextField("32");
     JButton resetButton=new JButton("Range Reset");
     JSpinner nLabelsSpinner=new JSpinner(new SpinnerNumberModel(4, 0, 20, 1));
+    JToggleButton syncButton=new JToggleButton("Sync");
+    JButton refreshButton=new JButton("Refresh");
     
     JPanel panel1=new JPanel();
-    JPanel panel2=new JPanel();
+    JPanel panel2r=new JPanel();
     JPanel panel3=new JPanel();
-
+    JPanel panel2l=new JPanel();
+    JPanel panel2=new JPanel();
+    
     public ColormapController()
     {
         setLayout(new BorderLayout());
@@ -69,20 +76,30 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
         colormap=Colormaps.getNewInstanceOfBuiltInColormap(Colormaps.getDefaultColormapName());
         panel1.add(colormapComboBox);
         //
-        panel2.setLayout(new GridLayout(4, 2));
-        panel2.add(new JLabel("Min Value", JLabel.RIGHT));
-        panel2.add(lowTextField);
-        panel2.add(new JLabel("Max Value", JLabel.RIGHT));
-        panel2.add(highTextField);
-        panel2.add(new JLabel("# Color Levels", JLabel.RIGHT));
-        panel2.add(nLevelsTextField);
-        panel2.add(new JLabel("# Ticks", JLabel.RIGHT));
-        panel2.add(nLabelsSpinner);
+        panel2r.setLayout(new GridLayout(4, 2));
+        panel2r.add(new JLabel("Min Value", JLabel.RIGHT));
+        panel2r.add(lowTextField);
+        panel2r.add(new JLabel("Max Value", JLabel.RIGHT));
+        panel2r.add(highTextField);
+        panel2r.add(new JLabel("# Color Levels", JLabel.RIGHT));
+        panel2r.add(nLevelsTextField);
+        panel2r.add(new JLabel("# Ticks", JLabel.RIGHT));
+        panel2r.add(nLabelsSpinner);
         //
         //
         panel3.setLayout(new GridLayout(2, 1));
         panel3.add(logScaleCheckbox);
         panel3.add(resetButton);
+        
+        //
+        panel2l.setLayout(new GridLayout(2, 1));
+        panel2l.add(syncButton);
+        panel2l.add(refreshButton);
+        
+        panel2.setLayout(new FlowLayout());
+        panel2.add(panel2l);
+        panel2.add(panel2r);
+        
         this.add(panel1,BorderLayout.NORTH);
         this.add(panel2,BorderLayout.CENTER);
         this.add(panel3,BorderLayout.EAST);
@@ -94,6 +111,7 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
         highTextField.addActionListener(this);
         logScaleCheckbox.addActionListener(this);
         resetButton.addActionListener(this);
+        refreshButton.addActionListener(this);
 
         lowTextField.addFocusListener(this);
         highTextField.addFocusListener(this);
@@ -102,6 +120,10 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
 
         nLabelsSpinner.addChangeListener(this);
 
+        syncButton.setSelected(true);
+        lowTextField.setAlignmentX(TextField.LEFT_ALIGNMENT);
+        highTextField.setAlignmentX(TextField.LEFT_ALIGNMENT);
+        
         setDefaultRange(0, 1);
         refresh();
     }
@@ -115,6 +137,8 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
         logScaleCheckbox.setEnabled(enabled);
         nLevelsTextField.setEnabled(enabled);
         resetButton.setEnabled(enabled);
+        syncButton.setEnabled(enabled);
+        refreshButton.setEnabled(enabled);
     }
 
     public void setMinMax(double min, double max)
@@ -198,7 +222,7 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
         refresh();
         if (e.getSource().equals(colormapComboBox))
         	pcs.firePropertyChange(colormapChanged, null, null);
-        else if (e.getSource().equals(resetButton))
+        else if (e.getSource().equals(resetButton) || e.getSource().equals(refreshButton))
         	pcs.firePropertyChange(colormapRangeChanged, null, null);
     }
 
@@ -249,6 +273,9 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
 	@Override
 	public void focusLost(FocusEvent e)
 	{
+		if (!syncButton.isSelected())
+			return;
+		//
 		if (e.getSource().equals(lowTextField) | e.getSource().equals(highTextField))
 			pcs.firePropertyChange(colormapRangeChanged, null, null);
 		else
@@ -259,6 +286,9 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
 	@Override
 	public void stateChanged(ChangeEvent e)
 	{
+		if (!syncButton.isSelected())
+			return;
+		//
 		colormap.setNumberOfLabels((Integer)nLabelsSpinner.getValue());
         pcs.firePropertyChange(colormapChanged, null, null);
 	}
