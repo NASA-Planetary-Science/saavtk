@@ -48,7 +48,8 @@ public class ColormapControllerWithContouring extends ColormapController impleme
 			contourLineWidthSpinner.setEnabled(showAsContourLinesButton.isSelected());
 		}
 		super.actionPerformed(e);
-		pcs.firePropertyChange(contourButtonToggled, null, null);
+		if (syncButton.isSelected())
+			pcs.firePropertyChange(contourButtonToggled, null, null);
 	}
 	
 
