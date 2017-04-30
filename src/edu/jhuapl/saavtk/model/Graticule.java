@@ -7,8 +7,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.collect.Lists;
+
 import vtk.vtkActor;
 import vtk.vtkAppendPolyData;
+import vtk.vtkCaptionActor2D;
 import vtk.vtkCone;
 import vtk.vtkCutter;
 import vtk.vtkImplicitFunction;
@@ -18,7 +21,7 @@ import vtk.vtkPolyDataMapper;
 import vtk.vtkPolyDataReader;
 import vtk.vtkProp;
 import vtk.vtkTransform;
-
+import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
@@ -29,7 +32,6 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
     private PolyhedralModel smallBodyModel;
     private List<vtkProp> actors = new ArrayList<vtkProp>();
     private vtkActor actor;
-    private boolean generated = false;
     private vtkPolyDataMapper mapper;
     private vtkAppendPolyData appendFilter;
     private vtkPolyData polyData;
@@ -40,6 +42,9 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
     private vtkPolyDataReader reader;
     private String[] gridFiles;
     private double shiftFactor = 7.0;
+    
+	List<vtkCaptionActor2D>		captionActors	= Lists.newArrayList();
+
 
     public Graticule(PolyhedralModel smallBodyModel)
     {
@@ -72,72 +77,162 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 
     public void generateGrid(vtkPolyData smallBodyPolyData)
     {
-        double longitudeSpacing = 10.0;
-        double latitudeSpacing = 10.0;
+    	
+    	captionActors.clear();
+    	
+		double longitudeSpacing = 10.0;
+		double latitudeSpacing = 10.0;
 
-        int numberLonCircles = (int)(180.0/longitudeSpacing);
-        int numberLatCircles = (int)(90.0/latitudeSpacing);
+		int numberLonCircles = (int) (180.0 / longitudeSpacing);
+		int numberLatCircles = (int) (90.0 / latitudeSpacing);
 
-        double[] origin = {0.0, 0.0, 0.0};
-        double[] zaxis = {0.0, 0.0, 1.0};
+		double[] origin = { 0.0, 0.0, 0.0 };
+		double[] zaxis = { 0.0, 0.0, 1.0 };
 
-        appendFilter.UserManagedInputsOn();
-        appendFilter.SetNumberOfInputs(numberLatCircles + numberLonCircles);
-        vtkPolyData[] tmps = new vtkPolyData[numberLatCircles + numberLonCircles];
+		appendFilter.UserManagedInputsOn();
+		appendFilter.SetNumberOfInputs(numberLatCircles + numberLonCircles);
+		vtkPolyData[] tmps = new vtkPolyData[numberLatCircles + numberLonCircles];
 
-        cutPolyData.SetInputData(smallBodyPolyData);
+		cutPolyData.SetInputData(smallBodyPolyData);
 
-        // First do the longitudes.
-        for (int i=0; i<numberLonCircles; ++i)
-        {
-            double lon = longitudeSpacing * (double)i * Math.PI / 180.0;
-            double[] vec = MathUtil.latrec(new LatLon(0.0, lon, 1.0));
-            double[] normal = new double[3];
-            MathUtil.vcrss(vec, zaxis, normal);
+		// First do the longitudes.
+		for (int i = 0; i < numberLonCircles; ++i)
+		{
+			double lon = longitudeSpacing * (double) i * Math.PI / 180.0;
+			double[] vec = MathUtil.latrec(new LatLon(0.0, lon, 1.0));
+			double[] normal = new double[3];
+			MathUtil.vcrss(vec, zaxis, normal);
 
-            plane.SetOrigin(origin);
-            plane.SetNormal(normal);
+			plane.SetOrigin(origin);
+			plane.SetNormal(normal);
 
-            cutPolyData.SetCutFunction(plane);
-            cutPolyData.Update();
+			cutPolyData.SetCutFunction(plane);
+			cutPolyData.Update();
 
-            tmps[i] = new vtkPolyData();
-            tmps[i].DeepCopy(cutPolyData.GetOutput());
-            appendFilter.SetInputDataByNumber(i, tmps[i]);
-        }
+			tmps[i] = new vtkPolyData();
+			tmps[i].DeepCopy(cutPolyData.GetOutput());
+			appendFilter.SetInputDataByNumber(i, tmps[i]);
+		}
 
-        double[] yaxis = {0.0, 1.0, 0.0};
-        transform.Identity();
-        transform.RotateWXYZ(90.0, yaxis);
-        for (int i=0; i<numberLatCircles; ++i)
-        {
-            vtkImplicitFunction cutFunction = null;
-            if (i == 0)
-            {
-                plane.SetOrigin(origin);
-                plane.SetNormal(zaxis);
-                cutFunction = plane;
-            }
-            else
-            {
-                cone.SetTransform(transform);
-                cone.SetAngle(latitudeSpacing * (double)i);
-                cutFunction = cone;
-            }
+		String fmt = "%.0f";
+		String deg = String.valueOf(Character.toChars(0x00B0));
 
-            cutPolyData.SetCutFunction(cutFunction);
-            cutPolyData.Update();
+		for (int i = 0; i <= numberLonCircles; i++)
+		{
+			double lat = 0;
+			double lon = longitudeSpacing * (double) i * Math.PI / 180.0;
+			// create caption
+			double[] intersectPoint = new double[3];
+			smallBodyModel.getPointAndCellIdFromLatLon(lat, lon, intersectPoint);
+			String captionLabel = String.format(fmt, lon / Math.PI * 180) + deg;
+			if (i != 0 && i != numberLonCircles)
+				captionLabel += "E";
+			vtkCaptionActor2D caption = new OccludingCaptionActor(intersectPoint, null, smallBodyModel);
+			caption.SetCaption(captionLabel);
+			caption.BorderOff();
+			caption.SetAttachmentPoint(intersectPoint);
+			captionActors.add(caption);
+		}
 
-            int idx = numberLonCircles+i;
-            tmps[idx] = new vtkPolyData();
-            tmps[idx].DeepCopy(cutPolyData.GetOutput());
-            appendFilter.SetInputDataByNumber(idx, tmps[idx]);
-        }
+		for (int i = 1; i < numberLonCircles; i++) // don't do 0
+		{
+			double lat = 0;
+			double lon = longitudeSpacing * (double) i * Math.PI / 180.0;
+			// create caption
+			double[] intersectPoint = new double[3];
+			smallBodyModel.getPointAndCellIdFromLatLon(lat, 2 * Math.PI - lon, intersectPoint);
+			String captionLabel = String.format(fmt, lon / Math.PI * 180) + deg + "W";
+			vtkCaptionActor2D caption = new OccludingCaptionActor(intersectPoint, null, smallBodyModel);
+			caption.SetCaption(captionLabel);
+			caption.BorderOff();
+			caption.SetAttachmentPoint(intersectPoint);
+			captionActors.add(caption);
 
-        appendFilter.Update();
+		}
 
-        polyData.DeepCopy(appendFilter.GetOutput());
+		double[] yaxis = { 0.0, 1.0, 0.0 };
+		transform.Identity();
+		transform.RotateWXYZ(90.0, yaxis);
+		for (int i = 0; i < numberLatCircles; ++i)
+		{
+			vtkImplicitFunction cutFunction = null;
+			if (i == 0)
+			{
+				plane.SetOrigin(origin);
+				plane.SetNormal(zaxis);
+				cutFunction = plane;
+			} else
+			{
+				cone.SetTransform(transform);
+				cone.SetAngle(latitudeSpacing * (double) i);
+				cutFunction = cone;
+			}
+
+			cutPolyData.SetCutFunction(cutFunction);
+			cutPolyData.Update();
+
+			int idx = numberLonCircles + i;
+			tmps[idx] = new vtkPolyData();
+			tmps[idx].DeepCopy(cutPolyData.GetOutput());
+			appendFilter.SetInputDataByNumber(idx, tmps[idx]);
+		}
+
+		appendFilter.Update();
+
+		polyData.DeepCopy(appendFilter.GetOutput());
+
+		int nlon=3;
+		for (double lon = 0; lon < 360; lon += 360./(double)nlon)	// do meridians at nlon intervals from 0
+		{
+			
+			// northern hemisphere
+			for (int i = 1; i < numberLatCircles; i++) // don't do 0 since longitude already took care of it
+			{
+				double lat = latitudeSpacing * (double) i * Math.PI / 180.0;
+				// create caption
+				double[] intersectPoint = new double[3];
+				smallBodyModel.getPointAndCellIdFromLatLon(lat, lon/180*Math.PI, intersectPoint);
+				String captionLabel = String.format(fmt, lat / Math.PI * 180) + deg + "N";
+				vtkCaptionActor2D caption = new OccludingCaptionActor(intersectPoint, null, smallBodyModel);
+				caption.SetCaption(captionLabel);
+				caption.BorderOff();
+				caption.SetAttachmentPoint(intersectPoint);
+				captionActors.add(caption);
+
+			}
+
+			// southern hemisphere
+			for (int i = 1; i < numberLatCircles; i++) // don't do 0 since longitude already took care of it
+			{
+				double lat = latitudeSpacing * (double) i * Math.PI / 180.0;
+				// create caption
+				double[] intersectPoint = new double[3];
+				smallBodyModel.getPointAndCellIdFromLatLon(-lat, lon/180*Math.PI, intersectPoint);
+				String captionLabel = String.format(fmt, lat / Math.PI * 180) + deg + "S";
+				vtkCaptionActor2D caption = new OccludingCaptionActor(intersectPoint, null, smallBodyModel);
+				caption.SetCaption(captionLabel);
+				caption.BorderOff();
+				caption.SetAttachmentPoint(intersectPoint);
+				captionActors.add(caption);
+
+			}
+		}
+		
+		setShowCaptions(false);
+
     }
+
+	public void setShowCaptions(boolean show)
+	{
+		for (vtkCaptionActor2D a : captionActors)
+		{
+			OccludingCaptionActor caption=(OccludingCaptionActor)a;
+			caption.setEnabled(show);
+			if (!show)
+				caption.VisibilityOff();
+		}
+		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+	}
 
     /**
      * Returns the grid as a vtkPolyData. Note that generateGrid() must be called first.
@@ -150,14 +245,14 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 
     private void update()
     {
+    	
         // There is no need to regenerate the data if generated is true
-        if (generated)
-            return;
+ 
 
-        if (gridFiles == null)
-        {
+//        if (gridFiles == null)
+//        {
             this.generateGrid(smallBodyModel.getSmallBodyPolyData());
-        }
+/*        }
         else
         {
             int level = smallBodyModel.getModelResolution();
@@ -184,7 +279,7 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
             reader.Update();
 
             polyData.DeepCopy(reader.GetOutput());
-        }
+        }*/
 
         smallBodyModel.shiftPolyLineInNormalDirection(
                 polyData,
@@ -200,22 +295,22 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
         actor.SetMapper(mapper);
         actor.GetProperty().SetColor(0.2, 0.2, 0.2);
 
-        generated = true;
     }
 
     public void setShowGraticule(boolean show)
     {
-        if (show == true && actors.size() == 0)
-        {
-            update();
-            actors.add(actor);
-            this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-        }
-        else if (show == false && actors.size() > 0)
-        {
-            actors.clear();
-            this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-        }
+
+		if (show == true && actors.size() == 0)
+		{
+			update();
+			actors.add(actor);
+			actors.addAll(captionActors);
+			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		} else if (show == false && actors.size() > 0)
+		{
+			actors.clear();
+			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		}
     }
 
     public void setLineWidth(double value)
@@ -246,7 +341,6 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
     {
         if (Properties.MODEL_RESOLUTION_CHANGED.equals(evt.getPropertyName()))
         {
-            generated = false;
             if (actors.size() > 0)
                 update();
             this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);

@@ -521,6 +521,7 @@ public class Renderer extends JPanel implements
             }
         }
         //
+        occludeLabels();
 
         if (renderWindow.getRenderWindow().GetNeverRendered() > 0)
             return;
@@ -589,14 +590,15 @@ public class Renderer extends JPanel implements
         for (vtkProp prop : modelManager.getProps())
         	if (prop instanceof OccludingCaptionActor)
         	{
-        		Vector3D normal=new Vector3D(((OccludingCaptionActor) prop).getNormal());
-        		if (normal.dotProduct(lookdir)>0)
+        		OccludingCaptionActor caption=(OccludingCaptionActor) prop;
+        		Vector3D normal=new Vector3D(caption.getNormal());
+        		if (!caption.isEnabled()|| normal.dotProduct(lookdir)>0)
         			prop.VisibilityOff();
         		else
         		{
         			double tolerance=1e-15;
         			vtkIdList ids=new vtkIdList();
-        			double[] rayStartPoint=((OccludingCaptionActor) prop).getRayStartPoint();
+        			double[] rayStartPoint=caption.getRayStartPoint();
         			locator.FindCellsAlongLine(rayStartPoint, campos.toArray(), tolerance, ids);
         			if (ids.GetNumberOfIds()>0)
         				prop.VisibilityOff();
@@ -605,6 +607,7 @@ public class Renderer extends JPanel implements
         		}
         		        		
         	}
+
     }
 
     /*
