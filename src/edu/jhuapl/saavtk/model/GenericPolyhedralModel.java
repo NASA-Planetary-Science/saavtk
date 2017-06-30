@@ -17,6 +17,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.TreeSet;
 
+import javax.swing.JDialog;
+import javax.swing.JOptionPane;
+
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import com.google.common.collect.Lists;
 
 import vtk.vtkAbstractPointLocator;
@@ -1541,7 +1546,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	protected void loadColoringData() throws IOException
 	{
 		if (coloringIndex < 0 || coloringIndex >= coloringInfo.size())
-			throw new UnsupportedOperationException("Coloring index " + coloringIndex + " does not identify a valid plate coloring");
+		{
+			return;
+		}
 
 		ColoringInfo info = coloringInfo.get(coloringIndex);
 		// If not null, that means we've already loaded it.
@@ -1558,7 +1565,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		File file = retrieveAndCacheFile(info);
 		if (file == null)
-			throw new IOException("Unable to download file " + (info.format == Format.UNKNOWN ? "with base name " : "") + info.coloringFile);
+		{
+			String message="Unable to download file " + (info.format == Format.UNKNOWN ? "with base name " : "") + info.coloringFile;
+			JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
+			throw new IOException(message);
+		}
 
 		// If we get this far, the file was successfully opened and we know which type it has.
 		switch (info.format)
@@ -1699,7 +1710,14 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			++j;
 		}
 		in.close();
-
+		
+		if (array.GetNumberOfTuples()!=getSmallBodyPolyData().GetNumberOfCells())
+		{
+			String message="Plate data length in file "+file+" does not match number of faces in small body model.";
+			JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
+			throw new IOException(message);
+		}
+		
 		info.coloringValues = array;
 	}
 

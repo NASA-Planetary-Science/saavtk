@@ -347,9 +347,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         saveColoringButton.addActionListener(new SavePlateDataAction());
 
         customizeColoringButton = new JButton("Customize Plate Coloring...");
-        if (smallBodyModel.getConfig().customTemporary)
-            customizeColoringButton.setEnabled(false);
-        else
+//        if (smallBodyModel.getConfig().customTemporary)
+ //           customizeColoringButton.setEnabled(false);
+ //       else
             customizeColoringButton.setEnabled(true);
         customizeColoringButton.addActionListener(new CustomizePlateDataAction());
 
