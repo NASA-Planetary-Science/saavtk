@@ -42,6 +42,8 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
     private vtkPolyDataReader reader;
     private String[] gridFiles;
     private double shiftFactor = 7.0;
+    private double longitudeSpacing = 10.;
+    private double latitudeSpacing = 10.;
     
 	List<vtkCaptionActor2D>		captionActors	= Lists.newArrayList();
 
@@ -80,9 +82,6 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
     	
     	captionActors.clear();
     	
-		double longitudeSpacing = 10.0;
-		double latitudeSpacing = 10.0;
-
 		int numberLonCircles = (int) (180.0 / longitudeSpacing);
 		int numberLatCircles = (int) (90.0 / latitudeSpacing);
 
@@ -335,6 +334,22 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
     {
         double[] c = actor.GetProperty().GetColor();
         return new Color((float)c[0], (float)c[1], (float)c[2]);
+    }
+
+    public void setLongitudeSpacing(double longitudeSpacing) {
+    	this.longitudeSpacing = longitudeSpacing;
+    }
+
+    public double getLongitudeSpacing() {
+    	return longitudeSpacing;
+    }
+
+    public void setLatitudeSpacing(double latitudeSpacing) {
+    	this.latitudeSpacing = latitudeSpacing;
+    }
+
+    public double getLatitudeSpacing() {
+    	return latitudeSpacing;
     }
 
     public void propertyChange(PropertyChangeEvent evt)
