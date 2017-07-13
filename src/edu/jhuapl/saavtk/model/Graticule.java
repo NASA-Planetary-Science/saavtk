@@ -30,7 +30,7 @@ import edu.jhuapl.saavtk.util.Properties;
 public class Graticule extends AbstractModel implements PropertyChangeListener
 {
     private PolyhedralModel smallBodyModel;
-    private List<vtkProp> actors = new ArrayList<vtkProp>();
+    private List<vtkProp> actors = new ArrayList<>();
     private vtkActor actor;
     private vtkPolyDataMapper mapper;
     private vtkAppendPolyData appendFilter;
@@ -53,6 +53,9 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
         this(smallBodyModel, null);
     }
 
+    /**
+	 * @param gridFiles ignored for now. 
+	 */
     public Graticule(PolyhedralModel smallBodyModel, String[] gridFiles)
     {
         if (smallBodyModel != null)
@@ -97,7 +100,7 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 		// First do the longitudes.
 		for (int i = 0; i < numberLonCircles; ++i)
 		{
-			double lon = longitudeSpacing * (double) i * Math.PI / 180.0;
+			double lon = longitudeSpacing * i * Math.PI / 180.0;
 			double[] vec = MathUtil.latrec(new LatLon(0.0, lon, 1.0));
 			double[] normal = new double[3];
 			MathUtil.vcrss(vec, zaxis, normal);
@@ -119,7 +122,7 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 		for (int i = 0; i <= numberLonCircles; i++)
 		{
 			double lat = 0;
-			double lon = longitudeSpacing * (double) i * Math.PI / 180.0;
+			double lon = longitudeSpacing * i * Math.PI / 180.0;
 			// create caption
 			double[] intersectPoint = new double[3];
 			smallBodyModel.getPointAndCellIdFromLatLon(lat, lon, intersectPoint);
@@ -136,7 +139,7 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 		for (int i = 1; i < numberLonCircles; i++) // don't do 0
 		{
 			double lat = 0;
-			double lon = longitudeSpacing * (double) i * Math.PI / 180.0;
+			double lon = longitudeSpacing * i * Math.PI / 180.0;
 			// create caption
 			double[] intersectPoint = new double[3];
 			smallBodyModel.getPointAndCellIdFromLatLon(lat, 2 * Math.PI - lon, intersectPoint);
@@ -163,7 +166,7 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 			} else
 			{
 				cone.SetTransform(transform);
-				cone.SetAngle(latitudeSpacing * (double) i);
+				cone.SetAngle(latitudeSpacing * i);
 				cutFunction = cone;
 			}
 
@@ -181,13 +184,13 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 		polyData.DeepCopy(appendFilter.GetOutput());
 
 		int nlon=3;
-		for (double lon = 0; lon < 360; lon += 360./(double)nlon)	// do meridians at nlon intervals from 0
+		for (double lon = 0; lon < 360; lon += 360./nlon)	// do meridians at nlon intervals from 0
 		{
 			
 			// northern hemisphere
 			for (int i = 1; i < numberLatCircles; i++) // don't do 0 since longitude already took care of it
 			{
-				double lat = latitudeSpacing * (double) i * Math.PI / 180.0;
+				double lat = latitudeSpacing * i * Math.PI / 180.0;
 				// create caption
 				double[] intersectPoint = new double[3];
 				smallBodyModel.getPointAndCellIdFromLatLon(lat, lon/180*Math.PI, intersectPoint);
@@ -203,7 +206,7 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 			// southern hemisphere
 			for (int i = 1; i < numberLatCircles; i++) // don't do 0 since longitude already took care of it
 			{
-				double lat = latitudeSpacing * (double) i * Math.PI / 180.0;
+				double lat = latitudeSpacing * i * Math.PI / 180.0;
 				// create caption
 				double[] intersectPoint = new double[3];
 				smallBodyModel.getPointAndCellIdFromLatLon(-lat, lon/180*Math.PI, intersectPoint);
@@ -352,7 +355,8 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
     	return latitudeSpacing;
     }
 
-    public void propertyChange(PropertyChangeEvent evt)
+    @Override
+	public void propertyChange(PropertyChangeEvent evt)
     {
         if (Properties.MODEL_RESOLUTION_CHANGED.equals(evt.getPropertyName()))
         {
@@ -362,7 +366,8 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
         }
     }
 
-    public List<vtkProp> getProps()
+    @Override
+	public List<vtkProp> getProps()
     {
         return actors;
     }
