@@ -7,8 +7,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.common.collect.Lists;
-
+import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
+import edu.jhuapl.saavtk.util.LatLon;
+import edu.jhuapl.saavtk.util.MathUtil;
+import edu.jhuapl.saavtk.util.Properties;
 import vtk.vtkActor;
 import vtk.vtkAppendPolyData;
 import vtk.vtkCaptionActor2D;
@@ -18,35 +20,28 @@ import vtk.vtkImplicitFunction;
 import vtk.vtkPlane;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
-import vtk.vtkPolyDataReader;
 import vtk.vtkProp;
 import vtk.vtkTransform;
-import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
-import edu.jhuapl.saavtk.util.FileCache;
-import edu.jhuapl.saavtk.util.LatLon;
-import edu.jhuapl.saavtk.util.MathUtil;
-import edu.jhuapl.saavtk.util.Properties;
 
 public class Graticule extends AbstractModel implements PropertyChangeListener
 {
-    private PolyhedralModel smallBodyModel;
-    private List<vtkProp> actors = new ArrayList<>();
-    private vtkActor actor;
-    private vtkPolyDataMapper mapper;
-    private vtkAppendPolyData appendFilter;
-    private vtkPolyData polyData;
-    private vtkPlane plane;
-    private vtkCone cone;
-    private vtkCutter cutPolyData;
-    private vtkTransform transform;
-    private vtkPolyDataReader reader;
-    private String[] gridFiles;
-    private double shiftFactor = 7.0;
-    private double longitudeSpacing = 10.;
-    private double latitudeSpacing = 10.;
-    
-	List<vtkCaptionActor2D>		captionActors	= Lists.newArrayList();
-
+    private final PolyhedralModel smallBodyModel;
+    private final vtkActor actor;
+    private final vtkPolyDataMapper mapper;
+    private final vtkAppendPolyData appendFilter;
+    private final vtkPolyData polyData;
+    private final vtkPlane plane;
+    private final vtkCone cone;
+    private final vtkCutter cutPolyData;
+    private final vtkTransform transform;
+//    private String[] gridFiles;
+    private final List<vtkProp> actors;
+    private final List<vtkCaptionActor2D> captionActors;
+    private double shiftFactor;
+    private double longitudeSpacing;
+    private double latitudeSpacing;    
+	private boolean showGraticule;
+	private boolean showCaptions;
 
     public Graticule(PolyhedralModel smallBodyModel)
     {
@@ -58,21 +53,28 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 	 */
     public Graticule(PolyhedralModel smallBodyModel, String[] gridFiles)
     {
-        if (smallBodyModel != null)
+    	this.smallBodyModel = smallBodyModel;
+        if (this.smallBodyModel != null)
         {
-            this.smallBodyModel = smallBodyModel;
-            smallBodyModel.addPropertyChangeListener(this);
+            this.smallBodyModel.addPropertyChangeListener(this);
         }
 
-        this.gridFiles = gridFiles;
-
+        actor = new vtkActor();
+        mapper = new vtkPolyDataMapper();
         appendFilter = new vtkAppendPolyData();
+        polyData = new vtkPolyData();
         plane = new vtkPlane();
         cone = new vtkCone();
         cutPolyData = new vtkCutter();
         transform = new vtkTransform();
-        polyData = new vtkPolyData();
-        reader = new vtkPolyDataReader();
+        //this.gridFiles = gridFiles;
+        actors = new ArrayList<>();
+        captionActors = new ArrayList<>();
+        shiftFactor = 7.0;
+        longitudeSpacing = 10.;
+        latitudeSpacing = 10.;    
+    	showGraticule = false;
+    	showCaptions = false;
     }
 
     public void setShiftFactor(double factor)
@@ -82,7 +84,7 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 
     public void generateGrid(vtkPolyData smallBodyPolyData)
     {
-    	
+    	actors.clear();
     	captionActors.clear();
     	
 		int numberLonCircles = (int) (180.0 / longitudeSpacing);
@@ -219,20 +221,14 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 
 			}
 		}
-		
-		setShowCaptions(false);
-
+		actors.add(actor);
+		actors.addAll(captionActors);
     }
 
 	public void setShowCaptions(boolean show)
 	{
-		for (vtkCaptionActor2D a : captionActors)
-		{
-			OccludingCaptionActor caption=(OccludingCaptionActor)a;
-			caption.setEnabled(show);
-			if (!show)
-				caption.VisibilityOff();
-		}
+		showCaptions = show;
+		update();
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
@@ -247,72 +243,36 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 
     private void update()
     {
-    	
-        // There is no need to regenerate the data if generated is true
- 
+    	if (showGraticule)
+    	{
+    		generateGrid(smallBodyModel.getSmallBodyPolyData());
+    		smallBodyModel.shiftPolyLineInNormalDirection(
+    				polyData,
+    				shiftFactor * smallBodyModel.getMinShiftAmount());
 
-//        if (gridFiles == null)
-//        {
-            this.generateGrid(smallBodyModel.getSmallBodyPolyData());
-/*        }
-        else
-        {
-            int level = smallBodyModel.getModelResolution();
+    		mapper.SetInputData(polyData);
+    		mapper.Update();
 
+    		actor.SetMapper(mapper);
+    		actor.GetProperty().SetColor(0.2, 0.2, 0.2);
 
-            File modelFile = null;
-            switch(level)
-            {
-            case 1:
-                modelFile = FileCache.getFileFromServer(gridFiles[1]);
-                break;
-            case 2:
-                modelFile = FileCache.getFileFromServer(gridFiles[2]);
-                break;
-            case 3:
-                modelFile = FileCache.getFileFromServer(gridFiles[3]);
-                break;
-            default:
-                modelFile = FileCache.getFileFromServer(gridFiles[0]);
-                break;
-            }
-
-            reader.SetFileName(modelFile.getAbsolutePath());
-            reader.Update();
-
-            polyData.DeepCopy(reader.GetOutput());
-        }*/
-
-        smallBodyModel.shiftPolyLineInNormalDirection(
-                polyData,
-                shiftFactor * smallBodyModel.getMinShiftAmount());
-
-        if (mapper == null)
-            mapper = new vtkPolyDataMapper();
-        mapper.SetInputData(polyData);
-        mapper.Update();
-
-        if (actor == null)
-            actor = new vtkActor();
-        actor.SetMapper(mapper);
-        actor.GetProperty().SetColor(0.2, 0.2, 0.2);
-
+    	} else {
+    		actors.clear();
+    	}
+		for (vtkCaptionActor2D a : captionActors)
+		{
+			OccludingCaptionActor caption=(OccludingCaptionActor)a;
+			caption.setEnabled(showCaptions);
+			if (!showCaptions)
+				caption.VisibilityOff();
+		}
     }
 
     public void setShowGraticule(boolean show)
     {
-
-		if (show == true && actors.size() == 0)
-		{
-			update();
-			actors.add(actor);
-			actors.addAll(captionActors);
-			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-		} else if (show == false && actors.size() > 0)
-		{
-			actors.clear();
-			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-		}
+    	showGraticule = show;
+    	update();
+		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
     }
 
     public void setLineWidth(double value)
@@ -360,8 +320,7 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
     {
         if (Properties.MODEL_RESOLUTION_CHANGED.equals(evt.getPropertyName()))
         {
-            if (actors.size() > 0)
-                update();
+            update();
             this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
         }
     }
