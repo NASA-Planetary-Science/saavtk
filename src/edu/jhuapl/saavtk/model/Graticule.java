@@ -87,8 +87,8 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
     	actors.clear();
     	captionActors.clear();
     	
-		int numberLonCircles = (int) (180.0 / longitudeSpacing);
-		int numberLatCircles = (int) (90.0 / latitudeSpacing);
+		int numberLonCircles = (int) Math.ceil(180.0 / longitudeSpacing);
+		int numberLatCircles = (int) Math.ceil(90.0 / latitudeSpacing);
 
 		double[] origin = { 0.0, 0.0, 0.0 };
 		double[] zaxis = { 0.0, 0.0, 1.0 };
@@ -190,9 +190,15 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 		{
 			
 			// northern hemisphere
-			for (int i = 1; i < numberLatCircles; i++) // don't do 0 since longitude already took care of it
+			for (int i = 1; i < numberLatCircles; i++) // Start at one to skip labeling the pole.
 			{
-				double lat = latitudeSpacing * i * Math.PI / 180.0;
+				// Compute labels from the poles toward the equator so they coincide with parallels from the grid
+				// no matter what spacing.
+				double lat = 90 - latitudeSpacing * i;
+
+				// Convert to radians.
+				lat *=  Math.PI / 180.0;
+
 				// create caption
 				double[] intersectPoint = new double[3];
 				smallBodyModel.getPointAndCellIdFromLatLon(lat, lon/180*Math.PI, intersectPoint);
@@ -206,9 +212,15 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 			}
 
 			// southern hemisphere
-			for (int i = 1; i < numberLatCircles; i++) // don't do 0 since longitude already took care of it
+			for (int i = 1; i < numberLatCircles; i++) // Start at one to skip labeling the pole.
 			{
-				double lat = latitudeSpacing * i * Math.PI / 180.0;
+				// Compute labels from the poles toward the equator so they coincide with parallels from the grid
+				// no matter what spacing.
+				double lat = 90 - latitudeSpacing * i;
+
+				// Convert to radians.
+				lat *=  Math.PI / 180.0;
+
 				// create caption
 				double[] intersectPoint = new double[3];
 				smallBodyModel.getPointAndCellIdFromLatLon(-lat, lon/180*Math.PI, intersectPoint);
