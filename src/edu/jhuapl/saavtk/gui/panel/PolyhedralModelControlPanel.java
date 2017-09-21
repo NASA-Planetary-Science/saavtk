@@ -75,6 +75,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
     private JCheckBox imageMapCheckBox;
     private JLabel opacityLabel;
     private JSpinner imageMapOpacitySpinner;
+    private JLabel modelOpacityLabel;
+    private JSpinner modelOpacitySpinner;
     
     ColormapControllerWithContouring colormapController=new ColormapControllerWithContouring();
 
@@ -127,6 +129,11 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
     public JSpinner getImageMapOpacitySpinner()
     {
         return imageMapOpacitySpinner;
+    }
+
+    public JSpinner getModelOpacitySpinner()
+    {
+        return modelOpacitySpinner;
     }
 
     public JButton getSaveColoringButton()
@@ -224,6 +231,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         modelCheckBox.setSelected(true);
         modelCheckBox.addItemListener(this);
 
+        modelOpacityLabel = new JLabel("Shape model opacity");
+        modelOpacitySpinner = createOpacitySpinner();
+        modelOpacitySpinner.addChangeListener(this);
         JLabel resolutionLabel = new JLabel("Resolution");
 
         final PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
@@ -397,6 +407,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         });
 
         panel.add(modelCheckBox, "wrap");
+        panel.add(modelOpacityLabel, "gapleft 25, split 2");
+        panel.add(modelOpacitySpinner, "wrap");
         if (smallBodyModel.getNumberResolutionLevels() > 1)
         {
             panel.add(resolutionLabel, "wrap");
@@ -467,6 +479,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             if (e.getStateChange() == ItemEvent.SELECTED)
             {
                 smallBodyModel.setShowSmallBody(true);
+                modelOpacityLabel.setEnabled(true);
+                modelOpacitySpinner.setEnabled(true);
                 if (graticule != null && gridCheckBox.isSelected())
                     graticule.setShowGraticule(true);
                 if (imageMapCheckBox.isSelected())
@@ -475,6 +489,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             else
             {
                 smallBodyModel.setShowSmallBody(false);
+                modelOpacityLabel.setEnabled(false);
+                modelOpacitySpinner.setEnabled(false);
                 if (graticule != null && gridCheckBox.isSelected())
                     graticule.setShowGraticule(false);
                 if (imageMapCheckBox.isSelected())
