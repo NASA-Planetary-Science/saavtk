@@ -147,8 +147,11 @@ public class SafePaths {
 	 * @return the path string
 	 */
 	public static String getStringUnchecked(String first, String... more) {
-		String combined = more.length == 0 ? first : String.join("/", first, String.join("/", more)); 
-		return combined.replaceAll(PATH_SEPARATORS_REGEX, File.separator);
+		String combined = more.length == 0 ? first : String.join("/", first, String.join("/", more));
+		// If the separator is backslash, which Java uses for escape sequences, need to
+		// escape the escape or replaceAll will get confused.
+		String separator = File.separator.equals("\\") ? "\\\\" : File.separator;
+		return combined.replaceAll(PATH_SEPARATORS_REGEX, separator);
 	}
 
 	/**
