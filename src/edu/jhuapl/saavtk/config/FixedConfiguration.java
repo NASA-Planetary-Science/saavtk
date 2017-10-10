@@ -9,9 +9,9 @@ import com.google.common.collect.Maps;
 public final class FixedConfiguration extends ListOrderedMap<Key<?>, Object> implements BodyConfiguration
 {
 
-	public static Builder builder()
+	public static Builder builder(Key<Builder> builderKey)
 	{
-		return new Builder(Lists.newArrayList(), Maps.newHashMap());
+		return new Builder(builderKey, Lists.newArrayList(), Maps.newHashMap());
 	}
 
 	private FixedConfiguration(List<Key<?>> list, Map<Key<?>, Object> map)
@@ -34,11 +34,13 @@ public final class FixedConfiguration extends ListOrderedMap<Key<?>, Object> imp
 
 	public static final class Builder implements BodyConfiguration.Builder
 	{
+		private final Key<Builder> builderKey;
 		private final List<Key<?>> list;
 		private final Map<Key<?>, Object> map;
 
-		private Builder(List<Key<?>> list, Map<Key<?>, Object> map)
+		private Builder(Key<Builder> builderKey, List<Key<?>> list, Map<Key<?>, Object> map)
 		{
+			this.builderKey = builderKey;
 			this.list = list;
 			this.map = map;
 		}
@@ -62,6 +64,11 @@ public final class FixedConfiguration extends ListOrderedMap<Key<?>, Object> imp
 		public FixedConfiguration build()
 		{
 			return new FixedConfiguration(list, map);
+		}
+
+		boolean matches(Key<Builder> builderKey)
+		{
+			return this.builderKey.equals(builderKey);
 		}
 	}
 }
