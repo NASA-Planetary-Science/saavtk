@@ -1,12 +1,12 @@
 package edu.jhuapl.saavtk.config;
 
-public interface Configuration
+public interface BodyConfiguration
 {
 	public static interface Builder
 	{
 		Builder put(ConfigurationEntry<?> entry);
 
-		Configuration build();
+		BodyConfiguration build();
 	}
 
 	<ValueType> ValueType get(Key<ValueType> key);

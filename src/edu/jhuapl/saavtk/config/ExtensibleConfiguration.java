@@ -1,6 +1,6 @@
 package edu.jhuapl.saavtk.config;
 
-public class ExtensibleConfiguration implements Configuration
+public class ExtensibleConfiguration implements BodyConfiguration
 {
 	private final FixedConfiguration configuration;
 

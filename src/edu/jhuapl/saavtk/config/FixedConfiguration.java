@@ -6,7 +6,7 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-public final class FixedConfiguration extends ListOrderedMap<Key<?>, Object> implements Configuration
+public final class FixedConfiguration extends ListOrderedMap<Key<?>, Object> implements BodyConfiguration
 {
 
 	public static Builder builder()
@@ -32,7 +32,7 @@ public final class FixedConfiguration extends ListOrderedMap<Key<?>, Object> imp
 		return result;
 	}
 
-	public static final class Builder implements Configuration.Builder
+	public static final class Builder implements BodyConfiguration.Builder
 	{
 		private final List<Key<?>> list;
 		private final Map<Key<?>, Object> map;
