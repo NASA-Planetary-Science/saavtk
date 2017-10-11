@@ -6,23 +6,23 @@ package edu.jhuapl.saavtk.config;
  */
 public final class Key<ValueType>
 {
-	public static <ValueType> Key<ValueType> of(String label)
+	public static <ValueType> Key<ValueType> of(String identifier)
 	{
-		return new Key<>(label);
+		return new Key<>(identifier);
 	}
 
-	private final String label;
+	private final String identifier;
 
-	private Key(String label)
+	private Key(String identifier)
 	{
-		if (label == null)
+		if (identifier == null)
 			throw new NullPointerException();
-		this.label = label;
+		this.identifier = identifier;
 	}
 
-	public String getLabel()
+	public String getIdentifier()
 	{
-		return label;
+		return identifier;
 	}
 
 	/**
@@ -46,6 +46,6 @@ public final class Key<ValueType>
 	@Override
 	public String toString()
 	{
-		return "Key: " + label;
+		return "Key: " + identifier;
 	}
 }

@@ -1,16 +1,16 @@
 package edu.jhuapl.saavtk.config;
 
-public final class ConfigurationEntry<T>
+public final class Entry<T>
 {
 	private final Key<T> key;
 	private final T value;
 
-	public static <T> ConfigurationEntry<T> of(Key<T> key, T value)
+	public static <T> Entry<T> of(Key<T> key, T value)
 	{
-		return new ConfigurationEntry<>(key, value);
+		return new Entry<>(key, value);
 	}
 
-	private ConfigurationEntry(Key<T> key, T value)
+	private Entry(Key<T> key, T value)
 	{
 		if (key == null || value == null)
 			throw new NullPointerException();

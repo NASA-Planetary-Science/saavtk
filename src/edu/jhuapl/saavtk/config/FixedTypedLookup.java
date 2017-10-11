@@ -6,7 +6,7 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-public final class FixedConfiguration extends ListOrderedMap<Key<?>, Object> implements BodyConfiguration
+public final class FixedTypedLookup extends ListOrderedMap<Key<?>, Object> implements TypedLookup
 {
 
 	public static Builder builder(Key<Builder> builderKey)
@@ -14,7 +14,7 @@ public final class FixedConfiguration extends ListOrderedMap<Key<?>, Object> imp
 		return new Builder(builderKey, Lists.newArrayList(), Maps.newHashMap());
 	}
 
-	private FixedConfiguration(List<Key<?>> list, Map<Key<?>, Object> map)
+	private FixedTypedLookup(List<Key<?>> list, Map<Key<?>, Object> map)
 	{
 		super(list, map);
 	}
@@ -32,7 +32,7 @@ public final class FixedConfiguration extends ListOrderedMap<Key<?>, Object> imp
 		return result;
 	}
 
-	public static final class Builder implements BodyConfiguration.Builder
+	public static final class Builder implements TypedLookup.TypedBuilder
 	{
 		private final Key<Builder> builderKey;
 		private final List<Key<?>> list;
@@ -46,7 +46,7 @@ public final class FixedConfiguration extends ListOrderedMap<Key<?>, Object> imp
 		}
 
 		@Override
-		public Builder put(ConfigurationEntry<?> entry)
+		public Builder put(Entry<?> entry)
 		{
 			if (entry == null)
 				throw new NullPointerException();
@@ -61,14 +61,18 @@ public final class FixedConfiguration extends ListOrderedMap<Key<?>, Object> imp
 		}
 
 		@Override
-		public FixedConfiguration build()
+		public FixedTypedLookup build()
 		{
-			return new FixedConfiguration(list, map);
+			return new FixedTypedLookup(list, map);
 		}
 
-		boolean matches(Key<Builder> builderKey)
+		public boolean matches(Key<Builder> builderKey)
 		{
 			return this.builderKey.equals(builderKey);
+		}
+
+		boolean containsKey(Key<?> key) {
+			return map.containsKey(key);
 		}
 	}
 }

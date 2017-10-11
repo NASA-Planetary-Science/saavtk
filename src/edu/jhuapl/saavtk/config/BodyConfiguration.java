@@ -1,13 +1,27 @@
 package edu.jhuapl.saavtk.config;
 
-public interface BodyConfiguration
+public class BodyConfiguration extends ExtensibleTypedLookup implements Configurable
 {
-	public static interface Builder
-	{
-		Builder put(ConfigurationEntry<?> entry);
 
-		BodyConfiguration build();
+    private static final Key<FixedTypedLookup.Builder> BUILDER_KEY = Key.of("BodyConfiguration");
+
+    public static Builder<BodyConfiguration> builder()
+    {
+    	final FixedTypedLookup.Builder fixedBuilder = FixedTypedLookup.builder(BUILDER_KEY);
+    	
+    	return new Builder<BodyConfiguration>(fixedBuilder)
+    	{
+			@Override
+			public BodyConfiguration build()
+			{
+				return new BodyConfiguration(getFixedBuilder());
+			}
+    	};
+    }
+
+    protected BodyConfiguration(FixedTypedLookup.Builder builder)
+    {
+		super(BUILDER_KEY, builder);
 	}
 
-	<ValueType> ValueType get(Key<ValueType> key);
 }
