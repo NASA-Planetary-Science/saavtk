@@ -1,6 +1,6 @@
 package edu.jhuapl.saavtk.config;
 
-public class ExtensibleTypedLookup implements TypedLookup
+public abstract class ExtensibleTypedLookup implements TypedLookup
 {
 	public static abstract class Builder<T extends ExtensibleTypedLookup> implements TypedLookup.TypedBuilder {
 
