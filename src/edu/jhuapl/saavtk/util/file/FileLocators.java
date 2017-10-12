@@ -11,6 +11,10 @@ public class FileLocators
             @Override
             public String getLocation(String name)
             {
+                if (name == null || name.isEmpty() || name.matches("[/\\\\]$"))
+                {
+                	return name;
+                }
                 if (name.contains("."))
                 {                    
                 	return name.replaceAll("\\.[^\\.]*$", suffix);
