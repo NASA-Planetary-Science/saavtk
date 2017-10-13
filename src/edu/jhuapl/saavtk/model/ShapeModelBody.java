@@ -12,6 +12,7 @@ public enum ShapeModelBody
     PHOBOS("Phobos"),
     RQ36("101955 Bennu"),
     DIONE("Dione"),
+    TELESTO("Telesto"),
     RHEA("Rhea"),
     TETHYS("Tethys"),
     LUTETIA("21 Lutetia"),
