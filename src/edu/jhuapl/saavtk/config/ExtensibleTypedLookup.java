@@ -2,7 +2,7 @@ package edu.jhuapl.saavtk.config;
 
 public abstract class ExtensibleTypedLookup implements TypedLookup
 {
-	public static abstract class Builder<T extends ExtensibleTypedLookup> implements TypedLookup.TypedBuilder {
+	public static abstract class Builder<T extends ExtensibleTypedLookup> implements TypedLookup.TypedBuilder, TypedLookup {
 
 		private final FixedTypedLookup.Builder fixedBuilder;
 		private T built;
@@ -32,6 +32,12 @@ public abstract class ExtensibleTypedLookup implements TypedLookup
 				built = doBuild();
 			}
 			return built;
+		}
+
+		@Override
+		public <ValueType> ValueType get(Key<ValueType> key)
+		{
+			return fixedBuilder.get(key);
 		}
 
 		protected FixedTypedLookup.Builder getFixedBuilder() {

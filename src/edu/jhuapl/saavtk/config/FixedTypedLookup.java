@@ -66,5 +66,13 @@ public final class FixedTypedLookup extends ListOrderedMap<Key<?>, Object> imple
 		boolean containsKey(Key<?> key) {
 			return map.containsKey(key);
 		}
+
+		<ValueType> ValueType get(Key<ValueType> key) {
+			// This cast is safe because the only way to add to the map is in the
+			// put method, which ensures keys and values match.
+			@SuppressWarnings("unchecked")
+			ValueType result = (ValueType) map.get(key);
+			return result;
+		}
 	}
 }
