@@ -34,24 +34,57 @@ public final class FixedTypedLookup extends ListOrderedMap<Key<?>, Object> imple
 
 	public static final class Builder implements TypedLookup.TypedBuilder
 	{
+		private final SimpleBuilder simpleBuilder;
+		private FixedTypedLookup built;
+
+		private Builder(List<Key<?>> list, Map<Key<?>, Object> map)
+		{
+			simpleBuilder = new SimpleBuilder(list, map);
+			built = null;
+		}
+
+		@Override
+		public <ValueType> Builder put(Key<ValueType> key, ValueType value)
+		{
+			if (built != null)
+				throw new UnsupportedOperationException("Cannot add entry to map after it was already built");
+			if (containsKey(key))
+				throw new IllegalArgumentException("Duplicate key entered in map.");
+
+			simpleBuilder.put(key, value);
+			return this;
+		}
+
+		@Override
+		public FixedTypedLookup build()
+		{
+			if (built == null)
+				built = simpleBuilder.build();
+			return built;
+		}
+
+		protected boolean containsKey(Key<?> key)
+		{
+			return simpleBuilder.containsKey(key);
+		}
+	}
+
+	static final class SimpleBuilder implements TypedLookup.TypedBuilder
+	{
 		private final List<Key<?>> list;
 		private final Map<Key<?>, Object> map;
 
-		private Builder(List<Key<?>> list, Map<Key<?>, Object> map)
+		private SimpleBuilder(List<Key<?>> list, Map<Key<?>, Object> map)
 		{
 			this.list = list;
 			this.map = map;
 		}
 
 		@Override
-		public <ValueType> Builder put(Key<ValueType> key, ValueType value)
+		public <ValueType> SimpleBuilder put(Key<ValueType> key, ValueType value)
 		{
 			if (key == null || value == null)
 				throw new NullPointerException();
-			if (map.containsKey(key))
-			{
-				throw new IllegalArgumentException("Duplicate key entered in map.");
-			}
 			list.add(key);
 			map.put(key, value);
 			return this;
@@ -62,17 +95,12 @@ public final class FixedTypedLookup extends ListOrderedMap<Key<?>, Object> imple
 		{
 			return new FixedTypedLookup(list, map);
 		}
-
-		boolean containsKey(Key<?> key) {
+		
+		private boolean containsKey(Key<?> key)
+		{
+			if (key == null)
+				throw new NullPointerException();
 			return map.containsKey(key);
-		}
-
-		<ValueType> ValueType get(Key<ValueType> key) {
-			// This cast is safe because the only way to add to the map is in the
-			// put method, which ensures keys and values match.
-			@SuppressWarnings("unchecked")
-			ValueType result = (ValueType) map.get(key);
-			return result;
 		}
 	}
 }
