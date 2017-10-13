@@ -9,9 +9,9 @@ import com.google.common.collect.Maps;
 public final class FixedTypedLookup extends ListOrderedMap<Key<?>, Object> implements TypedLookup
 {
 
-	public static Builder builder(Key<Builder> builderKey)
+	public static Builder builder()
 	{
-		return new Builder(builderKey, Lists.newArrayList(), Maps.newHashMap());
+		return new Builder(Lists.newArrayList(), Maps.newHashMap());
 	}
 
 	private FixedTypedLookup(List<Key<?>> list, Map<Key<?>, Object> map)
@@ -34,13 +34,11 @@ public final class FixedTypedLookup extends ListOrderedMap<Key<?>, Object> imple
 
 	public static final class Builder implements TypedLookup.TypedBuilder
 	{
-		private final Key<Builder> builderKey;
 		private final List<Key<?>> list;
 		private final Map<Key<?>, Object> map;
 
-		private Builder(Key<Builder> builderKey, List<Key<?>> list, Map<Key<?>, Object> map)
+		private Builder(List<Key<?>> list, Map<Key<?>, Object> map)
 		{
-			this.builderKey = builderKey;
 			this.list = list;
 			this.map = map;
 		}
@@ -64,11 +62,6 @@ public final class FixedTypedLookup extends ListOrderedMap<Key<?>, Object> imple
 		public FixedTypedLookup build()
 		{
 			return new FixedTypedLookup(list, map);
-		}
-
-		public boolean matches(Key<Builder> builderKey)
-		{
-			return this.builderKey.equals(builderKey);
 		}
 
 		boolean containsKey(Key<?> key) {

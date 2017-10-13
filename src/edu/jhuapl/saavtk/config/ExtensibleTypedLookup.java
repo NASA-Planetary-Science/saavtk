@@ -31,10 +31,8 @@ public abstract class ExtensibleTypedLookup implements TypedLookup
 
 	private final FixedTypedLookup configuration;
 
-	protected ExtensibleTypedLookup(Key<FixedTypedLookup.Builder> builderKey, FixedTypedLookup.Builder builder)
+	protected ExtensibleTypedLookup(FixedTypedLookup.Builder builder)
 	{
-		if (!builder.matches(builderKey))
-			throw new IllegalArgumentException();
 		this.configuration = builder.build();
 	}
 
