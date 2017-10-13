@@ -12,8 +12,8 @@ public abstract class ExtensibleTypedLookup implements TypedLookup
 		}
 
 		@Override
-		public Builder<T> put(Entry<?> entry) {
-			fixedBuilder.put(entry);
+		public <ValueType> Builder<T> put(Key<ValueType> key, ValueType value) {
+			fixedBuilder.put(key, value);
 			return this;
 		}
 

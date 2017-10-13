@@ -4,7 +4,7 @@ public interface TypedLookup
 {
 	public static interface TypedBuilder
 	{
-		TypedBuilder put(Entry<?> entry);
+		<ValueType> TypedBuilder put(Key<ValueType> key, ValueType value);
 
 		TypedLookup build();
 	}

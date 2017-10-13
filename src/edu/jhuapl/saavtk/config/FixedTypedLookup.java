@@ -44,17 +44,16 @@ public final class FixedTypedLookup extends ListOrderedMap<Key<?>, Object> imple
 		}
 
 		@Override
-		public Builder put(Entry<?> entry)
+		public <ValueType> Builder put(Key<ValueType> key, ValueType value)
 		{
-			if (entry == null)
+			if (key == null || value == null)
 				throw new NullPointerException();
-			Key<?> key = entry.getKey();
 			if (map.containsKey(key))
 			{
 				throw new IllegalArgumentException("Duplicate key entered in map.");
 			}
 			list.add(key);
-			map.put(key, entry.getValue());
+			map.put(key, value);
 			return this;
 		}
 
