@@ -70,7 +70,14 @@ public enum ShapeModelBody
     PALLAS("2 Pallas"),
     DAPHNE("41 Daphne"),
     HERMIONE("121 Hermione"),
-    _67P("67P/Churyumov-Gerasmenko");
+    _67P("67P/Churyumov-Gerasmenko"),
+    EARTH("Earth"),
+    CALYPSO("Calypso"),
+    PAN("Pan"),
+    ENCELADUS("Enceladus"),
+    IAPETUS("Iapetus"),
+    ATLAS("Atlas"),
+    ;
 
     final private String str;
     private ShapeModelBody(String str)
