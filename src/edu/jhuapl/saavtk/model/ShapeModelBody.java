@@ -77,6 +77,7 @@ public enum ShapeModelBody
     ENCELADUS("Enceladus"),
     IAPETUS("Iapetus"),
     ATLAS("Atlas"),
+    HELENE("Helene"),
     ;
 
     final private String str;
