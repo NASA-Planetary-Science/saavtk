@@ -375,10 +375,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         imageMapCheckBox.setSelected(false);
         imageMapCheckBox.addItemListener(this);
 
-        opacityLabel = new JLabel("Opacity");
-        imageMapOpacitySpinner = new JSpinner(new SpinnerNumberModel(1.0, 0.0, 1.0, 0.1));
-        imageMapOpacitySpinner.setEditor(new JSpinner.NumberEditor(imageMapOpacitySpinner, "0.00"));
-        imageMapOpacitySpinner.setPreferredSize(new Dimension(80, 21));
+        opacityLabel = new JLabel("Image opacity");
+        imageMapOpacitySpinner = createOpacitySpinner();
         imageMapOpacitySpinner.addChangeListener(this);
         opacityLabel.setEnabled(false);
         imageMapOpacitySpinner.setEnabled(false);
@@ -707,6 +705,13 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
     protected CustomPlateDataDialog getPlateDataDialog(ModelManager modelManager)
     {
         return new CustomPlateDataDialog(modelManager);
+    }
+
+    private static JSpinner createOpacitySpinner() {
+        JSpinner spinner = new JSpinner(new SpinnerNumberModel(1.0, 0.0, 1.0, 0.1));
+        spinner.setEditor(new JSpinner.NumberEditor(spinner, "0.00"));
+        spinner.setPreferredSize(new Dimension(80, 21));
+        return spinner;
     }
 
     private class CustomizePlateDataAction extends AbstractAction

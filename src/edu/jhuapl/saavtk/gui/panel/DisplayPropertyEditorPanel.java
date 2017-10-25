@@ -151,7 +151,7 @@ public class DisplayPropertyEditorPanel extends JPanel implements ChangeListener
         cullFrontfaceCheckBox.setSelected(false);
         cullFrontfaceCheckBox.addItemListener(this);
 
-        opacityLabel = new JLabel("Opacity");
+        opacityLabel = new JLabel("Shape model opacity");
         opacitySpinner = new JSpinner(new SpinnerNumberModel(1.0, 0.0, 1.0, 0.1));
         opacitySpinner.setEditor(new JSpinner.NumberEditor(opacitySpinner, "0.00"));
         opacitySpinner.setPreferredSize(new Dimension(80, 21));
@@ -177,8 +177,8 @@ public class DisplayPropertyEditorPanel extends JPanel implements ChangeListener
         //add(specularCoefSpinner, "wrap");
         //add(specularPowerLabel, "split 2");
         //add(specularPowerSpinner, "wrap");
-        //add(opacityLabel, "split 2");
-        //add(opacitySpinner, "wrap");
+        add(opacityLabel, "split 2");
+        add(opacitySpinner, "wrap");
 
         initialized = true;
     }
