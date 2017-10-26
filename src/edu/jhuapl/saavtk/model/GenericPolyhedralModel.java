@@ -1630,8 +1630,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	private boolean isColoringAvailable(ColoringInfo info) {
 		String fileName = info.coloringFile;
-		if (!info.builtIn)
-			fileName = FileCache.FILE_PREFIX + getCustomDataFolder() + File.separator + fileName;
 		if (!fileName.startsWith(FileCache.FILE_PREFIX))
 		{
 			fileName += "_res" + resolutionLevel;
