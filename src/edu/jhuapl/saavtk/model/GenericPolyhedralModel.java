@@ -230,6 +230,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				info.coloringUnits = coloringUnits[i];
 				if (coloringHasNulls != null)
 					info.coloringHasNulls = coloringHasNulls[i];
+				if (!isColoringAvailable(info))
+				{
+					System.err.println("Plate coloring is not available. Disabling " + info.coloringName);
+					continue;
+				}
 				coloringInfo.add(info);
 			}
 		}
@@ -1529,30 +1534,133 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	}
 
 	/**
+	 * Load just the current plate coloring identified by coloringIndex.
+	 * @throws IOException if the plate coloring fails to load
+	 */
+	protected void loadColoringData() throws IOException
+	{
+		if (coloringIndex < 0 || coloringIndex >= coloringInfo.size())
+			throw new UnsupportedOperationException("Coloring index " + coloringIndex + " does not identify a valid plate coloring");
+
+		ColoringInfo info = coloringInfo.get(coloringIndex);
+		// If not null, that means we've already loaded it.
+		if (info.coloringValues != null)
+			return;
+		loadFile(info);
+	}
+
+	private void loadFile(ColoringInfo info) throws IOException
+	{
+		// If not null, that means we've already loaded it.
+		if (info.coloringValues != null)
+			return;
+
+		File file = retrieveAndCacheFile(info);
+		if (file == null)
+			throw new IOException("Unable to download file " + (info.format == Format.UNKNOWN ? "with base name " : "") + info.coloringFile);
+
+		// If we get this far, the file was successfully opened and we know which type it has.
+		switch (info.format)
+		{
+		case TXT:
+			loadColoringDataTxt(file, info);
+			break;
+		case FIT:
+			loadColoringDataFits(file, info);
+			break;
+		case UNKNOWN:
+			try {
+				loadColoringDataFits(file, info);
+			} catch (@SuppressWarnings("unused") Exception e) {
+				loadColoringDataTxt(file, info);
+			}
+			break;
+		default:
+			throw new AssertionError("Unhandled case");
+		}
+		computeDefaultColoringRange(info);
+	}
+
+	private File retrieveAndCacheFile(ColoringInfo info) {
+		String fileName = new String(info.coloringFile);
+		if (!info.builtIn)
+			fileName = FileCache.FILE_PREFIX + getCustomDataFolder() + File.separator + fileName;
+		// Cache the file, which may be text or fits, but we may not know which at this point.
+		File file = null;
+		if (fileName.startsWith(FileCache.FILE_PREFIX))
+		{
+			file = FileCache.getFileFromServer(fileName);
+		}
+		else
+		{
+			fileName += "_res" + resolutionLevel;
+			switch (info.format)
+			{
+			case TXT:
+				fileName += ".txt.gz";
+				file = FileCache.getFileFromServer(fileName);
+				break;
+			case FIT:
+				fileName += ".fits.gz";
+				file = FileCache.getFileFromServer(fileName);
+				break;
+			case UNKNOWN:
+				// Prefer FITS if that exists.
+				File fitsFile = FileCache.getFileFromServer(fileName + ".fits.gz");
+				if (fitsFile != null && fitsFile.exists())
+				{
+					file = fitsFile;
+				}
+				else
+				{
+					File textFile = FileCache.getFileFromServer(fileName + ".txt.gz");
+					if (textFile != null && textFile.exists())
+					{
+						fileName += ".txt.gz";
+						file = textFile;
+					}
+				}
+				break;
+			default:
+				throw new AssertionError("Unhandled case " + info.format);
+			}
+		}
+		return file;
+	}
+
+	private boolean isColoringAvailable(ColoringInfo info) {
+		String fileName = info.coloringFile;
+		if (!info.builtIn)
+			fileName = FileCache.FILE_PREFIX + getCustomDataFolder() + File.separator + fileName;
+		if (!fileName.startsWith(FileCache.FILE_PREFIX))
+		{
+			fileName += "_res" + resolutionLevel;
+			switch (info.format)
+			{
+			case TXT:
+				fileName += ".txt.gz";
+				break;
+			case FIT:
+				fileName += ".fits.gz";
+				break;
+			case UNKNOWN:
+				return FileCache.isFileGettable(fileName + ".fits.gz") || FileCache.isFileGettable(fileName + ".txt.gz");
+			default:
+				throw new AssertionError("Unhandled case " + info.format);
+			}
+		}
+		return FileCache.isFileGettable(fileName);
+	}
+
+	/**
 	 * This file loads the coloring data.
 	 * @throws IOException
 	 */
-	private void loadColoringData() throws IOException
+	protected void loadAllColoringData() throws IOException
 	{
 		for (ColoringInfo info : coloringInfo)
 		{
-			// If not null, that means we've already loaded it.
-			if (info.coloringValues != null)
-				continue;
-
-			String filename = info.coloringFile;
-			if (!info.builtIn)
-				filename = FileCache.FILE_PREFIX + getCustomDataFolder() + File.separator + filename;
-			if (!filename.startsWith(FileCache.FILE_PREFIX))
-				filename += "_res" + resolutionLevel + ".txt.gz";
-			File file = FileCache.getFileFromServer(filename);
-			if (file == null)
-				throw new IOException("Unable to download " + filename);
-
-			if (info.format == Format.TXT)
-				loadColoringDataTxt(file, info);
-			else if (info.format == Format.FIT)
-				loadColoringDataFits(file, info);
+			loadFile(info);
 		}
 
 		initializeColoringRanges();
@@ -1628,6 +1736,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		if (coloringIndex != index || useFalseColoring)
 		{
 			coloringIndex = index;
+			loadColoringData();
 			useFalseColoring = false;
 			
 			if (index!=-1)
@@ -1767,7 +1876,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		try
 		{
 			if (index >= 0 && index < coloringInfo.size() && coloringInfo.get(index).coloringValues == null)
-				loadColoringData();
+				loadFile(coloringInfo.get(index));
 		}
 		catch (Exception e)
 		{
@@ -1782,7 +1891,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	{
 		try
 		{
-			loadColoringData();
+			loadAllColoringData();
 		}
 		catch (Exception e)
 		{
@@ -1895,15 +2004,27 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	private double[] computeDefaultColoringRange(int index)//, boolean adjustForColorTable)
 	{
 		ColoringInfo info = coloringInfo.get(index);
+		computeDefaultColoringRange(info);
+		return info.defaultColoringRange;
+	}
+
+	// Compute the range of an array but account for the fact that for some
+	// datasets,
+	// some of the data is missing as represented by the lowest valued. So
+	// compute
+	// the range ignoring this lowest value (i.e take the lowest value to be the
+	// value
+	// just higher than the lowest value).
+	private void computeDefaultColoringRange(ColoringInfo info)// , boolean
+															// adjustForColorTable)
+	{
+		if (info.defaultColoringRange != null)
+			return;
 
 		double[] range = new double[2];
 		info.coloringValues.GetRange(range);
 
-		if (!info.coloringHasNulls)
-		{
-			return range;
-		}
-		else
+		if (info.coloringHasNulls)
 		{
 			vtkFloatArray array = info.coloringValues;
 			int numberValues = array.GetNumberOfTuples();
@@ -1917,28 +2038,21 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 			range[0] = adjustedMin;
 
-			return range;
 		}
+		info.defaultColoringRange = new double[2];
+		info.defaultColoringRange[0] = range[0];
+		info.defaultColoringRange[1] = range[1];
+
+		info.currentColoringRange = new double[2];
+		info.currentColoringRange[0] = range[0];
+		info.currentColoringRange[1] = range[1];
 	}
 
 	private void initializeColoringRanges()
 	{
-		int numberOfColors = getNumberOfColors();
-
-		for (int i=0; i<numberOfColors; ++i)
+		for (ColoringInfo info: coloringInfo)
 		{
-			double[] range = computeDefaultColoringRange(i);
-			ColoringInfo info = coloringInfo.get(i);
-			if (info.defaultColoringRange == null)
-			{
-				info.defaultColoringRange = new double[2];
-				info.defaultColoringRange[0] = range[0];
-				info.defaultColoringRange[1] = range[1];
-
-				info.currentColoringRange = new double[2];
-				info.currentColoringRange[0] = range[0];
-				info.currentColoringRange[1] = range[1];
-			}
+			computeDefaultColoringRange(info);
 		}
 	}
 
@@ -2021,10 +2135,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		initializeActorsAndMappers();
 
-		loadColoringData();
-
 		if (coloringIndex >= 0)
 		{
+			loadColoringData();			
 			ColoringInfo info = coloringInfo.get(coloringIndex);
 			String title = info.coloringName;
 			if (!info.coloringUnits.isEmpty())
@@ -2422,21 +2535,20 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	 */
 	public double getReferencePotential()
 	{
-		try
-		{
-			loadColoringData();
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-			return Double.MAX_VALUE;
-		}
-
 		int numColors = coloringInfo.size();
 		for (int j=0; j<numColors; ++j)
 		{
 			if (coloringInfo.get(j).coloringName.equals(GravPotStr))
 			{
+				try
+				{
+					loadFile(coloringInfo.get(j));
+				}
+				catch (Exception e)
+				{
+					e.printStackTrace();
+					return Double.MAX_VALUE;
+				}
 				double potTimesAreaSum = 0.0;
 				double totalArea = 0.0;
 				double minRefPot = Double.MAX_VALUE;
@@ -2522,7 +2634,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	 */
 	public void savePlateData(File file) throws IOException
 	{
-		loadColoringData();
+		loadAllColoringData();
 
 		FileWriter fstream = new FileWriter(file);
 		BufferedWriter out = new BufferedWriter(fstream);
@@ -2690,9 +2802,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		info.coloringValues = null;
 		info.defaultColoringRange = null;
 		coloringInfo.add(info);
-
-		if (coloringIndex >= 0)
-			loadColoringData();
 	}
 
 	public void setCustomPlateData(int index, ColoringInfo info) throws IOException
@@ -2708,7 +2817,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		if (coloringIndex >= 0)
 		{
-			loadColoringData();
 			paintBody();
 		}
 	}
@@ -2760,7 +2868,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			info.defaultColoringRange = null;
 		}
 
-		loadColoringData();
+		if (coloringIndex >= 0 && coloringIndex < coloringInfo.size())
+			loadColoringData();
 	}
 
 	public List<ColoringInfo> getColoringInfoList()
