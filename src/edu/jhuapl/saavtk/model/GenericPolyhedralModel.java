@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -1606,18 +1607,28 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				break;
 			case UNKNOWN:
 				// Prefer FITS if that exists.
-				File fitsFile = FileCache.getFileFromServer(fileName + ".fits.gz");
-				if (fitsFile != null && fitsFile.exists())
-				{
-					file = fitsFile;
+				if (FileCache.isFileGettable(fileName + ".fits.gz"))
+				{					
+					File fitsFile = FileCache.getFileFromServer(fileName + ".fits.gz");
+					if (fitsFile != null && fitsFile.exists())
+					{
+						file = fitsFile;
+					}
 				}
-				else
+				if (file == null && FileCache.isFileGettable(fileName + ".txt.gz"))
 				{
 					File textFile = FileCache.getFileFromServer(fileName + ".txt.gz");
 					if (textFile != null && textFile.exists())
 					{
 						fileName += ".txt.gz";
 						file = textFile;
+					}
+				}
+				if (file == null) {
+					try {
+						throw new FileNotFoundException(fileName + " (.fits.gz or .txt.gz)");
+					} catch (FileNotFoundException e) {
+						e.printStackTrace();
 					}
 				}
 				break;
