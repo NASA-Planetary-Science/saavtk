@@ -9,8 +9,6 @@ import java.net.URLConnection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 
-import javax.swing.JOptionPane;
-
 import org.apache.commons.io.input.CountingInputStream;
 
 public class FileCache
@@ -19,7 +17,7 @@ public class FileCache
 
     // Stores files already downloaded in this process
     private static ConcurrentHashMap<String, Object> downloadedFiles =
-        new ConcurrentHashMap<String, Object>();
+        new ConcurrentHashMap<>();
 
     private static volatile boolean abortDownload = false;
 
@@ -147,6 +145,8 @@ public class FileCache
         {
             URL u = new URL(Configuration.getDataRootURL() + path);
 
+            System.err.println("getFileInfoFromServer():" + u);
+
             URLConnection conn = u.openConnection();
             conn.setRequestProperty("User-Agent", "Mozilla/4.0");
             conn.setRequestProperty("Accept","*/*");
@@ -159,15 +159,15 @@ public class FileCache
             catch (IOException e)
             {
                 //e.printStackTrace();
-            	if(!exists)
+            	if(!exists && doDownloadIfNeeded)
             	{
             		// Print an error message if the file does not exist in the cache and we cannot
             		// connect to the server to download it.
             		e.printStackTrace();
-            		JOptionPane.showMessageDialog(null,
-                        "File " + path + " does not exist in cache and client is unable to connect to server to download.",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
+//            		JOptionPane.showMessageDialog(null,
+//                        "File " + path + " does not exist in cache and client is unable to connect to server to download.",
+//                        "Error",
+//                        JOptionPane.ERROR_MESSAGE);
             	}
             	
             	fi.existsOnServer=false;
@@ -242,11 +242,46 @@ public class FileCache
     }
 
     /**
+     * Determine if it appears that the provided file name could be opened.
+     * If the server is in use this will check whether the file exists
+     * on the server. Otherwise it checks whether the file already exists
+     * on disk. This will not actually open or download any files.
+     * 
+     * This method must be kept consistent with the getFileFromServer
+     * method below.
+     * @param fileName the file to check
+     * @return
+     */
+    static public boolean isFileGettable(String fileName)
+    {
+    	File file = null;
+        if (!Configuration.useFileCache())
+        {
+            file = new File(fileName);
+        }
+        else
+        {
+            if (fileName.startsWith(FILE_PREFIX))
+            {
+                file = new File(fileName.substring(FILE_PREFIX.length()));
+            }
+            else
+            {
+                FileInfo fi = getFileInfoFromServer(fileName, false);
+                if (fi.existsInCache || fi.existsOnServer) return true;
+                file = fi.file;
+            }
+        }
+        return file != null && file.exists();
+    }
+ 
+    /**
      * Get (download) the file from the server. Place it in the cache for
      * future access.
      * If the path begins with "file://", then the file is assumed to be local
      * on disk and no server is contacted.
      *
+     * This method must be kept consistent with the isFileGettable method above.
      * @param path
      * @return
      */
