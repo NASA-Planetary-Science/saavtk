@@ -15,7 +15,7 @@ public class ColoringInfo
     public vtkFloatArray coloringValues = null;
     public String coloringFile = null;
     public boolean builtIn = true;
-    public Format format = Format.TXT;
+    public Format format = Format.UNKNOWN;
 
     @Override
     public String toString()
