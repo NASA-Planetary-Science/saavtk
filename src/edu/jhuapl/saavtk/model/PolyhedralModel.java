@@ -45,6 +45,7 @@ public abstract class PolyhedralModel extends AbstractModel
     public enum Format {
         TXT,
         FIT,
+        UNKNOWN
     }
 
     static public final String SlopeStr = "Slope";
