@@ -177,14 +177,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		idList = new vtkIdList();
 	}
 
-	public GenericPolyhedralModel(ViewConfig config)
-	{
-		super(config);
-		smallBodyPolyData = new vtkPolyData();
-		genericCell = new vtkGenericCell();
-		idList = new vtkIdList();
-	}
-
 	/**
 	 * Convenience method for initializing a GenericPolyhedralModel with just a vtkPolyData.
 	 * @param polyData
@@ -268,6 +260,72 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		initialize(defaultModelFile);
 
+	}
+
+	// Note this change has been merged back into sbmt1dev, but not
+	// all SBMT2 changes were initially.
+	// SBMT 2 constructor
+	public GenericPolyhedralModel(ViewConfig config)
+	{
+		super(config);
+	}
+
+	protected void initializeConfigParameters(
+			String[] modelFiles,
+			String[] coloringFiles,
+			String[] coloringNames,
+			String[] coloringUnits,
+			boolean[] coloringHasNulls,
+			String[] imageMapNames,
+			ColoringValueType coloringValueType,
+			boolean lowestResolutionModelStoredInResource)
+	{
+		this.modelFiles = modelFiles;
+		setDefaultModelFileName(this.modelFiles[0]);
+		this.imageMapNames = imageMapNames;
+		this.coloringValueType = coloringValueType;
+		if (coloringNames != null)
+		{
+			for (int i=0; i<coloringNames.length; ++i)
+			{
+				ColoringInfo info = new ColoringInfo();
+				info.coloringName = coloringNames[i];
+				info.coloringFile = coloringFiles[i];
+				if (info.coloringFile.toLowerCase().endsWith(".fit") || info.coloringFile.toLowerCase().endsWith(".fits"))
+					info.format = Format.FIT;
+				info.coloringUnits = coloringUnits[i];
+				if (coloringHasNulls != null)
+					info.coloringHasNulls = coloringHasNulls[i];
+				if (!isColoringAvailable(info))
+				{
+					System.err.println("Plate coloring is not available. Disabling " + info.coloringName);
+					continue;
+				}
+				coloringInfo.add(info);
+			}
+		}
+
+		colorData = new vtkUnsignedCharArray();
+		smallBodyPolyData = new vtkPolyData();
+		genericCell = new vtkGenericCell();
+		idList = new vtkIdList();
+
+		if (Configuration.useFileCache())
+		{
+			if (lowestResolutionModelStoredInResource)
+				defaultModelFile = ConvertResourceToFile.convertResourceToRealFile(
+						this,
+						modelFiles[0],
+						Configuration.getApplicationDataDir());
+			else
+				defaultModelFile = FileCache.getFileFromServer(modelFiles[0]);
+		}
+		else
+		{
+			defaultModelFile = new File(modelFiles[0]);
+		}
+
+		initialize(defaultModelFile);
 	}
 
 	public void setColormap(Colormap colormap)
