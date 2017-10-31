@@ -1526,7 +1526,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		//        if (resolutionLevel > 0)
 		{
 			smallBodyFile = FileCache.getFileFromServer(modelFiles[resolutionLevel]);
-			defaultModelFile = smallBodyFile;
+			//defaultModelFile = smallBodyFile;
 		}
 
 		this.initializeDefaultModel();
