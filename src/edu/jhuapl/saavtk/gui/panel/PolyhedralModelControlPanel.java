@@ -71,6 +71,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
     private List<JRadioButton> resModelButtons = new ArrayList<JRadioButton>();
     private ButtonGroup resolutionButtonGroup;
     private JCheckBox gridCheckBox;
+    protected JCheckBox gridLabelCheckBox;
+
     private JCheckBox axesCheckBox;
     private JCheckBox imageMapCheckBox;
     private JLabel opacityLabel;
@@ -345,9 +347,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         saveColoringButton.addActionListener(new SavePlateDataAction());
 
         customizeColoringButton = new JButton("Customize Plate Coloring...");
-        if (smallBodyModel.getConfig().customTemporary)
-            customizeColoringButton.setEnabled(false);
-        else
+//        if (smallBodyModel.getConfig().customTemporary)
+ //           customizeColoringButton.setEnabled(false);
+ //       else
             customizeColoringButton.setEnabled(true);
         customizeColoringButton.addActionListener(new CustomizePlateDataAction());
 
@@ -364,6 +366,13 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         gridCheckBox.setText("Show Coordinate Grid");
         gridCheckBox.setSelected(false);
         gridCheckBox.addItemListener(this);
+                
+        gridLabelCheckBox = new JCheckBox();
+        gridLabelCheckBox.setText("Show Coord Labels");
+        gridLabelCheckBox.setSelected(false);
+        gridLabelCheckBox.setEnabled(false);
+        gridLabelCheckBox.addItemListener(this);
+
 
         axesCheckBox = new JCheckBox();
         axesCheckBox.setText("Show Orientation Axes");
@@ -440,7 +449,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             panel.add(opacityLabel, "gapleft 25, split 2");
             panel.add(imageMapOpacitySpinner, "wrap");
         }
-        panel.add(gridCheckBox, "wrap");
+        panel.add(gridCheckBox);
+        panel.add(gridLabelCheckBox, "wrap");
 
         panel.add(surfacePropertiesEditorPanel, "wrap");
 
@@ -455,10 +465,12 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
     public void itemStateChanged(ItemEvent e)
     {
+    	
         Picker.setPickingEnabled(false);
 
         PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
 
+        
         if (e.getItemSelectable() == this.modelCheckBox)
         {
             // In the following we ensure that the graticule and image map are shown
@@ -468,7 +480,12 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             {
                 smallBodyModel.setShowSmallBody(true);
                 if (graticule != null && gridCheckBox.isSelected())
+                {
                     graticule.setShowGraticule(true);
+                    gridLabelCheckBox.setEnabled(true);
+                }
+                else
+                	gridLabelCheckBox.setEnabled(false);
                 if (imageMapCheckBox.isSelected())
                     showImageMap(true);
             }
@@ -487,9 +504,26 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             if (graticule != null)
             {
                 if (e.getStateChange() == ItemEvent.SELECTED)
+                {
                     graticule.setShowGraticule(true);
+                    gridLabelCheckBox.setEnabled(true);
+                }
                 else
+                {
                     graticule.setShowGraticule(false);
+                    gridLabelCheckBox.setEnabled(false);
+                }
+            }
+        }
+        else if (e.getItemSelectable() == this.gridLabelCheckBox)
+        {
+            Graticule graticule = (Graticule)modelManager.getModel(ModelNames.GRATICULE);
+            if (graticule != null)
+            {
+                if (e.getStateChange() == ItemEvent.SELECTED)
+                    graticule.setShowCaptions(true);
+                else
+                    graticule.setShowCaptions(false);
             }
         }
         else if (e.getItemSelectable() == this.imageMapCheckBox)

@@ -156,7 +156,7 @@ public class FileCache
             //    u.openStream();   // sometimes this throws a FileNotFoundException because the server returns HTTP 404 even though the file exists; the declaration of conn just above, with the subsequent properties, seems to give the correct result (e.g. not a 404 for files that do exist)
                 conn.getInputStream();
             }
-            catch (IOException e)
+            catch (@SuppressWarnings("unused") IOException e)
             {
                 //e.printStackTrace();
             	if(!exists && doDownloadIfNeeded)

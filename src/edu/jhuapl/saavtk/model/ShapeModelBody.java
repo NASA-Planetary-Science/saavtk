@@ -12,6 +12,7 @@ public enum ShapeModelBody
     PHOBOS("Phobos"),
     RQ36("101955 Bennu"),
     DIONE("Dione"),
+    TELESTO("Telesto"),
     RHEA("Rhea"),
     TETHYS("Tethys"),
     LUTETIA("21 Lutetia"),
@@ -70,7 +71,16 @@ public enum ShapeModelBody
     PALLAS("2 Pallas"),
     DAPHNE("41 Daphne"),
     HERMIONE("121 Hermione"),
-    _67P("67P/Churyumov-Gerasmenko");
+    _67P("67P/Churyumov-Gerasmenko"),
+    EARTH("Earth"),
+    CALYPSO("Calypso"),
+    PAN("Pan"),
+    ENCELADUS("Enceladus"),
+    IAPETUS("Iapetus"),
+    ATLAS("Atlas"),
+    HELENE("Helene"),
+    RYUGU("162173 Ryugu"),
+    ;
 
     final private String str;
     private ShapeModelBody(String str)

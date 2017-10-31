@@ -14,6 +14,8 @@ public class OccludingCaptionActor extends vtkCaptionActor2D
 
 	double[] normal;
 	double[] rayStartPoint;
+	boolean enabled=true;	// overrides visibility
+
 	
 	public OccludingCaptionActor(double[] polygonCenterPoint, String polygonName, PolyhedralModel smallBodyModel)
 	{
@@ -56,5 +58,15 @@ public class OccludingCaptionActor extends vtkCaptionActor2D
 		return rayStartPoint;
 	}
 	
+
+	public void setEnabled(boolean flag)
+	{
+		enabled=flag;
+	}
+	
+	public boolean isEnabled()
+	{
+		return enabled;
+	}
 	
 }
