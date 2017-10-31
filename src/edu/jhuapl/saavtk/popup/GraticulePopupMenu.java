@@ -2,12 +2,16 @@ package edu.jhuapl.saavtk.popup;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
+import java.beans.PropertyChangeEvent;
 
 import javax.swing.AbstractAction;
+import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 
@@ -17,6 +21,7 @@ import edu.jhuapl.saavtk.gui.dialog.ColorChooser;
 import edu.jhuapl.saavtk.model.Graticule;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
+import edu.jhuapl.saavtk.util.Properties;
 
 public class GraticulePopupMenu extends PopupMenu
 {
@@ -24,6 +29,7 @@ public class GraticulePopupMenu extends PopupMenu
     private Component invoker;
     private JMenuItem colorMenuItem;
     private JMenuItem thicknessMenuItem;
+    private JMenuItem setLatLongSpacing;
 
     public GraticulePopupMenu(ModelManager modelManager,
             Component invoker)
@@ -38,6 +44,10 @@ public class GraticulePopupMenu extends PopupMenu
         thicknessMenuItem = new JMenuItem(new ChangeThicknessAction());
         thicknessMenuItem.setText("Change Line Width...");
         this.add(thicknessMenuItem);
+
+        setLatLongSpacing = new JMenuItem(new ChangeLatLongSpacingAction());
+        setLatLongSpacing.setText("Change Grid Spacing...");
+        this.add(setLatLongSpacing);
     }
 
     public class ChangeColorAction extends AbstractAction
@@ -78,6 +88,43 @@ public class GraticulePopupMenu extends PopupMenu
         }
     }
 
+    public class ChangeLatLongSpacingAction extends AbstractAction
+    {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+            SpinnerNumberModel longitudeModel = new SpinnerNumberModel(graticule.getLongitudeSpacing(), 0., 180.0, 1.0);
+            JSpinner longitudeSpinner = new JSpinner(longitudeModel);
+
+            SpinnerNumberModel latitudeModel = new SpinnerNumberModel(graticule.getLatitudeSpacing(), 0., 90.0, 1.0);
+            JSpinner latitudeSpinner = new JSpinner(latitudeModel);
+
+            JPanel topPanel = new JPanel();
+            topPanel.setLayout(new GridLayout(2, 1));
+            topPanel.add(new JLabel("<html>Note: a fine grid spacing may<br>take a long time to render."));
+            JPanel panel = new JPanel();
+            topPanel.add(panel);
+            panel.setLayout(new GridLayout(2, 2));
+            panel.add(new JLabel("Longitude Spacing"));
+            panel.add(longitudeSpinner);
+            panel.add(new JLabel("Latitude Spacing"));
+            panel.add(latitudeSpinner);
+
+            int option = JOptionPane.showOptionDialog(
+                    invoker,
+                    topPanel,
+                    "Enter valid longitude/latitude spacing",
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    null, null, null);
+
+            if (option == JOptionPane.OK_OPTION)
+            {
+                graticule.setLongitudeSpacing((Double)longitudeSpinner.getValue());
+                graticule.setLatitudeSpacing((Double)latitudeSpinner.getValue());
+                graticule.propertyChange(new PropertyChangeEvent(this, Properties.MODEL_RESOLUTION_CHANGED, null, null));
+            }
+		}
+    }
 
     @Override
     public void showPopup(MouseEvent e, vtkProp pickedProp, int pickedCellId,
