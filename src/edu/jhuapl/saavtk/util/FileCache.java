@@ -91,7 +91,7 @@ public class FileCache
      */
     static private FileInfo getFileInfoFromServer(String path, boolean doDownloadIfNeeded)
     {
-        path = replaceBackslashesWithForwardSlashes(path);
+        path = cleanPath(path);
 
         FileInfo fi = new FileInfo();
 
@@ -426,6 +426,17 @@ public class FileCache
     static private String replaceBackslashesWithForwardSlashes(String path)
     {
         return path.replace('\\', '/');
+    }
+
+    /**
+     * Make sure path is clean and starts with a slash.
+     * @param path input path
+     * @return the cleaned path
+     */
+    static private String cleanPath(String path)
+    {
+    	path = replaceBackslashesWithForwardSlashes(SafePaths.getString(path));
+    	return path.replaceFirst("^/*", "/");
     }
 
     static public void setOfflineMode(boolean offline, String rootFolder)
