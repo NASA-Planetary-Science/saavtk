@@ -19,7 +19,9 @@ public enum ShapeModelAuthor
     MVIC("MVIC"),
     CARRY("Carry"),
     DLR("DLR"),
-    BLENDER("Zimmerman");
+    BLENDER("Zimmerman"),
+    TRUTH("Truth"),
+    ;
 
     final private String str;
     private ShapeModelAuthor(String str)
