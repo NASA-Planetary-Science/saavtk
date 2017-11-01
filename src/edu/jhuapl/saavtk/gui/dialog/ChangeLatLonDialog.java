@@ -87,6 +87,7 @@ public class ChangeLatLonDialog extends JDialog implements ActionListener
             {
                 if (structureModel instanceof AbstractEllipsePolygonModel)
                 {
+                	
                     double latitude = Double.parseDouble(latTextField.getText());
                     double longitude = Double.parseDouble(lonTextField.getText());
 
