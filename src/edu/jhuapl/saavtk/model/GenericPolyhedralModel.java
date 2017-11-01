@@ -1157,8 +1157,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		LatLon lla = new LatLon(lat, lon);
 		double[] lookPt = MathUtil.latrec(lla);
 
-		System.out.println(new Vector3D(lookPt).normalize());
-		
 		// Move in the direction of lookPt until we are definitely outside the asteroid
 		BoundingBox bb = getBoundingBox();
 		double largestSide = bb.getLargestSide() * 1.1;
