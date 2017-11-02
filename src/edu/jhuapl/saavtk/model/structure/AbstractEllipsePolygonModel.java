@@ -664,6 +664,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
         EllipsePolygon pol = polygons.get(polygonId);
         pol.updatePolygon(smallBodyModel, newCenter, pol.radius, pol.flattening, pol.angle);
         updatePolyData();
+        
+
+        
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
     }
 
@@ -678,7 +681,14 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
     {
         double[] newCenter = new double[3];
         smallBodyModel.getPointAndCellIdFromLatLon(latitude, longitude, newCenter);
-        movePolygon(polygonId, newCenter);
+        double[] center=getStructureCenter(polygonId);
+        
+        Vector3D centerVec=new Vector3D(center);
+        Vector3D newCenterVec=new Vector3D(newCenter);
+        newCenterVec=newCenterVec.scalarMultiply(centerVec.getNorm()/newCenterVec.getNorm());// there is sometimes a radial offset (parallel to both center and newCenter) that needs to be corrected
+        
+        //System.out.println(newCenterVec+" "+centerVec);
+        movePolygon(polygonId, newCenterVec.toArray());
     }
 
     public void changeRadiusOfPolygon(int polygonId, double[] newPointOnPerimeter)
@@ -757,6 +767,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
         double newFlattening = computeFlatteningOfPolygon(pol.center, pol.radius, pol.angle, newPointOnPerimeter);
 
         pol.updatePolygon(smallBodyModel, pol.center, pol.radius, newFlattening, pol.angle);
+        
+       
         updatePolyData();
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
     }
@@ -934,12 +946,16 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
             pol.center[0] = Double.parseDouble(words[2]);
             pol.center[1] = Double.parseDouble(words[3]);
             pol.center[2] = Double.parseDouble(words[4]);
-
+            
             if (pol.id > maxPolygonId)
                 maxPolygonId = pol.id;
 
             // Note the next 3 words in the line (the point in spherical coordinates) are not used
 
+  //          LatLon latLon=MathUtil.reclat(pol.center);
+//            System.out.println(words[5]+" "+(360-Double.parseDouble(words[6]))+" "+Math.toDegrees(latLon.lat)+" "+Math.toDegrees(latLon.lon));
+
+            
             // For the new format and the points file in the old format, the next 4 columns (slope,
             // elevation, acceleration, and potential) are not used.
 
@@ -984,9 +1000,13 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
                     pol.color[2] = Integer.parseInt(colorStr[2]);
                 }
             }
+            
 
             pol.updatePolygon(smallBodyModel, pol.center, pol.radius, pol.flattening, pol.angle);
             newPolygons.add(pol);
+
+            
+//            System.out.println(pol.name+" "+Arrays.toString(pol.center));
 
             //Second to last word is the label, last string is the color
             if(words[words.length-2].substring(0, 2).equals("l:"))
