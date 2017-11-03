@@ -1,0 +1,14 @@
+/AbstractLoadTask.class
+/CsvLoadTask.class
+/CsvLoadTask2.class
+/Log.class
+/Streams$StreamCopier.class
+/Streams.class
+/Tasks$1.class
+/Tasks.class
+/ThreadedForLoopTask$AbstractLoop.class
+/ThreadedForLoopTask$ForLoop.class
+/ThreadedForLoopTask.class
+/ThreadedRangeTask$ForLoopRange.class
+/ThreadedRangeTask.class
+/VtkDataLoadTask.class

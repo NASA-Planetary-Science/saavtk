@@ -1173,7 +1173,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		int[] cellId = new int[1];
 
 		int result = cellLocator.IntersectWithLine(origin, lookPt, tol, t, x, pcoords, subId, cellId, genericCell);
-
+		
 		intersectPoint[0] = x[0];
 		intersectPoint[1] = x[1];
 		intersectPoint[2] = x[2];
@@ -1526,7 +1526,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		//        if (resolutionLevel > 0)
 		{
 			smallBodyFile = FileCache.getFileFromServer(modelFiles[resolutionLevel]);
-			defaultModelFile = smallBodyFile;
+			//defaultModelFile = smallBodyFile;
 		}
 
 		this.initializeDefaultModel();
