@@ -20,8 +20,7 @@ public enum ShapeModelAuthor
     CARRY("Carry"),
     DLR("DLR"),
     BLENDER("Zimmerman"),
-    TRUTH("Truth"),
-    ;
+    TRUTH("Truth");
 
     final private String str;
     private ShapeModelAuthor(String str)
