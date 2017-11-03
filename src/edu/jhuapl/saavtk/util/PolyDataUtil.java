@@ -2554,8 +2554,8 @@ public class PolyDataUtil
 
         double[] spacecraftPosition = frustum.origin;
         double[] frustum1 = frustum.ul;
-        double[] frustum3 = frustum.ur;
         double[] frustum2 = frustum.lr;
+        double[] frustum3 = frustum.ur;
 
         vtkPointData pointData = footprint.GetPointData();
         vtkDataArray textureCoordinates = pointData.GetTCoords();
