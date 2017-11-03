@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.util;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 public class Frustum
 {
@@ -38,6 +39,29 @@ public class Frustum
         b = MathUtil.vsep(ul, lr);
     }
 
+
+    public Frustum(double[] o, double[] look, double[] u, double fovxDeg, double fovyDeg)	// +x is boresight cross up, +y is direction of up
+    {
+    	this.origin=o;
+    	Vector3D lookAt=new Vector3D(look);
+    	Vector3D up= new Vector3D(u);
+    	Vector3D origin=new Vector3D(o);
+    	Vector3D boresight=lookAt.subtract(origin).normalize();
+    	Vector3D xhat=boresight.crossProduct(up).normalize();
+    	Vector3D yhat=up.normalize();
+    	double fovx=Math.toRadians(fovxDeg);
+    	double fovy=Math.toRadians(fovyDeg);
+    	double dxhf=Math.tan(fovx/2);
+    	double dyhf=Math.tan(fovy/2);
+    	ul=xhat.scalarMultiply(-dxhf).add(yhat.scalarMultiply(+dyhf)).add(boresight).toArray();
+    	ur=xhat.scalarMultiply(+dxhf).add(yhat.scalarMultiply(+dyhf)).add(boresight).toArray();
+    	ll=xhat.scalarMultiply(-dxhf).add(yhat.scalarMultiply(-dyhf)).add(boresight).toArray();
+    	lr=xhat.scalarMultiply(+dxhf).add(yhat.scalarMultiply(-dyhf)).add(boresight).toArray();
+
+        a = MathUtil.vsep(ul, ur);
+        b = MathUtil.vsep(ul, lr);
+    }
+    
     /**
      * Given a point in the frustum compute the texture coordinates of the
      * point assuming the frustum represents the field of the view of
