@@ -1663,47 +1663,63 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 		else
 		{
-			fileName += "_res" + resolutionLevel;
-			switch (info.format)
-			{
-			case TXT:
-				fileName += ".txt.gz";
-				file = FileCache.getFileFromServer(fileName);
-				break;
-			case FIT:
-				fileName += ".fits.gz";
-				file = FileCache.getFileFromServer(fileName);
-				break;
-			case UNKNOWN:
-				// Prefer FITS if that exists.
-				if (FileCache.isFileGettable(fileName + ".fits.gz"))
-				{					
-					File fitsFile = FileCache.getFileFromServer(fileName + ".fits.gz");
-					if (fitsFile != null && fitsFile.exists())
-					{
-						file = fitsFile;
-					}
-				}
-				if (file == null && FileCache.isFileGettable(fileName + ".txt.gz"))
-				{
-					File textFile = FileCache.getFileFromServer(fileName + ".txt.gz");
-					if (textFile != null && textFile.exists())
-					{
-						fileName += ".txt.gz";
-						file = textFile;
-					}
-				}
-				if (file == null) {
-					try {
-						throw new FileNotFoundException(fileName + " (.fits.gz or .txt.gz)");
-					} catch (FileNotFoundException e) {
-						e.printStackTrace();
-					}
-				}
-				break;
-			default:
-				throw new AssertionError("Unhandled case " + info.format);
+			try {
+				file = retrieveAndCacheFile(fileName + "_res" + resolutionLevel, info.format);
+				System.err.println("Found FITS or TEXT file for coloring " + fileName + "_res" + resolutionLevel);
+			} catch (FileNotFoundException e) {
+				System.err.println("Did not find FITS or TEXT file for coloring " + fileName + "_res" + resolutionLevel);
 			}
+			if (file == null)
+			{
+				try {
+					file = retrieveAndCacheFile(fileName + resolutionLevel, info.format);
+					System.err.println("Found FITS or TEXT file for coloring " + fileName + resolutionLevel);
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return file;
+	}
+
+	private File retrieveAndCacheFile(String fileName, Format format) throws FileNotFoundException
+	{
+		File file = null;
+		switch (format)
+		{
+		case TXT:
+			fileName += ".txt.gz";
+			file = FileCache.getFileFromServer(fileName);
+			break;
+		case FIT:
+			fileName += ".fits.gz";
+			file = FileCache.getFileFromServer(fileName);
+			break;
+		case UNKNOWN:
+			// Prefer FITS if that exists.
+			if (FileCache.isFileGettable(fileName + ".fits.gz"))
+			{					
+				File fitsFile = FileCache.getFileFromServer(fileName + ".fits.gz");
+				if (fitsFile != null && fitsFile.exists())
+				{
+					file = fitsFile;
+				}
+			}
+			if (file == null && FileCache.isFileGettable(fileName + ".txt.gz"))
+			{
+				File textFile = FileCache.getFileFromServer(fileName + ".txt.gz");
+				if (textFile != null && textFile.exists())
+				{
+					fileName += ".txt.gz";
+					file = textFile;
+				}
+			}
+			if (file == null) {
+				throw new FileNotFoundException("Did not find file with base name " + fileName + " (.fits.gz or .txt.gz)");
+			}
+			break;
+		default:
+			throw new AssertionError("Unhandled case " + format);
 		}
 		return file;
 	}
@@ -1712,20 +1728,26 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		String fileName = info.coloringFile;
 		if (!fileName.startsWith(FileCache.FILE_PREFIX))
 		{
-			fileName += "_res" + resolutionLevel;
-			switch (info.format)
-			{
-			case TXT:
-				fileName += ".txt.gz";
-				break;
-			case FIT:
-				fileName += ".fits.gz";
-				break;
-			case UNKNOWN:
-				return FileCache.isFileGettable(fileName + ".fits.gz") || FileCache.isFileGettable(fileName + ".txt.gz");
-			default:
-				throw new AssertionError("Unhandled case " + info.format);
-			}
+			return isColoringAvailable(fileName + "_res" + resolutionLevel, info.format) ||
+				isColoringAvailable(fileName + resolutionLevel, info.format);
+		}
+		return FileCache.isFileGettable(fileName);
+	}
+
+	private boolean isColoringAvailable(String fileName, Format format)
+	{
+		switch (format)
+		{
+		case TXT:
+			fileName += ".txt.gz";
+			break;
+		case FIT:
+			fileName += ".fits.gz";
+			break;
+		case UNKNOWN:
+			return FileCache.isFileGettable(fileName + ".fits.gz") || FileCache.isFileGettable(fileName + ".txt.gz");
+		default:
+			throw new AssertionError("Unhandled case " + format);
 		}
 		return FileCache.isFileGettable(fileName);
 	}

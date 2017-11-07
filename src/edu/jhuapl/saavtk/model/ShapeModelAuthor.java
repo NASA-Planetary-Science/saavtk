@@ -18,7 +18,11 @@ public enum ShapeModelAuthor
     LORRI("LORRI"),
     MVIC("MVIC"),
     CARRY("Carry"),
-    DLR("DLR");
+    DLR("DLR"),
+    BLENDER("Zimmerman"),
+    OREX("Orex"),
+    HAYABUSA2("Hayabusa2"),
+    TRUTH("Truth");
 
     final private String str;
     private ShapeModelAuthor(String str)

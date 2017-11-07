@@ -5,14 +5,16 @@ public class DateTimeUtil
     /**
      * Convert Bob Gaskell's date time format as used in his sumfiles to
      * yyyy-MM-dd'T'HH:mm:ss.SSS format. Java does not seem to support
-     * this format.
+     * this format. For greater generality, this method also accepts
+     * strings already in this format, in which case the string returned
+     * is equivalent to the string passed in.
      *
      * @param datetime
      * @return
      */
     public static String convertDateTimeFormat(String datetime)
     {
-        String[] tokens = datetime.trim().split("\\s+");
+        String[] tokens = datetime.trim().split("[\\sT-]+");
 
         String year  = tokens[0];
         String month = tokens[1];
