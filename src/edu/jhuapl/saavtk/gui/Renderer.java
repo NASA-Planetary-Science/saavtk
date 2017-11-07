@@ -1107,6 +1107,11 @@ public class Renderer extends JPanel implements
         mainCanvas.resetCameraClippingRange();
         mainCanvas.Render();
     }
+    
+    public double[] getCameraFocalPoint() {
+      vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
+      return cam.GetFocalPoint();
+    }
 
     // Sets the camera roll with roll as defined by vtkCamera
     public void setCameraRoll(double angle)
