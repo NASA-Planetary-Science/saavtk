@@ -275,7 +275,7 @@ public class CameraDialog extends JDialog implements ActionListener
                 MathUtil.unorm(pos, pos);
                 MathUtil.vscl(radius + altitude, pos, pos);
                 renderer.setCameraFocalPoint(pos);
-                renderer.setViewPointLatLong();
+                renderer.setViewPointLatLong(); // This doesn't do anything?
             } 
             catch (Exception e2)
             {

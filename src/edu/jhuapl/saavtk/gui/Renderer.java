@@ -1108,6 +1108,7 @@ public class Renderer extends JPanel implements
         mainCanvas.Render();
     }
     
+    // gets the camera focal point as defined by vtkCamera
     public double[] getCameraFocalPoint() {
       vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
       return cam.GetFocalPoint();
@@ -1128,6 +1129,14 @@ public class Renderer extends JPanel implements
     public double getCameraRoll()
     {
         return mainCanvas.getRenderer().GetActiveCamera().GetRoll();
+    }
+    
+    // gets the camera position as defined by vtk camera
+    public double[] getCameraPosition()
+    {
+        vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
+        
+        return cam.GetPosition();
     }
 
     public vtksbmtJoglCanvas getRenderWindowPanel()
@@ -1631,19 +1640,16 @@ public class Renderer extends JPanel implements
 
     }
 
-    public GenericPolyhedralModel getGenericPolyhedralModel() {
-      return null;
+    public GenericPolyhedralModel getGenericPolyhedralModel(){
+      return (GenericPolyhedralModel) modelManager.getPolyhedralModel();
+  }
+
+
+    public void setViewPointLatLong()//LatLon viewPoint)
+    {
+        //System.out.println( (SmallBodyModel) modelManager.getPolyhedralModel());
     }
 
-    public void setViewPointLatLong() {
-      // TODO Auto-generated method stub
-      
-    }
-
-    public double[] getCameraPosition() {
-      // TODO Auto-generated method stub
-      return null;
-    }
 
 
 }
