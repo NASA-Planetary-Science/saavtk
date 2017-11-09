@@ -1631,6 +1631,20 @@ public class Renderer extends JPanel implements
 
     }
 
+    public GenericPolyhedralModel getGenericPolyhedralModel() {
+      return null;
+    }
+
+    public void setViewPointLatLong() {
+      // TODO Auto-generated method stub
+      
+    }
+
+    public double[] getCameraPosition() {
+      // TODO Auto-generated method stub
+      return null;
+    }
+
 
 }
 
