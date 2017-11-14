@@ -99,7 +99,7 @@ public class CameraDialog extends JDialog implements ActionListener
       panel.add(degreesLabel, "cell 2 0");
       
       // Create "View Point Latitude" text entry box and add to 2nd row
-      JLabel vpLat = new JLabel("View Point Latitude");
+      JLabel vpLat = new JLabel("Boresight Latitude");
       viewPointLatitiudeField = new JTextField();
       viewPointLatitiudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(viewPointLatitiudeField, -90.0, 90.0));
       JLabel vpLatDegree = new JLabel("degrees");
@@ -108,16 +108,16 @@ public class CameraDialog extends JDialog implements ActionListener
       panel.add(vpLatDegree, "cell 2 1");
       
       // Create "View Point Longitude" text entry box and add to 3rd row
-      JLabel vpLong = new JLabel("View Point Longitude");
+      JLabel vpLong = new JLabel("Boresight Longitude");
       viewPointLongitudeField = new JTextField();
       viewPointLongitudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(viewPointLongitudeField, -180.0, 180.0));
-      JLabel vpLongDegree = new JLabel("degrees");
+      JLabel vpLongDegree = new JLabel("degrees east");
       panel.add(vpLong, "cell 0 2");
       panel.add(viewPointLongitudeField, "cell 1 2,growx");
       panel.add(vpLongDegree, "cell 2 2");
       
       // Create "View Point Altitude" text entry box and add to 4th row
-      JLabel vpAlt = new JLabel("View Point Altitude");
+      JLabel vpAlt = new JLabel("Line of Sight Distance");
       viewPointAltitudeField = new JTextField();
       viewPointAltitudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(viewPointAltitudeField));
       JLabel vpAltDistance = new JLabel("km");
@@ -132,21 +132,21 @@ public class CameraDialog extends JDialog implements ActionListener
       panel.add(projComboBox, "cell 1 4,growx");
 
       // Create "Camera Latitude" text entry box and add to 6th row
-      panel.add(new JLabel("Camera Latitude"), "cell 0 5,alignx trailing");
+      panel.add(new JLabel("Sub-Spacecraft Latitude"), "cell 0 5,alignx trailing");
       cameraLatitudeField = new JTextField();
       cameraLatitudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(cameraLatitudeField, -90.0, 90.0));
       panel.add(cameraLatitudeField, "cell 1 5,growx");
       panel.add(new JLabel("degrees"), "cell 2 5");
 
       // Create "Camera Longitude" text entry box and add to 7th row
-      panel.add(new JLabel("Camera Longitude"), "cell 0 6,alignx trailing");
+      panel.add(new JLabel("Sub-Spacecraft Longitude"), "cell 0 6,alignx trailing");
       cameraLongitudeField = new JTextField();
       cameraLongitudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(cameraLongitudeField, -180.0, 180.0));
       panel.add(cameraLongitudeField, "cell 1 6,growx");
-      panel.add(new JLabel("degrees"), "cell 2 6");
+      panel.add(new JLabel("degrees east"), "cell 2 6");
       
       // Create "Camera Altitude" text entry box and add to 8th row
-      JLabel altLabel = new JLabel("Camera Altitude");
+      JLabel altLabel = new JLabel("Spacecraft Altitude");
       panel.add(altLabel, "cell 0 7,alignx trailing");
       cameraAltitudeField = new JTextField();
       cameraAltitudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(cameraAltitudeField));
@@ -205,18 +205,8 @@ public class CameraDialog extends JDialog implements ActionListener
             {
               GenericPolyhedralModel model = renderer.getGenericPolyhedralModel();
               double altitude = Double.valueOf(cameraAltitudeField.getText());
-              LatLon cameraLatLong = new LatLon(Double.valueOf(cameraLatitudeField.getText()), Double.valueOf(cameraLongitudeField.getText()));
-              double[] pos = MathUtil.latrec(cameraLatLong.toRadians());
-              double[] viewDirection = new double[3];
-              double[] origin = new double[3];
-              MathUtil.unorm(pos, pos);
-              MathUtil.vscl(JupiterScale, pos, origin);
-              MathUtil.vscl(-1.0, pos, viewDirection);
-//              pos[0] *= altitude;
-//              pos[1] *= altitude;
-//              pos[2] *= altitude;
-              int result = model.computeRayIntersection(origin, viewDirection, pos);
-              cameraRadius = MathUtil.vnorm(pos);
+              calculateCameraRadius();
+              
 //              System.out.println("RadiusCamera: " + cameraRadius);
               //MathUtil.unorm(pos, pos);
               //MathUtil.vscl(radius + altitude, pos, pos);
@@ -275,7 +265,7 @@ public class CameraDialog extends JDialog implements ActionListener
                 MathUtil.unorm(pos, pos);
                 MathUtil.vscl(radius + altitude, pos, pos);
                 renderer.setCameraFocalPoint(pos);
-                renderer.setViewPointLatLong(); // This doesn't do anything?
+                renderer.setViewPointLatLong(); // TODO: This doesn't do anything?
             } 
             catch (Exception e2)
             {
