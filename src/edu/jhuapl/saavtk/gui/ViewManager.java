@@ -180,11 +180,6 @@ public abstract class ViewManager extends JPanel
         return builtInViews;
     }
 
-    public void setBuiltInViews(List<View> builtInViews)
-    {
-        this.builtInViews = builtInViews;
-    }
-
     public List<View> getCustomViews()
     {
         return customViews;
