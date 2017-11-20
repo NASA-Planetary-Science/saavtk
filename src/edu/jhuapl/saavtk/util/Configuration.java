@@ -18,14 +18,17 @@ public class Configuration
     // Flag indicating if this version of the tool is APL in-house only ("private")
     static private boolean APLVersion = false;
 
-    static
-    {
-        // If the user sets the sbmt.root.url property then use that
-        // as the root URL. Otherwise use the default.
-        String rootURLProperty = System.getProperty("sbmt.root.url");
-        if (rootURLProperty != null)
-            rootURL = rootURLProperty;
-    }
+// Uncomment the following to enable the startup script (which can be changed by the user)
+// to specify the web server URL:
+//
+//    static
+//    {
+//        // If the user sets the sbmt.root.url property then use that
+//        // as the root URL. Otherwise use the default.
+//        String rootURLProperty = System.getProperty("sbmt.root.url");
+//        if (rootURLProperty != null)
+//            rootURL = rootURLProperty;
+//    }
 
     static public void setupPasswordAuthentication(final String username, final String password)
     {
@@ -81,6 +84,17 @@ public class Configuration
         }
 
         return cacheDir;
+    }
+
+    public static String getWebURL()
+    {
+        return webURL;
+    }
+
+    public static void setWebURL(String webURL)
+    {
+        Configuration.webURL = webURL;
+        Configuration.rootURL = webURL + "/sbmt";
     }
 
     public static String getRootURL()
