@@ -67,7 +67,12 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 
     public ViewMenu(ViewManager rootPanel, RecentlyViewed viewed)
     {
-        super("View");
+    	this("View", rootPanel, viewed);
+    }
+
+    public ViewMenu(String title, ViewManager rootPanel, RecentlyViewed viewed)
+    {
+        super(title);
 
         this.rootPanel = rootPanel;
         this.viewed=viewed;
