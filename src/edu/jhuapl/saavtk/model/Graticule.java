@@ -54,10 +54,7 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
     public Graticule(PolyhedralModel smallBodyModel, String[] gridFiles)
     {
     	this.smallBodyModel = smallBodyModel;
-        if (this.smallBodyModel != null)
-        {
-            this.smallBodyModel.addPropertyChangeListener(this);
-        }
+    	this.smallBodyModel.addPropertyChangeListener(this);
 
         actor = new vtkActor();
         mapper = new vtkPolyDataMapper();
