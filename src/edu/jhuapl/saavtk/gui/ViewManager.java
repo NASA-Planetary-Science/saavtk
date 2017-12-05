@@ -20,8 +20,8 @@ import edu.jhuapl.saavtk.util.Configuration;
 
 public abstract class ViewManager extends JPanel
 {
-    private List<View> builtInViews = new ArrayList<View>();
-    private List<View> customViews = new ArrayList<View>();
+    private List<View> builtInViews = new ArrayList<>();
+    private List<View> customViews = new ArrayList<>();
     private View currentView;
     private final StatusBar statusBar;
     private final Frame frame;
@@ -51,7 +51,8 @@ public abstract class ViewManager extends JPanel
         this.frame = frame;
         this.tempCustomShapeModelPath = tempCustomShapeModelPath;
 
-        setupViews();
+        // Subclass constructors should call this. It should not be called here because it is not final.
+//        setupViews();
     }
 
     protected void addBuiltInView(View view)
@@ -59,7 +60,7 @@ public abstract class ViewManager extends JPanel
         builtInViews.add(view);
     }
 
-    protected void addBuiltInViews(StatusBar statusBar)
+    protected void addBuiltInViews(@SuppressWarnings("unused") StatusBar statusBar)
     {
     }
 
@@ -180,11 +181,6 @@ public abstract class ViewManager extends JPanel
         return builtInViews;
     }
 
-    public void setBuiltInViews(List<View> builtInViews)
-    {
-        this.builtInViews = builtInViews;
-    }
-
     public List<View> getCustomViews()
     {
         return customViews;
@@ -285,7 +281,7 @@ public abstract class ViewManager extends JPanel
 
     public List<View> getAllViews()
     {
-        List<View> allViews = new ArrayList<View>();
+        List<View> allViews = new ArrayList<>();
         allViews.addAll(builtInViews);
         allViews.addAll(customViews);
         return allViews;

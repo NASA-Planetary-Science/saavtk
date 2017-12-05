@@ -8,25 +8,27 @@ import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.model.ShapeModelAuthor;
 
-public class ExampleViewManager extends ViewManager
+public final class ExampleViewManager extends ViewManager
 {
     public ExampleViewManager(StatusBar statusBar, Frame frame, String tempCustomShapeModelPath)
     {
         super(statusBar, frame, tempCustomShapeModelPath);
 
         frame.setTitle("Example SAAVTK Tool");
-
+        setupViews(); // Must be called before this view manager is used.
     }
 
-    protected void addBuiltInViews(StatusBar statusBar)
+    @Override
+	protected void addBuiltInViews(StatusBar statusBar)
     {
         for (ViewConfig config: ExampleViewConfig.getBuiltInConfigs())
         {
-            addBuiltInView(new ExampleView(statusBar, (ExampleViewConfig)config));
+            addBuiltInView(new ExampleView(statusBar, config));
         }
     }
 
-    public View createCustomView(StatusBar statusBar, String name, boolean temporary)
+    @Override
+	public View createCustomView(StatusBar statusBar, String name, boolean temporary)
     {
         ViewConfig config = new ExampleViewConfig();
         config.customName = name;

@@ -8,8 +8,9 @@ public class Configuration
     static private String rootURL = webURL + "/sbmt";
     static private String helpURL = webURL;
 
-    static private String appName = "saavtk";
+    static private String appName = null;
     static private String appDir = null;
+    static private String appTitle = null;
     static private String cacheDir = null;
     static private String cacheVersion = "";
     static private boolean useFileCache = true;
@@ -18,14 +19,17 @@ public class Configuration
     // Flag indicating if this version of the tool is APL in-house only ("private")
     static private boolean APLVersion = false;
 
-    static
-    {
-        // If the user sets the sbmt.root.url property then use that
-        // as the root URL. Otherwise use the default.
-        String rootURLProperty = System.getProperty("sbmt.root.url");
-        if (rootURLProperty != null)
-            rootURL = rootURLProperty;
-    }
+// Uncomment the following to enable the startup script (which can be changed by the user)
+// to specify the web server URL:
+//
+//    static
+//    {
+//        // If the user sets the sbmt.root.url property then use that
+//        // as the root URL. Otherwise use the default.
+//        String rootURLProperty = System.getProperty("sbmt.root.url");
+//        if (rootURLProperty != null)
+//            rootURL = rootURLProperty;
+//    }
 
     static public void setupPasswordAuthentication(final String username, final String password)
     {
@@ -33,7 +37,8 @@ public class Configuration
         {
             java.net.Authenticator.setDefault(new java.net.Authenticator()
             {
-                protected java.net.PasswordAuthentication getPasswordAuthentication()
+                @Override
+				protected java.net.PasswordAuthentication getPasswordAuthentication()
                 {
                     return new java.net.PasswordAuthentication(username, password.toCharArray());
                 }
@@ -54,6 +59,11 @@ public class Configuration
     {
         if (appDir == null)
         {
+        	if (appName == null)
+        	{
+        		appName = "saavtk";
+        		System.err.println("Warning: application name was not set; setting it to the default value of \"" + appName + "\"");
+        	}
             appDir = System.getProperty("user.home") + File.separator + "." + appName;
 
             // if the directory does not exist, create it
@@ -81,6 +91,17 @@ public class Configuration
         }
 
         return cacheDir;
+    }
+
+    public static String getWebURL()
+    {
+        return webURL;
+    }
+
+    public static void setWebURL(String webURL)
+    {
+        Configuration.webURL = webURL;
+        Configuration.rootURL = webURL + "/sbmt";
     }
 
     public static String getRootURL()
@@ -158,9 +179,55 @@ public class Configuration
         return System.getProperty("os.name").toLowerCase().startsWith("windows");
     }
 
+    /**
+     * Get a short name for the application, from which is derived the location for SAAVTK to
+     * cache files on the user's machine.
+     * @return the current application name.
+     */
+    static public String getAppName()
+    {
+    	return appName;
+    }
+
+    /**
+     * Set a short name for the application, from which is derived the location for SAAVTK to
+     * cache files on the user's machine. This method must be called exactly one time, and it
+     * should not contain any whitespace or newlines.
+     * @param name the short name
+     */
     static public void setAppName(String name)
     {
-        appName = name;
+    	if (appName == null)
+    	{
+    		appName = name;
+    	}
+    	else
+    	{
+    		throw new UnsupportedOperationException("Cannot change the app name -- it was already set to " + appName);
+    	}
+    }
+
+    /**
+     * Return the application's title, if any, which may be used for cosmetic purposes to identify
+     * a specific application, e.g., when reporting version information or naming the application
+     * on a startup page.
+     * @return the title
+     */
+    public static String getAppTitle()
+    {
+    	return appTitle;
+    }
+
+    /**
+     * Set the application's title. The title may be used for cosmetic purposes to identify
+     * a specific application, e.g., when reporting version information or naming the application
+     * on a startup page. It should be concise but meaningful like any good title. This attribute
+     * is optional, and may not contain contain any printable characters except newlines.
+     * @param appTitle the title
+     */
+    public static void setAppTitle(String appTitle)
+    {
+    	Configuration.appTitle = appTitle;
     }
 
     static public void setCacheVersion(String cv)
