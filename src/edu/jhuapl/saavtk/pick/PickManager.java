@@ -10,6 +10,7 @@ import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.util.Preferences;
+import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 public class PickManager extends Picker
 {
@@ -29,7 +30,7 @@ public class PickManager extends Picker
 
     private PickMode pickMode = PickMode.DEFAULT;
     private Renderer renderer;
-    private vtksbmtJoglCanvas renWin;
+    private vtkJoglPanelComponent renWin;
 
     private DefaultPicker defaultPicker;
 
