@@ -30,6 +30,7 @@ public class ViewConfig implements Cloneable
     public double customBodyCubeSize; // km
     public String[] smallBodyLabelPerResolutionLevel; // only needed when number resolution levels > 1
     public int[] smallBodyNumberOfPlatesPerResolutionLevel; // only needed when number resolution levels > 1
+    private boolean enabled = true;
 
 
 
@@ -102,6 +103,16 @@ public class ViewConfig implements Cloneable
                  ver += " (" + version + ")";
              return "DefaultName" + ver;
          }
+     }
+
+     public boolean isEnabled()
+     {
+    	 return enabled;
+     }
+
+     public void enable(boolean enabled)
+     {
+    	 this.enabled = enabled;
      }
 
      static private List<ViewConfig> builtInConfigs = new ArrayList<ViewConfig>();

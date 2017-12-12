@@ -33,6 +33,7 @@ import vtk.vtkClipPolyData;
 import vtk.vtkCutter;
 import vtk.vtkDataArray;
 import vtk.vtkDecimatePro;
+import vtk.vtkDoubleArray;
 import vtk.vtkExtractPolyDataGeometry;
 import vtk.vtkFeatureEdges;
 import vtk.vtkFloatArray;
@@ -862,6 +863,16 @@ public class PolyDataUtil
         transform.RotateWXYZ(sepAngle, cross);
         transform.RotateZ(angle);
         transform.Scale(1.0, flattening, 1.0);
+        
+/*      LatLon ll=MathUtil.reclat(center);
+      System.out.println(Math.toDegrees(ll.lat)+" "+Math.toDegrees(ll.lon));
+
+        double[] pt=transform.TransformDoublePoint(0,0,0);
+        LatLon ll2=MathUtil.reclat(pt);
+        System.out.println(Math.toDegrees(ll2.lat)+" "+Math.toDegrees(ll2.lon));*/
+        
+        // XXX: at this point in the code the specified center and the transformed origin match up 
+        
 
         vtkTransformPolyDataFilter transformFilter = new vtkTransformPolyDataFilter();
         d.add(transformFilter);
@@ -871,6 +882,8 @@ public class PolyDataUtil
         transformFilter.SetTransform(transform);
         transformFilter.Update();
 
+        
+        
         vtkPolyData transformFilterOutput = transformFilter.GetOutput();
         d.add(transformFilterOutput);
         vtkPoints points = transformFilterOutput.GetPoints();
@@ -906,6 +919,11 @@ public class PolyDataUtil
                     nextPoint[2]-currentPoint[2]};
 
             double[] planeNormal = new double[3];
+            double[] midpt=new double[3];
+            MathUtil.vadd(currentPoint, nextPoint, midpt);
+            MathUtil.vscl(0.5, midpt, midpt);
+            //normal = getPolyDataNormalAtPoint(midpt, polyData, pointLocator);
+            MathUtil.vhat(midpt, normal);
             MathUtil.vcrss(normal, vec, planeNormal);
             MathUtil.vhat(planeNormal, planeNormal);
 
@@ -989,6 +1007,7 @@ public class PolyDataUtil
             //writer.SetFileTypeToBinary();
             //writer.Write();
         }
+        
 
         for (vtkObject o : d)
             o.Delete();
