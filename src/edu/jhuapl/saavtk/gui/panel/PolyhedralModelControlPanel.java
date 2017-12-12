@@ -74,7 +74,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
     protected JCheckBox gridLabelCheckBox;
 
     private JCheckBox axesCheckBox;
-    private JCheckBox imageMapCheckBox;
+    private final JCheckBox imageMapCheckBox;
+    private final JComboBox<String> imageMapComboBox;
     private JLabel opacityLabel;
     private JSpinner imageMapOpacitySpinner;
     
@@ -95,6 +96,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
     private static final String NO_COLORING = "None";
     private static final String STANDARD_COLORING = "Standard";
     private static final String RGB_COLORING = "RGB";
+    private static final String EMPTY_SELECTION = "None";
+    private static final String IMAGE_MAP_TEXT = "Show Image Map";
 
     public ModelManager getModelManager()
     {
@@ -121,9 +124,13 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         return gridCheckBox;
     }
 
-    public JCheckBox getImageMapCheckBox()
+    public String getSelectedImageMapName()
     {
-        return imageMapCheckBox;
+        String[] names = getModelManager().getPolyhedralModel().getImageMapNames();
+        int index = 0;
+        if (imageMapComboBox != null) index = imageMapComboBox.getSelectedIndex() - 1;
+        if (index < 0 || index >= names.length) throw new IllegalStateException();
+        return names[index];
     }
 
     public JSpinner getImageMapOpacitySpinner()
@@ -380,9 +387,12 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         axesCheckBox.addItemListener(this);
 
         imageMapCheckBox = new JCheckBox();
-        imageMapCheckBox.setText("Show Image Map");
+        imageMapCheckBox.setText(IMAGE_MAP_TEXT);
         imageMapCheckBox.setSelected(false);
         imageMapCheckBox.addItemListener(this);
+
+        imageMapComboBox = configureImageMapComboBox(modelManager.getPolyhedralModel());
+        if (imageMapComboBox != null) imageMapComboBox.addItemListener(this);
 
         opacityLabel = new JLabel("Image opacity");
         imageMapOpacitySpinner = createOpacitySpinner();
@@ -445,7 +455,15 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
         if (modelManager.getPolyhedralModel().isImageMapAvailable())
         {
-            panel.add(imageMapCheckBox, "wrap");
+            if (imageMapComboBox != null)
+            {
+                panel.add(new JLabel(IMAGE_MAP_TEXT), "wrap");
+                panel.add(imageMapComboBox, "wrap");
+            }
+            else
+            {                
+            	panel.add(imageMapCheckBox, "wrap");
+            }
             panel.add(opacityLabel, "gapleft 25, split 2");
             panel.add(imageMapOpacitySpinner, "wrap");
         }
@@ -486,17 +504,14 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                 }
                 else
                 	gridLabelCheckBox.setEnabled(false);
-                if (imageMapCheckBox.isSelected())
-                    showImageMap(true);
             }
             else
             {
                 smallBodyModel.setShowSmallBody(false);
                 if (graticule != null && gridCheckBox.isSelected())
                     graticule.setShowGraticule(false);
-                if (imageMapCheckBox.isSelected())
-                    showImageMap(false);
             }
+            showImageMap(isImageMapEnabled());
         }
         else if (e.getItemSelectable() == this.gridCheckBox)
         {
@@ -540,6 +555,13 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                 opacityLabel.setEnabled(false);
                 imageMapOpacitySpinner.setEnabled(false);
             }
+        }
+        else if (e.getItemSelectable() == this.imageMapComboBox)
+        {
+            boolean show = this.imageMapComboBox.getSelectedIndex() != 0;
+            showImageMap(show);
+            opacityLabel.setEnabled(show);
+            imageMapOpacitySpinner.setEnabled(show);
         }
         else if (this.resModelButtons.contains(e.getItemSelectable()))
         {
@@ -734,6 +756,11 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
     protected void addAdditionalStatisticsToLabel() {}
 
+    protected boolean isImageMapEnabled() {
+    	if (imageMapComboBox != null) return !EMPTY_SELECTION.equals(imageMapComboBox.getSelectedItem());
+        return imageMapCheckBox.isSelected();
+    }
+
     public void stateChanged(ChangeEvent e) {}
 
     protected CustomPlateDataDialog getPlateDataDialog(ModelManager modelManager)
@@ -746,6 +773,23 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         spinner.setEditor(new JSpinner.NumberEditor(spinner, "0.00"));
         spinner.setPreferredSize(new Dimension(80, 21));
         return spinner;
+    }
+
+    private static JComboBox<String> configureImageMapComboBox(PolyhedralModel model)
+    {
+        JComboBox<String> result = null;
+        String[] mapNames = model.getImageMapNames();
+        if (mapNames != null && mapNames.length > 1)
+        {
+            String[] allOptions = new String[mapNames.length + 1];
+            int index = 0;
+            allOptions[index] = EMPTY_SELECTION;
+            for (; index < mapNames.length; ++index) {
+                allOptions[index + 1] = mapNames[index].replaceAll(".*[/\\\\]", ""); 
+            }
+            result = new JComboBox<>(allOptions);
+        }
+        return result;
     }
 
     private class CustomizePlateDataAction extends AbstractAction
