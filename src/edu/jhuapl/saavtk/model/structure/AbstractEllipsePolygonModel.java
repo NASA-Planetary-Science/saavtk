@@ -221,6 +221,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
             {
                 sbModel.drawEllipticalPolygon(center, radius, flattening, angle, numberOfSides, interiorPolyData, boundaryPolyData);
                 
+//                LatLon ll=MathUtil.reclat(center);
+//                System.out.println(Math.toDegrees(ll.lat)+" "+Math.toDegrees(ll.lon));
+                		
                 // Setup decimator
                 vtkQuadricClustering decimator = new vtkQuadricClustering();
                 
@@ -683,11 +686,16 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
         smallBodyModel.getPointAndCellIdFromLatLon(latitude, longitude, newCenter);
         double[] center=getStructureCenter(polygonId);
         
+        
+        
         Vector3D centerVec=new Vector3D(center);
         Vector3D newCenterVec=new Vector3D(newCenter);
         newCenterVec=newCenterVec.scalarMultiply(centerVec.getNorm()/newCenterVec.getNorm());// there is sometimes a radial offset (parallel to both center and newCenter) that needs to be corrected
         
-        //System.out.println(newCenterVec+" "+centerVec);
+        //System.out.println(newCenterVec+" "+centerVec+" "+newCenterVec.crossProduct(centerVec));
+//        LatLon ll=MathUtil.reclat(centerVec.toArray());
+//        LatLon ll2=MathUtil.reclat(newCenterVec.toArray());
+//        System.out.println(Math.toDegrees(ll.lat)+" "+Math.toDegrees(ll.lon)+" "+Math.toDegrees(ll2.lat)+" "+Math.toDegrees(ll2.lon));
         movePolygon(polygonId, newCenterVec.toArray());
     }
 
