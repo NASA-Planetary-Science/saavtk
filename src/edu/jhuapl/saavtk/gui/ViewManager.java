@@ -13,12 +13,10 @@ import java.util.List;
 import java.util.Scanner;
 
 import javax.swing.BorderFactory;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.util.Configuration;
-import edu.jhuapl.saavtk.util.FileCache.UnauthorizedAccessException;
 
 public abstract class ViewManager extends JPanel
 {
@@ -211,17 +209,11 @@ public abstract class ViewManager extends JPanel
         // defer initialization of View until we show it.
         repaint();
         validate();
-        try
-        {
-        	view.initialize();
-        	currentView = view;
-        }
-        catch (UnauthorizedAccessException e)
-        {
-        	e.printStackTrace();
-        	JOptionPane.showMessageDialog(null, "Access to this model is restricted. Please email sbmt@jhuapl.edu to request access", "Access not authorized", JOptionPane.ERROR_MESSAGE);
-        }
-    	frame.setTitle(view.getConfig().getPathRepresentation());
+        view.initialize();
+
+        currentView = view;
+
+        frame.setTitle(currentView.getConfig().getPathRepresentation());
     }
 
     public View getBuiltInView(int i)
