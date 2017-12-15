@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,26 +13,7 @@ import org.apache.commons.io.input.CountingInputStream;
 
 public class FileCache
 {
-	// TODO this should extend Exception and thus be checked, but waiting to
-	// see whether this works out before going that route, since it would
-	// require many files to change.
-	public static class UnauthorizedAccessException extends RuntimeException
-	{
-		private static final long serialVersionUID = 7671006960310656926L;
-		private final URL url;
-		private UnauthorizedAccessException(Exception cause, URL url)
-		{
-			super(cause);
-			this.url = url;
-		}
-
-		public URL getURL()
-		{
-			return url;
-		}
-	}
-
-	public static final String FILE_PREFIX = "file://";
+    public static final String FILE_PREFIX = "file://";
 
     // Stores files already downloaded in this process
     private static ConcurrentHashMap<String, Object> downloadedFiles =
@@ -108,10 +88,8 @@ public class FileCache
      *
      * @param path
      * @return
-     * @throws UnauthorizedAccessException if a 401 (Unauthorized) error is encountered when attempting
-     * to access the server for the remote file.
      */
-    static private FileInfo getFileInfoFromServer(String path, boolean doDownloadIfNeeded) throws UnauthorizedAccessException
+    static private FileInfo getFileInfoFromServer(String path, boolean doDownloadIfNeeded)
     {
         path = cleanPath(path);
 
@@ -180,10 +158,6 @@ public class FileCache
             }
             catch (@SuppressWarnings("unused") IOException e)
             {
-            	if (e instanceof ProtocolException || e.getMessage().contains("401"))
-            	{
-            		throw new UnauthorizedAccessException(e, conn.getURL());
-            	}
                 //e.printStackTrace();
             	if(!exists && doDownloadIfNeeded)
             	{
@@ -261,10 +235,8 @@ public class FileCache
      *
      * @param path
      * @return
-     * @throws UnauthorizedAccessException if a 401 (Unauthorized) error is encountered when attempting
-     * to access the server for the remote file.
      */
-    static public FileInfo getFileInfoFromServer(String path) throws UnauthorizedAccessException
+    static public FileInfo getFileInfoFromServer(String path)
     {
         return getFileInfoFromServer(path, false);
     }
@@ -279,10 +251,8 @@ public class FileCache
      * method below.
      * @param fileName the file to check
      * @return
-     * @throws UnauthorizedAccessException if a 401 (Unauthorized) error is encountered when attempting
-     * to access the server for the remote file.
      */
-    static public boolean isFileGettable(String fileName) throws UnauthorizedAccessException
+    static public boolean isFileGettable(String fileName)
     {
     	File file = null;
         if (!Configuration.useFileCache())
@@ -314,10 +284,8 @@ public class FileCache
      * This method must be kept consistent with the isFileGettable method above.
      * @param path
      * @return
-     * @throws UnauthorizedAccessException if a 401 (Unauthorized) error is encountered when attempting
-     * to access the server for the remote file.
      */
-    static public File getFileFromServer(String path) throws UnauthorizedAccessException
+    static public File getFileFromServer(String path)
     {
         if (!Configuration.useFileCache())
         {
