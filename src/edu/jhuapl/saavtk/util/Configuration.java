@@ -93,16 +93,16 @@ public class Configuration
         return cacheDir;
     }
 
-    public static String getWebURL()
-    {
-        return webURL;
-    }
-
-    public static void setWebURL(String webURL)
-    {
-        Configuration.webURL = webURL;
-        Configuration.rootURL = webURL + "/sbmt";
-    }
+//    public static String getWebURL()
+//    {
+//        return webURL;
+//    }
+//
+//    public static void setWebURL(String webURL)
+//    {
+//        Configuration.webURL = webURL;
+//        Configuration.rootURL = webURL + "/sbmt";
+//    }
 
     public static String getRootURL()
     {
@@ -241,14 +241,14 @@ public class Configuration
 
         // If APL version, then change root URL to the default internal root URL
         // unless user set sbmt.root.url property.
-        if (APLVersion)
-        {
-            String rootURLProperty = System.getProperty("sbmt.root.url");
-            if (rootURLProperty == null)
-            {
-                rootURL = "http://sbmt.jhuapl.edu/internal/sbmt";
-            }
-        }
+//        if (APLVersion)
+//        {
+//            String rootURLProperty = System.getProperty("sbmt.root.url");
+//            if (rootURLProperty == null)
+//            {
+//                rootURL = "http://sbmt.jhuapl.edu/internal/sbmt";
+//            }
+//        }
     }
 
     static public void setUseFileCache(boolean use)
