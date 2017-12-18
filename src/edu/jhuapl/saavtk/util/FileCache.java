@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -11,6 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.io.input.CountingInputStream;
+
+import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
 
 public class FileCache
 {
@@ -57,19 +60,179 @@ public class FileCache
      */
     public static class FileInfo
     {
+    	public enum YesOrNo {
+    		YES,
+    		NO,
+    		UNKNOWN
+    	}
+
         // The location on disk of the file if actually downloaded or the location the file
         // would have if downloaded.
-        public File file = null;
+        private final File file;
 
+        // The number of bytes in the file; may be the number in local file OR on the server.
+        private final long length;
+        
         // If the the file was not actually downloaded, this variable stores whether it
         // needs to be downloaded (i.e. if it is out of date)
-        public boolean needToDownload = false;
+        private final boolean needToDownload;
 
-        // The number of bytes in the file (regardless if actually downloaded)
-        public long length = -1;
+        private final YesOrNo authorized;
+		private final YesOrNo existsOnServer;
+		private final boolean existsLocally;
+		private final boolean failedToDownload;
 
-        public boolean existsOnServer;
-        public boolean existsInCache;
+        private FileInfo(String path, boolean doDownloadIfNeeded)
+        {
+        	// Ensure path has clean form and strip off compression suffix.
+        	path = cleanPath(path);
+        	final String unzippedPath = path.toLowerCase().endsWith(".gz") ? path.substring(0, path.length() - 3) : path;
+
+        	// Construct URL that may be used to access the remote file and the local File object.
+        	URL url = null;
+            String fileName = null;
+
+        	String dataRoot = Configuration.getDataRootURL();
+            if (dataRoot.startsWith(FILE_PREFIX) || !Configuration.useFileCache())
+            {
+            	url = getURL(dataRoot + unzippedPath);
+            	fileName = url.getPath();
+            }
+            else if (offlineMode)
+            {
+            	url = getURL(dataRoot + path);
+            	fileName = SafePaths.getString(offlineModeRootFolder, unzippedPath);
+            }
+            else
+            {
+            	url = getURL(dataRoot + path);
+            	fileName = SafePaths.getString(Configuration.getCacheDir(), unzippedPath);
+            }
+
+            File file = new File(fileName);
+            long length = file.exists() ? file.length() : -1;
+
+            // Confirm accessibility of URL and its existence.
+            YesOrNo authorized = YesOrNo.UNKNOWN;
+            YesOrNo urlExists = YesOrNo.UNKNOWN;
+            boolean needToDownload = false;
+            boolean failedToDownload = false;
+            if (file.exists() && downloadedFiles.containsKey(path))
+            {
+            	// The file was present and it has been checked already while this
+            	// instance is running. Assume URL is authorized. No need to open
+            	// a connection and/or download the file.
+            	authorized = YesOrNo.YES;
+            }
+            else if (!offlineMode)
+            {
+            	try
+            	{
+            		URLConnection connection = url.openConnection();
+            		System.out.println("FileInfo(): opened connection to " + url);
+    	            connection.setRequestProperty("User-Agent", "Mozilla/4.0");
+    	            connection.setRequestProperty("Accept","*/*");
+	                connection.getInputStream();
+        			urlExists = YesOrNo.YES;
+        			authorized = YesOrNo.YES;
+
+            		// Check file existence and modification time to decide if we need to download.
+            		long urlLastModified = connection.getLastModified();
+        			needToDownload = !file.exists() || file.lastModified() < urlLastModified;
+            		if (needToDownload)
+            		{
+                        String contentLengthStr = connection.getHeaderField("content-length");
+                        if (contentLengthStr != null)
+                        {                        	
+                        	length = Long.parseLong(contentLengthStr);
+                        }
+                        if (doDownloadIfNeeded)
+                        {
+                            File cachedFile = addToCache(path, connection.getInputStream(), urlLastModified, length);
+                            if (cachedFile != null) // file can be null if the user aborted the download
+                            {
+                                downloadedFiles.put(path, "");
+                                file = cachedFile;
+                                length = file.length();
+                                needToDownload = false;
+                            }
+                            else
+                            {
+                            	failedToDownload = true;
+                            }
+                        }
+            		}
+            	}
+            	catch (@SuppressWarnings("unused") ProtocolException e)
+            	{
+            		authorized = YesOrNo.NO;
+            	}
+            	catch (IOException e)
+            	{
+            		if (e.getMessage().contains("401"))
+            		{
+            			authorized = YesOrNo.NO;
+            		}
+            		else
+            		{
+            			authorized = YesOrNo.YES;
+            			urlExists = YesOrNo.NO;
+            		}
+            	}
+            }
+
+            this.file = file;
+            this.length = length;
+            this.needToDownload = needToDownload;
+            this.authorized = authorized;
+            this.existsOnServer = urlExists;
+            this.existsLocally = file.exists();
+            this.failedToDownload = failedToDownload;
+        }
+
+        public File getFile()
+        {
+        	return file;
+        }
+        
+        public long getLength() {
+        	return length;
+        }
+        
+        public boolean isNeedToDownload() {
+        	return needToDownload;
+        }
+        
+        public YesOrNo isURLAccessAuthorized()
+        {
+        	return authorized;
+        }
+
+        public YesOrNo isExistsOnServer()
+        {
+        	return existsOnServer;
+        }
+
+		public boolean isExistsLocally() {
+			return existsLocally;
+		}
+
+		public boolean isFailedToDownload() {
+			return failedToDownload;
+		}
+
+		private static URL getURL(String url)
+        {
+            try
+            {
+            	return new URL(url);
+            }
+        	catch (MalformedURLException e)
+        	{
+        		throw new AssertionError(e);
+        	}
+
+        }
     }
 
     /**
@@ -113,147 +276,9 @@ public class FileCache
      */
     static private FileInfo getFileInfoFromServer(String path, boolean doDownloadIfNeeded) throws UnauthorizedAccessException
     {
-        path = cleanPath(path);
+        FileInfo fi = new FileInfo(path, doDownloadIfNeeded);
 
-        FileInfo fi = new FileInfo();
-
-        // If root URL starts with "file://", return file directly without caching it
-        if (!Configuration.useFileCache() || Configuration.getDataRootURL().startsWith(FILE_PREFIX))
-        {
-            // If the file is gzipped, you will need to manually gunzip (in the same folder)
-            // it in order for the following to work. Remember to leave the gzipped version
-            // in place since otherwise you will break the web server!
-            if (path.toLowerCase().endsWith(".gz"))
-                path = path.substring(0, path.length()-3);
-            File file = new File(Configuration.getDataRootURL().substring(FILE_PREFIX.length()) + path);
-            fi.file = file;
-            if (file.exists())
-                fi.length = file.length();
-            return fi;
-        }
-
-        if (offlineMode)
-        {
-            if (path.toLowerCase().endsWith(".gz"))
-                path = path.substring(0, path.length()-3);
-            File file = new File(offlineModeRootFolder + File.separator + path);
-            fi.file = file;
-            if (file.exists())
-                fi.length = file.length();
-            return fi;
-        }
-
-        String unzippedPath = path;
-        if (unzippedPath.toLowerCase().endsWith(".gz"))
-            unzippedPath = unzippedPath.substring(0, unzippedPath.length() - 3);
-
-        File file = new File(Configuration.getCacheDir() + File.separator
-                + unzippedPath);
-
-        fi.file = file;
-
-        // If we've already downloaded the file previously in this process,
-        // simply return without making any network connections.
-        boolean exists = file.exists();
-        fi.existsInCache = exists;
-        if (exists && downloadedFiles.containsKey(path))
-        {
-            fi.length = file.length();
-            return fi;
-        }
-
-        // Open a connection to the server
-        try
-        {
-            URL u = new URL(Configuration.getDataRootURL() + path);
-
-            System.err.println("getFileInfoFromServer():" + u);
-
-            URLConnection conn = u.openConnection();
-            conn.setRequestProperty("User-Agent", "Mozilla/4.0");
-            conn.setRequestProperty("Accept","*/*");
-
-            try
-            {
-            //    u.openStream();   // sometimes this throws a FileNotFoundException because the server returns HTTP 404 even though the file exists; the declaration of conn just above, with the subsequent properties, seems to give the correct result (e.g. not a 404 for files that do exist)
-                conn.getInputStream();
-            }
-            catch (@SuppressWarnings("unused") IOException e)
-            {
-            	if (e instanceof ProtocolException || e.getMessage().contains("401"))
-            	{
-            		throw new UnauthorizedAccessException(e, conn.getURL());
-            	}
-                //e.printStackTrace();
-            	if(!exists && doDownloadIfNeeded)
-            	{
-            		// Print an error message if the file does not exist in the cache and we cannot
-            		// connect to the server to download it.
-            		e.printStackTrace();
-//            		JOptionPane.showMessageDialog(null,
-//                        "File " + path + " does not exist in cache and client is unable to connect to server to download.",
-//                        "Error",
-//                        JOptionPane.ERROR_MESSAGE);
-            	}
-            	
-            	fi.existsOnServer=false;
-                return fi;
-            }
-            fi.existsOnServer=true;
-
-
-            long urlLastModified = conn.getLastModified();
-
-            if (exists && file.lastModified() >= urlLastModified)
-            {
-                fi.length = file.length();
-                return fi;
-            }
-            else
-            {
-                if (doDownloadIfNeeded)
-                {
-                    long contentLength = 0;
-                    String contentLengthStr = conn.getHeaderField("content-length");
-                    if (contentLengthStr != null)
-                        contentLength = Long.parseLong(contentLengthStr);
-                    file = addToCache(path, conn.getInputStream(), urlLastModified, contentLength);
-                    if (file != null) // file can be null if the user aborted the download
-                    {
-                        downloadedFiles.put(path, "");
-                        fi.length = file.length();
-                    }
-                    else
-                    {
-                        return null;
-                    }
-                }
-                else
-                {
-                    fi.needToDownload = true;
-                    String contentLengthStr = conn.getHeaderField("content-length");
-                    if (contentLengthStr != null)
-                        fi.length = Long.parseLong(contentLengthStr);
-                }
-
-                return fi;
-            }
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
-
-        // If we reach here, simply return the file if it exists.
-        if (exists)
-        {
-            fi.length = file.length();
-            return fi;
-        }
-        else
-        {
-            return null;
-        }
+        return fi.isFailedToDownload() ? null : fi;
     }
 
     /**
@@ -298,8 +323,8 @@ public class FileCache
             else
             {
                 FileInfo fi = getFileInfoFromServer(fileName, false);
-                if (fi.existsInCache || fi.existsOnServer) return true;
-                file = fi.file;
+                if (fi.isExistsLocally() || fi.isExistsOnServer() == YesOrNo.YES) return true;
+                file = fi.getFile();
             }
         }
         return file != null && file.exists();
@@ -334,7 +359,7 @@ public class FileCache
                 FileInfo fi = getFileInfoFromServer(path, true);
                 
                 if (fi != null)
-                    return fi.file;
+                    return fi.getFile();
                 else
                     return null;
             }
