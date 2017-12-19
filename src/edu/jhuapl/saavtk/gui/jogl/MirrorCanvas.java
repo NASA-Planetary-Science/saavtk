@@ -8,11 +8,12 @@ import vtk.vtkOrientationMarkerWidget;
 import vtk.vtkProperty;
 import vtk.vtkRenderer;
 import vtk.vtkTextProperty;
+import vtk.rendering.jogl.vtkJoglPanelComponent;
 import edu.jhuapl.saavtk.util.Preferences;
 
-public class MirrorCanvas extends vtksbmtJoglCanvas
+public class MirrorCanvas extends vtkJoglPanelComponent
 {
-    vtksbmtJoglCanvas parent;
+    vtkJoglPanelComponent parent;
     vtkRenderer defaultRenderer;
     double eyeSeparation;
 //    vtkPolyData background;
@@ -22,7 +23,7 @@ public class MirrorCanvas extends vtksbmtJoglCanvas
     private vtkAxesActor axes;
     private double axesSize;
 
-    public MirrorCanvas(vtksbmtJoglCanvas parent)
+    public MirrorCanvas(vtkJoglPanelComponent parent)
     {
         this.parent=parent;
         parent.getActiveCamera().AddObserver("ModifiedEvent", this, "syncWindows");
@@ -34,7 +35,7 @@ public class MirrorCanvas extends vtksbmtJoglCanvas
         initOrientationWidget();
         //
         syncCameras(parent.getActiveCamera(), this.getActiveCamera());
-        parent.uiComponent.repaint();   // this must be done here to "wake up" parent renderWindow; not sure why but otherwise the user has to refocus the mouse on the main window and go back to the mirror window
+        parent.getComponent().repaint();   // this must be done here to "wake up" parent renderWindow; not sure why but otherwise the user has to refocus the mouse on the main window and go back to the mirror window
 
     }
 
@@ -215,7 +216,7 @@ public class MirrorCanvas extends vtksbmtJoglCanvas
         {
             //System.out.println("mirror "+System.currentTimeMillis());
             syncCameras(this.getActiveCamera(), parent.getActiveCamera());
-            parent.uiComponent.repaint();
+            parent.getComponent().repaint();
         };
     }
 

@@ -9,7 +9,7 @@ import vtk.vtkActor;
 import vtk.vtkCellPicker;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
-
+import vtk.rendering.jogl.vtkJoglPanelComponent;
 import edu.jhuapl.saavtk.gui.Renderer;
 import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
 import edu.jhuapl.saavtk.model.Model;
@@ -21,7 +21,7 @@ import edu.jhuapl.saavtk.model.structure.PointModel;
 public class PointPicker extends Picker
 {
     private ModelManager modelManager;
-    private vtksbmtJoglCanvas renWin;
+    private vtkJoglPanelComponent renWin;
     private PolyhedralModel smallBodyModel;
     private PointModel pointModel;
 

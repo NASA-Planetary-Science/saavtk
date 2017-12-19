@@ -19,6 +19,9 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import javax.media.opengl.GLAutoDrawable;
+import javax.media.opengl.GLEventListener;
+import javax.media.opengl.awt.GLJPanel;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -61,6 +64,7 @@ import vtk.vtkTextProperty;
 import vtk.vtkTriangle;
 import vtk.vtkWindowToImageFilter;
 import vtk.vtksbTriangle;
+import vtk.rendering.jogl.vtkJoglPanelComponent;
 import edu.jhuapl.saavtk.colormap.Colorbar;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas;
@@ -123,13 +127,13 @@ public class Renderer extends JPanel implements
         }
     }
 
-    protected vtksbmtJoglCanvas mainCanvas;
+    protected vtkJoglPanelComponent mainCanvas;
     private ModelManager modelManager;
     private vtkInteractorStyleTrackballCamera trackballCameraInteractorStyle;
     private vtkInteractorStyleJoystickCamera joystickCameraInteractorStyle;
     private vtkInteractorStyle defaultInteractorStyle;
     private vtkAxesActor axes;
-    private vtkOrientationMarkerWidget orientationWidget;
+//    private vtkOrientationMarkerWidget orientationWidget;
     private vtkLightKit lightKit;
     private vtkLight headlight;
     private vtkLight fixedLight;
@@ -142,10 +146,10 @@ public class Renderer extends JPanel implements
     public static boolean enableLODs = true; // This is temporary to show off the LOD feature, very soon we will replace this with an actual menu
     public boolean showingLODs = false;
     
-    private JFrame mirrorFrame;
-    private StereoCapableMirrorCanvas mirrorCanvas;
-    private boolean mirrorFrameOpen=false;
-    private StereoMode mode=StereoMode.NONE;
+//    private JFrame mirrorFrame;
+//    private StereoCapableMirrorCanvas mirrorCanvas;
+//    private boolean mirrorFrameOpen=false;
+///    private StereoMode mode=StereoMode.NONE;
 
     private StatusBar statusBar=null;
     private Colorbar smallBodyColorbar;
@@ -182,10 +186,10 @@ public class Renderer extends JPanel implements
         setAxesConeLength(Preferences.getInstance().getAsDouble(Preferences.AXES_CONE_LENGTH, 0.2));
         setAxesConeRadius(Preferences.getInstance().getAsDouble(Preferences.AXES_CONE_RADIUS, 0.4));
 
-        orientationWidget = new vtkOrientationMarkerWidget();
-        orientationWidget.SetOrientationMarker(axes);
-        orientationWidget.SetInteractor(mainCanvas.getRenderWindowInteractor());
-        orientationWidget.SetTolerance(10);
+  //      orientationWidget = new vtkOrientationMarkerWidget();
+  //      orientationWidget.SetOrientationMarker(axes);
+  //      orientationWidget.SetInteractor(mainCanvas.getRenderWindowInteractor());
+  //      orientationWidget.SetTolerance(10);
         setAxesSize(Preferences.getInstance().getAsDouble(Preferences.AXES_SIZE, 0.2));
     }
 
@@ -236,7 +240,7 @@ public class Renderer extends JPanel implements
             int modifiers=(KeyEvent.SHIFT_DOWN_MASK*shiftDown) | (KeyEvent.ALT_DOWN_MASK*altDown) | (KeyEvent.CTRL_DOWN_MASK*ctrlDown);
             listener.keyPressed(new KeyEvent(this, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), modifiers, mainCanvas.getRenderWindowInteractor().GetKeyCode(), mainCanvas.getRenderWindowInteractor().GetKeyCode()));
         }
-
+/*
         char ch=mainCanvas.getRenderWindowInteractor().GetKeyCode();    // check main window for keypress
         if (ch=='0')    // this means no key was hit in the main window (not sure why it matches key '0' but whatever)
         {
@@ -246,11 +250,11 @@ public class Renderer extends JPanel implements
                 if (ch=='0')
                     return;
             }
-/*                if (ch=='0' || ch=='M') // don't allow mirror to be closed by keypress from itself - this crashes the whole app
-                    return;
-            }
-            else
-                return;*/
+//                if (ch=='0' || ch=='M') // don't allow mirror to be closed by keypress from itself - this crashes the whole app
+//                    return;
+//            }
+//            else
+//                return;
         }
         //
         if (ch=='M' && !mirrorFrameOpen)
@@ -263,18 +267,18 @@ public class Renderer extends JPanel implements
         if (mirrorFrameOpen)
             mirrorCanvas.Render();
         //
-/*        if (stereoOn && mirrorFrame!=null)
-        {
-            System.out.println(ch);
-            if (ch=='<')
-                mirrorCanvas.decreaseEyeSeparation();
-            else if (ch=='>')
-                mirrorCanvas.increaseEyeSeparation();
-        }*/
-
+//        if (stereoOn && mirrorFrame!=null)
+//        {
+//            System.out.println(ch);
+//            if (ch=='<')
+//                mirrorCanvas.decreaseEyeSeparation();
+//            else if (ch=='>')
+//                mirrorCanvas.increaseEyeSeparation();
+//        }
+*/
 
     }
-
+/*
     void toggleMirrorFrame()
     {
         if (!mirrorFrameOpen)
@@ -367,7 +371,7 @@ public class Renderer extends JPanel implements
             break;
         }
         mainCanvas.Render();
-    }
+    }*/
 
 /*    void checkStereoModeSynchronization()    // this is a really sloppy kludge to cover up the behavior of the '3' key which changes the stereo mode to anaglyph and disrupts our stereo implementation (overloading the interactor style classes does not seem to work)
     {
@@ -413,7 +417,7 @@ public class Renderer extends JPanel implements
 
         setLayout(new BorderLayout());
 
-        mainCanvas = new vtksbmtJoglCanvas();
+        mainCanvas=new vtkJoglPanelComponent();
         mainCanvas.getRenderWindowInteractor().AddObserver("KeyPressEvent", this, "localKeypressHandler");
 
         this.modelManager = modelManager;
@@ -467,13 +471,13 @@ public class Renderer extends JPanel implements
     public void setProps(List<vtkProp> props)
     {
         setProps(props,mainCanvas,mainCanvas.getRenderer());
-        if (mirrorFrameOpen)
+ /*       if (mirrorFrameOpen)
         {
            setProps(props,mirrorCanvas,mirrorCanvas.getRenderer());
-        }
+        }*/
     }
 
-    public void setProps(List<vtkProp> props, vtksbmtJoglCanvas renderWindow, vtkRenderer whichRenderer)
+    public void setProps(List<vtkProp> props, vtkJoglPanelComponent renderWindow, vtkRenderer whichRenderer)
     {
         // Go through the props and if an prop is already in the renderer,
         // do nothing. If not, add it. If an prop not listed is
@@ -1139,7 +1143,7 @@ public class Renderer extends JPanel implements
         return cam.GetPosition();
     }
 
-    public vtksbmtJoglCanvas getRenderWindowPanel()
+    public vtkJoglPanelComponent getRenderWindowPanel()
     {
         return mainCanvas;
     }
@@ -1194,17 +1198,17 @@ public class Renderer extends JPanel implements
     public void setInteractorStyleToDefault()
     {
         mainCanvas.setInteractorStyle(defaultInteractorStyle);
-        if (mirrorFrameOpen)
-        {
+  //      if (mirrorFrameOpen)
+  //      {
 //            mirrorCanvas.setInteractorStyle(defaultInteractorStyle);
-        }
+  //      }
     }
 
     public void setInteractorStyleToNone()
     {
         mainCanvas.setInteractorStyle(null);
-        if (mirrorFrameOpen)
-            mirrorCanvas.setInteractorStyle(null);
+//        if (mirrorFrameOpen)
+//            mirrorCanvas.setInteractorStyle(null);
     }
 
     public void setLighting(LightingType type)
@@ -1212,25 +1216,25 @@ public class Renderer extends JPanel implements
 //        if (type != currentLighting)  // MZ commented out this if statement so mirror canvas lighting starts in sync with main canvas
 //        {
             mainCanvas.getRenderer().RemoveAllLights();
-            if (mirrorFrameOpen)
-                mirrorCanvas.getRenderer().RemoveAllLights();
+//            if (mirrorFrameOpen)
+//                mirrorCanvas.getRenderer().RemoveAllLights();
             if (type == LightingType.LIGHT_KIT)
             {
                 lightKit.AddLightsToRenderer(mainCanvas.getRenderer());
-                if (mirrorFrameOpen)
-                    lightKit.AddLightsToRenderer(mirrorCanvas.getRenderer());
+//                if (mirrorFrameOpen)
+//                    lightKit.AddLightsToRenderer(mirrorCanvas.getRenderer());
             }
             else if (type == LightingType.HEADLIGHT)
             {
                 mainCanvas.getRenderer().AddLight(headlight);
-                if (mirrorFrameOpen)
-                    mirrorCanvas.getRenderer().AddLight(headlight);
+//                if (mirrorFrameOpen)
+//                    mirrorCanvas.getRenderer().AddLight(headlight);
             }
             else
             {
                 mainCanvas.getRenderer().AddLight(fixedLight);
-                if (mirrorFrameOpen)
-                    mirrorCanvas.getRenderer().AddLight(fixedLight);
+//                if (mirrorFrameOpen)
+//                    mirrorCanvas.getRenderer().AddLight(fixedLight);
             }
             currentLighting = type;
             if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
@@ -1308,9 +1312,9 @@ public class Renderer extends JPanel implements
         if (getShowOrientationAxes() != show)
         {
             mainCanvas.getVTKLock().lock();
-            orientationWidget.SetEnabled(show ? 1 : 0);
-            if (show)
-                orientationWidget.SetInteractive(interactiveAxes ? 1 : 0);
+    //        orientationWidget.SetEnabled(show ? 1 : 0);
+    //        if (show)
+    //            orientationWidget.SetInteractive(interactiveAxes ? 1 : 0);
             mainCanvas.getVTKLock().unlock();
             if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
                 mainCanvas.Render();
@@ -1319,8 +1323,9 @@ public class Renderer extends JPanel implements
 
     public boolean getShowOrientationAxes()
     {
-        int value = orientationWidget.GetEnabled();
-        return value == 1 ? true : false;
+      //  int value = orientationWidget.GetEnabled();
+      //  return value == 1 ? true : false;
+    	return false;
     }
 
     public void setOrientationAxesInteractive(boolean interactive)
@@ -1329,7 +1334,7 @@ public class Renderer extends JPanel implements
             getShowOrientationAxes())
         {
             mainCanvas.getVTKLock().lock();
-            orientationWidget.SetInteractive(interactive ? 1 : 0);
+      //      orientationWidget.SetInteractive(interactive ? 1 : 0);
             mainCanvas.getVTKLock().unlock();
             if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
                 mainCanvas.Render();
@@ -1394,7 +1399,7 @@ public class Renderer extends JPanel implements
     public void setAxesSize(double size)
     {
         this.axesSize = size;
-        orientationWidget.SetViewport(0.0, 0.0, size, size);
+    //    orientationWidget.SetViewport(0.0, 0.0, size, size);
         if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
             mainCanvas.Render();
     }
@@ -1546,7 +1551,7 @@ public class Renderer extends JPanel implements
         return axes.GetConeRadius();
     }
 
-    public static void saveToFile(File file, vtksbmtJoglCanvas renWin)
+    public static void saveToFile(File file, vtkJoglPanelComponent renWin)
     {
         if (file != null)
         {

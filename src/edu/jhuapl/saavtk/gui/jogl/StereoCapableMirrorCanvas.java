@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.gui.jogl;
 
+import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 public class StereoCapableMirrorCanvas extends MirrorCanvas
 {
@@ -17,13 +18,13 @@ public class StereoCapableMirrorCanvas extends MirrorCanvas
         }
     }
 
-    public StereoCapableMirrorCanvas(vtksbmtJoglCanvas parent, StereoMode initialMode)
+    public StereoCapableMirrorCanvas(vtkJoglPanelComponent parent, StereoMode initialMode)
     {
         this(parent);
         setMode(initialMode);
     }
 
-    public StereoCapableMirrorCanvas(vtksbmtJoglCanvas parent)
+    public StereoCapableMirrorCanvas(vtkJoglPanelComponent parent)
     {
         super(parent);
         getRenderWindow().StereoCapableWindowOn();
