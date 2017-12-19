@@ -219,7 +219,7 @@ public abstract class ViewManager extends JPanel
         catch (UnauthorizedAccessException e)
         {
         	e.printStackTrace();
-        	JOptionPane.showMessageDialog(null, "Access to this model is restricted. Please email sbmt@jhuapl.edu to request access", "Access not authorized", JOptionPane.ERROR_MESSAGE);
+        	JOptionPane.showMessageDialog(null, "Access to this model is restricted. Please email sbmt@jhuapl.edu to request access.", "Access not authorized", JOptionPane.ERROR_MESSAGE);
         }
     	frame.setTitle(view.getConfig().getPathRepresentation());
     }
