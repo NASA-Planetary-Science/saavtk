@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
@@ -24,6 +25,13 @@ public class FileCache
 	{
 		private static final long serialVersionUID = 7671006960310656926L;
 		private final URL url;
+
+		private UnauthorizedAccessException(String cause, URL url)
+		{
+			super(cause);
+			this.url = url;
+		}
+
 		private UnauthorizedAccessException(Exception cause, URL url)
 		{
 			super(cause);
@@ -66,6 +74,9 @@ public class FileCache
     		UNKNOWN
     	}
 
+    	// Remote location of resource.
+    	private final URL url;
+    	
         // The location on disk of the file if actually downloaded or the location the file
         // would have if downloaded.
         private final File file;
@@ -128,19 +139,64 @@ public class FileCache
             {
             	try
             	{
+            		// This test is based on code from stacktrace. The stacktrace code
+            		// specifically included disabling redirects, but that leads to
+            		// spurious 301 errors, so leaving these in here commented out.
+//            		HttpURLConnection.setFollowRedirects(false);
             		URLConnection connection = url.openConnection();
             		System.out.println("FileInfo(): opened connection to " + url);
-    	            connection.setRequestProperty("User-Agent", "Mozilla/4.0");
-    	            connection.setRequestProperty("Accept","*/*");
-	                connection.getInputStream();
-        			urlExists = YesOrNo.YES;
-        			authorized = YesOrNo.YES;
+            		// These two properties seem to be still necessary as of 2017-12-19.
+        			connection.setRequestProperty("User-Agent", "Mozilla/4.0");
+        			connection.setRequestProperty("Accept","*/*");
+        			if (!doDownloadIfNeeded && connection instanceof HttpURLConnection)
+        			{
+        				// This access test seems to run quicker, doesn't throw as
+        				// many exceptions, and gives more detailed information, so
+        				// use it when just getting file information. However, because it
+        				// only reads the header, this version is not suitable for when
+        				// doDownloadIfNeeded is true.
+        				HttpURLConnection httpConnection = (HttpURLConnection) connection;
+        				// See note above.
+//        				httpConnection.setInstanceFollowRedirects(false);
+
+        				httpConnection.setRequestMethod("HEAD");
+        				int code = httpConnection.getResponseCode();
+
+        				if (code == HttpURLConnection.HTTP_OK)
+        				{
+        					authorized = YesOrNo.YES;
+        					urlExists = YesOrNo.YES;
+        				}
+        				else if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN)
+        				{
+        					authorized = YesOrNo.NO;
+        				}
+        				else if (code == HttpURLConnection.HTTP_NOT_FOUND)
+        				{
+        					authorized = YesOrNo.YES;
+        					urlExists = YesOrNo.NO;
+        				}
+        			}
+        			else
+        			{
+        				// This access test is much simpler and perhaps more robust, but gives less info
+        				// and is slower because it gets an input stream to the whole file.
+        				// Count on this throwing an exception if we don't have access or the file doesn't exist.
+            			connection.getInputStream();
+            			// It didn't throw, so assume all is well.
+            			authorized = YesOrNo.YES;
+            			urlExists = YesOrNo.YES;
+            		}
 
             		// Check file existence and modification time to decide if we need to download.
+        			// TODO: this seems always to return 0: does this in fact work?
             		long urlLastModified = connection.getLastModified();
         			needToDownload = !file.exists() || file.lastModified() < urlLastModified;
             		if (needToDownload)
             		{
+            			// TODO: the length is probably not correct if just the header was read above.
+            			// Check into this and correct the behavior. Ideally length should not be an
+            			// element of this class. The length is used only by progress monitors.
                         String contentLengthStr = connection.getHeaderField("content-length");
                         if (contentLengthStr != null)
                         {                        	
@@ -163,14 +219,17 @@ public class FileCache
                         }
             		}
             	}
-            	catch (@SuppressWarnings("unused") ProtocolException e)
+            	catch (ProtocolException e)
             	{
+            		e.printStackTrace();
             		authorized = YesOrNo.NO;
             	}
             	catch (IOException e)
             	{
-            		if (e.getMessage().contains("401"))
+            		String message = e.getMessage();
+            		if (message != null && message.contains("401"))
             		{
+            			e.printStackTrace();
             			authorized = YesOrNo.NO;
             		}
             		else
@@ -181,6 +240,7 @@ public class FileCache
             	}
             }
 
+            this.url = url;
             this.file = file;
             this.length = length;
             this.needToDownload = needToDownload;
@@ -190,11 +250,16 @@ public class FileCache
             this.failedToDownload = failedToDownload;
         }
 
+        public URL getURL()
+        {
+        	return url;
+        }
+
         public File getFile()
         {
         	return file;
         }
-        
+
         public long getLength() {
         	return length;
         }
@@ -271,10 +336,8 @@ public class FileCache
      *
      * @param path
      * @return
-     * @throws UnauthorizedAccessException if a 401 (Unauthorized) error is encountered when attempting
-     * to access the server for the remote file.
      */
-    static private FileInfo getFileInfoFromServer(String path, boolean doDownloadIfNeeded) throws UnauthorizedAccessException
+    static private FileInfo getFileInfoFromServer(String path, boolean doDownloadIfNeeded)
     {
         FileInfo fi = new FileInfo(path, doDownloadIfNeeded);
 
@@ -286,10 +349,8 @@ public class FileCache
      *
      * @param path
      * @return
-     * @throws UnauthorizedAccessException if a 401 (Unauthorized) error is encountered when attempting
-     * to access the server for the remote file.
      */
-    static public FileInfo getFileInfoFromServer(String path) throws UnauthorizedAccessException
+    static public FileInfo getFileInfoFromServer(String path)
     {
         return getFileInfoFromServer(path, false);
     }
@@ -323,7 +384,15 @@ public class FileCache
             else
             {
                 FileInfo fi = getFileInfoFromServer(fileName, false);
-                if (fi.isExistsLocally() || fi.isExistsOnServer() == YesOrNo.YES) return true;
+                if (fi.isExistsLocally() || fi.isExistsOnServer() == YesOrNo.YES)
+                {
+                	return true;
+                }
+                else if (fi.isURLAccessAuthorized() != YesOrNo.YES)
+                {
+                	URL url = fi.getURL();;
+					throw new UnauthorizedAccessException("Cannot access information about restricted URL: " + url, url);
+                }
                 file = fi.getFile();
             }
         }
@@ -359,7 +428,14 @@ public class FileCache
                 FileInfo fi = getFileInfoFromServer(path, true);
                 
                 if (fi != null)
-                    return fi.getFile();
+                {
+                	if (fi.isURLAccessAuthorized() == YesOrNo.NO)
+                	{
+                		URL url = fi.getURL();
+                		throw new UnauthorizedAccessException("Cannot get file: access is restricted to URL: " + url, url);
+                	}
+                	return fi.getFile();
+                }
                 else
                     return null;
             }
