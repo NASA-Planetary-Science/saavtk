@@ -86,6 +86,7 @@ public class DefaultPicker extends Picker
             smallBodyCellPicker.AddPickList(act);
         }
         smallBodyCellPicker.AddLocator(smallBodyModel.getCellLocator());
+        
 
         allPropsCellPicker = new vtkCellPicker();
         allPropsCellPicker.AddLocator(smallBodyModel.getCellLocator());

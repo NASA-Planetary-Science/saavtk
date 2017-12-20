@@ -241,14 +241,18 @@ public class Configuration
 
         // If APL version, then change root URL to the default internal root URL
         // unless user set sbmt.root.url property.
-//        if (APLVersion)
-//        {
-//            String rootURLProperty = System.getProperty("sbmt.root.url");
-//            if (rootURLProperty == null)
-//            {
-//                rootURL = "http://sbmt.jhuapl.edu/internal/sbmt";
-//            }
-//        }
+        if (APLVersion)
+        {
+            String rootURLProperty = System.getProperty("sbmt.root.url");
+            if (rootURLProperty != null)
+            {
+            	rootURL = rootURLProperty;
+            }
+            else
+            {
+                rootURL = "http://sbmt.jhuapl.edu/internal/sbmt";
+            }
+        }
     }
 
     static public void setUseFileCache(boolean use)

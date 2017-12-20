@@ -33,14 +33,14 @@ public class CameraDialog extends JDialog implements ActionListener
     private JButton okayButton;
     private JButton cancelButton;
     private JTextField fovField;
-    private JTextField cameraAltitudeField;
+    private JTextField spacecraftAltitudeField;
     private JComboBox projComboBox;
-    private JTextField cameraLatitudeField;
-    private JTextField cameraLongitudeField;
+    private JTextField subSpacecraftLatitudeField;
+    private JTextField subspacecraftLongitudeField;
     private JTextField cameraRollField;
-    private JTextField viewPointLatitiudeField;
-    private JTextField viewPointLongitudeField;
-    private JTextField viewPointAltitudeField;
+    private JTextField boresightLatitiudeField;
+    private JTextField boresightLongitudeField;
+    private JTextField lineOfSightDistanceField;
     private boolean nadirFocalPoint;
     private static final double JupiterScale = 75000;
     private double cameraRadius = 0.0, viewRadius = 0.0;
@@ -99,30 +99,30 @@ public class CameraDialog extends JDialog implements ActionListener
       panel.add(degreesLabel, "cell 2 0");
       
       // Create "View Point Latitude" text entry box and add to 2nd row
-      JLabel vpLat = new JLabel("View Point Latitude");
-      viewPointLatitiudeField = new JTextField();
-      viewPointLatitiudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(viewPointLatitiudeField, -90.0, 90.0));
+      JLabel vpLat = new JLabel("Boresight Latitude");
+      boresightLatitiudeField = new JTextField();
+      boresightLatitiudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(boresightLatitiudeField, -90.0, 90.0));
       JLabel vpLatDegree = new JLabel("degrees");
       panel.add(vpLat, "cell 0 1");
-      panel.add(viewPointLatitiudeField, "cell 1 1,growx");
+      panel.add(boresightLatitiudeField, "cell 1 1,growx");
       panel.add(vpLatDegree, "cell 2 1");
       
       // Create "View Point Longitude" text entry box and add to 3rd row
-      JLabel vpLong = new JLabel("View Point Longitude");
-      viewPointLongitudeField = new JTextField();
-      viewPointLongitudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(viewPointLongitudeField, -180.0, 180.0));
-      JLabel vpLongDegree = new JLabel("degrees");
+      JLabel vpLong = new JLabel("Boresight Longitude");
+      boresightLongitudeField = new JTextField();
+      boresightLongitudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(boresightLongitudeField, -180.0, 180.0));
+      JLabel vpLongDegree = new JLabel("degrees east");
       panel.add(vpLong, "cell 0 2");
-      panel.add(viewPointLongitudeField, "cell 1 2,growx");
+      panel.add(boresightLongitudeField, "cell 1 2,growx");
       panel.add(vpLongDegree, "cell 2 2");
       
       // Create "View Point Altitude" text entry box and add to 4th row
-      JLabel vpAlt = new JLabel("View Point Altitude");
-      viewPointAltitudeField = new JTextField();
-      viewPointAltitudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(viewPointAltitudeField));
+      JLabel vpAlt = new JLabel("Line of Sight Distance");
+      lineOfSightDistanceField = new JTextField();
+      lineOfSightDistanceField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(lineOfSightDistanceField));
       JLabel vpAltDistance = new JLabel("km");
       panel.add(vpAlt, "cell 0 3");
-      panel.add(viewPointAltitudeField, "cell 1 3,growx");
+      panel.add(lineOfSightDistanceField, "cell 1 3,growx");
       panel.add(vpAltDistance, "cell 2 3");
       
       // Create "Projection Type" combo box and add to 5th row
@@ -132,25 +132,25 @@ public class CameraDialog extends JDialog implements ActionListener
       panel.add(projComboBox, "cell 1 4,growx");
 
       // Create "Camera Latitude" text entry box and add to 6th row
-      panel.add(new JLabel("Camera Latitude"), "cell 0 5,alignx trailing");
-      cameraLatitudeField = new JTextField();
-      cameraLatitudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(cameraLatitudeField, -90.0, 90.0));
-      panel.add(cameraLatitudeField, "cell 1 5,growx");
+      panel.add(new JLabel("Sub-Spacecraft Latitude"), "cell 0 5,alignx trailing");
+      subSpacecraftLatitudeField = new JTextField();
+      subSpacecraftLatitudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(subSpacecraftLatitudeField, -90.0, 90.0));
+      panel.add(subSpacecraftLatitudeField, "cell 1 5,growx");
       panel.add(new JLabel("degrees"), "cell 2 5");
 
       // Create "Camera Longitude" text entry box and add to 7th row
-      panel.add(new JLabel("Camera Longitude"), "cell 0 6,alignx trailing");
-      cameraLongitudeField = new JTextField();
-      cameraLongitudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(cameraLongitudeField, -180.0, 180.0));
-      panel.add(cameraLongitudeField, "cell 1 6,growx");
-      panel.add(new JLabel("degrees"), "cell 2 6");
+      panel.add(new JLabel("Sub-Spacecraft Longitude"), "cell 0 6,alignx trailing");
+      subspacecraftLongitudeField = new JTextField();
+      subspacecraftLongitudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(subspacecraftLongitudeField, -180.0, 180.0));
+      panel.add(subspacecraftLongitudeField, "cell 1 6,growx");
+      panel.add(new JLabel("degrees east"), "cell 2 6");
       
       // Create "Camera Altitude" text entry box and add to 8th row
-      JLabel altLabel = new JLabel("Camera Altitude");
+      JLabel altLabel = new JLabel("Spacecraft Altitude");
       panel.add(altLabel, "cell 0 7,alignx trailing");
-      cameraAltitudeField = new JTextField();
-      cameraAltitudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(cameraAltitudeField));
-      panel.add(cameraAltitudeField, "cell 1 7,growx");
+      spacecraftAltitudeField = new JTextField();
+      spacecraftAltitudeField.setInputVerifier(JTextFieldDoubleVerifier.getVerifier(spacecraftAltitudeField));
+      panel.add(spacecraftAltitudeField, "cell 1 7,growx");
       JLabel kmLabel = new JLabel("km");
       panel.add(kmLabel, "cell 2 7");
 
@@ -204,19 +204,9 @@ public class CameraDialog extends JDialog implements ActionListener
             try
             {
               GenericPolyhedralModel model = renderer.getGenericPolyhedralModel();
-              double altitude = Double.valueOf(cameraAltitudeField.getText());
-              LatLon cameraLatLong = new LatLon(Double.valueOf(cameraLatitudeField.getText()), Double.valueOf(cameraLongitudeField.getText()));
-              double[] pos = MathUtil.latrec(cameraLatLong.toRadians());
-              double[] viewDirection = new double[3];
-              double[] origin = new double[3];
-              MathUtil.unorm(pos, pos);
-              MathUtil.vscl(JupiterScale, pos, origin);
-              MathUtil.vscl(-1.0, pos, viewDirection);
-//              pos[0] *= altitude;
-//              pos[1] *= altitude;
-//              pos[2] *= altitude;
-              int result = model.computeRayIntersection(origin, viewDirection, pos);
-              cameraRadius = MathUtil.vnorm(pos);
+              double altitude = Double.valueOf(spacecraftAltitudeField.getText());
+              calculateCameraRadius();
+              
 //              System.out.println("RadiusCamera: " + cameraRadius);
               //MathUtil.unorm(pos, pos);
               //MathUtil.vscl(radius + altitude, pos, pos);
@@ -235,8 +225,8 @@ public class CameraDialog extends JDialog implements ActionListener
             try
             {
                 // Compute camera position
-                double latitude = Double.parseDouble(cameraLatitudeField.getText());
-                double longitude = Double.parseDouble(cameraLongitudeField.getText());
+                double latitude = Double.parseDouble(subSpacecraftLatitudeField.getText());
+                double longitude = Double.parseDouble(subspacecraftLongitudeField.getText());
                 renderer.setCameraLatLon(new LatLon(latitude, longitude));
             }
             catch (NumberFormatException ex)
@@ -258,8 +248,8 @@ public class CameraDialog extends JDialog implements ActionListener
             // Set camera view point
             try {
                 GenericPolyhedralModel model = renderer.getGenericPolyhedralModel();
-                double altitude = Double.valueOf(viewPointAltitudeField.getText());
-                LatLon viewpointLatLong = new LatLon(Double.valueOf(viewPointLatitiudeField.getText()), Double.valueOf(viewPointLongitudeField.getText()));
+                double altitude = Double.valueOf(lineOfSightDistanceField.getText());
+                LatLon viewpointLatLong = new LatLon(Double.valueOf(boresightLatitiudeField.getText()), Double.valueOf(boresightLongitudeField.getText()));
                 double[] pos = MathUtil.latrec(viewpointLatLong.toRadians());
                 double[] viewDirection = new double[3];
                 double[] origin = new double[3];
@@ -275,7 +265,7 @@ public class CameraDialog extends JDialog implements ActionListener
                 MathUtil.unorm(pos, pos);
                 MathUtil.vscl(radius + altitude, pos, pos);
                 renderer.setCameraFocalPoint(pos);
-                renderer.setViewPointLatLong(); // This doesn't do anything?
+                renderer.setViewPointLatLong(); // TODO: This doesn't do anything?
             } 
             catch (Exception e2)
             {
@@ -301,11 +291,11 @@ public class CameraDialog extends JDialog implements ActionListener
       fovField.setText(String.valueOf(renderer.getCameraViewAngle()));
       calculateCameraRadius();
 //      System.out.println("Camera distance: " + renderer.getCameraDistance() + " cameraRadius: " + cameraRadius);
-      cameraAltitudeField.setText(String.valueOf(renderer.getCameraDistance() - cameraRadius));
+      spacecraftAltitudeField.setText(String.valueOf(renderer.getCameraDistance() - cameraRadius));
       projComboBox.setSelectedItem(renderer.getProjectionType());
       LatLon cameraLatLon = renderer.getCameraLatLon();
-      cameraLatitudeField.setText(String.valueOf(cameraLatLon.lat));
-      cameraLongitudeField.setText(String.valueOf(cameraLatLon.lon));
+      subSpacecraftLatitudeField.setText(String.valueOf(cameraLatLon.lat));
+      subspacecraftLongitudeField.setText(String.valueOf(cameraLatLon.lon));
       cameraRollField.setText(String.valueOf(renderer.getCameraRoll()));
       
       LatLon viewPointLatLong = MathUtil.reclat(renderer.getCameraFocalPoint()).toDegrees();
@@ -315,15 +305,15 @@ public class CameraDialog extends JDialog implements ActionListener
       calculateViewRadius();
       if(nadirFocalPoint){
           System.out.println("11");
-          viewPointLatitiudeField.setText("");
-          viewPointLongitudeField.setText("");
+          boresightLatitiudeField.setText("");
+          boresightLongitudeField.setText("");
           lat = String.valueOf(cameraLatLon.lat);
           lon = String.valueOf(cameraLatLon.lon);
       }
       double[] focalPoint = renderer.getCameraFocalPoint();
-      viewPointAltitudeField.setText(String.valueOf(MathUtil.vnorm(focalPoint) - viewRadius ));
-      viewPointLatitiudeField.setText(lat);
-      viewPointLongitudeField.setText(lon);
+      lineOfSightDistanceField.setText(String.valueOf(MathUtil.vnorm(focalPoint) - viewRadius ));
+      boresightLatitiudeField.setText(lat);
+      boresightLongitudeField.setText(lon);
 
       super.setVisible(b);
     }

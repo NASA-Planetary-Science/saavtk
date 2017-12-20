@@ -42,4 +42,9 @@ public class ExampleViewConfig extends ViewConfig
         return c;
     }
 
+	@Override
+	public boolean isAccessible() {
+		return true;
+	}
+
 }

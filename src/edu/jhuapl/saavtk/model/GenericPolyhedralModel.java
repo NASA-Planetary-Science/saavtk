@@ -772,10 +772,12 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		cellLocator.AutomaticOn();
 		//cellLocator.SetMaxLevel(10);
 		//cellLocator.SetNumberOfCellsPerNode(5);
+		cellLocator.SetTolerance(1e-15);
 		cellLocator.BuildLocator();
 
 		pointLocator.FreeSearchStructure();
 		pointLocator.SetDataSet(smallBodyPolyData);
+		pointLocator.SetTolerance(1e-15);
 		pointLocator.BuildLocator();
 	}
 
@@ -1156,7 +1158,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	{
 		LatLon lla = new LatLon(lat, lon);
 		double[] lookPt = MathUtil.latrec(lla);
-
+		
 		// Move in the direction of lookPt until we are definitely outside the asteroid
 		BoundingBox bb = getBoundingBox();
 		double largestSide = bb.getLargestSide() * 1.1;
