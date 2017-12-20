@@ -14,7 +14,7 @@ import edu.jhuapl.saavtk.model.ShapeModelBody;
  * application instance. This class is also used when creating (to know which tabs
  * to create).
  */
-public class ViewConfig implements Cloneable
+public abstract class ViewConfig implements Cloneable
 {
     public String customName;
     public boolean customTemporary = false;
@@ -33,8 +33,10 @@ public class ViewConfig implements Cloneable
     private boolean enabled = true;
 
 
+    public abstract boolean isAccessible();
 
-    public ViewConfig clone() // throws CloneNotSupportedException
+    @Override
+	public ViewConfig clone() // throws CloneNotSupportedException
     {
         ViewConfig c = null;
         try {
@@ -115,7 +117,7 @@ public class ViewConfig implements Cloneable
     	 this.enabled = enabled;
      }
 
-     static private List<ViewConfig> builtInConfigs = new ArrayList<ViewConfig>();
+     static private List<ViewConfig> builtInConfigs = new ArrayList<>();
      static public List<ViewConfig> getBuiltInConfigs() { return builtInConfigs; }
 
      /**
@@ -148,10 +150,10 @@ public class ViewConfig implements Cloneable
      {
          for (ViewConfig config : getBuiltInConfigs())
          {
-             if (((ViewConfig)config).body == name && config.author == author &&
+             if (config.body == name && config.author == author &&
                      ((config.version == null && version == null) || (version != null && version.equals(config.version)))
                      )
-                 return (ViewConfig)config;
+                 return config;
          }
 
          System.err.println("Error: Cannot find Config with name " + name +

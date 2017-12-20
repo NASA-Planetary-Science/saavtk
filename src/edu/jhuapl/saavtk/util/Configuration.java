@@ -244,7 +244,11 @@ public class Configuration
         if (APLVersion)
         {
             String rootURLProperty = System.getProperty("sbmt.root.url");
-            if (rootURLProperty == null)
+            if (rootURLProperty != null)
+            {
+            	rootURL = rootURLProperty;
+            }
+            else
             {
                 rootURL = "http://sbmt.jhuapl.edu/internal/sbmt";
             }
