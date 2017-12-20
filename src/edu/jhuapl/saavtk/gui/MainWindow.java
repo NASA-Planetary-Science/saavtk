@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -19,7 +20,8 @@ import edu.jhuapl.saavtk.gui.menu.HelpMenu;
  */
 public abstract class MainWindow extends JFrame
 {
-    private StatusBar statusBar;
+	private static final long serialVersionUID = -1837887362465597229L;
+	private StatusBar statusBar;
     private FileMenu fileMenu;
     private ViewMenu viewMenu;
     private HelpMenu helpMenu;
@@ -39,6 +41,8 @@ public abstract class MainWindow extends JFrame
         createStatusBar(editableLeftStatusLabel);
 
         rootPanel = createViewManager(statusBar, this, tempCustomShapeModelPath);
+
+        rootPanel.setPreferredSize(new Dimension(800, 600));
 
         createMenus();
 
