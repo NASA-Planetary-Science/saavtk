@@ -39,8 +39,6 @@ public enum ShapeModelBody
     KY26("1998 KY26"),
     BACCHUS("2063 Bacchus"),
     KLEOPATRA("216 Kleopatra"),
-    TOUTATIS_LOW_RES("4179 Toutatis (Low Res)"),
-    TOUTATIS_HIGH_RES("4179 Toutatis (High Res)"),
     TOUTATIS("4179 Toutatis"),
     CASTALIA("4769 Castalia"),
     _52760_1998_ML14("(52760) 1998 ML14"),

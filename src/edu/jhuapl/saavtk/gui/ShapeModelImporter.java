@@ -193,16 +193,6 @@ public class ShapeModelImporter
         writer.Write();
 
 
-        // Generate a graticule
-        Graticule grid = new Graticule(null, null);
-        grid.generateGrid(shapePoly);
-
-        writer = new vtkPolyDataWriter();
-        writer.SetInputData(grid.getGridAsPolyData());
-        writer.SetFileName(newModelDir.getAbsolutePath() + File.separator + "grid.vtk");
-        writer.SetFileTypeToBinary();
-        writer.Write();
-
         // Copy any files as needed
         for(String key : copyMap.keySet())
         {   
