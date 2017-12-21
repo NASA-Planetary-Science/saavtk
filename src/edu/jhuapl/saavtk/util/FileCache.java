@@ -144,7 +144,7 @@ public class FileCache
             		// spurious 301 errors, so leaving these in here commented out.
 //            		HttpURLConnection.setFollowRedirects(false);
             		URLConnection connection = url.openConnection();
-            		System.out.println("FileInfo(): opened connection to " + url);
+//            		System.out.println("FileInfo(): opened connection to " + url);
             		// These two properties seem to be still necessary as of 2017-12-19.
         			connection.setRequestProperty("User-Agent", "Mozilla/4.0");
         			connection.setRequestProperty("Accept","*/*");
