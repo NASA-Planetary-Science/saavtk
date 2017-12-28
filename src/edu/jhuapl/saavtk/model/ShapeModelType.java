@@ -1,7 +1,7 @@
 package edu.jhuapl.saavtk.model;
 
 // Names of authors
-public enum ShapeModelAuthor
+public enum ShapeModelType
 {
     GASKELL("Gaskell"),
     THOMAS("Thomas"),
@@ -25,7 +25,7 @@ public enum ShapeModelAuthor
     TRUTH("Truth");
 
     final private String str;
-    private ShapeModelAuthor(String str)
+    private ShapeModelType(String str)
     {
         this.str = str;
     }

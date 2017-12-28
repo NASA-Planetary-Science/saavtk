@@ -11,7 +11,7 @@ import edu.jhuapl.saavtk.model.Graticule;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.ShapeModelAuthor;
+import edu.jhuapl.saavtk.model.ShapeModelType;
 import edu.jhuapl.saavtk.model.structure.CircleModel;
 import edu.jhuapl.saavtk.model.structure.CircleSelectionModel;
 import edu.jhuapl.saavtk.model.structure.EllipseModel;
@@ -45,7 +45,7 @@ public class ExampleView extends View
 
     public String getDisplayName()
     {
-        if (getConfig().author == ShapeModelAuthor.CUSTOM)
+        if (getConfig().author == ShapeModelType.CUSTOM)
             return getConfig().customName;
         else
         {
