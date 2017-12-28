@@ -46,7 +46,7 @@ public class ExampleView extends View
     public String getDisplayName()
     {
         if (getConfig().author == ShapeModelType.CUSTOM)
-            return getConfig().customName;
+            return getConfig().modelLabel;
         else
         {
             String version = "";

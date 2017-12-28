@@ -31,7 +31,7 @@ public final class ExampleViewManager extends ViewManager
 	public View createCustomView(StatusBar statusBar, String name, boolean temporary)
     {
         ViewConfig config = new ExampleViewConfig();
-        config.customName = name;
+        config.modelLabel = name;
         config.customTemporary = temporary;
         config.author = ShapeModelType.CUSTOM;
         return new ExampleView(statusBar, config);

@@ -23,13 +23,13 @@ public class ExampleViewConfig extends ViewConfig
         List<ViewConfig> configArray = getBuiltInConfigs();
 
         ExampleViewConfig config = new ExampleViewConfig();
-        config.customName = "data/brain.obj";
+        config.modelLabel = "data/brain.obj";
         config.customTemporary = true;
         config.author = ShapeModelType.CUSTOM;
         configArray.add(config);
 
         config = new ExampleViewConfig();
-        config.customName = "data/left-lung.obj";
+        config.modelLabel = "data/left-lung.obj";
         config.customTemporary = true;
         config.author = ShapeModelType.CUSTOM;
         configArray.add(config);

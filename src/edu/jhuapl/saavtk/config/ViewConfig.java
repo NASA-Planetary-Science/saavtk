@@ -16,7 +16,7 @@ import edu.jhuapl.saavtk.model.ShapeModelBody;
  */
 public abstract class ViewConfig implements Cloneable
 {
-    public String customName;
+    public String modelLabel;
     public boolean customTemporary = false;
     public ShapeModelType author; // e.g. Gaskell
     public String version; // e.g. 2.0
@@ -48,7 +48,7 @@ public abstract class ViewConfig implements Cloneable
         c.author = this.author;
         c.version = this.version;
 
-        c.customName = this.customName;
+        c.modelLabel = this.modelLabel;
         c.customTemporary = this.customTemporary;
 
         c.useMinimumReferencePotential = this.useMinimumReferencePotential;
@@ -70,7 +70,7 @@ public abstract class ViewConfig implements Cloneable
      {
          if (ShapeModelType.CUSTOM == author)
          {
-             return ShapeModelType.CUSTOM + " > " + customName;
+             return ShapeModelType.CUSTOM + " > " + modelLabel;
          }
          else
              return "DefaultPath";
@@ -89,7 +89,7 @@ public abstract class ViewConfig implements Cloneable
      public String getUniqueName()
      {
          if (ShapeModelType.CUSTOM == author)
-             return author + "/" + customName;
+             return author + "/" + modelLabel;
          else
              return "DefaultName";
      }
@@ -97,7 +97,7 @@ public abstract class ViewConfig implements Cloneable
      public String getShapeModelName()
      {
          if (author == ShapeModelType.CUSTOM)
-             return customName;
+             return modelLabel;
          else
          {
              String ver = "";

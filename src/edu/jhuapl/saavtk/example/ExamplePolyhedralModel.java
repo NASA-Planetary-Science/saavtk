@@ -8,7 +8,7 @@ public class ExamplePolyhedralModel extends GenericPolyhedralModel
     public ExamplePolyhedralModel(ViewConfig config)
     {
         super(config,
-                new String[] { config.customName },
+                new String[] { config.modelLabel },
                 new String[] { getModelFilename(config) },
                 null,
                 null,
@@ -26,6 +26,6 @@ public class ExamplePolyhedralModel extends GenericPolyhedralModel
 
     private static String getModelFilename(ViewConfig config)
     {
-        return config.customName;
+        return config.modelLabel;
     }
 }
