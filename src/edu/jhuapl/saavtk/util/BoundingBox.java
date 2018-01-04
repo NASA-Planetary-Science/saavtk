@@ -1,7 +1,21 @@
 package edu.jhuapl.saavtk.util;
 
+import vtk.vtkOBJReader;
+
 public class BoundingBox
 {
+	
+	public static BoundingBox fromObj(String filename)
+	{
+		
+		vtkOBJReader reader=new vtkOBJReader();
+		reader.SetFileName(filename);
+		reader.Update();
+		
+		BoundingBox bbox=new BoundingBox(reader.GetOutput().GetBounds());
+		return bbox;
+	}
+	
     public double xmin = Double.MAX_VALUE;
     public double xmax = -Double.MAX_VALUE;
     public double ymin = Double.MAX_VALUE;
