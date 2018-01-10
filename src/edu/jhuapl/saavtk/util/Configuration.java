@@ -1,6 +1,21 @@
 package edu.jhuapl.saavtk.util;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+
+import javax.swing.BoxLayout;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+
+import edu.jhuapl.saavtk.util.FileCache.FileInfo;
+import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
 
 public class Configuration
 {
@@ -32,7 +47,99 @@ public class Configuration
 //            rootURL = rootURLProperty;
 //    }
 
-    static public void setupPasswordAuthentication(final String username, final String password)
+	public static void setupPasswordAuthentication(final String restrictedAccessRoot, final String restrictedFileName, Iterable<Path> passwordFilesToTry)
+	{
+		if (restrictedAccessRoot == null || restrictedFileName == null || passwordFilesToTry == null)
+		{
+			throw new NullPointerException();
+		}
+		if (!passwordFilesToTry.iterator().hasNext())
+		{
+			throw new IllegalArgumentException();
+		}
+
+		for (Path passwordFile : passwordFilesToTry)
+        {
+            if (passwordFile.toFile().exists())
+            {
+                List<String> credentials;
+				try {
+					credentials = FileUtil.getFileLinesAsStringList(passwordFile.toString());
+					if (credentials.size() >= 2)
+					{
+						String user = credentials.get(0);
+						String pass = credentials.get(1);
+						
+						if (user != null && user.trim().length() > 0 && !user.trim().toLowerCase().contains("replace-with-") &&
+								pass != null && pass.trim().length() > 0)
+						{
+							setupPasswordAuthentication(user.trim(), pass.trim().toCharArray());
+							FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
+							if (!info.isURLAccessAuthorized().equals(YesOrNo.YES))
+							{
+								promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFile);
+							}
+							return;
+						}
+					}
+				} catch (@SuppressWarnings("unused") IOException e) {
+					// Ignore -- maybe the next one will work.
+				}
+            }
+        }
+
+        // If we get here, no password file was found, so try to create the first one in the collection.
+        promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next());
+	}
+
+	static private void promptUserForPassword(final String restrictedAccessRoot, final String restrictedFileName, Path passwordFile)
+	{
+		JPanel mainPanel = new JPanel();
+		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+		JLabel promptLabel = new JLabel("If you have credentials to access restricted models, enter them here.");
+		JLabel requestAccess = new JLabel("(Email sbmt@jhuapl.edu to request access)");
+		
+		JPanel namePanel = new JPanel();
+		namePanel.setLayout(new BoxLayout(namePanel, BoxLayout.X_AXIS));
+		namePanel.add(new JLabel("Username:"));
+		JTextField nameField = new JTextField(15);
+		namePanel.add(nameField);
+		
+		JPanel passwordPanel = new JPanel();
+		passwordPanel.setLayout(new BoxLayout(passwordPanel, BoxLayout.X_AXIS));
+		passwordPanel.add(new JLabel("Password:"));
+		JPasswordField passwordField = new JPasswordField(15);
+		passwordPanel.add(passwordField);
+
+		mainPanel.add(promptLabel);
+		mainPanel.add(requestAccess);
+		mainPanel.add(namePanel);
+		mainPanel.add(passwordPanel);
+
+		boolean validOrCancel = false;
+		while (!validOrCancel)
+		{
+			int selection = JOptionPane.showConfirmDialog(null, mainPanel, "Optional password for restricted model access", JOptionPane.OK_CANCEL_OPTION);
+			if (selection == JOptionPane.OK_OPTION)
+			{
+				String name = nameField.getText();
+				char[] password = passwordField.getPassword();
+				setupPasswordAuthentication(name, password);
+				FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
+				if (info.isURLAccessAuthorized().equals(YesOrNo.YES))
+				{
+					validOrCancel = true;
+					writePasswordFile(passwordFile, name, password);
+				}
+			}
+			else
+			{
+				validOrCancel = true;
+			}
+		}
+	}
+
+	static public void setupPasswordAuthentication(final String username, final char[] password)
     {
         try
         {
@@ -41,7 +148,7 @@ public class Configuration
                 @Override
 				protected java.net.PasswordAuthentication getPasswordAuthentication()
                 {
-                    return new java.net.PasswordAuthentication(username, password.toCharArray());
+                    return new java.net.PasswordAuthentication(username, password);
                 }
             });
             passwordAuthenticationSetup = true;
@@ -51,8 +158,19 @@ public class Configuration
             e.printStackTrace();
         }
     }
-    
-    static public boolean isPasswordAuthenticationSetup()
+
+	static public void writePasswordFile(final Path passwordFile, String name, char[] password)
+	{
+		try (PrintStream outStream = new PrintStream(Files.newOutputStream(passwordFile))) {
+			outStream.println(name);
+			outStream.println(password);
+		} catch (IOException e) {
+			// Unfortunate but there's nothing more we can do at this point.
+			e.printStackTrace();
+		}
+	}
+
+	static public boolean isPasswordAuthenticationSetup()
     {
     	return passwordAuthenticationSetup;
     }
