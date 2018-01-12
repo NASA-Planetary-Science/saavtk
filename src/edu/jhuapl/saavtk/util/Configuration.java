@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import javax.swing.BoxLayout;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -19,6 +20,8 @@ import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
 
 public class Configuration
 {
+	private static final String INITIAL_MESSAGE = "If you have credentials to access restricted models, enter them here.";
+	
     static private String webURL = "http://sbmt.jhuapl.edu";
     static private String rootURL = webURL + "/sbmt";
     static private String helpURL = webURL;
@@ -34,6 +37,9 @@ public class Configuration
     // Flag indicating if this version of the tool is APL in-house only ("private")
     static private boolean APLVersion = false;
 	private static boolean passwordAuthenticationSetup = false;
+	private static String restrictedAccessRoot = null;
+	private static String restrictedFileName = null;
+	private static Iterable<Path> passwordFilesToTry = null;
 
 // Uncomment the following to enable the startup script (which can be changed by the user)
 // to specify the web server URL:
@@ -47,7 +53,7 @@ public class Configuration
 //            rootURL = rootURLProperty;
 //    }
 
-	public static void setupPasswordAuthentication(final String restrictedAccessRoot, final String restrictedFileName, Iterable<Path> passwordFilesToTry)
+	public static void setupPasswordAuthentication(final String restrictedAccessRoot, final String restrictedFileName, final Iterable<Path> passwordFilesToTry)
 	{
 		if (restrictedAccessRoot == null || restrictedFileName == null || passwordFilesToTry == null)
 		{
@@ -57,6 +63,10 @@ public class Configuration
 		{
 			throw new IllegalArgumentException();
 		}
+
+		Configuration.restrictedAccessRoot = restrictedAccessRoot;
+		Configuration.restrictedFileName = restrictedFileName;
+		Configuration.passwordFilesToTry = passwordFilesToTry;
 
 		for (Path passwordFile : passwordFilesToTry)
         {
@@ -79,24 +89,24 @@ public class Configuration
 							{
 								promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFile);
 							}
-							return;
 						}
 					}
 				} catch (@SuppressWarnings("unused") IOException e) {
 					// Ignore -- maybe the next one will work.
 				}
+				return;
             }
         }
 
-        // If we get here, no password file was found, so try to create the first one in the collection.
+        // If we get here, no password file was found, so try to create the first one in the iterable object.
         promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next());
 	}
 
-	static private void promptUserForPassword(final String restrictedAccessRoot, final String restrictedFileName, Path passwordFile)
+	private static void promptUserForPassword(final String restrictedAccessRoot, final String restrictedFileName, final Path passwordFile)
 	{
 		JPanel mainPanel = new JPanel();
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-		JLabel promptLabel = new JLabel("If you have credentials to access restricted models, enter them here.");
+		JLabel promptLabel = new JLabel(INITIAL_MESSAGE);
 		JLabel requestAccess = new JLabel("(Email sbmt@jhuapl.edu to request access)");
 		
 		JPanel namePanel = new JPanel();
@@ -111,10 +121,14 @@ public class Configuration
 		JPasswordField passwordField = new JPasswordField(15);
 		passwordPanel.add(passwordField);
 
+		JCheckBox rememberPassword = new JCheckBox("Do not prompt for a password in the future (cache credentials if entered).");
+		rememberPassword.setSelected(true);
+
 		mainPanel.add(promptLabel);
 		mainPanel.add(requestAccess);
 		mainPanel.add(namePanel);
 		mainPanel.add(passwordPanel);
+		mainPanel.add(rememberPassword);
 
 		boolean validOrCancel = false;
 		while (!validOrCancel)
@@ -129,17 +143,36 @@ public class Configuration
 				if (info.isURLAccessAuthorized().equals(YesOrNo.YES))
 				{
 					validOrCancel = true;
-					writePasswordFile(passwordFile, name, password);
+					if (rememberPassword.isSelected())
+					{
+						writePasswordFile(passwordFile, name, password);
+					}
 				}
 			}
 			else
 			{
+				if (rememberPassword.isSelected())
+				{
+					writeBlankPasswordFile(passwordFile);
+				}
 				validOrCancel = true;
+			}
+			promptLabel.setText(validOrCancel ? INITIAL_MESSAGE : "Try again, or click \"Cancel\" to continue without password. Some models may not be available.");
+		}
+		if (!rememberPassword.isSelected())
+		{
+			try
+			{
+				Files.delete(passwordFile);
+			}
+			catch (@SuppressWarnings("unused") IOException e)
+			{
+				// Silently ignore this one.
 			}
 		}
 	}
 
-	static public void setupPasswordAuthentication(final String username, final char[] password)
+	public static void setupPasswordAuthentication(final String username, final char[] password)
     {
         try
         {
@@ -159,15 +192,31 @@ public class Configuration
         }
     }
 
-	static public void writePasswordFile(final Path passwordFile, String name, char[] password)
+	public static void writePasswordFile(final Path passwordFile, final String name, final char[] password)
 	{
 		try (PrintStream outStream = new PrintStream(Files.newOutputStream(passwordFile))) {
-			outStream.println(name);
-			outStream.println(password);
+			if (name != null && password != null)
+			{
+				outStream.println(name);
+				outStream.println(password);				
+			}
 		} catch (IOException e) {
 			// Unfortunate but there's nothing more we can do at this point.
 			e.printStackTrace();
 		}
+	}
+
+	public static void writeBlankPasswordFile(final Path passwordFile)
+	{
+		writePasswordFile(passwordFile, null, null);
+	}
+
+	public static void updatePassword() {
+		if (restrictedAccessRoot == null || restrictedFileName == null || passwordFilesToTry == null)
+		{
+			throw new AssertionError("Cannot update password; authentication was not properly initialized.");
+		}
+		promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next());
 	}
 
 	static public boolean isPasswordAuthenticationSetup()
