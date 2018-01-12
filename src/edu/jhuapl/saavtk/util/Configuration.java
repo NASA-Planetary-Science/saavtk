@@ -102,7 +102,7 @@ public class Configuration
         promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next());
 	}
 
-	private static void promptUserForPassword(final String restrictedAccessRoot, final String restrictedFileName, final Path passwordFile)
+	private static boolean promptUserForPassword(final String restrictedAccessRoot, final String restrictedFileName, final Path passwordFile)
 	{
 		JPanel mainPanel = new JPanel();
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
@@ -170,6 +170,7 @@ public class Configuration
 				// Silently ignore this one.
 			}
 		}
+		return rememberPassword.isSelected();
 	}
 
 	public static void setupPasswordAuthentication(final String username, final char[] password)
@@ -216,7 +217,10 @@ public class Configuration
 		{
 			throw new AssertionError("Cannot update password; authentication was not properly initialized.");
 		}
-		promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next());
+		if (promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next()))
+		{
+			JOptionPane.showMessageDialog(null, "Changes will take effect next time you start the tool", "Password changes saved", JOptionPane.INFORMATION_MESSAGE);
+		}
 	}
 
 	static public boolean isPasswordAuthenticationSetup()
