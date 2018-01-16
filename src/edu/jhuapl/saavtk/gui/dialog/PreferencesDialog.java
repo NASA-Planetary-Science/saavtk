@@ -20,11 +20,11 @@ import javax.swing.JOptionPane;
 import com.google.common.base.Joiner;
 import com.google.common.primitives.Ints;
 
-import edu.jhuapl.saavtk.gui.Renderer;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
-import edu.jhuapl.saavtk.gui.Renderer.InteractorStyleType;
-import edu.jhuapl.saavtk.gui.Renderer.LightingType;
+import edu.jhuapl.saavtk.gui.renderer.Renderer;
+import edu.jhuapl.saavtk.gui.renderer.Renderer.InteractorStyleType;
+import edu.jhuapl.saavtk.gui.renderer.Renderer.LightingType;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.util.ColorUtil;
