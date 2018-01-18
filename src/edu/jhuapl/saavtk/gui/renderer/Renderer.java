@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.gui.renderer;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -22,6 +23,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLEventListener;
 import javax.media.opengl.awt.GLJPanel;
+import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -278,6 +280,7 @@ public class Renderer extends JPanel implements
 
         add(toolbar, BorderLayout.NORTH);
         add(mainCanvas.getComponent(), BorderLayout.CENTER);
+        toolbar.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
 
        // mainCanvas.getRenderWindow().StereoCapableWindowOn();
   //      mainCanvas.getRenderWindowInteractor().CreateRepeatingTimer(1000);  // once per second we make sure the stereo mode hasn't been changed via keyboard; this is admittedly a sloppy kludge to override the '3' key behavior (anaglyph toggle) in vtk

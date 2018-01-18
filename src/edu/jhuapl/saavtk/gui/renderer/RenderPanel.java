@@ -97,10 +97,10 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		follower.SetMapper(mapper);
 		follower.SetCamera(getActiveCamera());
 		follower.GetProperty().SetEdgeColor(1, 1, 1);
-		follower.GetProperty().SetEdgeVisibility(1);
+		//follower.GetProperty().SetEdgeVisibility(1);
 				
 		getRenderer().AddActor(follower);
-		axesSource=new OffScreenAxesRenderer(100);
+		axesSource=new OffScreenAxesRenderer(200);
 
 		cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this, "test");
 	}

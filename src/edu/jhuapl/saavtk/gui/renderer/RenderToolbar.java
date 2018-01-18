@@ -19,6 +19,9 @@ import com.google.common.collect.Lists;
 import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JSeparator;
+import java.awt.GridLayout;
+import java.awt.FlowLayout;
 
 public class RenderToolbar extends JPanel implements ItemListener, ActionListener
 {
@@ -61,7 +64,6 @@ public class RenderToolbar extends JPanel implements ItemListener, ActionListene
 
 	public RenderToolbar()
 	{
-		setLayout(new MigLayout("", "[][][][][][][][][][]", "[][]"));
 
 		constrainRotationButtonGroup.add(constrainRotationXButton);
 		constrainRotationButtonGroup.add(constrainRotationYButton);
@@ -75,10 +77,11 @@ public class RenderToolbar extends JPanel implements ItemListener, ActionListene
 		constrainRotationXButton.setIcon(constrainRotationXIcon);
 		constrainRotationYButton.setIcon(constrainRotationYIcon);
 		constrainRotationZButton.setIcon(constrainRotationZIcon);
+		setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
 
-		add(constrainRotationXButton, "cell 0 0");
-		add(constrainRotationYButton, "cell 1 0");
-		add(constrainRotationZButton, "cell 2 0");
+		add(constrainRotationXButton);
+		add(constrainRotationYButton);
+		add(constrainRotationZButton);
 
 		constrainRotationXButton.addItemListener(this);
 		constrainRotationYButton.addItemListener(this);
@@ -91,45 +94,46 @@ public class RenderToolbar extends JPanel implements ItemListener, ActionListene
 		viewAlignPlusYIcon.setImage(viewAlignPlusYIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
 		viewAlignMinusYIcon.setImage(viewAlignMinusYIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
 		viewAlignPlusZIcon.setImage(viewAlignPlusZIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
-
-		viewAlignPlusXButton.setIcon(viewAlignPlusXIcon);
-		viewAlignMinusXButton.setIcon(viewAlignMinusXIcon);
-		viewAlignPlusYButton.setIcon(viewAlignPlusYIcon);
-		viewAlignMinusYButton.setIcon(viewAlignMinusYIcon);
-		viewAlignPlusZButton.setIcon(viewAlignPlusZIcon);
-		viewAlignMinusZButton.setIcon(viewAlignMinusZIcon);
+		
+		add(separator_1);
 
 		//
 
 		showOrientationAxesToggleButton.setIcon(showOrientationAxesIcon);
-		add(showOrientationAxesToggleButton, "cell 3 0");
+		add(showOrientationAxesToggleButton);
 		showOrientationAxesToggleButton.addItemListener(this);
 		showOrientationAxesToggleButton.setSelected(false);
 		
 				pickRotationCenterButton.setIcon(pickRotationIcon);
-				add(pickRotationCenterButton, "cell 4 0");
+				add(pickRotationCenterButton);
 				pickRotationCenterButton.addItemListener(this);
 				pickRotationCenterButton.setEnabled(false);
 		
 				//
 		
 				viewAllButton.setIcon(viewAllIcon);
-				add(viewAllButton, "cell 5 0");
+				add(viewAllButton);
 				viewAllButton.addActionListener(this);
-
-		add(viewAlignPlusXButton, "cell 0 1");
-		add(viewAlignMinusXButton, "cell 1 1");
-		add(viewAlignPlusYButton, "cell 2 1");
-		add(viewAlignMinusYButton, "cell 3 1");
-		add(viewAlignPlusZButton, "cell 4 1");
-		add(viewAlignMinusZButton, "cell 5 1");
-
-		viewAlignPlusXButton.addActionListener(this);
+		
+		add(separator);
+		
+				viewAlignPlusXButton.setIcon(viewAlignPlusXIcon);
+				
+						add(viewAlignPlusXButton);
+						
+								viewAlignPlusXButton.addActionListener(this);
+		viewAlignMinusXButton.setIcon(viewAlignMinusXIcon);
+		add(viewAlignMinusXButton);
 		viewAlignMinusXButton.addActionListener(this);
+		viewAlignPlusYButton.setIcon(viewAlignPlusYIcon);
+		add(viewAlignPlusYButton);
 		viewAlignPlusYButton.addActionListener(this);
+		viewAlignMinusYButton.setIcon(viewAlignMinusYIcon);
+		add(viewAlignMinusYButton);
 		viewAlignMinusYButton.addActionListener(this);
+		viewAlignPlusZButton.setIcon(viewAlignPlusZIcon);
+		add(viewAlignPlusZButton);
 		viewAlignPlusZButton.addActionListener(this);
-		viewAlignMinusZButton.addActionListener(this);
 
 		//
 
@@ -140,6 +144,9 @@ public class RenderToolbar extends JPanel implements ItemListener, ActionListene
 		showOrientationAxesIcon.setImage(showOrientationAxesIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
 		viewAllIcon.setImage(viewAllIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
 		showOrientationAxesToggleButton.setSelected(true);
+		viewAlignMinusZButton.setIcon(viewAlignMinusZIcon);
+		add(viewAlignMinusZButton);
+		viewAlignMinusZButton.addActionListener(this);
 	}
 	
 	public void addToolbarListener(RenderToolbarListener listener)
@@ -148,6 +155,8 @@ public class RenderToolbar extends JPanel implements ItemListener, ActionListene
 	}
 	
 	List<RenderToolbarListener> listeners=Lists.newArrayList();
+	private final JSeparator separator = new JSeparator();
+	private final JSeparator separator_1 = new JSeparator();
 
 	public void fire(RenderToolbarEvent event)
 	{
