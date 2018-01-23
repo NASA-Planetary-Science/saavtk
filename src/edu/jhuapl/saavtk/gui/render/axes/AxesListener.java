@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.renderer.axes;
+package edu.jhuapl.saavtk.gui.render.axes;
 
 public interface AxesListener
 {

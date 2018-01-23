@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.renderer;
+package edu.jhuapl.saavtk.gui.render;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -35,8 +35,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import edu.jhuapl.saavtk.gui.renderer.camera.CameraFrame;
-import edu.jhuapl.saavtk.gui.renderer.toolbar.RenderToolbar;
 import vtk.vtkActor;
 import vtk.vtkAxesActor;
 import vtk.vtkBMPWriter;
@@ -74,6 +72,8 @@ import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas.StereoMode;
+import edu.jhuapl.saavtk.gui.render.camera.CameraFrame;
+import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;

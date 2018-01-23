@@ -1,8 +1,8 @@
-package edu.jhuapl.saavtk.gui.renderer.toolbar;
+package edu.jhuapl.saavtk.gui.render.toolbar;
 
-import edu.jhuapl.saavtk.gui.renderer.Event;
-import edu.jhuapl.saavtk.gui.renderer.axes.CartesianAxis;
-import edu.jhuapl.saavtk.gui.renderer.axes.CartesianViewDirection;
+import edu.jhuapl.saavtk.gui.render.Event;
+import edu.jhuapl.saavtk.gui.render.axes.CartesianAxis;
+import edu.jhuapl.saavtk.gui.render.axes.CartesianViewDirection;
 
 public class RenderToolbarEvent extends Event<RenderToolbar>
 {

@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.renderer;
+package edu.jhuapl.saavtk.gui.render;
 
 import javax.swing.JPanel;
 

@@ -1,9 +1,9 @@
-package edu.jhuapl.saavtk.gui.renderer;
+package edu.jhuapl.saavtk.gui.render;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.gui.renderer.axes.CartesianAxis;
+import edu.jhuapl.saavtk.gui.render.axes.CartesianAxis;
 import vtk.vtkCamera;
 import vtk.vtkInteractorStyleTrackballCamera;
 import vtk.vtkInteractorStyleUser;

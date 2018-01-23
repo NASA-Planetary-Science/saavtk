@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.renderer;
+package edu.jhuapl.saavtk.gui.render;
 
 import java.awt.Color;
 import java.awt.event.ComponentEvent;
@@ -10,15 +10,15 @@ import javax.swing.SwingUtilities;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.gui.renderer.axes.Axes;
-import edu.jhuapl.saavtk.gui.renderer.axes.CartesianViewDirection;
-import edu.jhuapl.saavtk.gui.renderer.camera.Camera;
-import edu.jhuapl.saavtk.gui.renderer.camera.CameraEvent;
-import edu.jhuapl.saavtk.gui.renderer.camera.CameraListener;
-import edu.jhuapl.saavtk.gui.renderer.toolbar.RenderToolbar;
-import edu.jhuapl.saavtk.gui.renderer.toolbar.RenderToolbarEvent;
-import edu.jhuapl.saavtk.gui.renderer.toolbar.RenderToolbarListener;
-import edu.jhuapl.saavtk.gui.renderer.toolbar.RenderToolbarEvent.ConstrainRotationAxisEvent;
+import edu.jhuapl.saavtk.gui.render.axes.Axes;
+import edu.jhuapl.saavtk.gui.render.axes.CartesianViewDirection;
+import edu.jhuapl.saavtk.gui.render.camera.Camera;
+import edu.jhuapl.saavtk.gui.render.camera.CameraEvent;
+import edu.jhuapl.saavtk.gui.render.camera.CameraListener;
+import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
+import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent;
+import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarListener;
+import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent.ConstrainRotationAxisEvent;
 import vtk.vtkActor;
 import vtk.vtkAxes;
 import vtk.vtkConeSource;

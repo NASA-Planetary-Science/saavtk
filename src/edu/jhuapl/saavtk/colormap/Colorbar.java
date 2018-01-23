@@ -3,7 +3,7 @@ package edu.jhuapl.saavtk.colormap;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
-import edu.jhuapl.saavtk.gui.renderer.Renderer;
+import edu.jhuapl.saavtk.gui.render.Renderer;
 import vtk.vtkRenderWindowInteractor;
 import vtk.vtkScalarBarActor;
 import vtk.vtkScalarBarWidget;

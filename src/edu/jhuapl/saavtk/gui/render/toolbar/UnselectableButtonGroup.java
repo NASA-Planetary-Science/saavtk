@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.renderer.toolbar;
+package edu.jhuapl.saavtk.gui.render.toolbar;
 
 import javax.swing.ButtonGroup;
 import javax.swing.ButtonModel;

@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.renderer.axes;
+package edu.jhuapl.saavtk.gui.render.axes;
 
 import java.awt.Color;
 import java.util.Arrays;

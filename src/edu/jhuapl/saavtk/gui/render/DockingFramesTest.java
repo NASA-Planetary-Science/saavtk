@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.renderer;
+package edu.jhuapl.saavtk.gui.render;
 
 import java.awt.Dimension;
 
@@ -15,7 +15,7 @@ import bibliothek.gui.dock.common.action.CAction;
 import bibliothek.gui.dock.common.action.predefined.CMinimizeAction;
 import bibliothek.gui.dock.common.event.CDockableLocationEvent;
 import bibliothek.gui.dock.common.event.CDockableLocationListener;
-import edu.jhuapl.saavtk.gui.renderer.toolbar.RenderToolbar;
+import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import vtk.vtkActor;
 import vtk.vtkConeSource;
 import vtk.vtkNativeLibrary;

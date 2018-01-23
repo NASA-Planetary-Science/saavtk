@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.renderer.toolbar;
+package edu.jhuapl.saavtk.gui.render.toolbar;
 
 import java.awt.Image;
 import java.awt.event.ActionEvent;
@@ -21,8 +21,8 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
 
-import edu.jhuapl.saavtk.gui.renderer.axes.CartesianAxis;
-import edu.jhuapl.saavtk.gui.renderer.axes.CartesianViewDirection;
+import edu.jhuapl.saavtk.gui.render.axes.CartesianAxis;
+import edu.jhuapl.saavtk.gui.render.axes.CartesianViewDirection;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;

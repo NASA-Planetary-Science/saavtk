@@ -1,6 +1,6 @@
-package edu.jhuapl.saavtk.gui.renderer.axes;
+package edu.jhuapl.saavtk.gui.render.axes;
 
-import edu.jhuapl.saavtk.gui.renderer.Event;
+import edu.jhuapl.saavtk.gui.render.Event;
 
 public class AxesEvent extends Event<Axes>
 {
