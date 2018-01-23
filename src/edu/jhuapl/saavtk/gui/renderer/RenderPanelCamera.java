@@ -6,6 +6,9 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
 
+import edu.jhuapl.saavtk.gui.renderer.camera.Camera;
+import edu.jhuapl.saavtk.gui.renderer.camera.CameraEvent;
+import edu.jhuapl.saavtk.gui.renderer.camera.CameraListener;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 

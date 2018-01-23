@@ -81,17 +81,17 @@ public class PickManager extends Picker
 
         this.pickMode = mode;
 
-        if (this.pickMode == PickMode.DEFAULT)
-        {
-            renderer.setInteractorStyleToDefault();
+//        if (this.pickMode == PickMode.DEFAULT)
+//        {
+//            renderer.setInteractorStyleToDefault();
             for (PickMode pm : nondefaultPickers.keySet())
             {
                 removePicker(nondefaultPickers.get(pm));
             }
             defaultPicker.setSuppressPopups(false);
             renWin.getComponent().setCursor(new Cursor(defaultPicker.getDefaultCursor()));
-        }
-        else
+//        }
+/*        else
         {
             renderer.setInteractorStyleToNone();
             for (PickMode pm : nondefaultPickers.keySet())
@@ -105,8 +105,8 @@ public class PickManager extends Picker
             addPicker(picker);
             defaultPicker.setSuppressPopups(true);
             renWin.getComponent().setCursor(new Cursor(picker.getDefaultCursor()));
-        }
-    }
+        }*/
+   }
 
     public DefaultPicker getDefaultPicker()
     {

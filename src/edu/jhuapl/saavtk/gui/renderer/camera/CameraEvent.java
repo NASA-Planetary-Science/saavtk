@@ -1,4 +1,6 @@
-package edu.jhuapl.saavtk.gui.renderer;
+package edu.jhuapl.saavtk.gui.renderer.camera;
+
+import edu.jhuapl.saavtk.gui.renderer.Event;
 
 public class CameraEvent extends Event<Camera>
 {

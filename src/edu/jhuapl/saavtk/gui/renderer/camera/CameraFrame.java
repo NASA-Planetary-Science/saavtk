@@ -1,8 +1,8 @@
-package edu.jhuapl.saavtk.gui.renderer;
+package edu.jhuapl.saavtk.gui.renderer.camera;
 
 import java.io.File;
 
-class CameraFrame
+public class CameraFrame
 {
     public boolean staged;
     public boolean saved;

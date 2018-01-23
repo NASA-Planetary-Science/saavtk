@@ -15,6 +15,7 @@ import bibliothek.gui.dock.common.action.CAction;
 import bibliothek.gui.dock.common.action.predefined.CMinimizeAction;
 import bibliothek.gui.dock.common.event.CDockableLocationEvent;
 import bibliothek.gui.dock.common.event.CDockableLocationListener;
+import edu.jhuapl.saavtk.gui.renderer.toolbar.RenderToolbar;
 import vtk.vtkActor;
 import vtk.vtkConeSource;
 import vtk.vtkNativeLibrary;

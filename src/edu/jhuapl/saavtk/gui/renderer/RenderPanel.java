@@ -1,82 +1,46 @@
 package edu.jhuapl.saavtk.gui.renderer;
 
+import java.awt.Color;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.util.Arrays;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.gui.renderer.RenderToolbarEvent.ConstrainRotationAxisEvent;
+import edu.jhuapl.saavtk.gui.renderer.axes.Axes;
+import edu.jhuapl.saavtk.gui.renderer.camera.Camera;
+import edu.jhuapl.saavtk.gui.renderer.camera.CameraEvent;
+import edu.jhuapl.saavtk.gui.renderer.camera.CameraListener;
+import edu.jhuapl.saavtk.gui.renderer.camera.CartesianViewDirection;
+import edu.jhuapl.saavtk.gui.renderer.toolbar.RenderToolbar;
+import edu.jhuapl.saavtk.gui.renderer.toolbar.RenderToolbarEvent;
+import edu.jhuapl.saavtk.gui.renderer.toolbar.RenderToolbarListener;
+import edu.jhuapl.saavtk.gui.renderer.toolbar.RenderToolbarEvent.ConstrainRotationAxisEvent;
 import vtk.vtkActor;
-import vtk.vtkActor2D;
-import vtk.vtkApplyColors;
-import vtk.vtkArrowSource;
-import vtk.vtkAssembly;
-import vtk.vtkAxesActor;
-import vtk.vtkColorTransferFunction;
+import vtk.vtkAxes;
 import vtk.vtkConeSource;
 import vtk.vtkCoordinate;
-import vtk.vtkFollower;
-import vtk.vtkImageActor;
-import vtk.vtkImageData;
-import vtk.vtkImageMapToColors;
-import vtk.vtkImageMapToRGBA;
-import vtk.vtkImageMapper;
-import vtk.vtkImageMask;
-import vtk.vtkLookupTable;
-import vtk.vtkMatrix4x4;
 import vtk.vtkNativeLibrary;
-import vtk.vtkOrientationMarkerWidget;
-import vtk.vtkPNGReader;
-import vtk.vtkPNGWriter;
-import vtk.vtkPerspectiveTransform;
-import vtk.vtkPlaneSource;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
-import vtk.vtkPropCollection;
-import vtk.vtkRenderWindow;
-import vtk.vtkRenderWindowInteractor;
 import vtk.vtkRenderer;
-import vtk.vtkSphereSource;
-import vtk.vtkTextSource;
-import vtk.vtkTexture;
 import vtk.vtkTransform;
-import vtk.vtkTransformFilter;
-import vtk.vtkUnsignedCharArray;
-import vtk.vtkWindow;
-import vtk.vtkWindowToImageFilter;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
-public class RenderPanel extends vtkJoglPanelComponent implements CameraListener, RenderToolbarListener
+public class RenderPanel extends vtkJoglPanelComponent implements CameraListener, RenderToolbarListener, ComponentListener
 {
 	Camera					viewCamera;
 	RenderToolbar			toolbar	= null;
 	CustomInteractorStyle	interactorStyle;
 
-	//vtkRenderer renderer2=new vtkRenderer();
-	
-	//vtkRenderWindow axesRenderWindow = new vtkRenderWindow();
-	//vtkRenderer axesRenderer=new vtkRenderer();
-	
-/*	vtkFollower actorx=new vtkFollower();
-	vtkFollower actory=new vtkFollower();
-	vtkFollower actorz=new vtkFollower();
-	vtkFollower actorxlabel=new vtkFollower();
-	vtkFollower actorylabel=new vtkFollower();
-	vtkFollower actorzlabel=new vtkFollower();*/
-
-	vtkTexture texture=new vtkTexture();
-	OffScreenAxesRenderer axesSource;
-	vtkFollower follower=new vtkFollower();
-	vtkAxesActor axes=new vtkAxesActor();
 	int cameraObserver;
-	
-	public vtkActor getAxesActor()
-	{
-		return follower;
-	}
+	vtkRenderer axesRenderer=new vtkRenderer();
+	vtkRenderer propRenderer;
+
+	Axes axes=new Axes();
 
 	public RenderPanel(RenderToolbar toolbar)//, RenderStatusBar statusBar)
 	{
@@ -85,57 +49,90 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		viewCamera.addCameraListener(this);
 		toolbar.addToolbarListener(this);
 		//
-		
-		
-		vtkPlaneSource source=new vtkPlaneSource();
-		source.Update();
-		
-		vtkPolyDataMapper mapper=new vtkPolyDataMapper();
-		mapper.SetInputData(source.GetOutput());
-		mapper.Update();
-		
-		follower.SetMapper(mapper);
-		follower.SetCamera(getActiveCamera());
-		follower.GetProperty().SetEdgeColor(1, 1, 1);
-		//follower.GetProperty().SetEdgeVisibility(1);
-				
-		getRenderer().AddActor(follower);
-		axesSource=new OffScreenAxesRenderer(200);
+		propRenderer=getRenderer();
 
-		cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this, "test");
+		getRenderWindow().SetNumberOfLayers(2);
+		getRenderWindow().AddRenderer(axesRenderer);
+		getRenderer().SetLayer(0);
+		axesRenderer.SetLayer(1);
+		axesRenderer.AddActor(axes.getActor());
+		axesRenderer.AddActor(axes.getLabelActorX());
+		axesRenderer.AddActor(axes.getLabelActorY());
+		axesRenderer.AddActor(axes.getLabelActorZ());
+		axesRenderer.SetActiveCamera(getActiveCamera());
+
+		cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this, "redrawAxes");
+		redrawAxes();
+		
+		getComponent().addComponentListener(this);
+	}
+	
+	@Override
+	public void componentHidden(ComponentEvent e)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+	
+	@Override
+	public void componentMoved(ComponentEvent e)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+	
+	@Override
+	public void componentResized(ComponentEvent e)
+	{
+		redrawAxes();
+		Render();
 	}
 
 	@Override
+	public void componentShown(ComponentEvent e)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+	
+	@Override
 	public void handle(CameraEvent event)
 	{
+		redrawAxes();
 		Render();
 	}
 
 	@Override
 	public void handle(RenderToolbarEvent event)
 	{
+		getActiveCamera().RemoveObserver(cameraObserver);
+		viewCamera.removeCameraListener(this);
 		if (event instanceof RenderToolbarEvent.ConstrainRotationAxisEvent)
 		{
 			interactorStyle.setRotationConstraint(((ConstrainRotationAxisEvent) event).getAxis());
 		} else if (event instanceof RenderToolbarEvent.LookAlongAxisEvent)
 		{
-			getActiveCamera().RemoveObserver(cameraObserver);
 			Vector3D position = new Vector3D(getActiveCamera().GetPosition());
 			CartesianViewDirection direction = ((RenderToolbarEvent.LookAlongAxisEvent) event).getDirection();
 			viewCamera.setPosition(direction.getLookUnit().negate().scalarMultiply(position.getNorm()));
 			viewCamera.setUpUnit(direction.getUpUnit());
-			cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this, "test");
 		} else if (event instanceof RenderToolbarEvent.ViewAllEvent)
 		{
-			follower.SetVisibility(0);
+			boolean showAxes=axes.isVisible();
+			axes.setVisible(false);
 			getRenderer().ResetCamera();
-			follower.SetVisibility(1);
+			axes.setVisible(showAxes);
 			Render();
 		} else if (event instanceof RenderToolbarEvent.ToggleAxesVisibilityEvent)
 		{
-			follower.SetVisibility(((RenderToolbarEvent.ToggleAxesVisibilityEvent) event).show()?1:0);
+			axes.setVisible(((RenderToolbarEvent.ToggleAxesVisibilityEvent) event).show());
 			Render();
 		}
+		viewCamera.addCameraListener(this);
+		cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this, "redrawAxes");
+		redrawAxes();
+		Render();
+		
 	}
 
 	public static void main(String[] args) throws InterruptedException
@@ -168,21 +165,63 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		vtkActor actor = new vtkActor();
 		actor.SetMapper(mapper);
 		renderView.registerProp(actor);
+		renderView.getRenderPanel().getRenderer().AddActor(actor);
 	}
 
-	private void test()
+	private void redrawAxes()
 	{
-
-		vtkImageData imageData=axesSource.getImageData(getActiveCamera());
-		texture.SetInputData(imageData);
-		texture.Update();
-		follower.SetTexture(texture);
-		//follower.SetScale(2);
-
-		Vector3D pos1=viewCamera.getPosition();
-		Vector3D pos2=pos1.add(viewCamera.getLookUnit().scalarMultiply(10)).add(viewCamera.getRightUnit().scalarMultiply(-3)).add(viewCamera.getUpUnit().scalarMultiply(-2));
-		//Vector3D pos=pos1.add(pos2.subtract(pos1)).normalize().scalarMultiply(2);
-		follower.SetPosition(pos2.toArray());
+		vtkTransform transform=new vtkTransform();
+		transform.DeepCopy(getActiveCamera().GetModelViewTransformObject());
+		transform.Inverse();
+		transform.Update();
 		
+		axes.getActor().SetOrientation(transform.GetOrientation());
+		double axesViewSize=0.25;
+		double axesViewX=-0.75;
+		double axesViewY=-0.75;
+		double fovRad=Math.toRadians(getActiveCamera().GetViewAngle());
+		double axesWorldSize=1;
+		double tanFovHf=Math.tan(fovRad/2.);
+		double L=axesWorldSize/axesViewSize/tanFovHf;
+
+		Vector3D campos=new Vector3D(getActiveCamera().GetPosition());
+		double W=2*L*tanFovHf;
+		Vector3D right=viewCamera.getRightUnit();
+		Vector3D up=viewCamera.getUpUnit();
+		Vector3D look=viewCamera.getLookUnit();
+		Vector3D lambdaVec=right.scalarMultiply(W/2.*axesViewX).add(up.scalarMultiply(W/2.*axesViewY)).add(look.scalarMultiply(L));
+		Vector3D origin=campos.add(lambdaVec);
+		axes.getActor().SetPosition(origin.toArray());
+
+		Vector3D xunit=new Vector3D(transform.TransformPoint(origin.add(Vector3D.PLUS_I).toArray()));
+		Vector3D yunit=new Vector3D(transform.TransformPoint(origin.add(Vector3D.PLUS_J).toArray()));
+		Vector3D zunit=new Vector3D(transform.TransformPoint(origin.add(Vector3D.PLUS_K).toArray()));
+		vtkCoordinate coordTransform=new vtkCoordinate();
+		coordTransform.SetCoordinateSystemToWorld();
+		coordTransform.SetValue(xunit.toArray());
+		double[] xpos=coordTransform.GetComputedDoubleViewportValue(getRenderer());
+		coordTransform.SetValue(yunit.toArray());
+		double[] ypos=coordTransform.GetComputedDoubleViewportValue(getRenderer());
+		coordTransform.SetValue(zunit.toArray());
+		double[] zpos=coordTransform.GetComputedDoubleViewportValue(getRenderer());
+		double whf=getRenderWindow().GetSize()[0]/2;
+		double hhf=getRenderWindow().GetSize()[1]/2;
+		coordTransform.SetValue(Vector3D.ZERO.toArray());
+		double[] opos=coordTransform.GetComputedDoubleViewportValue(getRenderer());
+//		axes.getLabelActorX().SetPosition(xpos[0]-whf,xpos[1]-hhf);
+//		axes.getLabelActorY().SetPosition(ypos[0]-whf,ypos[1]-hhf);
+//		axes.getLabelActorZ().SetPosition(zpos[0]-whf,zpos[1]-hhf);
+		axes.getLabelActorX().SetPosition(xpos[0]-opos[0],xpos[1]-opos[1]);
+		axes.getLabelActorY().SetPosition(ypos[0]-opos[0],ypos[1]-opos[1]);
+		axes.getLabelActorZ().SetPosition(zpos[0]-opos[0],zpos[1]-opos[1]);
+
+		
+		getActiveCamera().RemoveObserver(cameraObserver);
+		propRenderer.ResetCameraClippingRange();
+		double[] propRange=propRenderer.GetActiveCamera().GetClippingRange();
+		axesRenderer.ResetCameraClippingRange();
+		double[] axesRange=axesRenderer.GetActiveCamera().GetClippingRange();
+		getActiveCamera().SetClippingRange(Math.min(propRange[0], axesRange[0]),Math.max(propRange[1], axesRange[1]));
+		cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this, "redrawAxes");
 	}
 }

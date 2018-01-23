@@ -1,5 +1,8 @@
-package edu.jhuapl.saavtk.gui.renderer;
+package edu.jhuapl.saavtk.gui.renderer.toolbar;
 
+import edu.jhuapl.saavtk.gui.renderer.Event;
+import edu.jhuapl.saavtk.gui.renderer.camera.CartesianAxis;
+import edu.jhuapl.saavtk.gui.renderer.camera.CartesianViewDirection;
 
 public class RenderToolbarEvent extends Event<RenderToolbar>
 {
@@ -10,7 +13,7 @@ public class RenderToolbarEvent extends Event<RenderToolbar>
 		// TODO Auto-generated constructor stub
 	}
 	
-	static class ConstrainRotationAxisEvent extends RenderToolbarEvent
+	public static class ConstrainRotationAxisEvent extends RenderToolbarEvent
 	{
 		CartesianAxis axis;
 		
@@ -26,7 +29,7 @@ public class RenderToolbarEvent extends Event<RenderToolbar>
 		}
 	}
 	
-	static class LookAlongAxisEvent extends RenderToolbarEvent
+	public static class LookAlongAxisEvent extends RenderToolbarEvent
 	{
 		CartesianViewDirection direction;
 
@@ -42,7 +45,7 @@ public class RenderToolbarEvent extends Event<RenderToolbar>
 		}
 	}
 	
-	static class ViewAllEvent extends RenderToolbarEvent
+	public static class ViewAllEvent extends RenderToolbarEvent
 	{
 
 		public ViewAllEvent(RenderToolbar source)
@@ -52,9 +55,8 @@ public class RenderToolbarEvent extends Event<RenderToolbar>
 		}
 		
 	}
-
 	
-	static class ToggleAxesVisibilityEvent extends RenderToolbarEvent
+	public static class ToggleAxesVisibilityEvent extends RenderToolbarEvent
 	{
 		boolean show;
 		

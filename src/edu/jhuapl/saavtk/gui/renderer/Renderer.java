@@ -35,6 +35,8 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import edu.jhuapl.saavtk.gui.renderer.camera.CameraFrame;
+import edu.jhuapl.saavtk.gui.renderer.toolbar.RenderToolbar;
 import vtk.vtkActor;
 import vtk.vtkAxesActor;
 import vtk.vtkBMPWriter;
@@ -72,7 +74,6 @@ import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas.StereoMode;
-import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
@@ -342,7 +343,7 @@ public class Renderer extends JPanel implements
             if (whichRenderer.HasViewProp(prop) == 0)
                 whichRenderer.AddViewProp(prop);
         }
-        whichRenderer.AddActor(mainCanvas.getAxesActor());
+        //whichRenderer.AddActor(mainCanvas.getAxesActor());
 
         // If we are in 2D mode, then remove all props of models that
         // do not support 2D mode.

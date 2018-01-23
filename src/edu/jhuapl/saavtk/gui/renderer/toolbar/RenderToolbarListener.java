@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.renderer;
+package edu.jhuapl.saavtk.gui.renderer.toolbar;
 
 public interface RenderToolbarListener
 {

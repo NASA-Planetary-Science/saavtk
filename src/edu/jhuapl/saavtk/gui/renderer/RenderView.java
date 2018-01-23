@@ -7,6 +7,7 @@ import javax.swing.JPanel;
 
 import com.google.common.collect.Lists;
 
+import edu.jhuapl.saavtk.gui.renderer.toolbar.RenderToolbar;
 import vtk.vtkProp;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
