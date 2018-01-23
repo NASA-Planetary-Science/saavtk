@@ -21,8 +21,8 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
 
-import edu.jhuapl.saavtk.gui.renderer.camera.CartesianAxis;
-import edu.jhuapl.saavtk.gui.renderer.camera.CartesianViewDirection;
+import edu.jhuapl.saavtk.gui.renderer.axes.CartesianAxis;
+import edu.jhuapl.saavtk.gui.renderer.axes.CartesianViewDirection;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;

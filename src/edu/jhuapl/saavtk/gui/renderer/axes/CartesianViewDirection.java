@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.renderer.camera;
+package edu.jhuapl.saavtk.gui.renderer.axes;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 

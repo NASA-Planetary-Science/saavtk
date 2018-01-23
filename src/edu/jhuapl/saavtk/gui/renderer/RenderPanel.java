@@ -11,10 +11,10 @@ import javax.swing.SwingUtilities;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.gui.renderer.axes.Axes;
+import edu.jhuapl.saavtk.gui.renderer.axes.CartesianViewDirection;
 import edu.jhuapl.saavtk.gui.renderer.camera.Camera;
 import edu.jhuapl.saavtk.gui.renderer.camera.CameraEvent;
 import edu.jhuapl.saavtk.gui.renderer.camera.CameraListener;
-import edu.jhuapl.saavtk.gui.renderer.camera.CartesianViewDirection;
 import edu.jhuapl.saavtk.gui.renderer.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.gui.renderer.toolbar.RenderToolbarEvent;
 import edu.jhuapl.saavtk.gui.renderer.toolbar.RenderToolbarListener;
