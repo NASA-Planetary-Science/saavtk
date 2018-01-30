@@ -6,7 +6,7 @@ import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
-import edu.jhuapl.saavtk.model.ShapeModelAuthor;
+import edu.jhuapl.saavtk.model.ShapeModelType;
 
 public final class ExampleViewManager extends ViewManager
 {
@@ -31,9 +31,9 @@ public final class ExampleViewManager extends ViewManager
 	public View createCustomView(StatusBar statusBar, String name, boolean temporary)
     {
         ViewConfig config = new ExampleViewConfig();
-        config.customName = name;
+        config.modelLabel = name;
         config.customTemporary = temporary;
-        config.author = ShapeModelAuthor.CUSTOM;
+        config.author = ShapeModelType.CUSTOM;
         return new ExampleView(statusBar, config);
     }
 }

@@ -30,16 +30,16 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
 
     public boolean getIfNeedToDownload()
     {
-        return FileCache.getFileInfoFromServer(filename).needToDownload;
+        return FileCache.getFileInfoFromServer(filename).isNeedToDownload();
     }
 
     @Override
     protected Void doInBackground()
     {
         final FileInfo fileInfo = FileCache.getFileInfoFromServer(filename);
-        final boolean needToDownload = fileInfo.needToDownload;
+        final boolean needToDownload = fileInfo.isNeedToDownload();
 
-        String zipfile = fileInfo.file.getAbsolutePath();
+        String zipfile = fileInfo.getFile().getAbsolutePath();
         File zipRootFolder = new File(zipfile.substring(0, zipfile.length()-4));
         final boolean needToUnzip = filename.endsWith(".zip") &&
                                     (needToDownload || !zipRootFolder.exists());
@@ -61,7 +61,8 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
 
         Runnable runner = new Runnable()
         {
-            public void run()
+            @Override
+			public void run()
             {
                 File file = FileCache.getFileFromServer(filename);
 
@@ -81,12 +82,12 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
             while (downloadThread.isAlive() && !isCancelled())
             {
                 long downloadProgress = FileCache.getDownloadProgess();
-                double percentDownloaded = 100.0 * (double)downloadProgress / (double)fileInfo.length;
-                double downloadedSoFarInMB = (double)downloadProgress / 1048576.0;
-                double totalSizeInMB = (double)fileInfo.length / 1048576.0;
+                double percentDownloaded = 100.0 * downloadProgress / fileInfo.getLength();
+                double downloadedSoFarInMB = downloadProgress / 1048576.0;
+                double totalSizeInMB = fileInfo.getLength() / 1048576.0;
 
                 double unzipProgress = FileUtil.getUnzipProgress();
-                if (downloadProgress < fileInfo.length && needToDownload)
+                if (downloadProgress < fileInfo.getLength() && needToDownload)
                 {
                     setLabelText("<html>Downloading " + name + "<br>" +
                             df.format(percentDownloaded) + "% completed " +
@@ -111,15 +112,15 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
 
                 if (needToDownload && !computedTimeEstimate)
                 {
-                    double timeElapsed = (double)(System.currentTimeMillis() - prevTime) / 1000.0;
-                    double downloadRate = (double)FileCache.getDownloadProgess() / timeElapsed;
-                    double totalTimeToDownload = (double)fileInfo.length / downloadRate;
+                    double timeElapsed = (System.currentTimeMillis() - prevTime) / 1000.0;
+                    double downloadRate = FileCache.getDownloadProgess() / timeElapsed;
+                    double totalTimeToDownload = fileInfo.getLength() / downloadRate;
                     setCompletionTimeEstimate(totalTimeToDownload);
                     computedTimeEstimate = true;
                 }
             }
         }
-        catch (InterruptedException ignore)
+        catch (@SuppressWarnings("unused") InterruptedException ignore)
         {
             //ignore.printStackTrace();
         }

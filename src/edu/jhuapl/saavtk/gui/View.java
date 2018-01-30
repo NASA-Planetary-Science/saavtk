@@ -19,6 +19,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 
 import edu.jhuapl.saavtk.config.ViewConfig;
+import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;

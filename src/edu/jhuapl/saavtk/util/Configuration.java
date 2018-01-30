@@ -18,6 +18,7 @@ public class Configuration
 
     // Flag indicating if this version of the tool is APL in-house only ("private")
     static private boolean APLVersion = false;
+	private static boolean passwordAuthenticationSetup = false;
 
 // Uncomment the following to enable the startup script (which can be changed by the user)
 // to specify the web server URL:
@@ -43,13 +44,18 @@ public class Configuration
                     return new java.net.PasswordAuthentication(username, password.toCharArray());
                 }
             });
+            passwordAuthenticationSetup = true;
         }
         catch (Exception e)
         {
             e.printStackTrace();
         }
     }
-
+    
+    static public boolean isPasswordAuthenticationSetup()
+    {
+    	return passwordAuthenticationSetup;
+    }
 
     /**
      * @return Return the location where all application specific files should be stored. This is within
@@ -93,16 +99,16 @@ public class Configuration
         return cacheDir;
     }
 
-    public static String getWebURL()
-    {
-        return webURL;
-    }
-
-    public static void setWebURL(String webURL)
-    {
-        Configuration.webURL = webURL;
-        Configuration.rootURL = webURL + "/sbmt";
-    }
+//    public static String getWebURL()
+//    {
+//        return webURL;
+//    }
+//
+//    public static void setWebURL(String webURL)
+//    {
+//        Configuration.webURL = webURL;
+//        Configuration.rootURL = webURL + "/sbmt";
+//    }
 
     public static String getRootURL()
     {
@@ -244,7 +250,11 @@ public class Configuration
         if (APLVersion)
         {
             String rootURLProperty = System.getProperty("sbmt.root.url");
-            if (rootURLProperty == null)
+            if (rootURLProperty != null)
+            {
+            	rootURL = rootURLProperty;
+            }
+            else
             {
                 rootURL = "http://sbmt.jhuapl.edu/internal/sbmt";
             }

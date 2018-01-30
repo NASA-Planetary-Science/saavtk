@@ -3,7 +3,7 @@ package edu.jhuapl.saavtk.config;
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.jhuapl.saavtk.model.ShapeModelAuthor;
+import edu.jhuapl.saavtk.model.ShapeModelType;
 import edu.jhuapl.saavtk.model.ShapeModelBody;
 
 
@@ -14,11 +14,11 @@ import edu.jhuapl.saavtk.model.ShapeModelBody;
  * application instance. This class is also used when creating (to know which tabs
  * to create).
  */
-public class ViewConfig implements Cloneable
+public abstract class ViewConfig implements Cloneable
 {
-    public String customName;
+    public String modelLabel;
     public boolean customTemporary = false;
-    public ShapeModelAuthor author; // e.g. Gaskell
+    public ShapeModelType author; // e.g. Gaskell
     public String version; // e.g. 2.0
     public ShapeModelBody body; // e.g. EROS or ITOKAWA
     public boolean hasFlybyData; // for flyby path data
@@ -33,8 +33,10 @@ public class ViewConfig implements Cloneable
     private boolean enabled = true;
 
 
+    public abstract boolean isAccessible();
 
-    public ViewConfig clone() // throws CloneNotSupportedException
+    @Override
+	public ViewConfig clone() // throws CloneNotSupportedException
     {
         ViewConfig c = null;
         try {
@@ -46,7 +48,7 @@ public class ViewConfig implements Cloneable
         c.author = this.author;
         c.version = this.version;
 
-        c.customName = this.customName;
+        c.modelLabel = this.modelLabel;
         c.customTemporary = this.customTemporary;
 
         c.useMinimumReferencePotential = this.useMinimumReferencePotential;
@@ -66,9 +68,9 @@ public class ViewConfig implements Cloneable
      */
      public String getPathRepresentation()
      {
-         if (ShapeModelAuthor.CUSTOM == author)
+         if (ShapeModelType.CUSTOM == author)
          {
-             return ShapeModelAuthor.CUSTOM + " > " + customName;
+             return ShapeModelType.CUSTOM + " > " + modelLabel;
          }
          else
              return "DefaultPath";
@@ -86,16 +88,16 @@ public class ViewConfig implements Cloneable
 
      public String getUniqueName()
      {
-         if (ShapeModelAuthor.CUSTOM == author)
-             return author + "/" + customName;
+         if (ShapeModelType.CUSTOM == author)
+             return author + "/" + modelLabel;
          else
              return "DefaultName";
      }
 
      public String getShapeModelName()
      {
-         if (author == ShapeModelAuthor.CUSTOM)
-             return customName;
+         if (author == ShapeModelType.CUSTOM)
+             return modelLabel;
          else
          {
              String ver = "";
@@ -115,7 +117,7 @@ public class ViewConfig implements Cloneable
     	 this.enabled = enabled;
      }
 
-     static private List<ViewConfig> builtInConfigs = new ArrayList<ViewConfig>();
+     static private List<ViewConfig> builtInConfigs = new ArrayList<>();
      static public List<ViewConfig> getBuiltInConfigs() { return builtInConfigs; }
 
      /**
@@ -129,7 +131,7 @@ public class ViewConfig implements Cloneable
       * @param author
       * @return
       */
-     static public ViewConfig getConfig(ShapeModelBody name, ShapeModelAuthor author)
+     static public ViewConfig getConfig(ShapeModelBody name, ShapeModelType author)
      {
          return getConfig(name, author, null);
      }
@@ -144,14 +146,14 @@ public class ViewConfig implements Cloneable
       * @param version
       * @return
       */
-     static public ViewConfig getConfig(ShapeModelBody name, ShapeModelAuthor author, String version)
+     static public ViewConfig getConfig(ShapeModelBody name, ShapeModelType author, String version)
      {
          for (ViewConfig config : getBuiltInConfigs())
          {
-             if (((ViewConfig)config).body == name && config.author == author &&
+             if (config.body == name && config.author == author &&
                      ((config.version == null && version == null) || (version != null && version.equals(config.version)))
                      )
-                 return (ViewConfig)config;
+                 return config;
          }
 
          System.err.println("Error: Cannot find Config with name " + name +

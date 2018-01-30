@@ -19,5 +19,8 @@
 	<classpathentry exported="true" kind="lib" path="lib/jogl/gluegen-rt.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jogl/jogl-all.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/vtk6.3/vtk-6.3.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/dockingframes/docking-frames-common.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/dockingframes/docking-frames-core.jar"/>
+	<classpathentry kind="lib" path="jgoodies-forms-1.8.0.jar" sourcepath="jgoodies-forms-1.8.0-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

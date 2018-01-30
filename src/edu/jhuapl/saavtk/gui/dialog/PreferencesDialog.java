@@ -20,11 +20,11 @@ import javax.swing.JOptionPane;
 import com.google.common.base.Joiner;
 import com.google.common.primitives.Ints;
 
-import edu.jhuapl.saavtk.gui.Renderer;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
-import edu.jhuapl.saavtk.gui.Renderer.InteractorStyleType;
-import edu.jhuapl.saavtk.gui.Renderer.LightingType;
+import edu.jhuapl.saavtk.gui.render.Renderer;
+import edu.jhuapl.saavtk.gui.render.Renderer.InteractorStyleType;
+import edu.jhuapl.saavtk.gui.render.Renderer.LightingType;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.util.ColorUtil;
@@ -67,10 +67,13 @@ public class PreferencesDialog extends javax.swing.JDialog {
             showAxesCheckBox.setSelected(renderer.getShowOrientationAxes());
             interactiveCheckBox.setSelected(renderer.getOrientationAxesInteractive());
 
-            if (renderer.getDefaultInteractorStyleType() == Renderer.InteractorStyleType.JOYSTICK_CAMERA)
+/*            if (renderer.getDefaultInteractorStyleType() == Renderer.InteractorStyleType.JOYSTICK_CAMERA)
                 joystickRadioButton.setSelected(true);
             else
-                trackballRadioButton.setSelected(true);
+                trackballRadioButton.setSelected(true);*/
+            
+            joystickRadioButton.setEnabled(false);
+            trackballRadioButton.setEnabled(false);
 
             PolyhedralModel smallBodyModel =
                     viewManager.getCurrentView().getModelManager().getPolyhedralModel();
@@ -80,7 +83,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
             int value = getSliderValueFromTolerance(pickManager.getPickTolerance());
             pickToleranceSlider.setValue(value);
 
-            mouseWheelMotionFactorSpinner.setValue(renderer.getMouseWheelMotionFactor());
+//            mouseWheelMotionFactorSpinner.setValue(renderer.getMouseWheelMotionFactor());
 
             int[] color = viewManager.getCurrentView().getModelManager().getCommonData().getSelectionColor();
             updateColorLabel(color, selectionColorLabel);
@@ -155,10 +158,10 @@ public class PreferencesDialog extends javax.swing.JDialog {
             renderer.setShowOrientationAxes(showAxesCheckBox.isSelected());
             renderer.setOrientationAxesInteractive(interactiveCheckBox.isSelected());
 
-            if (joystickRadioButton.isSelected())
+/*            if (joystickRadioButton.isSelected())
                 renderer.setDefaultInteractorStyleType(InteractorStyleType.JOYSTICK_CAMERA);
             else
-                renderer.setDefaultInteractorStyleType(InteractorStyleType.TRACKBALL_CAMERA);
+                renderer.setDefaultInteractorStyleType(InteractorStyleType.TRACKBALL_CAMERA);*/
 
             PolyhedralModel smallBodyModel = v.getModelManager().getPolyhedralModel();
             smallBodyModel.setShowScaleBar(showScaleBarCheckBox.isSelected());
@@ -167,7 +170,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
             double tolerance = getToleranceFromSliderValue(pickToleranceSlider.getValue());
             pickManager.setPickTolerance(tolerance);
 
-            renderer.setMouseWheelMotionFactor((Double)mouseWheelMotionFactorSpinner.getValue());
+//            renderer.setMouseWheelMotionFactor((Double)mouseWheelMotionFactorSpinner.getValue());
 
             int [] color = getColorFromLabel(selectionColorLabel);
             v.getModelManager().getCommonData().setSelectionColor(color);
