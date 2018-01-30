@@ -267,15 +267,15 @@ public class RenderToolbar extends JToolBar implements ItemListener, ActionListe
 	@Override
 	public void propertyChange(PropertyChangeEvent evt)
 	{
-		for (Component c : getComponents())
-			System.out.println(this.getBounds()+" "+c.getBounds());
+//		for (Component c : getComponents())
+//			System.out.println(this.getBounds()+" "+c.getBounds());
 	}
 	
 	@Override
 	public void ancestorResized(HierarchyEvent e)
 	{
-		for (Component c : getComponents())
-			System.out.println(this.getBounds()+" "+c.getBounds());
+//		for (Component c : getComponents())
+//			System.out.println(this.getBounds()+" "+c.getBounds());
 	}
 	
 	@Override
