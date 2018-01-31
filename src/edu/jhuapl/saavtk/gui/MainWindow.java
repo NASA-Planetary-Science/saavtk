@@ -102,7 +102,7 @@ public abstract class MainWindow extends JFrame
 
     protected JMenuItem createPasswordMenu(ViewManager rootPanel)
     {
-        JMenuItem updatePassword = new JMenuItem("Update Password");
+        JMenuItem updatePassword = new JMenuItem("Update Password...");
         updatePassword.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
