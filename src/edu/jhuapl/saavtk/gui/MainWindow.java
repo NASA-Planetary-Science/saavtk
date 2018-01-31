@@ -2,15 +2,19 @@ package edu.jhuapl.saavtk.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JSeparator;
 
 import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
 import edu.jhuapl.saavtk.gui.menu.FileMenu;
 import edu.jhuapl.saavtk.gui.menu.HelpMenu;
+import edu.jhuapl.saavtk.util.Configuration;
 
 
 /**
@@ -96,6 +100,19 @@ public abstract class MainWindow extends JFrame
         return new FavoritesMenu(new FavoritesFile(), rootPanel);
     }
 
+    protected JMenuItem createPasswordMenu(ViewManager rootPanel)
+    {
+        JMenuItem updatePassword = new JMenuItem("Update Password...");
+        updatePassword.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
+            {
+                Configuration.updatePassword();
+            }
+        });
+        return updatePassword;
+    }
+
     protected HelpMenu createHelpMenu(ViewManager rootPanel)
     {
         return new HelpMenu(rootPanel);
@@ -116,8 +133,12 @@ public abstract class MainWindow extends JFrame
         menuBar.add(viewMenu);
 
         favoritesMenu = createFavoritesMenu(rootPanel);
+
+        JMenuItem passwordMenu = createPasswordMenu(rootPanel);
+
         viewMenu.add(new JSeparator());
         viewMenu.add(favoritesMenu);
+        viewMenu.add(passwordMenu);
         viewMenu.add(new JSeparator());
         viewMenu.add(recentsMenu);
 
