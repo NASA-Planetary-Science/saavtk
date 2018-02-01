@@ -292,7 +292,7 @@ public class Renderer extends JPanel implements
       //  mainCanvas.getRenderWindowInteractor().AddObserver("InteractionEvent", this, "duringInteraction");
       //  mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
         
-        smallBodyColorbar=new Colorbar(this);
+//        smallBodyColorbar=new Colorbar(this);
 
         initOrientationAxes();
 
@@ -906,19 +906,22 @@ public class Renderer extends JPanel implements
         {
             this.setProps(modelManager.getProps());
             
-            PolyhedralModel sbModel=(PolyhedralModel)modelManager.getModel(ModelNames.SMALL_BODY);
-            if (sbModel.isColoringDataAvailable() && sbModel.getColoringIndex()>=0)
+            if (smallBodyColorbar != null)
             {
-                if (!smallBodyColorbar.isVisible())
-                    smallBodyColorbar.setVisible(true);
-                smallBodyColorbar.setColormap(sbModel.getColormap());
-                smallBodyColorbar.setTitle(sbModel.getColoringName(sbModel.getColoringIndex()));
-                if (mainCanvas.getRenderer().HasViewProp(smallBodyColorbar.getActor())==0)
-                    mainCanvas.getRenderer().AddActor(smallBodyColorbar.getActor());
-                smallBodyColorbar.getActor().SetNumberOfLabels(sbModel.getColormap().getNumberOfLabels());
+	            PolyhedralModel sbModel=(PolyhedralModel)modelManager.getModel(ModelNames.SMALL_BODY);
+	            if (sbModel.isColoringDataAvailable() && sbModel.getColoringIndex()>=0)
+	            {
+	                if (!smallBodyColorbar.isVisible())
+	                    smallBodyColorbar.setVisible(true);
+	                smallBodyColorbar.setColormap(sbModel.getColormap());
+	                smallBodyColorbar.setTitle(sbModel.getColoringName(sbModel.getColoringIndex()));
+	                if (mainCanvas.getRenderer().HasViewProp(smallBodyColorbar.getActor())==0)
+	                    mainCanvas.getRenderer().AddActor(smallBodyColorbar.getActor());
+	                smallBodyColorbar.getActor().SetNumberOfLabels(sbModel.getColormap().getNumberOfLabels());
+	            }
+	            else
+	                smallBodyColorbar.setVisible(false);
             }
-            else
-                smallBodyColorbar.setVisible(false);
 
         }
         else
