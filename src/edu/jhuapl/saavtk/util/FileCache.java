@@ -93,7 +93,7 @@ public class FileCache
 		private final boolean existsLocally;
 		private final boolean failedToDownload;
 
-        private FileInfo(String path, boolean doDownloadIfNeeded)
+        private FileInfo(String dataRoot, String path, boolean doDownloadIfNeeded)
         {
         	// Ensure path has clean form and strip off compression suffix.
         	path = cleanPath(path);
@@ -103,7 +103,6 @@ public class FileCache
         	URL url = null;
             String fileName = null;
 
-        	String dataRoot = Configuration.getDataRootURL();
             if (dataRoot.startsWith(FILE_PREFIX) || !Configuration.useFileCache())
             {
             	url = getURL(dataRoot + unzippedPath);
@@ -337,9 +336,9 @@ public class FileCache
      * @param path
      * @return
      */
-    static private FileInfo getFileInfoFromServer(String path, boolean doDownloadIfNeeded)
+    static private FileInfo getFileInfoFromServer(String dataRoot, String path, boolean doDownloadIfNeeded)
     {
-        FileInfo fi = new FileInfo(path, doDownloadIfNeeded);
+        FileInfo fi = new FileInfo(dataRoot, path, doDownloadIfNeeded);
 
         return fi.isFailedToDownload() ? null : fi;
     }
@@ -347,12 +346,24 @@ public class FileCache
     /**
      * Get information about the file on the server without actually downloading.
      *
-     * @param path
+     * @param path the path relative to the configuration's data root directory.
      * @return
      */
     static public FileInfo getFileInfoFromServer(String path)
     {
-        return getFileInfoFromServer(path, false);
+        return getFileInfoFromServer(Configuration.getDataRootURL(), path);
+    }
+
+    /**
+     * Get information about the file on the server without actually downloading.
+     *
+     * @param dataRoot the root path prefix.
+     * @param path the path relative to the provided data root directory.
+     * @return
+     */
+    static public FileInfo getFileInfoFromServer(String dataRoot, String path)
+    {
+        return getFileInfoFromServer(dataRoot, path, false);
     }
 
     /**
@@ -383,7 +394,7 @@ public class FileCache
             }
             else
             {
-                FileInfo fi = getFileInfoFromServer(fileName, false);
+                FileInfo fi = getFileInfoFromServer(fileName);
                 if (fi.isExistsLocally() || fi.isExistsOnServer() == YesOrNo.YES)
                 {
                 	return true;
@@ -425,7 +436,7 @@ public class FileCache
             }
             else
             {
-                FileInfo fi = getFileInfoFromServer(path, true);
+                FileInfo fi = getFileInfoFromServer(Configuration.getDataRootURL(), path, true);
                 
                 if (fi != null)
                 {
