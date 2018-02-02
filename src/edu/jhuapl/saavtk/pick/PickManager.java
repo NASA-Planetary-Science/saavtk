@@ -3,13 +3,14 @@ package edu.jhuapl.saavtk.pick;
 import java.awt.Cursor;
 import java.util.HashMap;
 
+import edu.jhuapl.saavtk.gui.Renderer;
 import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
-import edu.jhuapl.saavtk.gui.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.util.Preferences;
+import vtk.rendering.jogl.vtkJoglCanvasComponent;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 public class PickManager extends Picker
@@ -30,7 +31,7 @@ public class PickManager extends Picker
 
     private PickMode pickMode = PickMode.DEFAULT;
     private Renderer renderer;
-    private vtkJoglPanelComponent renWin;
+    private vtkJoglCanvasComponent renWin;
 
     private DefaultPicker defaultPicker;
 
@@ -81,17 +82,17 @@ public class PickManager extends Picker
 
         this.pickMode = mode;
 
-//        if (this.pickMode == PickMode.DEFAULT)
-//        {
-//            renderer.setInteractorStyleToDefault();
+        if (this.pickMode == PickMode.DEFAULT)
+        {
+            renderer.setInteractorStyleToDefault();
             for (PickMode pm : nondefaultPickers.keySet())
             {
                 removePicker(nondefaultPickers.get(pm));
             }
             defaultPicker.setSuppressPopups(false);
             renWin.getComponent().setCursor(new Cursor(defaultPicker.getDefaultCursor()));
-//        }
-/*        else
+        }
+        else
         {
             renderer.setInteractorStyleToNone();
             for (PickMode pm : nondefaultPickers.keySet())
@@ -105,8 +106,8 @@ public class PickManager extends Picker
             addPicker(picker);
             defaultPicker.setSuppressPopups(true);
             renWin.getComponent().setCursor(new Cursor(picker.getDefaultCursor()));
-        }*/
-   }
+        }
+    }
 
     public DefaultPicker getDefaultPicker()
     {

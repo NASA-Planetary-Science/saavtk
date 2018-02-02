@@ -23,11 +23,12 @@ import vtk.vtkCellPicker;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
 import vtk.vtkRenderer;
+import vtk.rendering.jogl.vtkJoglCanvasComponent;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
-import edu.jhuapl.saavtk.gui.StatusBar;
-import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
 import edu.jhuapl.saavtk.gui.Renderer;
+import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.Renderer.AxisType;
+import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
@@ -42,7 +43,7 @@ import edu.jhuapl.saavtk.util.Properties;
 public class DefaultPicker extends Picker
 {
     private Renderer renderer;
-    private vtkJoglPanelComponent renWin;
+    private vtkJoglCanvasComponent renWin;
     private StatusBar statusBar;
     private ModelManager modelManager;
     private PopupManager popupManager;
