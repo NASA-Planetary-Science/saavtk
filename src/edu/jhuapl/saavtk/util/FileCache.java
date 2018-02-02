@@ -63,7 +63,7 @@ public class FileCache
     // When in offline mode, files are retrieved relative to this folder
     private static String offlineModeRootFolder = null;
 
-    private static boolean showDotsForFiles = true;
+    private static boolean showDotsForFiles = false;
 
     public static void showDotsForFiles(boolean enable)
     {
