@@ -19,8 +19,8 @@ import org.apache.commons.math3.geometry.euclidean.threed.NotARotationMatrixExce
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 
 import edu.jhuapl.saavtk.gui.JTextFieldDoubleVerifier;
-import edu.jhuapl.saavtk.gui.render.Renderer;
-import edu.jhuapl.saavtk.gui.render.Renderer.ProjectionType;
+import edu.jhuapl.saavtk.gui.Renderer;
+import edu.jhuapl.saavtk.gui.Renderer.ProjectionType;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;

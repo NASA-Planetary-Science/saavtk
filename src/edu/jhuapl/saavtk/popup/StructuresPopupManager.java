@@ -4,7 +4,7 @@ import java.awt.event.MouseEvent;
 import java.util.HashMap;
 
 import vtk.vtkProp;
-import edu.jhuapl.saavtk.gui.render.Renderer;
+import edu.jhuapl.saavtk.gui.Renderer;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
