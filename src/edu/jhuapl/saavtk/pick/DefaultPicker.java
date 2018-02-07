@@ -190,6 +190,7 @@ public class DefaultPicker extends Picker
                 statusBar.setLeftText(" ");
             }
         }
+        renWin.getComponent().requestFocus();
     }
 
     public void mouseClicked(MouseEvent e)
@@ -223,6 +224,7 @@ public class DefaultPicker extends Picker
                 System.out.println(p[0] + " " + p[1] + " " + p[2]);
             }
         }
+        renWin.getComponent().requestFocus();
     }
 
     public void mouseWheelMoved(MouseWheelEvent e)
