@@ -64,7 +64,6 @@ import vtk.vtkTextProperty;
 import vtk.vtkTriangle;
 import vtk.vtkWindowToImageFilter;
 import vtk.vtksbTriangle;
-import vtk.rendering.jogl.vtkJoglCanvasComponent;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 import edu.jhuapl.saavtk.colormap.Colorbar;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
@@ -128,7 +127,7 @@ public class Renderer extends JPanel implements
         }
     }
 
-    protected vtkJoglCanvasComponent mainCanvas;
+    protected vtkJoglPanelComponent mainCanvas;
     private ModelManager modelManager;
     private vtkInteractorStyleTrackballCamera trackballCameraInteractorStyle;
     private vtkInteractorStyleJoystickCamera joystickCameraInteractorStyle;
@@ -418,9 +417,8 @@ public class Renderer extends JPanel implements
 
         setLayout(new BorderLayout());
 
-        mainCanvas=new vtkJoglCanvasComponent();// vtkJoglPanelComponent();
-        mainCanvas.getRenderWindowInteractor().GetInteractorStyle().KeyPressActivationOn();
-        //mainCanvas.getRenderWindowInteractor().AddObserver("KeyPressEvent", this, "localKeypressHandler");
+        mainCanvas=new vtkJoglPanelComponent();
+        mainCanvas.getRenderWindowInteractor().AddObserver("KeyPressEvent", this, "localKeypressHandler");
 
         this.modelManager = modelManager;
 
@@ -438,7 +436,7 @@ public class Renderer extends JPanel implements
 
         setMouseWheelMotionFactor(Preferences.getInstance().getAsDouble(Preferences.MOUSE_WHEEL_MOTION_FACTOR, 1.0));
 
-        setBackgroundColor(Preferences.getInstance().getAsIntArray(Preferences.BACKGROUND_COLOR, new int[]{0, 0, 0}));
+        setBackgroundColor(new int[]{0,0,0});//Preferences.getInstance().getAsIntArray(Preferences.BACKGROUND_COLOR, new int[]{0, 0, 0}));
 
         initLights();
 
@@ -479,7 +477,7 @@ public class Renderer extends JPanel implements
         }*/
     }
 
-    public void setProps(List<vtkProp> props, vtkJoglCanvasComponent renderWindow, vtkRenderer whichRenderer)
+    public void setProps(List<vtkProp> props, vtkJoglPanelComponent renderWindow, vtkRenderer whichRenderer)
     {
         // Go through the props and if an prop is already in the renderer,
         // do nothing. If not, add it. If an prop not listed is
@@ -1145,7 +1143,7 @@ public class Renderer extends JPanel implements
         return cam.GetPosition();
     }
 
-    public vtkJoglCanvasComponent getRenderWindowPanel()
+    public vtkJoglPanelComponent getRenderWindowPanel()
     {
         return mainCanvas;
     }
@@ -1553,7 +1551,7 @@ public class Renderer extends JPanel implements
         return axes.GetConeRadius();
     }
 
-    public static void saveToFile(File file, vtkJoglCanvasComponent renWin)
+    public static void saveToFile(File file, vtkJoglPanelComponent renWin)
     {
         if (file != null)
         {

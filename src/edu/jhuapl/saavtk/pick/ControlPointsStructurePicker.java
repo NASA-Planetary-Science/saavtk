@@ -9,10 +9,9 @@ import vtk.vtkActor;
 import vtk.vtkCellPicker;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
-import vtk.rendering.jogl.vtkJoglCanvasComponent;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
-import edu.jhuapl.saavtk.gui.Renderer;
 import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
+import edu.jhuapl.saavtk.gui.Renderer;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
@@ -31,7 +30,7 @@ import edu.jhuapl.saavtk.model.structure.Line;
 public class ControlPointsStructurePicker extends Picker
 {
     private ModelManager modelManager;
-    private vtkJoglCanvasComponent renWin;
+    private vtkJoglPanelComponent renWin;
     private PolyhedralModel smallBodyModel;
     private ControlPointsStructureModel structureModel;
 
