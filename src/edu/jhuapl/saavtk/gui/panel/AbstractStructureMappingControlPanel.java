@@ -214,10 +214,9 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
         // is only temporarily and should be removed after several months.
         if (pickMode == PickManager.PickMode.ELLIPSE_DRAW)
         {
-            String text = "<html>" +
-                    "Warning: Method to create new ellipses<br>" +
-                    "has changed! Click for details..." +
-                    "</html>";
+            String text = "<html><center>" +
+                    "Method to create new ellipses<br>(click for details)" +
+                    "</center></html>";
             JButton ellipsesWarningButton = new JButton(text);
             ellipsesWarningButton.addActionListener(new ActionListener()
             {
