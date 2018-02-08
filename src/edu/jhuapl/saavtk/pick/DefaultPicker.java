@@ -441,14 +441,19 @@ public class DefaultPicker extends Picker
 
     public void keyPressed(KeyEvent e)
     {
-        vtkRenderer ren = renWin.getRenderer();
+    	// Only respond to c, x, y, or z press if in the default interactor (e.g.
+    	// not when drawing structures)
+    	if (renWin.getRenderWindowInteractor().GetInteractorStyle() == null)
+    	{
+    		return;
+    	}
+
+    	vtkRenderer ren = renWin.getRenderer();
         if (ren.VisibleActorCount() == 0) return;
 
         int keyCode = e.getKeyCode();
 
-        // Only repond to c, x, y, or z press if in the default interactor (e.g.
-        // not when drawing structures)
-        if (keyCode == KeyEvent.VK_C && renWin.getRenderWindowInteractor().GetInteractorStyle() != null)
+        if (keyCode == KeyEvent.VK_C)
         {
             Point pt = renWin.getComponent().getMousePosition();
             if (pt != null)
@@ -475,10 +480,9 @@ public class DefaultPicker extends Picker
                 }
             }
         }
-        else if ((keyCode == KeyEvent.VK_X ||
-                  keyCode == KeyEvent.VK_Y ||
-                  keyCode == KeyEvent.VK_Z) &&
-                 renWin.getRenderWindowInteractor().GetInteractorStyle() != null)
+        else if (keyCode == KeyEvent.VK_X ||
+                 keyCode == KeyEvent.VK_Y ||
+                 keyCode == KeyEvent.VK_Z)
         {
             char keyChar = e.getKeyChar();
 
@@ -495,9 +499,8 @@ public class DefaultPicker extends Picker
             else if ('z' == keyChar)
                 renderer.setCameraOrientationInDirectionOfAxis(AxisType.POSITIVE_Z, true);
         }
-        else if (keyCode == KeyEvent.VK_N &&
-                 renWin.getRenderWindowInteractor().GetInteractorStyle() != null)
-      {
+        else if (keyCode == KeyEvent.VK_N)
+        {
             // The following spins the view along the boresight of the current
             // camera so that the Z axis of the body is up.
             vtkCamera activeCamera = renWin.getRenderer().GetActiveCamera();
@@ -520,7 +523,7 @@ public class DefaultPicker extends Picker
                 MathUtil.vcrss(upVector, dir, upVector);
                 renderer.setCameraOrientation(position, focalPoint, upVector, viewAngle);
             }
-      }
+        }
     }
 
 }
