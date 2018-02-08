@@ -353,11 +353,11 @@ public class DefaultPicker extends Picker
                 radStr = " " + radStr;
             radStr += " km";
 
-            statusBar.setRightText("Lat: " + latStr + "  Lon: " + lonStr + "  Radius: " + radStr + "  Distance: " + distanceStr + " ");
+            statusBar.setRightText("Lat: " + latStr + "  Lon: " + lonStr + "  Radius: " + radStr + "  Range: " + distanceStr + " ");
         }
         else
         {
-            statusBar.setRightText("Distance: " + distanceStr + " ");
+            statusBar.setRightText("Range: " + distanceStr + " ");
         }
     }
 
