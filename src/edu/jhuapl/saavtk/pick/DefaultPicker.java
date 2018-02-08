@@ -524,6 +524,16 @@ public class DefaultPicker extends Picker
                 renderer.setCameraOrientation(position, focalPoint, upVector, viewAngle);
             }
         }
+        else if (keyCode == KeyEvent.VK_S)
+        {
+        	PolyhedralModel polyhedralModel = modelManager.getPolyhedralModel();
+        	polyhedralModel.setRepresentationToSurface();
+        }
+        else if (keyCode == KeyEvent.VK_W)
+        {
+        	PolyhedralModel polyhedralModel = modelManager.getPolyhedralModel();
+        	polyhedralModel.setRepresentationToWireframe();        	
+        }
     }
 
 }
