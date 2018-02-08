@@ -602,10 +602,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         {
             setColoring();
         }
-        else if (e.getItemSelectable() == rgbColoringButton)
-        {
-            setColoring();
-        }
         else if (e.getItemSelectable() == customColorRedComboBox ||
                 e.getItemSelectable() == customColorGreenComboBox ||
                 e.getItemSelectable() == customColorBlueComboBox)
@@ -636,32 +632,35 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
         try
         {
-            if (rgbColoringButton.isSelected())
-            {
-                smallBodyModel.setFalseColoring(
-                        customColorRedComboBox.getSelectedIndex(),
-                        customColorGreenComboBox.getSelectedIndex(),
-                        customColorBlueComboBox.getSelectedIndex());
-            }
-            else if (standardColoringButton.isSelected())
-            {
-                int idx=coloringComboBox.getSelectedIndex();
-                smallBodyModel.setColoringIndex(idx);
-                double[] range=smallBodyModel.getCurrentColoringRange(idx);
-                colormapController.setMinMax(range[0],range[1]);
-                range=smallBodyModel.getDefaultColoringRange(idx);
-                colormapController.setDefaultRange(range[0], range[1]);
-                smallBodyModel.setColormap(colormapController.getColormap());
-                smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
-                smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
-                colormapController.refresh();
-            }
-            else
-            	smallBodyModel.setColoringIndex(-1);
+        	if (standardColoringButton.isSelected() || rgbColoringButton.isSelected())
+        	{        	
+        		int idx=coloringComboBox.getSelectedIndex();
+        		smallBodyModel.setColoringIndex(idx);
+        		double[] range=smallBodyModel.getCurrentColoringRange(idx);
+        		colormapController.setMinMax(range[0],range[1]);
+        		range=smallBodyModel.getDefaultColoringRange(idx);
+        		colormapController.setDefaultRange(range[0], range[1]);
+        		smallBodyModel.setColormap(colormapController.getColormap());
+        		smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
+        		smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
+        		colormapController.refresh();
+        		
+        		if (rgbColoringButton.isSelected())
+        		{
+        			smallBodyModel.setFalseColoring(
+        					customColorRedComboBox.getSelectedIndex(),
+        					customColorGreenComboBox.getSelectedIndex(),
+        					customColorBlueComboBox.getSelectedIndex());
+        		}
+        	}
+        	else
+        	{        	
+        		smallBodyModel.setColoringIndex(-1);
+        	}
         }
         catch (IOException e1)
         {
-            e1.printStackTrace();
+        	e1.printStackTrace();
         }
     }
 
