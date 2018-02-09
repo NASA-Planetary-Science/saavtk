@@ -1,6 +1,7 @@
-package edu.jhuapl.saavtk.gui;
+package edu.jhuapl.saavtk.gui.render;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -22,6 +23,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLEventListener;
 import javax.media.opengl.awt.GLJPanel;
+import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -64,13 +66,14 @@ import vtk.vtkTextProperty;
 import vtk.vtkTriangle;
 import vtk.vtkWindowToImageFilter;
 import vtk.vtksbTriangle;
-import vtk.rendering.jogl.vtkJoglCanvasComponent;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 import edu.jhuapl.saavtk.colormap.Colorbar;
+import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas.StereoMode;
-import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
+import edu.jhuapl.saavtk.gui.render.camera.CameraFrame;
+import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
@@ -128,7 +131,7 @@ public class Renderer extends JPanel implements
         }
     }
 
-    protected vtkJoglCanvasComponent mainCanvas;
+    protected RenderPanel mainCanvas;
     private ModelManager modelManager;
     private vtkInteractorStyleTrackballCamera trackballCameraInteractorStyle;
     private vtkInteractorStyleJoystickCamera joystickCameraInteractorStyle;
@@ -147,11 +150,6 @@ public class Renderer extends JPanel implements
     public static boolean enableLODs = true; // This is temporary to show off the LOD feature, very soon we will replace this with an actual menu
     public boolean showingLODs = false;
     
-//    private JFrame mirrorFrame;
-//    private StereoCapableMirrorCanvas mirrorCanvas;
-//    private boolean mirrorFrameOpen=false;
-///    private StereoMode mode=StereoMode.NONE;
-
     private StatusBar statusBar=null;
     private Colorbar smallBodyColorbar;
     boolean inInteraction=false;
@@ -241,186 +239,25 @@ public class Renderer extends JPanel implements
             int modifiers=(KeyEvent.SHIFT_DOWN_MASK*shiftDown) | (KeyEvent.ALT_DOWN_MASK*altDown) | (KeyEvent.CTRL_DOWN_MASK*ctrlDown);
             listener.keyPressed(new KeyEvent(this, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), modifiers, mainCanvas.getRenderWindowInteractor().GetKeyCode(), mainCanvas.getRenderWindowInteractor().GetKeyCode()));
         }
-/*
-        char ch=mainCanvas.getRenderWindowInteractor().GetKeyCode();    // check main window for keypress
-        if (ch=='0')    // this means no key was hit in the main window (not sure why it matches key '0' but whatever)
-        {
-            if (mirrorFrameOpen)    // check mirror window for keypress
-            {
-                ch=mirrorCanvas.getRenderWindowInteractor().GetKeyCode();
-                if (ch=='0')
-                    return;
-            }
-//                if (ch=='0' || ch=='M') // don't allow mirror to be closed by keypress from itself - this crashes the whole app
-//                    return;
-//            }
-//            else
-//                return;
-        }
-        //
-        if (ch=='M' && !mirrorFrameOpen)
-            toggleMirrorFrame();
-        if (ch=='S')
-            advanceStereoMode();
-
-
-        mainCanvas.Render();
-        if (mirrorFrameOpen)
-            mirrorCanvas.Render();
-        //
-//        if (stereoOn && mirrorFrame!=null)
-//        {
-//            System.out.println(ch);
-//            if (ch=='<')
-//                mirrorCanvas.decreaseEyeSeparation();
-//            else if (ch=='>')
-//                mirrorCanvas.increaseEyeSeparation();
-//        }
-*/
 
     }
-/*
-    void toggleMirrorFrame()
-    {
-        if (!mirrorFrameOpen)
-            createMirrorFrame();
-        else
-            destroyMirrorFrame();
-    }
-
-    void createMirrorFrame()
-    {
-        // something about spawning the stereo mirror window causes the small body mesh to be drawn in the orientation axes viewport, when dragged from the main window; but disabling the axes while the stereo mirror is created seems to fix this
-        setShowOrientationAxes(false);
-        //
-        final Dimension preferredSize=mainCanvas.getComponent().getPreferredSize();
-        mirrorCanvas=new StereoCapableMirrorCanvas(mainCanvas,mode);
-        //
-        SwingUtilities.invokeLater(new Runnable()
-        {
-
-            @Override
-            public void run()
-            {
-                mirrorFrameOpen=true;
-                setLighting(getLighting());
-                //
-                mirrorFrame=new JFrame();
-                mirrorFrame.setTitle(modelManager.getPolyhedralModel().getConfig().getUniqueName());
-                mirrorFrame.setSize(preferredSize);
-                mirrorFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                mirrorFrame.getContentPane().add(mirrorCanvas.getComponent());
-                mirrorFrame.setVisible(true);
-                mirrorFrame.addWindowListener(new WindowAdapter()
-                {
-
-                    @Override
-                    public void windowClosing(WindowEvent e)
-                    {
-                        mirrorFrameOpen=false;
-                    }
-
-                });
-                setProps(modelManager.getProps(), mirrorCanvas, mirrorCanvas.getRenderer());
-                setInteractorStyleToDefault();
-            }
-        });
-        //
-        // re-enable orientation axes (see remarks above regarding how the axes are hidden)
-        setShowOrientationAxes(true);
-        //
-        mirrorCanvas.getRenderWindowInteractor().AddObserver("KeyPressEvent", this, "localKeypressHandler");
-    }
-
-    void destroyMirrorFrame()
-    {
-        mirrorFrame.dispose();
-        mirrorFrameOpen=true;
-    }
-
-    void advanceStereoMode()
-    {
-        mode=StereoMode.nextMode(mode);
-        commitStereoMode(mode);
-        if (statusBar!=null)
-            statusBar.setLeftText("Changed stereo rendering mode to "+mode.toString());
-    }
-
-    void commitStereoMode(StereoMode mode)
-    {
-        if (mirrorFrameOpen)
-            mirrorCanvas.setMode(mode);
-        //
-        switch (mode)
-        {
-        case SIDEBYSIDE:    // don't do side by side in main window, and if the mirror window isn't open just move on to the next stereo render mode
-            mainCanvas.getRenderWindow().StereoRenderOff();
-            if (!mirrorFrameOpen)
-                advanceStereoMode();
-            break;
-        case SIDEBYSIDEBALANCED:
-            mainCanvas.getRenderWindow().StereoRenderOff();
-            if (!mirrorFrameOpen)
-                advanceStereoMode();
-            break;
-        case NONE:
-            mainCanvas.getRenderWindow().StereoRenderOff();
-            break;
-        case ANAGLYPH:
-            mainCanvas.getRenderWindow().StereoRenderOn();
-            mainCanvas.getRenderWindow().SetStereoTypeToAnaglyph();
-            break;
-        }
-        mainCanvas.Render();
-    }*/
-
-/*    void checkStereoModeSynchronization()    // this is a really sloppy kludge to cover up the behavior of the '3' key which changes the stereo mode to anaglyph and disrupts our stereo implementation (overloading the interactor style classes does not seem to work)
-    {
-        if (mainCanvas.getRenderWindow().GetStereoType()==2)    // re-commit stereo mode to our setting if it has been switched by the user to type 2, which is the ugly anaglyph mode (the mode we use is 7)
-        {
-            commitStereoMode(mode);
-            return;
-        }
-        if (mainCanvas.getRenderWindow().GetStereoRender()==0 && !mode.equals(StereoMode.NONE)) // keyboard switch to ugly anaglyph also turns stereo render on and off, so if it gets shut off and our setting needs it on then re-enable it
-        {
-            commitStereoMode(mode);
-            return;
-        }
-        if (mode.equals(StereoMode.SIDEBYSIDE)) // override with our own mode if the main window is in side by side (which means it advances to the next mode anyway in commitStereoMode())
-        {
-            commitStereoMode(mode);
-            return;
-        }
-        if (mirrorFrameOpen)
-        {
-            if (mirrorCanvas.getRenderWindow().GetStereoType()==2)  // override ugly anaglyph mode for mirror window, just like main window above
-            {
-                commitStereoMode(mode);
-                return;
-            }
-            if (mirrorCanvas.getRenderWindow().GetStereoRender()==0)    // make sure keyboard switch doesn't turn stereo off if our mode needs it on
-            {
-                commitStereoMode(mode);
-                return;
-            }
-
-        }
-    }*/
 
     public Renderer(final ModelManager modelManager, StatusBar statusBar)
     {
         this(modelManager);
         this.statusBar=statusBar;
     }
-
+    
+    RenderToolbar toolbar;
+    
     public Renderer(final ModelManager modelManager)
     {
 
         setLayout(new BorderLayout());
 
-        mainCanvas=new vtkJoglCanvasComponent();// vtkJoglPanelComponent();
-        mainCanvas.getRenderWindowInteractor().GetInteractorStyle().KeyPressActivationOn();
-        //mainCanvas.getRenderWindowInteractor().AddObserver("KeyPressEvent", this, "localKeypressHandler");
+        toolbar=new RenderToolbar();
+        mainCanvas=new RenderPanel(toolbar);//, statusBar)
+        mainCanvas.getRenderWindowInteractor().AddObserver("KeyPressEvent", this, "localKeypressHandler");
 
         this.modelManager = modelManager;
 
@@ -432,26 +269,28 @@ public class Renderer extends JPanel implements
 
         defaultInteractorStyle = trackballCameraInteractorStyle;
 
-        InteractorStyleType interactorStyleType = InteractorStyleType.valueOf(
+ /*       InteractorStyleType interactorStyleType = InteractorStyleType.valueOf(
                 Preferences.getInstance().get(Preferences.INTERACTOR_STYLE_TYPE, InteractorStyleType.TRACKBALL_CAMERA.toString()));
         setDefaultInteractorStyleType(interactorStyleType);
 
         setMouseWheelMotionFactor(Preferences.getInstance().getAsDouble(Preferences.MOUSE_WHEEL_MOTION_FACTOR, 1.0));
-
-        setBackgroundColor(Preferences.getInstance().getAsIntArray(Preferences.BACKGROUND_COLOR, new int[]{0, 0, 0}));
+*/
+        setBackgroundColor(new int[]{0,0,0});//Preferences.getInstance().getAsIntArray(Preferences.BACKGROUND_COLOR, new int[]{0, 0, 0}));
 
         initLights();
 
+        add(toolbar, BorderLayout.NORTH);
         add(mainCanvas.getComponent(), BorderLayout.CENTER);
+        toolbar.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
 
-        mainCanvas.getRenderWindow().StereoCapableWindowOn();
+       // mainCanvas.getRenderWindow().StereoCapableWindowOn();
   //      mainCanvas.getRenderWindowInteractor().CreateRepeatingTimer(1000);  // once per second we make sure the stereo mode hasn't been changed via keyboard; this is admittedly a sloppy kludge to override the '3' key behavior (anaglyph toggle) in vtk
   //      mainCanvas.getRenderWindowInteractor().AddObserver("TimerEvent", this, "checkStereoModeSynchronization");
 
         // Setup observers for start/stop interaction events
-        mainCanvas.getRenderWindowInteractor().AddObserver("StartInteractionEvent", this, "onStartInteraction");
-        mainCanvas.getRenderWindowInteractor().AddObserver("InteractionEvent", this, "duringInteraction");
-        mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
+      //  mainCanvas.getRenderWindowInteractor().AddObserver("StartInteractionEvent", this, "onStartInteraction");
+      //  mainCanvas.getRenderWindowInteractor().AddObserver("InteractionEvent", this, "duringInteraction");
+      //  mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
         
         smallBodyColorbar=new Colorbar(this);
 
@@ -464,8 +303,8 @@ public class Renderer extends JPanel implements
                 setShowOrientationAxes(Preferences.getInstance().getAsBoolean(Preferences.SHOW_AXES, true));
                 setOrientationAxesInteractive(Preferences.getInstance().getAsBoolean(Preferences.INTERACTIVE_AXES, true));
                 setProps(modelManager.getProps());
-                mainCanvas.resetCamera();
-                mainCanvas.Render();
+                //mainCanvas.resetCamera();
+                //mainCanvas.Render();
             }
         });
     }
@@ -473,13 +312,9 @@ public class Renderer extends JPanel implements
     public void setProps(List<vtkProp> props)
     {
         setProps(props,mainCanvas,mainCanvas.getRenderer());
- /*       if (mirrorFrameOpen)
-        {
-           setProps(props,mirrorCanvas,mirrorCanvas.getRenderer());
-        }*/
     }
 
-    public void setProps(List<vtkProp> props, vtkJoglCanvasComponent renderWindow, vtkRenderer whichRenderer)
+    public void setProps(List<vtkProp> props, vtkJoglPanelComponent renderWindow, vtkRenderer whichRenderer)
     {
         // Go through the props and if an prop is already in the renderer,
         // do nothing. If not, add it. If an prop not listed is
@@ -500,6 +335,7 @@ public class Renderer extends JPanel implements
                 whichRenderer.RemoveViewProp(prop);
             renderWindow.getVTKLock().unlock();
         }
+        
 
         // Next add the new props.
         for (vtkProp prop : props)
@@ -507,6 +343,7 @@ public class Renderer extends JPanel implements
             if (whichRenderer.HasViewProp(prop) == 0)
                 whichRenderer.AddViewProp(prop);
         }
+        //whichRenderer.AddActor(mainCanvas.getAxesActor());
 
         // If we are in 2D mode, then remove all props of models that
         // do not support 2D mode.
@@ -615,93 +452,6 @@ public class Renderer extends JPanel implements
         	}
 
     }
-
-    /*
-    public void addActor(vtkActor actor)
-    {
-        if (renWin.getRenderer().HasViewProp(actor) == 0)
-        {
-            renWin.getRenderer().AddActor(actor);
-            renWin.Render();
-        }
-    }
-
-    private void addActors(List<vtkActor> actors)
-    {
-        boolean actorWasAdded = false;
-        for (vtkActor act : actors)
-        {
-            if (renWin.getRenderer().HasViewProp(act) == 0)
-            {
-                renWin.getRenderer().AddActor(act);
-                actorWasAdded = true;
-            }
-        }
-
-        if (actorWasAdded)
-            render();
-    }
-
-    public void removeActor(vtkActor actor)
-    {
-        if (renWin.getRenderer().HasViewProp(actor) > 0)
-        {
-            renWin.getRenderer().RemoveActor(actor);
-            renWin.Render();
-        }
-    }
-
-    public void removeActors(List<vtkActor> actors)
-    {
-        boolean actorWasRemoved = false;
-        for (vtkActor act : actors)
-        {
-            if (renWin.getRenderer().HasViewProp(act) > 0)
-            {
-                renWin.getRenderer().RemoveActor(act);
-                actorWasRemoved = true;
-            }
-        }
-
-        if (actorWasRemoved)
-            renWin.Render();
-    }
-
-    public void updateAllActors()
-    {
-        renWin.Render();
-    }
-    */
-    
-/*    public void exportPolyDataAsStlFiles(Path outputDirectory)
-    {
-    	Set<vtkPolyData> polyDataToOutput=Sets.newHashSet();
-    	List<vtkProp> props=modelManager.getProps();
-    	for (int i=0; i<props.size(); i++)
-    	{
-    		if (props.get(i) instanceof vtkActor)
-    		{
-    			vtkActor actor=(vtkActor)props.get(i);
-    			if (actor.GetMapper() instanceof vtkPolyDataMapper)
-    			{
-    				vtkPolyDataMapper mapper=(vtkPolyDataMapper)actor.GetMapper();
-    				polyDataToOutput.add(mapper.GetInput());	// there tend to be duplicate references to polydata objects in the list of props, and here the duplicates are automatically filtered out (some still survive, however... this needs to be fixed)
-    			}
-    		}
-    	}
-    	
-    	int cnt=0;
-    	for (vtkPolyData polyData : polyDataToOutput)
-    	{
-    		vtkSTLWriter writer=new vtkSTLWriter();
-    		writer.SetFileName(outputDirectory.resolve("object."+cnt+".stl").toString());
-    		writer.SetFileTypeToBinary();
-    		writer.SetInputData(polyData);
-    		writer.Write();
-    		cnt++;
-    	}
-    	
-    }*/
 
     public void saveToFile()
     {
@@ -1145,7 +895,7 @@ public class Renderer extends JPanel implements
         return cam.GetPosition();
     }
 
-    public vtkJoglCanvasComponent getRenderWindowPanel()
+    public vtkJoglPanelComponent getRenderWindowPanel()
     {
         return mainCanvas;
     }
@@ -1349,7 +1099,7 @@ public class Renderer extends JPanel implements
         return interactiveAxes;
     }
 
-    public void setMouseWheelMotionFactor(double factor)
+ /*   public void setMouseWheelMotionFactor(double factor)
     {
         trackballCameraInteractorStyle.SetMouseWheelMotionFactor(factor);
         joystickCameraInteractorStyle.SetMouseWheelMotionFactor(factor);
@@ -1358,7 +1108,7 @@ public class Renderer extends JPanel implements
     public double getMouseWheelMotionFactor()
     {
         return trackballCameraInteractorStyle.GetMouseWheelMotionFactor();
-    }
+    }*/
 
     public int[] getBackgroundColor()
     {
@@ -1392,7 +1142,7 @@ public class Renderer extends JPanel implements
         {
             mainCanvas.getRenderer().GetActiveCamera().ParallelProjectionOff();
             mainCanvas.resetCamera();
-            setInteractorStyleToDefault();
+       //     setInteractorStyleToDefault();
         }
 
         mainCanvas.Render();
@@ -1553,7 +1303,7 @@ public class Renderer extends JPanel implements
         return axes.GetConeRadius();
     }
 
-    public static void saveToFile(File file, vtkJoglCanvasComponent renWin)
+    public static void saveToFile(File file, vtkJoglPanelComponent renWin)
     {
         if (file != null)
         {
@@ -1661,13 +1411,3 @@ public class Renderer extends JPanel implements
 
 }
 
-class CameraFrame
-{
-    public boolean staged;
-    public boolean saved;
-    public int delay;
-    public double[] position;
-    public double[] upDirection;
-    public double[] focalPoint;
-    public File file;
-}
