@@ -23,12 +23,11 @@ import vtk.vtkCellPicker;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
 import vtk.vtkRenderer;
-import vtk.rendering.jogl.vtkJoglCanvasComponent;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
-import edu.jhuapl.saavtk.gui.Renderer;
 import edu.jhuapl.saavtk.gui.StatusBar;
-import edu.jhuapl.saavtk.gui.Renderer.AxisType;
 import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
+import edu.jhuapl.saavtk.gui.render.Renderer;
+import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
@@ -43,7 +42,7 @@ import edu.jhuapl.saavtk.util.Properties;
 public class DefaultPicker extends Picker
 {
     private Renderer renderer;
-    private vtkJoglCanvasComponent renWin;
+    private vtkJoglPanelComponent renWin;
     private StatusBar statusBar;
     private ModelManager modelManager;
     private PopupManager popupManager;
@@ -191,6 +190,7 @@ public class DefaultPicker extends Picker
                 statusBar.setLeftText(" ");
             }
         }
+        renWin.getComponent().requestFocus();
     }
 
     public void mouseClicked(MouseEvent e)
@@ -224,6 +224,7 @@ public class DefaultPicker extends Picker
                 System.out.println(p[0] + " " + p[1] + " " + p[2]);
             }
         }
+        renWin.getComponent().requestFocus();
     }
 
     public void mouseWheelMoved(MouseWheelEvent e)
@@ -353,11 +354,11 @@ public class DefaultPicker extends Picker
                 radStr = " " + radStr;
             radStr += " km";
 
-            statusBar.setRightText("Lat: " + latStr + "  Lon: " + lonStr + "  Radius: " + radStr + "  Distance: " + distanceStr + " ");
+            statusBar.setRightText("Lat: " + latStr + "  Lon: " + lonStr + "  Radius: " + radStr + "  Range: " + distanceStr + " ");
         }
         else
         {
-            statusBar.setRightText("Distance: " + distanceStr + " ");
+            statusBar.setRightText("Range: " + distanceStr + " ");
         }
     }
 
@@ -440,14 +441,19 @@ public class DefaultPicker extends Picker
 
     public void keyPressed(KeyEvent e)
     {
-        vtkRenderer ren = renWin.getRenderer();
+    	// Only respond to c, x, y, or z press if in the default interactor (e.g.
+    	// not when drawing structures)
+    	if (renWin.getRenderWindowInteractor().GetInteractorStyle() == null)
+    	{
+    		return;
+    	}
+
+    	vtkRenderer ren = renWin.getRenderer();
         if (ren.VisibleActorCount() == 0) return;
 
         int keyCode = e.getKeyCode();
 
-        // Only repond to c, x, y, or z press if in the default interactor (e.g.
-        // not when drawing structures)
-        if (keyCode == KeyEvent.VK_C && renWin.getRenderWindowInteractor().GetInteractorStyle() != null)
+        if (keyCode == KeyEvent.VK_C)
         {
             Point pt = renWin.getComponent().getMousePosition();
             if (pt != null)
@@ -474,10 +480,9 @@ public class DefaultPicker extends Picker
                 }
             }
         }
-        else if ((keyCode == KeyEvent.VK_X ||
-                  keyCode == KeyEvent.VK_Y ||
-                  keyCode == KeyEvent.VK_Z) &&
-                 renWin.getRenderWindowInteractor().GetInteractorStyle() != null)
+        else if (keyCode == KeyEvent.VK_X ||
+                 keyCode == KeyEvent.VK_Y ||
+                 keyCode == KeyEvent.VK_Z)
         {
             char keyChar = e.getKeyChar();
 
@@ -494,9 +499,8 @@ public class DefaultPicker extends Picker
             else if ('z' == keyChar)
                 renderer.setCameraOrientationInDirectionOfAxis(AxisType.POSITIVE_Z, true);
         }
-        else if (keyCode == KeyEvent.VK_N &&
-                 renWin.getRenderWindowInteractor().GetInteractorStyle() != null)
-      {
+        else if (keyCode == KeyEvent.VK_N)
+        {
             // The following spins the view along the boresight of the current
             // camera so that the Z axis of the body is up.
             vtkCamera activeCamera = renWin.getRenderer().GetActiveCamera();
@@ -519,7 +523,21 @@ public class DefaultPicker extends Picker
                 MathUtil.vcrss(upVector, dir, upVector);
                 renderer.setCameraOrientation(position, focalPoint, upVector, viewAngle);
             }
-      }
+        }
+        else if (keyCode == KeyEvent.VK_R)
+        {
+        	// TODO code "reset".
+        }
+        else if (keyCode == KeyEvent.VK_S)
+        {
+        	PolyhedralModel polyhedralModel = modelManager.getPolyhedralModel();
+        	polyhedralModel.setRepresentationToSurface();
+        }
+        else if (keyCode == KeyEvent.VK_W)
+        {
+        	PolyhedralModel polyhedralModel = modelManager.getPolyhedralModel();
+        	polyhedralModel.setRepresentationToWireframe();        	
+        }
     }
 
 }

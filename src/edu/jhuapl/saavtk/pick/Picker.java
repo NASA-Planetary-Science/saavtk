@@ -18,7 +18,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 import vtk.vtkCellPicker;
-import vtk.rendering.jogl.vtkJoglCanvasComponent;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
 import edu.jhuapl.saavtk.util.Configuration;
@@ -203,12 +202,12 @@ public abstract class Picker implements
 */
 
 
-    protected int doPick(MouseEvent e, vtkCellPicker picker, vtkJoglCanvasComponent renWin)
+    protected int doPick(MouseEvent e, vtkCellPicker picker, vtkJoglPanelComponent renWin)
     {
         return doPick(e.getWhen(), e.getX(), e.getY(), picker, renWin);
     }
 
-    protected int doPick(final long when, int x, int y, vtkCellPicker picker, vtkJoglCanvasComponent renWin)
+    protected int doPick(final long when, int x, int y, vtkCellPicker picker, vtkJoglPanelComponent renWin)
     {
         if (pickingEnabled == false)
             return 0;
