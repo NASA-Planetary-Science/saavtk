@@ -524,6 +524,10 @@ public class DefaultPicker extends Picker
                 renderer.setCameraOrientation(position, focalPoint, upVector, viewAngle);
             }
         }
+        else if (keyCode == KeyEvent.VK_R)
+        {
+        	// TODO code "reset".
+        }
         else if (keyCode == KeyEvent.VK_S)
         {
         	PolyhedralModel polyhedralModel = modelManager.getPolyhedralModel();
