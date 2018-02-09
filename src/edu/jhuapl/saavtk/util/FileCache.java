@@ -63,6 +63,13 @@ public class FileCache
     // When in offline mode, files are retrieved relative to this folder
     private static String offlineModeRootFolder = null;
 
+    private static boolean showDotsForFiles = false;
+
+    public static void showDotsForFiles(boolean enable)
+    {
+    	showDotsForFiles = enable;
+    }
+
     /**
      * Information returned about a remote file on the server
      */
@@ -143,7 +150,11 @@ public class FileCache
             		// spurious 301 errors, so leaving these in here commented out.
 //            		HttpURLConnection.setFollowRedirects(false);
             		URLConnection connection = url.openConnection();
-            		System.out.println("FileInfo(): opened connection to " + url);
+            		Debug.out().println("FileInfo(): opened connection to " + url);
+            		if (!Debug.isEnabled() && showDotsForFiles)
+            		{
+            			System.out.print('.');
+            		}
             		// These two properties seem to be still necessary as of 2017-12-19.
         			connection.setRequestProperty("User-Agent", "Mozilla/4.0");
         			connection.setRequestProperty("Accept","*/*");
