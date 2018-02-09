@@ -133,9 +133,9 @@ public class Renderer extends JPanel implements
 
     protected RenderPanel mainCanvas;
     private ModelManager modelManager;
-   // private vtkInteractorStyleTrackballCamera trackballCameraInteractorStyle;
-   // private vtkInteractorStyleJoystickCamera joystickCameraInteractorStyle;
-   // private vtkInteractorStyle defaultInteractorStyle;
+    private vtkInteractorStyleTrackballCamera trackballCameraInteractorStyle;
+    private vtkInteractorStyleJoystickCamera joystickCameraInteractorStyle;
+    private vtkInteractorStyle defaultInteractorStyle;
     private vtkAxesActor axes;
 //    private vtkOrientationMarkerWidget orientationWidget;
     private vtkLightKit lightKit;
@@ -264,10 +264,10 @@ public class Renderer extends JPanel implements
         
         modelManager.addPropertyChangeListener(this);
 
-     //   trackballCameraInteractorStyle = new vtkInteractorStyleTrackballCamera();
-     //   joystickCameraInteractorStyle = new vtkInteractorStyleJoystickCamera();
+        trackballCameraInteractorStyle = new vtkInteractorStyleTrackballCamera();
+        joystickCameraInteractorStyle = new vtkInteractorStyleJoystickCamera();
 
-     //   defaultInteractorStyle = trackballCameraInteractorStyle;
+        defaultInteractorStyle = trackballCameraInteractorStyle;
 
  /*       InteractorStyleType interactorStyleType = InteractorStyleType.valueOf(
                 Preferences.getInstance().get(Preferences.INTERACTOR_STYLE_TYPE, InteractorStyleType.TRACKBALL_CAMERA.toString()));
@@ -930,7 +930,7 @@ public class Renderer extends JPanel implements
         }
     }
 
-/*    public void setDefaultInteractorStyleType(InteractorStyleType interactorStyleType)
+    public void setDefaultInteractorStyleType(InteractorStyleType interactorStyleType)
     {
         if (interactorStyleType == InteractorStyleType.JOYSTICK_CAMERA)
             defaultInteractorStyle = joystickCameraInteractorStyle;
@@ -964,7 +964,7 @@ public class Renderer extends JPanel implements
         mainCanvas.setInteractorStyle(null);
 //        if (mirrorFrameOpen)
 //            mirrorCanvas.setInteractorStyle(null);
-    }*/
+    }
 
     public void setLighting(LightingType type)
     {

@@ -3,11 +3,15 @@ package edu.jhuapl.saavtk.gui.render;
 import java.awt.Color;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.util.Arrays;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
+import org.apache.commons.math3.exception.MathArithmeticException;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.gui.render.axes.Axes;
@@ -28,6 +32,7 @@ import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
 import vtk.vtkRenderer;
 import vtk.vtkTransform;
+import vtk.rendering.vtkEventInterceptor;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 public class RenderPanel extends vtkJoglPanelComponent implements CameraListener, RenderToolbarListener, ComponentListener
@@ -44,6 +49,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 
 	public RenderPanel(RenderToolbar toolbar)//, RenderStatusBar statusBar)
 	{
+		getInteractorForwarder().setEventInterceptor(new Interceptor());
 		interactorStyle = new CustomInteractorStyle(getRenderWindowInteractor());
 		viewCamera = new RenderPanelCamera(this);
 		viewCamera.addCameraListener(this);
@@ -185,10 +191,17 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		double L=axesWorldSize/axesViewSize/tanFovHf;
 
 		Vector3D campos=new Vector3D(getActiveCamera().GetPosition());
+		Vector3D right,up,look;
+		try
+		{
+			right=viewCamera.getRightUnit();
+			up=viewCamera.getUpUnit();
+			look=viewCamera.getLookUnit();
+		} catch (MathArithmeticException e)
+		{
+			return; 
+		}
 		double W=2*L*tanFovHf;
-		Vector3D right=viewCamera.getRightUnit();
-		Vector3D up=viewCamera.getUpUnit();
-		Vector3D look=viewCamera.getLookUnit();
 		Vector3D lambdaVec=right.scalarMultiply(W/2.*axesViewX).add(up.scalarMultiply(W/2.*axesViewY)).add(look.scalarMultiply(L));
 		Vector3D origin=campos.add(lambdaVec);
 		axes.getActor().SetPosition(origin.toArray());
@@ -223,5 +236,66 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		double[] axesRange=axesRenderer.GetActiveCamera().GetClippingRange();
 		getActiveCamera().SetClippingRange(Math.min(propRange[0], axesRange[0]),Math.max(propRange[1], axesRange[1]));
 		cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this, "redrawAxes");
+	}
+
+	private static class Interceptor implements vtkEventInterceptor {
+
+		@Override
+		public boolean keyPressed(KeyEvent e) {
+			// Don't let VTK handle key events.
+			return true;
+		}
+
+		@Override
+		public boolean keyReleased(KeyEvent e) {
+			// Don't let VTK handle key events.
+			return true;
+		}
+
+		@Override
+		public boolean keyTyped(KeyEvent e) {
+			// Don't let VTK handle key events.
+			return true;
+		}
+
+		@Override
+		public boolean mouseDragged(MouseEvent e) {
+			return false;
+		}
+
+		@Override
+		public boolean mouseMoved(MouseEvent e) {
+			return false;
+		}
+
+		@Override
+		public boolean mouseClicked(MouseEvent e) {
+			return false;
+		}
+
+		@Override
+		public boolean mouseEntered(MouseEvent e) {
+			return false;
+		}
+
+		@Override
+		public boolean mouseExited(MouseEvent e) {
+			return false;
+		}
+
+		@Override
+		public boolean mousePressed(MouseEvent e) {
+			return false;
+		}
+
+		@Override
+		public boolean mouseReleased(MouseEvent e) {
+			return false;
+		}
+
+		@Override
+		public boolean mouseWheelMoved(MouseWheelEvent e) {
+			return false;
+		}		
 	}
 }
