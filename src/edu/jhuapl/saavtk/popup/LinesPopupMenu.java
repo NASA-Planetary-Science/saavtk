@@ -9,7 +9,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
-import edu.jhuapl.saavtk.gui.Renderer;
+import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.structure.LineModel;
