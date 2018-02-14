@@ -95,6 +95,12 @@ public class Console {
         if (isEnabled()) CONSOLE.consoleFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
+    public static void hideConsole() {
+    	if (isEnabled()) {
+    		CONSOLE.consoleFrame.setVisible(false);
+    	}
+    }
+
     public static void addConsoleMenu(final JMenuBar menuBar) {
         JMenu consoleMenu = new JMenu("Console");
 
