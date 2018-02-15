@@ -142,6 +142,8 @@ public abstract class MainWindow extends JFrame
         viewMenu.add(new JSeparator());
         viewMenu.add(recentsMenu);
 
+        Console.addConsoleMenu(menuBar);
+
         helpMenu = createHelpMenu(rootPanel);
         helpMenu.setMnemonic('H');
         menuBar.add(helpMenu);

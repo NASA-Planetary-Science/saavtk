@@ -1,8 +1,6 @@
 package edu.jhuapl.saavtk.pick;
 
 import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.InputEvent;
@@ -13,10 +11,6 @@ import java.beans.PropertyChangeEvent;
 import java.text.DecimalFormat;
 import java.util.List;
 
-import javax.swing.Timer;
-
-import java.util.List;
-
 import vtk.vtkActor;
 import vtk.vtkCamera;
 import vtk.vtkCellPicker;
@@ -25,7 +19,6 @@ import vtk.vtkPropCollection;
 import vtk.vtkRenderer;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 import edu.jhuapl.saavtk.gui.StatusBar;
-import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.model.Model;
@@ -526,7 +519,9 @@ public class DefaultPicker extends Picker
         }
         else if (keyCode == KeyEvent.VK_R)
         {
-        	// TODO code "reset".
+            renderer.setCameraOrientationInDirectionOfAxis(AxisType.NEGATIVE_Z, true);
+        	renWin.resetCamera();
+        	renWin.Render();
         }
         else if (keyCode == KeyEvent.VK_S)
         {

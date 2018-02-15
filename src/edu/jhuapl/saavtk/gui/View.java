@@ -238,6 +238,8 @@ public abstract class View extends JPanel
 
         this.add(splitPane, BorderLayout.CENTER);
 
+        renderer.getRenderWindowPanel().resetCamera();
+
         initialized = true;
     }
 

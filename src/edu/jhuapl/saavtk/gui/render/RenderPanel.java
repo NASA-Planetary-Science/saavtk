@@ -90,7 +90,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 	@Override
 	public void componentResized(ComponentEvent e)
 	{
-		redrawAxes();
+//		redrawAxes();
 		Render();
 	}
 
@@ -104,7 +104,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 	@Override
 	public void handle(CameraEvent event)
 	{
-		redrawAxes();
+//		redrawAxes();
 		Render();
 	}
 
@@ -128,17 +128,23 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 			axes.setVisible(false);
 			getRenderer().ResetCamera();
 			axes.setVisible(showAxes);
-			Render();
+			super.Render();
 		} else if (event instanceof RenderToolbarEvent.ToggleAxesVisibilityEvent)
 		{
 			axes.setVisible(((RenderToolbarEvent.ToggleAxesVisibilityEvent) event).show());
-			Render();
+			super.Render();
 		}
 		viewCamera.addCameraListener(this);
 		cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this, "redrawAxes");
-		redrawAxes();
+//		redrawAxes();
 		Render();
 		
+	}
+
+	@Override
+	public void Render() {
+		redrawAxes();
+		super.Render();
 	}
 
 	public static void main(String[] args) throws InterruptedException
