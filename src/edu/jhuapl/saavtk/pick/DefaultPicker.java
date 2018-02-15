@@ -519,6 +519,7 @@ public class DefaultPicker extends Picker
         }
         else if (keyCode == KeyEvent.VK_R)
         {
+            renderer.setCameraOrientationInDirectionOfAxis(AxisType.NEGATIVE_Z, true);
         	renWin.resetCamera();
         	renWin.Render();
         }
