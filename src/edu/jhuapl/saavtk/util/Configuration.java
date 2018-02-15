@@ -20,7 +20,8 @@ import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
 
 public class Configuration
 {
-	private static final String INITIAL_MESSAGE = "If you have credentials to access restricted models, enter them here.";
+	private static final String INITIAL_MESSAGE =
+		"<html>The Small Body Mapping Tool will work without a password, but data for some models is restricted.<br>If you have credentials to access restricted models, enter them here.</html>";
 	
     static private String webURL = "http://sbmt.jhuapl.edu";
     static private String rootURL = webURL + "/sbmt";
@@ -91,10 +92,10 @@ public class Configuration
 							}
 						}
 					}
+					return;
 				} catch (@SuppressWarnings("unused") IOException e) {
 					// Ignore -- maybe the next one will work.
 				}
-				return;
             }
         }
 
@@ -107,7 +108,7 @@ public class Configuration
 		JPanel mainPanel = new JPanel();
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
 		JLabel promptLabel = new JLabel(INITIAL_MESSAGE);
-		JLabel requestAccess = new JLabel("(Email sbmt@jhuapl.edu to request access)");
+		JLabel requestAccess = new JLabel("<html><br>(Email sbmt@jhuapl.edu to request access)</html>@");
 		
 		JPanel namePanel = new JPanel();
 		namePanel.setLayout(new BoxLayout(namePanel, BoxLayout.X_AXIS));
@@ -133,11 +134,11 @@ public class Configuration
 		boolean validOrCancel = false;
 		while (!validOrCancel)
 		{
-			int selection = JOptionPane.showConfirmDialog(null, mainPanel, "Optional password for restricted model access", JOptionPane.OK_CANCEL_OPTION);
-			if (selection == JOptionPane.OK_OPTION)
+			int selection = JOptionPane.showConfirmDialog(null, mainPanel, "Small Body Mapping Tool: Optional Password", JOptionPane.OK_CANCEL_OPTION);
+			String name = nameField.getText();
+			char[] password = passwordField.getPassword();
+			if (selection == JOptionPane.OK_OPTION && !name.isEmpty() && password.length > 0)
 			{
-				String name = nameField.getText();
-				char[] password = passwordField.getPassword();
 				setupPasswordAuthentication(name, password);
 				FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
 				if (info.isURLAccessAuthorized().equals(YesOrNo.YES))
