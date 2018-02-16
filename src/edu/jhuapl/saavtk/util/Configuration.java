@@ -69,7 +69,6 @@ public class Configuration
 		Configuration.restrictedFileName = restrictedFileName;
 		Configuration.passwordFilesToTry = passwordFilesToTry;
 
-		boolean passwordOK = false;
 		for (Path passwordFile : passwordFilesToTry)
         {
             if (passwordFile.toFile().exists())
@@ -87,19 +86,11 @@ public class Configuration
 						{
 							setupPasswordAuthentication(user.trim(), pass.trim().toCharArray());
 							FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
-							if (info.isURLAccessAuthorized().equals(YesOrNo.YES))
+							if (!info.isURLAccessAuthorized().equals(YesOrNo.YES))
 							{
-								passwordOK = true;
-							}
-							else
-							{
-								passwordOK = promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFile);
+								promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFile);
 							}
 						}
-					}
-					if (!passwordOK)
-					{
-						setupPasswordAuthentication("public", "wide-open".toCharArray());
 					}
 					return;
 				} catch (@SuppressWarnings("unused") IOException e) {
@@ -109,11 +100,7 @@ public class Configuration
         }
 
         // If we get here, no password file was found, so try to create the first one in the iterable object.
-        passwordOK = promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next());
-		if (!passwordOK)
-		{
-			setupPasswordAuthentication("public", "wide-open".toCharArray());
-		}
+        promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next());
 	}
 
 	private static boolean promptUserForPassword(final String restrictedAccessRoot, final String restrictedFileName, final Path passwordFile) throws IOException
