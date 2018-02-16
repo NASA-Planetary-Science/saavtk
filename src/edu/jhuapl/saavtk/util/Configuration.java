@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.BoxLayout;
@@ -37,7 +38,7 @@ public class Configuration
 
     // Flag indicating if this version of the tool is APL in-house only ("private")
     static private boolean APLVersion = false;
-	private static boolean passwordAuthenticationSetup = false;
+	private static boolean userPasswordAccepted = false;
 	private static String restrictedAccessRoot = null;
 	private static String restrictedFileName = null;
 	private static Iterable<Path> passwordFilesToTry = null;
@@ -69,38 +70,57 @@ public class Configuration
 		Configuration.restrictedFileName = restrictedFileName;
 		Configuration.passwordFilesToTry = passwordFilesToTry;
 
+		boolean foundEmptyPasswordFile = false;
+		boolean userPasswordAccepted = false;
 		for (Path passwordFile : passwordFilesToTry)
         {
             if (passwordFile.toFile().exists())
             {
                 List<String> credentials;
 				try {
+					boolean foundCredentials = false;
 					credentials = FileUtil.getFileLinesAsStringList(passwordFile.toString());
-					if (credentials.size() >= 2)
+					Iterator<String> iterator = credentials.iterator();
+					if (iterator.hasNext())
 					{
-						String user = credentials.get(0);
-						String pass = credentials.get(1);
-						
-						if (user != null && user.trim().length() > 0 && !user.trim().toLowerCase().contains("replace-with-") &&
-								pass != null && pass.trim().length() > 0)
+						String userName = iterator.next().trim();
+						if (iterator.hasNext())
 						{
-							setupPasswordAuthentication(user.trim(), pass.trim().toCharArray());
-							FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
-							if (!info.isURLAccessAuthorized().equals(YesOrNo.YES))
+							char[] password = iterator.next().trim().toCharArray();
+							if (!userName.isEmpty() && password.length > 0)
 							{
-								promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFile);
+								foundCredentials = true;
+								setupPasswordAuthentication(userName, password);
+								FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
+								if (info.isURLAccessAuthorized().equals(YesOrNo.YES))
+								{
+									userPasswordAccepted = true;
+									break;
+								}
 							}
 						}
 					}
-					return;
-				} catch (@SuppressWarnings("unused") IOException e) {
+					if (!foundCredentials)
+					{
+						foundEmptyPasswordFile = true;
+					}
+				}
+				catch (@SuppressWarnings("unused") IOException e)
+				{
 					// Ignore -- maybe the next one will work.
 				}
             }
         }
 
-        // If we get here, no password file was found, so try to create the first one in the iterable object.
-        promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next());
+		if (!userPasswordAccepted && !foundEmptyPasswordFile)
+		{
+			userPasswordAccepted = promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next());
+		}
+		if (!userPasswordAccepted)
+		{			
+			setupPasswordAuthentication("public", "wide-open".toCharArray());
+		}
+		Configuration.userPasswordAccepted = userPasswordAccepted;
 	}
 
 	private static boolean promptUserForPassword(final String restrictedAccessRoot, final String restrictedFileName, final Path passwordFile) throws IOException
@@ -151,7 +171,7 @@ public class Configuration
 					}
 					else
 					{
-						Files.delete(passwordFile);
+						deleteFile(passwordFile);
 					}
 					doPromptUser = false;
 				}
@@ -170,7 +190,7 @@ public class Configuration
 						}
 						else
 						{
-							Files.delete(passwordFile);
+							deleteFile(passwordFile);
 						}
 						doPromptUser = false;
 					}
@@ -204,7 +224,6 @@ public class Configuration
                     return new java.net.PasswordAuthentication(username, password);
                 }
             });
-            passwordAuthenticationSetup = true;
         }
         catch (Exception e)
         {
@@ -239,9 +258,9 @@ public class Configuration
 		}
 	}
 
-	static public boolean isPasswordAuthenticationSetup()
+	public static boolean wasUserPasswordAccepted()
     {
-    	return passwordAuthenticationSetup;
+    	return userPasswordAccepted;
     }
 
     /**
@@ -285,17 +304,6 @@ public class Configuration
 
         return cacheDir;
     }
-
-//    public static String getWebURL()
-//    {
-//        return webURL;
-//    }
-//
-//    public static void setWebURL(String webURL)
-//    {
-//        Configuration.webURL = webURL;
-//        Configuration.rootURL = webURL + "/sbmt";
-//    }
 
     public static String getRootURL()
     {
@@ -475,5 +483,13 @@ public class Configuration
         }
 
         return tmpDir;
+    }
+
+    private static void deleteFile(Path path) throws IOException
+    {
+    	if (path.toFile().exists())
+    	{
+    		Files.delete(path);
+    	}
     }
 }
