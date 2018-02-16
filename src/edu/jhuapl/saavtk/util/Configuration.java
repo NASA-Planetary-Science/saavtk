@@ -54,7 +54,7 @@ public class Configuration
 //            rootURL = rootURLProperty;
 //    }
 
-	public static void setupPasswordAuthentication(final String restrictedAccessRoot, final String restrictedFileName, final Iterable<Path> passwordFilesToTry)
+	public static void setupPasswordAuthentication(final String restrictedAccessRoot, final String restrictedFileName, final Iterable<Path> passwordFilesToTry) throws IOException
 	{
 		if (restrictedAccessRoot == null || restrictedFileName == null || passwordFilesToTry == null)
 		{
@@ -103,7 +103,7 @@ public class Configuration
         promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next());
 	}
 
-	private static boolean promptUserForPassword(final String restrictedAccessRoot, final String restrictedFileName, final Path passwordFile)
+	private static boolean promptUserForPassword(final String restrictedAccessRoot, final String restrictedFileName, final Path passwordFile) throws IOException
 	{
 		JPanel mainPanel = new JPanel();
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
@@ -122,56 +122,74 @@ public class Configuration
 		JPasswordField passwordField = new JPasswordField(15);
 		passwordPanel.add(passwordField);
 
-		JCheckBox rememberPassword = new JCheckBox("Do not prompt for a password in the future (cache credentials if entered).");
-		rememberPassword.setSelected(true);
+		JCheckBox rememberPasswordCheckBox = new JCheckBox("Do not prompt for a password in the future (save/clear credentials).");
+		rememberPasswordCheckBox.setSelected(true);
 
 		mainPanel.add(promptLabel);
 		mainPanel.add(requestAccess);
 		mainPanel.add(namePanel);
 		mainPanel.add(passwordPanel);
-		mainPanel.add(rememberPassword);
+		mainPanel.add(rememberPasswordCheckBox);
 
-		boolean validOrCancel = false;
-		while (!validOrCancel)
+		boolean doPromptUser = true;
+		boolean passwordChanged = false;
+		while (doPromptUser)
 		{
 			int selection = JOptionPane.showConfirmDialog(null, mainPanel, "Small Body Mapping Tool: Optional Password", JOptionPane.OK_CANCEL_OPTION);
-			String name = nameField.getText();
+			boolean rememberPassword = rememberPasswordCheckBox.isSelected();
+			String name = nameField.getText().trim();
 			char[] password = passwordField.getPassword();
-			if (selection == JOptionPane.OK_OPTION && !name.isEmpty() && password.length > 0)
+			if (selection == JOptionPane.OK_OPTION)
 			{
-				setupPasswordAuthentication(name, password);
-				FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
-				if (info.isURLAccessAuthorized().equals(YesOrNo.YES))
+				if (name.isEmpty())
 				{
-					validOrCancel = true;
-					if (rememberPassword.isSelected())
+					// Proceed without password; save blank password if requested.
+					if (rememberPassword)
 					{
-						writePasswordFile(passwordFile, name, password);
+						writeBlankPasswordFile(passwordFile);
+						passwordChanged = true;
+					}
+					else
+					{
+						Files.delete(passwordFile);
+					}
+					doPromptUser = false;
+				}
+				else
+				{
+					// Attempt authentication.
+					setupPasswordAuthentication(name, password);					
+					FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
+					if (info.isURLAccessAuthorized().equals(YesOrNo.YES))
+					{
+						// User entered valid password. Save password if requested.
+						if (rememberPassword)
+						{
+							writePasswordFile(passwordFile, name, password);
+							passwordChanged = true;
+						}
+						else
+						{
+							Files.delete(passwordFile);
+						}
+						doPromptUser = false;
+					}
+					else
+					{
+						// Authentication did not succeed, so keep trying.
+						doPromptUser = true;
 					}
 				}
 			}
 			else
 			{
-				if (rememberPassword.isSelected())
-				{
-					writeBlankPasswordFile(passwordFile);
-				}
-				validOrCancel = true;
+				// User clicked Cancel. Nothing was done; nothing more to be done.
+				doPromptUser = false;
+				passwordChanged = false;
 			}
-			promptLabel.setText(validOrCancel ? INITIAL_MESSAGE : "Try again, or click \"Cancel\" to continue without password. Some models may not be available.");
+			promptLabel.setText(doPromptUser ?  "<html>Invalid user name or password. Try again, or click \"Cancel\" to continue without password. Some models may not be available.</html>" : INITIAL_MESSAGE);
 		}
-		if (!rememberPassword.isSelected())
-		{
-			try
-			{
-				Files.delete(passwordFile);
-			}
-			catch (@SuppressWarnings("unused") IOException e)
-			{
-				// Silently ignore this one.
-			}
-		}
-		return rememberPassword.isSelected();
+		return passwordChanged;
 	}
 
 	public static void setupPasswordAuthentication(final String username, final char[] password)
@@ -194,7 +212,7 @@ public class Configuration
         }
     }
 
-	public static void writePasswordFile(final Path passwordFile, final String name, final char[] password)
+	private static void writePasswordFile(final Path passwordFile, final String name, final char[] password) throws IOException
 	{
 		try (PrintStream outStream = new PrintStream(Files.newOutputStream(passwordFile))) {
 			if (name != null && password != null)
@@ -202,25 +220,22 @@ public class Configuration
 				outStream.println(name);
 				outStream.println(password);				
 			}
-		} catch (IOException e) {
-			// Unfortunate but there's nothing more we can do at this point.
-			e.printStackTrace();
 		}
 	}
 
-	public static void writeBlankPasswordFile(final Path passwordFile)
+	private static void writeBlankPasswordFile(final Path passwordFile) throws IOException
 	{
 		writePasswordFile(passwordFile, null, null);
 	}
 
-	public static void updatePassword() {
+	public static void updatePassword() throws IOException {
 		if (restrictedAccessRoot == null || restrictedFileName == null || passwordFilesToTry == null)
 		{
 			throw new AssertionError("Cannot update password; authentication was not properly initialized.");
 		}
 		if (promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next()))
 		{
-			JOptionPane.showMessageDialog(null, "Changes will take effect next time you start the tool", "Password changes saved", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(null, "You must restart the tool for this change to take effect.", "Password changes saved", JOptionPane.INFORMATION_MESSAGE);
 		}
 	}
 
@@ -461,5 +476,4 @@ public class Configuration
 
         return tmpDir;
     }
-
 }
