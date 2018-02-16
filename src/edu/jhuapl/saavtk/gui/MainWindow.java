@@ -4,11 +4,13 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JSeparator;
 
 import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
@@ -100,14 +102,19 @@ public abstract class MainWindow extends JFrame
         return new FavoritesMenu(new FavoritesFile(), rootPanel);
     }
 
-    protected JMenuItem createPasswordMenu(ViewManager rootPanel)
+    protected JMenuItem createPasswordMenu()
     {
         JMenuItem updatePassword = new JMenuItem("Update Password...");
         updatePassword.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
+            public void actionPerformed(@SuppressWarnings("unused") ActionEvent evt)
             {
-                Configuration.updatePassword();
+                try {
+					Configuration.updatePassword();
+				} catch (IOException e) {
+					e.printStackTrace();
+					JOptionPane.showMessageDialog(null, "Error trying to save user name and password.", "Unable to save changes", JOptionPane.ERROR_MESSAGE);
+				}
             }
         });
         return updatePassword;
@@ -134,7 +141,7 @@ public abstract class MainWindow extends JFrame
 
         favoritesMenu = createFavoritesMenu(rootPanel);
 
-        JMenuItem passwordMenu = createPasswordMenu(rootPanel);
+        JMenuItem passwordMenu = createPasswordMenu();
 
         viewMenu.add(new JSeparator());
         viewMenu.add(favoritesMenu);

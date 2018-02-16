@@ -216,7 +216,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
     protected void updatePolyData()
     {
-    	
+    		actors.clear();
     	
         linesPolyData.DeepCopy(emptyPolyData);
         vtkPoints points = linesPolyData.GetPoints();
