@@ -124,11 +124,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 			viewCamera.setUpUnit(direction.getUpUnit());
 		} else if (event instanceof RenderToolbarEvent.ViewAllEvent)
 		{
-			boolean showAxes=axes.isVisible();
-			axes.setVisible(false);
-			getRenderer().ResetCamera();
-			axes.setVisible(showAxes);
-			super.Render();
+			viewAll();
 		} else if (event instanceof RenderToolbarEvent.ToggleAxesVisibilityEvent)
 		{
 			axes.setVisible(((RenderToolbarEvent.ToggleAxesVisibilityEvent) event).show());
@@ -139,6 +135,15 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 //		redrawAxes();
 		Render();
 		
+	}
+	
+	public void viewAll()
+	{
+		boolean showAxes=axes.isVisible();
+		axes.setVisible(false);
+		getRenderer().ResetCamera();
+		axes.setVisible(showAxes);
+		super.Render();
 	}
 
 	@Override
