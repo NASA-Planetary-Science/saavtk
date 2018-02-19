@@ -33,6 +33,7 @@ import vtk.vtkPolyDataMapper;
 import vtk.vtkRenderer;
 import vtk.vtkTransform;
 import vtk.rendering.vtkEventInterceptor;
+import vtk.rendering.vtkInteractorForwarder;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 public class RenderPanel extends vtkJoglPanelComponent implements CameraListener, RenderToolbarListener, ComponentListener
@@ -73,6 +74,22 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		getComponent().addComponentListener(this);
 	}
 	
+	public void mouseOff()
+	{
+	    vtkInteractorForwarder forwarder = this.getInteractorForwarder();
+	    this.uiComponent.removeMouseListener(forwarder);
+	    this.uiComponent.removeMouseMotionListener(forwarder);
+	    this.uiComponent.removeMouseWheelListener(forwarder);
+	}
+	
+	public void mouseOn()
+	{
+	    vtkInteractorForwarder forwarder = this.getInteractorForwarder();
+	    this.uiComponent.addMouseListener(forwarder);
+	    this.uiComponent.addMouseMotionListener(forwarder);
+	    this.uiComponent.addMouseWheelListener(forwarder);
+	}
+
 	@Override
 	public void componentHidden(ComponentEvent e)
 	{
