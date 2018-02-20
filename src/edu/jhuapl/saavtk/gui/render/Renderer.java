@@ -288,9 +288,9 @@ public class Renderer extends JPanel implements
   //      mainCanvas.getRenderWindowInteractor().AddObserver("TimerEvent", this, "checkStereoModeSynchronization");
 
         // Setup observers for start/stop interaction events
-      //  mainCanvas.getRenderWindowInteractor().AddObserver("StartInteractionEvent", this, "onStartInteraction");
-      //  mainCanvas.getRenderWindowInteractor().AddObserver("InteractionEvent", this, "duringInteraction");
-      //  mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
+        mainCanvas.getRenderWindowInteractor().AddObserver("StartInteractionEvent", this, "onStartInteraction");
+        mainCanvas.getRenderWindowInteractor().AddObserver("InteractionEvent", this, "duringInteraction");
+        mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
         
         smallBodyColorbar=new Colorbar(this);
 
