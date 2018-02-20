@@ -30,6 +30,7 @@ public class GraticulePopupMenu extends PopupMenu
     private JMenuItem colorMenuItem;
     private JMenuItem thicknessMenuItem;
     private JMenuItem setLatLongSpacing;
+    private ColorChooser colorChooser;
 
     public GraticulePopupMenu(ModelManager modelManager,
             Component invoker)
@@ -48,16 +49,15 @@ public class GraticulePopupMenu extends PopupMenu
         setLatLongSpacing = new JMenuItem(new ChangeLatLongSpacingAction());
         setLatLongSpacing.setText("Change Grid Spacing...");
         this.add(setLatLongSpacing);
+
+        this.colorChooser = ColorChooser.of(graticule.getColor());
     }
 
     public class ChangeColorAction extends AbstractAction
     {
         public void actionPerformed(ActionEvent arg0)
         {
-            Color color = graticule.getColor();
-            int[] initialColor = {color.getRed(), color.getGreen(), color.getBlue()};
-
-            color = ColorChooser.showColorChooser(invoker, initialColor);
+            Color color = colorChooser.showColorDialog(invoker);
 
             if (color == null)
                 return;
