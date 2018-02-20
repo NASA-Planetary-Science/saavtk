@@ -1302,6 +1302,16 @@ public class Renderer extends JPanel implements
     {
         return axes.GetConeRadius();
     }
+    
+    public int getPanelWidth()
+    {
+    		return mainCanvas.getComponent().getWidth();
+    }
+    
+    public int getPanelHeight()
+    {
+    		return mainCanvas.getComponent().getHeight();
+    }
 
     public static void saveToFile(File file, vtkJoglPanelComponent renWin)
     {
@@ -1400,6 +1410,12 @@ public class Renderer extends JPanel implements
     public GenericPolyhedralModel getGenericPolyhedralModel(){
       return (GenericPolyhedralModel) modelManager.getPolyhedralModel();
   }
+    
+    public void setMouseEnabled(boolean enabled)
+    {
+    		if (enabled) mainCanvas.mouseOn();
+    		else mainCanvas.mouseOff();
+    }
 
 
     public void setViewPointLatLong()//LatLon viewPoint)
