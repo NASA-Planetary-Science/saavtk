@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.BoxLayout;
@@ -37,7 +39,7 @@ public class Configuration
 
     // Flag indicating if this version of the tool is APL in-house only ("private")
     static private boolean APLVersion = false;
-	private static boolean passwordAuthenticationSetup = false;
+	private static boolean userPasswordAccepted = false;
 	private static String restrictedAccessRoot = null;
 	private static String restrictedFileName = null;
 	private static Iterable<Path> passwordFilesToTry = null;
@@ -69,41 +71,60 @@ public class Configuration
 		Configuration.restrictedFileName = restrictedFileName;
 		Configuration.passwordFilesToTry = passwordFilesToTry;
 
+		boolean foundEmptyPasswordFile = false;
+		boolean userPasswordAccepted = false;
 		for (Path passwordFile : passwordFilesToTry)
         {
             if (passwordFile.toFile().exists())
             {
                 List<String> credentials;
 				try {
+					boolean foundCredentials = false;
 					credentials = FileUtil.getFileLinesAsStringList(passwordFile.toString());
-					if (credentials.size() >= 2)
+					Iterator<String> iterator = credentials.iterator();
+					if (iterator.hasNext())
 					{
-						String user = credentials.get(0);
-						String pass = credentials.get(1);
-						
-						if (user != null && user.trim().length() > 0 && !user.trim().toLowerCase().contains("replace-with-") &&
-								pass != null && pass.trim().length() > 0)
+						String userName = iterator.next().trim();
+						if (iterator.hasNext())
 						{
-							setupPasswordAuthentication(user.trim(), pass.trim().toCharArray());
-							FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
-							if (!info.isURLAccessAuthorized().equals(YesOrNo.YES))
+							char[] password = iterator.next().trim().toCharArray();
+							if (!userName.isEmpty() && password.length > 0)
 							{
-								promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFile);
+								foundCredentials = true;
+								setupPasswordAuthentication(userName, password);
+								FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
+								if (info.isURLAccessAuthorized().equals(YesOrNo.YES))
+								{
+									userPasswordAccepted = true;
+									break;
+								}
 							}
 						}
 					}
-					return;
-				} catch (@SuppressWarnings("unused") IOException e) {
+					if (!foundCredentials)
+					{
+						foundEmptyPasswordFile = true;
+					}
+				}
+				catch (@SuppressWarnings("unused") IOException e)
+				{
 					// Ignore -- maybe the next one will work.
 				}
             }
         }
 
-        // If we get here, no password file was found, so try to create the first one in the iterable object.
-        promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next());
+		if (!userPasswordAccepted && !foundEmptyPasswordFile)
+		{
+			userPasswordAccepted = promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next(), false);
+		}
+		if (!userPasswordAccepted)
+		{			
+			setupPasswordAuthentication("public", "wide-open".toCharArray());
+		}
+		Configuration.userPasswordAccepted = userPasswordAccepted;
 	}
 
-	private static boolean promptUserForPassword(final String restrictedAccessRoot, final String restrictedFileName, final Path passwordFile) throws IOException
+	private static boolean promptUserForPassword(final String restrictedAccessRoot, final String restrictedFileName, final Path passwordFile, final boolean updateMode) throws IOException
 	{
 		JPanel mainPanel = new JPanel();
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
@@ -131,10 +152,11 @@ public class Configuration
 		mainPanel.add(passwordPanel);
 		mainPanel.add(rememberPasswordCheckBox);
 
-		boolean doPromptUser = true;
-		boolean passwordChanged = false;
-		while (doPromptUser)
+		boolean repromptUser = false;
+		boolean validPasswordEntered = false;
+		do
 		{
+			repromptUser = false;
 			int selection = JOptionPane.showConfirmDialog(null, mainPanel, "Small Body Mapping Tool: Optional Password", JOptionPane.OK_CANCEL_OPTION);
 			boolean rememberPassword = rememberPasswordCheckBox.isSelected();
 			String name = nameField.getText().trim();
@@ -143,53 +165,39 @@ public class Configuration
 			{
 				if (name.isEmpty())
 				{
-					// Proceed without password; save blank password if requested.
-					if (rememberPassword)
-					{
-						writeBlankPasswordFile(passwordFile);
-						passwordChanged = true;
-					}
-					else
-					{
-						Files.delete(passwordFile);
-					}
-					doPromptUser = false;
+					// Blank password is acceptable, but is not considered "valid" in the sense of this method.
+					name = null;
+					password = null;
 				}
 				else
 				{
 					// Attempt authentication.
 					setupPasswordAuthentication(name, password);					
 					FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
-					if (info.isURLAccessAuthorized().equals(YesOrNo.YES))
+					if (!info.isURLAccessAuthorized().equals(YesOrNo.YES))
 					{
-						// User entered valid password. Save password if requested.
-						if (rememberPassword)
-						{
-							writePasswordFile(passwordFile, name, password);
-							passwordChanged = true;
-						}
-						else
-						{
-							Files.delete(passwordFile);
-						}
-						doPromptUser = false;
+						// Try again.
+						promptLabel.setText("<html>Invalid user name or password. Try again, or click \"Cancel\" to continue without password. Some models may not be available.</html>");
+						repromptUser = true;
+						continue;
 					}
-					else
-					{
-						// Authentication did not succeed, so keep trying.
-						doPromptUser = true;
-					}
+					validPasswordEntered = true;
+				}
+				if (rememberPassword)
+				{
+					writePasswordFile(passwordFile, name, password);
+				}
+				else
+				{
+					deleteFile(passwordFile);
+				}
+				if (updateMode)
+				{
+					JOptionPane.showMessageDialog(null, "You must restart the tool for this change to take effect.", "Password changes saved", JOptionPane.INFORMATION_MESSAGE);	
 				}
 			}
-			else
-			{
-				// User clicked Cancel. Nothing was done; nothing more to be done.
-				doPromptUser = false;
-				passwordChanged = false;
-			}
-			promptLabel.setText(doPromptUser ?  "<html>Invalid user name or password. Try again, or click \"Cancel\" to continue without password. Some models may not be available.</html>" : INITIAL_MESSAGE);
-		}
-		return passwordChanged;
+		} while (repromptUser);
+		return validPasswordEntered;
 	}
 
 	public static void setupPasswordAuthentication(final String username, final char[] password)
@@ -204,7 +212,6 @@ public class Configuration
                     return new java.net.PasswordAuthentication(username, password);
                 }
             });
-            passwordAuthenticationSetup = true;
         }
         catch (Exception e)
         {
@@ -223,25 +230,18 @@ public class Configuration
 		}
 	}
 
-	private static void writeBlankPasswordFile(final Path passwordFile) throws IOException
-	{
-		writePasswordFile(passwordFile, null, null);
-	}
-
 	public static void updatePassword() throws IOException {
 		if (restrictedAccessRoot == null || restrictedFileName == null || passwordFilesToTry == null)
 		{
 			throw new AssertionError("Cannot update password; authentication was not properly initialized.");
 		}
-		if (promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next()))
-		{
-			JOptionPane.showMessageDialog(null, "You must restart the tool for this change to take effect.", "Password changes saved", JOptionPane.INFORMATION_MESSAGE);
-		}
+		promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next(), true);
+		
 	}
 
-	static public boolean isPasswordAuthenticationSetup()
+	public static boolean wasUserPasswordAccepted()
     {
-    	return passwordAuthenticationSetup;
+    	return userPasswordAccepted;
     }
 
     /**
@@ -285,17 +285,6 @@ public class Configuration
 
         return cacheDir;
     }
-
-//    public static String getWebURL()
-//    {
-//        return webURL;
-//    }
-//
-//    public static void setWebURL(String webURL)
-//    {
-//        Configuration.webURL = webURL;
-//        Configuration.rootURL = webURL + "/sbmt";
-//    }
 
     public static String getRootURL()
     {
@@ -475,5 +464,18 @@ public class Configuration
         }
 
         return tmpDir;
+    }
+
+    private static void deleteFile(Path path) throws IOException
+    {
+    	try
+    	{
+    		Files.delete(path);
+    	}
+    	catch (@SuppressWarnings("unused") NoSuchFileException e)
+    	{
+    		// Give me a break. Deleting a file that doesn't exist throws an exception?
+    		// Who cares?
+    	}
     }
 }
