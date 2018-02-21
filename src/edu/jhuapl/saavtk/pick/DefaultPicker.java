@@ -482,7 +482,11 @@ public class DefaultPicker extends Picker
         else if (keyCode == KeyEvent.VK_F)
         {
         	// "Fly-to." Focus on the last clicked position, and move the camera to a point directly
-        	// above it, along the normal at the last clicked position. 
+        	// above it, along the normal at the last clicked position.
+        	if (lastClickedPosition == null || lastClickedNormal == null)
+        	{
+        		return;
+        	}
             Vector3D vPos = new Vector3D(lastClickedPosition);
             Vector3D vNorm = new Vector3D(lastClickedNormal);
             
