@@ -68,4 +68,17 @@ public class ColorChooser
     	return currentColor;
     }
 
+    public Color getColor()
+    {
+    	return currentColor;
+    }
+
+    public void setColor(Color color)
+    {
+    	if (color != null)
+    	{
+    		currentColor = color;
+    	}
+    }
+
 }

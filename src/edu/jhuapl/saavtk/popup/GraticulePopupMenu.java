@@ -50,14 +50,16 @@ public class GraticulePopupMenu extends PopupMenu
         setLatLongSpacing.setText("Change Grid Spacing...");
         this.add(setLatLongSpacing);
 
-        this.colorChooser = ColorChooser.of(graticule.getColor());
+        this.colorChooser = ColorChooser.of(graticule != null ? graticule.getColor() : Color.BLACK);
     }
 
     public class ChangeColorAction extends AbstractAction
     {
         public void actionPerformed(ActionEvent arg0)
         {
-            Color color = colorChooser.showColorDialog(invoker);
+        	colorChooser.setColor(graticule.getColor());
+
+        	Color color = colorChooser.showColorDialog(invoker);
 
             if (color == null)
                 return;
