@@ -1868,11 +1868,22 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	public void setFalseColoring(int redChannel, int greenChannel, int blueChannel) throws IOException
 	{
-		coloringIndex = -1;
-		useFalseColoring = true;
 		redFalseColor = redChannel;
 		greenFalseColor = greenChannel;
 		blueFalseColor = blueChannel;
+
+		if (
+				isColoringIndexInRange(redFalseColor) &&
+				isColoringIndexInRange(greenFalseColor) &&
+				isColoringIndexInRange(blueFalseColor))
+		{			
+			coloringIndex = -1;
+			useFalseColoring = true;
+		}
+		else
+		{
+			useFalseColoring = false;
+		}
 
 		paintBody();
 	}
@@ -3024,5 +3035,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public List<LidarDatasourceInfo> getLidarDasourceInfoList()
 	{
 		return lidarDatasourceInfo;
+	}
+
+	private boolean isColoringIndexInRange(int index)
+	{
+		return index >= 0 && index < coloringInfo.size();
 	}
 }
