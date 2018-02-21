@@ -11,6 +11,8 @@ import java.beans.PropertyChangeEvent;
 import java.text.DecimalFormat;
 import java.util.List;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import vtk.vtkActor;
 import vtk.vtkCamera;
 import vtk.vtkCellPicker;
@@ -45,6 +47,8 @@ public class DefaultPicker extends Picker
     private DecimalFormat decimalFormatter = new DecimalFormat("##0.000");
     private DecimalFormat decimalFormatter2 = new DecimalFormat("#0.000");
     private boolean suppressPopups = false;
+	private double[] lastClickedPosition = null;
+	private double[] lastClickedNormal = null;
 
     public DefaultPicker(
             Renderer renderer,
@@ -212,7 +216,9 @@ public class DefaultPicker extends Picker
 
             if (pickSucceeded == 1)
             {
-                double[] p = smallBodyCellPicker.GetPickPosition();
+            	double[] p = smallBodyCellPicker.GetPickPosition();
+            	lastClickedPosition = p;
+            	lastClickedNormal = smallBodyCellPicker.GetPickNormal();
 //                System.out.println(p[0] + " " + p[1] + " " + p[2]);
                 System.out.println(p[0] + " " + p[1] + " " + p[2]);
             }
@@ -473,6 +479,36 @@ public class DefaultPicker extends Picker
                 }
             }
         }
+        else if (keyCode == KeyEvent.VK_F)
+        {
+        	// "Fly-to." Focus on the last clicked position, and move the camera to a point directly
+        	// above it, along the normal at the last clicked position. 
+            Vector3D vPos = new Vector3D(lastClickedPosition);
+            Vector3D vNorm = new Vector3D(lastClickedNormal);
+            
+            vtkCamera camera = renderer.getRenderWindowPanel().getActiveCamera();
+            camera.SetFocalPoint(lastClickedPosition);
+            camera.SetPosition(vPos.add(vNorm.scalarMultiply(vPos.getNorm())).toArray());
+
+            Point pt = renWin.getComponent().getMousePosition();
+            if (pt != null)
+            {
+                // The call to doPick requires a MouseEvent, so create one here
+                MouseEvent me = new MouseEvent(e.getComponent(), e.getID(), e.getWhen(),
+                        e.getModifiers(),
+                        pt.x, pt.y,
+                        0, false);
+
+                int pickSucceeded = doPick(me, allPropsCellPicker, renWin);
+                if (pickSucceeded == 1)
+                {
+                	showPositionInfoInStatusBar(me);	
+                }
+                
+            }
+
+            renWin.Render();
+       }
         else if (keyCode == KeyEvent.VK_X ||
                  keyCode == KeyEvent.VK_Y ||
                  keyCode == KeyEvent.VK_Z)
