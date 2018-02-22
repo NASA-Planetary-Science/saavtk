@@ -624,6 +624,15 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         customColorRedLabel.setEnabled(selected);
         customColorGreenLabel.setEnabled(selected);
         customColorBlueLabel.setEnabled(selected);
+
+        // Make sure *something* is selected in the RGB family if custom coloring is enabled.
+        if (selected && customColorRedComboBox.getSelectedIndex() < 1 && customColorGreenComboBox.getSelectedIndex() < 1
+        		&& customColorBlueComboBox.getSelectedIndex() < 1)
+        {
+        	// Select the 1st (or 0th) element in red.
+        	customColorRedComboBox.setSelectedIndex(Math.min(customColorRedComboBox.getItemCount() - 1, 1));
+        }
+
     }
 
     protected void setColoring()
