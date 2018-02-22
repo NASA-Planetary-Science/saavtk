@@ -115,7 +115,7 @@ public class HelpMenu extends JMenu
     {
         public ShowRecentChangesAction()
         {
-            super("Recent Changes");
+            super("Release Notes");
         }
 
         public void actionPerformed(ActionEvent actionEvent)
