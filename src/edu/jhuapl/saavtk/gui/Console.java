@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.gui;
 
 
+import java.awt.Component;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -37,7 +38,7 @@ public class Console {
                 if (manager != null) manager.checkPermission(new RuntimePermission("setIO"));
 //              if (true) throw new SecurityException("fake security exception");
 
-                JTextArea consoleTextArea = new JTextArea(40,80);
+                JTextArea consoleTextArea = new JTextArea(20,60);
                 // I updated this to not set the entire content of the text area every time,
                 // but just to append to it as it gets read. This has a HUGE effect
                 // on performance (more than a factor of 100) for cases where the
@@ -98,7 +99,12 @@ public class Console {
     public static void hideConsole() {
     	if (isEnabled()) {
     		CONSOLE.consoleFrame.setVisible(false);
+    		CONSOLE.consoleFrame.setLocationByPlatform(false);
     	}
+    }
+
+    public static void setDefaultLocation(Component relativeTo) {
+    	CONSOLE.consoleFrame.setLocationRelativeTo(relativeTo);
     }
 
     public static void addConsoleMenu(final JMenuBar menuBar) {
