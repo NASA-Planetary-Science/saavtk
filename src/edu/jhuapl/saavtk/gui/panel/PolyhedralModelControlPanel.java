@@ -61,10 +61,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
     private JRadioButton standardColoringButton;
     private JRadioButton rgbColoringButton;
     private ButtonGroup coloringButtonGroup;
-    private JComboBox coloringComboBox;
-    private JComboBox customColorRedComboBox;
-    private JComboBox customColorGreenComboBox;
-    private JComboBox customColorBlueComboBox;
+    private JComboBox<String> coloringComboBox;
+    private JComboBox<String> customColorRedComboBox;
+    private JComboBox<String> customColorGreenComboBox;
+    private JComboBox<String> customColorBlueComboBox;
     private JLabel customColorRedLabel;
     private JLabel customColorGreenLabel;
     private JLabel customColorBlueLabel;
@@ -624,6 +624,15 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         customColorRedLabel.setEnabled(selected);
         customColorGreenLabel.setEnabled(selected);
         customColorBlueLabel.setEnabled(selected);
+
+        // Make sure *something* is selected in the RGB family if custom coloring is enabled.
+        if (selected && customColorRedComboBox.getSelectedIndex() < 1 && customColorGreenComboBox.getSelectedIndex() < 1
+        		&& customColorBlueComboBox.getSelectedIndex() < 1)
+        {
+        	// Select the 1st (or 0th) element in red.
+        	customColorRedComboBox.setSelectedIndex(Math.min(customColorRedComboBox.getItemCount() - 1, 1));
+        }
+
     }
 
     protected void setColoring()
@@ -632,29 +641,36 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
         try
         {
-        	if (standardColoringButton.isSelected() || rgbColoringButton.isSelected())
+        	if (standardColoringButton.isSelected())
         	{        	
-        		int idx=coloringComboBox.getSelectedIndex();
-        		smallBodyModel.setColoringIndex(idx);
-        		double[] range=smallBodyModel.getCurrentColoringRange(idx);
-        		colormapController.setMinMax(range[0],range[1]);
-        		range=smallBodyModel.getDefaultColoringRange(idx);
-        		colormapController.setDefaultRange(range[0], range[1]);
+        		setColoring(coloringComboBox.getSelectedIndex());
         		smallBodyModel.setColormap(colormapController.getColormap());
         		smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
         		smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
-        		colormapController.refresh();
-        		
-        		if (rgbColoringButton.isSelected())
-        		{
-        			smallBodyModel.setFalseColoring(
-        					customColorRedComboBox.getSelectedIndex(),
-        					customColorGreenComboBox.getSelectedIndex(),
-        					customColorBlueComboBox.getSelectedIndex());
-        		}
+        		colormapController.refresh();       	
+        	}
+        	else if (rgbColoringButton.isSelected())
+        	{
+        		// Subtract 1 to leave room for the blank string (no selection) at the top.
+        		int redIndex = customColorRedComboBox.getSelectedIndex() - 1;
+				int greenIndex = customColorGreenComboBox.getSelectedIndex() - 1;
+				int blueIndex = customColorBlueComboBox.getSelectedIndex() - 1;
+				if (redIndex < 0 && greenIndex < 0 && blueIndex < 0)
+				{
+	        		smallBodyModel.setColoringIndex(-1);
+	        		return;
+				}
+        		setColoring(redIndex);
+        		setColoring(greenIndex);
+        		setColoring(blueIndex);
+        		smallBodyModel.setColormap(colormapController.getColormap());
+        		smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
+        		smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
+        		colormapController.refresh();       	
+        		smallBodyModel.setFalseColoring(redIndex, greenIndex, blueIndex);
         	}
         	else
-        	{        	
+        	{
         		smallBodyModel.setColoringIndex(-1);
         	}
         }
@@ -664,6 +680,26 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         }
     }
 
+    protected void setColoring(int idx)
+    {
+        PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
+        if (idx < 0 || idx >= smallBodyModel.getColoringInfoList().size())
+        {
+        	return;
+        }
+        try
+        {
+        	smallBodyModel.setColoringIndex(idx);
+        	double[] range=smallBodyModel.getCurrentColoringRange(idx);
+        	colormapController.setMinMax(range[0],range[1]);
+        	range=smallBodyModel.getDefaultColoringRange(idx);   	
+    		colormapController.setDefaultRange(range[0], range[1]);
+        }
+        catch (IOException e)
+        {
+        	e.printStackTrace();
+        }
+    }
 
     protected void updateColoringComboBoxes()
     {
@@ -678,6 +714,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         customColorRedComboBox.removeAllItems();
         customColorGreenComboBox.removeAllItems();
         customColorBlueComboBox.removeAllItems();
+
+        customColorRedComboBox.addItem("");
+        customColorGreenComboBox.addItem("");
+        customColorBlueComboBox.addItem("");
 
         for (int i=0; i<smallBodyModel.getNumberOfColors(); ++i)
         {
