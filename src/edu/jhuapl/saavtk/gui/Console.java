@@ -104,7 +104,9 @@ public class Console {
     }
 
     public static void setDefaultLocation(Component relativeTo) {
-    	CONSOLE.consoleFrame.setLocationRelativeTo(relativeTo);
+    	if (isEnabled()) {    		
+    		CONSOLE.consoleFrame.setLocationRelativeTo(relativeTo);
+    	}
     }
 
     public static void addConsoleMenu(final JMenuBar menuBar) {
