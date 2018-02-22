@@ -912,7 +912,18 @@ public class Renderer extends JPanel implements
                 if (!smallBodyColorbar.isVisible())
                     smallBodyColorbar.setVisible(true);
                 smallBodyColorbar.setColormap(sbModel.getColormap());
-                smallBodyColorbar.setTitle(sbModel.getColoringName(sbModel.getColoringIndex()));
+                int index = sbModel.getColoringIndex();
+                String title = sbModel.getColoringName(index).trim();
+                String units = sbModel.getColoringUnits(index).trim();
+                if (units != null && !units.isEmpty())
+                {
+                	title += " (" + units + ")";
+                }
+                if (title.length() > 16)
+                {
+                	title = title.replaceAll("\\s+", "\n");
+                }
+                smallBodyColorbar.setTitle(title);
                 if (mainCanvas.getRenderer().HasViewProp(smallBodyColorbar.getActor())==0)
                     mainCanvas.getRenderer().AddActor(smallBodyColorbar.getActor());
                 smallBodyColorbar.getActor().SetNumberOfLabels(sbModel.getColormap().getNumberOfLabels());
