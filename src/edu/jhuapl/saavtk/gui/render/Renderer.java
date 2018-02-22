@@ -913,12 +913,15 @@ public class Renderer extends JPanel implements
                     smallBodyColorbar.setVisible(true);
                 smallBodyColorbar.setColormap(sbModel.getColormap());
                 int index = sbModel.getColoringIndex();
-                String title = sbModel.getColoringName(index).trim().replaceAll("\\s+", "\n");
+                String title = sbModel.getColoringName(index).trim();
                 String units = sbModel.getColoringUnits(index).trim();
                 if (units != null && !units.isEmpty())
                 {
-                	title += title.matches(".*\n.*") ? "\n" : " "; 
-                	title += "(" + units + ")";
+                	title += " (" + units + ")";
+                }
+                if (title.length() > 16)
+                {
+                	title = title.replaceAll("\\s+", "\n");
                 }
                 smallBodyColorbar.setTitle(title);
                 if (mainCanvas.getRenderer().HasViewProp(smallBodyColorbar.getActor())==0)
