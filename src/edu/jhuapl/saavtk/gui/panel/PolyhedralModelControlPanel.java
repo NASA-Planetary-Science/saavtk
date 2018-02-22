@@ -646,7 +646,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         		int redIndex = customColorRedComboBox.getSelectedIndex() - 1;
 				int greenIndex = customColorGreenComboBox.getSelectedIndex() - 1;
 				int blueIndex = customColorBlueComboBox.getSelectedIndex() - 1;
-				if (redIndex < 0 || greenIndex < 0 || blueIndex < 0)
+				if (redIndex < 0 && greenIndex < 0 && blueIndex < 0)
 				{
 	        		smallBodyModel.setColoringIndex(-1);
 	        		return;
@@ -658,7 +658,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         		smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
         		smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
         		colormapController.refresh();       	
-       		smallBodyModel.setFalseColoring(redIndex, greenIndex, blueIndex);
+        		smallBodyModel.setFalseColoring(redIndex, greenIndex, blueIndex);
         	}
         	else
         	{
