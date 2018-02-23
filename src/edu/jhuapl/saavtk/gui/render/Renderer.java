@@ -960,7 +960,8 @@ public class Renderer extends JPanel implements
 
     public void setInteractorStyleToDefault()
     {
-        mainCanvas.setInteractorStyle(defaultInteractorStyle);
+//        mainCanvas.setInteractorStyle(defaultInteractorStyle);
+        mainCanvas.setInteractorStyleToDefault();
   //      if (mirrorFrameOpen)
   //      {
 //            mirrorCanvas.setInteractorStyle(defaultInteractorStyle);
