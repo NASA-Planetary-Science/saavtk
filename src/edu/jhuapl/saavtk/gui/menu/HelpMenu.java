@@ -128,7 +128,7 @@ public class HelpMenu extends JMenu
     {
         public ShowTutorialAction()
         {
-            super("Tutorial");
+            super("Tutorials");
         }
 
         public void actionPerformed(ActionEvent actionEvent)
