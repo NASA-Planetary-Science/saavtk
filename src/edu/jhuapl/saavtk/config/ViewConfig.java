@@ -162,6 +162,8 @@ public abstract class ViewConfig implements Cloneable
          return null;
      }
 
-
-
+     @Override
+     public String toString() {
+    	 return getUniqueName();
+     }
 }

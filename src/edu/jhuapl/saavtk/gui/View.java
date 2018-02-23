@@ -340,4 +340,12 @@ public abstract class View extends JPanel
     }
 
     protected abstract void setupPickManager();
+
+    @Override
+    public String toString() {
+    	if (config != null) {
+    		return "View of " + config.toString();
+    	}
+    	return "View of (null)";
+    }
 }
