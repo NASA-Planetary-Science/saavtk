@@ -73,6 +73,7 @@ import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas.StereoMode;
 import edu.jhuapl.saavtk.gui.render.camera.CameraFrame;
+import edu.jhuapl.saavtk.gui.render.camera.CameraProperties;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.Model;
@@ -421,6 +422,7 @@ public class Renderer extends JPanel implements
     {
         hideLODs();
         occludeLabels();
+        updateImageOffsets();
     }
     
     public void occludeLabels()
@@ -451,6 +453,11 @@ public class Renderer extends JPanel implements
         		        		
         	}
 
+    }
+
+    public void updateImageOffsets() {
+    	double distance = getCameraDistance();
+    	firePropertyChange(CameraProperties.CAMERA_DISTANCE, 0., distance);
     }
 
     public void saveToFile()
