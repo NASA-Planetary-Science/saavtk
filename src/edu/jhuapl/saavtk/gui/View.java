@@ -335,8 +335,10 @@ public abstract class View extends JPanel
 
     protected void setupRenderer()
     {
-        //renderer = new Renderer(modelManager);
-        setRenderer(new Renderer(getModelManager(), getStatusBar()));
+    	ModelManager manager = getModelManager();
+        Renderer renderer = new Renderer(manager, getStatusBar());
+        renderer.addPropertyChangeListener(manager);
+        setRenderer(renderer);
     }
 
     protected abstract void setupPickManager();
