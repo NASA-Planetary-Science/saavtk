@@ -250,6 +250,7 @@ public class Renderer extends JPanel implements
     }
     
     RenderToolbar toolbar;
+	private double cameraDistance;
     
     public Renderer(final ModelManager modelManager)
     {
@@ -456,8 +457,13 @@ public class Renderer extends JPanel implements
     }
 
     public void updateImageOffsets() {
-    	double distance = getCameraDistance();
-    	firePropertyChange(CameraProperties.CAMERA_DISTANCE, 0., distance);
+    	double oldDistance = this.cameraDistance;
+    	double newDistance = getCameraDistance();
+    	this.cameraDistance = newDistance;
+    	if (newDistance != oldDistance)
+    	{
+    		firePropertyChange(CameraProperties.CAMERA_DISTANCE, oldDistance, newDistance);    		
+    	}
     }
 
     public void saveToFile()
