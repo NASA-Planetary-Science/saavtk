@@ -24,12 +24,15 @@ import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarListener;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent.ConstrainRotationAxisEvent;
 import vtk.vtkActor;
+import vtk.vtkActorCollection;
 import vtk.vtkAxes;
 import vtk.vtkConeSource;
 import vtk.vtkCoordinate;
+import vtk.vtkCubeAxesActor2D;
 import vtk.vtkNativeLibrary;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
+import vtk.vtkPropCollection;
 import vtk.vtkRenderer;
 import vtk.vtkTransform;
 import vtk.rendering.vtkEventInterceptor;
@@ -48,6 +51,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 	vtkRenderer propRenderer;
 
 	Axes axes=new Axes();
+	vtkCubeAxesActor2D cubeActor=new vtkCubeAxesActor2D();
 
 	public RenderPanel(RenderToolbar toolbar)//, RenderStatusBar statusBar)
 	{
@@ -69,12 +73,26 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		axesRenderer.AddActor(axes.getLabelActorY());
 		axesRenderer.AddActor(axes.getLabelActorZ());
 		axesRenderer.SetActiveCamera(getActiveCamera());
+		
+		cubeActor.SetCamera(getActiveCamera());
+		cubeActor.SetFlyModeToClosestTriad();
+		cubeActor.ScalingOn();
+		cubeActor.SetFontFactor(2);
+		cubeActor.SetVisibility(0);
+		getRenderer().AddViewProp(cubeActor);
 
 		cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this, "redrawAxes");
 		redrawAxes();
 		
 		getComponent().addComponentListener(this);
 	}
+	
+/*	public double[] computeBoundsOfVisibleActors()
+	{
+		for (int i=0; i<getRenderer().GetNumberOfPropsRendered(); i++)
+		{
+		}
+	}*/
 	
 	public void setInteractorStyleToDefault() {
 		
@@ -158,12 +176,22 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 			axes.setVisible(((RenderToolbarEvent.ToggleAxesVisibilityEvent) event).show());
 			super.Render();
 		}
+		else if (event instanceof RenderToolbarEvent.ToggleOriginVisibilityEvent)
+		{
+			cubeActor.SetBounds(renderer.ComputeVisiblePropBounds());
+			cubeActor.SetVisibility(((RenderToolbarEvent.ToggleOriginVisibilityEvent)event).show()?1:0);
+			System.out.println(cubeActor.GetVisibility()+" "+Arrays.toString(cubeActor.GetBounds()));
+			System.out.println(renderer.HasViewProp(cubeActor));
+			super.Render();
+		}
 		viewCamera.addCameraListener(this);
 		cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this, "redrawAxes");
 //		redrawAxes();
 		Render();
 		
 	}
+	
+	
 	
 	public void viewAll()
 	{

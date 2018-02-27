@@ -45,6 +45,8 @@ public class RenderToolbar extends JToolBar implements ItemListener, ActionListe
 	JToggleButton				constrainRotationZButton		= new JToggleButton();
 	protected final ButtonGroup	constrainRotationButtonGroup	= new UnselectableButtonGroup();
 
+	JToggleButton				showOriginButton		= new JToggleButton();
+
 	ImageIcon					constrainRotationXIcon			= new ImageIcon(
 			RenderToolbar.class.getResource("lock-orientation-x.png"));
 	ImageIcon					constrainRotationYIcon			= new ImageIcon(
@@ -154,6 +156,11 @@ public class RenderToolbar extends JToolBar implements ItemListener, ActionListe
 		showOrientationAxesToggleButton.addItemListener(this);
 		showOrientationAxesToggleButton.setSelected(false);
 
+		showOriginButton.setText("<html><center><b>Cube<br>Axes</b></center></html>");
+		add(showOriginButton);
+		showOriginButton.addItemListener(this);;
+		showOriginButton.setSelected(false);
+		
 		pickRotationCenterButton.setIcon(pickRotationIcon);
 		add(pickRotationCenterButton);
 		pickRotationCenterButton.addItemListener(this);
@@ -240,6 +247,8 @@ public class RenderToolbar extends JToolBar implements ItemListener, ActionListe
 		{
 			fire(new RenderToolbarEvent.ToggleAxesVisibilityEvent(this, showOrientationAxesToggleButton.isSelected()));
 		}
+		else if (e.getSource() == showOriginButton)
+			fire (new RenderToolbarEvent.ToggleOriginVisibilityEvent(this, showOriginButton.isSelected()));
 
 	}
 
