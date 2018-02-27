@@ -294,7 +294,7 @@ public class Renderer extends JPanel implements
         mainCanvas.getRenderWindowInteractor().AddObserver("InteractionEvent", this, "duringInteraction");
         mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
         
-//        smallBodyColorbar=new Colorbar(this);
+        smallBodyColorbar=new Colorbar(this);
 
         initOrientationAxes();
 
@@ -918,7 +918,7 @@ public class Renderer extends JPanel implements
         if (e.getPropertyName().equals(Properties.MODEL_CHANGED))
         {
             this.setProps(modelManager.getProps());
-            if (smallBodyColorbar == null) return;
+
             PolyhedralModel sbModel=(PolyhedralModel)modelManager.getModel(ModelNames.SMALL_BODY);
             if (sbModel.isColoringDataAvailable() && sbModel.getColoringIndex()>=0)
             {
