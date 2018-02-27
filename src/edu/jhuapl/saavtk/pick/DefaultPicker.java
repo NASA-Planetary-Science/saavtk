@@ -476,6 +476,8 @@ public class DefaultPicker extends Picker
 
                     renWin.resetCameraClippingRange();
                     renWin.Render();*/
+                    renWin.Render();
+                    showPositionInfoInStatusBar(me);
                 }
             }
         }
@@ -487,31 +489,23 @@ public class DefaultPicker extends Picker
         	{
         		return;
         	}
-            Vector3D vPos = new Vector3D(lastClickedPosition);
-            Vector3D vNorm = new Vector3D(lastClickedNormal);
+            Vector3D flyToPos = new Vector3D(lastClickedPosition);
+            Vector3D flyToNorm = new Vector3D(lastClickedNormal);
+            double flyToRange = flyToPos.getNorm();
             
             vtkCamera camera = renderer.getRenderWindowPanel().getActiveCamera();
+            Vector3D cPos = new Vector3D(camera.GetPosition());
+            double cRange = cPos.getNorm();
+
+            // Use law of cosines based on the current camera position and the fly-to position
+            // to determine how far above the new spot to put the camera.
+            double newAltitude = Math.sqrt(Math.abs(cRange * cRange + flyToRange * flyToRange - 2 * flyToPos.dotProduct(cPos)));
+
             camera.SetFocalPoint(lastClickedPosition);
-            camera.SetPosition(vPos.add(vNorm.scalarMultiply(vPos.getNorm())).toArray());
-
-            Point pt = renWin.getComponent().getMousePosition();
-            if (pt != null)
-            {
-                // The call to doPick requires a MouseEvent, so create one here
-                MouseEvent me = new MouseEvent(e.getComponent(), e.getID(), e.getWhen(),
-                        e.getModifiers(),
-                        pt.x, pt.y,
-                        0, false);
-
-                int pickSucceeded = doPick(me, allPropsCellPicker, renWin);
-                if (pickSucceeded == 1)
-                {
-                	showPositionInfoInStatusBar(me);	
-                }
-                
-            }
+            camera.SetPosition(flyToPos.add(flyToNorm.scalarMultiply(newAltitude)).toArray());
 
             renWin.Render();
+            updatePositionInfoInStatusBar(e);
        }
         else if (keyCode == KeyEvent.VK_X ||
                  keyCode == KeyEvent.VK_Y ||
@@ -531,6 +525,7 @@ public class DefaultPicker extends Picker
                 renderer.setCameraOrientationInDirectionOfAxis(AxisType.NEGATIVE_Z, true);
             else if ('z' == keyChar)
                 renderer.setCameraOrientationInDirectionOfAxis(AxisType.POSITIVE_Z, true);
+            updatePositionInfoInStatusBar(e);
         }
         else if (keyCode == KeyEvent.VK_N)
         {
@@ -562,6 +557,7 @@ public class DefaultPicker extends Picker
             renderer.setCameraOrientationInDirectionOfAxis(AxisType.NEGATIVE_Z, true);
         	renWin.resetCamera();
         	renWin.Render();
+            updatePositionInfoInStatusBar(e);
         }
         else if (keyCode == KeyEvent.VK_S)
         {
@@ -575,4 +571,17 @@ public class DefaultPicker extends Picker
         }
     }
 
+    private void updatePositionInfoInStatusBar(KeyEvent e) {
+        Point pt = renWin.getComponent().getMousePosition();
+        if (pt == null)
+        {
+        	pt = new Point(-1, -1);
+        }
+        MouseEvent me = new MouseEvent(e.getComponent(), e.getID(), e.getWhen(),
+                e.getModifiers(),
+                pt.x, pt.y,
+                0, false);
+
+        showPositionInfoInStatusBar(me);	
+    }
 }
