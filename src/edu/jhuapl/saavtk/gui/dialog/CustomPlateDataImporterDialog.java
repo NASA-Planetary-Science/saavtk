@@ -24,6 +24,10 @@ import javax.swing.JOptionPane;
 import edu.jhuapl.saavtk.model.ColoringInfo;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.PolyhedralModel.Format;
+import nom.tam.fits.AsciiTableHDU;
+import nom.tam.fits.BasicHDU;
+import nom.tam.fits.BinaryTableHDU;
+import nom.tam.fits.Fits;
 
 
 public class CustomPlateDataImporterDialog extends javax.swing.JDialog
@@ -64,6 +68,11 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
      */
     public ColoringInfo getCellDataInfo()
     {
+    	String errorString = validateInput();
+    	if (errorString != null)
+    	{
+    		throw new RuntimeException(errorString);
+    	}
         ColoringInfo info = new ColoringInfo();
         info.builtIn = false;
         info.coloringFile = cellDataPathTextField.getText();
@@ -175,7 +184,45 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
     protected String validateFitsFile(String filename)
     {
-        String result = "Ancillary FITS file reading not available yet";
+        String result = null;
+
+        try {
+            Fits fits = new Fits(filename);
+            BasicHDU[] hdus = fits.read();
+            int nhdus = fits.getNumberOfHDUs();
+            if (nhdus != 2)
+                return "FITS Ancillary File has improper number of HDUs";
+
+                BasicHDU hdu = fits.getHDU(1);
+                 if (hdu instanceof AsciiTableHDU)
+                {
+                    AsciiTableHDU athdu = (AsciiTableHDU)hdu;
+                    int ncols = athdu.getNCols();
+                    if (ncols <= PolyhedralModel.FITS_SCALAR_COLUMN_INDEX)
+                        return "FITS Ancillary File Has Insufficient Columns";
+
+//                    for (int k=0; k<ncols; k++)
+//                        System.out.print(athdu.getColumnName(k) + ", ");
+//
+//                    String scalarHeader = athdu.getColumnName(SmallBodyModel.FITS_SCALAR_COLUMN_INDEX);
+//                    float[] scalars = (float[])athdu.getColumn(FITS_SCALAR_COLUMN_INDEX);
+//                    for (int j=0; j<10; j++)
+//                    {
+//                        System.out.println("Value " + j + ": " + scalars[j]);
+//                    }
+                }
+                else if (hdu instanceof BinaryTableHDU)
+                {
+                    BinaryTableHDU bthdu = (BinaryTableHDU)hdu;
+                    int ncols = bthdu.getNCols();
+                    if (ncols <= PolyhedralModel.FITS_SCALAR_COLUMN_INDEX)
+                        return "FITS Ancillary File Has Insufficient Columns";
+                }
+                else
+                    return "FITS Ancillary File doesn't have an Ascii Table HDU";
+
+        } catch (Exception e) { return "Error Parsing FITS Ancillary File"; }
+
         return result;
     }
 
