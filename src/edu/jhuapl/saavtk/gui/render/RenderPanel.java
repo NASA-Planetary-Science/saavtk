@@ -33,6 +33,7 @@ import vtk.vtkPolyDataMapper;
 import vtk.vtkRenderer;
 import vtk.vtkTransform;
 import vtk.rendering.vtkEventInterceptor;
+import vtk.rendering.vtkInteractorForwarder;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 public class RenderPanel extends vtkJoglPanelComponent implements CameraListener, RenderToolbarListener, ComponentListener
@@ -40,6 +41,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 	Camera					viewCamera;
 	RenderToolbar			toolbar	= null;
 	CustomInteractorStyle	interactorStyle;
+	CustomInteractorStyle 	defaultInteractorStyle;
 
 	int cameraObserver;
 	vtkRenderer axesRenderer=new vtkRenderer();
@@ -51,6 +53,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 	{
 		getInteractorForwarder().setEventInterceptor(new Interceptor());
 		interactorStyle = new CustomInteractorStyle(getRenderWindowInteractor());
+		defaultInteractorStyle = interactorStyle;
 		viewCamera = new RenderPanelCamera(this);
 		viewCamera.addCameraListener(this);
 		toolbar.addToolbarListener(this);
@@ -73,6 +76,31 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		getComponent().addComponentListener(this);
 	}
 	
+	public void setInteractorStyleToDefault() {
+		
+		if (this.windowInteractor != null) {
+		      this.lock.lock();
+		      this.windowInteractor.SetInteractorStyle(defaultInteractorStyle);
+		      this.lock.unlock();
+		    }
+	}
+	
+	public void mouseOff()
+	{
+	    vtkInteractorForwarder forwarder = this.getInteractorForwarder();
+	    this.uiComponent.removeMouseListener(forwarder);
+	    this.uiComponent.removeMouseMotionListener(forwarder);
+	    this.uiComponent.removeMouseWheelListener(forwarder);
+	}
+	
+	public void mouseOn()
+	{
+	    vtkInteractorForwarder forwarder = this.getInteractorForwarder();
+	    this.uiComponent.addMouseListener(forwarder);
+	    this.uiComponent.addMouseMotionListener(forwarder);
+	    this.uiComponent.addMouseWheelListener(forwarder);
+	}
+
 	@Override
 	public void componentHidden(ComponentEvent e)
 	{
@@ -90,7 +118,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 	@Override
 	public void componentResized(ComponentEvent e)
 	{
-		redrawAxes();
+//		redrawAxes();
 		Render();
 	}
 
@@ -104,7 +132,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 	@Override
 	public void handle(CameraEvent event)
 	{
-		redrawAxes();
+//		redrawAxes();
 		Render();
 	}
 
@@ -124,21 +152,32 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 			viewCamera.setUpUnit(direction.getUpUnit());
 		} else if (event instanceof RenderToolbarEvent.ViewAllEvent)
 		{
-			boolean showAxes=axes.isVisible();
-			axes.setVisible(false);
-			getRenderer().ResetCamera();
-			axes.setVisible(showAxes);
-			Render();
+			viewAll();
 		} else if (event instanceof RenderToolbarEvent.ToggleAxesVisibilityEvent)
 		{
 			axes.setVisible(((RenderToolbarEvent.ToggleAxesVisibilityEvent) event).show());
-			Render();
+			super.Render();
 		}
 		viewCamera.addCameraListener(this);
 		cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this, "redrawAxes");
-		redrawAxes();
+//		redrawAxes();
 		Render();
 		
+	}
+	
+	public void viewAll()
+	{
+		boolean showAxes=axes.isVisible();
+		axes.setVisible(false);
+		getRenderer().ResetCamera();
+		axes.setVisible(showAxes);
+		super.Render();
+	}
+
+	@Override
+	public void Render() {
+		redrawAxes();
+		super.Render();
 	}
 
 	public static void main(String[] args) throws InterruptedException

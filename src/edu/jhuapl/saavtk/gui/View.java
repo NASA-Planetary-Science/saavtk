@@ -238,6 +238,8 @@ public abstract class View extends JPanel
 
         this.add(splitPane, BorderLayout.CENTER);
 
+        renderer.getRenderWindowPanel().resetCamera();
+
         initialized = true;
     }
 
@@ -333,9 +335,19 @@ public abstract class View extends JPanel
 
     protected void setupRenderer()
     {
-        //renderer = new Renderer(modelManager);
-        setRenderer(new Renderer(getModelManager(), getStatusBar()));
+    	ModelManager manager = getModelManager();
+        Renderer renderer = new Renderer(manager, getStatusBar());
+        renderer.addPropertyChangeListener(manager);
+        setRenderer(renderer);
     }
 
     protected abstract void setupPickManager();
+
+    @Override
+    public String toString() {
+    	if (config != null) {
+    		return "View of " + config.toString();
+    	}
+    	return "View of (null)";
+    }
 }

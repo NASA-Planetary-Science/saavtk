@@ -14,6 +14,7 @@ import edu.jhuapl.saavtk.util.Configuration;
 public class HelpMenu extends JMenu
 {
     private JPanel rootPanel;
+    protected JMenuItem dataSourceMenuItem;
 
     protected JPanel getRootPanel()
     {
@@ -28,8 +29,8 @@ public class HelpMenu extends JMenu
         JMenuItem mi = new JMenuItem(new ShowHelpContentsAction());
         this.add(mi);
 
-        mi = new JMenuItem(new ShowSourceOfDataAction());
-        this.add(mi);
+        dataSourceMenuItem = new JMenuItem(new ShowSourceOfDataAction());
+        this.add(dataSourceMenuItem);
 
         if (Configuration.isAPLVersion())
         {
@@ -115,7 +116,7 @@ public class HelpMenu extends JMenu
     {
         public ShowRecentChangesAction()
         {
-            super("Recent Changes");
+            super("Release Notes");
         }
 
         public void actionPerformed(ActionEvent actionEvent)
@@ -128,7 +129,7 @@ public class HelpMenu extends JMenu
     {
         public ShowTutorialAction()
         {
-            super("Tutorial");
+            super("Tutorials");
         }
 
         public void actionPerformed(ActionEvent actionEvent)

@@ -72,6 +72,7 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
         latitudeSpacing = 10.;    
     	showGraticule = false;
     	showCaptions = false;
+    	actor.GetProperty().SetColor(0.2, 0.2, 0.2);
     }
 
     public void setShiftFactor(double factor)
@@ -230,6 +231,7 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 
 			}
 		}
+		mapper.ScalarVisibilityOff();
 		actors.add(actor);
 		actors.addAll(captionActors);
     }
@@ -263,7 +265,7 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
     		mapper.Update();
 
     		actor.SetMapper(mapper);
-    		actor.GetProperty().SetColor(0.2, 0.2, 0.2);
+//    		actor.GetProperty().SetColor(0.2, 0.2, 0.2);
 
     	} else {
     		actors.clear();

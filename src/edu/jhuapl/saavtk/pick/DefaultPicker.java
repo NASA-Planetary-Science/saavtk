@@ -1,8 +1,6 @@
 package edu.jhuapl.saavtk.pick;
 
 import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.InputEvent;
@@ -13,9 +11,7 @@ import java.beans.PropertyChangeEvent;
 import java.text.DecimalFormat;
 import java.util.List;
 
-import javax.swing.Timer;
-
-import java.util.List;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import vtk.vtkActor;
 import vtk.vtkCamera;
@@ -25,7 +21,6 @@ import vtk.vtkPropCollection;
 import vtk.vtkRenderer;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 import edu.jhuapl.saavtk.gui.StatusBar;
-import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.model.Model;
@@ -52,6 +47,8 @@ public class DefaultPicker extends Picker
     private DecimalFormat decimalFormatter = new DecimalFormat("##0.000");
     private DecimalFormat decimalFormatter2 = new DecimalFormat("#0.000");
     private boolean suppressPopups = false;
+	private double[] lastClickedPosition = null;
+	private double[] lastClickedNormal = null;
 
     public DefaultPicker(
             Renderer renderer,
@@ -219,7 +216,9 @@ public class DefaultPicker extends Picker
 
             if (pickSucceeded == 1)
             {
-                double[] p = smallBodyCellPicker.GetPickPosition();
+            	double[] p = smallBodyCellPicker.GetPickPosition();
+            	lastClickedPosition = p;
+            	lastClickedNormal = smallBodyCellPicker.GetPickNormal();
 //                System.out.println(p[0] + " " + p[1] + " " + p[2]);
                 System.out.println(p[0] + " " + p[1] + " " + p[2]);
             }
@@ -477,9 +476,37 @@ public class DefaultPicker extends Picker
 
                     renWin.resetCameraClippingRange();
                     renWin.Render();*/
+                    renWin.Render();
+                    showPositionInfoInStatusBar(me);
                 }
             }
         }
+        else if (keyCode == KeyEvent.VK_F)
+        {
+        	// "Fly-to." Focus on the last clicked position, and move the camera to a point directly
+        	// above it, along the normal at the last clicked position.
+        	if (lastClickedPosition == null || lastClickedNormal == null)
+        	{
+        		return;
+        	}
+            Vector3D flyToPos = new Vector3D(lastClickedPosition);
+            Vector3D flyToNorm = new Vector3D(lastClickedNormal);
+            double flyToRange = flyToPos.getNorm();
+            
+            vtkCamera camera = renderer.getRenderWindowPanel().getActiveCamera();
+            Vector3D cPos = new Vector3D(camera.GetPosition());
+            double cRange = cPos.getNorm();
+
+            // Use law of cosines based on the current camera position and the fly-to position
+            // to determine how far above the new spot to put the camera.
+            double newAltitude = Math.sqrt(Math.abs(cRange * cRange + flyToRange * flyToRange - 2 * flyToPos.dotProduct(cPos)));
+
+            camera.SetFocalPoint(lastClickedPosition);
+            camera.SetPosition(flyToPos.add(flyToNorm.scalarMultiply(newAltitude)).toArray());
+
+            renWin.Render();
+            updatePositionInfoInStatusBar(e);
+       }
         else if (keyCode == KeyEvent.VK_X ||
                  keyCode == KeyEvent.VK_Y ||
                  keyCode == KeyEvent.VK_Z)
@@ -498,6 +525,7 @@ public class DefaultPicker extends Picker
                 renderer.setCameraOrientationInDirectionOfAxis(AxisType.NEGATIVE_Z, true);
             else if ('z' == keyChar)
                 renderer.setCameraOrientationInDirectionOfAxis(AxisType.POSITIVE_Z, true);
+            updatePositionInfoInStatusBar(e);
         }
         else if (keyCode == KeyEvent.VK_N)
         {
@@ -526,7 +554,10 @@ public class DefaultPicker extends Picker
         }
         else if (keyCode == KeyEvent.VK_R)
         {
-        	// TODO code "reset".
+            renderer.setCameraOrientationInDirectionOfAxis(AxisType.NEGATIVE_Z, true);
+        	renWin.resetCamera();
+        	renWin.Render();
+            updatePositionInfoInStatusBar(e);
         }
         else if (keyCode == KeyEvent.VK_S)
         {
@@ -540,4 +571,17 @@ public class DefaultPicker extends Picker
         }
     }
 
+    private void updatePositionInfoInStatusBar(KeyEvent e) {
+        Point pt = renWin.getComponent().getMousePosition();
+        if (pt == null)
+        {
+        	pt = new Point(-1, -1);
+        }
+        MouseEvent me = new MouseEvent(e.getComponent(), e.getID(), e.getWhen(),
+                e.getModifiers(),
+                pt.x, pt.y,
+                0, false);
+
+        showPositionInfoInStatusBar(me);	
+    }
 }

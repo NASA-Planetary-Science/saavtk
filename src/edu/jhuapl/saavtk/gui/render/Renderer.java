@@ -73,6 +73,7 @@ import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas.StereoMode;
 import edu.jhuapl.saavtk.gui.render.camera.CameraFrame;
+import edu.jhuapl.saavtk.gui.render.camera.CameraProperties;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.Model;
@@ -249,6 +250,7 @@ public class Renderer extends JPanel implements
     }
     
     RenderToolbar toolbar;
+	private double cameraDistance;
     
     public Renderer(final ModelManager modelManager)
     {
@@ -288,9 +290,9 @@ public class Renderer extends JPanel implements
   //      mainCanvas.getRenderWindowInteractor().AddObserver("TimerEvent", this, "checkStereoModeSynchronization");
 
         // Setup observers for start/stop interaction events
-      //  mainCanvas.getRenderWindowInteractor().AddObserver("StartInteractionEvent", this, "onStartInteraction");
-      //  mainCanvas.getRenderWindowInteractor().AddObserver("InteractionEvent", this, "duringInteraction");
-      //  mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
+        mainCanvas.getRenderWindowInteractor().AddObserver("StartInteractionEvent", this, "onStartInteraction");
+        mainCanvas.getRenderWindowInteractor().AddObserver("InteractionEvent", this, "duringInteraction");
+        mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
         
 //        smallBodyColorbar=new Colorbar(this);
 
@@ -421,6 +423,7 @@ public class Renderer extends JPanel implements
     {
         hideLODs();
         occludeLabels();
+        updateImageOffsets();
     }
     
     public void occludeLabels()
@@ -451,6 +454,16 @@ public class Renderer extends JPanel implements
         		        		
         	}
 
+    }
+
+    public void updateImageOffsets() {
+    	double oldDistance = this.cameraDistance;
+    	double newDistance = getCameraDistance();
+    	this.cameraDistance = newDistance;
+    	if (newDistance != oldDistance)
+    	{
+    		firePropertyChange(CameraProperties.CAMERA_DISTANCE, oldDistance, newDistance);    		
+    	}
     }
 
     public void saveToFile()
@@ -517,7 +530,7 @@ public class Renderer extends JPanel implements
         {
             File f = sixFiles[i];
             AxisType at = sixAxes[i];
-            CameraFrame frame = createCameraFrameInDirectionOfAxis(at, true, f, 2000);
+            CameraFrame frame = createCameraFrameInDirectionOfAxis(at, true, f, 1);
             cameraFrameQueue.add(frame);
         }
 
@@ -906,22 +919,30 @@ public class Renderer extends JPanel implements
         {
             this.setProps(modelManager.getProps());
             
-            if (smallBodyColorbar != null)
+            PolyhedralModel sbModel=(PolyhedralModel)modelManager.getModel(ModelNames.SMALL_BODY);
+            if (sbModel.isColoringDataAvailable() && sbModel.getColoringIndex()>=0)
             {
-	            PolyhedralModel sbModel=(PolyhedralModel)modelManager.getModel(ModelNames.SMALL_BODY);
-	            if (sbModel.isColoringDataAvailable() && sbModel.getColoringIndex()>=0)
-	            {
-	                if (!smallBodyColorbar.isVisible())
-	                    smallBodyColorbar.setVisible(true);
-	                smallBodyColorbar.setColormap(sbModel.getColormap());
-	                smallBodyColorbar.setTitle(sbModel.getColoringName(sbModel.getColoringIndex()));
-	                if (mainCanvas.getRenderer().HasViewProp(smallBodyColorbar.getActor())==0)
-	                    mainCanvas.getRenderer().AddActor(smallBodyColorbar.getActor());
-	                smallBodyColorbar.getActor().SetNumberOfLabels(sbModel.getColormap().getNumberOfLabels());
-	            }
-	            else
-	                smallBodyColorbar.setVisible(false);
+                if (!smallBodyColorbar.isVisible())
+                    smallBodyColorbar.setVisible(true);
+                smallBodyColorbar.setColormap(sbModel.getColormap());
+                int index = sbModel.getColoringIndex();
+                String title = sbModel.getColoringName(index).trim();
+                String units = sbModel.getColoringUnits(index).trim();
+                if (units != null && !units.isEmpty())
+                {
+                	title += " (" + units + ")";
+                }
+                if (title.length() > 16)
+                {
+                	title = title.replaceAll("\\s+", "\n");
+                }
+                smallBodyColorbar.setTitle(title);
+                if (mainCanvas.getRenderer().HasViewProp(smallBodyColorbar.getActor())==0)
+                    mainCanvas.getRenderer().AddActor(smallBodyColorbar.getActor());
+                smallBodyColorbar.getActor().SetNumberOfLabels(sbModel.getColormap().getNumberOfLabels());
             }
+            else
+                smallBodyColorbar.setVisible(false);
 
         }
         else
@@ -952,7 +973,8 @@ public class Renderer extends JPanel implements
 
     public void setInteractorStyleToDefault()
     {
-        mainCanvas.setInteractorStyle(defaultInteractorStyle);
+//        mainCanvas.setInteractorStyle(defaultInteractorStyle);
+        mainCanvas.setInteractorStyleToDefault();
   //      if (mirrorFrameOpen)
   //      {
 //            mirrorCanvas.setInteractorStyle(defaultInteractorStyle);
@@ -1305,6 +1327,16 @@ public class Renderer extends JPanel implements
     {
         return axes.GetConeRadius();
     }
+    
+    public int getPanelWidth()
+    {
+    		return mainCanvas.getComponent().getWidth();
+    }
+    
+    public int getPanelHeight()
+    {
+    		return mainCanvas.getComponent().getHeight();
+    }
 
     public static void saveToFile(File file, vtkJoglPanelComponent renWin)
     {
@@ -1403,6 +1435,12 @@ public class Renderer extends JPanel implements
     public GenericPolyhedralModel getGenericPolyhedralModel(){
       return (GenericPolyhedralModel) modelManager.getPolyhedralModel();
   }
+    
+    public void setMouseEnabled(boolean enabled)
+    {
+    		if (enabled) mainCanvas.mouseOn();
+    		else mainCanvas.mouseOff();
+    }
 
 
     public void setViewPointLatLong()//LatLon viewPoint)
