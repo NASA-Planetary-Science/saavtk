@@ -129,9 +129,32 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 
                 addMenuItem(mi, smallBodyConfig);
         }
+
+        setSubMenuEnabledState(this);
+        // This very top menu should always be enabled.
+        this.setEnabled(true);
     }
 
-    protected void addMenuItem(JMenuItem mi, ViewConfig config)
+    // If any sub-menu is enabled, enable the menu as well.
+    // If no sub-menu is enabled, disable the top menu.
+    protected boolean setSubMenuEnabledState(JMenu menu) {
+    	boolean enable = false;
+    	for (Component component : menu.getMenuComponents())
+    	{
+    		if (component instanceof JMenu)
+    		{
+    			enable |= setSubMenuEnabledState((JMenu) component);
+    		}
+    		else if (component instanceof JMenuItem)
+    		{
+    			enable |= component.isEnabled();
+    		}
+    	}
+    	menu.setEnabled(enable);
+    	return enable;
+	}
+
+	protected void addMenuItem(JMenuItem mi, ViewConfig config)
     {
          add(mi);
     }
