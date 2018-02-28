@@ -918,7 +918,7 @@ public class Renderer extends JPanel implements
         if (e.getPropertyName().equals(Properties.MODEL_CHANGED))
         {
             this.setProps(modelManager.getProps());
-            
+
             PolyhedralModel sbModel=(PolyhedralModel)modelManager.getModel(ModelNames.SMALL_BODY);
             if (sbModel.isColoringDataAvailable() && sbModel.getColoringIndex()>=0)
             {
