@@ -73,7 +73,7 @@ public class RecentlyViewed extends JMenu
         {
         	for(int i=0;i<items.size();i++)
         	{
-        		f_out.write(items.get(i).getActionCommand()+"\n");
+        		f_out.write(items.get(i).getText()+"\n");
         	}
         } catch (IOException e) {
         	e.printStackTrace();
