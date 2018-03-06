@@ -69,24 +69,14 @@ public class RecentlyViewed extends JMenu
         recentItem.setAction(new RecentAction(manager, name));
         clrItems.setAction(new ClearRecentsAction(manager, "Remove all recents"));
         add(clrItems);
-        try{
-            FileWriter f_out=new FileWriter(Configuration.getApplicationDataDir()+File.separator+"recents.txt", false);
-            f_out.write("");
-            f_out.close();
-
-        }catch(IOException e){
-            System.exit(-1);
-        }
-        for(int i=0;i<items.size();i++)
+        try (FileWriter f_out=new FileWriter(Configuration.getApplicationDataDir()+File.separator+"recents.txt", false))
         {
-            try{
-                FileWriter f_out=new FileWriter(Configuration.getApplicationDataDir()+File.separator+"recents.txt", true);
-                f_out.write(items.get(i).getActionCommand()+"\n");
-                f_out.close();
-
-            }catch(IOException e){
-                System.exit(-1);
-            }
+        	for(int i=0;i<items.size();i++)
+        	{
+        		f_out.write(items.get(i).getActionCommand()+"\n");
+        	}
+        } catch (IOException e) {
+        	e.printStackTrace();
         }
     }
 
