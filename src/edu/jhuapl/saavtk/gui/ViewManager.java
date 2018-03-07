@@ -2,6 +2,8 @@ package edu.jhuapl.saavtk.gui;
 
 import java.awt.CardLayout;
 import java.awt.Frame;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -13,10 +15,16 @@ import java.util.List;
 import java.util.Scanner;
 
 import javax.swing.BorderFactory;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSeparator;
 
 import edu.jhuapl.saavtk.config.ViewConfig;
+import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
+import edu.jhuapl.saavtk.gui.menu.FileMenu;
+import edu.jhuapl.saavtk.gui.menu.HelpMenu;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.FileCache.UnauthorizedAccessException;
 
@@ -32,6 +40,11 @@ public abstract class ViewManager extends JPanel
     private static String defaultModelName=null;
     private final static Path defaultModelFile=Paths.get(Configuration.getApplicationDataDir()+File.separator+"defaultModelToLoad");
 
+    protected FileMenu fileMenu = null;
+    protected ViewMenu viewMenu = null;
+    protected HelpMenu helpMenu = null;
+    protected FavoritesMenu favoritesMenu = null;
+    protected RecentlyViewed recentsMenu = null;
 
 
     /**
@@ -55,6 +68,53 @@ public abstract class ViewManager extends JPanel
 
         // Subclass constructors should call this. It should not be called here because it is not final.
 //        setupViews();
+    }
+
+    protected void createMenus(JMenuBar menuBar)
+    {
+        fileMenu = new FileMenu(this);
+        fileMenu.setMnemonic('F');
+        menuBar.add(fileMenu);
+
+        recentsMenu = new RecentlyViewed(this);
+        viewMenu = new ViewMenu(this, recentsMenu);
+        viewMenu.setMnemonic('V');
+
+        menuBar.add(viewMenu);
+
+        favoritesMenu = new FavoritesMenu(this);
+
+        JMenuItem passwordMenu = createPasswordMenu();
+
+        viewMenu.add(new JSeparator());
+        viewMenu.add(favoritesMenu);
+        viewMenu.add(passwordMenu);
+        viewMenu.add(new JSeparator());
+        viewMenu.add(recentsMenu);
+
+        Console.addConsoleMenu(menuBar);
+
+        helpMenu = new HelpMenu(this);
+        helpMenu.setMnemonic('H');
+        menuBar.add(helpMenu);
+    }
+
+    protected JMenuItem createPasswordMenu()
+    {
+        JMenuItem updatePassword = new JMenuItem("Update Password...");
+        updatePassword.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(@SuppressWarnings("unused") ActionEvent evt)
+            {
+                try {
+					Configuration.updatePassword();
+				} catch (IOException e) {
+					e.printStackTrace();
+					JOptionPane.showMessageDialog(null, "Error trying to save user name and password.", "Unable to save changes", JOptionPane.ERROR_MESSAGE);
+				}
+            }
+        });
+        return updatePassword;
     }
 
     protected void addBuiltInView(View view)
@@ -235,7 +295,10 @@ public abstract class ViewManager extends JPanel
         try
         {
         	view.initialize();
+
+        	updateRecents();
         	currentView = view;
+        	updateRecents();
         }
         catch (UnauthorizedAccessException e)
         {
@@ -314,5 +377,13 @@ public abstract class ViewManager extends JPanel
         allViews.addAll(builtInViews);
         allViews.addAll(customViews);
         return allViews;
+    }
+
+    private void updateRecents()
+    {
+    	if (recentsMenu != null && currentView != null)
+    	{
+    		recentsMenu.updateMenu(currentView);
+    	}
     }
 }

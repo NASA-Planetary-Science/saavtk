@@ -1,14 +1,14 @@
 package edu.jhuapl.saavtk.gui;
 
 import java.awt.event.ActionEvent;
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 import javax.swing.AbstractAction;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
@@ -33,12 +33,12 @@ public class RecentlyViewed extends JMenu
         if (this.recentsFile.exists())
         {
         	// Read recents file and figure out which models it refers to.
-        	try (Scanner scan = new Scanner(this.recentsFile))
+        	try (BufferedReader reader = new BufferedReader(new FileReader(this.recentsFile)))
         	{
         		final List<View> allViews = this.manager.getAllViews();
-        		while (scan.hasNextLine() && recentViews.size() <= NUMBER_RECENTS_MAXIMUM)
+        		while (reader.ready() && recentViews.size() <= NUMBER_RECENTS_MAXIMUM)
         		{
-        			String line = scan.nextLine();
+        			String line = reader.readLine();
         			for (View view : allViews)
         			{
         				if (view.getUniqueName().equals(line) && !this.recentViews.contains(view))
@@ -50,7 +50,7 @@ public class RecentlyViewed extends JMenu
         			}
         		}
         	}
-        	catch (FileNotFoundException e)
+        	catch (IOException e)
         	{
         		e.printStackTrace();
         	}
@@ -120,7 +120,6 @@ public class RecentlyViewed extends JMenu
 		item.setAction(new AbstractAction(view.getModelDisplayName()) {
 			@Override
 			public void actionPerformed(@SuppressWarnings("unused") ActionEvent e) {
-				updateMenu(view);
 				manager.setCurrentView(view);
 			}
 		});

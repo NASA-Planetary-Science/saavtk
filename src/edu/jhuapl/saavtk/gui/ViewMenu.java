@@ -325,10 +325,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 
         public void actionPerformed(ActionEvent actionEvent)
         {
-            View currentView = rootPanel.getCurrentView();
-            viewed.updateMenu(currentView);
             getRootPanel().setCurrentView(view);
-            viewed.updateMenu(view);
         }
     }
 
