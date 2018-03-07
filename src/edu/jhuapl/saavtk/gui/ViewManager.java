@@ -151,6 +151,27 @@ public abstract class ViewManager extends JPanel
             defaultModelFile.toFile().delete();
     }
 
+    public View getView(String uniqueName)
+    {
+    	for (View view : builtInViews)
+    	{
+    		if (view.getUniqueName().equals(uniqueName))
+    		{
+    			return view;
+    		}
+    	}
+
+    	for (View view : customViews)
+    	{
+    		if (view.getUniqueName().equals(uniqueName))
+    		{
+    			return view;
+    		}    		
+    	}
+
+    	throw new IllegalArgumentException();
+    }
+
     protected void loadCustomViews(String newCustomShapeModelPath, StatusBar statusBar)
     {
         if (newCustomShapeModelPath != null)
@@ -221,7 +242,7 @@ public abstract class ViewManager extends JPanel
         	e.printStackTrace();
         	JOptionPane.showMessageDialog(null, "Access to this model is restricted. Please email sbmt@jhuapl.edu to request access.", "Access not authorized", JOptionPane.ERROR_MESSAGE);
         }
-    	frame.setTitle(view.getConfig().getPathRepresentation());
+    	frame.setTitle(view.getPathRepresentation());
     }
 
     public View getBuiltInView(int i)
