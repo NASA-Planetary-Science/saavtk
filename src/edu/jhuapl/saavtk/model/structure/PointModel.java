@@ -14,6 +14,21 @@ public class PointModel extends AbstractEllipsePolygonModel
         setInteriorOpacity(1.0);
         int[] color = {255, 0, 255};
         setDefaultColor(color);
-        setDefaultRadius(Math.round(10. * Math.sqrt(smallBodyModel.getMeanCellArea() / Math.PI)) / 10.);
+        // Size the radius relative to a circle whose area equals the mean cell area.
+        // Overall multiplier used to make the points big enough.
+        double multiplier = 2.;
+        double radius = multiplier * Math.sqrt(smallBodyModel.getMinCellArea() / Math.PI);
+        double factor = 1.;
+        if (Double.compare(radius, 0.) <= 0)
+        {
+        	throw new RuntimeException();
+        }
+        while (radius < 1.)
+        {
+        	radius *= 10.;
+        	factor *= 10.;
+        }
+        radius = Math.ceil(radius) / factor;
+        setDefaultRadius(radius);
     }
 }
