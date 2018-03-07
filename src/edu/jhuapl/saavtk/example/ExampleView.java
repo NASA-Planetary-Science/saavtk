@@ -11,6 +11,7 @@ import edu.jhuapl.saavtk.model.Graticule;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.ShapeModelBody;
 import edu.jhuapl.saavtk.model.ShapeModelType;
 import edu.jhuapl.saavtk.model.structure.CircleModel;
 import edu.jhuapl.saavtk.model.structure.CircleSelectionModel;
@@ -43,7 +44,22 @@ public class ExampleView extends View
         super(statusBar, config);
     }
 
-    public String getDisplayName()
+    /**
+     * Returns model as a path. e.g. "Asteroid > Near-Earth > Eros > Image Based > Gaskell"
+     */
+    @Override
+	public String getPathRepresentation()
+    {
+    	ViewConfig config = getConfig();
+        if (ShapeModelType.CUSTOM == config.author)
+        {
+        	return ShapeModelType.CUSTOM + " > " + config.modelLabel;
+        }
+        return "DefaultPath";
+    }
+
+    @Override
+	public String getDisplayName()
     {
         if (getConfig().author == ShapeModelType.CUSTOM)
             return getConfig().modelLabel;
@@ -56,13 +72,21 @@ public class ExampleView extends View
         }
     }
 
-    protected void setupModelManager()
+    @Override
+    public String getModelDisplayName()
+    {
+    	ShapeModelBody body = getConfig().body;
+    	return body != null ? body + " / " + getDisplayName() : getDisplayName();
+    }
+
+    @Override
+	protected void setupModelManager()
     {
         PolyhedralModel smallBodyModel = new ExamplePolyhedralModel(getConfig());
         setModelManager(new ExampleModelManager(smallBodyModel));
         Graticule graticule = new Graticule(smallBodyModel);
 
-        HashMap<ModelNames, Model> allModels = new HashMap<ModelNames, Model>();
+        HashMap<ModelNames, Model> allModels = new HashMap<>();
         allModels.put(ModelNames.SMALL_BODY, smallBodyModel);
         allModels.put(ModelNames.GRATICULE, graticule);
 
@@ -83,7 +107,8 @@ public class ExampleView extends View
         setModels(allModels);
     }
 
-    protected void setupPopupManager()
+    @Override
+	protected void setupPopupManager()
     {
         setPopupManager(new StructuresPopupManager(getModelManager(), getRenderer()));
 
@@ -95,7 +120,8 @@ public class ExampleView extends View
 //        }
     }
 
-    protected void setupTabs()
+    @Override
+	protected void setupTabs()
     {
         addTab(getConfig().getShapeModelName(), new PolyhedralModelControlPanel(getModelManager(), getConfig().getShapeModelName()));
 
@@ -125,17 +151,20 @@ public class ExampleView extends View
 
     }
 
-    protected void setupPickManager()
+    @Override
+	protected void setupPickManager()
     {
       setPickManager(new StructuresPickManager(getRenderer(), getStatusBar(), getModelManager(), getPopupManager()));
     }
 
 
-    protected void setupInfoPanelManager()
+    @Override
+	protected void setupInfoPanelManager()
     {
     }
 
-    protected void setupSpectrumPanelManager()
+    @Override
+	protected void setupSpectrumPanelManager()
     {
     }
 
