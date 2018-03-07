@@ -295,7 +295,7 @@ public class Renderer extends JPanel implements
         mainCanvas.getRenderWindowInteractor().AddObserver("InteractionEvent", this, "duringInteraction");
         mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
         
-//        smallBodyColorbar=new Colorbar(this);
+        smallBodyColorbar=new Colorbar(this);
 
         initOrientationAxes();
 
