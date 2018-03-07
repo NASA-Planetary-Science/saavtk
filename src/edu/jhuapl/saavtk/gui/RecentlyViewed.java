@@ -6,132 +6,146 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-
 import javax.swing.AbstractAction;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
-import javax.swing.JSeparator;
-
 import edu.jhuapl.saavtk.util.Configuration;
-
+import edu.jhuapl.saavtk.util.SafePaths;
 
 public class RecentlyViewed extends JMenu
 {
-    ViewManager manager;
-    List<JMenuItem> items= new ArrayList<JMenuItem>();
-    JMenuItem clrItems = new JMenuItem();
-    String names;
+	private static final int NUMBER_RECENTS_MAXIMUM = 10;
+	private final ViewManager manager;
+    private final List<View> recentViews;
+    private final File recentsFile;
+	private final JMenuItem clearAllMenuItem;
 
-    public RecentlyViewed(ViewManager m)
+    public RecentlyViewed(ViewManager manager)
     {
         super("Recents");
-        manager = m;
-        Scanner scan = null;
-        File read_file = new File(Configuration.getApplicationDataDir()+File.separator+"recents.txt");
-        try
+        this.manager = manager;
+        this.recentViews = new ArrayList<>();
+        this.recentsFile = new File(SafePaths.getString(Configuration.getApplicationDataDir(), "recents.txt"));
+        this.clearAllMenuItem = createClearAllMenuItem();
+        if (this.recentsFile.exists())
         {
-            read_file.createNewFile();
-        }
-        catch (IOException e1)
-        {
-        }
-        // Creating file object
-        try{
-            scan = new Scanner(read_file);
-        }catch (FileNotFoundException e){
-            e.printStackTrace();
+        	// Read recents file and figure out which models it refers to.
+        	try (Scanner scan = new Scanner(this.recentsFile))
+        	{
+        		final List<View> allViews = this.manager.getAllViews();
+        		while (scan.hasNextLine() && recentViews.size() <= NUMBER_RECENTS_MAXIMUM)
+        		{
+        			String line = scan.nextLine();
+        			for (View view : allViews)
+        			{
+        				if (view.getUniqueName().equals(line) && !this.recentViews.contains(view))
+        				{
+        					recentViews.add(view);
+        					add(createMenuItem(view));
+        					break;
+        				}
+        			}
+        		}
+        	}
+        	catch (FileNotFoundException e)
+        	{
+        		e.printStackTrace();
+        	}
+
         }
 
-        while (scan.hasNextLine())
-        {
-            updateMenu(scan.nextLine());
-        }
+        add(clearAllMenuItem);
+
+    	// Put the current view as the most recent.
+		View view = this.manager.getCurrentView();
+		if (view != null)
+		{
+			updateMenu(view);
+		}
+
+		if (recentViews.isEmpty())
+		{
+			clearAllMenuItem.setEnabled(false);        			
+		}
+
     }
 
-    //Updates the menu and sets action
-    public void updateMenu(String name)
+    public final void updateMenu(View view)
     {
-    	names=name;
-        if(items.size()>9)
-        {
-            items.remove(9);
-            this.remove(9);
-        }
+    	// If this view is already somewhere in the menu, remove it.
+    	// Then below we will add it in the 0th spot.
+    	for (int index = 0; index < recentViews.size(); ++index)
+    	{
+    		if (recentViews.get(index) == view)
+    		{
+    			recentViews.remove(index);
+    			remove(index);
+    			break;
+    		}
+    	}
 
-        JMenuItem recentItem = new JMenuItem();
-        items.add(recentItem);
-        this.add(recentItem, 0);
-        recentItem.setAction(new RecentAction(manager, name));
-        clrItems.setAction(new ClearRecentsAction(manager, "Remove all recents"));
-        add(clrItems);
-        try (FileWriter f_out=new FileWriter(Configuration.getApplicationDataDir()+File.separator+"recents.txt", false))
+    	// Update both the collection and the view menu.
+    	recentViews.add(0, view);
+    	add(createMenuItem(view), 0);
+    	clearAllMenuItem.setEnabled(true);
+
+    	// Enforce the limit on number of recents.
+    	if (recentViews.size() > NUMBER_RECENTS_MAXIMUM) {
+    		int lastViewIndex = recentViews.size() - 1;
+    		recentViews.remove(lastViewIndex);
+    		remove(lastViewIndex);
+    	}
+
+    	// Save the current recents list.
+    	writeRecentsFile();
+    }
+
+    protected final void writeRecentsFile() {
+        try (FileWriter fileWriter = new FileWriter(recentsFile))
         {
-        	for(int i=0;i<items.size();i++)
+        	for(View view : recentViews)
         	{
-        		f_out.write(items.get(i).getText()+"\n");
+        		fileWriter.write(view.getUniqueName() + "\n");
         	}
         } catch (IOException e) {
         	e.printStackTrace();
         }
     }
 
-    //sets the action for the menu items
-    private class RecentAction extends AbstractAction
-    {
-        ViewManager manager;
-        String viewName;
-
-        public RecentAction(ViewManager m, String n)
-        {
-            super(n);
-            manager = m;
-            viewName = n;
-        }
-
-        public void actionPerformed(ActionEvent e)
-        {
-            List<View> check = manager.getAllViews();
-            for (View v : check)
-            {
-                if (v.getUniqueName().equals(viewName))
-                {
-                    manager.setCurrentView(v);
-                }
-            }
-
-        }
+    protected final JMenuItem createMenuItem(View view) {
+    	JMenuItem item = new JMenuItem();
+		item.setAction(new AbstractAction(view.getModelDisplayName()) {
+			@Override
+			public void actionPerformed(@SuppressWarnings("unused") ActionEvent e) {
+				updateMenu(view);
+				manager.setCurrentView(view);
+			}
+		});
+		return item;
     }
-    
-    private class ClearRecentsAction extends AbstractAction
-    {
-    	
-    	public ClearRecentsAction(ViewManager m, String desc)
-        {
-            super(desc);
-        }
-		
-		public void actionPerformed(ActionEvent e) 
-		{	
-			File read_file = new File(Configuration.getApplicationDataDir()+File.separator+"recents.txt");
-			//read_file.delete();
-	        try{
-	            FileWriter f_out=new FileWriter(Configuration.getApplicationDataDir()+File.separator+"recents.txt", false);
-	            f_out.write("");
-	            f_out.close();
 
-	        }catch(IOException ex){
-	        	ex.getStackTrace();
-	        }
-	        items.clear();
-	        
-	        
-		}
-   
+    protected final JMenuItem createClearAllMenuItem() {
+    	JMenuItem item = new JMenuItem();
+    	item.setAction(new AbstractAction("Clear recently-viewed list") {
+			@Override
+			public void actionPerformed(@SuppressWarnings("unused") ActionEvent evt) {
+				if (recentsFile.exists())
+				{
+					try {
+						Files.delete(recentsFile.toPath());
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+				recentViews.clear();
+				removeAll();
+				clearAllMenuItem.setEnabled(false);
+				add(clearAllMenuItem);
+			}
+    	});
+    	return item;
     }
-    
 }
