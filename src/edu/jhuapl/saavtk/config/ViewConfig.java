@@ -63,19 +63,6 @@ public abstract class ViewConfig implements Cloneable
         return c;
     }
 
-    /**
-     * Returns model as a path. e.g. "Asteroid > Near-Earth > Eros > Image Based > Gaskell"
-     */
-     public String getPathRepresentation()
-     {
-         if (ShapeModelType.CUSTOM == author)
-         {
-             return ShapeModelType.CUSTOM + " > " + modelLabel;
-         }
-         else
-             return "DefaultPath";
-     }
-
      /**
       * Return a unique name for this model. No other model may have this
       * name. Note that only applies within built-in models or custom models
