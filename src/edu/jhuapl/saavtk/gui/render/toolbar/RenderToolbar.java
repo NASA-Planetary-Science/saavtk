@@ -157,7 +157,7 @@ public class RenderToolbar extends JToolBar implements ItemListener, ActionListe
 		showOrientationAxesToggleButton.setSelected(false);
 
 		showOriginButton.setText("<html><center><b>Cube<br>Axes</b></center></html>");
-//		add(showOriginButton);
+		add(showOriginButton);
 		showOriginButton.addItemListener(this);;
 		showOriginButton.setSelected(false);
 		
