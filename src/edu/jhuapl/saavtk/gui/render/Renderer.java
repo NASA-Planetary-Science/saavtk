@@ -446,7 +446,11 @@ public class Renderer extends JPanel implements
     {
         hideLODs();
         occludeLabels();
-        updateImageOffsets();
+        // See Redmine #1135. This method was added in an attempt to address rendering problems that were caused
+        // by clipping range limitations, but it interacted badly with other features, specifically center-in-window,
+        // but who knows what else would have been affected. Leaving the code here,
+        // but commented out, in case we need to revisit this capability.
+//        updateImageOffsets();
     }
     
     public void occludeLabels()
@@ -479,15 +483,19 @@ public class Renderer extends JPanel implements
 
     }
 
-    public void updateImageOffsets() {
-    	double oldDistance = this.cameraDistance;
-    	double newDistance = getCameraDistance();
-    	this.cameraDistance = newDistance;
-    	if (newDistance != oldDistance)
-    	{
-    		firePropertyChange(CameraProperties.CAMERA_DISTANCE, oldDistance, newDistance);    		
-    	}
-    }
+    // See Redmine #1135. This method was added in an attempt to address rendering problems that were caused
+    // by clipping range limitations, but it interacted badly with other features, specifically center-in-window,
+    // but who knows what else would have been affected. Leaving the code here,
+    // but commented out, in case we need to revisit this capability.
+//    public void updateImageOffsets() {
+//    	double oldDistance = this.cameraDistance;
+//    	double newDistance = getCameraDistance();
+//    	this.cameraDistance = newDistance;
+//    	if (newDistance != oldDistance)
+//    	{
+//    		firePropertyChange(CameraProperties.CAMERA_DISTANCE, oldDistance, newDistance);    		
+//    	}
+//    }
 
     public static File createAxesFile(File rawOutputFile)
     {
