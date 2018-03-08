@@ -24,6 +24,7 @@ import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarListener;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent.ConstrainRotationAxisEvent;
 import vtk.vtkActor;
+import vtk.vtkActorCollection;
 import vtk.vtkAxes;
 import vtk.vtkConeSource;
 import vtk.vtkCoordinate;
@@ -31,6 +32,7 @@ import vtk.vtkCubeAxesActor2D;
 import vtk.vtkNativeLibrary;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
+import vtk.vtkPropCollection;
 import vtk.vtkRenderer;
 import vtk.vtkTransform;
 import vtk.rendering.vtkEventInterceptor;
@@ -84,6 +86,13 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		
 		getComponent().addComponentListener(this);
 	}
+	
+/*	public double[] computeBoundsOfVisibleActors()
+	{
+		for (int i=0; i<getRenderer().GetNumberOfPropsRendered(); i++)
+		{
+		}
+	}*/
 	
 	public void setInteractorStyleToDefault() {
 		
@@ -181,6 +190,8 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		Render();
 		
 	}
+	
+	
 	
 	public void viewAll()
 	{
