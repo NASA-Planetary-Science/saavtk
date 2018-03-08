@@ -45,6 +45,7 @@ import vtk.vtkBMPWriter;
 import vtk.vtkCamera;
 import vtk.vtkCaptionActor2D;
 import vtk.vtkCellLocator;
+import vtk.vtkCubeAxesActor2D;
 import vtk.vtkIdList;
 import vtk.vtkImageData;
 import vtk.vtkInteractorStyle;
@@ -353,7 +354,10 @@ public class Renderer extends JPanel implements
         {
             renderWindow.getVTKLock().lock();
             for (vtkProp prop : renderedProps)
-                whichRenderer.RemoveViewProp(prop);
+            {
+            	if (! (prop instanceof vtkCubeAxesActor2D))
+            		whichRenderer.RemoveViewProp(prop);
+            }
             renderWindow.getVTKLock().unlock();
         }
         
@@ -944,6 +948,9 @@ public class Renderer extends JPanel implements
         {
             this.setProps(modelManager.getProps());
 
+            if (smallBodyColorbar==null)
+            	return;
+            
             PolyhedralModel sbModel=(PolyhedralModel)modelManager.getModel(ModelNames.SMALL_BODY);
             if (sbModel.isColoringDataAvailable() && sbModel.getColoringIndex()>=0)
             {
