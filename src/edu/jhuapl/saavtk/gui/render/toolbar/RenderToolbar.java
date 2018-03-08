@@ -13,6 +13,11 @@ import java.util.List;
 
 import javax.swing.JPanel;
 import net.miginfocom.swing.MigLayout;
+import vtk.vtkAxesActor;
+import vtk.vtkCamera;
+import vtk.vtkOrientationMarkerWidget;
+import vtk.vtkRenderWindowInteractor;
+import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
@@ -72,7 +77,8 @@ public class RenderToolbar extends JToolBar implements ItemListener, ActionListe
 	ImageIcon					viewAlignMinusZIcon				= new ImageIcon(
 			RenderToolbar.class.getResource("pqZMinus.png"));
 
-	JToggleButton				showOrientationAxesToggleButton	= new JToggleButton();
+	//JToggleButton				showOrientationAxesToggleButton	= new JToggleButton();
+
 	JButton						viewAllButton					= new JButton();
 	JToggleButton				pickRotationCenterButton		= new JToggleButton();
 
@@ -94,18 +100,16 @@ public class RenderToolbar extends JToolBar implements ItemListener, ActionListe
 	List<Component> visibleComponents=Lists.newArrayList();
 	List<Component> outOfBoundsComponents=Lists.newArrayList();
 
+	
 	public RenderToolbar()
 	{
+		setFloatable(false);
 		setRollover(true);
 		setOrientation(JToolBar.HORIZONTAL);
 		setAutoscrolls(true);
 		
 		addPropertyChangeListener(this);
 		addHierarchyBoundsListener(this);
-
-		constrainRotationButtonGroup.add(constrainRotationXButton);
-		constrainRotationButtonGroup.add(constrainRotationYButton);
-		constrainRotationButtonGroup.add(constrainRotationZButton);
 
 		int iconSize = 32;
 		constrainRotationXIcon
@@ -115,23 +119,7 @@ public class RenderToolbar extends JToolBar implements ItemListener, ActionListe
 		constrainRotationZIcon
 				.setImage(constrainRotationZIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
 
-		constrainRotationXButton.setIcon(constrainRotationXIcon);
-		constrainRotationYButton.setIcon(constrainRotationYIcon);
-		constrainRotationZButton.setIcon(constrainRotationZIcon);
-
 		addSeparator();
-
-		// dragToolbarIcon.setImage(dragToolbarIcon.getImage().getScaledInstance(iconSize/2,
-		// iconSize/2, Image.SCALE_SMOOTH));
-		// setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
-
-		add(constrainRotationXButton);
-		add(constrainRotationYButton);
-		add(constrainRotationZButton);
-
-		constrainRotationXButton.addItemListener(this);
-		constrainRotationYButton.addItemListener(this);
-		constrainRotationZButton.addItemListener(this);
 
 		//
 
@@ -146,14 +134,11 @@ public class RenderToolbar extends JToolBar implements ItemListener, ActionListe
 		viewAlignPlusZIcon
 				.setImage(viewAlignPlusZIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
 
-		//
-		addSeparator();
-
-		showOrientationAxesToggleButton.setIcon(showOrientationAxesIcon);
+		/*showOrientationAxesToggleButton.setIcon(showOrientationAxesIcon);
 		add(showOrientationAxesToggleButton);
 		showOrientationAxesToggleButton.addItemListener(this);
-		showOrientationAxesToggleButton.setSelected(false);
-
+		showOrientationAxesToggleButton.setSelected(false);*/
+		
 		pickRotationCenterButton.setIcon(pickRotationIcon);
 		add(pickRotationCenterButton);
 		pickRotationCenterButton.addItemListener(this);
@@ -195,10 +180,33 @@ public class RenderToolbar extends JToolBar implements ItemListener, ActionListe
 		showOrientationAxesIcon
 				.setImage(showOrientationAxesIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
 		viewAllIcon.setImage(viewAllIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
-		showOrientationAxesToggleButton.setSelected(true);
+		//showOrientationAxesToggleButton.setSelected(true);
 		viewAlignMinusZButton.setIcon(viewAlignMinusZIcon);
 		add(viewAlignMinusZButton);
 		viewAlignMinusZButton.addActionListener(this);
+		
+				//
+				addSeparator();
+				
+						constrainRotationButtonGroup.add(constrainRotationXButton);
+						
+								constrainRotationXButton.setIcon(constrainRotationXIcon);
+								
+										// dragToolbarIcon.setImage(dragToolbarIcon.getImage().getScaledInstance(iconSize/2,
+										// iconSize/2, Image.SCALE_SMOOTH));
+										// setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
+								
+										add(constrainRotationXButton);
+										
+												constrainRotationXButton.addItemListener(this);
+												constrainRotationButtonGroup.add(constrainRotationYButton);
+												constrainRotationYButton.setIcon(constrainRotationYIcon);
+												add(constrainRotationYButton);
+												constrainRotationYButton.addItemListener(this);
+												constrainRotationButtonGroup.add(constrainRotationZButton);
+												constrainRotationZButton.setIcon(constrainRotationZIcon);
+												add(constrainRotationZButton);
+												constrainRotationZButton.addItemListener(this);
 
 	}
 
@@ -236,10 +244,10 @@ public class RenderToolbar extends JToolBar implements ItemListener, ActionListe
 				fire(new RenderToolbarEvent.ConstrainRotationAxisEvent(this, CartesianAxis.Z));
 			else
 				fire(new RenderToolbarEvent.ConstrainRotationAxisEvent(this, CartesianAxis.NONE));
-		} else if (e.getSource() == showOrientationAxesToggleButton)
+		}/* else if (e.getSource() == showOrientationAxesToggleButton)
 		{
 			fire(new RenderToolbarEvent.ToggleAxesVisibilityEvent(this, showOrientationAxesToggleButton.isSelected()));
-		}
+		}*/
 
 	}
 

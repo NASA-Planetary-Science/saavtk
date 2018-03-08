@@ -45,9 +45,8 @@ public class PointsMappingControlPanel extends
         JLabel radiusLabel = new JLabel("Diameter");
         panel.add(radiusLabel);
 
-        double bbLength = modelManager.getPolyhedralModel().getBoundingBoxDiagonalLength();
-        double max = 10.0 * bbLength;
-        double step = bbLength / 400.0;
+        double max = 100.0 * diameter;
+        double step = computeStepSize(diameter);
 
         SpinnerModel model = new SpinnerNumberModel(diameter, //initial value
                 0.00001,
@@ -71,10 +70,21 @@ public class PointsMappingControlPanel extends
         add(panel, "span");
     }
 
-    public void stateChanged(ChangeEvent e)
+	public void stateChanged(ChangeEvent e)
     {
         Number val = (Number)spinner.getValue();
         pointModel.setDefaultRadius(val.doubleValue()/2.0);
         pointModel.changeRadiusOfAllPolygons(val.doubleValue()/2.0);
     }
+
+	private double computeStepSize(double diameter) {
+		double step = 1.;
+		while (diameter < 1.)
+		{
+			diameter *= 10.;
+			step *= .1;
+		}
+		return step;
+	}
+	
 }

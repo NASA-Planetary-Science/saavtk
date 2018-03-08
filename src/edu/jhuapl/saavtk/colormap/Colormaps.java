@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.colormap;
 
 import java.awt.Color;
+import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -10,6 +11,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -26,6 +32,7 @@ import com.google.common.collect.Maps;
 
 import edu.jhuapl.saavtk.colormap.RgbColormap.ColorSpace;
 import edu.jhuapl.saavtk.util.FileCache;
+import vtk.vtkNativeLibrary;
 import vtk.vtkObject;
 import vtk.vtkOutputWindow;
 
@@ -117,6 +124,46 @@ public class Colormaps
 			e.printStackTrace();
 		}
 	}
+	
+	public static void main(String[] args) {
+		vtkNativeLibrary.LoadAllNativeLibraries();
+		initBuiltInColorMaps();
+		JFrame frame=new JFrame();
+		frame.setVisible(true);
+		int w = 100;
+		int h = 30;
+		JLabel label=new JLabel();
+		frame.add(label);
+		label.setSize(w,h);
+		frame.setSize(w, h);
+		for (String name : builtInColormaps.keySet())
+		{
+			Colormap colormap=builtInColormaps.get(name);
+			label.setIcon(createIcon(colormap,w,h));
+			label.repaint();
+			BufferedImage im = new BufferedImage(label.getWidth(), label.getHeight(), BufferedImage.TYPE_INT_ARGB);
+			label.paint(im.getGraphics());
+			try {
+				ImageIO.write(im, "PNG", new File("/Users/zimmemi1/Desktop/colormaps/"+name+".png"));
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
 
+	private static ImageIcon createIcon(Colormap cmap, int w, int h)
+	{
+		cmap.setRangeMin(0);
+		cmap.setRangeMax(1);
+		BufferedImage image = new BufferedImage(w, h, java.awt.color.ColorSpace.TYPE_RGB);
+		for (int i = 0; i < w; i++)
+		{
+			double val = (double) i / (double) (image.getWidth() - 1);
+			for (int j = 0; j < h; j++)
+				image.setRGB(i, j, cmap.getColor(val).getRGB());
+		}
+		return new ImageIcon(image);
+	}
 
 }
