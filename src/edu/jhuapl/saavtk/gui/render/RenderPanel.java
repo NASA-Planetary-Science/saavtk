@@ -44,10 +44,10 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 	CustomInteractorStyle 	defaultInteractorStyle;
 
 	int cameraObserver;
-	vtkRenderer axesRenderer=new vtkRenderer();
+	//vtkRenderer axesRenderer=new vtkRenderer();
 	vtkRenderer propRenderer;
 
-	Axes axes=new Axes();
+	//Axes axes=new Axes();
 
 	public RenderPanel(RenderToolbar toolbar)//, RenderStatusBar statusBar)
 	{
@@ -56,11 +56,13 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		defaultInteractorStyle = interactorStyle;
 		viewCamera = new RenderPanelCamera(this);
 		viewCamera.addCameraListener(this);
+		this.toolbar=toolbar;
 		toolbar.addToolbarListener(this);
 		//
 		propRenderer=getRenderer();
+		
 
-		getRenderWindow().SetNumberOfLayers(2);
+/*		getRenderWindow().SetNumberOfLayers(2);
 		getRenderWindow().AddRenderer(axesRenderer);
 		getRenderer().SetLayer(0);
 		axesRenderer.SetLayer(1);
@@ -69,13 +71,14 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		axesRenderer.AddActor(axes.getLabelActorY());
 		axesRenderer.AddActor(axes.getLabelActorZ());
 		axesRenderer.SetActiveCamera(getActiveCamera());
-
-		cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this, "redrawAxes");
-		redrawAxes();
+*/
+	//	cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this, "cameraModified");
+//		redrawAxes();
 		
 		getComponent().addComponentListener(this);
 	}
 	
+
 	public void setInteractorStyleToDefault() {
 		
 		if (this.windowInteractor != null) {
@@ -153,13 +156,13 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		} else if (event instanceof RenderToolbarEvent.ViewAllEvent)
 		{
 			viewAll();
-		} else if (event instanceof RenderToolbarEvent.ToggleAxesVisibilityEvent)
+		}/* else if (event instanceof RenderToolbarEvent.ToggleAxesVisibilityEvent)
 		{
 			axes.setVisible(((RenderToolbarEvent.ToggleAxesVisibilityEvent) event).show());
 			super.Render();
-		}
+		}*/
 		viewCamera.addCameraListener(this);
-		cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this, "redrawAxes");
+		//cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this, "redrawAxes");
 //		redrawAxes();
 		Render();
 		
@@ -167,16 +170,16 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 	
 	public void viewAll()
 	{
-		boolean showAxes=axes.isVisible();
-		axes.setVisible(false);
+//		boolean showAxes=axes.isVisible();
+//		axes.setVisible(false);
 		getRenderer().ResetCamera();
-		axes.setVisible(showAxes);
+//		axes.setVisible(showAxes);
 		super.Render();
 	}
 
 	@Override
 	public void Render() {
-		redrawAxes();
+//		redrawAxes();
 		super.Render();
 	}
 
@@ -213,7 +216,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		renderView.getRenderPanel().getRenderer().AddActor(actor);
 	}
 
-	private void redrawAxes()
+/*	private void redrawAxes()
 	{
 		vtkTransform transform=new vtkTransform();
 		transform.DeepCopy(getActiveCamera().GetModelViewTransformObject());
@@ -275,7 +278,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		double[] axesRange=axesRenderer.GetActiveCamera().GetClippingRange();
 		getActiveCamera().SetClippingRange(Math.min(propRange[0], axesRange[0]),Math.max(propRange[1], axesRange[1]));
 		cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this, "redrawAxes");
-	}
+	}*/
 
 	private static class Interceptor implements vtkEventInterceptor {
 
