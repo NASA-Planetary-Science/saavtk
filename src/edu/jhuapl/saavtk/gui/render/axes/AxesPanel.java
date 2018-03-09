@@ -41,7 +41,7 @@ public class AxesPanel extends vtkJoglPanelComponent {
 		actor.GetYAxisShaftProperty().SetLineWidth(2);
 		actor.GetZAxisShaftProperty().SetLineWidth(2);
 		
-		printModeOff();
+		//printModeOff();
 	
 	}
 	
@@ -59,7 +59,7 @@ public class AxesPanel extends vtkJoglPanelComponent {
 		super.Render();
 	}
 	
-	public void printModeOn()
+	/*public void printModeOn()
 	{
 		
 		sourceComponent.getRenderer().SetBackground(0, 0, 0);
@@ -90,5 +90,5 @@ public class AxesPanel extends vtkJoglPanelComponent {
 		actor.GetZAxisCaptionActor2D().GetCaptionTextProperty().SetColor(0,0,0);
 		Render();
 	}
-	
+	*/
 }
