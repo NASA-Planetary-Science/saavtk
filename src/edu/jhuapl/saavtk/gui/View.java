@@ -310,11 +310,25 @@ public abstract class View extends JPanel
 
 
     /**
+     * Return a hierarchical path representation of this view.
+     * @return the representation.
+     */
+	public abstract String getPathRepresentation();
+
+    /**
      * Return the display name for this view (the name to be shown in the menu).
      * This name need not be unique among all views.
-     * @return
+     * @return the name to display
      */
     public abstract String getDisplayName();
+
+    /**
+     * Similar to {@link getDisplayName()}, this returns a suitable-for-display
+     * name that uniquely identifies the model. This name must be unique
+     * among all views.
+     * @return
+     */
+    public abstract String getModelDisplayName();
 
     public ViewConfig getConfig()
     {

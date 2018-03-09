@@ -8,24 +8,23 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JSeparator;
 
-import edu.jhuapl.saavtk.gui.FavoritesFile;
+import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
 
 public class FavoritesMenu extends JMenu
 {
     FavoritesFile favoritesFile;
     ViewManager manager;
-    private static final char viewNameSpaceReplacementChar='|';
 
-    public FavoritesMenu(FavoritesFile file, ViewManager manager)
+    public FavoritesMenu(ViewManager manager)
     {
         super("Favorites");
-        favoritesFile=file;
+        this.favoritesFile = new FavoritesFile(manager);
         this.manager=manager;
         rebuild();
     }
 
-    private void rebuild()
+    private final void rebuild()
     {
         removeAll();
         //
@@ -46,25 +45,24 @@ public class FavoritesMenu extends JMenu
         favoritesItem.setEnabled(false);
         add(favoritesItem);
 
-        List<String> stringsOnFile=favoritesFile.getAllFavorites();
-        for (String viewName : stringsOnFile)
+        List<View> favoriteViews = favoritesFile.getAllFavorites();
+        for (View view : favoriteViews)
         {
-            JMenuItem menuItem=new FavoritesMenuItem(viewName, manager);
-            boolean isDefaultToLoad=unfilterViewName(viewName).equals(manager.getDefaultBodyToLoad());
-            if (!isDefaultToLoad)
+            JMenuItem menuItem = new FavoritesMenuItem(view);
+            if (!view.getUniqueName().equals(manager.getDefaultBodyToLoad()))
                 add(menuItem);
-
         }
 
         // show default to load
-        if (!stringsOnFile.isEmpty())
+        if (!favoriteViews.isEmpty())
             add(new JSeparator());
         JMenuItem defaultItem=new JMenuItem("Default model:");
         defaultItem.setEnabled(false);
         add(defaultItem);
 
         String defaultToLoad = manager.getDefaultBodyToLoad();
-        JMenuItem menuItem = new FavoritesMenuItem(defaultToLoad, manager);
+        View defaultView = manager.getView(defaultToLoad);
+        JMenuItem menuItem = new FavoritesMenuItem(defaultView);
         add(menuItem);
 
         //
@@ -78,35 +76,28 @@ public class FavoritesMenu extends JMenu
 
     private class FavoritesMenuItem extends JMenuItem
     {
-        public FavoritesMenuItem(String viewName, ViewManager manager)
+        public FavoritesMenuItem(View view)
         {
-            super(viewName);
-            setAction(new ShowFavoriteAction(manager, viewName));
+            super(view.getModelDisplayName());
+            setAction(new ShowFavoriteAction(view));
         }
 
     }
 
     private class ShowFavoriteAction extends AbstractAction
     {
-        ViewManager manager;
-        String viewName;
+        private final View view;
 
-        public ShowFavoriteAction(ViewManager manager, String viewName)
+        public ShowFavoriteAction(View view)
         {
-            super(viewName);
-            this.manager=manager;
-            this.viewName=viewName;
+            super(view.getModelDisplayName());
+            this.view = view;
         }
 
         @Override
-        public void actionPerformed(ActionEvent e)
+        public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
         {
-            for (int i=0; i<manager.getNumberOfBuiltInViews(); i++)
-                if (manager.getBuiltInView(i).getUniqueName().equals(unfilterViewName(viewName)))
-                    manager.setCurrentView(manager.getBuiltInView(i));
-            for (int i=0; i<manager.getNumberOfCustomViews(); i++)
-                if (manager.getCustomView(i).getUniqueName().equals(unfilterViewName(viewName)))
-                    manager.setCurrentView(manager.getCustomView(i));
+        	manager.setCurrentView(view);
         }
 
     }
@@ -119,9 +110,9 @@ public class FavoritesMenu extends JMenu
         }
 
         @Override
-        public void actionPerformed(ActionEvent e)
+        public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
         {
-            favoritesFile.addFavorite(filterViewName(manager.getCurrentView().getUniqueName()));
+            favoritesFile.addFavorite(manager.getCurrentView());
             rebuild();
         }
     }
@@ -134,9 +125,9 @@ public class FavoritesMenu extends JMenu
         }
 
         @Override
-        public void actionPerformed(ActionEvent e)
+        public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
         {
-            favoritesFile.removeFavorite(filterViewName(manager.getCurrentView().getUniqueName()));
+            favoritesFile.removeFavorite(manager.getCurrentView());
             if (manager.getDefaultBodyToLoad().equals(manager.getCurrentView().getUniqueName()))
                 manager.resetDefaultBodyToLoad();
             rebuild();
@@ -152,7 +143,7 @@ public class FavoritesMenu extends JMenu
         }
 
         @Override
-        public void actionPerformed(ActionEvent e)
+        public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
         {
             favoritesFile.clear();
             manager.resetDefaultBodyToLoad();
@@ -172,23 +163,13 @@ public class FavoritesMenu extends JMenu
         }
 
         @Override
-        public void actionPerformed(ActionEvent e)
+        public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
         {
             manager.setDefaultBodyToLoad(manager.getCurrentView().getUniqueName());
-            favoritesFile.addFavorite(filterViewName(manager.getCurrentView().getUniqueName()));    // automatically add current view to favorites if it already is
+            favoritesFile.addFavorite(manager.getCurrentView());    // automatically add current view to favorites if it already is
             rebuild();
         }
 
-    }
-
-    private String filterViewName(String str)   // JMenuItems don't display correctly if the text is too long and contains spaces, so replace spaces with |
-    {
-        return str.replace(' ',viewNameSpaceReplacementChar);
-    }
-
-    private String unfilterViewName(String str)
-    {
-        return str.replace(viewNameSpaceReplacementChar,' ');
     }
 
 }

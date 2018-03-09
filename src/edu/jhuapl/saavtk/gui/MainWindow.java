@@ -2,21 +2,10 @@ package edu.jhuapl.saavtk.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.io.IOException;
-
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JSeparator;
-
-import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
 import edu.jhuapl.saavtk.gui.menu.FileMenu;
-import edu.jhuapl.saavtk.gui.menu.HelpMenu;
-import edu.jhuapl.saavtk.util.Configuration;
 
 
 /**
@@ -28,12 +17,7 @@ public abstract class MainWindow extends JFrame
 {
 	private static final long serialVersionUID = -1837887362465597229L;
 	private StatusBar statusBar;
-    private FileMenu fileMenu;
-    private ViewMenu viewMenu;
-    private HelpMenu helpMenu;
     protected ViewManager rootPanel;
-    private FavoritesMenu favoritesMenu;
-    private RecentlyViewed recentsMenu;
     /**
      * @param tempCustomShapeModelPath path to shape model. May be null.
      * If non-null, the main window will create a temporary custom view of the shape model
@@ -46,7 +30,7 @@ public abstract class MainWindow extends JFrame
 
         createStatusBar(editableLeftStatusLabel);
 
-        rootPanel = createViewManager(statusBar, this, tempCustomShapeModelPath);
+        rootPanel = createViewManager(statusBar, tempCustomShapeModelPath);
 
         rootPanel.setPreferredSize(new Dimension(800, 600));
 
@@ -80,81 +64,17 @@ public abstract class MainWindow extends JFrame
         return new ImageIcon("data/yin-yang.gif");
     }
 
-    protected abstract ViewManager createViewManager(StatusBar statusBar, MainWindow mainWindow, String tempCustomShapeModelPath);
+    protected abstract ViewManager createViewManager(StatusBar statusBar, String tempCustomShapeModelPath);
 
     protected FileMenu createFileMenu(ViewManager rootPanel)
     {
         return new FileMenu(rootPanel);
     }
 
-    protected RecentlyViewed createRecentsMenu(ViewManager rootPanel)
-    {
-        return new RecentlyViewed(rootPanel);
-    }
-
-    protected ViewMenu createViewMenu(ViewManager rootPanel, RecentlyViewed recentsMenu)
-    {
-        return new ViewMenu(rootPanel, recentsMenu);
-    }
-
-    protected FavoritesMenu createFavoritesMenu(ViewManager rootPanel)
-    {
-        return new FavoritesMenu(new FavoritesFile(), rootPanel);
-    }
-
-    protected JMenuItem createPasswordMenu()
-    {
-        JMenuItem updatePassword = new JMenuItem("Update Password...");
-        updatePassword.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(@SuppressWarnings("unused") ActionEvent evt)
-            {
-                try {
-					Configuration.updatePassword();
-				} catch (IOException e) {
-					e.printStackTrace();
-					JOptionPane.showMessageDialog(null, "Error trying to save user name and password.", "Unable to save changes", JOptionPane.ERROR_MESSAGE);
-				}
-            }
-        });
-        return updatePassword;
-    }
-
-    protected HelpMenu createHelpMenu(ViewManager rootPanel)
-    {
-        return new HelpMenu(rootPanel);
-    }
-
-    private void createMenus()
+    private final void createMenus()
     {
         JMenuBar menuBar = new JMenuBar();
-
-        fileMenu = createFileMenu(rootPanel);
-        fileMenu.setMnemonic('F');
-        menuBar.add(fileMenu);
-
-        recentsMenu = createRecentsMenu(rootPanel);
-        viewMenu = createViewMenu(rootPanel, recentsMenu);
-        viewMenu.setMnemonic('V');
-
-        menuBar.add(viewMenu);
-
-        favoritesMenu = createFavoritesMenu(rootPanel);
-
-        JMenuItem passwordMenu = createPasswordMenu();
-
-        viewMenu.add(new JSeparator());
-        viewMenu.add(favoritesMenu);
-        viewMenu.add(passwordMenu);
-        viewMenu.add(new JSeparator());
-        viewMenu.add(recentsMenu);
-
-        Console.addConsoleMenu(menuBar);
-
-        helpMenu = createHelpMenu(rootPanel);
-        helpMenu.setMnemonic('H');
-        menuBar.add(helpMenu);
-
+        rootPanel.createMenus(menuBar);
         setJMenuBar(menuBar);
     }
 

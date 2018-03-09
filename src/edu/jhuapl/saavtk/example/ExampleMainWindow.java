@@ -23,7 +23,8 @@ public class ExampleMainWindow extends MainWindow
         super(tempCustomShapeModelPath, false);
    }
 
-    protected ViewManager createViewManager(StatusBar statusBar, MainWindow mainWindow, String tempCustomShapeModelPath)
+    @Override
+	protected ViewManager createViewManager(StatusBar statusBar, String tempCustomShapeModelPath)
     {
         return new ExampleViewManager(statusBar, this, tempCustomShapeModelPath);
     }
@@ -33,7 +34,8 @@ public class ExampleMainWindow extends MainWindow
         return new ExampleViewMenu(rootPanel, recentsMenu);
     }
 
-    protected ImageIcon createImageIcon()
+    @Override
+	protected ImageIcon createImageIcon()
     {
 //        return new ImageIcon(getClass().getResource("/edu/jhuapl/saavtk/data/black-sphere.png"));
         return new ImageIcon("black-sphere.png");

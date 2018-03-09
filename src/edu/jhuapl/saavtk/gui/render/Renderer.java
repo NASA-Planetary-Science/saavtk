@@ -3,6 +3,7 @@ package edu.jhuapl.saavtk.gui.render;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -27,10 +28,13 @@ import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.jfree.chart.axis.AxisSpace;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -43,6 +47,7 @@ import vtk.vtkCaptionActor2D;
 import vtk.vtkCellLocator;
 import vtk.vtkCubeAxesActor2D;
 import vtk.vtkIdList;
+import vtk.vtkImageData;
 import vtk.vtkInteractorStyle;
 import vtk.vtkInteractorStyleImage;
 import vtk.vtkInteractorStyleJoystickCamera;
@@ -65,6 +70,7 @@ import vtk.vtkScalarBarActor;
 import vtk.vtkTIFFWriter;
 import vtk.vtkTextProperty;
 import vtk.vtkTriangle;
+import vtk.vtkUnsignedCharArray;
 import vtk.vtkWindowToImageFilter;
 import vtk.vtksbTriangle;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
@@ -73,6 +79,7 @@ import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas;
 import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas.StereoMode;
+import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
 import edu.jhuapl.saavtk.gui.render.camera.CameraFrame;
 import edu.jhuapl.saavtk.gui.render.camera.CameraProperties;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
@@ -249,6 +256,7 @@ public class Renderer extends JPanel implements ActionListener
     }
     
     RenderToolbar toolbar;
+    AxesPanel axesPanel;
 	private double cameraDistance;
     
     public Renderer(final ModelManager modelManager)
@@ -258,6 +266,7 @@ public class Renderer extends JPanel implements ActionListener
 
         toolbar=new RenderToolbar();
         mainCanvas=new RenderPanel(toolbar);//, statusBar)
+        axesPanel=new AxesPanel(mainCanvas);
         mainCanvas.getRenderWindowInteractor().AddObserver("KeyPressEvent", this, "localKeypressHandler");
 
         this.modelManager = modelManager;
@@ -280,8 +289,18 @@ public class Renderer extends JPanel implements ActionListener
 
         initLights();
 
-        add(toolbar, BorderLayout.NORTH);
+        JSplitPane splitPane=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        splitPane.setLeftComponent(axesPanel.getComponent());
+        splitPane.setRightComponent(toolbar);
+        Dimension dim=toolbar.getMinimumSize();
+        int pad=2;
+		axesPanel.getComponent().setMaximumSize(new Dimension(dim.height-pad,dim.height-pad));
+        splitPane.setResizeWeight(0);
+        splitPane.setDividerLocation(dim.height);
+        splitPane.setDividerSize(0);
+        add(splitPane, BorderLayout.NORTH);
         add(mainCanvas.getComponent(), BorderLayout.CENTER);
+        
         toolbar.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
 
        // mainCanvas.getRenderWindow().StereoCapableWindowOn();
@@ -425,7 +444,11 @@ public class Renderer extends JPanel implements ActionListener
     {
         hideLODs();
         occludeLabels();
-        updateImageOffsets();
+        // See Redmine #1135. This method was added in an attempt to address rendering problems that were caused
+        // by clipping range limitations, but it interacted badly with other features, specifically center-in-window,
+        // but who knows what else would have been affected. Leaving the code here,
+        // but commented out, in case we need to revisit this capability.
+//        updateImageOffsets();
     }
     
     public void occludeLabels()
@@ -458,21 +481,31 @@ public class Renderer extends JPanel implements ActionListener
 
     }
 
-    public void updateImageOffsets() {
-    	double oldDistance = this.cameraDistance;
-    	double newDistance = getCameraDistance();
-    	this.cameraDistance = newDistance;
-    	if (newDistance != oldDistance)
-    	{
-    		firePropertyChange(CameraProperties.CAMERA_DISTANCE, oldDistance, newDistance);    		
-    	}
-    }
+    // See Redmine #1135. This method was added in an attempt to address rendering problems that were caused
+    // by clipping range limitations, but it interacted badly with other features, specifically center-in-window,
+    // but who knows what else would have been affected. Leaving the code here,
+    // but commented out, in case we need to revisit this capability.
+//    public void updateImageOffsets() {
+//    	double oldDistance = this.cameraDistance;
+//    	double newDistance = getCameraDistance();
+//    	this.cameraDistance = newDistance;
+//    	if (newDistance != oldDistance)
+//    	{
+//    		firePropertyChange(CameraProperties.CAMERA_DISTANCE, oldDistance, newDistance);    		
+//    	}
+//    }
 
+    public static File createAxesFile(File rawOutputFile)
+    {
+    	String extension=FilenameUtils.getExtension(rawOutputFile.getName());
+    	return new File(rawOutputFile.getAbsolutePath().replaceAll("."+extension, ".axes."+extension));
+    }
+    
     public void saveToFile()
     {
     	getRenderWindowPanel().Render();
         File file = CustomFileChooser.showSaveDialog(this, "Export to PNG Image", "image.png", "png");
-        saveToFile(file, mainCanvas);
+        saveToFile(file, mainCanvas, axesPanel);
     }
 
     private BlockingQueue<CameraFrame> cameraFrameQueue;
@@ -1304,7 +1337,20 @@ public class Renderer extends JPanel implements ActionListener
     		return mainCanvas.getComponent().getHeight();
     }
 
-    public static void saveToFile(File file, vtkJoglPanelComponent renWin)
+    public static void saveToFile(File file, vtkJoglPanelComponent renWin, AxesPanel axesWin)
+    {
+    	saveToFile(file, renWin);
+    	if (axesWin!=null)
+    	{
+    		//axesWin.printModeOn();
+    		//axesWin.setSize(200, 200);
+    		saveToFile(createAxesFile(file), axesWin);
+    		axesWin.Render();
+    		//axesWin.printModeOff();
+    	}
+    }
+    
+    protected static void saveToFile(File file, vtkJoglPanelComponent renWin)
     {
         if (file != null)
         {
@@ -1317,7 +1363,8 @@ public class Renderer extends JPanel implements ActionListener
 
                 renWin.getVTKLock().lock();
                 vtkWindowToImageFilter windowToImage = new vtkWindowToImageFilter();
-                windowToImage.SetInput(renWin.getRenderWindow());
+           		windowToImage.SetInput(renWin.getRenderWindow());
+           		windowToImage.ShouldRerenderOn();
 
                 String filename = file.getAbsolutePath();
                 if (filename.toLowerCase().endsWith("bmp"))
@@ -1339,7 +1386,7 @@ public class Renderer extends JPanel implements ActionListener
                 {
                     vtkPNGWriter writer = new vtkPNGWriter();
                     writer.SetFileName(filename);
-                    writer.SetInputConnection(windowToImage.GetOutputPort());
+                    	writer.SetInputConnection(windowToImage.GetOutputPort());
                     writer.Write();
                 }
                 else if (filename.toLowerCase().endsWith("pnm"))
@@ -1382,7 +1429,7 @@ public class Renderer extends JPanel implements ActionListener
         {
             if (frame.staged && frame.file != null)
             {
-                saveToFile(frame.file, mainCanvas);
+                saveToFile(frame.file, mainCanvas, axesPanel);
                 cameraFrameQueue.remove();
             }
             else

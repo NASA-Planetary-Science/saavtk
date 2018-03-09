@@ -109,7 +109,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
         {
             View view = rootPanel.getCustomView(i);
             mi = new JMenuItem(new ShowBodyAction(view));
-            mi.setText(view.getDisplayName());
+            mi.setText(view.getModelDisplayName());
             if (i==0)
                 mi.setSelected(true);
 //                group.add(mi);
@@ -205,7 +205,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
             this.addSeparator();
 
         JMenuItem mi = new JRadioButtonMenuItem(new ShowBodyAction(view));
-        mi.setText(view.getDisplayName());
+        mi.setText(view.getModelDisplayName());
         customImageMenu.add(mi);
 
         sortCustomMenuItems();
@@ -325,7 +325,6 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 
         public void actionPerformed(ActionEvent actionEvent)
         {
-            viewed.updateMenu(view.getUniqueName());
             getRootPanel().setCurrentView(view);
         }
     }
