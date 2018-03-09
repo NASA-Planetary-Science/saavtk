@@ -128,7 +128,7 @@ public class RecentlyViewed extends JMenu
 
     protected final JMenuItem createClearAllMenuItem() {
     	JMenuItem item = new JMenuItem();
-    	item.setAction(new AbstractAction("Clear recently-viewed list") {
+    	item.setAction(new AbstractAction("Clear recents list") {
 			@Override
 			public void actionPerformed(@SuppressWarnings("unused") ActionEvent evt) {
 				if (recentsFile.exists())
