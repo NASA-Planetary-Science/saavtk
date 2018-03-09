@@ -71,4 +71,20 @@ public class RenderToolbarEvent extends Event<RenderToolbar>
 			return show;
 		}
 	}
+
+	public static class ToggleOriginVisibilityEvent extends RenderToolbarEvent
+	{
+		boolean show;
+		
+		public ToggleOriginVisibilityEvent(RenderToolbar source, boolean show)
+		{
+			super(source);
+			this.show=show;
+		}
+		
+		public boolean show()
+		{
+			return show;
+		}
+	}
 }

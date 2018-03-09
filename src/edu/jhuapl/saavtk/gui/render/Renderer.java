@@ -45,6 +45,7 @@ import vtk.vtkBMPWriter;
 import vtk.vtkCamera;
 import vtk.vtkCaptionActor2D;
 import vtk.vtkCellLocator;
+import vtk.vtkCubeAxesActor2D;
 import vtk.vtkIdList;
 import vtk.vtkImageData;
 import vtk.vtkInteractorStyle;
@@ -353,7 +354,10 @@ public class Renderer extends JPanel implements
         {
             renderWindow.getVTKLock().lock();
             for (vtkProp prop : renderedProps)
-                whichRenderer.RemoveViewProp(prop);
+            {
+            	if (! (prop instanceof vtkCubeAxesActor2D))
+            		whichRenderer.RemoveViewProp(prop);
+            }
             renderWindow.getVTKLock().unlock();
         }
         
@@ -442,7 +446,11 @@ public class Renderer extends JPanel implements
     {
         hideLODs();
         occludeLabels();
-        updateImageOffsets();
+        // See Redmine #1135. This method was added in an attempt to address rendering problems that were caused
+        // by clipping range limitations, but it interacted badly with other features, specifically center-in-window,
+        // but who knows what else would have been affected. Leaving the code here,
+        // but commented out, in case we need to revisit this capability.
+//        updateImageOffsets();
     }
     
     public void occludeLabels()
@@ -475,15 +483,19 @@ public class Renderer extends JPanel implements
 
     }
 
-    public void updateImageOffsets() {
-    	double oldDistance = this.cameraDistance;
-    	double newDistance = getCameraDistance();
-    	this.cameraDistance = newDistance;
-    	if (newDistance != oldDistance)
-    	{
-    		firePropertyChange(CameraProperties.CAMERA_DISTANCE, oldDistance, newDistance);    		
-    	}
-    }
+    // See Redmine #1135. This method was added in an attempt to address rendering problems that were caused
+    // by clipping range limitations, but it interacted badly with other features, specifically center-in-window,
+    // but who knows what else would have been affected. Leaving the code here,
+    // but commented out, in case we need to revisit this capability.
+//    public void updateImageOffsets() {
+//    	double oldDistance = this.cameraDistance;
+//    	double newDistance = getCameraDistance();
+//    	this.cameraDistance = newDistance;
+//    	if (newDistance != oldDistance)
+//    	{
+//    		firePropertyChange(CameraProperties.CAMERA_DISTANCE, oldDistance, newDistance);    		
+//    	}
+//    }
 
     public static File createAxesFile(File rawOutputFile)
     {
@@ -944,6 +956,9 @@ public class Renderer extends JPanel implements
         {
             this.setProps(modelManager.getProps());
 
+            if (smallBodyColorbar==null)
+            	return;
+            
             PolyhedralModel sbModel=(PolyhedralModel)modelManager.getModel(ModelNames.SMALL_BODY);
             if (sbModel.isColoringDataAvailable() && sbModel.getColoringIndex()>=0)
             {
