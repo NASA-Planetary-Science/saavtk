@@ -97,8 +97,7 @@ import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
 import edu.jhuapl.saavtk.util.SmallBodyCubes;
 
-public class Renderer extends JPanel implements
-            PropertyChangeListener, ActionListener
+public class Renderer extends JPanel implements ActionListener
 {
     public enum LightingType
     {
@@ -161,7 +160,6 @@ public class Renderer extends JPanel implements
     public boolean showingLODs = false;
     
     private StatusBar statusBar=null;
-    private Colorbar smallBodyColorbar;
     boolean inInteraction=false;
 
     void initOrientationAxes()
@@ -274,7 +272,7 @@ public class Renderer extends JPanel implements
         this.modelManager = modelManager;
 
         
-        modelManager.addPropertyChangeListener(this);
+//        modelManager.addPropertyChangeListener(this);
 
         trackballCameraInteractorStyle = new vtkInteractorStyleTrackballCamera();
         joystickCameraInteractorStyle = new vtkInteractorStyleJoystickCamera();
@@ -327,7 +325,7 @@ public class Renderer extends JPanel implements
         mainCanvas.getRenderWindowInteractor().AddObserver("InteractionEvent", this, "duringInteraction");
         mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
         
-        smallBodyColorbar=new Colorbar(this);
+        
 
         initOrientationAxes();
 
@@ -963,46 +961,7 @@ public class Renderer extends JPanel implements
         return mainCanvas;
     }
 
-    public void propertyChange(PropertyChangeEvent e)
-    {
-        if (e.getPropertyName().equals(Properties.MODEL_CHANGED))
-        {
-            this.setProps(modelManager.getProps());
-
-            if (smallBodyColorbar==null)
-            	return;
-            
-            PolyhedralModel sbModel=(PolyhedralModel)modelManager.getModel(ModelNames.SMALL_BODY);
-            if (sbModel.isColoringDataAvailable() && sbModel.getColoringIndex()>=0)
-            {
-                if (!smallBodyColorbar.isVisible())
-                    smallBodyColorbar.setVisible(true);
-                smallBodyColorbar.setColormap(sbModel.getColormap());
-                int index = sbModel.getColoringIndex();
-                String title = sbModel.getColoringName(index).trim();
-                String units = sbModel.getColoringUnits(index).trim();
-                if (units != null && !units.isEmpty())
-                {
-                	title += " (" + units + ")";
-                }
-                if (title.length() > 16)
-                {
-                	title = title.replaceAll("\\s+", "\n");
-                }
-                smallBodyColorbar.setTitle(title);
-                if (mainCanvas.getRenderer().HasViewProp(smallBodyColorbar.getActor())==0)
-                    mainCanvas.getRenderer().AddActor(smallBodyColorbar.getActor());
-                smallBodyColorbar.getActor().SetNumberOfLabels(sbModel.getColormap().getNumberOfLabels());
-            }
-            else
-                smallBodyColorbar.setVisible(false);
-
-        }
-        else
-        {
-            mainCanvas.Render();
-        }
-    }
+    
 
     public void setDefaultInteractorStyleType(InteractorStyleType interactorStyleType)
     {
