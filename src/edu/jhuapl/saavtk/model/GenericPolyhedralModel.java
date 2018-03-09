@@ -325,6 +325,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			defaultModelFile = new File(modelFiles[0]);
 		}
 
+		if (!defaultModelFile.exists())
+		{
+			throw new RuntimeException("Shape model file not found: " + defaultModelFile.getPath());
+		}
 		initialize(defaultModelFile);
 	}
 
