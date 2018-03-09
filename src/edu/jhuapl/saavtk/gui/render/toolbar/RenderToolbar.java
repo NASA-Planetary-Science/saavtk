@@ -77,7 +77,7 @@ public class RenderToolbar extends JToolBar implements ItemListener, ActionListe
 	ImageIcon					viewAlignMinusZIcon				= new ImageIcon(
 			RenderToolbar.class.getResource("pqZMinus.png"));
 
-	//JToggleButton				showOrientationAxesToggleButton	= new JToggleButton();
+	JToggleButton				showOrientationAxesToggleButton	= new JToggleButton();
 
 	JButton						viewAllButton					= new JButton();
 	JToggleButton				pickRotationCenterButton		= new JToggleButton();
@@ -134,10 +134,10 @@ public class RenderToolbar extends JToolBar implements ItemListener, ActionListe
 		viewAlignPlusZIcon
 				.setImage(viewAlignPlusZIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
 
-		/*showOrientationAxesToggleButton.setIcon(showOrientationAxesIcon);
+		showOrientationAxesToggleButton.setIcon(showOrientationAxesIcon);
 		add(showOrientationAxesToggleButton);
 		showOrientationAxesToggleButton.addItemListener(this);
-		showOrientationAxesToggleButton.setSelected(false);*/
+		showOrientationAxesToggleButton.setSelected(false);
 		
 		pickRotationCenterButton.setIcon(pickRotationIcon);
 		add(pickRotationCenterButton);
@@ -244,10 +244,10 @@ public class RenderToolbar extends JToolBar implements ItemListener, ActionListe
 				fire(new RenderToolbarEvent.ConstrainRotationAxisEvent(this, CartesianAxis.Z));
 			else
 				fire(new RenderToolbarEvent.ConstrainRotationAxisEvent(this, CartesianAxis.NONE));
-		}/* else if (e.getSource() == showOrientationAxesToggleButton)
+		} else if (e.getSource() == showOrientationAxesToggleButton)
 		{
 			fire(new RenderToolbarEvent.ToggleAxesVisibilityEvent(this, showOrientationAxesToggleButton.isSelected()));
-		}*/
+		}
 
 	}
 

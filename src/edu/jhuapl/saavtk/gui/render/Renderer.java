@@ -35,6 +35,7 @@ import javax.swing.Timer;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.jfree.chart.axis.AxisSpace;
+import org.jfree.ui.OverlayLayout;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -258,17 +259,16 @@ public class Renderer extends JPanel implements
     }
     
     RenderToolbar toolbar;
-    AxesPanel axesPanel;
 	private double cameraDistance;
+	AxesPanel axesPanel;
     
     public Renderer(final ModelManager modelManager)
     {
 
-        setLayout(new BorderLayout());
+        //
 
         toolbar=new RenderToolbar();
         mainCanvas=new RenderPanel(toolbar);//, statusBar)
-        axesPanel=new AxesPanel(mainCanvas);
         mainCanvas.getRenderWindowInteractor().AddObserver("KeyPressEvent", this, "localKeypressHandler");
 
         this.modelManager = modelManager;
@@ -291,7 +291,7 @@ public class Renderer extends JPanel implements
 
         initLights();
 
-        JSplitPane splitPane=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+/*        JSplitPane splitPane=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitPane.setLeftComponent(axesPanel.getComponent());
         splitPane.setRightComponent(toolbar);
         Dimension dim=toolbar.getMinimumSize();
@@ -300,9 +300,22 @@ public class Renderer extends JPanel implements
         splitPane.setResizeWeight(0);
         splitPane.setDividerLocation(dim.height);
         splitPane.setDividerSize(0);
-        add(splitPane, BorderLayout.NORTH);
-        add(mainCanvas.getComponent(), BorderLayout.CENTER);
+        add(splitPane, BorderLayout.NORTH);*/
         
+        setLayout(new BorderLayout());
+        
+        //setLayout(new OverlayLayout());
+        add(toolbar,BorderLayout.NORTH);
+        add(mainCanvas.getComponent(), BorderLayout.CENTER);
+        /*JPanel overlayPanel=new JPanel(new OverlayLayout());
+        overlayPanel.add(mainCanvas.getComponent(), BorderLayout.CENTER);
+        overlayPanel.add(mainCanvas.getAxesPanel().getComponent(), BorderLayout.CENTER);
+        add(overlayPanel, BorderLayout.CENTER);
+        
+        mainCanvas.getComponent().setOpaque(false);
+        mainCanvas.getAxesPanel().getComponent().setOpaque(false);
+        mainCanvas.getAxesPanel().getComponent().setMaximumSize(new Dimension(600,600));
+        */
         toolbar.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
 
        // mainCanvas.getRenderWindow().StereoCapableWindowOn();
@@ -507,7 +520,7 @@ public class Renderer extends JPanel implements
     {
     	getRenderWindowPanel().Render();
         File file = CustomFileChooser.showSaveDialog(this, "Export to PNG Image", "image.png", "png");
-        saveToFile(file, mainCanvas, axesPanel);
+        saveToFile(file, mainCanvas, mainCanvas.getAxesPanel());
     }
 
     private BlockingQueue<CameraFrame> cameraFrameQueue;
@@ -1470,7 +1483,7 @@ public class Renderer extends JPanel implements
         {
             if (frame.staged && frame.file != null)
             {
-                saveToFile(frame.file, mainCanvas, axesPanel);
+                saveToFile(frame.file, mainCanvas, mainCanvas.getAxesPanel());
                 cameraFrameQueue.remove();
             }
             else
