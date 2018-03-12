@@ -17,10 +17,14 @@ import edu.jhuapl.saavtk.gui.menu.FileMenu;
  */
 public abstract class MainWindow extends JFrame
 {
-	private static MainWindow mainWindow;
+	private static Window mainWindow;
 
 	public static Window getMainWindow() {
 		return mainWindow;
+	}
+
+	public static void setMainWindow(Window window) {
+		mainWindow = window;
 	}
 
 	private static final long serialVersionUID = -1837887362465597229L;
@@ -60,7 +64,6 @@ public abstract class MainWindow extends JFrame
 //        int y = parentLocation.y + (parentSize.height - prefSize.height) / 2;
 //        this.setLocation(x, y);
 //        this.setResizable(true);
-        MainWindow.mainWindow = this;
     }
     
     public MainWindow(String tempCustomShapeModelPath)

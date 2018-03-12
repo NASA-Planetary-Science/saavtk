@@ -21,6 +21,7 @@ public class ExampleMainWindow extends MainWindow
     public ExampleMainWindow(String tempCustomShapeModelPath)
     {
         super(tempCustomShapeModelPath, false);
+        setMainWindow(this);
    }
 
     @Override
