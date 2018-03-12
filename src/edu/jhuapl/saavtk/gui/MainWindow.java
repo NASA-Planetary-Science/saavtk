@@ -2,6 +2,8 @@ package edu.jhuapl.saavtk.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.Window;
+
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
@@ -15,6 +17,12 @@ import edu.jhuapl.saavtk.gui.menu.FileMenu;
  */
 public abstract class MainWindow extends JFrame
 {
+	private static MainWindow mainWindow;
+
+	public static Window getMainWindow() {
+		return mainWindow;
+	}
+
 	private static final long serialVersionUID = -1837887362465597229L;
 	private StatusBar statusBar;
     protected ViewManager rootPanel;
@@ -52,6 +60,7 @@ public abstract class MainWindow extends JFrame
 //        int y = parentLocation.y + (parentSize.height - prefSize.height) / 2;
 //        this.setLocation(x, y);
 //        this.setResizable(true);
+        MainWindow.mainWindow = this;
     }
     
     public MainWindow(String tempCustomShapeModelPath)
