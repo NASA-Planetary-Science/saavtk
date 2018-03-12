@@ -17,13 +17,17 @@ import edu.jhuapl.saavtk.gui.menu.FileMenu;
  */
 public abstract class MainWindow extends JFrame
 {
-	private static Window mainWindow;
+	private static Window mainWindow = null;
 
 	public static Window getMainWindow() {
 		return mainWindow;
 	}
 
 	public static void setMainWindow(Window window) {
+		if (mainWindow != null)
+		{
+			throw new IllegalStateException("Cannot call setMainWindow more than once");
+		}
 		mainWindow = window;
 	}
 
