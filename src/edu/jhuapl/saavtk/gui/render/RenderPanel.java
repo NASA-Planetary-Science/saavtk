@@ -104,22 +104,6 @@ public class RenderPanel extends vtkJoglPanelComponent
 		axesFrame.setVisible(false);
 		axesFrame.setAlwaysOnTop(true);
 		
-		MainWindow.getMainWindow().addWindowListener(new WindowAdapter() {
-			
-			@Override
-			public void windowActivated(WindowEvent e) {
-				//axesFrame.requestFocus();
-				axesFrame.setAlwaysOnTop(true);
-				//axesFrame.transferFocus();
-			}
-		
-			@Override
-			public void windowDeactivated(WindowEvent e) {
-				//axesFrame.requestFocus();
-				axesFrame.setAlwaysOnTop(false);
-				//axesFrame.transferFocus();
-			}
-	});
 
 		//frame.setUndecorated(true);
 		toolbar.addToolbarListener(new RenderToolbarListener() {
@@ -129,6 +113,22 @@ public class RenderPanel extends vtkJoglPanelComponent
 				if (event instanceof RenderToolbarEvent.ToggleAxesVisibilityEvent) {
 					axesFrame.setVisible(((RenderToolbarEvent.ToggleAxesVisibilityEvent) event).show());
 					if (!axesPanelShown) {
+						MainWindow.getMainWindow().addWindowListener(new WindowAdapter() {
+
+							@Override
+							public void windowActivated(WindowEvent e) {
+								//axesFrame.requestFocus();
+								axesFrame.setAlwaysOnTop(true);
+								//axesFrame.transferFocus();
+							}
+
+							@Override
+							public void windowDeactivated(WindowEvent e) {
+								//axesFrame.requestFocus();
+								axesFrame.setAlwaysOnTop(false);
+								//axesFrame.transferFocus();
+							}
+						});
 						Point point = RenderPanel.this.getComponent().getLocationOnScreen();
 						Dimension dim = RenderPanel.this.getComponent().getSize();
 						int size = (int) Math.max(dim.width / 5., dim.height / 5);
