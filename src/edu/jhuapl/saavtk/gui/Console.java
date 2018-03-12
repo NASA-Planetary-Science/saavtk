@@ -82,6 +82,10 @@ public class Console {
         return isConfigured() && CONSOLE.consoleFrame != null;
     }
 
+    public static JFrame getConsoleFrame() {
+    	return CONSOLE.consoleFrame;
+    }
+
     public static void showConsole() {
         if (isEnabled()) {
             CONSOLE.consoleFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
