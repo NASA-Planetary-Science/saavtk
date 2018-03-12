@@ -52,6 +52,7 @@ public class ExampleRunnable implements Runnable
         ToolTipManager.sharedInstance().setDismissDelay(600000); // 10 minutes
 
         MainWindow frame = new ExampleMainWindow(tempShapeModelPath);
+        MainWindow.setMainWindow(frame);
         frame.setVisible(true);
     }
 
