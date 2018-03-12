@@ -48,7 +48,7 @@ public class AxesPanel extends vtkJoglPanelComponent {
 	@Override
 	public void Render() {
 		Vector3D position=new Vector3D(sourceComponent.getActiveCamera().GetPosition());
-		position=position.normalize();
+		position=position.normalize();//.scalarMultiply(5);
 		getActiveCamera().SetPosition(position.toArray());
 		getActiveCamera().SetViewUp(sourceComponent.getActiveCamera().GetViewUp());
 /*		double w=actor.GetXAxisCaptionActor2D().GetTextActor().GetWidth();

@@ -29,6 +29,7 @@ import javax.swing.JFrame;
 import javax.swing.JRootPane;
 import javax.swing.JWindow;
 import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
 import javax.tools.Diagnostic;
 
 import org.apache.commons.math3.exception.MathArithmeticException;
@@ -79,7 +80,7 @@ public class RenderPanel extends vtkJoglPanelComponent
 
 
 	boolean axesPanelShown = false;
-	JDialog axesFrame=new JDialog();
+	JFrame axesFrame=new JFrame();
 
 	public RenderPanel(RenderToolbar toolbar)// , RenderStatusBar statusBar)
 	{
@@ -96,13 +97,11 @@ public class RenderPanel extends vtkJoglPanelComponent
 
 		axesPanel = new AxesPanel(this);
 		
-		axesFrame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
+		//axesFrame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
 		axesFrame.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
 		axesFrame.add(axesPanel.getComponent());
 		axesFrame.setVisible(false);
 		axesFrame.setAlwaysOnTop(true);
-		
-		
 		
 		//frame.setUndecorated(true);
 		toolbar.addToolbarListener(new RenderToolbarListener() {
@@ -115,7 +114,6 @@ public class RenderPanel extends vtkJoglPanelComponent
 						Point point = RenderPanel.this.getComponent().getLocationOnScreen();
 						Dimension dim = RenderPanel.this.getComponent().getSize();
 						int size = (int) Math.max(dim.width / 5., dim.height / 5);
-						axesFrame.setSize(size, size);
 						axesPanel.setSize(size, size);
 						axesFrame.setLocation(point.x, point.y + dim.height - size);	// lower left
 						axesPanelShown = true;
@@ -126,29 +124,19 @@ public class RenderPanel extends vtkJoglPanelComponent
 		});
 		
 		
-		axesFrame.addMouseListener(new MouseAdapter() {
+		axesFrame.getRootPane().setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY,2));
+		
+/*		axesPanel.getComponent().addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseEntered(MouseEvent e) {
+				axesFrame.getRootPane().setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY,2));
 			}
 			
 			@Override
 			public void mouseExited(MouseEvent e) {
-				axesFrame.setAlwaysOnTop(false);				
+				axesFrame.getRootPane().setBorder(null);
 			}
-		});
-		
-		
-		//axesPanel.getComponent().addMouseListener(new MouseAdapter() {
-		//	@Override
-		//	public void mouseEntered(MouseEvent e) {
-				axesPanel.getComponent().setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-		//	}
-			
-		//	@Override
-		//	public void mouseExited(MouseEvent e) {
-		//		axesPanel.getComponent().setBorder(null);
-		//	}
-		//});
+		});*/
 
 		axesFrame.addWindowListener(new WindowAdapter() {
 			
@@ -168,23 +156,11 @@ public class RenderPanel extends vtkJoglPanelComponent
 				e.getComponent().setSize(w,w);
 				e.getComponent().setLocation(loc);
 				axesPanel.getComponent().setSize(e.getComponent().getSize());
-//				e.getComponent().repaint();
-			}
+				//axesPanel.getRenderer().ResetCamera();
+	}
 		});
-		/*
-		 * getRenderWindow().SetNumberOfLayers(2);
-		 * getRenderWindow().AddRenderer(axesRenderer);
-		 * getRenderer().SetLayer(0); axesRenderer.SetLayer(1);
-		 * axesRenderer.AddActor(axes.getActor());
-		 * axesRenderer.AddActor(axes.getLabelActorX());
-		 * axesRenderer.AddActor(axes.getLabelActorY());
-		 * axesRenderer.AddActor(axes.getLabelActorZ());
-		 * axesRenderer.SetActiveCamera(getActiveCamera());
-		 */
-		// cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this,
-		// "cameraModified");
-		// redrawAxes();
-
+		
+		
 		getComponent().addComponentListener(this);
 	}
 
