@@ -5,26 +5,36 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Point;
+import java.awt.Toolkit;
+import java.awt.Window;
+import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowFocusListener;
+import java.awt.event.WindowListener;
 import java.util.Arrays;
 
 import javax.swing.AbstractButton;
+import javax.swing.BorderFactory;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JRootPane;
 import javax.swing.JWindow;
 import javax.swing.SwingUtilities;
+import javax.tools.Diagnostic;
 
 import org.apache.commons.math3.exception.MathArithmeticException;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import com.jogamp.newt.event.MouseAdapter;
+import com.jidesoft.plaf.WindowsDesktopProperty;
 
 import edu.jhuapl.saavtk.gui.render.axes.Axes;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
@@ -69,9 +79,11 @@ public class RenderPanel extends vtkJoglPanelComponent
 
 
 	boolean axesPanelShown = false;
+	JDialog axesFrame=new JDialog();
 
 	public RenderPanel(RenderToolbar toolbar)// , RenderStatusBar statusBar)
 	{
+		
 		getInteractorForwarder().setEventInterceptor(new Interceptor());
 		interactorStyle = new CustomInteractorStyle(getRenderWindowInteractor());
 		defaultInteractorStyle = interactorStyle;
@@ -83,34 +95,83 @@ public class RenderPanel extends vtkJoglPanelComponent
 		propRenderer = getRenderer();
 
 		axesPanel = new AxesPanel(this);
-		JDialog frame=new JDialog();
-		frame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
-		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		frame.add(axesPanel.getComponent());
-		frame.setVisible(false);
-		frame.setAlwaysOnTop(true);
+		
+		axesFrame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
+		axesFrame.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+		axesFrame.add(axesPanel.getComponent());
+		axesFrame.setVisible(false);
+		axesFrame.setAlwaysOnTop(true);
+		
+		
+		
 		//frame.setUndecorated(true);
-		frame.getRootPane().setWindowDecorationStyle(JRootPane.NONE);
 		toolbar.addToolbarListener(new RenderToolbarListener() {
 
 			@Override
 			public void handle(RenderToolbarEvent event) {
 				if (event instanceof RenderToolbarEvent.ToggleAxesVisibilityEvent) {
-					frame.setVisible(((RenderToolbarEvent.ToggleAxesVisibilityEvent) event).show());
+					axesFrame.setVisible(((RenderToolbarEvent.ToggleAxesVisibilityEvent) event).show());
 					if (!axesPanelShown) {
 						Point point = RenderPanel.this.getComponent().getLocationOnScreen();
 						Dimension dim = RenderPanel.this.getComponent().getSize();
 						int size = (int) Math.max(dim.width / 5., dim.height / 5);
-						frame.setSize(size, size);
+						axesFrame.setSize(size, size);
 						axesPanel.setSize(size, size);
-						frame.setLocation(point.x, point.y + dim.height - size);	// lower left
+						axesFrame.setLocation(point.x, point.y + dim.height - size);	// lower left
 						axesPanelShown = true;
 					}
 				}
 
 			}
 		});
-				/*
+		
+		
+		axesFrame.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseEntered(MouseEvent e) {
+			}
+			
+			@Override
+			public void mouseExited(MouseEvent e) {
+				axesFrame.setAlwaysOnTop(false);				
+			}
+		});
+		
+		
+		//axesPanel.getComponent().addMouseListener(new MouseAdapter() {
+		//	@Override
+		//	public void mouseEntered(MouseEvent e) {
+				axesPanel.getComponent().setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+		//	}
+			
+		//	@Override
+		//	public void mouseExited(MouseEvent e) {
+		//		axesPanel.getComponent().setBorder(null);
+		//	}
+		//});
+
+		axesFrame.addWindowListener(new WindowAdapter() {
+			
+			@Override
+			public void windowClosing(WindowEvent e) {
+				toolbar.setOrientationAxesToggleState(false);
+			}
+			
+			
+		});
+		
+		axesFrame.addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentResized(ComponentEvent e) {
+				Point loc=e.getComponent().getLocation();
+				int w=e.getComponent().getWidth();
+				e.getComponent().setSize(w,w);
+				e.getComponent().setLocation(loc);
+				axesPanel.getComponent().setSize(e.getComponent().getSize());
+//				e.getComponent().repaint();
+			}
+		});
+		/*
 		 * getRenderWindow().SetNumberOfLayers(2);
 		 * getRenderWindow().AddRenderer(axesRenderer);
 		 * getRenderer().SetLayer(0); axesRenderer.SetLayer(1);

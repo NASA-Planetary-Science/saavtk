@@ -100,6 +100,10 @@ public class RenderToolbar extends JToolBar implements ItemListener, ActionListe
 	List<Component> visibleComponents=Lists.newArrayList();
 	List<Component> outOfBoundsComponents=Lists.newArrayList();
 
+	public void setOrientationAxesToggleState(boolean show)
+	{
+		showOrientationAxesToggleButton.setSelected(show);
+	}
 	
 	public RenderToolbar()
 	{
