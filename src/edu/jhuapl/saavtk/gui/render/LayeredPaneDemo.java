@@ -5,12 +5,16 @@ import vtk.vtkActor;
 import vtk.vtkNativeLibrary;
 import vtk.vtkPolyDataMapper;
 import vtk.vtkSphereSource;
+import vtk.rendering.vtkEventInterceptor;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Point;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -53,54 +57,99 @@ public class LayeredPaneDemo extends JPanel {
 		layeredPane.add(axesPanel.getComponent(), new Integer(1));
 		axesPanel.getComponent().setSize(50, 50);
 		axesPanel.getComponent().setOpaque(true);
-		//
-		axesPanel.getComponent().addMouseListener(new MouseAdapter() {
-			int lastx,lasty;
+		
+/*		axesPanel.getInteractorForwarder().setEventInterceptor(new vtkEventInterceptor() {
+			int xold,yold;
+			int mx0,my0;
 			boolean dragging=false;
 			
 			@Override
-			public void mouseEntered(MouseEvent e) {
-				axesPanel.getComponent().setBorder(BorderFactory.createLineBorder(Color.WHITE, 5));
-				}
-			
-			@Override
-			public void mouseExited(MouseEvent e) {
-				axesPanel.getComponent().setBorder(null);
+			public boolean mouseWheelMoved(MouseWheelEvent e) {
+				// TODO Auto-generated method stub
+				return false;
 			}
 			
 			@Override
-			public void mousePressed(MouseEvent e) {
-				lastx=e.getX();
-				lasty=e.getY();
-				System.out.println(lastx+" "+lasty);
-				dragging=true;
-			}
-			
-			@Override
-			public void mouseMoved(MouseEvent e) {
-				if (dragging)
-					System.out.print("!");
-			}
-			
-			@Override
-			public void mouseReleased(MouseEvent e) {
+			public boolean mouseReleased(MouseEvent e) {
 				dragging=false;
+				return true;
 			}
-		});
-		
-		
-		renderObject.getComponent().addMouseListener(new MouseAdapter() {
+			
 			@Override
-			public void mouseMoved(MouseEvent e) {
-				System.out.println("renderObject mouse moved");
+			public boolean mousePressed(MouseEvent e) {
+				xold=axesPanel.getComponent().getLocation().x;
+				yold=axesPanel.getComponent().getLocation().y;
+				mx0=e.getX();
+				my0=e.getY();
+				dragging=true;
+				return true;
 			}
-		});
+			
+			@Override
+			public boolean mouseMoved(MouseEvent e) {
+				System.out.println(e.getComponent());
+				if (dragging)
+				{
+					axesPanel.getComponent().setLocation(xold+e.getX()-mx0,yold+e.getY()-my0);
+					axesPanel.getComponent().repaint();
+					System.out.println(e.getX()+" "+e.getY());
+				}
+
+				return false;
+			}
+			
+			@Override
+			public boolean mouseExited(MouseEvent e) {
+				// TODO Auto-generated method stub
+				return false;
+			}
+			
+			@Override
+			public boolean mouseEntered(MouseEvent e) {
+				// TODO Auto-generated method stub
+				return false;
+			}
+			
+			@Override
+			public boolean mouseDragged(MouseEvent e) {
+				return false;
+			}
+			
+			@Override
+			public boolean mouseClicked(MouseEvent e) {
+				// TODO Auto-generated method stub
+				return false;
+			}
+			
+			@Override
+			public boolean keyTyped(KeyEvent e) {
+				// TODO Auto-generated method stub
+				return false;
+			}
+			
+			@Override
+			public boolean keyReleased(KeyEvent e) {
+				// TODO Auto-generated method stub
+				return false;
+			}
+			
+			@Override
+			public boolean keyPressed(KeyEvent e) {
+				// TODO Auto-generated method stub
+				return false;
+			}
+		});*/
+		
 
 		renderObject.getRenderer().ResetCamera();
 
 		add(layeredPane);
 	}
 
+	void test()
+	{
+		System.out.println("!");
+	}
 
 	public static void main(String[] args) {
 		javax.swing.SwingUtilities.invokeLater(new Runnable() {

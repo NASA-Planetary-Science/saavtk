@@ -42,6 +42,7 @@ public abstract class MainWindow extends JFrame
      */
     public MainWindow(String tempCustomShapeModelPath, boolean editableLeftStatusLabel)
     {
+    	setMainWindow(this);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         createStatusBar(editableLeftStatusLabel);

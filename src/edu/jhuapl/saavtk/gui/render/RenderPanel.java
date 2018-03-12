@@ -37,6 +37,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.jidesoft.plaf.WindowsDesktopProperty;
 
+import edu.jhuapl.saavtk.gui.MainWindow;
 import edu.jhuapl.saavtk.gui.render.axes.Axes;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
 import edu.jhuapl.saavtk.gui.render.axes.CartesianViewDirection;
@@ -103,6 +104,23 @@ public class RenderPanel extends vtkJoglPanelComponent
 		axesFrame.setVisible(false);
 		axesFrame.setAlwaysOnTop(true);
 		
+		MainWindow.getMainWindow().addWindowListener(new WindowAdapter() {
+			
+			@Override
+			public void windowActivated(WindowEvent e) {
+				//axesFrame.requestFocus();
+				axesFrame.setAlwaysOnTop(true);
+				//axesFrame.transferFocus();
+			}
+		
+			@Override
+			public void windowDeactivated(WindowEvent e) {
+				//axesFrame.requestFocus();
+				axesFrame.setAlwaysOnTop(false);
+				//axesFrame.transferFocus();
+			}
+	});
+
 		//frame.setUndecorated(true);
 		toolbar.addToolbarListener(new RenderToolbarListener() {
 
@@ -205,9 +223,9 @@ public class RenderPanel extends vtkJoglPanelComponent
 		Render();
 	}
 
+	
 	@Override
 	public void componentShown(ComponentEvent e) {
-		// TODO Auto-generated method stub
 
 	}
 
@@ -345,7 +363,7 @@ public class RenderPanel extends vtkJoglPanelComponent
 	 * "redrawAxes"); }
 	 */
 
-	private static class Interceptor implements vtkEventInterceptor {
+	static class Interceptor implements vtkEventInterceptor {
 
 		@Override
 		public boolean keyPressed(KeyEvent e) {
