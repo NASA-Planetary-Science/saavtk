@@ -104,7 +104,6 @@ public class RenderPanel extends vtkJoglPanelComponent
 		axesFrame.add(axesPanel.getComponent());
 		axesFrame.setVisible(false);
 		axesFrame.setAlwaysOnTop(true);
-		
 
 		//frame.setUndecorated(true);
 		toolbar.addToolbarListener(new RenderToolbarListener() {
@@ -114,7 +113,7 @@ public class RenderPanel extends vtkJoglPanelComponent
 				if (event instanceof RenderToolbarEvent.ToggleAxesVisibilityEvent) {
 					axesFrame.setVisible(((RenderToolbarEvent.ToggleAxesVisibilityEvent) event).show());
 					if (!axesPanelShownBefore) {
-					    setUpMainWindowListener();
+					    setUpMainWindowListeners();
 						Point point = RenderPanel.this.getComponent().getLocationOnScreen();
 						Dimension dim = RenderPanel.this.getComponent().getSize();
 						int size = (int) Math.max(dim.width / 5., dim.height / 5);
@@ -292,8 +291,8 @@ public class RenderPanel extends vtkJoglPanelComponent
 		renderView.getRenderPanel().getRenderer().AddActor(actor);
 	}
 
-	protected void setUpMainWindowListener() {
-        MainWindow.getMainWindow().addWindowListener(new WindowAdapter() {
+	protected void setUpMainWindowListeners() {
+        WindowAdapter adapter = new WindowAdapter() {
             @Override
             public void windowDeiconified(@SuppressWarnings("unused") WindowEvent e) {
                 axesFrame.setVisible(showAxesPanelOnRestore);
@@ -324,8 +323,16 @@ public class RenderPanel extends vtkJoglPanelComponent
             public void windowLostFocus(@SuppressWarnings("unused") WindowEvent e) {
                 axesFrame.setAlwaysOnTop(false);
             }
-        });
 
+            @Override
+            public void windowStateChanged(WindowEvent e) {
+                System.err.println(e);
+            }
+        };
+
+        Window window = MainWindow.getMainWindow();
+        window.addWindowListener(adapter);
+        window.addWindowFocusListener(adapter);
 	}
 	/*
 	 * private void redrawAxes() { vtkTransform transform=new vtkTransform();
