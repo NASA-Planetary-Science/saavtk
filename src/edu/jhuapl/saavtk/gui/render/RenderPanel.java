@@ -80,7 +80,8 @@ public class RenderPanel extends vtkJoglPanelComponent
 	}
 
 
-	boolean axesPanelShown = false;
+	boolean showAxesPanelOnRestore = false;
+	boolean axesPanelShownBefore = false;
 	JFrame axesFrame=new JFrame();
 
 	public RenderPanel(RenderToolbar toolbar)// , RenderStatusBar statusBar)
@@ -112,29 +113,14 @@ public class RenderPanel extends vtkJoglPanelComponent
 			public void handle(RenderToolbarEvent event) {
 				if (event instanceof RenderToolbarEvent.ToggleAxesVisibilityEvent) {
 					axesFrame.setVisible(((RenderToolbarEvent.ToggleAxesVisibilityEvent) event).show());
-					if (!axesPanelShown) {
-						MainWindow.getMainWindow().addWindowListener(new WindowAdapter() {
-
-							@Override
-							public void windowActivated(WindowEvent e) {
-								//axesFrame.requestFocus();
-								axesFrame.setAlwaysOnTop(true);
-								//axesFrame.transferFocus();
-							}
-
-							@Override
-							public void windowDeactivated(WindowEvent e) {
-								//axesFrame.requestFocus();
-								axesFrame.setAlwaysOnTop(false);
-								//axesFrame.transferFocus();
-							}
-						});
+					if (!axesPanelShownBefore) {
+					    setUpMainWindowListener();
 						Point point = RenderPanel.this.getComponent().getLocationOnScreen();
 						Dimension dim = RenderPanel.this.getComponent().getSize();
 						int size = (int) Math.max(dim.width / 5., dim.height / 5);
 						axesPanel.setSize(size, size);
 						axesFrame.setLocation(point.x, point.y + dim.height - size);	// lower left
-						axesPanelShown = true;
+						axesPanelShownBefore = true;
 					}
 				}
 
@@ -306,6 +292,41 @@ public class RenderPanel extends vtkJoglPanelComponent
 		renderView.getRenderPanel().getRenderer().AddActor(actor);
 	}
 
+	protected void setUpMainWindowListener() {
+        MainWindow.getMainWindow().addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowDeiconified(@SuppressWarnings("unused") WindowEvent e) {
+                axesFrame.setVisible(showAxesPanelOnRestore);
+            }
+
+            @Override
+            public void windowIconified(@SuppressWarnings("unused") WindowEvent e) {
+                showAxesPanelOnRestore = axesFrame.isVisible();
+                axesFrame.setVisible(false);
+            }
+
+            @Override
+            public void windowActivated(@SuppressWarnings("unused") WindowEvent e) {
+                axesFrame.setAlwaysOnTop(true);
+            }
+
+            @Override
+            public void windowDeactivated(@SuppressWarnings("unused") WindowEvent e) {
+                axesFrame.setAlwaysOnTop(false);
+            }
+
+            @Override
+            public void windowGainedFocus(@SuppressWarnings("unused") WindowEvent e) {
+                axesFrame.setAlwaysOnTop(true);
+            }
+
+            @Override
+            public void windowLostFocus(@SuppressWarnings("unused") WindowEvent e) {
+                axesFrame.setAlwaysOnTop(false);
+            }
+        });
+
+	}
 	/*
 	 * private void redrawAxes() { vtkTransform transform=new vtkTransform();
 	 * transform.DeepCopy(getActiveCamera().GetModelViewTransformObject());
