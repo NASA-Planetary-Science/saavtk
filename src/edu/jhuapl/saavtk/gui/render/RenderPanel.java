@@ -1,44 +1,24 @@
 package edu.jhuapl.saavtk.gui.render;
 
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Point;
-import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.event.WindowFocusListener;
-import java.awt.event.WindowListener;
-import java.util.Arrays;
-
-import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
-import javax.swing.JRootPane;
-import javax.swing.JWindow;
 import javax.swing.SwingUtilities;
-import javax.swing.border.EmptyBorder;
-import javax.tools.Diagnostic;
-
-import org.apache.commons.math3.exception.MathArithmeticException;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import com.jidesoft.plaf.WindowsDesktopProperty;
-
 import edu.jhuapl.saavtk.gui.MainWindow;
-import edu.jhuapl.saavtk.gui.render.axes.Axes;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
 import edu.jhuapl.saavtk.gui.render.axes.CartesianViewDirection;
 import edu.jhuapl.saavtk.gui.render.camera.Camera;
@@ -49,14 +29,11 @@ import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarListener;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent.ConstrainRotationAxisEvent;
 import vtk.vtkActor;
-import vtk.vtkAxes;
 import vtk.vtkConeSource;
-import vtk.vtkCoordinate;
 import vtk.vtkNativeLibrary;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
 import vtk.vtkRenderer;
-import vtk.vtkTransform;
 import vtk.rendering.vtkEventInterceptor;
 import vtk.rendering.vtkInteractorForwarder;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
