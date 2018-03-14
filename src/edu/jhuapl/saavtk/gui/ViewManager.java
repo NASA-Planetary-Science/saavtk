@@ -184,23 +184,20 @@ public abstract class ViewManager extends JPanel
 
     public String getDefaultBodyToLoad()
     {
-        try
-        {
-            if (!defaultModelFile.toFile().exists())
-                return ViewConfig.getBuiltInConfigs().get(0).getUniqueName();
-            //
-            Scanner scanner=new Scanner(ViewManager.defaultModelFile.toFile());
-            if (scanner.hasNextLine())
-                defaultModelName=scanner.nextLine();
-            else
-                defaultModelName=null;
-            scanner.close();
-        }
-        catch (IOException e)
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+    	defaultModelName = ViewConfig.getBuiltInConfigs().get(0).getUniqueName();
+    	if (defaultModelFile.toFile().exists())
+    	{    		
+    		try (Scanner scanner = new Scanner(ViewManager.defaultModelFile.toFile()))
+    		{
+    			if (scanner.hasNextLine())
+    				defaultModelName=scanner.nextLine();
+    		}
+    		catch (IOException e)
+    		{
+    			// TODO Auto-generated catch block
+    			e.printStackTrace();
+    		}
+    	}
 
         return defaultModelName;
     }
