@@ -20,7 +20,7 @@ public enum ShapeModelType
     CARRY("Carry"),
     DLR("DLR"),
     BLENDER("Zimmerman"),
-    OREX("Orex"),
+    OREX("OSIRIS-REx"),
     HAYABUSA2("Hayabusa2"),
     TRUTH("Truth");
 
