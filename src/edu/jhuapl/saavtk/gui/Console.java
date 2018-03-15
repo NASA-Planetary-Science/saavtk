@@ -20,11 +20,14 @@ import javax.swing.JTextArea;
 public class Console {
 
     private static Console CONSOLE = null;
+    private final PrintStream outputFile;
     private final JFrame consoleFrame;
     private final PrintStream out;
 
-    private Console(boolean enable) {
-        // Start with settings for enable == false.
+    private Console(boolean enable, PrintStream outputFile) {
+    	this.outputFile = outputFile;
+
+    	// Start with settings for enable == false.
         JFrame consoleFrame = null;
         PrintStream out = System.out;
 
@@ -70,9 +73,13 @@ public class Console {
     }
 
     public static void configure(boolean enable) {
-        if (CONSOLE != null) throw new UnsupportedOperationException("Console may only be configured once.");
-        CONSOLE = new Console(enable);
+    	configure(enable, null);
     }
+
+	public static void configure(boolean enable, PrintStream outputFile) {
+        if (CONSOLE != null) throw new UnsupportedOperationException("Console may only be configured once.");
+        CONSOLE = new Console(enable, outputFile);
+	}
 
     public static boolean isConfigured() {
         return CONSOLE != null;
@@ -164,6 +171,9 @@ public class Console {
             // put the string version of each character into the text area
             textArea.append(String.valueOf((char) b)); // make sure the bottom of the data is showing in the window
             textArea.setCaretPosition(textArea.getDocument().getLength());
+            if (outputFile != null) {
+            	outputFile.append((char) b);
+            }
         }
     }
 }
