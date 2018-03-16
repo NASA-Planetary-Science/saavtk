@@ -2,46 +2,25 @@ package edu.jhuapl.saavtk.gui.render;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.File;
-import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import javax.media.opengl.GLAutoDrawable;
-import javax.media.opengl.GLEventListener;
-import javax.media.opengl.awt.GLJPanel;
+import javax.media.opengl.GLContext;
 import javax.swing.BorderFactory;
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JSplitPane;
-import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-import org.jfree.chart.axis.AxisSpace;
-import org.jfree.ui.OverlayLayout;
-
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-
-import vtk.vtkActor;
 import vtk.vtkAxesActor;
 import vtk.vtkBMPWriter;
 import vtk.vtkCamera;
@@ -49,7 +28,6 @@ import vtk.vtkCaptionActor2D;
 import vtk.vtkCellLocator;
 import vtk.vtkCubeAxesActor2D;
 import vtk.vtkIdList;
-import vtk.vtkImageData;
 import vtk.vtkInteractorStyle;
 import vtk.vtkInteractorStyleImage;
 import vtk.vtkInteractorStyleJoystickCamera;
@@ -57,46 +35,31 @@ import vtk.vtkInteractorStyleTrackballCamera;
 import vtk.vtkJPEGWriter;
 import vtk.vtkLight;
 import vtk.vtkLightKit;
-import vtk.vtkOrientationMarkerWidget;
 import vtk.vtkPNGWriter;
 import vtk.vtkPNMWriter;
-import vtk.vtkPolyData;
-import vtk.vtkPolyDataMapper;
 import vtk.vtkPostScriptWriter;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
 import vtk.vtkProperty;
 import vtk.vtkRenderer;
-import vtk.vtkSTLWriter;
-import vtk.vtkScalarBarActor;
 import vtk.vtkTIFFWriter;
 import vtk.vtkTextProperty;
-import vtk.vtkTriangle;
-import vtk.vtkUnsignedCharArray;
 import vtk.vtkWindowToImageFilter;
-import vtk.vtksbTriangle;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
-import edu.jhuapl.saavtk.colormap.Colorbar;
 import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
-import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas;
-import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas.StereoMode;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
 import edu.jhuapl.saavtk.gui.render.camera.CameraFrame;
-import edu.jhuapl.saavtk.gui.render.camera.CameraProperties;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
-import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Preferences;
-import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
-import edu.jhuapl.saavtk.util.SmallBodyCubes;
 
 public class Renderer extends JPanel implements ActionListener
 {
@@ -1369,12 +1332,17 @@ public class Renderer extends JPanel implements ActionListener
     {
         if (file != null)
         {
+        	GLContext glContext = null;
             try
             {
-                // The following line is needed due to some weird threading
-                // issue with JOGL when saving out the pixel buffer. Note release
-                // needs to be called at the end.
-                renWin.getComponent().getContext().makeCurrent();
+                glContext = renWin.getComponent().getContext();
+                if (glContext != null)
+                {
+                	// The following line is needed due to some weird threading
+                	// issue with JOGL when saving out the pixel buffer. Note release
+                	// needs to be called at the end.
+                	glContext.makeCurrent();
+                }
 
                 renWin.getVTKLock().lock();
                 vtkWindowToImageFilter windowToImage = new vtkWindowToImageFilter();
@@ -1431,7 +1399,10 @@ public class Renderer extends JPanel implements ActionListener
             }
             finally
             {
-                renWin.getComponent().getContext().release();
+            	if (glContext != null)
+            	{            		
+            		glContext.release();
+            	}
             }
         }
     }
