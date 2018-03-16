@@ -85,6 +85,7 @@ import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
 import edu.jhuapl.saavtk.gui.render.camera.CameraFrame;
 import edu.jhuapl.saavtk.gui.render.camera.CameraProperties;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
+import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
@@ -944,6 +945,16 @@ public class Renderer extends JPanel implements ActionListener
         mainCanvas.Render();
     }
 
+    public void viewDeactivating()
+    {
+    	mainCanvas.axesFrame.setVisible(false);
+    }
+
+    public void viewActivating()
+    {
+    	mainCanvas.axesFrame.setVisible(toolbar.getOrientationAxesToggleState());
+    }
+    
     // Gets the camera roll with roll as defined by vtkCamera
     public double getCameraRoll()
     {

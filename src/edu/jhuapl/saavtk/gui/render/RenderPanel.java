@@ -117,6 +117,7 @@ public class RenderPanel extends vtkJoglPanelComponent
 				axesFrame.getRootPane().setBorder(null);
 			}
 		});*/
+		
 
 		axesFrame.addWindowListener(new WindowAdapter() {
 			
