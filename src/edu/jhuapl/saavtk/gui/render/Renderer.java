@@ -109,12 +109,12 @@ public class Renderer extends JPanel implements ActionListener
         FIXEDLIGHT
     }
 
-    public enum InteractorStyleType
+/*    public enum InteractorStyleType
     {
         TRACKBALL_CAMERA,
         JOYSTICK_CAMERA
     }
-
+*/
     public enum AxisType
     {
         NONE,
@@ -146,9 +146,9 @@ public class Renderer extends JPanel implements ActionListener
 
     private ModelManager modelManager;
     private vtkInteractorStyleTrackballCamera trackballCameraInteractorStyle;
-    private vtkInteractorStyleJoystickCamera joystickCameraInteractorStyle;
-    private vtkInteractorStyle defaultInteractorStyle;
-    private vtkAxesActor axes;
+//    private vtkInteractorStyleJoystickCamera joystickCameraInteractorStyle;
+//    private vtkInteractorStyle defaultInteractorStyle;
+//    private vtkAxesActor axes;
 //    private vtkOrientationMarkerWidget orientationWidget;
     private vtkLightKit lightKit;
     private vtkLight headlight;
@@ -156,8 +156,8 @@ public class Renderer extends JPanel implements ActionListener
     private LightingType currentLighting = LightingType.NONE;
     // We need a separate flag for this since we should modify interaction if
     // axes are enabled
-    private boolean interactiveAxes = true;
-    private double axesSize; // needed because java wrappers do not expose vtkOrientationMarkerWidget.GetViewport() function.
+//    private boolean interactiveAxes = true;
+//    private double axesSize; // needed because java wrappers do not expose vtkOrientationMarkerWidget.GetViewport() function.
 
     public static boolean enableLODs = true; // This is temporary to show off the LOD feature, very soon we will replace this with an actual menu
     public boolean showingLODs = false;
@@ -165,7 +165,7 @@ public class Renderer extends JPanel implements ActionListener
     private StatusBar statusBar=null;
     boolean inInteraction=false;
 
-    void initOrientationAxes()
+/*    void initOrientationAxes()
     {
         axes = new vtkAxesActor();
 
@@ -201,7 +201,7 @@ public class Renderer extends JPanel implements ActionListener
   //      orientationWidget.SetInteractor(mainCanvas.getRenderWindowInteractor());
   //      orientationWidget.SetTolerance(10);
         setAxesSize(Preferences.getInstance().getAsDouble(Preferences.AXES_SIZE, 0.2));
-    }
+    }*/
 
     void initLights()
     {
@@ -278,9 +278,9 @@ public class Renderer extends JPanel implements ActionListener
 //        modelManager.addPropertyChangeListener(this);
 
         trackballCameraInteractorStyle = new vtkInteractorStyleTrackballCamera();
-        joystickCameraInteractorStyle = new vtkInteractorStyleJoystickCamera();
+       // joystickCameraInteractorStyle = new vtkInteractorStyleJoystickCamera();
 
-        defaultInteractorStyle = trackballCameraInteractorStyle;
+        //defaultInteractorStyle = trackballCameraInteractorStyle;
 
  /*       InteractorStyleType interactorStyleType = InteractorStyleType.valueOf(
                 Preferences.getInstance().get(Preferences.INTERACTOR_STYLE_TYPE, InteractorStyleType.TRACKBALL_CAMERA.toString()));
@@ -330,14 +330,14 @@ public class Renderer extends JPanel implements ActionListener
         
         
 
-        initOrientationAxes();
+        //initOrientationAxes();
 
         javax.swing.SwingUtilities.invokeLater(new Runnable()
         {
             public void run()
             {
-                setShowOrientationAxes(Preferences.getInstance().getAsBoolean(Preferences.SHOW_AXES, true));
-                setOrientationAxesInteractive(Preferences.getInstance().getAsBoolean(Preferences.INTERACTIVE_AXES, true));
+                //setShowOrientationAxes(Preferences.getInstance().getAsBoolean(Preferences.SHOW_AXES, true));
+                //setOrientationAxesInteractive(Preferences.getInstance().getAsBoolean(Preferences.INTERACTIVE_AXES, true));
                 setProps(modelManager.getProps());
                 //mainCanvas.resetCamera();
                 //mainCanvas.Render();
@@ -976,7 +976,7 @@ public class Renderer extends JPanel implements ActionListener
 
     
 
-    public void setDefaultInteractorStyleType(InteractorStyleType interactorStyleType)
+/*    public void setDefaultInteractorStyleType(InteractorStyleType interactorStyleType)
     {
         if (interactorStyleType == InteractorStyleType.JOYSTICK_CAMERA)
             defaultInteractorStyle = joystickCameraInteractorStyle;
@@ -986,15 +986,15 @@ public class Renderer extends JPanel implements ActionListener
         // Change the interactor now unless it is currently null.
         if (mainCanvas.getRenderWindowInteractor().GetInteractorStyle() != null)
             setInteractorStyleToDefault();
-    }
+    }*/
 
-    public InteractorStyleType getDefaultInteractorStyleType()
+/*    public InteractorStyleType getDefaultInteractorStyleType()
     {
         if (defaultInteractorStyle == joystickCameraInteractorStyle)
             return InteractorStyleType.JOYSTICK_CAMERA;
         else
             return InteractorStyleType.TRACKBALL_CAMERA;
-    }
+    }*/
 
     public void setInteractorStyleToDefault()
     {
@@ -1109,7 +1109,7 @@ public class Renderer extends JPanel implements ActionListener
         return headlight.GetIntensity();
     }
 
-    public void setShowOrientationAxes(boolean show)
+/*    public void setShowOrientationAxes(boolean show)
     {
         if (getShowOrientationAxes() != show)
         {
@@ -1148,7 +1148,7 @@ public class Renderer extends JPanel implements ActionListener
     {
         return interactiveAxes;
     }
-
+*/
  /*   public void setMouseWheelMotionFactor(double factor)
     {
         trackballCameraInteractorStyle.SetMouseWheelMotionFactor(factor);
@@ -1198,7 +1198,7 @@ public class Renderer extends JPanel implements ActionListener
         mainCanvas.Render();
     }
 
-    public void setAxesSize(double size)
+/*    public void setAxesSize(double size)
     {
         this.axesSize = size;
     //    orientationWidget.SetViewport(0.0, 0.0, size, size);
@@ -1351,7 +1351,7 @@ public class Renderer extends JPanel implements ActionListener
     public double getAxesConeRadius()
     {
         return axes.GetConeRadius();
-    }
+    }*/
     
     public int getPanelWidth()
     {
