@@ -14,7 +14,8 @@ public class DateTimeUtil
      */
     public static String convertDateTimeFormat(String datetime)
     {
-        String[] tokens = datetime.trim().split("[\\sT-]+");
+    	datetime = datetime.trim().replaceAll("(\\d)[Tt]", "$1 ");
+        String[] tokens = datetime.trim().split("[\\s-]+");
 
         String year  = tokens[0];
         String month = tokens[1];
