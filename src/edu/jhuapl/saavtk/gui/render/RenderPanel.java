@@ -61,6 +61,11 @@ public class RenderPanel extends vtkJoglPanelComponent
 	JFrame axesFrame;
 	Point location;
 
+	public boolean isAxesPanelVisible()
+	{
+		return axesFrame.isVisible();
+	}
+	
 	public RenderPanel(RenderToolbar toolbar)// , RenderStatusBar statusBar)
 	{
 
