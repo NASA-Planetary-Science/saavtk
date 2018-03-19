@@ -80,7 +80,7 @@ public class RenderPanel extends vtkJoglPanelComponent
 			@Override
 			public void setVisible(boolean b) {
 				super.setVisible(b);
-				if (!axesPanelShownBefore && MainWindow.getMainWindow() != null) {
+				if (!axesPanelShownBefore && MainWindow.getMainWindow() != null && isWindowCreated) {
 					setUpMainWindowListeners();
 					Point point = RenderPanel.this.getComponent().getLocationOnScreen();
 					Dimension dim = RenderPanel.this.getComponent().getSize();
