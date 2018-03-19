@@ -537,6 +537,7 @@ public class Renderer extends JPanel implements ActionListener
     public void save6ViewsToFile()
     {
         File file = CustomFileChooser.showSaveDialog(this, "Export to PNG Image", "", "png");
+        if (file == null) return;
         String path = file.getAbsolutePath();
         String base = path.substring(0, path.lastIndexOf('.'));
         String ext = path.substring(path.lastIndexOf('.'));
