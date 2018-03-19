@@ -21,7 +21,7 @@ public enum ShapeModelType
     DLR("DLR"),
     BLENDER("Zimmerman"),
     OREX("Orex"),
-    HAYABUSA2("Hayabusa2"),
+    HAYABUSA2("Hayabusa2-testing"),
     TRUTH("Truth");
 
     final private String str;
