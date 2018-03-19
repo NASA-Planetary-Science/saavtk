@@ -2,101 +2,59 @@ package edu.jhuapl.saavtk.gui.render;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.File;
-import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import javax.media.opengl.GLAutoDrawable;
-import javax.media.opengl.GLEventListener;
-import javax.media.opengl.awt.GLJPanel;
+import javax.media.opengl.GLContext;
+import javax.media.opengl.GLException;
 import javax.swing.BorderFactory;
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JSplitPane;
-import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-import org.jfree.chart.axis.AxisSpace;
-import org.jfree.ui.OverlayLayout;
-
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-
-import vtk.vtkActor;
-import vtk.vtkAxesActor;
 import vtk.vtkBMPWriter;
 import vtk.vtkCamera;
-import vtk.vtkCaptionActor2D;
 import vtk.vtkCellLocator;
 import vtk.vtkCubeAxesActor2D;
 import vtk.vtkIdList;
-import vtk.vtkImageData;
-import vtk.vtkInteractorStyle;
 import vtk.vtkInteractorStyleImage;
-import vtk.vtkInteractorStyleJoystickCamera;
 import vtk.vtkInteractorStyleTrackballCamera;
 import vtk.vtkJPEGWriter;
 import vtk.vtkLight;
 import vtk.vtkLightKit;
-import vtk.vtkOrientationMarkerWidget;
 import vtk.vtkPNGWriter;
 import vtk.vtkPNMWriter;
-import vtk.vtkPolyData;
-import vtk.vtkPolyDataMapper;
 import vtk.vtkPostScriptWriter;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
-import vtk.vtkProperty;
 import vtk.vtkRenderer;
-import vtk.vtkSTLWriter;
-import vtk.vtkScalarBarActor;
 import vtk.vtkTIFFWriter;
-import vtk.vtkTextProperty;
-import vtk.vtkTriangle;
-import vtk.vtkUnsignedCharArray;
 import vtk.vtkWindowToImageFilter;
-import vtk.vtksbTriangle;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
-import edu.jhuapl.saavtk.colormap.Colorbar;
 import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
-import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas;
-import edu.jhuapl.saavtk.gui.jogl.StereoCapableMirrorCanvas.StereoMode;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
 import edu.jhuapl.saavtk.gui.render.camera.CameraFrame;
-import edu.jhuapl.saavtk.gui.render.camera.CameraProperties;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
-import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Preferences;
-import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
-import edu.jhuapl.saavtk.util.SmallBodyCubes;
 
 public class Renderer extends JPanel implements ActionListener
 {
@@ -106,12 +64,6 @@ public class Renderer extends JPanel implements ActionListener
         HEADLIGHT,
         LIGHT_KIT,
         FIXEDLIGHT
-    }
-
-    public enum InteractorStyleType
-    {
-        TRACKBALL_CAMERA,
-        JOYSTICK_CAMERA
     }
 
     public enum AxisType
@@ -145,62 +97,16 @@ public class Renderer extends JPanel implements ActionListener
 
     private ModelManager modelManager;
     private vtkInteractorStyleTrackballCamera trackballCameraInteractorStyle;
-    private vtkInteractorStyleJoystickCamera joystickCameraInteractorStyle;
-    private vtkInteractorStyle defaultInteractorStyle;
-    private vtkAxesActor axes;
-//    private vtkOrientationMarkerWidget orientationWidget;
     private vtkLightKit lightKit;
     private vtkLight headlight;
     private vtkLight fixedLight;
     private LightingType currentLighting = LightingType.NONE;
-    // We need a separate flag for this since we should modify interaction if
-    // axes are enabled
-    private boolean interactiveAxes = true;
-    private double axesSize; // needed because java wrappers do not expose vtkOrientationMarkerWidget.GetViewport() function.
 
     public static boolean enableLODs = true; // This is temporary to show off the LOD feature, very soon we will replace this with an actual menu
     public boolean showingLODs = false;
     
     private StatusBar statusBar=null;
     boolean inInteraction=false;
-
-    void initOrientationAxes()
-    {
-        axes = new vtkAxesActor();
-
-        vtkCaptionActor2D caption = axes.GetXAxisCaptionActor2D();
-        caption.GetTextActor().SetTextScaleModeToNone();
-        vtkTextProperty textProperty = caption.GetCaptionTextProperty();
-        textProperty.BoldOff();
-        textProperty.ItalicOff();
-
-        caption = axes.GetYAxisCaptionActor2D();
-        caption.GetTextActor().SetTextScaleModeToNone();
-        textProperty = caption.GetCaptionTextProperty();
-        textProperty.BoldOff();
-        textProperty.ItalicOff();
-
-        caption = axes.GetZAxisCaptionActor2D();
-        caption.GetTextActor().SetTextScaleModeToNone();
-        textProperty = caption.GetCaptionTextProperty();
-        textProperty.BoldOff();
-        textProperty.ItalicOff();
-
-        setXAxisColor(Preferences.getInstance().getAsIntArray(Preferences.AXES_XAXIS_COLOR, new int[]{255, 0, 0}));
-        setYAxisColor(Preferences.getInstance().getAsIntArray(Preferences.AXES_YAXIS_COLOR, new int[]{0, 255, 0}));
-        setZAxisColor(Preferences.getInstance().getAsIntArray(Preferences.AXES_ZAXIS_COLOR, new int[]{255, 255, 0}));
-        setAxesLabelFontSize((int)Preferences.getInstance().getAsLong(Preferences.AXES_FONT_SIZE, 12L));
-        setAxesLabelFontColor(Preferences.getInstance().getAsIntArray(Preferences.AXES_FONT_COLOR, new int[]{255, 255, 255}));
-        setAxesLineWidth(Preferences.getInstance().getAsDouble(Preferences.AXES_LINE_WIDTH, 1.0));
-        setAxesConeLength(Preferences.getInstance().getAsDouble(Preferences.AXES_CONE_LENGTH, 0.2));
-        setAxesConeRadius(Preferences.getInstance().getAsDouble(Preferences.AXES_CONE_RADIUS, 0.4));
-
-  //      orientationWidget = new vtkOrientationMarkerWidget();
-  //      orientationWidget.SetOrientationMarker(axes);
-  //      orientationWidget.SetInteractor(mainCanvas.getRenderWindowInteractor());
-  //      orientationWidget.SetTolerance(10);
-        setAxesSize(Preferences.getInstance().getAsDouble(Preferences.AXES_SIZE, 0.2));
-    }
 
     void initLights()
     {
@@ -273,54 +179,16 @@ public class Renderer extends JPanel implements ActionListener
 
         this.modelManager = modelManager;
 
-        
-//        modelManager.addPropertyChangeListener(this);
-
         trackballCameraInteractorStyle = new vtkInteractorStyleTrackballCamera();
-        joystickCameraInteractorStyle = new vtkInteractorStyleJoystickCamera();
 
-        defaultInteractorStyle = trackballCameraInteractorStyle;
-
- /*       InteractorStyleType interactorStyleType = InteractorStyleType.valueOf(
-                Preferences.getInstance().get(Preferences.INTERACTOR_STYLE_TYPE, InteractorStyleType.TRACKBALL_CAMERA.toString()));
-        setDefaultInteractorStyleType(interactorStyleType);
-
-        setMouseWheelMotionFactor(Preferences.getInstance().getAsDouble(Preferences.MOUSE_WHEEL_MOTION_FACTOR, 1.0));
-*/
         setBackgroundColor(new int[]{0,0,0});//Preferences.getInstance().getAsIntArray(Preferences.BACKGROUND_COLOR, new int[]{0, 0, 0}));
 
         initLights();
-
-/*        JSplitPane splitPane=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPane.setLeftComponent(axesPanel.getComponent());
-        splitPane.setRightComponent(toolbar);
-        Dimension dim=toolbar.getMinimumSize();
-        int pad=2;
-		axesPanel.getComponent().setMaximumSize(new Dimension(dim.height-pad,dim.height-pad));
-        splitPane.setResizeWeight(0);
-        splitPane.setDividerLocation(dim.height);
-        splitPane.setDividerSize(0);
-        add(splitPane, BorderLayout.NORTH);*/
-        
         setLayout(new BorderLayout());
         
-        //setLayout(new OverlayLayout());
         add(toolbar,BorderLayout.NORTH);
         add(mainCanvas.getComponent(), BorderLayout.CENTER);
-        /*JPanel overlayPanel=new JPanel(new OverlayLayout());
-        overlayPanel.add(mainCanvas.getComponent(), BorderLayout.CENTER);
-        overlayPanel.add(mainCanvas.getAxesPanel().getComponent(), BorderLayout.CENTER);
-        add(overlayPanel, BorderLayout.CENTER);
-        
-        mainCanvas.getComponent().setOpaque(false);
-        mainCanvas.getAxesPanel().getComponent().setOpaque(false);
-        mainCanvas.getAxesPanel().getComponent().setMaximumSize(new Dimension(600,600));
-        */
         toolbar.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
-
-       // mainCanvas.getRenderWindow().StereoCapableWindowOn();
-  //      mainCanvas.getRenderWindowInteractor().CreateRepeatingTimer(1000);  // once per second we make sure the stereo mode hasn't been changed via keyboard; this is admittedly a sloppy kludge to override the '3' key behavior (anaglyph toggle) in vtk
-  //      mainCanvas.getRenderWindowInteractor().AddObserver("TimerEvent", this, "checkStereoModeSynchronization");
 
         // Setup observers for start/stop interaction events
         mainCanvas.getRenderWindowInteractor().AddObserver("StartInteractionEvent", this, "onStartInteraction");
@@ -329,17 +197,11 @@ public class Renderer extends JPanel implements ActionListener
         
         
 
-        initOrientationAxes();
-
         javax.swing.SwingUtilities.invokeLater(new Runnable()
         {
             public void run()
             {
-                setShowOrientationAxes(Preferences.getInstance().getAsBoolean(Preferences.SHOW_AXES, true));
-                setOrientationAxesInteractive(Preferences.getInstance().getAsBoolean(Preferences.INTERACTIVE_AXES, true));
                 setProps(modelManager.getProps());
-                //mainCanvas.resetCamera();
-                //mainCanvas.Render();
             }
         });
     }
@@ -381,7 +243,6 @@ public class Renderer extends JPanel implements ActionListener
             if (whichRenderer.HasViewProp(prop) == 0)
                 whichRenderer.AddViewProp(prop);
         }
-        //whichRenderer.AddActor(mainCanvas.getAxesActor());
 
         // If we are in 2D mode, then remove all props of models that
         // do not support 2D mode.
@@ -395,9 +256,7 @@ public class Renderer extends JPanel implements ActionListener
                 Model model = modelManager.getModel(prop);
                 if (model != null && !model.supports2DMode())
                 {
-                    //renderWindow.getVTKLock().lock();
                     whichRenderer.RemoveViewProp(prop);
-                    //renderWindow.getVTKLock().unlock();
                 }
             }
         }
@@ -537,6 +396,7 @@ public class Renderer extends JPanel implements ActionListener
     public void save6ViewsToFile()
     {
         File file = CustomFileChooser.showSaveDialog(this, "Export to PNG Image", "", "png");
+        if (file == null) return;
         String path = file.getAbsolutePath();
         String base = path.substring(0, path.lastIndexOf('.'));
         String ext = path.substring(path.lastIndexOf('.'));
@@ -574,6 +434,7 @@ public class Renderer extends JPanel implements ActionListener
             }
         }
 
+        
         cameraFrameQueue = new LinkedBlockingQueue<CameraFrame>();
 
         for (int i=0; i<6; i++)
@@ -944,6 +805,16 @@ public class Renderer extends JPanel implements ActionListener
         mainCanvas.Render();
     }
 
+    public void viewDeactivating()
+    {
+    	mainCanvas.axesFrame.setVisible(false);
+    }
+
+    public void viewActivating()
+    {
+    	mainCanvas.axesFrame.setVisible(toolbar.getOrientationAxesToggleState());
+    }
+    
     // Gets the camera roll with roll as defined by vtkCamera
     public double getCameraRoll()
     {
@@ -963,69 +834,31 @@ public class Renderer extends JPanel implements ActionListener
         return mainCanvas;
     }
 
-    
-
-    public void setDefaultInteractorStyleType(InteractorStyleType interactorStyleType)
-    {
-        if (interactorStyleType == InteractorStyleType.JOYSTICK_CAMERA)
-            defaultInteractorStyle = joystickCameraInteractorStyle;
-        else
-            defaultInteractorStyle = trackballCameraInteractorStyle;
-
-        // Change the interactor now unless it is currently null.
-        if (mainCanvas.getRenderWindowInteractor().GetInteractorStyle() != null)
-            setInteractorStyleToDefault();
-    }
-
-    public InteractorStyleType getDefaultInteractorStyleType()
-    {
-        if (defaultInteractorStyle == joystickCameraInteractorStyle)
-            return InteractorStyleType.JOYSTICK_CAMERA;
-        else
-            return InteractorStyleType.TRACKBALL_CAMERA;
-    }
 
     public void setInteractorStyleToDefault()
     {
-//        mainCanvas.setInteractorStyle(defaultInteractorStyle);
         mainCanvas.setInteractorStyleToDefault();
-  //      if (mirrorFrameOpen)
-  //      {
-//            mirrorCanvas.setInteractorStyle(defaultInteractorStyle);
-  //      }
     }
 
     public void setInteractorStyleToNone()
     {
         mainCanvas.setInteractorStyle(null);
-//        if (mirrorFrameOpen)
-//            mirrorCanvas.setInteractorStyle(null);
     }
 
     public void setLighting(LightingType type)
     {
-//        if (type != currentLighting)  // MZ commented out this if statement so mirror canvas lighting starts in sync with main canvas
-//        {
             mainCanvas.getRenderer().RemoveAllLights();
-//            if (mirrorFrameOpen)
-//                mirrorCanvas.getRenderer().RemoveAllLights();
             if (type == LightingType.LIGHT_KIT)
             {
                 lightKit.AddLightsToRenderer(mainCanvas.getRenderer());
-//                if (mirrorFrameOpen)
-//                    lightKit.AddLightsToRenderer(mirrorCanvas.getRenderer());
             }
             else if (type == LightingType.HEADLIGHT)
             {
                 mainCanvas.getRenderer().AddLight(headlight);
-//                if (mirrorFrameOpen)
-//                    mirrorCanvas.getRenderer().AddLight(headlight);
             }
             else
             {
                 mainCanvas.getRenderer().AddLight(fixedLight);
-//                if (mirrorFrameOpen)
-//                    mirrorCanvas.getRenderer().AddLight(fixedLight);
             }
             currentLighting = type;
             if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
@@ -1098,56 +931,6 @@ public class Renderer extends JPanel implements ActionListener
         return headlight.GetIntensity();
     }
 
-    public void setShowOrientationAxes(boolean show)
-    {
-        if (getShowOrientationAxes() != show)
-        {
-            mainCanvas.getVTKLock().lock();
-    //        orientationWidget.SetEnabled(show ? 1 : 0);
-    //        if (show)
-    //            orientationWidget.SetInteractive(interactiveAxes ? 1 : 0);
-            mainCanvas.getVTKLock().unlock();
-            if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-                mainCanvas.Render();
-        }
-    }
-
-    public boolean getShowOrientationAxes()
-    {
-      //  int value = orientationWidget.GetEnabled();
-      //  return value == 1 ? true : false;
-    	return false;
-    }
-
-    public void setOrientationAxesInteractive(boolean interactive)
-    {
-        if (getOrientationAxesInteractive() != interactive &&
-            getShowOrientationAxes())
-        {
-            mainCanvas.getVTKLock().lock();
-      //      orientationWidget.SetInteractive(interactive ? 1 : 0);
-            mainCanvas.getVTKLock().unlock();
-            if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-                mainCanvas.Render();
-        }
-        interactiveAxes = interactive;
-    }
-
-    public boolean getOrientationAxesInteractive()
-    {
-        return interactiveAxes;
-    }
-
- /*   public void setMouseWheelMotionFactor(double factor)
-    {
-        trackballCameraInteractorStyle.SetMouseWheelMotionFactor(factor);
-        joystickCameraInteractorStyle.SetMouseWheelMotionFactor(factor);
-    }
-
-    public double getMouseWheelMotionFactor()
-    {
-        return trackballCameraInteractorStyle.GetMouseWheelMotionFactor();
-    }*/
 
     public int[] getBackgroundColor()
     {
@@ -1186,161 +969,6 @@ public class Renderer extends JPanel implements ActionListener
 
         mainCanvas.Render();
     }
-
-    public void setAxesSize(double size)
-    {
-        this.axesSize = size;
-    //    orientationWidget.SetViewport(0.0, 0.0, size, size);
-        if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-            mainCanvas.Render();
-    }
-
-    public double getAxesSize()
-    {
-        return axesSize;
-    }
-
-    public void setAxesLineWidth(double width)
-    {
-        vtkProperty property = axes.GetXAxisShaftProperty();
-        property.SetLineWidth(width);
-        property = axes.GetYAxisShaftProperty();
-        property.SetLineWidth(width);
-        property = axes.GetZAxisShaftProperty();
-        property.SetLineWidth(width);
-        if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-            mainCanvas.Render();
-    }
-
-    public double getAxesLineWidth()
-    {
-        vtkProperty property = axes.GetXAxisShaftProperty();
-        return property.GetLineWidth();
-    }
-
-    public void setAxesLabelFontSize(int size)
-    {
-        vtkCaptionActor2D caption = axes.GetXAxisCaptionActor2D();
-        vtkTextProperty textProperty = caption.GetCaptionTextProperty();
-        textProperty.SetFontSize(size);
-        caption = axes.GetYAxisCaptionActor2D();
-        textProperty = caption.GetCaptionTextProperty();
-        textProperty.SetFontSize(size);
-        caption = axes.GetZAxisCaptionActor2D();
-        textProperty = caption.GetCaptionTextProperty();
-        textProperty.SetFontSize(size);
-        if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-            mainCanvas.Render();
-    }
-
-    public int getAxesLabelFontSize()
-    {
-        vtkCaptionActor2D caption = axes.GetXAxisCaptionActor2D();
-        vtkTextProperty textProperty = caption.GetCaptionTextProperty();
-        return textProperty.GetFontSize();
-    }
-
-    public void setAxesLabelFontColor(int[] color)
-    {
-        vtkCaptionActor2D caption = axes.GetXAxisCaptionActor2D();
-        vtkTextProperty textProperty = caption.GetCaptionTextProperty();
-        textProperty.SetColor(color[0]/255.0, color[1]/255.0, color[2]/255.0);
-        caption = axes.GetYAxisCaptionActor2D();
-        textProperty = caption.GetCaptionTextProperty();
-        textProperty.SetColor(color[0]/255.0, color[1]/255.0, color[2]/255.0);
-        caption = axes.GetZAxisCaptionActor2D();
-        textProperty = caption.GetCaptionTextProperty();
-        textProperty.SetColor(color[0]/255.0, color[1]/255.0, color[2]/255.0);
-        if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-            mainCanvas.Render();
-    }
-
-    public int[] getAxesLabelFontColor()
-    {
-        vtkCaptionActor2D caption = axes.GetXAxisCaptionActor2D();
-        vtkTextProperty textProperty = caption.GetCaptionTextProperty();
-        double[] c = textProperty.GetColor();
-        return new int[]{(int)(255.0*c[0]), (int)(255.0*c[1]), (int)(255.0*c[2])};
-    }
-
-    public void setXAxisColor(int[] color)
-    {
-        vtkProperty property = axes.GetXAxisShaftProperty();
-        property.SetColor(color[0]/255.0, color[1]/255.0, color[2]/255.0);
-        property = axes.GetXAxisTipProperty();
-        property.SetColor(color[0]/255.0, color[1]/255.0, color[2]/255.0);
-        if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-            mainCanvas.Render();
-    }
-
-    public int[] getXAxisColor()
-    {
-        vtkProperty property = axes.GetXAxisShaftProperty();
-        double[] c = property.GetColor();
-        return new int[]{(int)(255.0*c[0]), (int)(255.0*c[1]), (int)(255.0*c[2])};
-    }
-
-    public void setYAxisColor(int[] color)
-    {
-        vtkProperty property = axes.GetYAxisShaftProperty();
-        property.SetColor(color[0]/255.0, color[1]/255.0, color[2]/255.0);
-        property = axes.GetYAxisTipProperty();
-        property.SetColor(color[0]/255.0, color[1]/255.0, color[2]/255.0);
-        if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-            mainCanvas.Render();
-    }
-
-    public int[] getYAxisColor()
-    {
-        vtkProperty property = axes.GetYAxisShaftProperty();
-        double[] c = property.GetColor();
-        return new int[]{(int)(255.0*c[0]), (int)(255.0*c[1]), (int)(255.0*c[2])};
-    }
-
-    public void setZAxisColor(int[] color)
-    {
-        vtkProperty property = axes.GetZAxisShaftProperty();
-        property.SetColor(color[0]/255.0, color[1]/255.0, color[2]/255.0);
-        property = axes.GetZAxisTipProperty();
-        property.SetColor(color[0]/255.0, color[1]/255.0, color[2]/255.0);
-        if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-            mainCanvas.Render();
-    }
-
-    public int[] getZAxisColor()
-    {
-        vtkProperty property = axes.GetZAxisShaftProperty();
-        double[] c = property.GetColor();
-        return new int[]{(int)(255.0*c[0]), (int)(255.0*c[1]), (int)(255.0*c[2])};
-    }
-
-    public void setAxesConeLength(double size)
-    {
-        if (size > 1.0) size = 1.0;
-        if (size < 0.0) size = 0.0;
-        axes.SetNormalizedTipLength(size, size, size);
-        // Change the shaft length also to fill in any space.
-        axes.SetNormalizedShaftLength(1.0-size, 1.0-size, 1.0-size);
-        if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-            mainCanvas.Render();
-    }
-
-    public double getAxesConeLength()
-    {
-        return axes.GetNormalizedTipLength()[0];
-    }
-
-    public void setAxesConeRadius(double size)
-    {
-        axes.SetConeRadius(size);
-        if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-            mainCanvas.Render();
-    }
-
-    public double getAxesConeRadius()
-    {
-        return axes.GetConeRadius();
-    }
     
     public int getPanelWidth()
     {
@@ -1355,12 +983,18 @@ public class Renderer extends JPanel implements ActionListener
     public static void saveToFile(File file, vtkJoglPanelComponent renWin, AxesPanel axesWin)
     {
     	saveToFile(file, renWin);
-    	if (axesWin!=null)
+    	if (axesWin!=null && ((RenderPanel)renWin).isAxesPanelVisible())
     	{
     		//axesWin.printModeOn();
     		//axesWin.setSize(200, 200);
+    		RenderPanel renderPanel=(RenderPanel)renWin;
+    		//boolean visible=renderPanel.axesFrame.isVisible();
+    		//if (!visible)
+    		//	renderPanel.axesFrame.setVisible(true);
     		saveToFile(createAxesFile(file), axesWin);
     		axesWin.Render();
+    		//if (!visible)
+    		//	renderPanel.axesFrame.setVisible(false);
     		//axesWin.printModeOff();
     	}
     }
@@ -1369,12 +1003,17 @@ public class Renderer extends JPanel implements ActionListener
     {
         if (file != null)
         {
+        	GLContext glContext = null;
             try
             {
-                // The following line is needed due to some weird threading
-                // issue with JOGL when saving out the pixel buffer. Note release
-                // needs to be called at the end.
-                renWin.getComponent().getContext().makeCurrent();
+                glContext = renWin.getComponent().getContext();
+                if (glContext != null)
+                {
+                	// The following line is needed due to some weird threading
+                	// issue with JOGL when saving out the pixel buffer. Note release
+                	// needs to be called at the end.
+                	glContext.makeCurrent();
+                }
 
                 renWin.getVTKLock().lock();
                 vtkWindowToImageFilter windowToImage = new vtkWindowToImageFilter();
@@ -1429,9 +1068,16 @@ public class Renderer extends JPanel implements ActionListener
                 }
                 renWin.getVTKLock().unlock();
             }
+            catch (Exception e)
+            {
+            	System.out.println(e);
+            }
             finally
             {
-                renWin.getComponent().getContext().release();
+            	if (glContext != null)
+            	{            		
+            		glContext.release();
+            	}
             }
         }
     }

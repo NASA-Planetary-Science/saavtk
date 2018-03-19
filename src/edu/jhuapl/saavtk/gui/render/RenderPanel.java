@@ -56,14 +56,19 @@ public class RenderPanel extends vtkJoglPanelComponent
 		return axesPanel;
 	}
 
-
 	boolean showAxesPanelOnRestore = false;
 	boolean axesPanelShownBefore = false;
-	JFrame axesFrame=new JFrame();
+	JFrame axesFrame;
+	Point location;
 
+	public boolean isAxesPanelVisible()
+	{
+		return axesFrame.isVisible();
+	}
+	
 	public RenderPanel(RenderToolbar toolbar)// , RenderStatusBar statusBar)
 	{
-		
+
 		getInteractorForwarder().setEventInterceptor(new Interceptor());
 		interactorStyle = new CustomInteractorStyle(getRenderWindowInteractor());
 		defaultInteractorStyle = interactorStyle;
@@ -75,72 +80,83 @@ public class RenderPanel extends vtkJoglPanelComponent
 		propRenderer = getRenderer();
 
 		axesPanel = new AxesPanel(this);
-		
-		//axesFrame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
+
+		axesFrame = new JFrame() {
+			@Override
+			public void setVisible(boolean b) {
+				super.setVisible(b);
+				if (!axesPanelShownBefore && MainWindow.getMainWindow() != null && isWindowCreated) {
+					setUpMainWindowListeners();
+					Point point = RenderPanel.this.getComponent().getLocationOnScreen();
+					Dimension dim = RenderPanel.this.getComponent().getSize();
+					int size = (int) Math.max(dim.width / 5., dim.height / 5);
+					axesPanel.setSize(size, size);
+					axesFrame.setLocation(point.x, point.y + dim.height - size); // lower
+					axesPanelShownBefore = true;
+				}
+
+			}
+		};
+
+		// axesFrame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
 		axesFrame.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
 		axesFrame.add(axesPanel.getComponent());
 		axesFrame.setVisible(false);
 		axesFrame.setAlwaysOnTop(true);
 
-		//frame.setUndecorated(true);
+		// frame.setUndecorated(true);
 		toolbar.addToolbarListener(new RenderToolbarListener() {
 
 			@Override
 			public void handle(RenderToolbarEvent event) {
 				if (event instanceof RenderToolbarEvent.ToggleAxesVisibilityEvent) {
 					axesFrame.setVisible(((RenderToolbarEvent.ToggleAxesVisibilityEvent) event).show());
-					if (!axesPanelShownBefore) {
-					    setUpMainWindowListeners();
-						Point point = RenderPanel.this.getComponent().getLocationOnScreen();
-						Dimension dim = RenderPanel.this.getComponent().getSize();
-						int size = (int) Math.max(dim.width / 5., dim.height / 5);
-						axesPanel.setSize(size, size);
-						axesFrame.setLocation(point.x, point.y + dim.height - size);	// lower left
-						axesPanelShownBefore = true;
-					}
 				}
 
 			}
 		});
-		
-		
-		axesFrame.getRootPane().setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY,2));
-		
-/*		axesPanel.getComponent().addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseEntered(MouseEvent e) {
-				axesFrame.getRootPane().setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY,2));
-			}
-			
-			@Override
-			public void mouseExited(MouseEvent e) {
-				axesFrame.getRootPane().setBorder(null);
-			}
-		});*/
+
+		axesFrame.getRootPane().setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY, 2));
+
+		/*
+		 * axesPanel.getComponent().addMouseListener(new MouseAdapter() {
+		 * 
+		 * @Override public void mouseEntered(MouseEvent e) {
+		 * axesFrame.getRootPane().setBorder(BorderFactory.createLineBorder(
+		 * Color.DARK_GRAY,2)); }
+		 * 
+		 * @Override public void mouseExited(MouseEvent e) {
+		 * axesFrame.getRootPane().setBorder(null); } });
+		 */
 
 		axesFrame.addWindowListener(new WindowAdapter() {
-			
+
 			@Override
 			public void windowClosing(WindowEvent e) {
 				toolbar.setOrientationAxesToggleState(false);
 			}
-			
-			
+
 		});
-		
+
 		axesFrame.addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized(ComponentEvent e) {
-				Point loc=e.getComponent().getLocation();
-				int w=e.getComponent().getWidth();
-				e.getComponent().setSize(w,w);
+				Point loc = e.getComponent().getLocation();
+				int w = e.getComponent().getWidth();
+				e.getComponent().setSize(w, w);
 				e.getComponent().setLocation(loc);
 				axesPanel.getComponent().setSize(e.getComponent().getSize());
-				//axesPanel.getRenderer().ResetCamera();
-	}
+				// axesPanel.getRenderer().ResetCamera();
+			}
+			
+			@Override
+			public void componentShown(ComponentEvent e) {
+				// TODO Auto-generated method stub
+				super.componentShown(e);
+				axesPanel.Render();
+			}
 		});
-		
-		
+
 		getComponent().addComponentListener(this);
 	}
 
@@ -185,7 +201,6 @@ public class RenderPanel extends vtkJoglPanelComponent
 		Render();
 	}
 
-	
 	@Override
 	public void componentShown(ComponentEvent e) {
 
@@ -269,47 +284,80 @@ public class RenderPanel extends vtkJoglPanelComponent
 	}
 
 	protected void setUpMainWindowListeners() {
-        WindowAdapter adapter = new WindowAdapter() {
-            @Override
-            public void windowDeiconified(@SuppressWarnings("unused") WindowEvent e) {
-                axesFrame.setVisible(showAxesPanelOnRestore);
-            }
 
-            @Override
-            public void windowIconified(@SuppressWarnings("unused") WindowEvent e) {
-                showAxesPanelOnRestore = axesFrame.isVisible();
-                axesFrame.setVisible(false);
-            }
+		WindowAdapter adapter = new WindowAdapter() {
+			@Override
+			public void windowDeiconified(@SuppressWarnings("unused") WindowEvent e) {
+				axesFrame.setVisible(showAxesPanelOnRestore);
+			}
 
-            @Override
-            public void windowActivated(@SuppressWarnings("unused") WindowEvent e) {
-                axesFrame.setAlwaysOnTop(true);
-            }
+			@Override
+			public void windowIconified(@SuppressWarnings("unused") WindowEvent e) {
+				showAxesPanelOnRestore = axesFrame.isVisible();
+				axesFrame.setVisible(false);
+			}
 
-            @Override
-            public void windowDeactivated(@SuppressWarnings("unused") WindowEvent e) {
-                axesFrame.setAlwaysOnTop(false);
-            }
+			@Override
+			public void windowActivated(@SuppressWarnings("unused") WindowEvent e) {
+				axesFrame.setAlwaysOnTop(true);
+			}
 
-            @Override
-            public void windowGainedFocus(@SuppressWarnings("unused") WindowEvent e) {
-                axesFrame.setAlwaysOnTop(true);
-            }
+			@Override
+			public void windowDeactivated(@SuppressWarnings("unused") WindowEvent e) {
+				axesFrame.setAlwaysOnTop(false);
+			}
 
-            @Override
-            public void windowLostFocus(@SuppressWarnings("unused") WindowEvent e) {
-                axesFrame.setAlwaysOnTop(false);
-            }
+			@Override
+			public void windowGainedFocus(@SuppressWarnings("unused") WindowEvent e) {
+				axesFrame.setAlwaysOnTop(true);
+			}
 
-            @Override
-            public void windowStateChanged(WindowEvent e) {
-                System.err.println(e);
-            }
-        };
+			@Override
+			public void windowLostFocus(@SuppressWarnings("unused") WindowEvent e) {
+				axesFrame.setAlwaysOnTop(false);
+			}
 
-        Window window = MainWindow.getMainWindow();
-        window.addWindowListener(adapter);
-        window.addWindowFocusListener(adapter);
+			@Override
+			public void windowStateChanged(WindowEvent e) {
+				System.err.println(e);
+			}
+		};
+
+		Window window = MainWindow.getMainWindow();
+		window.addWindowListener(adapter);
+		window.addWindowFocusListener(adapter);
+		
+/*		ComponentListener l=new ComponentListener() {
+			Point location;
+			
+			@Override
+			public void componentShown(ComponentEvent e) {
+				location=e.getComponent().getLocationOnScreen();
+			}
+			
+			@Override
+			public void componentResized(ComponentEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void componentMoved(ComponentEvent e) {
+				if (location==null)
+					location=e.getComponent().getLocationOnScreen();
+				int dx=(int)(e.getComponent().getLocationOnScreen().getX()-location.getX());
+				int dy=(int)(e.getComponent().getLocationOnScreen().getY()-location.getY());
+				axesFrame.setLocationRelativeTo(window);
+				axesFrame.setLocation(dx, dy);
+			}
+			
+			@Override
+			public void componentHidden(ComponentEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+		};
+		window.addComponentListener(l);*/
 	}
 	/*
 	 * private void redrawAxes() { vtkTransform transform=new vtkTransform();
