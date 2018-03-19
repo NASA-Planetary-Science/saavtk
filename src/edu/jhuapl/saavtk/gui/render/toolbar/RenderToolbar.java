@@ -105,6 +105,11 @@ public class RenderToolbar extends JToolBar implements ItemListener, ActionListe
 		showOrientationAxesToggleButton.setSelected(show);
 	}
 	
+	public boolean getOrientationAxesToggleState()
+	{
+		return showOrientationAxesToggleButton.isSelected();
+	}
+	
 	public RenderToolbar()
 	{
 		setFloatable(false);
