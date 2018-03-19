@@ -432,7 +432,7 @@ public class Configuration
             }
             else
             {
-                rootURL = "http://sbmt.jhuapl.edu/sbmt/staged";
+                rootURL = "http://sbmt.jhuapl.edu/sbmt/prod";
             }
         }
     }
