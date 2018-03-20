@@ -20,8 +20,8 @@ public enum ShapeModelType
     CARRY("Carry"),
     DLR("DLR"),
     BLENDER("Zimmerman"),
-    OREX("Orex"),
     HAYABUSA2("Hayabusa2-testing"),
+    OREX("OSIRIS-REx"),
     TRUTH("Truth");
 
     final private String str;

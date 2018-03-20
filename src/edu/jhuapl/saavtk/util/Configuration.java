@@ -3,11 +3,14 @@ package edu.jhuapl.saavtk.util;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
@@ -22,6 +25,8 @@ import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
 
 public class Configuration
 {
+	private static final int DEFAULT_MAXIMUM_NUMBER_TRIES = 3;
+
 	private static final String INITIAL_MESSAGE =
 		"<html>The Small Body Mapping Tool will work without a password, but data for some models is restricted.<br>If you have credentials to access restricted models, enter them here.</html>";
 	
@@ -73,6 +78,7 @@ public class Configuration
 
 		boolean foundEmptyPasswordFile = false;
 		boolean userPasswordAccepted = false;
+		final int maximumNumberTries = 1;
 		for (Path passwordFile : passwordFilesToTry)
         {
             if (passwordFile.toFile().exists())
@@ -91,7 +97,7 @@ public class Configuration
 							if (!userName.isEmpty() && password.length > 0)
 							{
 								foundCredentials = true;
-								setupPasswordAuthentication(userName, password);
+								setupPasswordAuthentication(userName, password, maximumNumberTries);
 								FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
 								if (info.isURLAccessAuthorized().equals(YesOrNo.YES))
 								{
@@ -119,7 +125,7 @@ public class Configuration
 		}
 		if (!userPasswordAccepted)
 		{			
-			setupPasswordAuthentication("public", "wide-open".toCharArray());
+			setupPasswordAuthentication("public", "wide-open".toCharArray(), maximumNumberTries);
 		}
 		Configuration.userPasswordAccepted = userPasswordAccepted;
 	}
@@ -154,6 +160,7 @@ public class Configuration
 
 		boolean repromptUser = false;
 		boolean validPasswordEntered = false;
+		final int maximumNumberTries = 1;
 		do
 		{
 			repromptUser = false;
@@ -172,7 +179,7 @@ public class Configuration
 				else
 				{
 					// Attempt authentication.
-					setupPasswordAuthentication(name, password);					
+					setupPasswordAuthentication(name, password, maximumNumberTries);					
 					FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
 					if (!info.isURLAccessAuthorized().equals(YesOrNo.YES))
 					{
@@ -202,14 +209,42 @@ public class Configuration
 
 	public static void setupPasswordAuthentication(final String username, final char[] password)
     {
+		setupPasswordAuthentication(username, password, DEFAULT_MAXIMUM_NUMBER_TRIES);
+	}
+
+	public static void setupPasswordAuthentication(final String username, final char[] password, final int maximumNumberTries)
+    {
+		if (username == null || password == null)
+		{
+			throw new NullPointerException();
+		}
+		if (maximumNumberTries < 1)
+		{
+			throw new IllegalArgumentException();
+		}
         try
         {
             java.net.Authenticator.setDefault(new java.net.Authenticator()
             {
-                @Override
+            	final Map<URL, Integer> triedCount = new HashMap<>();
+
+            	@Override
 				protected java.net.PasswordAuthentication getPasswordAuthentication()
                 {
-                    return new java.net.PasswordAuthentication(username, password);
+            		final URL url = getRequestingURL();
+            		int count = triedCount.containsKey(url) ? triedCount.get(url) : 0;
+            		if (count < maximumNumberTries)
+            		{
+            			triedCount.put(url, count + 1);
+            			return new java.net.PasswordAuthentication(username, password);
+            		}
+            		// Oddly enough, this does the trick to prevent repeatedly trying a wrong password,
+            		// while throwing a RuntimeException doesn't work. It appears that null is interpreted
+            		// as meaning the user failed to provide credentials, so it just returns an appropriate
+            		// HTTP code back up the stack. Nice!
+            		// By contrast, the RuntimeException was not catchable because the authorization attempt
+            		// occurred in a different thread.
+            		return null;
                 }
             });
         }
@@ -432,7 +467,7 @@ public class Configuration
             }
             else
             {
-                rootURL = "http://sbmt.jhuapl.edu/sbmt/staged";
+                rootURL = "http://sbmt.jhuapl.edu/sbmt/prod";
             }
         }
     }

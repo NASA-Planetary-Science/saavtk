@@ -283,6 +283,9 @@ public abstract class ViewManager extends JPanel
 
     public void setCurrentView(View view)
     {
+    	if (currentView!=null)
+    		currentView.renderer.viewDeactivating();
+    	
         CardLayout cardLayout = (CardLayout)(getLayout());
         cardLayout.show(this, view.getUniqueName());
 
@@ -295,6 +298,7 @@ public abstract class ViewManager extends JPanel
 
         	updateRecents();
         	currentView = view;
+        	currentView.renderer.viewActivating();
         	updateRecents();
         }
         catch (UnauthorizedAccessException e)
