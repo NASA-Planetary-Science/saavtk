@@ -14,15 +14,25 @@ public class PointModel extends AbstractEllipsePolygonModel
         setInteriorOpacity(1.0);
         int[] color = {255, 0, 255};
         setDefaultColor(color);
-        // Size the radius relative to a circle whose area equals the mean cell area.
-        // Overall multiplier used to make the points big enough.
-        double multiplier = 2.;
+        // Size the radius relative to a circle whose area equals the minimum cell area.
+        // Overall multiplier found experimentally to be good for getting the points big enough.
+        final double multiplier = 2.;
+
         double radius = multiplier * Math.sqrt(smallBodyModel.getMinCellArea() / Math.PI);
-        double factor = 1.;
+        // Unfortunately, there is no guarantee that getMinCellArea will return a physically reasonable value.
         if (Double.compare(radius, 0.) <= 0)
         {
-        	throw new RuntimeException();
+        	radius = multiplier * Math.sqrt(smallBodyModel.getMeanCellArea() / Math.PI);
         }
+
+        // Unfortunately, there is no guarantee that getMeanCellArea will return a physically reasonable value either.
+        if (Double.compare(radius, 0.) <= 0)
+        {
+        	radius = 100.; // 100 m = best guess at a reasonably "safe" default value.
+        }
+
+        // Make the value more pretty to look at/rounded reasonably.
+        double factor = 1.;
         while (radius < 1.)
         {
         	radius *= 10.;

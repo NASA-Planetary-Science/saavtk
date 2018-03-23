@@ -1011,11 +1011,11 @@ public class PreferencesDialog extends javax.swing.JDialog {
         gridBagConstraints.gridy = 14;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         jPanel11.add(fontColorButton, gridBagConstraints);
-
+*/
         jScrollPane1.setViewportView(jPanel11);
 
         getContentPane().add(jScrollPane1);
-*/
+
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
