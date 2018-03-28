@@ -134,7 +134,7 @@ public class FileCache
             YesOrNo urlExists = YesOrNo.UNKNOWN;
             boolean needToDownload = false;
             boolean failedToDownload = false;
-            if (file.exists() && downloadedFiles.containsKey(path))
+            if (file.exists() && (downloadedFiles.containsKey(path) || file.isDirectory()))
             {
             	// The file was present and it has been checked already while this
             	// instance is running. Assume URL is authorized. No need to open
@@ -201,7 +201,7 @@ public class FileCache
             		// Check file existence and modification time to decide if we need to download.
         			// TODO: this seems always to return 0: does this in fact work?
             		long urlLastModified = connection.getLastModified();
-        			needToDownload = !file.exists() || file.lastModified() < urlLastModified;
+        			needToDownload = (!file.exists() || file.lastModified() < urlLastModified) && !file.isDirectory();
             		if (needToDownload)
             		{
             			// TODO: the length is probably not correct if just the header was read above.
