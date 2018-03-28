@@ -314,8 +314,7 @@ public class Configuration
     {
         if (cacheDir == null)
         {
-            cacheDir = Configuration.getApplicationDataDir() + File.separator +
-            "cache" + File.separator + cacheVersion;
+            cacheDir = SafePaths.getString(Configuration.getApplicationDataDir(), "cache", cacheVersion);
         }
 
         return cacheDir;
