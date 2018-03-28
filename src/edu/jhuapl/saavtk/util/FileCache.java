@@ -387,7 +387,7 @@ public class FileCache
      * method below.
      * @param fileName the file to check
      * @return
-     * @throws UnauthorizedAccessException if a 401 (Unauthorized) error is encountered when attempting
+     * @throws UnauthorizedAccessException if a 401/403 (Unauthorized/Forbidden) error is encountered when attempting
      * to access the server for the remote file.
      */
     static public boolean isFileGettable(String fileName) throws UnauthorizedAccessException
