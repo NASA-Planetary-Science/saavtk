@@ -137,9 +137,11 @@ public class FileCache
             if (file.exists() && (downloadedFiles.containsKey(path) || file.isDirectory()))
             {
             	// The file was present and it has been checked already while this
-            	// instance is running. Assume URL is authorized. No need to open
+            	// instance is running. Assume URL is authorized and that it exists
+            	// on the server. No need to open
             	// a connection and/or download the file.
             	authorized = YesOrNo.YES;
+            	urlExists = YesOrNo.YES;
             }
             else if (!offlineMode)
             {
