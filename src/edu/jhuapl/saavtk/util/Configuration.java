@@ -80,8 +80,7 @@ public class Configuration
 		boolean userPasswordAccepted = false;
 		final int maximumNumberTries = 1;
 
-		// First confirm public access works. If not, probably nothing will work (maybe there's not internet connection),
-		// so don't try to authenticate users.
+		// First confirm queries for information at least work. If not, don't try to update credentials.
 		FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
 		if (!info.isURLAccessAuthorized().equals(YesOrNo.NO))
 		{
