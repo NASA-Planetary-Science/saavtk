@@ -79,6 +79,14 @@ public class Configuration
 		boolean foundEmptyPasswordFile = false;
 		boolean userPasswordAccepted = false;
 		final int maximumNumberTries = 1;
+
+		// First confirm public access works. If not, probably nothing will work (maybe there's not internet connection),
+		// so don't try to authenticate users.
+		FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
+		if (!info.isURLAccessAuthorized().equals(YesOrNo.NO))
+		{
+			return;
+		}
 		for (Path passwordFile : passwordFilesToTry)
         {
             if (passwordFile.toFile().exists())
@@ -98,7 +106,7 @@ public class Configuration
 							{
 								foundCredentials = true;
 								setupPasswordAuthentication(userName, password, maximumNumberTries);
-								FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
+								info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
 								if (info.isURLAccessAuthorized().equals(YesOrNo.YES))
 								{
 									userPasswordAccepted = true;
