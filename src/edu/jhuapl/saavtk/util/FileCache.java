@@ -412,7 +412,7 @@ public class FileCache
                 }
                 else if (fi.isURLAccessAuthorized() != YesOrNo.YES)
                 {
-                	URL url = fi.getURL();;
+                	URL url = fi.getURL();
 					throw new UnauthorizedAccessException("Cannot access information about restricted URL: " + url, url);
                 }
                 file = fi.getFile();
