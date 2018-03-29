@@ -237,15 +237,10 @@ public class FileCache
             	catch (IOException e)
             	{
             		String message = e.getMessage();
-            		if (message != null && message.contains("401"))
+            		if (message != null && (message.contains("401") || message.contains("403")))
             		{
             			e.printStackTrace();
             			authorized = YesOrNo.NO;
-            		}
-            		else
-            		{
-            			authorized = YesOrNo.YES;
-            			urlExists = YesOrNo.NO;
             		}
             	}
             }
@@ -410,7 +405,7 @@ public class FileCache
                 {
                 	return true;
                 }
-                else if (fi.isURLAccessAuthorized() != YesOrNo.YES)
+                else if (fi.isURLAccessAuthorized() == YesOrNo.NO)
                 {
                 	URL url = fi.getURL();
 					throw new UnauthorizedAccessException("Cannot access information about restricted URL: " + url, url);
