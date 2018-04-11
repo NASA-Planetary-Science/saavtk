@@ -14,299 +14,290 @@ import edu.jhuapl.saavtk.gui.OSXAdapter;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CameraDialog;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
-import edu.jhuapl.saavtk.gui.dialog.DirectoryChooser;
 import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
 import edu.jhuapl.saavtk.util.Configuration;
 
-
 public class FileMenu extends JMenu
 {
-    private PreferencesDialog preferencesDialog;
-    private ViewManager rootPanel;
-    public JFrame frame;
+	private PreferencesDialog preferencesDialog;
+	private ViewManager rootPanel;
+	public JFrame frame;
 
-    public FileMenu(ViewManager rootPanel)
-    {
-        super("File");
-        this.rootPanel = rootPanel;
+	public FileMenu(ViewManager rootPanel)
+	{
+		super("File");
+		this.rootPanel = rootPanel;
 
-        JMenuItem mi = new JMenuItem(new SaveImageAction());
-        this.add(mi);
-        mi = new JMenuItem(new Save6AxesViewsAction());
-        this.add(mi);
-        JMenu saveShapeModelMenu = new JMenu("Export Shape Model to");
-        this.add(saveShapeModelMenu);
-        mi = new JMenuItem(new SaveShapeModelAsPLTAction());
-        saveShapeModelMenu.add(mi);
-        mi = new JMenuItem(new SaveShapeModelAsOBJAction());
-        saveShapeModelMenu.add(mi);
-        mi = new JMenuItem(new SaveShapeModelAsSTLAction());
-        saveShapeModelMenu.add(mi);
-        
-        mi = new JMenuItem(new ShowCameraOrientationAction());
-        this.add(mi);
-        mi = new JMenuItem(new CopyToClipboardAction());
-        //this.add(mi);
-//        mi = new JCheckBoxMenuItem(new ShowSimpleCylindricalProjectionAction());
-//        this.add(mi);
-        if (Configuration.useFileCache())
-        {
-            mi= new JMenuItem(new ClearCacheAction());
-            this.add(mi);
-        }
+		JMenuItem mi = new JMenuItem(new SaveImageAction());
+		this.add(mi);
+		mi = new JMenuItem(new Save6AxesViewsAction());
+		this.add(mi);
+		JMenu saveShapeModelMenu = new JMenu("Export Shape Model to");
+		this.add(saveShapeModelMenu);
+		mi = new JMenuItem(new SaveShapeModelAsPLTAction());
+		saveShapeModelMenu.add(mi);
+		mi = new JMenuItem(new SaveShapeModelAsOBJAction());
+		saveShapeModelMenu.add(mi);
+		mi = new JMenuItem(new SaveShapeModelAsSTLAction());
+		saveShapeModelMenu.add(mi);
 
-        // On macs the exit action is in the Application menu not the file menu
-        if (!Configuration.isMac())
-        {
-            mi = new JMenuItem(new PreferencesAction());
-            this.add(mi);
+		mi = new JMenuItem(new ShowCameraOrientationAction());
+		this.add(mi);
+		mi = new JMenuItem(new CopyToClipboardAction());
+		// this.add(mi);
+		// mi = new JCheckBoxMenuItem(new ShowSimpleCylindricalProjectionAction());
+		// this.add(mi);
+		if (Configuration.useFileCache())
+		{
+			mi = new JMenuItem(new ClearCacheAction());
+			this.add(mi);
+		}
 
-            this.addSeparator();
+		// On macs the exit action is in the Application menu not the file menu
+		if (!Configuration.isMac())
+		{
+			mi = new JMenuItem(new PreferencesAction());
+			this.add(mi);
 
-            mi = new JMenuItem(new ExitAction());
-            this.add(mi);
-        }
-        else
-        {
-            try
-            {
-                OSXAdapter.setPreferencesHandler(this, getClass().getDeclaredMethod("showPreferences", (Class[])null));
-                OSXAdapter.setQuitHandler(this, getClass().getDeclaredMethod("exitTool", (Class[])null));
-            }
-            catch (SecurityException e)
-            {
-                e.printStackTrace();
-            }
-            catch (NoSuchMethodException e)
-            {
-                e.printStackTrace();
-            }
-        }
-    }
+			this.addSeparator();
 
-    public void showPreferences()
-    {
-        if (preferencesDialog == null)
-        {
-            preferencesDialog = new PreferencesDialog(null, false);
-            preferencesDialog.setViewManager(rootPanel);
-        }
+			mi = new JMenuItem(new ExitAction());
+			this.add(mi);
+		} else
+		{
+			try
+			{
+				OSXAdapter.setPreferencesHandler(this, getClass().getDeclaredMethod("showPreferences", (Class[]) null));
+				OSXAdapter.setQuitHandler(this, getClass().getDeclaredMethod("exitTool", (Class[]) null));
+			} catch (SecurityException e)
+			{
+				e.printStackTrace();
+			} catch (NoSuchMethodException e)
+			{
+				e.printStackTrace();
+			}
+		}
+	}
 
-        preferencesDialog.setLocationRelativeTo(rootPanel);
-        preferencesDialog.setVisible(true);
-    }
+	public void showPreferences()
+	{
+		if (preferencesDialog == null)
+		{
+			preferencesDialog = new PreferencesDialog(null, false);
+			preferencesDialog.setViewManager(rootPanel);
+		}
 
-    public void exitTool()
-    {
-        System.exit(0);
-    }
+		preferencesDialog.setLocationRelativeTo(rootPanel);
+		preferencesDialog.setVisible(true);
+	}
 
-    private class SaveImageAction extends AbstractAction
-    {
-        public SaveImageAction()
-        {
-            super("Export to Image...");
-        }
+	public void exitTool()
+	{
+		System.exit(0);
+	}
 
-        public void actionPerformed(ActionEvent actionEvent)
-        {
-            rootPanel.getCurrentView().getRenderer().saveToFile();
-        }
-    }
+	private class SaveImageAction extends AbstractAction
+	{
+		public SaveImageAction()
+		{
+			super("Export to Image...");
+		}
 
-    private class Save6AxesViewsAction extends AbstractAction
-    {
-        public Save6AxesViewsAction()
-        {
-            super("Export Six Views along Axes to Images...");
-        }
+		@Override
+		public void actionPerformed(ActionEvent actionEvent)
+		{
+			rootPanel.getCurrentView().getRenderer().saveToFile();
+		}
+	}
 
-        public void actionPerformed(ActionEvent actionEvent)
-        {
-            rootPanel.getCurrentView().getRenderer().save6ViewsToFile();
-        }
-    }
+	private class Save6AxesViewsAction extends AbstractAction
+	{
+		public Save6AxesViewsAction()
+		{
+			super("Export Six Views along Axes to Images...");
+		}
 
-    private class SaveShapeModelAsPLTAction extends AbstractAction
-    {
-        public SaveShapeModelAsPLTAction()
-        {
-            super("PLT (Gaskell Format)...");
-        }
+		@Override
+		public void actionPerformed(ActionEvent actionEvent)
+		{
+			rootPanel.getCurrentView().getRenderer().save6ViewsToFile();
+		}
+	}
 
-        public void actionPerformed(ActionEvent actionEvent)
-        {
-            File file = CustomFileChooser.showSaveDialog(null, "Export Shape Model to PLT (Gaskell Format)", "model.plt");
+	private class SaveShapeModelAsPLTAction extends AbstractAction
+	{
+		public SaveShapeModelAsPLTAction()
+		{
+			super("PLT (Gaskell Format)...");
+		}
 
-            try
-            {
-                if (file != null)
-                    rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsPLT(file);
-            }
-            catch (Exception e1)
-            {
-                e1.printStackTrace();
-                JOptionPane.showMessageDialog(null,
-                        "An error occurred exporting the shape model.",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-        }
-    }
+		@Override
+		public void actionPerformed(ActionEvent actionEvent)
+		{
+			File file = CustomFileChooser.showSaveDialog(null, "Export Shape Model to PLT (Gaskell Format)", "model.plt");
 
-    private class SaveShapeModelAsOBJAction extends AbstractAction
-    {
-        public SaveShapeModelAsOBJAction()
-        {
-            super("OBJ...");
-        }
+			try
+			{
+				if (file != null)
+					rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsPLT(file);
+			} catch (Exception e1)
+			{
+				e1.printStackTrace();
+				JOptionPane.showMessageDialog(null, "An error occurred exporting the shape model.", "Error", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+		}
+	}
 
-        public void actionPerformed(ActionEvent actionEvent)
-        {
-            File file = CustomFileChooser.showSaveDialog(null, "Export Shape Model to OBJ", "model.obj");
+	private class SaveShapeModelAsOBJAction extends AbstractAction
+	{
+		public SaveShapeModelAsOBJAction()
+		{
+			super("OBJ...");
+		}
 
-            try
-            {
-                if (file != null)
-                    rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsOBJ(file);
-            }
-            catch (Exception e1)
-            {
-                e1.printStackTrace();
-                JOptionPane.showMessageDialog(null,
-                        "An error occurred exporting the shape model.",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-        }
-    }
+		@Override
+		public void actionPerformed(ActionEvent actionEvent)
+		{
+			File file = CustomFileChooser.showSaveDialog(null, "Export Shape Model to OBJ", "model.obj");
 
-    private class SaveShapeModelAsSTLAction extends AbstractAction
-    {
-        public SaveShapeModelAsSTLAction()
-        {
-            super("STL...");
-        }
+			try
+			{
+				if (file != null)
+					rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsOBJ(file);
+			} catch (Exception e1)
+			{
+				e1.printStackTrace();
+				JOptionPane.showMessageDialog(null, "An error occurred exporting the shape model.", "Error", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+		}
+	}
 
-        public void actionPerformed(ActionEvent actionEvent)
-        {
-            File file = CustomFileChooser.showSaveDialog(null, "Export Shape Model to STL", "model.stl");
+	private class SaveShapeModelAsSTLAction extends AbstractAction
+	{
+		public SaveShapeModelAsSTLAction()
+		{
+			super("STL...");
+		}
 
-            try
-            {
-                if (file != null)
-                    rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsSTL(file);
-            }
-            catch (Exception e1)
-            {
-                e1.printStackTrace();
-                JOptionPane.showMessageDialog(null,
-                        "An error occurred exporting the shape model.",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-        }
-    }
+		@Override
+		public void actionPerformed(ActionEvent actionEvent)
+		{
+			File file = CustomFileChooser.showSaveDialog(null, "Export Shape Model to STL", "model.stl");
 
-    private class ShowCameraOrientationAction extends AbstractAction
-    {
-        public ShowCameraOrientationAction()
-        {
-            super("Camera...");
-        }
+			try
+			{
+				if (file != null)
+					rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsSTL(file);
+			} catch (Exception e1)
+			{
+				e1.printStackTrace();
+				JOptionPane.showMessageDialog(null, "An error occurred exporting the shape model.", "Error", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+		}
+	}
 
-        public void actionPerformed(ActionEvent e)
-        {
-            new CameraDialog(rootPanel.getCurrentView().getRenderer()).setVisible(true);
-        }
-    }
+	private class ShowCameraOrientationAction extends AbstractAction
+	{
+		public ShowCameraOrientationAction()
+		{
+			super("Camera...");
+		}
 
-    private class CopyToClipboardAction extends AbstractAction
-    {
-        public CopyToClipboardAction()
-        {
-            super("Copy to Clipboard...");
-        }
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			new CameraDialog(rootPanel.getCurrentView().getRenderer()).setVisible(true);
+		}
+	}
 
-        public void actionPerformed(ActionEvent e)
-        {
+	private class CopyToClipboardAction extends AbstractAction
+	{
+		public CopyToClipboardAction()
+		{
+			super("Copy to Clipboard...");
+		}
 
-        }
-    }
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
 
-    private class ShowSimpleCylindricalProjectionAction extends AbstractAction
-    {
-        public ShowSimpleCylindricalProjectionAction()
-        {
-            super("Render using Simple Cylindrical Projection (Experimental)");
-        }
+		}
+	}
 
-        public void actionPerformed(ActionEvent e)
-        {
-            JCheckBoxMenuItem mi = (JCheckBoxMenuItem)e.getSource();
-            rootPanel.getCurrentView().getRenderer().set2DMode(mi.isSelected());
-        }
-    }
+	private class ShowSimpleCylindricalProjectionAction extends AbstractAction
+	{
+		public ShowSimpleCylindricalProjectionAction()
+		{
+			super("Render using Simple Cylindrical Projection (Experimental)");
+		}
 
-    private class PreferencesAction extends AbstractAction
-    {
-        public PreferencesAction()
-        {
-            super("Preferences...");
-        }
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			JCheckBoxMenuItem mi = (JCheckBoxMenuItem) e.getSource();
+			rootPanel.getCurrentView().getRenderer().set2DMode(mi.isSelected());
+		}
+	}
 
-        public void actionPerformed(ActionEvent actionEvent)
-        {
-            showPreferences();
-        }
-    }
+	private class PreferencesAction extends AbstractAction
+	{
+		public PreferencesAction()
+		{
+			super("Preferences...");
+		}
 
-    private class ClearCacheAction extends AbstractAction
-    {
-        public ClearCacheAction()
-        {
-            super("Clear Cache");
-        }
-        public void actionPerformed(ActionEvent actionEvent)
-        {
-            int option = JOptionPane.showOptionDialog(frame, "Do you wish to clear your local data cache? \nIf you do, all remotely loaded data will need to be reloaded "
-                    + "from the server the next time you wish to view it. \nThis may take a few moments.", "Clear cache", 1, 3, null, null, null);
-            if(option == 0)
-            {
-                deleteFile(new File(Configuration.getApplicationDataDir()+File.separator+"cache\\2"));
-            }
-            else
-            {
-                return;
-            }
-        }
+		@Override
+		public void actionPerformed(ActionEvent actionEvent)
+		{
+			showPreferences();
+		}
+	}
 
-        private void deleteFile(File file)
-        {
-            if (file.isDirectory())
-                for (File subDir : file.listFiles())
-                    deleteFile(subDir);
+	private class ClearCacheAction extends AbstractAction
+	{
+		public ClearCacheAction()
+		{
+			super("Clear Cache");
+		}
 
-            file.delete();
-        }
-    }
+		@Override
+		public void actionPerformed(ActionEvent actionEvent)
+		{
+			int option = JOptionPane.showOptionDialog(frame, "Do you wish to clear your local data cache? \nIf you do, all remotely loaded data will need to be reloaded " + "from the server the next time you wish to view it. \nThis may take a few moments.", "Clear cache", 1, 3, null, null, null);
+			if (option == 0)
+			{
+				deleteFile(new File(Configuration.getApplicationDataDir() + File.separator + "cache\\2"));
+			} else
+			{
+				return;
+			}
+		}
 
-    private class ExitAction extends AbstractAction
-    {
-        public ExitAction()
-        {
-            super("Exit");
-        }
+		private void deleteFile(File file)
+		{
+			if (file.isDirectory())
+				for (File subDir : file.listFiles())
+					deleteFile(subDir);
 
-        public void actionPerformed(ActionEvent actionEvent)
-        {
-            exitTool();
-        }
-    }
-    
+			file.delete();
+		}
+	}
+
+	private class ExitAction extends AbstractAction
+	{
+		public ExitAction()
+		{
+			super("Exit");
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent actionEvent)
+		{
+			exitTool();
+		}
+	}
+
 }
-
-
