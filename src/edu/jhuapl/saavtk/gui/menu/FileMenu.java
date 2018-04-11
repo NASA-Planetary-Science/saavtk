@@ -44,7 +44,7 @@ public class FileMenu extends JMenu
 
 		mi = new JMenuItem(new ShowCameraOrientationAction());
 		this.add(mi);
-		mi = new JMenuItem(new CopyToClipboardAction());
+		// mi = new JMenuItem(new CopyToClipboardAction());
 		// this.add(mi);
 		// mi = new JCheckBoxMenuItem(new ShowSimpleCylindricalProjectionAction());
 		// this.add(mi);
