@@ -19,6 +19,7 @@ import edu.jhuapl.saavtk.util.Configuration;
 
 public class FileMenu extends JMenu
 {
+	private static final long serialVersionUID = 1L;
 	private PreferencesDialog preferencesDialog;
 	private ViewManager rootPanel;
 	public JFrame frame;
@@ -98,6 +99,8 @@ public class FileMenu extends JMenu
 
 	private class SaveImageAction extends AbstractAction
 	{
+		private static final long serialVersionUID = 1L;
+
 		public SaveImageAction()
 		{
 			super("Export to Image...");
@@ -112,6 +115,8 @@ public class FileMenu extends JMenu
 
 	private class Save6AxesViewsAction extends AbstractAction
 	{
+		private static final long serialVersionUID = 1L;
+
 		public Save6AxesViewsAction()
 		{
 			super("Export Six Views along Axes to Images...");
@@ -126,6 +131,8 @@ public class FileMenu extends JMenu
 
 	private class SaveShapeModelAsPLTAction extends AbstractAction
 	{
+		private static final long serialVersionUID = 1L;
+
 		public SaveShapeModelAsPLTAction()
 		{
 			super("PLT (Gaskell Format)...");
@@ -151,6 +158,8 @@ public class FileMenu extends JMenu
 
 	private class SaveShapeModelAsOBJAction extends AbstractAction
 	{
+		private static final long serialVersionUID = 1L;
+
 		public SaveShapeModelAsOBJAction()
 		{
 			super("OBJ...");
@@ -176,6 +185,8 @@ public class FileMenu extends JMenu
 
 	private class SaveShapeModelAsSTLAction extends AbstractAction
 	{
+		private static final long serialVersionUID = 1L;
+
 		public SaveShapeModelAsSTLAction()
 		{
 			super("STL...");
@@ -201,6 +212,8 @@ public class FileMenu extends JMenu
 
 	private class ShowCameraOrientationAction extends AbstractAction
 	{
+		private static final long serialVersionUID = 1L;
+
 		public ShowCameraOrientationAction()
 		{
 			super("Camera...");
@@ -215,6 +228,8 @@ public class FileMenu extends JMenu
 
 	private class CopyToClipboardAction extends AbstractAction
 	{
+		private static final long serialVersionUID = 1L;
+
 		public CopyToClipboardAction()
 		{
 			super("Copy to Clipboard...");
@@ -229,6 +244,8 @@ public class FileMenu extends JMenu
 
 	private class ShowSimpleCylindricalProjectionAction extends AbstractAction
 	{
+		private static final long serialVersionUID = 1L;
+
 		public ShowSimpleCylindricalProjectionAction()
 		{
 			super("Render using Simple Cylindrical Projection (Experimental)");
@@ -244,6 +261,8 @@ public class FileMenu extends JMenu
 
 	private class PreferencesAction extends AbstractAction
 	{
+		private static final long serialVersionUID = 1L;
+
 		public PreferencesAction()
 		{
 			super("Preferences...");
@@ -258,6 +277,8 @@ public class FileMenu extends JMenu
 
 	private class ClearCacheAction extends AbstractAction
 	{
+		private static final long serialVersionUID = 1L;
+
 		public ClearCacheAction()
 		{
 			super("Clear Cache");
@@ -288,6 +309,8 @@ public class FileMenu extends JMenu
 
 	private class ExitAction extends AbstractAction
 	{
+		private static final long serialVersionUID = 1L;
+
 		public ExitAction()
 		{
 			super("Exit");

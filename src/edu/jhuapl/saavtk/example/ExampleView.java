@@ -22,153 +22,150 @@ import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.pick.StructuresPickManager;
 import edu.jhuapl.saavtk.popup.StructuresPopupManager;
 
+
 /**
- * A view is a container which contains a control panel and renderer as well as
- * a collection of managers. A view is unique to a specific body. This class is
- * used to build all built-in and custom views. All the configuration details of
- * all the built-in and custom views are contained in this class.
+ * A view is a container which contains a control panel and renderer
+ * as well as a collection of managers. A view is unique to a specific
+ * body. This class is used to build all built-in and custom views.
+ * All the configuration details of all the built-in and custom views
+ * are contained in this class.
  */
 public class ExampleView extends View
 {
-	/**
-	 * By default a view should be created empty. Only when the user requests to
-	 * show a particular View, should the View's contents be created in order to
-	 * reduce memory and startup time. Therefore, this function should be called
-	 * prior to first time the View is shown in order to cause it
-	 */
-	public ExampleView(StatusBar statusBar, ViewConfig config)
-	{
-		super(statusBar, config);
-	}
+    /**
+     * By default a view should be created empty. Only when the user
+     * requests to show a particular View, should the View's contents
+     * be created in order to reduce memory and startup time. Therefore,
+     * this function should be called prior to first time the View is
+     * shown in order to cause it
+     */
+    public ExampleView(StatusBar statusBar, ViewConfig config)
+    {
+        super(statusBar, config);
+    }
 
-	/**
-	 * Returns model as a path. e.g. "Asteroid > Near-Earth > Eros > Image Based >
-	 * Gaskell"
-	 */
-	@Override
+    /**
+     * Returns model as a path. e.g. "Asteroid > Near-Earth > Eros > Image Based > Gaskell"
+     */
+    @Override
 	public String getPathRepresentation()
-	{
-		ViewConfig config = getConfig();
-		if (ShapeModelType.CUSTOM == config.author)
-		{
-			return ShapeModelType.CUSTOM + " > " + config.modelLabel;
-		}
-		return "DefaultPath";
-	}
+    {
+    	ViewConfig config = getConfig();
+        if (ShapeModelType.CUSTOM == config.author)
+        {
+        	return ShapeModelType.CUSTOM + " > " + config.modelLabel;
+        }
+        return "DefaultPath";
+    }
 
-	@Override
+    @Override
 	public String getDisplayName()
-	{
-		if (getConfig().author == ShapeModelType.CUSTOM)
-			return getConfig().modelLabel;
-		else
-		{
-			String version = "";
-			if (getConfig().version != null)
-				version += " (" + getConfig().version + ")";
-			return getConfig().author.toString() + version;
-		}
-	}
+    {
+        if (getConfig().author == ShapeModelType.CUSTOM)
+            return getConfig().modelLabel;
+        else
+        {
+            String version = "";
+            if (getConfig().version != null)
+                version += " (" + getConfig().version + ")";
+            return getConfig().author.toString() + version;
+        }
+    }
 
-	@Override
-	public String getModelDisplayName()
-	{
-		ShapeModelBody body = getConfig().body;
-		return body != null ? body + " / " + getDisplayName() : getDisplayName();
-	}
+    @Override
+    public String getModelDisplayName()
+    {
+    	ShapeModelBody body = getConfig().body;
+    	return body != null ? body + " / " + getDisplayName() : getDisplayName();
+    }
 
-	@Override
+    @Override
 	protected void setupModelManager()
-	{
-		PolyhedralModel smallBodyModel = new ExamplePolyhedralModel(getConfig());
-		setModelManager(new ExampleModelManager(smallBodyModel));
-		Graticule graticule = new Graticule(smallBodyModel);
+    {
+        PolyhedralModel smallBodyModel = new ExamplePolyhedralModel(getConfig());
+        setModelManager(new ExampleModelManager(smallBodyModel));
+        Graticule graticule = new Graticule(smallBodyModel);
 
-		HashMap<ModelNames, Model> allModels = new HashMap<>();
-		allModels.put(ModelNames.SMALL_BODY, smallBodyModel);
-		allModels.put(ModelNames.GRATICULE, graticule);
+        HashMap<ModelNames, Model> allModels = new HashMap<>();
+        allModels.put(ModelNames.SMALL_BODY, smallBodyModel);
+        allModels.put(ModelNames.GRATICULE, graticule);
 
-		// if (getConfig().hasLidarData)
-		// {
-		// allModels.putAll(ModelFactory.createLidarModels(smallBodyModel));
-		// }
+//        if (getConfig().hasLidarData)
+//        {
+//            allModels.putAll(ModelFactory.createLidarModels(smallBodyModel));
+//        }
 
-		allModels.put(ModelNames.LINE_STRUCTURES, new LineModel(smallBodyModel));
-		allModels.put(ModelNames.POLYGON_STRUCTURES, new PolygonModel(smallBodyModel));
-		allModels.put(ModelNames.CIRCLE_STRUCTURES, new CircleModel(smallBodyModel));
-		allModels.put(ModelNames.ELLIPSE_STRUCTURES, new EllipseModel(smallBodyModel));
-		allModels.put(ModelNames.POINT_STRUCTURES, new PointModel(smallBodyModel));
-		allModels.put(ModelNames.CIRCLE_SELECTION, new CircleSelectionModel(smallBodyModel));
+        allModels.put(ModelNames.LINE_STRUCTURES, new LineModel(smallBodyModel));
+        allModels.put(ModelNames.POLYGON_STRUCTURES, new PolygonModel(smallBodyModel));
+        allModels.put(ModelNames.CIRCLE_STRUCTURES, new CircleModel(smallBodyModel));
+        allModels.put(ModelNames.ELLIPSE_STRUCTURES, new EllipseModel(smallBodyModel));
+        allModels.put(ModelNames.POINT_STRUCTURES, new PointModel(smallBodyModel));
+        allModels.put(ModelNames.CIRCLE_SELECTION, new CircleSelectionModel(smallBodyModel));
 
-		// allModels.put(ModelNames.TRACKS, new
-		// LidarSearchDataCollection(smallBodyModel));
+//        allModels.put(ModelNames.TRACKS, new LidarSearchDataCollection(smallBodyModel));
 
-		setModels(allModels);
-	}
+        setModels(allModels);
+    }
 
-	@Override
+    @Override
 	protected void setupPopupManager()
-	{
-		setPopupManager(new StructuresPopupManager(getModelManager(), getRenderer()));
+    {
+        setPopupManager(new StructuresPopupManager(getModelManager(), getRenderer()));
 
-		// if (getConfig().hasLidarData)
-		// {
-		// LidarSearchDataCollection lidarSearch =
-		// (LidarSearchDataCollection)getModel(ModelNames.LIDAR_SEARCH);
-		// PopupMenu popupMenu = new LidarPopupMenu(lidarSearch, getRenderer());
-		// registerPopup(lidarSearch, popupMenu);
-		// }
-	}
+//        if (getConfig().hasLidarData)
+//        {
+//            LidarSearchDataCollection lidarSearch = (LidarSearchDataCollection)getModel(ModelNames.LIDAR_SEARCH);
+//            PopupMenu popupMenu = new LidarPopupMenu(lidarSearch, getRenderer());
+//            registerPopup(lidarSearch, popupMenu);
+//        }
+    }
 
-	@Override
+    @Override
 	protected void setupTabs()
-	{
-		addTab(getConfig().getShapeModelName(),
-				new PolyhedralModelControlPanel(getModelManager(), getConfig().getShapeModelName()));
+    {
+        addTab(getConfig().getShapeModelName(), new PolyhedralModelControlPanel(getModelManager(), getConfig().getShapeModelName()));
 
-		// if (getConfig().hasLidarData)
-		// {
-		// JComponent component = new LidarPanel(getConfig(), getModelManager(),
-		// getPickManager(), getRenderer());
-		// addTab(getConfig().lidarInstrumentName.toString(), component);
-		// }
+//        if (getConfig().hasLidarData)
+//        {
+//            JComponent component = new LidarPanel(getConfig(), getModelManager(), getPickManager(), getRenderer());
+//            addTab(getConfig().lidarInstrumentName.toString(), component);
+//        }
 
-		addTab("Structures", new StructuresControlPanel(getModelManager(), getPickManager()));
 
-		// if (!getConfig().customTemporary)
-		// {
-		// ImagingInstrument instrument = null;
-		// for (ImagingInstrument i : getConfig().imagingInstruments)
-		// {
-		// instrument = i;
-		// break;
-		// }
-		//
-		// addTab("Images", new CustomImagesPanel(getModelManager(),
-		// getInfoPanelManager(), getSpectrumPanelManager(), getPickManager(),
-		// getRenderer(), instrument).init());
-		// }
-		//
+        addTab("Structures", new StructuresControlPanel(getModelManager(), getPickManager()));
 
-		// addTab("Tracks", new TrackPanel(getConfig(), getModelManager(),
-		// getPickManager(), getRenderer()));
+//        if (!getConfig().customTemporary)
+//        {
+//            ImagingInstrument instrument = null;
+//            for (ImagingInstrument i : getConfig().imagingInstruments)
+//            {
+//                instrument = i;
+//                break;
+//            }
+//
+//            addTab("Images", new CustomImagesPanel(getModelManager(), getInfoPanelManager(), getSpectrumPanelManager(), getPickManager(), getRenderer(), instrument).init());
+//        }
+//
 
-	}
+//        addTab("Tracks", new TrackPanel(getConfig(), getModelManager(), getPickManager(), getRenderer()));
 
-	@Override
+    }
+
+    @Override
 	protected void setupPickManager()
-	{
-		setPickManager(new StructuresPickManager(getRenderer(), getStatusBar(), getModelManager(), getPopupManager()));
-	}
+    {
+      setPickManager(new StructuresPickManager(getRenderer(), getStatusBar(), getModelManager(), getPopupManager()));
+    }
 
-	@Override
+
+    @Override
 	protected void setupInfoPanelManager()
-	{
-	}
+    {
+    }
 
-	@Override
+    @Override
 	protected void setupSpectrumPanelManager()
-	{
-	}
+    {
+    }
 
 }
