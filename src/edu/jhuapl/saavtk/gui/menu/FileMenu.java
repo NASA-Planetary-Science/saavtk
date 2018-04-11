@@ -107,7 +107,7 @@ public class FileMenu extends JMenu
 		}
 
 		@Override
-		public void actionPerformed(ActionEvent actionEvent)
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			rootPanel.getCurrentView().getRenderer().saveToFile();
 		}
@@ -123,7 +123,7 @@ public class FileMenu extends JMenu
 		}
 
 		@Override
-		public void actionPerformed(ActionEvent actionEvent)
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			rootPanel.getCurrentView().getRenderer().save6ViewsToFile();
 		}
@@ -139,7 +139,7 @@ public class FileMenu extends JMenu
 		}
 
 		@Override
-		public void actionPerformed(ActionEvent actionEvent)
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			File file = CustomFileChooser.showSaveDialog(null, "Export Shape Model to PLT (Gaskell Format)", "model.plt");
 
@@ -166,7 +166,7 @@ public class FileMenu extends JMenu
 		}
 
 		@Override
-		public void actionPerformed(ActionEvent actionEvent)
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			File file = CustomFileChooser.showSaveDialog(null, "Export Shape Model to OBJ", "model.obj");
 
@@ -193,7 +193,7 @@ public class FileMenu extends JMenu
 		}
 
 		@Override
-		public void actionPerformed(ActionEvent actionEvent)
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			File file = CustomFileChooser.showSaveDialog(null, "Export Shape Model to STL", "model.stl");
 
@@ -220,7 +220,7 @@ public class FileMenu extends JMenu
 		}
 
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
 		{
 			new CameraDialog(rootPanel.getCurrentView().getRenderer()).setVisible(true);
 		}
@@ -236,9 +236,9 @@ public class FileMenu extends JMenu
 		}
 
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
 		{
-
+			// TODO Actually implement this.
 		}
 	}
 
@@ -252,7 +252,7 @@ public class FileMenu extends JMenu
 		}
 
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
 		{
 			JCheckBoxMenuItem mi = (JCheckBoxMenuItem) e.getSource();
 			rootPanel.getCurrentView().getRenderer().set2DMode(mi.isSelected());
@@ -269,7 +269,7 @@ public class FileMenu extends JMenu
 		}
 
 		@Override
-		public void actionPerformed(ActionEvent actionEvent)
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			showPreferences();
 		}
@@ -285,7 +285,7 @@ public class FileMenu extends JMenu
 		}
 
 		@Override
-		public void actionPerformed(ActionEvent actionEvent)
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			int option = JOptionPane.showOptionDialog(frame, "Do you wish to clear your local data cache? \nIf you do, all remotely loaded data will need to be reloaded " + "from the server the next time you wish to view it. \nThis may take a few moments.", "Clear cache", 1, 3, null, null, null);
 			if (option == 0)
@@ -317,7 +317,7 @@ public class FileMenu extends JMenu
 		}
 
 		@Override
-		public void actionPerformed(ActionEvent actionEvent)
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			exitTool();
 		}
