@@ -7,6 +7,7 @@ import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.model.ShapeModelType;
+import edu.jhuapl.saavtk.state.StateManager;
 
 public final class ExampleViewManager extends ViewManager
 {
@@ -35,5 +36,12 @@ public final class ExampleViewManager extends ViewManager
 		config.customTemporary = temporary;
 		config.author = ShapeModelType.CUSTOM;
 		return new ExampleView(statusBar, config);
+	}
+
+	@Override
+	public StateManager getStateManager()
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

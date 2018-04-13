@@ -25,11 +25,13 @@ import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
 import edu.jhuapl.saavtk.gui.menu.FileMenu;
 import edu.jhuapl.saavtk.gui.menu.HelpMenu;
+import edu.jhuapl.saavtk.state.StateManager;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.FileCache.UnauthorizedAccessException;
 
 public abstract class ViewManager extends JPanel
 {
+	private static final long serialVersionUID = 1L;
 	private List<View> builtInViews = new ArrayList<>();
 	private List<View> customViews = new ArrayList<>();
 	private View currentView;
@@ -111,7 +113,8 @@ public abstract class ViewManager extends JPanel
 				try
 				{
 					Configuration.updatePassword();
-				} catch (IOException e)
+				}
+				catch (IOException e)
 				{
 					e.printStackTrace();
 					JOptionPane.showMessageDialog(null, "Error trying to save user name and password.", "Unable to save changes", JOptionPane.ERROR_MESSAGE);
@@ -128,6 +131,7 @@ public abstract class ViewManager extends JPanel
 
 	protected void addBuiltInViews(@SuppressWarnings("unused") StatusBar statusBar)
 	{
+
 	}
 
 	protected void setupViews()
@@ -181,7 +185,8 @@ public abstract class ViewManager extends JPanel
 			FileWriter writer = new FileWriter(defaultModelFile.toFile());
 			writer.write(defaultModelName);
 			writer.close();
-		} catch (IOException e)
+		}
+		catch (IOException e)
 		{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -197,7 +202,8 @@ public abstract class ViewManager extends JPanel
 			{
 				if (scanner.hasNextLine())
 					defaultModelName = scanner.nextLine();
-			} catch (IOException e)
+			}
+			catch (IOException e)
 			{
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -288,6 +294,10 @@ public abstract class ViewManager extends JPanel
 
 	public void setCurrentView(View view)
 	{
+		if (view == currentView)
+		{
+			return;
+		}
 		if (currentView != null)
 			currentView.renderer.viewDeactivating();
 
@@ -305,7 +315,8 @@ public abstract class ViewManager extends JPanel
 			currentView = view;
 			currentView.renderer.viewActivating();
 			updateRecents();
-		} catch (UnauthorizedAccessException e)
+		}
+		catch (UnauthorizedAccessException e)
 		{
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(null, "Access to this model is restricted. Please email sbmt@jhuapl.edu to request access.", "Access not authorized", JOptionPane.ERROR_MESSAGE);
@@ -362,6 +373,8 @@ public abstract class ViewManager extends JPanel
 	}
 
 	public abstract View createCustomView(StatusBar statusBar, String name, boolean temporary);
+
+	public abstract StateManager getStateManager();
 
 	public View getCustomView(String name)
 	{
