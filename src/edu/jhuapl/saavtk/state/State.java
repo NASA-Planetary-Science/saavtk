@@ -37,6 +37,10 @@ public final class State
 	{
 		Preconditions.checkNotNull(key);
 		Object object = map.get(key);
+		if (object == null)
+		{
+			throw new IllegalArgumentException(key + " was not found in State");
+		}
 		if (object == NULL_OBJECT)
 		{
 			return null;
