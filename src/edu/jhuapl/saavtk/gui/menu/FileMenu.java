@@ -2,6 +2,7 @@ package edu.jhuapl.saavtk.gui.menu;
 
 import java.awt.event.ActionEvent;
 import java.io.File;
+import java.io.IOException;
 
 import javax.swing.AbstractAction;
 import javax.swing.JCheckBoxMenuItem;
@@ -10,26 +11,41 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.jhuapl.saavtk.gui.OSXAdapter;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CameraDialog;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
+import edu.jhuapl.saavtk.state.StateSerializer;
+import edu.jhuapl.saavtk.state.gson.GsonFileStateSerializer;
 import edu.jhuapl.saavtk.util.Configuration;
 
 public class FileMenu extends JMenu
 {
 	private static final long serialVersionUID = 1L;
+	private final ImmutableList<String> fileExtensions;
+	private final ViewManager rootPanel;
 	private PreferencesDialog preferencesDialog;
-	private ViewManager rootPanel;
 	public JFrame frame;
 
 	public FileMenu(ViewManager rootPanel)
 	{
+		this(rootPanel, ImmutableList.of());
+	}
+
+	public FileMenu(ViewManager rootPanel, Iterable<String> fileExtensions)
+	{
 		super("File");
+		this.fileExtensions = ImmutableList.copyOf(fileExtensions);
 		this.rootPanel = rootPanel;
 
-		JMenuItem mi = new JMenuItem(new SaveImageAction());
+		JMenuItem mi = new JMenuItem(new OpenSession());
+		this.add(mi);
+		mi = new JMenuItem(new SaveSessionAs());
+		this.add(mi);
+		mi = new JMenuItem(new SaveImageAction());
 		this.add(mi);
 		mi = new JMenuItem(new Save6AxesViewsAction());
 		this.add(mi);
@@ -64,16 +80,19 @@ public class FileMenu extends JMenu
 
 			mi = new JMenuItem(new ExitAction());
 			this.add(mi);
-		} else
+		}
+		else
 		{
 			try
 			{
 				OSXAdapter.setPreferencesHandler(this, getClass().getDeclaredMethod("showPreferences", (Class[]) null));
 				OSXAdapter.setQuitHandler(this, getClass().getDeclaredMethod("exitTool", (Class[]) null));
-			} catch (SecurityException e)
+			}
+			catch (SecurityException e)
 			{
 				e.printStackTrace();
-			} catch (NoSuchMethodException e)
+			}
+			catch (NoSuchMethodException e)
 			{
 				e.printStackTrace();
 			}
@@ -95,6 +114,62 @@ public class FileMenu extends JMenu
 	public void exitTool()
 	{
 		System.exit(0);
+	}
+
+	private class OpenSession extends AbstractAction
+	{
+		private static final long serialVersionUID = 1L;
+
+		public OpenSession()
+		{
+			super("Open Session");
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			File file = CustomFileChooser.showOpenDialog(FileMenu.this, "Open a previously saved session", fileExtensions);
+			if (file != null)
+			{
+				loadFrom(file);
+			}
+		}
+	}
+
+	private class SaveSession extends AbstractAction
+	{
+		private static final long serialVersionUID = 1L;
+
+		public SaveSession()
+		{
+			super("Save Session");
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			// TODO Auto-generated method stub
+		}
+	}
+
+	private class SaveSessionAs extends AbstractAction
+	{
+		private static final long serialVersionUID = 1L;
+
+		public SaveSessionAs()
+		{
+			super("Save Session As...");
+		}
+
+		@Override
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
+		{
+			File file = CustomFileChooser.showSaveDialog(FileMenu.this, "Save Current Session", "MySession", "sbmt");
+			if (file != null)
+			{
+				saveTo(file);
+			}
+		}
 	}
 
 	private class SaveImageAction extends AbstractAction
@@ -147,7 +222,8 @@ public class FileMenu extends JMenu
 			{
 				if (file != null)
 					rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsPLT(file);
-			} catch (Exception e1)
+			}
+			catch (Exception e1)
 			{
 				e1.printStackTrace();
 				JOptionPane.showMessageDialog(null, "An error occurred exporting the shape model.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -174,7 +250,8 @@ public class FileMenu extends JMenu
 			{
 				if (file != null)
 					rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsOBJ(file);
-			} catch (Exception e1)
+			}
+			catch (Exception e1)
 			{
 				e1.printStackTrace();
 				JOptionPane.showMessageDialog(null, "An error occurred exporting the shape model.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -201,7 +278,8 @@ public class FileMenu extends JMenu
 			{
 				if (file != null)
 					rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsSTL(file);
-			} catch (Exception e1)
+			}
+			catch (Exception e1)
 			{
 				e1.printStackTrace();
 				JOptionPane.showMessageDialog(null, "An error occurred exporting the shape model.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -287,11 +365,13 @@ public class FileMenu extends JMenu
 		@Override
 		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
-			int option = JOptionPane.showOptionDialog(frame, "Do you wish to clear your local data cache? \nIf you do, all remotely loaded data will need to be reloaded " + "from the server the next time you wish to view it. \nThis may take a few moments.", "Clear cache", 1, 3, null, null, null);
+			int option =
+					JOptionPane.showOptionDialog(frame, "Do you wish to clear your local data cache? \nIf you do, all remotely loaded data will need to be reloaded " + "from the server the next time you wish to view it. \nThis may take a few moments.", "Clear cache", 1, 3, null, null, null);
 			if (option == 0)
 			{
 				deleteFile(new File(Configuration.getApplicationDataDir() + File.separator + "cache\\2"));
-			} else
+			}
+			else
 			{
 				return;
 			}
@@ -323,4 +403,31 @@ public class FileMenu extends JMenu
 		}
 	}
 
+	private void saveTo(File file)
+	{
+		StateSerializer serializer = GsonFileStateSerializer.of(file);
+		try
+		{
+			serializer.save(rootPanel.getStateManager().getState());
+		}
+		catch (IOException e1)
+		{
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	}
+
+	private void loadFrom(File file)
+	{
+		StateSerializer serializer = GsonFileStateSerializer.of(file);
+		try
+		{
+			rootPanel.getStateManager().setState(serializer.load());
+		}
+		catch (IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 }
