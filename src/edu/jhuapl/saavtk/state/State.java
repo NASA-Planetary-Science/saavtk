@@ -7,61 +7,71 @@ import java.util.TreeMap;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSortedMap;
 
-public final class State implements Attribute
+public final class State
 {
-	private static final ValueType VALUE_TYPE = () -> {
-		return "State";
-	};
-
 	public static State of()
 	{
 		return new State(new TreeMap<>());
 	}
 
-	public static State of(Map<StateKey<?>, ? extends Attribute> map)
+	public static State of(Map<StateKey<?>, Object> map)
 	{
-		Preconditions.checkArgument(!map.containsKey(null));
-		Preconditions.checkArgument(!map.containsValue(null));
 		return new State(new TreeMap<>(map));
 	}
 
-	public static ValueType getValueType()
-	{
-		return VALUE_TYPE;
-	}
+	private final SortedMap<StateKey<?>, Object> map;
 
-	private final SortedMap<StateKey<?>, Attribute> map;
-
-	private State(TreeMap<StateKey<?>, Attribute> map)
+	private State(TreeMap<StateKey<?>, Object> map)
 	{
 		Preconditions.checkNotNull(map);
 		this.map = map;
 	}
 
-	public <A extends Attribute> A get(StateKey<A> key)
+	public <V> V get(StateKey<V> key)
 	{
 		Preconditions.checkNotNull(key);
 		@SuppressWarnings("unchecked")
-		A result = (A) map.get(key);
+		V result = (V) map.get(key);
 		return result;
 	}
 
-	public <A extends Attribute> void put(StateKey<A> key, A state)
+	public <V> void put(StateKey<V> key, V state)
 	{
 		Preconditions.checkNotNull(key);
 		Preconditions.checkNotNull(state);
 		map.put(key, state);
 	}
 
-	public ImmutableSortedMap<StateKey<?>, Attribute> getMap()
+	public ImmutableSortedMap<StateKey<?>, Object> getMap()
 	{
 		return ImmutableSortedMap.copyOf(map);
 	}
 
 	@Override
+	public int hashCode()
+	{
+		return map.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object other)
+	{
+		if (this == other)
+		{
+			return true;
+		}
+		if (other instanceof State)
+		{
+			State that = (State) other;
+			return this.map.equals(that.map);
+		}
+		return false;
+	}
+
+	@Override
 	public String toString()
 	{
-		return "(" + VALUE_TYPE.getId() + ") " + map;
+		return "(State) " + map;
 	}
 
 }

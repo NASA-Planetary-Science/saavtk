@@ -12,11 +12,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
-import edu.jhuapl.saavtk.state.Attribute;
 import edu.jhuapl.saavtk.state.State;
 import edu.jhuapl.saavtk.state.StateKey;
 import edu.jhuapl.saavtk.state.StateSerializer;
-import edu.jhuapl.saavtk.state.StringAttribute;
 
 public class GsonFileStateSerializer implements StateSerializer
 {
@@ -66,15 +64,33 @@ public class GsonFileStateSerializer implements StateSerializer
 
 	public static void main(String[] args) throws IOException
 	{
-		Attribute v3 = new StringAttribute("Bennu / V3");
-		Attribute v3State = State.of(ImmutableMap.of(new StateKey<>("tab"), new StringAttribute("1")));
-		ImmutableMap<StateKey<?>, Attribute> map = ImmutableMap.of(new StateKey<>("Current View"), v3, new StateKey<>("Bennu / V3"), v3State);
+		String v3 = "Bennu / V3";
+		State v3State = State.of(ImmutableMap.of(new StateKey<>("tab"), "1"));
+		v3State.put(new StateKey<>("facets"), 2000000001L);
+		v3State.put(new StateKey<>("showBaseMap"), true);
+		v3State.put(new StateKey<>("resolution"), 20.);
+		v3State.put(new StateKey<>("int"), 20);
+		v3State.put(new StateKey<>("long"), (long) 20);
+		v3State.put(new StateKey<>("short"), (short) 20);
+		v3State.put(new StateKey<>("byte"), (byte) 20);
+		v3State.put(new StateKey<>("double"), (double) 20);
+		v3State.put(new StateKey<>("float"), (float) 20);
+		v3State.put(new StateKey<>("char"), (char) 20);
+		v3State.put(new StateKey<>("boolean"), false);
+		v3State.put(new StateKey<>("string"), "a string");
+
+		ImmutableMap<StateKey<?>, Object> map = ImmutableMap.of(new StateKey<>("Current View"), v3, new StateKey<>("Bennu / V3"), v3State);
 		State state = State.of(map);
+		System.out.println("Original state is: " + state);
 
 		StateSerializer serializer = of(new File("/Users/peachjm1/Downloads/MyState.sbmt"));
 		serializer.save(state);
 
 		State state2 = serializer.load();
-		System.out.println(state2);
+		System.out.println("Reloaded state is: " + state2);
+		if (state.equals(state2))
+		{
+			System.out.println("States are considered equal");
+		}
 	}
 }

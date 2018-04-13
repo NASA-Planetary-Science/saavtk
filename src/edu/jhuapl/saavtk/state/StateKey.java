@@ -2,7 +2,7 @@ package edu.jhuapl.saavtk.state;
 
 import com.google.common.base.Preconditions;
 
-public final class StateKey<A extends Attribute> implements Comparable<StateKey<A>>
+public final class StateKey<V> implements Comparable<StateKey<V>>
 {
 	private final String keyId;
 
@@ -21,7 +21,7 @@ public final class StateKey<A extends Attribute> implements Comparable<StateKey<
 	}
 
 	@Override
-	public int compareTo(StateKey<A> that)
+	public int compareTo(StateKey<V> that)
 	{
 		return keyId.compareTo(that.getId());
 	}
