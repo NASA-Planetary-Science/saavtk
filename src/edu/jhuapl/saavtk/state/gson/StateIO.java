@@ -109,7 +109,8 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		JsonElement element = entry.getValue();
 		if (element instanceof JsonPrimitive)
 		{
-			stateDest.put(new StateKey<>(keyString), context.deserialize(element, OBJECT_TYPE));
+			Object object = context.deserialize(element, OBJECT_TYPE);
+			stateDest.put(StateKey.of(object, keyString), object);
 		}
 		else if (element instanceof JsonObject)
 		{
@@ -119,7 +120,8 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 			String typeName = jsonObject.get(STORED_AS_TYPE_KEY).getAsString();
 			Type type = getTypeToRetrieve(typeName);
 
-			stateDest.put(new StateKey<>(keyString), context.deserialize(value, type));
+			Object object = context.deserialize(value, type);
+			stateDest.put(StateKey.of(object, keyString), object);
 		}
 	}
 

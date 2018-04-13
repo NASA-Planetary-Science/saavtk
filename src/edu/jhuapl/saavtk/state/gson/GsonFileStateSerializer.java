@@ -6,7 +6,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
@@ -65,22 +64,24 @@ public class GsonFileStateSerializer implements StateSerializer
 	public static void main(String[] args) throws IOException
 	{
 		String v3 = "Bennu / V3";
-		State v3State = State.of(ImmutableMap.of(new StateKey<>("tab"), "1"));
-		v3State.put(new StateKey<>("facets"), 2000000001L);
-		v3State.put(new StateKey<>("showBaseMap"), true);
-		v3State.put(new StateKey<>("resolution"), 20.);
-		v3State.put(new StateKey<>("int"), 20);
-		v3State.put(new StateKey<>("long"), (long) 20);
-		v3State.put(new StateKey<>("short"), (short) 20);
-		v3State.put(new StateKey<>("byte"), (byte) 20);
-		v3State.put(new StateKey<>("double"), (double) 20);
-		v3State.put(new StateKey<>("float"), (float) 20);
-		v3State.put(new StateKey<>("char"), (char) 20);
-		v3State.put(new StateKey<>("boolean"), false);
-		v3State.put(new StateKey<>("string"), "a string");
+		State v3State = State.of();
+		v3State.put(StateKey.ofString("tab"), "1");
+		v3State.put(StateKey.ofLong("facets"), 2000000001L);
+		v3State.put(StateKey.ofBoolean("showBaseMap"), true);
+		v3State.put(StateKey.ofDouble("resolution"), -5.e64);
+		v3State.put(StateKey.ofInteger("int"), 20);
+		v3State.put(StateKey.ofLong("long"), (long) 20);
+		v3State.put(StateKey.ofShort("short"), (short) 20);
+		v3State.put(StateKey.ofByte("byte"), (byte) 20);
+		v3State.put(StateKey.ofDouble("double"), (double) 20);
+		v3State.put(StateKey.ofFloat("float"), (float) 20);
+		v3State.put(StateKey.ofCharacter("char"), (char) 20);
+		v3State.put(StateKey.ofBoolean("boolean"), false);
+		v3State.put(StateKey.ofString("string"), "a string");
 
-		ImmutableMap<StateKey<?>, Object> map = ImmutableMap.of(new StateKey<>("Current View"), v3, new StateKey<>("Bennu / V3"), v3State);
-		State state = State.of(map);
+		State state = State.of();
+		state.put(StateKey.ofState("Bennu / V3"), v3State);
+		state.put(StateKey.ofString("Current View"), v3);
 		System.out.println("Original state is: " + state);
 
 		StateSerializer serializer = of(new File("/Users/peachjm1/Downloads/MyState.sbmt"));
@@ -92,5 +93,8 @@ public class GsonFileStateSerializer implements StateSerializer
 		{
 			System.out.println("States are considered equal");
 		}
+		Float dVal = state2.get(StateKey.ofState("Bennu / V3")).get(StateKey.ofFloat("resolution"));
+		Short floatAsDouble = state2.get(StateKey.ofState("Bennu / V3")).get(StateKey.ofShort("facets"));
+		System.out.println("float as double is " + floatAsDouble);
 	}
 }
