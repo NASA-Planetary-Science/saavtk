@@ -98,32 +98,47 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 
 			jsonDest.add(key.getId(), jsonObject);
 		}
-		else
+		else if (attribute instanceof Boolean || attribute instanceof String)
 		{
 			jsonDest.add(key.getId(), context.serialize(attribute));
+		}
+		else
+		{
+			throw new IllegalArgumentException("Unable to serialize an object of type " + attribute.getClass().getSimpleName());
 		}
 	}
 
 	private void decode(State stateDest, Entry<String, JsonElement> entry, JsonDeserializationContext context)
 	{
-		String keyString = entry.getKey();
+		String keyId = entry.getKey();
 		JsonElement element = entry.getValue();
-		if (element instanceof JsonPrimitive)
-		{
-			Object object = context.deserialize(element, OBJECT_TYPE);
-			stateDest.put(StateKey.of(object, keyString), object);
-		}
-		else if (element instanceof JsonObject)
+		Type type = null;
+		if (element.isJsonObject())
 		{
 			JsonObject jsonObject = (JsonObject) entry.getValue();
-			JsonElement value = jsonObject.get(STORED_AS_VALUE_KEY);
 
 			String typeName = jsonObject.get(STORED_AS_TYPE_KEY).getAsString();
-			Type type = getTypeToRetrieve(typeName);
-
-			Object object = context.deserialize(value, type);
-			stateDest.put(StateKey.of(object, keyString), object);
+			type = getTypeToRetrieve(typeName);
+			element = jsonObject.get(STORED_AS_VALUE_KEY);
 		}
+		else if (element.isJsonPrimitive())
+		{
+			// Only Boolean and Strings are stored this way.
+			JsonPrimitive primitive = (JsonPrimitive) element;
+			if (primitive.isBoolean())
+			{
+				type = BOOL_TYPE;
+			}
+			else if (primitive.isString())
+			{
+				type = STRING_TYPE;
+			}
+		}
+		if (type == null)
+		{
+			throw new IllegalArgumentException("Unable to deserialize Json object " + element);
+		}
+		stateDest.put(getKeyForType(type, keyId), context.deserialize(element, type));
 	}
 
 	private Type getTypeToStore(Object object)
@@ -223,6 +238,56 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		else
 		{
 			throw new IllegalArgumentException("Cannot retrieve an object of type " + typeName);
+		}
+		return result;
+	}
+
+	private StateKey<?> getKeyForType(Type type, String keyId)
+	{
+		StateKey<?> result = null;
+		if (STATE_TYPE.equals(type))
+		{
+			result = StateKey.ofState(keyId);
+		}
+		else if (INT_TYPE.equals(type))
+		{
+			result = StateKey.ofInteger(keyId);
+		}
+		else if (LONG_TYPE.equals(type))
+		{
+			result = StateKey.ofLong(keyId);
+		}
+		else if (SHORT_TYPE.equals(type))
+		{
+			result = StateKey.ofShort(keyId);
+		}
+		else if (BYTE_TYPE.equals(type))
+		{
+			result = StateKey.ofByte(keyId);
+		}
+		else if (DOUBLE_TYPE.equals(type))
+		{
+			result = StateKey.ofDouble(keyId);
+		}
+		else if (FLOAT_TYPE.equals(type))
+		{
+			result = StateKey.ofFloat(keyId);
+		}
+		else if (CHAR_TYPE.equals(type))
+		{
+			result = StateKey.ofCharacter(keyId);
+		}
+		else if (BOOL_TYPE.equals(type))
+		{
+			result = StateKey.ofBoolean(keyId);
+		}
+		else if (STRING_TYPE.equals(type))
+		{
+			result = StateKey.ofString(keyId);
+		}
+		else
+		{
+			throw new IllegalArgumentException("Cannot create a key for an object of type " + type);
 		}
 		return result;
 	}

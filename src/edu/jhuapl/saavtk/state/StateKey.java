@@ -54,14 +54,6 @@ public final class StateKey<V> implements Comparable<StateKey<V>>
 		return new StateKey<>(String.class, keyId);
 	}
 
-	public static <V> StateKey<V> of(V object, String keyId)
-	{
-		Preconditions.checkNotNull(object);
-		@SuppressWarnings("unchecked")
-		StateKey<V> result = new StateKey<>((Class<V>) object.getClass(), keyId);
-		return result;
-	}
-
 	private final Class<V> typeId;
 	private final String keyId;
 
