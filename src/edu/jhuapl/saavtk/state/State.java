@@ -36,11 +36,7 @@ public final class State
 	public <V> V get(StateKey<V> key)
 	{
 		Preconditions.checkNotNull(key);
-		Object object = map.get(key);
-		if (object == null)
-		{
-			throw new IllegalArgumentException(key + " was not found in State");
-		}
+		Object object = getObject(key);
 		if (object == NULL_OBJECT)
 		{
 			return null;
@@ -63,6 +59,13 @@ public final class State
 		{
 			map.put(key, value);
 		}
+	}
+
+	public boolean isNullValue(StateKey<?> key)
+	{
+		Preconditions.checkNotNull(key);
+		Object object = getObject(key);
+		return object == NULL_OBJECT;
 	}
 
 	public ImmutableSortedMap<StateKey<?>, Object> getMap()
@@ -95,6 +98,17 @@ public final class State
 	public String toString()
 	{
 		return "(State) " + map;
+	}
+
+	private Object getObject(StateKey<?> key)
+	{
+		Preconditions.checkNotNull(key);
+		Object object = map.get(key);
+		if (object == null)
+		{
+			throw new AssertionError();
+		}
+		return object;
 	}
 
 	private <V> V convert(Number number, Class<V> typeId)
