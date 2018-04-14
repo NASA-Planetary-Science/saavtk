@@ -35,16 +35,16 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 	private static final String STORED_AS_TYPE_KEY = "type";
 	private static final String STORED_AS_VALUE_KEY = "value";
 
-	private static final String STORED_AS_STATE = State.class.getName();
-	private static final String STORED_AS_INT = Integer.class.getName();
-	private static final String STORED_AS_LONG = Long.class.getName();
-	private static final String STORED_AS_SHORT = Short.class.getName();
-	private static final String STORED_AS_BYTE = Byte.class.getName();
-	private static final String STORED_AS_DOUBLE = Double.class.getName();
-	private static final String STORED_AS_FLOAT = Float.class.getName();
-	private static final String STORED_AS_CHAR = Character.class.getName();
-	private static final String STORED_AS_BOOL = Boolean.class.getName();
-	private static final String STORED_AS_STRING = String.class.getName();
+	private static final String STORED_AS_STATE = "State";
+	private static final String STORED_AS_INT = Integer.class.getSimpleName();
+	private static final String STORED_AS_LONG = Long.class.getSimpleName();
+	private static final String STORED_AS_SHORT = Short.class.getSimpleName();
+	private static final String STORED_AS_BYTE = Byte.class.getSimpleName();
+	private static final String STORED_AS_DOUBLE = Double.class.getSimpleName();
+	private static final String STORED_AS_FLOAT = Float.class.getSimpleName();
+	private static final String STORED_AS_CHAR = Character.class.getSimpleName();
+	private static final String STORED_AS_BOOL = Boolean.class.getSimpleName();
+	private static final String STORED_AS_STRING = String.class.getSimpleName();
 
 	// @Override
 	public Type getTargetType()
@@ -92,7 +92,8 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		{
 			JsonObject jsonObject = new JsonObject();
 
-			jsonObject.addProperty(STORED_AS_TYPE_KEY, type.getTypeName());
+			String typeName = attribute instanceof State ? "State" : attribute.getClass().getSimpleName();
+			jsonObject.addProperty(STORED_AS_TYPE_KEY, typeName);
 			jsonObject.add(STORED_AS_VALUE_KEY, context.serialize(attribute, type));
 
 			jsonDest.add(key.getId(), jsonObject);
@@ -171,7 +172,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		}
 		else
 		{
-			throw new IllegalArgumentException("Cannot store an object of type " + clazz.getName());
+			throw new IllegalArgumentException("Cannot store an object of type " + clazz.getSimpleName());
 		}
 		return result;
 	}
