@@ -69,6 +69,7 @@ public final class StateKey<V> implements Comparable<StateKey<?>>
 		Preconditions.checkArgument(!keyId.isEmpty());
 		Preconditions.checkArgument(!keyId.matches("^\\s"));
 		Preconditions.checkArgument(!keyId.matches("\\s$"));
+		checkClassValue(valueClass);
 		this.valueClass = valueClass;
 		this.keyId = keyId;
 	}
@@ -136,4 +137,29 @@ public final class StateKey<V> implements Comparable<StateKey<?>>
 		return "Key (" + valueClass.getSimpleName() + ") " + keyId;
 	}
 
+	private static final void checkClassValue(Class<?> valueClass)
+	{
+		if (State.class.isAssignableFrom(valueClass))
+			return;
+		if (String.class.isAssignableFrom(valueClass))
+			return;
+		if (Integer.class.isAssignableFrom(valueClass))
+			return;
+		if (Long.class.isAssignableFrom(valueClass))
+			return;
+		if (Short.class.isAssignableFrom(valueClass))
+			return;
+		if (Byte.class.isAssignableFrom(valueClass))
+			return;
+		if (Double.class.isAssignableFrom(valueClass))
+			return;
+		if (Float.class.isAssignableFrom(valueClass))
+			return;
+		if (Character.class.isAssignableFrom(valueClass))
+			return;
+		if (Boolean.class.isAssignableFrom(valueClass))
+			return;
+
+		throw new IllegalArgumentException("Cannot create a key for an object of class " + valueClass.getSimpleName());
+	}
 }
