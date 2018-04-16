@@ -157,8 +157,7 @@ public class CylindricalProjectionControlPanel extends JPanel implements ChangeL
 		double maxLon = midLonSlider.getValue() + deltaLonSlider.getValue() / 2.;
 
 		projection = new CylindricalProjection(minLat, maxLat, minLon, maxLon);
-		projectionPolyData = CylindricalImage.createProjectionGeometry(bodyPolyData.GetLength(), bodyPolyData,
-				projection);
+		projectionPolyData = CylindricalImage.createProjectionGeometry(bodyPolyData.GetLength(), projection);
 		projectionMapper.SetInputData(projectionPolyData);
 		projectionMapper.Update();
 		projectionActor.GetProperty().SetRepresentationToWireframe();

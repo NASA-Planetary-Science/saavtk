@@ -31,6 +31,7 @@ import vtk.vtkPoints;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataWriter;
 import vtk.vtkPolyLine;
+import vtk.vtkQuad;
 import vtk.vtkSphereSource;
 
 public class CylindricalImage extends GenericImage
@@ -53,7 +54,7 @@ public class CylindricalImage extends GenericImage
 	protected void createGeometry(vtkPolyData targetSurface)
 	{
 		surfaceGeometry=createSurfaceGeometry(targetSurface, projection);
-		projectionGeometry=createProjectionGeometry(targetSurface.GetLength()*projectionDepth, surfaceGeometry, projection);
+		projectionGeometry=createProjectionGeometry(targetSurface.GetLength()*projectionDepth, projection);
 	}
 	
 	public static vtkPolyData createSurfaceGeometry(vtkPolyData targetSurface, Projection projection)
@@ -61,7 +62,12 @@ public class CylindricalImage extends GenericImage
 		return projection.clipVisibleGeometry(targetSurface);
 	}
 	
-	public static vtkPolyData createProjectionGeometry(double depth, vtkPolyData surfaceGeometry, Projection projection)
+	public static vtkPolyData createProjectionGeometry(double depth, Projection projection)
+	{
+		return createProjectionGeometry(depth, projection, false);
+	}
+	
+	public static vtkPolyData createProjectionGeometry(double depth, Projection projection, boolean solid)
 	{
 		vtkPoints points=new vtkPoints();
 		int oid=points.InsertNextPoint(Vector3D.ZERO.toArray());
@@ -95,6 +101,8 @@ public class CylindricalImage extends GenericImage
 		double latDeg,lonDeg;
 		int id;
 		DepthFunction func=new ConstantDepthFunction(depth);
+		
+		
 		for (int i=0; i<nDivLat; i++)
 		{
 			vtkPolyLine lonLine=new vtkPolyLine();
@@ -107,6 +115,7 @@ public class CylindricalImage extends GenericImage
 			}
 			cells.InsertNextCell(lonLine);
 		}
+		
 		for (int i=0; i<nDivLon; i++)
 		{
 			vtkPolyLine latLine=new vtkPolyLine();
@@ -119,10 +128,42 @@ public class CylindricalImage extends GenericImage
 			}
 			cells.InsertNextCell(latLine);
 		}
-		
-		vtkPolyData polyData=new vtkPolyData();
+
+		vtkPolyData polyData = new vtkPolyData();
 		polyData.SetPoints(points);
 		polyData.SetLines(cells);
+
+		if (solid) {
+			int[][] ids = new int[nDivLat][nDivLon];
+			for (int i = 0; i < nDivLat; i++) {
+				latDeg = latDegRange[i];
+				for (int j = 0; j < nDivLon; j++) {
+					lonDeg = lonDegRange[j];
+					id = points.InsertNextPoint(
+							projection.unproject(new CylindricalMapCoordinates(lonDeg, latDeg), func).toArray());
+					ids[i][j] = id;
+				}
+			}
+
+			vtkCellArray polys = new vtkCellArray();
+			for (int i = 0; i < nDivLat - 1; i++) {
+				latDeg = latDegRange[i];
+				for (int j = 0; j < nDivLon - 1; j++) {
+					vtkQuad quad = new vtkQuad();
+					int id0 = ids[i][j];
+					int id1 = ids[i + 1][j];
+					int id2 = ids[i][j + 1];
+					int id3 = ids[i + 1][j + 1];
+					quad.GetPointIds().SetId(0, id0);
+					quad.GetPointIds().SetId(1, id1);
+					quad.GetPointIds().SetId(2, id2);
+					quad.GetPointIds().SetId(3, id3);
+					polys.InsertNextCell(quad);
+				}
+			}
+			polyData.SetPolys(polys);
+		}
+
 		return polyData;
 	}
 	
