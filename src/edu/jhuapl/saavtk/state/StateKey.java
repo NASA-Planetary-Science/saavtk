@@ -9,6 +9,11 @@ public final class StateKey<V> implements Comparable<StateKey<?>>
 		return new StateKey<>(State.class, keyId);
 	}
 
+	public static StateKey<String> ofString(String keyId)
+	{
+		return new StateKey<>(String.class, keyId);
+	}
+
 	public static StateKey<Integer> ofInteger(String keyId)
 	{
 		return new StateKey<>(Integer.class, keyId);
@@ -47,11 +52,6 @@ public final class StateKey<V> implements Comparable<StateKey<?>>
 	public static StateKey<Boolean> ofBoolean(String keyId)
 	{
 		return new StateKey<>(Boolean.class, keyId);
-	}
-
-	public static StateKey<String> ofString(String keyId)
-	{
-		return new StateKey<>(String.class, keyId);
 	}
 
 	public static <V> StateKey<V> of(Class<V> valueClass, String keyId)
