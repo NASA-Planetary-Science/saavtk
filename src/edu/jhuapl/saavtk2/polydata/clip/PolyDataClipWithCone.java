@@ -21,25 +21,38 @@ public class PolyDataClipWithCone extends PolyDataClip
 		super(generateClipFunction(apex, axis, fovDeg));
 	}
 
-	protected static vtkImplicitFunction generateClipFunction(Vector3D apex, Vector3D axis, double fovDeg)
-	{		
-		vtkPlane plane=new vtkPlane();
-		plane.SetOrigin(0,0,0);
-		plane.SetNormal(-1,0,0);
-
-		vtkCone coneFunction=new vtkCone();
-		coneFunction.SetAngle(fovDeg);
-			
+	public static vtkTransform generateClipTransform(Vector3D apex, Vector3D axis)
+	{
 		Rotation rot=new Rotation(Vector3D.PLUS_I, axis);
 		vtkTransform transform=new vtkTransform();
 		transform.RotateWXYZ(Math.toDegrees(rot.getAngle()), rot.getAxis().negate().toArray());
 		transform.Update();
-		
+		return transform;
+	}
+	
+	public static vtkImplicitFunction generateConeFunction(Vector3D apex, Vector3D axis, double fovDeg)
+	{
+		vtkCone coneFunction=new vtkCone();
+		coneFunction.SetAngle(fovDeg);
+		coneFunction.SetTransform(generateClipTransform(apex, axis));
+		return coneFunction;
+	}
+	
+	public static vtkImplicitFunction generatePlaneFunction(Vector3D apex, Vector3D axis)
+	{
+		vtkPlane plane=new vtkPlane();
+		plane.SetOrigin(0,0,0);
+		plane.SetNormal(-1,0,0);
+		plane.SetTransform(generateClipTransform(apex, axis));
+		return plane;
+	}
+	
+	public static vtkImplicitFunction generateClipFunction(Vector3D apex, Vector3D axis, double fovDeg)
+	{		
 		vtkImplicitBoolean booleanFunction=new vtkImplicitBoolean();
 		booleanFunction.SetOperationTypeToIntersection();
-		booleanFunction.AddFunction(plane);
-		booleanFunction.AddFunction(coneFunction);
-		booleanFunction.SetTransform(transform);
+		booleanFunction.AddFunction(generateConeFunction(apex, axis, fovDeg));
+		booleanFunction.AddFunction(generatePlaneFunction(apex, axis));
 		return booleanFunction;
 	}
 	

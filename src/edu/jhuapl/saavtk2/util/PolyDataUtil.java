@@ -2151,6 +2151,8 @@ public class PolyDataUtil
 
         vtkDataArray pointNormals = normalsFilter.GetOutput().GetPointData().GetNormals();
         vtkPoints points = polyData.GetPoints();
+        if (points==null)
+        	return;
 
         int numPoints = points.GetNumberOfPoints();
 

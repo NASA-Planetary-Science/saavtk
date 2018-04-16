@@ -23,7 +23,7 @@ public class PolyDataClipWithPlane extends PolyDataClip
 		super(createClipFunction(plane));
 	}
 	
-	protected static vtkImplicitFunction createClipFunction(Plane plane)
+	public static vtkImplicitFunction createClipFunction(Plane plane)
 	{
 		vtkPlane planeFunction=new vtkPlane();
 		planeFunction.SetOrigin(plane.getOrigin().toArray());

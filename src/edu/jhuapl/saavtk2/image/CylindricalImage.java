@@ -2,6 +2,7 @@ package edu.jhuapl.saavtk2.image;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
@@ -55,14 +56,13 @@ public class CylindricalImage extends GenericImage
 		projectionGeometry=createProjectionGeometry(targetSurface.GetLength()*projectionDepth, surfaceGeometry, projection);
 	}
 	
-	protected static vtkPolyData createSurfaceGeometry(vtkPolyData targetSurface, Projection projection)
+	public static vtkPolyData createSurfaceGeometry(vtkPolyData targetSurface, Projection projection)
 	{
 		return projection.clipVisibleGeometry(targetSurface);
 	}
 	
-	protected static vtkPolyData createProjectionGeometry(double depth, vtkPolyData surfaceGeometry, Projection projection)
+	public static vtkPolyData createProjectionGeometry(double depth, vtkPolyData surfaceGeometry, Projection projection)
 	{
-	
 		vtkPoints points=new vtkPoints();
 		int oid=points.InsertNextPoint(Vector3D.ZERO.toArray());
 		int ulid=points.InsertNextPoint(projection.getUpperLeftUnit().scalarMultiply(depth).add(projection.getRayOrigin()).toArray());
@@ -87,51 +87,38 @@ public class CylindricalImage extends GenericImage
 		cells.InsertNextCell(llline);
 		cells.InsertNextCell(lrline);
 		
-		int nDivLon=(int)(projection.getHorizontalMax()-projection.getHorizontalMin())/3;
-		int nDivLat=(int)(projection.getHorizontalMax()-projection.getVerticalMin())/3;
-		if (nDivLon==0)
-			nDivLon=projectionDegreesPerLineDivision;
-		if (nDivLat==0)
-			nDivLat=projectionDegreesPerLineDivision;
+		int nDivLon=Math.max((int)(projection.getHorizontalMax()-projection.getHorizontalMin())/10,2);
+		int nDivLat=Math.max((int)(projection.getVerticalMax()-projection.getVerticalMin())/10,2);
 		double[] lonDegRange=LinearSpace.create(projection.getHorizontalMin(), projection.getHorizontalMax(), nDivLon);
 		double[] latDegRange=LinearSpace.create(projection.getVerticalMin(), projection.getVerticalMax(), nDivLat);
 		
-		vtkPolyLine minLatLine=new vtkPolyLine();
-		vtkPolyLine maxLatLine=new vtkPolyLine();
-		vtkPolyLine minLonLine=new vtkPolyLine();
-		vtkPolyLine maxLonLine=new vtkPolyLine();
 		double latDeg,lonDeg;
 		int id;
 		DepthFunction func=new ConstantDepthFunction(depth);
 		for (int i=0; i<nDivLat; i++)
 		{
-			lonDeg=projection.getHorizontalMin();
+			vtkPolyLine lonLine=new vtkPolyLine();
 			latDeg=latDegRange[i];
-			id=points.InsertNextPoint(projection.unproject(new CylindricalMapCoordinates(lonDeg, latDeg), func).toArray());
-			minLonLine.GetPointIds().InsertNextId(id);
-			//
-			lonDeg=projection.getHorizontalMax();
-			latDeg=latDegRange[i];
-			id=points.InsertNextPoint(projection.unproject(new CylindricalMapCoordinates(lonDeg, latDeg), func).toArray());
-			maxLonLine.GetPointIds().InsertNextId(id);
+			for (int j=0; j<nDivLon; j++)
+			{
+				lonDeg=lonDegRange[j];
+				id=points.InsertNextPoint(projection.unproject(new CylindricalMapCoordinates(lonDeg, latDeg), func).toArray());
+				lonLine.GetPointIds().InsertNextId(id);
+			}
+			cells.InsertNextCell(lonLine);
 		}
 		for (int i=0; i<nDivLon; i++)
 		{
+			vtkPolyLine latLine=new vtkPolyLine();
 			lonDeg=lonDegRange[i];
-			latDeg=projection.getVerticalMin();
-			id=points.InsertNextPoint(projection.unproject(new CylindricalMapCoordinates(lonDeg, latDeg), func).toArray());
-			minLatLine.GetPointIds().InsertNextId(id);
-			//
-			//
-			lonDeg=lonDegRange[i];
-			latDeg=projection.getVerticalMax();
-			id=points.InsertNextPoint(projection.unproject(new CylindricalMapCoordinates(lonDeg, latDeg), func).toArray());
-			maxLatLine.GetPointIds().InsertNextId(id);
+			for (int j=0; j<nDivLat; j++)
+			{
+				latDeg=latDegRange[j];
+				id=points.InsertNextPoint(projection.unproject(new CylindricalMapCoordinates(lonDeg, latDeg), func).toArray());
+				latLine.GetPointIds().InsertNextId(id);
+			}
+			cells.InsertNextCell(latLine);
 		}
-		cells.InsertNextCell(minLatLine);
-		cells.InsertNextCell(maxLatLine);
-		cells.InsertNextCell(minLonLine);
-		cells.InsertNextCell(maxLonLine);
 		
 		vtkPolyData polyData=new vtkPolyData();
 		polyData.SetPoints(points);
@@ -139,7 +126,7 @@ public class CylindricalImage extends GenericImage
 		return polyData;
 	}
 	
-	protected static vtkPolyData createBoundaryGeometry(vtkPolyData surfaceGeometry)
+	public static vtkPolyData createBoundaryGeometry(vtkPolyData surfaceGeometry)
 	{
 		vtkFeatureEdges edgeFilter=new vtkFeatureEdges();
 		edgeFilter.SetInputData(surfaceGeometry);
