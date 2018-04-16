@@ -4,6 +4,7 @@ import java.lang.reflect.Type;
 import java.util.Map.Entry;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -19,44 +20,101 @@ import edu.jhuapl.saavtk.state.StateKey;
 
 final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 {
-	private static final Type STATE_TYPE = new TypeToken<State>() {}.getType();
-	private static final Type INT_TYPE = new TypeToken<Integer>() {}.getType();
-	private static final Type LONG_TYPE = new TypeToken<Long>() {}.getType();
-	private static final Type SHORT_TYPE = new TypeToken<Short>() {}.getType();
-	private static final Type BYTE_TYPE = new TypeToken<Byte>() {}.getType();
-	private static final Type DOUBLE_TYPE = new TypeToken<Double>() {}.getType();
-	private static final Type FLOAT_TYPE = new TypeToken<Float>() {}.getType();
-	private static final Type CHAR_TYPE = new TypeToken<Character>() {}.getType();
-	private static final Type BOOL_TYPE = new TypeToken<Boolean>() {}.getType();
-	private static final Type STRING_TYPE = new TypeToken<String>() {}.getType();
+	private enum ValueTypeInfo
+	{
+		STATE("State", new TypeToken<State>() {}.getType(), State.class),
+		STRING("String", new TypeToken<String>() {}.getType(), String.class),
+		INTEGER("Integer", new TypeToken<Integer>() {}.getType(), Integer.class),
+		LONG("Long", new TypeToken<Long>() {}.getType(), Long.class),
+		SHORT("Short", new TypeToken<Short>() {}.getType(), Short.class),
+		BYTE("Byte", new TypeToken<Byte>() {}.getType(), Byte.class),
+		DOUBLE("Double", new TypeToken<Double>() {}.getType(), Double.class),
+		FLOAT("Float", new TypeToken<Float>() {}.getType(), Float.class),
+		CHARACTER("Character", new TypeToken<Character>() {}.getType(), Character.class),
+		BOOLEAN("Boolean", new TypeToken<Boolean>() {}.getType(), Boolean.class),
+		;
 
-	private static final Type OBJECT_TYPE = new TypeToken<Object>() {}.getType();
+		private final String typeId;
+		private final Type type;
+		private final Class<?> valueClass;
+
+		private ValueTypeInfo(String typeId, Type type, Class<?> clazz)
+		{
+			this.typeId = typeId;
+			this.type = type;
+			this.valueClass = clazz;
+		}
+
+		public String getTypeId()
+		{
+			return typeId;
+		}
+
+		public Type getType()
+		{
+			return type;
+		}
+
+		public Class<?> getTypeClass()
+		{
+			return valueClass;
+		}
+
+		@Override
+		public String toString()
+		{
+			return "TypeInfo: " + typeId + ", Type = " + type + ", class = " + valueClass.getSimpleName();
+		}
+	}
+
+	private static final ImmutableMap<String, ValueTypeInfo> idMap = createIdMap();
+	private static final ImmutableMap<Type, ValueTypeInfo> typeMap = createTypeMap();
+	private static final ImmutableMap<Class<?>, ValueTypeInfo> classMap = createClassMap();
+
+	private static ValueTypeInfo getValueTypeInfo(String typeId)
+	{
+		Preconditions.checkNotNull(typeId);
+		if (!idMap.containsKey(typeId))
+		{
+			throw new IllegalArgumentException("No information about how to store/retrieve an object with typeId " + typeId);
+		}
+		return idMap.get(typeId);
+	}
+
+	private static ValueTypeInfo getValueTypeInfo(Type type)
+	{
+		Preconditions.checkNotNull(type);
+		if (!typeMap.containsKey(type))
+		{
+			throw new IllegalArgumentException("No information about how to store/retrieve an object of type " + type.getTypeName());
+		}
+		return typeMap.get(type);
+	}
+
+	private static ValueTypeInfo getValueTypeInfo(Class<?> typeClass)
+	{
+		Preconditions.checkNotNull(typeClass);
+		if (!classMap.containsKey(typeClass))
+		{
+			throw new IllegalArgumentException("No information about how to store/retrieve an object with class " + typeClass.getSimpleName());
+		}
+		return classMap.get(typeClass);
+	}
 
 	private static final String STORED_AS_TYPE_KEY = "type";
 	private static final String STORED_AS_VALUE_KEY = "value";
 
-	private static final String STORED_AS_STATE = "State";
-	private static final String STORED_AS_INT = Integer.class.getSimpleName();
-	private static final String STORED_AS_LONG = Long.class.getSimpleName();
-	private static final String STORED_AS_SHORT = Short.class.getSimpleName();
-	private static final String STORED_AS_BYTE = Byte.class.getSimpleName();
-	private static final String STORED_AS_DOUBLE = Double.class.getSimpleName();
-	private static final String STORED_AS_FLOAT = Float.class.getSimpleName();
-	private static final String STORED_AS_CHAR = Character.class.getSimpleName();
-	private static final String STORED_AS_BOOL = Boolean.class.getSimpleName();
-	private static final String STORED_AS_STRING = String.class.getSimpleName();
-
 	// @Override
 	public Type getTargetType()
 	{
-		return STATE_TYPE;
+		return ValueTypeInfo.STATE.getType();
 	}
 
 	@Override
 	public JsonElement serialize(State src, Type typeOfSrc, JsonSerializationContext context)
 	{
 		Preconditions.checkNotNull(src);
-		Preconditions.checkArgument(STATE_TYPE.equals(typeOfSrc));
+		Preconditions.checkArgument(ValueTypeInfo.STATE.getType().equals(typeOfSrc));
 		Preconditions.checkNotNull(context);
 
 		JsonObject object = new JsonObject();
@@ -71,7 +129,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 	public State deserialize(JsonElement jsonSrc, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
 	{
 		Preconditions.checkNotNull(jsonSrc);
-		Preconditions.checkArgument(STATE_TYPE.equals(typeOfT));
+		Preconditions.checkArgument(ValueTypeInfo.STATE.getType().equals(typeOfT));
 		Preconditions.checkNotNull(context);
 
 		State state = State.of();
@@ -85,7 +143,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 
 	private void encode(StateKey<?> key, Object attribute, JsonObject jsonDest, JsonSerializationContext context)
 	{
-		Type type = getTypeToStore(key);
+		Type type = getValueTypeInfo(key.getValueClass()).getType();
 		if (attribute instanceof State || attribute instanceof Number || attribute instanceof Character)
 		{
 			JsonObject jsonObject = new JsonObject();
@@ -116,7 +174,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 			JsonObject jsonObject = (JsonObject) entry.getValue();
 
 			String typeName = jsonObject.get(STORED_AS_TYPE_KEY).getAsString();
-			type = getTypeToRetrieve(typeName);
+			type = getValueTypeInfo(typeName).getType();
 			element = jsonObject.get(STORED_AS_VALUE_KEY);
 		}
 		else if (element.isJsonPrimitive())
@@ -125,11 +183,11 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 			JsonPrimitive primitive = (JsonPrimitive) element;
 			if (primitive.isBoolean())
 			{
-				type = BOOL_TYPE;
+				type = ValueTypeInfo.BOOLEAN.getType();
 			}
 			else if (primitive.isString())
 			{
-				type = STRING_TYPE;
+				type = ValueTypeInfo.STRING.getType();
 			}
 		}
 		if (type == null)
@@ -139,154 +197,39 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		stateDest.put(getKeyForType(type, keyId), context.deserialize(element, type));
 	}
 
-	private Type getTypeToStore(StateKey<?> key)
-	{
-		Type result = null;
-		Class<?> clazz = key.getTypeId();
-		if (State.class.equals(clazz))
-		{
-			result = STATE_TYPE;
-		}
-		else if (Integer.class.equals(clazz))
-		{
-			result = INT_TYPE;
-		}
-		else if (Long.class.equals(clazz))
-		{
-			result = LONG_TYPE;
-		}
-		else if (Short.class.equals(clazz))
-		{
-			result = SHORT_TYPE;
-		}
-		else if (Byte.class.equals(clazz))
-		{
-			result = BYTE_TYPE;
-		}
-		else if (Double.class.equals(clazz))
-		{
-			result = DOUBLE_TYPE;
-		}
-		else if (Float.class.equals(clazz))
-		{
-			result = FLOAT_TYPE;
-		}
-		else if (Character.class.equals(clazz))
-		{
-			result = CHAR_TYPE;
-		}
-		else if (Boolean.class.equals(clazz))
-		{
-			result = BOOL_TYPE;
-		}
-		else if (String.class.equals(clazz))
-		{
-			result = STRING_TYPE;
-		}
-		else
-		{
-			throw new IllegalArgumentException("Cannot store an object of type " + clazz.getSimpleName());
-		}
-		return result;
-	}
-
-	private Type getTypeToRetrieve(String typeName)
-	{
-		Type result = null;
-		if (STORED_AS_STATE.equals(typeName))
-		{
-			result = STATE_TYPE;
-		}
-		else if (STORED_AS_INT.equals(typeName))
-		{
-			result = INT_TYPE;
-		}
-		else if (STORED_AS_LONG.equals(typeName))
-		{
-			result = LONG_TYPE;
-		}
-		else if (STORED_AS_SHORT.equals(typeName))
-		{
-			result = SHORT_TYPE;
-		}
-		else if (STORED_AS_BYTE.equals(typeName))
-		{
-			result = BYTE_TYPE;
-		}
-		else if (STORED_AS_DOUBLE.equals(typeName))
-		{
-			result = DOUBLE_TYPE;
-		}
-		else if (STORED_AS_FLOAT.equals(typeName))
-		{
-			result = FLOAT_TYPE;
-		}
-		else if (STORED_AS_CHAR.equals(typeName))
-		{
-			result = CHAR_TYPE;
-		}
-		else if (STORED_AS_BOOL.equals(typeName))
-		{
-			result = BOOL_TYPE;
-		}
-		else if (STORED_AS_STRING.equals(typeName))
-		{
-			result = STRING_TYPE;
-		}
-		else
-		{
-			throw new IllegalArgumentException("Cannot retrieve an object of type " + typeName);
-		}
-		return result;
-	}
-
 	private StateKey<?> getKeyForType(Type type, String keyId)
 	{
-		StateKey<?> result = null;
-		if (STATE_TYPE.equals(type))
-		{
-			result = StateKey.ofState(keyId);
-		}
-		else if (INT_TYPE.equals(type))
-		{
-			result = StateKey.ofInteger(keyId);
-		}
-		else if (LONG_TYPE.equals(type))
-		{
-			result = StateKey.ofLong(keyId);
-		}
-		else if (SHORT_TYPE.equals(type))
-		{
-			result = StateKey.ofShort(keyId);
-		}
-		else if (BYTE_TYPE.equals(type))
-		{
-			result = StateKey.ofByte(keyId);
-		}
-		else if (DOUBLE_TYPE.equals(type))
-		{
-			result = StateKey.ofDouble(keyId);
-		}
-		else if (FLOAT_TYPE.equals(type))
-		{
-			result = StateKey.ofFloat(keyId);
-		}
-		else if (CHAR_TYPE.equals(type))
-		{
-			result = StateKey.ofCharacter(keyId);
-		}
-		else if (BOOL_TYPE.equals(type))
-		{
-			result = StateKey.ofBoolean(keyId);
-		}
-		else if (STRING_TYPE.equals(type))
-		{
-			result = StateKey.ofString(keyId);
-		}
-		else
-		{
-			throw new IllegalArgumentException("Cannot create a key for an object of type " + type);
-		}
-		return result;
+		return StateKey.of(getValueTypeInfo(type).getTypeClass(), keyId);
 	}
+
+	private static ImmutableMap<String, ValueTypeInfo> createIdMap()
+	{
+		ImmutableMap.Builder<String, ValueTypeInfo> builder = ImmutableMap.builder();
+		for (ValueTypeInfo info : ValueTypeInfo.values())
+		{
+			builder.put(info.getTypeId(), info);
+		}
+		return builder.build();
+	}
+
+	private static ImmutableMap<Type, ValueTypeInfo> createTypeMap()
+	{
+		ImmutableMap.Builder<Type, ValueTypeInfo> builder = ImmutableMap.builder();
+		for (ValueTypeInfo info : ValueTypeInfo.values())
+		{
+			builder.put(info.getType(), info);
+		}
+		return builder.build();
+	}
+
+	private static ImmutableMap<Class<?>, ValueTypeInfo> createClassMap()
+	{
+		ImmutableMap.Builder<Class<?>, ValueTypeInfo> builder = ImmutableMap.builder();
+		for (ValueTypeInfo info : ValueTypeInfo.values())
+		{
+			builder.put(info.getTypeClass(), info);
+		}
+		return builder.build();
+	}
+
 }

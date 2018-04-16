@@ -48,9 +48,9 @@ public final class State
 		}
 		else if (object instanceof Number)
 		{
-			return convert((Number) object, key.getTypeId());
+			return convert((Number) object, key.getValueClass());
 		}
-		return key.getTypeId().cast(object);
+		return key.getValueClass().cast(object);
 	}
 
 	public <V> void put(StateKey<V> key, V value)
@@ -104,39 +104,39 @@ public final class State
 		return object;
 	}
 
-	private <V> V convert(Number number, Class<V> typeId)
+	private <V> V convert(Number number, Class<V> valueClass)
 	{
-		V result = tryConvert(number, typeId);
+		V result = tryConvert(number, valueClass);
 		if (result == null)
 		{
-			result = tryConvert(number.byteValue(), typeId);
+			result = tryConvert(number.byteValue(), valueClass);
 		}
 		if (result == null)
 		{
-			result = tryConvert(number.doubleValue(), typeId);
+			result = tryConvert(number.doubleValue(), valueClass);
 		}
 		if (result == null)
 		{
-			result = tryConvert(number.floatValue(), typeId);
+			result = tryConvert(number.floatValue(), valueClass);
 		}
 		if (result == null)
 		{
-			result = tryConvert(number.intValue(), typeId);
+			result = tryConvert(number.intValue(), valueClass);
 		}
 		if (result == null)
 		{
-			result = tryConvert(number.longValue(), typeId);
+			result = tryConvert(number.longValue(), valueClass);
 		}
 		if (result == null)
 		{
-			result = tryConvert(number.shortValue(), typeId);
+			result = tryConvert(number.shortValue(), valueClass);
 		}
 		if (result == null)
 		{
 			// Nothing worked, so repeat the first cast that
 			// failed. This will cause the appropriate
 			// exception to be thrown.
-			result = typeId.cast(number);
+			result = valueClass.cast(number);
 		}
 		if (result != null)
 		{
@@ -145,12 +145,12 @@ public final class State
 		return result;
 	}
 
-	private <V> V tryConvert(Number number, Class<V> typeId)
+	private <V> V tryConvert(Number number, Class<V> valueClass)
 	{
 		V result = null;
 		try
 		{
-			result = typeId.cast(number);
+			result = valueClass.cast(number);
 		}
 		catch (@SuppressWarnings("unused") ClassCastException e)
 		{}

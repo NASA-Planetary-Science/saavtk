@@ -54,23 +54,28 @@ public final class StateKey<V> implements Comparable<StateKey<V>>
 		return new StateKey<>(String.class, keyId);
 	}
 
-	private final Class<V> typeId;
+	public static <V> StateKey<V> of(Class<V> valueClass, String keyId)
+	{
+		return new StateKey<>(valueClass, keyId);
+	}
+
+	private final Class<V> valueClass;
 	private final String keyId;
 
-	private StateKey(Class<V> typeId, String keyId)
+	private StateKey(Class<V> valueClass, String keyId)
 	{
-		Preconditions.checkNotNull(typeId);
+		Preconditions.checkNotNull(valueClass);
 		Preconditions.checkNotNull(keyId);
 		Preconditions.checkArgument(!keyId.isEmpty());
 		Preconditions.checkArgument(!keyId.matches("^\\s"));
 		Preconditions.checkArgument(!keyId.matches("\\s$"));
-		this.typeId = typeId;
+		this.valueClass = valueClass;
 		this.keyId = keyId;
 	}
 
-	public Class<V> getTypeId()
+	public Class<V> getValueClass()
 	{
-		return typeId;
+		return valueClass;
 	}
 
 	public String getId()
@@ -128,7 +133,7 @@ public final class StateKey<V> implements Comparable<StateKey<V>>
 	@Override
 	public String toString()
 	{
-		return "Key (" + typeId.getSimpleName() + ") " + keyId;
+		return "Key (" + valueClass.getSimpleName() + ") " + keyId;
 	}
 
 }
