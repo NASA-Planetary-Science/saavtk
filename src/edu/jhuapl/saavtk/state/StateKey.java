@@ -2,7 +2,7 @@ package edu.jhuapl.saavtk.state;
 
 import com.google.common.base.Preconditions;
 
-public final class StateKey<V> implements Comparable<StateKey<V>>
+public final class StateKey<V> implements Comparable<StateKey<?>>
 {
 	public static StateKey<State> ofState(String keyId)
 	{
@@ -88,7 +88,7 @@ public final class StateKey<V> implements Comparable<StateKey<V>>
 	 * conversion can occur among numeric types.
 	 */
 	@Override
-	public int compareTo(StateKey<V> that)
+	public int compareTo(StateKey<?> that)
 	{
 		int result = keyId.compareTo(that.getId());
 		return result;
