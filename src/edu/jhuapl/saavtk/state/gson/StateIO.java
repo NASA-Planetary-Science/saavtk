@@ -117,12 +117,12 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		Preconditions.checkArgument(ValueTypeInfo.STATE.getType().equals(typeOfSrc));
 		Preconditions.checkNotNull(context);
 
-		JsonObject object = new JsonObject();
+		JsonObject jsonObject = new JsonObject();
 		for (StateKey<?> key : src.getKeys())
 		{
-			encode(key, src.get(key), object, context);
+			encode(key, src.get(key), jsonObject, context);
 		}
-		return object;
+		return jsonObject;
 	}
 
 	@Override
