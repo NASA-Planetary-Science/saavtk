@@ -18,7 +18,15 @@ public final class State
 		}
 	}
 
-	private static final Object NULL_OBJECT = new Object();
+	private static final Object NULL_OBJECT = new Object() {
+		@Override
+		public String toString()
+		{
+			// Deliberately capitalizing this so that the astute debugger has a chance of
+			// noticing that this object is not actually a null pointer.
+			return "Null";
+		}
+	};
 
 	public static State of()
 	{
@@ -41,7 +49,11 @@ public final class State
 	public <V> V get(StateKey<V> key)
 	{
 		Preconditions.checkNotNull(key);
-		Object object = getObject(key);
+		Object object = map.get(key);
+		if (object == null)
+		{
+			throw new IllegalArgumentException("State does not contain key " + key);
+		}
 		if (object == NULL_OBJECT)
 		{
 			return null;
@@ -91,17 +103,6 @@ public final class State
 	public String toString()
 	{
 		return "(State) " + map;
-	}
-
-	private Object getObject(StateKey<?> key)
-	{
-		Preconditions.checkNotNull(key);
-		Object object = map.get(key);
-		if (object == null)
-		{
-			throw new AssertionError();
-		}
-		return object;
 	}
 
 	private <V> V convert(Number number, Class<V> valueClass)
