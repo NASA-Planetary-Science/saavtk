@@ -78,6 +78,8 @@ public class GsonFileStateSerializer implements StateSerializer
 		v3State.put(StateKey.ofCharacter("char"), (char) 20);
 		v3State.put(StateKey.ofBoolean("boolean"), false);
 		v3State.put(StateKey.ofString("string"), "a string");
+		v3State.put(StateKey.ofString("stringNull"), null);
+		v3State.put(StateKey.ofLong("longNull"), null);
 
 		State state = State.of();
 		state.put(StateKey.ofState("Bennu / V3"), v3State);
@@ -93,8 +95,11 @@ public class GsonFileStateSerializer implements StateSerializer
 		{
 			System.out.println("States are considered equal");
 		}
-		Float dVal = state2.get(StateKey.ofState("Bennu / V3")).get(StateKey.ofFloat("resolution"));
-		Short floatAsDouble = state2.get(StateKey.ofState("Bennu / V3")).get(StateKey.ofShort("facets"));
+		State v3State2 = state2.get(StateKey.ofState("Bennu / V3"));
+		Long nullLong = v3State2.get(StateKey.ofLong("longNull"));
+		System.out.println("nullLong is " + nullLong);
+		Float dVal = v3State2.get(StateKey.ofFloat("resolution"));
+		Short floatAsDouble = v3State2.get(StateKey.ofShort("facets"));
 		System.out.println("float as double is " + floatAsDouble);
 	}
 }

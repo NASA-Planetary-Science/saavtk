@@ -143,13 +143,13 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 
 	private void encode(StateKey<?> key, Object attribute, JsonObject jsonDest, JsonSerializationContext context)
 	{
-		Type type = getValueTypeInfo(key.getValueClass()).getType();
-		if (attribute instanceof State || attribute instanceof Number || attribute instanceof Character)
+		ValueTypeInfo info = getValueTypeInfo(key.getValueClass());
+		Type type = info.getType();
+		if (attribute instanceof State || attribute instanceof Number || attribute instanceof Character || attribute == null)
 		{
 			JsonObject jsonObject = new JsonObject();
 
-			String typeName = attribute instanceof State ? "State" : attribute.getClass().getSimpleName();
-			jsonObject.addProperty(STORED_AS_TYPE_KEY, typeName);
+			jsonObject.addProperty(STORED_AS_TYPE_KEY, info.getTypeId());
 			jsonObject.add(STORED_AS_VALUE_KEY, context.serialize(attribute, type));
 
 			jsonDest.add(key.getId(), jsonObject);
@@ -190,7 +190,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 				type = ValueTypeInfo.STRING.getType();
 			}
 		}
-		if (type == null)
+		else
 		{
 			throw new IllegalArgumentException("Unable to deserialize Json object " + element);
 		}
