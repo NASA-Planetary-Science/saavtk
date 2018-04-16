@@ -60,9 +60,9 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		Preconditions.checkNotNull(context);
 
 		JsonObject object = new JsonObject();
-		for (Entry<StateKey<?>, Object> entry : src.getMap().entrySet())
+		for (StateKey<?> key : src.getKeys())
 		{
-			encode(object, entry, context);
+			encode(key, src.get(key), object, context);
 		}
 		return object;
 	}
@@ -78,16 +78,14 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		JsonObject object = (JsonObject) jsonSrc;
 		for (Entry<String, JsonElement> entry : object.entrySet())
 		{
-			decode(state, entry, context);
+			decode(entry, context, state);
 		}
 		return state;
 	}
 
-	private void encode(JsonObject jsonDest, Entry<StateKey<?>, Object> entry, JsonSerializationContext context)
+	private void encode(StateKey<?> key, Object attribute, JsonObject jsonDest, JsonSerializationContext context)
 	{
-		StateKey<?> key = entry.getKey();
-		Object attribute = entry.getValue();
-		Type type = getTypeToStore(attribute);
+		Type type = getTypeToStore(key);
 		if (attribute instanceof State || attribute instanceof Number || attribute instanceof Character)
 		{
 			JsonObject jsonObject = new JsonObject();
@@ -108,7 +106,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		}
 	}
 
-	private void decode(State stateDest, Entry<String, JsonElement> entry, JsonDeserializationContext context)
+	private void decode(Entry<String, JsonElement> entry, JsonDeserializationContext context, State stateDest)
 	{
 		String keyId = entry.getKey();
 		JsonElement element = entry.getValue();
@@ -141,10 +139,10 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		stateDest.put(getKeyForType(type, keyId), context.deserialize(element, type));
 	}
 
-	private Type getTypeToStore(Object object)
+	private Type getTypeToStore(StateKey<?> key)
 	{
 		Type result = null;
-		Class<?> clazz = object.getClass();
+		Class<?> clazz = key.getTypeId();
 		if (State.class.equals(clazz))
 		{
 			result = STATE_TYPE;

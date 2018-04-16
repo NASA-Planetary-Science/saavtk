@@ -4,7 +4,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableList;
 
 public final class State
 {
@@ -33,6 +33,11 @@ public final class State
 		this.map = map;
 	}
 
+	public ImmutableList<StateKey<?>> getKeys()
+	{
+		return ImmutableList.copyOf(map.keySet());
+	}
+
 	public <V> V get(StateKey<V> key)
 	{
 		Preconditions.checkNotNull(key);
@@ -59,18 +64,6 @@ public final class State
 		{
 			map.put(key, value);
 		}
-	}
-
-	public boolean isNullValue(StateKey<?> key)
-	{
-		Preconditions.checkNotNull(key);
-		Object object = getObject(key);
-		return object == NULL_OBJECT;
-	}
-
-	public ImmutableSortedMap<StateKey<?>, Object> getMap()
-	{
-		return ImmutableSortedMap.copyOf(map);
 	}
 
 	@Override
