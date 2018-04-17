@@ -21,6 +21,9 @@ public class Colorbar implements PropertyChangeListener
 	Colormap cmap;
 
 	boolean widgetInitialized=false;
+	boolean horizontal;
+	private String horizontalTitle;
+	private String verticalTitle;
 	
 	public Colorbar(Renderer renderer)
 	{
@@ -72,6 +75,7 @@ public class Colorbar implements PropertyChangeListener
         interactor.AddObserver("MouseMoveEvent", this, "interactionKludge");
         widget.SetInteractor(interactor);
         widget.EnabledOn();
+        this.horizontal = actor.GetOrientation() == 0;
 	}
 
 
@@ -118,11 +122,18 @@ public class Colorbar implements PropertyChangeListener
 			hovering=false;
 			actor.DrawBackgroundOff();
 		}
+		updateTitleOrientation(false);
 	}
 
-	public void setTitle(String str)
+	public void setTitle(String title)
 	{
-		widget.GetScalarBarActor().SetTitle(str);
+		this.horizontalTitle = title;
+        if (title.length() > 16)
+        {
+            title = title.replaceAll("\\s+", "\n");
+        }
+        this.verticalTitle = title;
+        updateTitleOrientation(true);
 	}
 
 	public vtkScalarBarWidget getWidget()
@@ -171,5 +182,19 @@ public class Colorbar implements PropertyChangeListener
         if (evt.getPropertyName().equals(Colormap.colormapPropertyChanged))
             widget.GetScalarBarActor().SetLookupTable(cmap.getLookupTable());
     }
-   
+
+    private void updateTitleOrientation(boolean forceUpdate) {
+		int orientation = actor.GetOrientation();
+		if (orientation == 0 && (!horizontal || forceUpdate)) {
+			System.err.println("orientation is " + orientation);
+			actor.SetTitle(horizontalTitle);
+			widget.Modified();
+			horizontal = true;
+		} else if (orientation != 0 && (horizontal || forceUpdate)) {
+			System.err.println("orientation is " + orientation);
+			actor.SetTitle(verticalTitle);
+			widget.Modified();
+			horizontal = false;
+		}
+    }
 }
