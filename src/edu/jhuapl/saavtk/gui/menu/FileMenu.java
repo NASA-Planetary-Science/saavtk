@@ -276,7 +276,7 @@ public class FileMenu extends JMenu
                     + "from the server the next time you wish to view it. \nThis may take a few moments.", "Clear cache", 1, 3, null, null, null);
             if(option == 0)
             {
-                deleteFile(new File(Configuration.getApplicationDataDir()+File.separator+"cache\\2"));
+                Configuration.clearCache();
             }
             else
             {
