@@ -64,11 +64,6 @@ public class CylindricalImage extends GenericImage
 	
 	public static vtkPolyData createProjectionGeometry(double depth, Projection projection)
 	{
-		return createProjectionGeometry(depth, projection, false);
-	}
-	
-	public static vtkPolyData createProjectionGeometry(double depth, Projection projection, boolean solid)
-	{
 		vtkPoints points=new vtkPoints();
 		int oid=points.InsertNextPoint(Vector3D.ZERO.toArray());
 		int ulid=points.InsertNextPoint(projection.getUpperLeftUnit().scalarMultiply(depth).add(projection.getRayOrigin()).toArray());
@@ -132,14 +127,49 @@ public class CylindricalImage extends GenericImage
 		vtkPolyData polyData = new vtkPolyData();
 		polyData.SetPoints(points);
 		polyData.SetLines(cells);
+		return polyData;
+	}
 
-		if (solid) {
+	public static int[] computeNumberOfDivisions(CylindricalProjection projection, double pixelsPerDegree)
+	{
+	     double degreesPerPixel=1./pixelsPerDegree;
+	     int nDivLat=(int)((projection.getVerticalExtent())/degreesPerPixel);
+	     int nDivLon=(int)((projection.getHorizontalExtent())/degreesPerPixel);
+	     return new int[]{nDivLon,nDivLat};
+	}
+	
+	public static double[] getLonDegRange(CylindricalProjection projection, double pixelsPerDegree)
+	{
+		int[] div=computeNumberOfDivisions(projection, pixelsPerDegree);
+		return LinearSpace.create(projection.getHorizontalMin(), projection.getHorizontalMax(), div[0]);
+	}
+	
+	public static double[] getLatDegRange(CylindricalProjection projection, double pixelsPerDegree)
+	{
+		int[] div=computeNumberOfDivisions(projection, pixelsPerDegree);
+		return LinearSpace.create(projection.getVerticalMin(), projection.getVerticalMax(), div[1]);
+	}
+	
+	public static vtkPolyData createProjectionGeometrySolid(double depth, Projection projection, double pixelsPerDegree)
+	{   
+		int[] dims=computeNumberOfDivisions((CylindricalProjection)projection, pixelsPerDegree);
+		int nDivLon=dims[0];
+		int nDivLat=dims[1];
+		//int nDivLon=Math.max((int)(projection.getHorizontalMax()-projection.getHorizontalMin())/10,2);
+		//int nDivLat=Math.max((int)(projection.getVerticalMax()-projection.getVerticalMin())/10,2);
+		double[] lonDegRange=getLonDegRange((CylindricalProjection)projection, pixelsPerDegree);
+		double[] latDegRange=getLatDegRange((CylindricalProjection)projection, pixelsPerDegree);
+		DepthFunction func=new ConstantDepthFunction(depth);
+
+		vtkPoints points=new vtkPoints();
+		
+		double latDeg,lonDeg;
 			int[][] ids = new int[nDivLat][nDivLon];
 			for (int i = 0; i < nDivLat; i++) {
 				latDeg = latDegRange[i];
 				for (int j = 0; j < nDivLon; j++) {
 					lonDeg = lonDegRange[j];
-					id = points.InsertNextPoint(
+					int id = points.InsertNextPoint(
 							projection.unproject(new CylindricalMapCoordinates(lonDeg, latDeg), func).toArray());
 					ids[i][j] = id;
 				}
@@ -151,19 +181,20 @@ public class CylindricalImage extends GenericImage
 				for (int j = 0; j < nDivLon - 1; j++) {
 					vtkQuad quad = new vtkQuad();
 					int id0 = ids[i][j];
-					int id1 = ids[i + 1][j];
-					int id2 = ids[i][j + 1];
+					int id1 = ids[i][j + 1];
+					int id2 = ids[i + 1][j];
 					int id3 = ids[i + 1][j + 1];
 					quad.GetPointIds().SetId(0, id0);
 					quad.GetPointIds().SetId(1, id1);
-					quad.GetPointIds().SetId(2, id2);
-					quad.GetPointIds().SetId(3, id3);
+					quad.GetPointIds().SetId(2, id3);
+					quad.GetPointIds().SetId(3, id2);
 					polys.InsertNextCell(quad);
 				}
 			}
-			polyData.SetPolys(polys);
-		}
 
+			vtkPolyData polyData=new vtkPolyData();
+			polyData.SetPoints(points);
+			polyData.SetPolys(polys);
 		return polyData;
 	}
 	
