@@ -65,36 +65,36 @@ public final class StateKey<V> implements Comparable<StateKey<?>>
 		return new StateKey<>(keyId, Boolean.class, null);
 	}
 
-	public static <V> StateKey<V> of(String keyId, Class<V> valueClass)
+	public static <V> StateKey<V> of(String keyId, Class<V> primaryClass)
 	{
-		return new StateKey<>(keyId, valueClass, null);
+		return new StateKey<>(keyId, primaryClass, null);
 	}
 
-	public static <V> StateKey<V> of(String keyId, Class<V> valueClass, Class<?> secondaryClass)
+	public static <V> StateKey<V> of(String keyId, Class<V> primaryClass, Class<?> secondaryClass)
 	{
-		return new StateKey<>(keyId, valueClass, secondaryClass);
+		return new StateKey<>(keyId, primaryClass, secondaryClass);
 	}
 
 	private final String keyId;
-	private final Class<V> valueClass;
+	private final Class<V> primaryClass;
 	private final Class<?> secondaryClass;
 
-	private StateKey(String keyId, Class<V> valueClass, Class<?> secondaryClass)
+	private StateKey(String keyId, Class<V> primaryClass, Class<?> secondaryClass)
 	{
 		this.secondaryClass = secondaryClass;
-		Preconditions.checkNotNull(valueClass);
+		Preconditions.checkNotNull(primaryClass);
 		Preconditions.checkNotNull(keyId);
 		Preconditions.checkArgument(!keyId.isEmpty());
 		Preconditions.checkArgument(!keyId.matches("^\\s"));
 		Preconditions.checkArgument(!keyId.matches("\\s$"));
-		checkClassValue(valueClass);
-		this.valueClass = valueClass;
+		checkClassValue(primaryClass);
+		this.primaryClass = primaryClass;
 		this.keyId = keyId;
 	}
 
-	public Class<V> getValueClass()
+	public Class<V> getPrimaryClass()
 	{
-		return valueClass;
+		return primaryClass;
 	}
 
 	public Class<?> getSecondaryClass()
@@ -161,7 +161,7 @@ public final class StateKey<V> implements Comparable<StateKey<?>>
 	@Override
 	public String toString()
 	{
-		return "Key (" + valueClass.getSimpleName() + ") " + keyId;
+		return "Key (" + primaryClass.getSimpleName() + ") " + keyId;
 	}
 
 	private static final void checkClassValue(Class<?> valueClass)

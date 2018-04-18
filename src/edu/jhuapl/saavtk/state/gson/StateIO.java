@@ -143,7 +143,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 
 	private void encode(StateKey<?> key, Object attribute, JsonObject jsonDest, JsonSerializationContext context)
 	{
-		ValueTypeInfo info = getValueTypeInfo(key.getValueClass());
+		ValueTypeInfo info = getValueTypeInfo(key.getPrimaryClass());
 		Type type = info.getType();
 		if (attribute instanceof State || attribute instanceof Number || attribute instanceof Character || attribute == null)
 		{
