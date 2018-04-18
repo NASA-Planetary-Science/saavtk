@@ -22,27 +22,29 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 {
 	private enum ValueTypeInfo
 	{
-		STATE("State", new TypeToken<State>() {}.getType(), State.class),
-		STRING("String", new TypeToken<String>() {}.getType(), String.class),
-		INTEGER("Integer", new TypeToken<Integer>() {}.getType(), Integer.class),
-		LONG("Long", new TypeToken<Long>() {}.getType(), Long.class),
-		SHORT("Short", new TypeToken<Short>() {}.getType(), Short.class),
-		BYTE("Byte", new TypeToken<Byte>() {}.getType(), Byte.class),
-		DOUBLE("Double", new TypeToken<Double>() {}.getType(), Double.class),
-		FLOAT("Float", new TypeToken<Float>() {}.getType(), Float.class),
-		CHARACTER("Character", new TypeToken<Character>() {}.getType(), Character.class),
-		BOOLEAN("Boolean", new TypeToken<Boolean>() {}.getType(), Boolean.class),
+		STATE("State", new TypeToken<State>() {}.getType(), State.class, true),
+		STRING("String", new TypeToken<String>() {}.getType(), String.class, false),
+		INTEGER("Integer", new TypeToken<Integer>() {}.getType(), Integer.class, true),
+		LONG("Long", new TypeToken<Long>() {}.getType(), Long.class, true),
+		SHORT("Short", new TypeToken<Short>() {}.getType(), Short.class, true),
+		BYTE("Byte", new TypeToken<Byte>() {}.getType(), Byte.class, true),
+		DOUBLE("Double", new TypeToken<Double>() {}.getType(), Double.class, true),
+		FLOAT("Float", new TypeToken<Float>() {}.getType(), Float.class, true),
+		CHARACTER("Character", new TypeToken<Character>() {}.getType(), Character.class, true),
+		BOOLEAN("Boolean", new TypeToken<Boolean>() {}.getType(), Boolean.class, false),
 		;
 
 		private final String typeId;
 		private final Type type;
 		private final Class<?> valueClass;
+		private final boolean useJsonObject;
 
-		private ValueTypeInfo(String typeId, Type type, Class<?> clazz)
+		private ValueTypeInfo(String typeId, Type type, Class<?> clazz, boolean useJsonObject)
 		{
 			this.typeId = typeId;
 			this.type = type;
 			this.valueClass = clazz;
+			this.useJsonObject = useJsonObject;
 		}
 
 		public String getTypeId()
@@ -58,6 +60,11 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		public Class<?> getTypeClass()
 		{
 			return valueClass;
+		}
+
+		public boolean useJsonObject()
+		{
+			return useJsonObject;
 		}
 
 		@Override
@@ -145,7 +152,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 	{
 		ValueTypeInfo info = getValueTypeInfo(key.getPrimaryClass());
 		Type type = info.getType();
-		if (attribute instanceof State || attribute instanceof Number || attribute instanceof Character || attribute == null)
+		if (attribute == null || info.useJsonObject())
 		{
 			JsonObject jsonObject = new JsonObject();
 
@@ -154,13 +161,9 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 
 			jsonDest.add(key.getId(), jsonObject);
 		}
-		else if (attribute instanceof Boolean || attribute instanceof String)
-		{
-			jsonDest.add(key.getId(), context.serialize(attribute));
-		}
 		else
 		{
-			throw new IllegalArgumentException("Unable to serialize an object of type " + attribute.getClass().getSimpleName());
+			jsonDest.add(key.getId(), context.serialize(attribute));
 		}
 	}
 
@@ -190,7 +193,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 				type = ValueTypeInfo.STRING.getType();
 			}
 		}
-		else
+		if (type == null)
 		{
 			throw new IllegalArgumentException("Unable to deserialize Json object " + element);
 		}
