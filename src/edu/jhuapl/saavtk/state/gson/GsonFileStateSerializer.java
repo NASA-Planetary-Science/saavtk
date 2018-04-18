@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
@@ -80,6 +82,19 @@ public class GsonFileStateSerializer implements StateSerializer
 		v3State.put(StateKey.ofString("string"), "a string");
 		v3State.put(StateKey.ofString("stringNull"), null);
 		v3State.put(StateKey.ofLong("longNull"), null);
+		List<String> stringList = new ArrayList<>();
+		stringList.add("String0");
+		stringList.add(null);
+		stringList.add("String2");
+		StateKey<List<String>> stringListKey = StateKey.ofList("stringList", String.class);
+		v3State.put(stringListKey, stringList);
+
+		List<Integer> intList = new ArrayList<>();
+		intList.add(0);
+		intList.add(null);
+		intList.add(2);
+		StateKey<List<Integer>> intListKey = StateKey.ofList("intList", Integer.class);
+		v3State.put(intListKey, intList);
 
 		State state = State.of();
 		state.put(StateKey.ofState("Bennu / V3"), v3State);

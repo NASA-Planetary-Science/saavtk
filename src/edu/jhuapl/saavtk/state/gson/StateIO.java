@@ -1,10 +1,13 @@
 package edu.jhuapl.saavtk.state.gson;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map.Entry;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -23,6 +26,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 	private enum ValueTypeInfo
 	{
 		STATE("State", new TypeToken<State>() {}.getType(), State.class),
+		LIST("List", new TypeToken<List<?>>() {}.getType(), List.class),
 		STRING("String", new TypeToken<String>() {}.getType(), String.class),
 		INTEGER("Integer", new TypeToken<Integer>() {}.getType(), Integer.class),
 		LONG("Long", new TypeToken<Long>() {}.getType(), Long.class),
@@ -102,6 +106,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 	}
 
 	private static final String STORED_AS_TYPE_KEY = "type";
+	private static final String STORED_AS_CONTENT_TYPE_KEY = "contentType";
 	private static final String STORED_AS_VALUE_KEY = "value";
 
 	// @Override
@@ -143,24 +148,48 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 
 	private void encode(StateKey<?> key, Object attribute, JsonObject jsonDest, JsonSerializationContext context)
 	{
-		ValueTypeInfo info = getValueTypeInfo(key.getValueClass());
-		Type type = info.getType();
-		if (attribute instanceof State || attribute instanceof Number || attribute instanceof Character || attribute == null)
-		{
-			JsonObject jsonObject = new JsonObject();
-
-			jsonObject.addProperty(STORED_AS_TYPE_KEY, info.getTypeId());
-			jsonObject.add(STORED_AS_VALUE_KEY, context.serialize(attribute, type));
-
-			jsonDest.add(key.getId(), jsonObject);
-		}
-		else if (attribute instanceof Boolean || attribute instanceof String)
+		if (attribute instanceof Boolean || attribute instanceof String)
 		{
 			jsonDest.add(key.getId(), context.serialize(attribute));
 		}
 		else
 		{
-			throw new IllegalArgumentException("Unable to serialize an object of type " + attribute.getClass().getSimpleName());
+			ValueTypeInfo info = getValueTypeInfo(key.getValueClass());
+			if (attribute instanceof State || attribute instanceof Number || attribute instanceof Character || attribute == null)
+			{
+				Type type = info.getType();
+
+				JsonObject jsonObject = new JsonObject();
+
+				jsonObject.addProperty(STORED_AS_TYPE_KEY, info.getTypeId());
+				jsonObject.add(STORED_AS_VALUE_KEY, context.serialize(attribute, type));
+
+				jsonDest.add(key.getId(), jsonObject);
+			}
+			else if (attribute instanceof List)
+			{
+				ValueTypeInfo contentInfo = getValueTypeInfo(key.getSecondaryClass());
+				Type type = contentInfo.getType();
+
+				JsonObject jsonObject = new JsonObject();
+
+				jsonObject.addProperty(STORED_AS_TYPE_KEY, info.getTypeId());
+				jsonObject.addProperty(STORED_AS_CONTENT_TYPE_KEY, contentInfo.getTypeId());
+
+				JsonArray jsonList = new JsonArray();
+				List<?> list = (List<?>) attribute;
+				for (Object element : list)
+				{
+					jsonList.add(context.serialize(element, type));
+				}
+
+				jsonObject.add(STORED_AS_VALUE_KEY, jsonList);
+				jsonDest.add(key.getId(), jsonObject);
+			}
+			else
+			{
+				throw new IllegalArgumentException("Unable to serialize an object of type " + attribute.getClass().getSimpleName());
+			}
 		}
 	}
 
@@ -169,15 +198,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		String keyId = entry.getKey();
 		JsonElement element = entry.getValue();
 		Type type = null;
-		if (element.isJsonObject())
-		{
-			JsonObject jsonObject = (JsonObject) entry.getValue();
-
-			String typeName = jsonObject.get(STORED_AS_TYPE_KEY).getAsString();
-			type = getValueTypeInfo(typeName).getType();
-			element = jsonObject.get(STORED_AS_VALUE_KEY);
-		}
-		else if (element.isJsonPrimitive())
+		if (element.isJsonPrimitive())
 		{
 			// Only Boolean and Strings are stored this way.
 			JsonPrimitive primitive = (JsonPrimitive) element;
@@ -189,17 +210,55 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 			{
 				type = ValueTypeInfo.STRING.getType();
 			}
+			stateDest.put(getKeyForType(keyId, type), context.deserialize(element, type));
+		}
+		else if (element.isJsonObject())
+		{
+			JsonObject jsonObject = (JsonObject) entry.getValue();
+			String typeName = jsonObject.get(STORED_AS_TYPE_KEY).getAsString();
+			ValueTypeInfo typeInfo = getValueTypeInfo(typeName);
+			type = typeInfo.getType();
+			element = jsonObject.get(STORED_AS_VALUE_KEY);
+			if (ValueTypeInfo.LIST.equals(typeInfo))
+			{
+				if (element instanceof JsonArray)
+				{
+					JsonArray jsonArray = (JsonArray) element;
+					String contentTypeName = jsonObject.get(STORED_AS_CONTENT_TYPE_KEY).getAsString();
+					Type contentType = getValueTypeInfo(contentTypeName).getType();
+					List<?> list = new ArrayList<>();
+					for (int index = 0; index < jsonArray.size(); ++index)
+					{
+						list.add(context.deserialize(jsonArray.get(index), contentType));
+					}
+					@SuppressWarnings("unchecked")
+					StateKey<List<?>> listKey = (StateKey<List<?>>) getKeyForType(keyId, type, contentType);
+					stateDest.put(listKey, list);
+				}
+				else
+				{
+					throw new AssertionError("Java List must be stored as a JsonArray");
+				}
+			}
+			else
+			{
+				stateDest.put(getKeyForType(keyId, type), context.deserialize(element, type));
+			}
 		}
 		else
 		{
 			throw new IllegalArgumentException("Unable to deserialize Json object " + element);
 		}
-		stateDest.put(getKeyForType(type, keyId), context.deserialize(element, type));
 	}
 
-	private StateKey<?> getKeyForType(Type type, String keyId)
+	private StateKey<?> getKeyForType(String keyId, Type type)
 	{
-		return StateKey.of(getValueTypeInfo(type).getTypeClass(), keyId);
+		return StateKey.of(keyId, getValueTypeInfo(type).getTypeClass());
+	}
+
+	private StateKey<?> getKeyForType(String keyId, Type type, Type contentType)
+	{
+		return StateKey.of(keyId, getValueTypeInfo(type).getTypeClass(), getValueTypeInfo(contentType).getTypeClass());
 	}
 
 	private static ImmutableMap<String, ValueTypeInfo> createIdMap()
