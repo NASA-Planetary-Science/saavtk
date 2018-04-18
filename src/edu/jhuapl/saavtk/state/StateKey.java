@@ -111,34 +111,51 @@ public final class StateKey<V> implements Comparable<StateKey<?>>
 		return keyId;
 	}
 
-	/**
-	 * Compare only based on the keyId -- ignore type differences. This is so that
-	 * conversion can occur among numeric types.
-	 */
 	@Override
 	public int compareTo(StateKey<?> that)
 	{
 		int result = keyId.compareTo(that.getId());
-		return result;
+		if (result != 0)
+			return result;
+
+		if (!areClassesConvertible(this.primaryClass, that.primaryClass))
+		{
+			return this.primaryClass.getSimpleName().compareTo(that.primaryClass.getSimpleName());
+		}
+
+		if (!areClassesConvertible(this.secondaryClass, that.secondaryClass))
+		{
+			return this.secondaryClass == null ? -1 : (that.secondaryClass == null ? 1 : this.secondaryClass.getSimpleName().compareTo(that.secondaryClass.getSimpleName()));
+		}
+
+		return 0;
 	}
 
-	/**
-	 * Compare only based on the keyId -- ignore type differences. This is so that
-	 * conversion can occur among numeric types.
-	 */
 	@Override
 	public int hashCode()
 	{
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + keyId.hashCode();
+		if (areClassesConvertible(primaryClass, Number.class))
+		{
+			result = prime * result + Number.class.hashCode();
+		}
+		else
+		{
+			result = prime * result + primaryClass.hashCode();
+		}
+		if (areClassesConvertible(secondaryClass, Number.class))
+		{
+			result = prime * result + Number.class.hashCode();
+		}
+		else
+		{
+			result = prime * result + (secondaryClass == null ? 0 : secondaryClass.hashCode());
+		}
 		return result;
 	}
 
-	/**
-	 * Compare only based on the keyId -- ignore type differences. This is so that
-	 * conversion can occur among numeric types.
-	 */
 	@Override
 	public boolean equals(Object other)
 	{
@@ -150,6 +167,14 @@ public final class StateKey<V> implements Comparable<StateKey<?>>
 		{
 			StateKey<?> that = (StateKey<?>) other;
 			if (!this.keyId.equals(that.keyId))
+			{
+				return false;
+			}
+			if (!areClassesConvertible(this.primaryClass, that.primaryClass))
+			{
+				return false;
+			}
+			if (!areClassesConvertible(this.secondaryClass, that.secondaryClass))
 			{
 				return false;
 			}
@@ -190,5 +215,33 @@ public final class StateKey<V> implements Comparable<StateKey<?>>
 			return;
 
 		throw new IllegalArgumentException("Cannot create a key for an object of class " + valueClass.getSimpleName());
+	}
+
+	private static boolean areClassesConvertible(Class<?> class1, Class<?> class2)
+	{
+		// Both or neither argument must be null.
+		if (class1 == null && class2 == null)
+		{
+			return true;
+		}
+		else if (class1 == null || class2 == null)
+		{
+			return false;
+		}
+
+		// Equal classes are convertible.
+		if (class1.equals(class2))
+		{
+			return true;
+		}
+
+		// Numbers are also convertible.
+		if (Number.class.isAssignableFrom(class1) && Number.class.isAssignableFrom(class2))
+		{
+			return true;
+		}
+
+		// Nothing else is convertible.
+		return false;
 	}
 }
