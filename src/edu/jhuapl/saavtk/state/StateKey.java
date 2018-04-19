@@ -2,13 +2,20 @@ package edu.jhuapl.saavtk.state;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 public final class StateKey<V> implements Comparable<StateKey<?>>
 {
-	private static final ImmutableList<Class<?>> SUPPORTED_VALUE_TYPES = ImmutableList.of(State.class, List.class, String.class, Integer.class, Long.class, Short.class, Byte.class, Double.class, Float.class, Character.class, Boolean.class);
+	// Note: this is iterated on to find the first value that matches a type, so this means that super-types must
+	// be listed *after* sub-types in this list, e.g., SortedSet before Set. Otherwise the first match may be the
+	// wrong match. Even so there are issues down in the weeds: something serialized as SortedSet is not retrievable
+	// as Set. Hard to sort that one out.
+	private static final ImmutableList<Class<?>> SUPPORTED_VALUE_TYPES =
+			ImmutableList.of(State.class, List.class, SortedSet.class, Set.class, String.class, Integer.class, Long.class, Short.class, Byte.class, Double.class, Float.class, Character.class, Boolean.class);
 
 	public static StateKey<State> ofState(String keyId)
 	{
@@ -21,6 +28,24 @@ public final class StateKey<V> implements Comparable<StateKey<?>>
 		StateKey<?> genericKey = of(keyId, List.class, secondaryClass);
 		@SuppressWarnings("unchecked")
 		StateKey<List<T>> result = (StateKey<List<T>>) genericKey;
+		return result;
+	}
+
+	public static <T> StateKey<SortedSet<T>> ofSortedSet(String keyId, Class<?> secondaryClass)
+	{
+		// Need to tap dance around Java's type erasure.
+		StateKey<?> genericKey = of(keyId, SortedSet.class, secondaryClass);
+		@SuppressWarnings("unchecked")
+		StateKey<SortedSet<T>> result = (StateKey<SortedSet<T>>) genericKey;
+		return result;
+	}
+
+	public static <T> StateKey<Set<T>> ofSet(String keyId, Class<?> secondaryClass)
+	{
+		// Need to tap dance around Java's type erasure.
+		StateKey<?> genericKey = of(keyId, Set.class, secondaryClass);
+		@SuppressWarnings("unchecked")
+		StateKey<Set<T>> result = (StateKey<Set<T>>) genericKey;
 		return result;
 	}
 
