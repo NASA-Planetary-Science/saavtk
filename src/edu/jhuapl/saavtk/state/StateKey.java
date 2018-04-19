@@ -1,17 +1,21 @@
 package edu.jhuapl.saavtk.state;
 
+import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 public final class StateKey<V> implements Comparable<StateKey<?>>
 {
+	private static final ImmutableList<Class<?>> SUPPORTED_VALUE_TYPES = ImmutableList.of(State.class, List.class, String.class, Integer.class, Long.class, Short.class, Byte.class, Double.class, Float.class, Character.class, Boolean.class);
+
 	public static StateKey<State> ofState(String keyId)
 	{
 		return new StateKey<>(keyId, State.class, null);
 	}
 
-	public static <T> StateKey<List<T>> ofList(String keyId, Class<T> secondaryClass)
+	public static <T> StateKey<List<T>> ofList(String keyId, Class<?> secondaryClass)
 	{
 		// Need to tap dance around Java's type erasure.
 		StateKey<?> genericKey = of(keyId, List.class, secondaryClass);
@@ -72,29 +76,42 @@ public final class StateKey<V> implements Comparable<StateKey<?>>
 
 	public static <V> StateKey<V> of(String keyId, Class<V> primaryClass, Class<?> secondaryClass)
 	{
+		Preconditions.checkNotNull(secondaryClass);
+		return new StateKey<>(keyId, primaryClass, secondaryClass);
+	}
+
+	public static StateKey<?> ofObject(String keyId, Object object)
+	{
+		Preconditions.checkNotNull(object);
+		Class<?> primaryClass = getSupportedClass(object.getClass());
+		Class<?> secondaryClass = needsSecondaryClass(primaryClass) ? getSecondaryClass(object) : null;
 		return new StateKey<>(keyId, primaryClass, secondaryClass);
 	}
 
 	private final String keyId;
-	private final Class<V> primaryClass;
+	private final Class<?> primaryClass;
 	private final Class<?> secondaryClass;
 
-	private StateKey(String keyId, Class<V> primaryClass, Class<?> secondaryClass)
+	private StateKey(String keyId, Class<?> primaryClass, Class<?> secondaryClass)
 	{
-		this.secondaryClass = secondaryClass;
-		Preconditions.checkNotNull(primaryClass);
 		Preconditions.checkNotNull(keyId);
 		Preconditions.checkArgument(!keyId.isEmpty());
 		Preconditions.checkArgument(!keyId.matches("^\\s"));
 		Preconditions.checkArgument(!keyId.matches("\\s$"));
-		checkClassValue(primaryClass);
-		this.primaryClass = primaryClass;
+		checkValid(primaryClass, secondaryClass);
 		this.keyId = keyId;
+		this.primaryClass = getSupportedClass(primaryClass);
+		this.secondaryClass = getSupportedClass(secondaryClass);
 	}
 
-	public Class<V> getPrimaryClass()
+	public Class<?> getPrimaryClass()
 	{
 		return primaryClass;
+	}
+
+	public boolean hasSecondaryClass()
+	{
+		return secondaryClass != null;
 	}
 
 	public Class<?> getSecondaryClass()
@@ -186,35 +203,57 @@ public final class StateKey<V> implements Comparable<StateKey<?>>
 	@Override
 	public String toString()
 	{
-		return "Key (" + primaryClass.getSimpleName() + ") " + keyId;
+		return "Key (" + primaryClass.getSimpleName() + (secondaryClass != null ? "<" + secondaryClass.getSimpleName() + ">" : "") + ") " + keyId;
 	}
 
-	private static final void checkClassValue(Class<?> valueClass)
+	private static Class<?> getSupportedClass(Class<?> valueClass)
 	{
-		if (State.class.isAssignableFrom(valueClass))
-			return;
-		if (List.class.isAssignableFrom(valueClass))
-			return;
-		if (String.class.isAssignableFrom(valueClass))
-			return;
-		if (Integer.class.isAssignableFrom(valueClass))
-			return;
-		if (Long.class.isAssignableFrom(valueClass))
-			return;
-		if (Short.class.isAssignableFrom(valueClass))
-			return;
-		if (Byte.class.isAssignableFrom(valueClass))
-			return;
-		if (Double.class.isAssignableFrom(valueClass))
-			return;
-		if (Float.class.isAssignableFrom(valueClass))
-			return;
-		if (Character.class.isAssignableFrom(valueClass))
-			return;
-		if (Boolean.class.isAssignableFrom(valueClass))
-			return;
+		if (valueClass == null)
+		{
+			return null;
+		}
+		for (Class<?> supportedClass : SUPPORTED_VALUE_TYPES)
+		{
+			if (supportedClass.isAssignableFrom(valueClass))
+			{
+				return supportedClass;
+			}
+		}
 
 		throw new IllegalArgumentException("Cannot create a key for an object of class " + valueClass.getSimpleName());
+	}
+
+	private final void checkValid(Class<?> primaryClass, Class<?> secondaryClass)
+	{
+		Preconditions.checkNotNull(primaryClass);
+		if (needsSecondaryClass(primaryClass))
+		{
+			Preconditions.checkNotNull(secondaryClass);
+		}
+	}
+
+	private static boolean needsSecondaryClass(Class<?> primaryClass)
+	{
+		return Iterable.class.isAssignableFrom(primaryClass);
+	}
+
+	private static Class<?> getSecondaryClass(Object object)
+	{
+		if (object instanceof Iterable)
+		{
+			Iterable<?> iterable = (Iterable<?>) object;
+			Iterator<?> iterator = iterable.iterator();
+			while (iterator.hasNext())
+			{
+				Object next = iterator.next();
+				if (next != null)
+				{
+					return next.getClass();
+				}
+			}
+			return null;
+		}
+		throw new AssertionError();
 	}
 
 	private static boolean areClassesConvertible(Class<?> class1, Class<?> class2)

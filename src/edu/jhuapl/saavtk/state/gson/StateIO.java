@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.state.gson;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -153,7 +154,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 	public State deserialize(JsonElement jsonSrc, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
 	{
 		Preconditions.checkNotNull(jsonSrc);
-		Preconditions.checkArgument(jsonSrc instanceof JsonObject);
+		Preconditions.checkArgument(jsonSrc.isJsonObject());
 		Preconditions.checkArgument(ValueTypeInfo.STATE.getType().equals(typeOfT));
 		Preconditions.checkNotNull(context);
 
@@ -220,40 +221,159 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		jsonDest.add(key.getId(), jsonElement);
 	}
 
+	/**
+	 * Top level decode method, called to reconstruct one Json element pulled from a
+	 * serialized state and add it to a destination State.
+	 * 
+	 * @param keyId
+	 * @param element
+	 * @param context
+	 * @param stateDest
+	 */
 	private void decode(String keyId, JsonElement element, JsonDeserializationContext context, State stateDest)
 	{
-		Type type = null;
-		if (element.isJsonObject())
+		// if (element.isJsonNull()) we don't know the type of the key to construct, so this can't be
+		// handled here.
+		//
+		// Similarly, if (element.isJsonArray()), additional metadata is needed to decode it, so this can't
+		// be handled here.
+		//
+		if (element.isJsonPrimitive())
 		{
-			JsonObject jsonObject = (JsonObject) element;
+			decode(keyId, element.getAsJsonPrimitive(), context, stateDest);
+		}
+		else if (element.isJsonObject())
+		{
+			JsonObject jsonObject = element.getAsJsonObject();
+			String typeId = getString(jsonObject, STORED_AS_TYPE_KEY);
+			ValueTypeInfo primaryInfo = getValueTypeInfo(typeId);
 
-			String typeName = jsonObject.get(STORED_AS_TYPE_KEY).getAsString();
-			type = getValueTypeInfo(typeName).getType();
-			element = jsonObject.get(STORED_AS_VALUE_KEY);
+			//			if (primaryInfo.useJsonArray())
+			//			{
+			decode(keyId, jsonObject, context, primaryInfo, stateDest);
+			//			}
+		}
+		else
+		{
+			// This one is the programmer's fault.
+			throw new AssertionError("Cannot call decode method for elements like " + element);
+		}
+	}
+
+	private void decode(String keyId, JsonPrimitive primitive, JsonDeserializationContext context, State stateDest)
+	{
+		Type type = null;
+		if (primitive.isBoolean())
+		{
+			type = ValueTypeInfo.BOOLEAN.getType();
+		}
+		else if (primitive.isString())
+		{
+			type = ValueTypeInfo.STRING.getType();
+		}
+		else if (primitive.isNumber())
+		{
+			type = ValueTypeInfo.DOUBLE.getType();
+		}
+		else
+		{
+			throw new IllegalArgumentException("Unable to deserialize Json primitive " + primitive);
+		}
+		stateDest.put(getKeyForType(keyId, type), context.deserialize(primitive, type));
+	}
+
+	/**
+	 * Decode the supplied JsonObject, which might contain another state (a
+	 * sub-state), a primitive, a null or even an array.
+	 * 
+	 * @param objectId
+	 * @param jsonObject
+	 * @param context
+	 * @param primaryInfo
+	 * @param stateDest
+	 */
+	private void decode(String objectId, JsonObject jsonObject, JsonDeserializationContext context, ValueTypeInfo primaryInfo, State stateDest)
+	{
+		JsonElement element = jsonObject.get(STORED_AS_VALUE_KEY);
+		if (element == null)
+		{
+			throw new IllegalArgumentException("Field " + STORED_AS_VALUE_KEY + " is missing from Json object " + jsonObject);
+		}
+
+		// Must handle Json array case first, because it requires a StateKey with a secondary type. 
+		if (element.isJsonArray())
+		{
+			String secondaryType = getString(jsonObject, STORED_AS_ELEMENT_TYPE_KEY);
+			ValueTypeInfo secondaryInfo = getValueTypeInfo(secondaryType);
+			if (ValueTypeInfo.LIST.equals(primaryInfo))
+			{
+				decodeList(getKeyForType(objectId, primaryInfo.getType(), secondaryInfo.getType()), element.getAsJsonArray(), context, secondaryInfo, stateDest);
+				return;
+			}
+			throw new IllegalArgumentException("Cannot decode a Json array into type " + primaryInfo);
+		}
+
+		// Remaining cases are scalars of various kinds.
+		StateKey<?> simpleKey = getKeyForType(objectId, primaryInfo.getType());
+		if (element.isJsonNull())
+		{
+			stateDest.put(simpleKey, null);
 		}
 		else if (element.isJsonPrimitive())
 		{
-			// Only Boolean and Strings are stored this way.
-			JsonPrimitive primitive = (JsonPrimitive) element;
-			if (primitive.isBoolean())
-			{
-				type = ValueTypeInfo.BOOLEAN.getType();
-			}
-			else if (primitive.isString())
-			{
-				type = ValueTypeInfo.STRING.getType();
-			}
+			stateDest.put(simpleKey, context.deserialize(element, primaryInfo.getType()));
 		}
-		if (type == null)
+		else if (element.isJsonObject())
 		{
-			throw new IllegalArgumentException("Unable to deserialize Json object " + element);
+			// Recurse (potentially) to handle this case.
+			stateDest.put(simpleKey, context.deserialize(element, primaryInfo.getType()));
 		}
-		stateDest.put(getKeyForType(type, keyId), context.deserialize(element, type));
 	}
 
-	private StateKey<?> getKeyForType(Type type, String keyId)
+	private <V> void decodeList(StateKey<List<V>> key, JsonArray jsonArray, JsonDeserializationContext context, ValueTypeInfo elementTypeInfo, State stateDest)
 	{
-		return StateKey.of(keyId, getValueTypeInfo(type).getTypeClass());
+		List<V> list = new ArrayList<>();
+		for (JsonElement element : jsonArray)
+		{
+			list.add(context.deserialize(element, elementTypeInfo.getType()));
+		}
+		stateDest.put(key, list);
+	}
+
+	private String getString(JsonObject object, String field)
+	{
+		JsonPrimitive primitive = getPrimitive(object, field);
+		if (!primitive.isString())
+		{
+			throw new IllegalArgumentException("Field " + field + " is not a String in the Json primitive " + primitive);
+		}
+		return primitive.getAsString();
+	}
+
+	private JsonPrimitive getPrimitive(JsonObject object, String field)
+	{
+		JsonElement element = object.get(field);
+		if (element == null)
+		{
+			throw new IllegalArgumentException("Cannot get field " + field + " in Json object " + object);
+		}
+		if (!element.isJsonPrimitive())
+		{
+			throw new ClassCastException("Field " + field + " is unexpectedly not a Json primitive in object " + element);
+		}
+		return element.getAsJsonPrimitive();
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> StateKey<T> getKeyForType(String keyId, Type type)
+	{
+		return StateKey.of(keyId, (Class<T>) getValueTypeInfo(type).getTypeClass());
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> StateKey<T> getKeyForType(String keyId, Type primaryType, Type secondaryType)
+	{
+		return StateKey.of(keyId, (Class<T>) getValueTypeInfo(primaryType).getTypeClass(), getValueTypeInfo(secondaryType).getTypeClass());
 	}
 
 	private static ImmutableMap<String, ValueTypeInfo> createIdMap()
