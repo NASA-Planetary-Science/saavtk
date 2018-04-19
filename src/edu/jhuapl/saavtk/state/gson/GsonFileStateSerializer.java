@@ -9,6 +9,7 @@ import java.util.List;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
@@ -107,6 +108,7 @@ public class GsonFileStateSerializer implements StateSerializer
 		state.put(StateKey.ofState("Bennu / V3"), v3State);
 		state.put(StateKey.ofString("Current View"), v3);
 		state.put(StateKey.ofList("listStringList", ArrayList.class), listStringList);
+		state.put(StateKey.ofSortedSet("stringSet", String.class), ImmutableSortedSet.of("liver", "spleen", "aardvark"));
 		System.out.println("Original state is: " + state);
 
 		StateSerializer serializer = of(new File("/Users/peachjm1/Downloads/MyState.sbmt"));
@@ -123,6 +125,7 @@ public class GsonFileStateSerializer implements StateSerializer
 		System.out.println("longNull is " + longNull);
 		Float dVal = v3State2.get(StateKey.ofFloat("long"));
 
+		System.out.println("stringSet is " + state2.get(StateKey.ofSet("stringSet", String.class)));
 		// This doesn't fail but I wish it would:
 		List<List<Integer>> unpackedListList = state2.get(StateKey.ofList("listStringList", List.class));
 		System.out.println(unpackedListList);

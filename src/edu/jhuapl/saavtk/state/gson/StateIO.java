@@ -2,8 +2,12 @@ package edu.jhuapl.saavtk.state.gson;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -42,6 +46,8 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 
 		// JsonArray (ends in false, true):
 		LIST("List", new TypeToken<List<?>>() {}.getType(), List.class, false, true),
+		SORTED_SET("SortedSet", new TypeToken<SortedSet<?>>() {}.getType(), SortedSet.class, false, true),
+		SET("Set", new TypeToken<Set<?>>() {}.getType(), Set.class, false, true),
 		;
 
 		private final String typeId;
@@ -310,6 +316,16 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 				decodeList(getKeyForType(objectId, primaryInfo.getType(), secondaryInfo.getType()), element.getAsJsonArray(), context, secondaryInfo, stateDest);
 				return;
 			}
+			if (ValueTypeInfo.SET.equals(primaryInfo))
+			{
+				decodeSet(getKeyForType(objectId, primaryInfo.getType(), secondaryInfo.getType()), element.getAsJsonArray(), context, secondaryInfo, stateDest);
+				return;
+			}
+			if (ValueTypeInfo.SORTED_SET.equals(primaryInfo))
+			{
+				decodeSortedSet(getKeyForType(objectId, primaryInfo.getType(), secondaryInfo.getType()), element.getAsJsonArray(), context, secondaryInfo, stateDest);
+				return;
+			}
 			throw new IllegalArgumentException("Cannot decode a Json array into type " + primaryInfo);
 		}
 
@@ -332,12 +348,32 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 
 	private <V> void decodeList(StateKey<List<V>> key, JsonArray jsonArray, JsonDeserializationContext context, ValueTypeInfo elementTypeInfo, State stateDest)
 	{
-		List<V> list = new ArrayList<>();
+		List<V> collection = new ArrayList<>();
 		for (JsonElement element : jsonArray)
 		{
-			list.add(context.deserialize(element, elementTypeInfo.getType()));
+			collection.add(context.deserialize(element, elementTypeInfo.getType()));
 		}
-		stateDest.put(key, list);
+		stateDest.put(key, collection);
+	}
+
+	private <V> void decodeSet(StateKey<Set<V>> key, JsonArray jsonArray, JsonDeserializationContext context, ValueTypeInfo elementTypeInfo, State stateDest)
+	{
+		Set<V> collection = new HashSet<>();
+		for (JsonElement element : jsonArray)
+		{
+			collection.add(context.deserialize(element, elementTypeInfo.getType()));
+		}
+		stateDest.put(key, collection);
+	}
+
+	private <V> void decodeSortedSet(StateKey<SortedSet<V>> key, JsonArray jsonArray, JsonDeserializationContext context, ValueTypeInfo elementTypeInfo, State stateDest)
+	{
+		SortedSet<V> collection = new TreeSet<>();
+		for (JsonElement element : jsonArray)
+		{
+			collection.add(context.deserialize(element, elementTypeInfo.getType()));
+		}
+		stateDest.put(key, collection);
 	}
 
 	private String getString(JsonObject object, String field)
