@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -47,7 +48,10 @@ public abstract class StateBase
 	@Override
 	public final int hashCode()
 	{
-		return map.hashCode();
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + map.hashCode();
+		return result;
 	}
 
 	@Override
@@ -68,7 +72,13 @@ public abstract class StateBase
 	@Override
 	public String toString()
 	{
-		return "(State) " + map;
+		StringBuilder builder = new StringBuilder("(State):");
+		for (StateKey<?> key : new TreeSet<>(map.keySet()))
+		{
+			builder.append("\n");
+			builder.append(key + " = " + map.get(key).toString());
+		}
+		return builder.toString();
 	}
 
 	protected Object getObject(StateKey<?> key)
@@ -99,20 +109,20 @@ public abstract class StateBase
 		}
 	}
 
-	protected <V> V convert(Object object, Class<V> toClass)
+	protected <V> V convert(Object from, StateKey<V> toKey)
 	{
 		V result = null;
-		if (object != null)
+		if (from != null)
 		{
-			Class<?> fromClass = object.getClass();
-			if (toClass.isAssignableFrom(fromClass))
-			{
-				result = toClass.cast(object);
-			}
-			else if (Number.class.isAssignableFrom(fromClass) && Number.class.isAssignableFrom(toClass))
+			Class<?> fromClass = from.getClass();
+			@SuppressWarnings("unchecked")
+			Class<V> toClass = (Class<V>) toKey.getPrimaryClass();
+
+			// Numbers may simply be converted.
+			if (Number.class.isAssignableFrom(fromClass) && Number.class.isAssignableFrom(toClass))
 			{
 				// Converting from one Number to another is supported with some error checking.
-				Number number = (Number) object;
+				Number number = (Number) from;
 				{
 					result = tryConvert(number.byteValue(), toClass);
 				}
@@ -140,12 +150,21 @@ public abstract class StateBase
 				{
 					checkForLossOfPrecision(number, (Number) result);
 				}
+				return result;
+			}
+
+			// This is not a numeric conversion. In order to be sure the conversion will really work,
+			// create a new state key from the object with the same name as the key we are converting *to*.
+			StateKey<?> fromKey = StateKey.ofObject(toKey.getId(), from);
+			if (toKey.equals(fromKey))
+			{
+				return toClass.cast(from);
 			}
 			else
 			{
 				// object is not null, but all attempts to convert it to
 				// the type provided by toClass have failed.
-				throw new ClassCastException("Unable to convert object " + object + " to a " + toClass.getSimpleName());
+				throw new ClassCastException("Unable to convert object " + from + " to a " + toClass.getSimpleName());
 			}
 		}
 		return result;

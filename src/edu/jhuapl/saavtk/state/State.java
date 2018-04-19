@@ -17,8 +17,7 @@ public final class State extends StateBase
 	public <V> V get(StateKey<V> key)
 	{
 		Preconditions.checkNotNull(key);
-		Class<V> valueClass = key.getPrimaryClass();
-		return convert(getObject(key), valueClass);
+		return convert(getObject(key), key);
 	}
 
 	public <V> void put(StateKey<V> key, V value)
