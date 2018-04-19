@@ -122,9 +122,14 @@ public class GsonFileStateSerializer implements StateSerializer
 		Long longNull = v3State2.get(StateKey.ofLong("longNull"));
 		System.out.println("longNull is " + longNull);
 		Float dVal = v3State2.get(StateKey.ofFloat("long"));
+
+		// This doesn't fail but I wish it would:
 		List<List<Integer>> unpackedListList = state2.get(StateKey.ofList("listStringList", List.class));
 		System.out.println(unpackedListList);
+
 		dVal = v3State2.get(StateKey.ofFloat("resolution"));
+
+		// This one is supposed to throw an exception. 
 		Short floatAsDouble = v3State2.get(StateKey.ofShort("facets"));
 		System.out.println("float as double is " + floatAsDouble);
 	}
