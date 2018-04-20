@@ -33,6 +33,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		// JsonPrimitive (ends in false, false):
 		STRING("String", new TypeToken<String>() {}.getType(), String.class, false, false),
 		BOOLEAN("Boolean", new TypeToken<Boolean>() {}.getType(), Boolean.class, false, false),
+		DOUBLE("Double", new TypeToken<Double>() {}.getType(), Double.class, false, false),
 
 		// JsonObject (ends in true, false):
 		STATE("State", new TypeToken<State>() {}.getType(), State.class, true, false),
@@ -40,7 +41,6 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		LONG("Long", new TypeToken<Long>() {}.getType(), Long.class, true, false),
 		SHORT("Short", new TypeToken<Short>() {}.getType(), Short.class, true, false),
 		BYTE("Byte", new TypeToken<Byte>() {}.getType(), Byte.class, true, false),
-		DOUBLE("Double", new TypeToken<Double>() {}.getType(), Double.class, true, false),
 		FLOAT("Float", new TypeToken<Float>() {}.getType(), Float.class, true, false),
 		CHARACTER("Character", new TypeToken<Character>() {}.getType(), Character.class, true, false),
 
