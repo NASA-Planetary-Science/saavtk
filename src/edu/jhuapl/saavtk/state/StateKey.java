@@ -8,7 +8,7 @@ import java.util.SortedSet;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-public final class StateKey<V> implements Comparable<StateKey<?>>
+public final class StateKey<T> implements Comparable<StateKey<?>>
 {
 	// Note: this is iterated on to find the first value that matches a type, so this means that super-types must
 	// be listed *after* sub-types in this list, e.g., SortedSet before Set. Otherwise the first match may be the
@@ -94,12 +94,12 @@ public final class StateKey<V> implements Comparable<StateKey<?>>
 		return new StateKey<>(keyId, Boolean.class, null);
 	}
 
-	public static <V> StateKey<V> of(String keyId, Class<V> primaryClass)
+	public static <T> StateKey<T> of(String keyId, Class<T> primaryClass)
 	{
 		return new StateKey<>(keyId, primaryClass, null);
 	}
 
-	public static <V> StateKey<V> of(String keyId, Class<V> primaryClass, Class<?> secondaryClass)
+	public static <T> StateKey<T> of(String keyId, Class<T> primaryClass, Class<?> secondaryClass)
 	{
 		Preconditions.checkNotNull(secondaryClass);
 		return new StateKey<>(keyId, primaryClass, secondaryClass);
