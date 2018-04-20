@@ -50,9 +50,13 @@ public class GsonFileStateSerializer implements StateSerializer
 	public void save(State state) throws IOException
 	{
 		Preconditions.checkNotNull(state);
-		try (JsonWriter writer = GSON.newJsonWriter(new FileWriter(file)))
+		try (FileWriter fileWriter = new FileWriter(file))
 		{
-			GSON.toJson(state, STATE_IO.getTargetType(), writer);
+			try (JsonWriter jsonWriter = GSON.newJsonWriter(fileWriter))
+			{
+				GSON.toJson(state, STATE_IO.getTargetType(), jsonWriter);
+				fileWriter.write('\n');
+			}
 		}
 	}
 
