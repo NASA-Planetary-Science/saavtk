@@ -125,11 +125,14 @@ public class GsonFileStateSerializer implements StateSerializer
 		System.out.println("longNull is " + longNull);
 		Float dVal = v3State2.get(StateKey.ofFloat("long"));
 
-		System.out.println("stringSet is " + state2.get(StateKey.ofSet("stringSet", String.class)));
+		System.out.println("stringSet is " + state2.get(StateKey.ofSortedSet("stringSet", String.class)));
+
 		// This doesn't fail but I wish it would:
 		List<List<Integer>> unpackedListList = state2.get(StateKey.ofList("listStringList", List.class));
 		System.out.println(unpackedListList);
 
+
+		// This one is supposed to succeed. 
 		dVal = v3State2.get(StateKey.ofFloat("resolution"));
 
 		// This one is supposed to throw an exception. 
