@@ -61,6 +61,7 @@ public class GsonFileStateSerializer implements StateSerializer
 		GsonBuilder builder = new GsonBuilder();
 		builder.serializeNulls();
 		builder.setPrettyPrinting();
+		builder.serializeSpecialFloatingPointValues();
 		builder.registerTypeAdapter(STATE_IO.getTargetType(), STATE_IO);
 		return builder.create();
 	}
@@ -130,7 +131,6 @@ public class GsonFileStateSerializer implements StateSerializer
 		// This doesn't fail but I wish it would:
 		List<List<Integer>> unpackedListList = state2.get(StateKey.ofList("listStringList", List.class));
 		System.out.println(unpackedListList);
-
 
 		// This one is supposed to succeed. 
 		dVal = v3State2.get(StateKey.ofFloat("resolution"));
