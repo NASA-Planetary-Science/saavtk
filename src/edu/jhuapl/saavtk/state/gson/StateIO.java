@@ -2,8 +2,10 @@ package edu.jhuapl.saavtk.state.gson;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedSet;
@@ -15,6 +17,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
@@ -34,6 +37,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		STRING("String", new TypeToken<String>() {}.getType(), String.class, false, false),
 		BOOLEAN("Boolean", new TypeToken<Boolean>() {}.getType(), Boolean.class, false, false),
 		DOUBLE("Double", new TypeToken<Double>() {}.getType(), Double.class, false, false),
+		NULL("Null", new TypeToken<Object>() {}.getType(), Object.class, false, false),
 
 		// JsonObject (ends in true, false):
 		STATE("State", new TypeToken<State>() {}.getType(), State.class, true, false),
@@ -43,8 +47,10 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		BYTE("Byte", new TypeToken<Byte>() {}.getType(), Byte.class, true, false),
 		FLOAT("Float", new TypeToken<Float>() {}.getType(), Float.class, true, false),
 		CHARACTER("Character", new TypeToken<Character>() {}.getType(), Character.class, true, false),
+		MAP_ENTRY("Map.Entry", new TypeToken<Map.Entry<?, ?>>() {}.getType(), Map.Entry.class, false, true),
 
 		// JsonArray (ends in false, true):
+		MAP("Map", new TypeToken<Map<?, ?>>() {}.getType(), Map.class, false, true),
 		LIST("List", new TypeToken<List<?>>() {}.getType(), List.class, false, true),
 		SORTED_SET("SortedSet", new TypeToken<SortedSet<?>>() {}.getType(), SortedSet.class, false, true),
 		SET("Set", new TypeToken<Set<?>>() {}.getType(), Set.class, false, true),
@@ -99,7 +105,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 
 	private static final ImmutableMap<String, ValueTypeInfo> idMap = createIdMap();
 	private static final ImmutableMap<Type, ValueTypeInfo> typeMap = createTypeMap();
-	private static final ImmutableMap<Class<?>, ValueTypeInfo> classMap = createClassMap();
+	//	private static final ImmutableMap<Class<?>, ValueTypeInfo> classMap = createClassMap();
 
 	private static ValueTypeInfo getValueTypeInfo(String typeId)
 	{
@@ -121,15 +127,15 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		return typeMap.get(type);
 	}
 
-	private static ValueTypeInfo getValueTypeInfo(Class<?> typeClass)
-	{
-		Preconditions.checkNotNull(typeClass);
-		if (!classMap.containsKey(typeClass))
-		{
-			throw new IllegalArgumentException("No information about how to store/retrieve an object with class " + typeClass.getSimpleName());
-		}
-		return classMap.get(typeClass);
-	}
+	//	private static ValueTypeInfo getValueTypeInfo(Class<?> typeClass)
+	//	{
+	//		Preconditions.checkNotNull(typeClass);
+	//		if (!classMap.containsKey(typeClass))
+	//		{
+	//			throw new IllegalArgumentException("No information about how to store/retrieve an object with class " + typeClass.getSimpleName());
+	//		}
+	//		return classMap.get(typeClass);
+	//	}
 
 	private static final String STORED_AS_TYPE_KEY = "type";
 	private static final String STORED_AS_ELEMENT_TYPE_KEY = "elementType";
@@ -173,11 +179,42 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		return state;
 	}
 
+	private ValueTypeInfo classify(Object object)
+	{
+		if (object == null)
+			return ValueTypeInfo.NULL;
+
+		// For interfaces and base classes, don't use the object's class..
+		if (object instanceof List)
+		{
+			return ValueTypeInfo.LIST;
+		}
+		if (object instanceof SortedSet)
+		{
+			return ValueTypeInfo.SORTED_SET;
+		}
+		if (object instanceof Map.Entry)
+		{
+			return ValueTypeInfo.MAP_ENTRY;
+		}
+		if (object instanceof Map)
+		{
+			return ValueTypeInfo.MAP;
+		}
+		if (object instanceof Set)
+		{
+			return ValueTypeInfo.SET;
+		}
+
+		// Final classes: use the object's class.
+		return getValueTypeInfo(object.getClass());
+	}
+
 	private void encode(StateKey<?> key, Object attribute, JsonObject jsonDest, JsonSerializationContext context)
 	{
-		ValueTypeInfo info = getValueTypeInfo(key.getPrimaryClass());
+		ValueTypeInfo info = classify(attribute);
 		JsonElement jsonElement = null;
-		if (attribute == null || info.useJsonObject())
+		if (info.useJsonObject())
 		{
 			JsonObject jsonObject = new JsonObject();
 			Type valueType = info.getType();
@@ -192,35 +229,58 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		}
 		else if (info.useJsonArray())
 		{
-			if (!(attribute instanceof Iterable) || key.getSecondaryClass() == null)
+			if (attribute instanceof Map)
+			{
+				Map<?, ?> map = (Map<?, ?>) attribute;
+				attribute = map.entrySet();
+			}
+			if (!(attribute instanceof Iterable))
 			{
 				throw new AssertionError();
 			}
-			ValueTypeInfo elementInfo = getValueTypeInfo(key.getSecondaryClass());
+			Iterable<?> iterable = (Iterable<?>) attribute;
 
 			JsonObject jsonObject = new JsonObject();
-			Type elementType = elementInfo.getType();
-
 			jsonObject.addProperty(STORED_AS_TYPE_KEY, info.getTypeId());
-			jsonObject.addProperty(STORED_AS_ELEMENT_TYPE_KEY, elementInfo.getTypeId());
 
-			JsonArray jsonArray = new JsonArray();
-			for (Object element : (Iterable<?>) attribute)
+			// First pass: look for an element that could give us the type information about the
+			// element(s) stored in the iterable.
+			ValueTypeInfo elementInfo = null;
+			for (Object element : iterable)
 			{
-				// Serialize the element directly into the jsonObject. This may recursively
-				// invoke the serialize method above.
-				jsonArray.add(context.serialize(element, elementType));
+				if (element != null)
+				{
+					elementInfo = classify(element);
+					jsonObject.addProperty(STORED_AS_ELEMENT_TYPE_KEY, elementInfo.getTypeId());
+					break;
+				}
 			}
 
-			// The Json array gets stored as the value.
-			jsonObject.add(STORED_AS_VALUE_KEY, jsonArray);
+			if (elementInfo != null)
+			{
+				Type elementType = elementInfo.getType();
+				JsonArray jsonArray = new JsonArray();
+				for (Object element : (Iterable<?>) attribute)
+				{
+					// Serialize the element directly into the jsonObject. This may recursively
+					// invoke the serialize method above.
+					jsonArray.add(context.serialize(element, elementType));
+				}
+
+				// The Json array gets stored as the value.
+				jsonObject.add(STORED_AS_VALUE_KEY, jsonArray);
+			}
 
 			jsonElement = jsonObject;
 		}
+		else if (ValueTypeInfo.NULL == info)
+		{
+			jsonElement = JsonNull.INSTANCE;
+		}
 		else
 		{
-			// Serialize using Gson built-in behavior (JsonPrimitive).
-			jsonElement = context.serialize(attribute);
+			// Serialize using Gson built-in behavior.
+			jsonElement = context.serialize(attribute, info.getType());
 		}
 
 		// Finally, just add the fully serialized element.
@@ -258,6 +318,10 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 			//			{
 			decode(keyId, jsonObject, context, primaryInfo, stateDest);
 			//			}
+		}
+		else if (element.isJsonNull())
+		{
+			stateDest.put(StateKey.of(keyId), null);
 		}
 		else
 		{
@@ -316,6 +380,11 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 				decodeList(getKeyForType(objectId, primaryInfo.getType(), secondaryInfo.getType()), element.getAsJsonArray(), context, secondaryInfo, stateDest);
 				return;
 			}
+			if (ValueTypeInfo.MAP.equals(primaryInfo))
+			{
+				decodeMap(getKeyForType(objectId, primaryInfo.getType(), secondaryInfo.getType()), element.getAsJsonArray(), context, secondaryInfo, stateDest);
+				return;
+			}
 			if (ValueTypeInfo.SET.equals(primaryInfo))
 			{
 				decodeSet(getKeyForType(objectId, primaryInfo.getType(), secondaryInfo.getType()), element.getAsJsonArray(), context, secondaryInfo, stateDest);
@@ -352,6 +421,17 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		for (JsonElement element : jsonArray)
 		{
 			collection.add(context.deserialize(element, elementTypeInfo.getType()));
+		}
+		stateDest.put(key, collection);
+	}
+
+	private <K, V> void decodeMap(StateKey<Map<K, V>> key, JsonArray jsonArray, JsonDeserializationContext context, ValueTypeInfo elementTypeInfo, State stateDest)
+	{
+		Map<K, V> collection = new HashMap<>();
+		for (JsonElement element : jsonArray)
+		{
+			Map.Entry<K, V> entry = context.deserialize(element, elementTypeInfo.getType());
+			collection.put(entry.getKey(), entry.getValue());
 		}
 		stateDest.put(key, collection);
 	}
@@ -403,13 +483,15 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 	@SuppressWarnings("unchecked")
 	private <T> StateKey<T> getKeyForType(String keyId, Type type)
 	{
-		return StateKey.of(keyId, (Class<T>) getValueTypeInfo(type).getTypeClass());
+		//		return StateKey.of(keyId, (Class<T>) getValueTypeInfo(type).getTypeClass());
+		return StateKey.of(keyId);
 	}
 
 	@SuppressWarnings("unchecked")
 	private <T> StateKey<T> getKeyForType(String keyId, Type primaryType, Type secondaryType)
 	{
-		return StateKey.of(keyId, (Class<T>) getValueTypeInfo(primaryType).getTypeClass(), getValueTypeInfo(secondaryType).getTypeClass());
+		//		return StateKey.of(keyId, (Class<T>) getValueTypeInfo(primaryType).getTypeClass(), getValueTypeInfo(secondaryType).getTypeClass());
+		return StateKey.of(keyId);
 	}
 
 	private static ImmutableMap<String, ValueTypeInfo> createIdMap()

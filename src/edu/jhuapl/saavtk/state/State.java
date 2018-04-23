@@ -14,10 +14,12 @@ public final class State extends StateBase
 		super();
 	}
 
+	@SuppressWarnings("unchecked")
 	public <V> V get(StateKey<V> key)
 	{
 		Preconditions.checkNotNull(key);
-		return convert(getObject(key), key);
+		//		return convert(getObject(key), key);
+		return (V) getObject(key);
 	}
 
 	public <V> void put(StateKey<V> key, V value)

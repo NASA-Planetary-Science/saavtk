@@ -92,6 +92,11 @@ public abstract class StateBase
 		{
 			return null;
 		}
+		//		Type objectType = TypeToken.get(object.getClass()).getType();
+		//		if (!objectType.equals(key.getType()))
+		//		{
+		//			throw new ClassCastException();
+		//		}
 		return object;
 	}
 
@@ -109,66 +114,67 @@ public abstract class StateBase
 		}
 	}
 
-	protected <V> V convert(Object from, StateKey<V> toKey)
-	{
-		V result = null;
-		if (from != null)
-		{
-			Class<?> fromClass = from.getClass();
-			@SuppressWarnings("unchecked")
-			Class<V> toClass = (Class<V>) toKey.getPrimaryClass();
-
-			// Numbers may simply be converted.
-			if (Number.class.isAssignableFrom(fromClass) && Number.class.isAssignableFrom(toClass))
-			{
-				// Converting from one Number to another is supported with some error checking.
-				Number number = (Number) from;
-				{
-					result = tryConvert(number.byteValue(), toClass);
-				}
-				if (result == null)
-				{
-					result = tryConvert(number.doubleValue(), toClass);
-				}
-				if (result == null)
-				{
-					result = tryConvert(number.floatValue(), toClass);
-				}
-				if (result == null)
-				{
-					result = tryConvert(number.intValue(), toClass);
-				}
-				if (result == null)
-				{
-					result = tryConvert(number.longValue(), toClass);
-				}
-				if (result == null)
-				{
-					result = tryConvert(number.shortValue(), toClass);
-				}
-				if (result != null)
-				{
-					checkForLossOfPrecision(number, (Number) result);
-				}
-				return result;
-			}
-
-			// This is not a numeric conversion. In order to be sure the conversion will really work,
-			// create a new state key from the object with the same name as the key we are converting *to*.
-			StateKey<?> fromKey = StateKey.ofObject(toKey.getId(), from);
-			if (toKey.equals(fromKey))
-			{
-				return toClass.cast(from);
-			}
-			else
-			{
-				// object is not null, but all attempts to convert it to
-				// the type provided by toClass have failed.
-				throw new ClassCastException("Unable to convert object " + from + " to a " + toClass.getSimpleName());
-			}
-		}
-		return result;
-	}
+	//	protected <V> V convert(Object from, StateKey<V> toKey)
+	//	{
+	//		V result = null;
+	//		if (from != null)
+	//		{
+	//			Class<?> fromClass = from.getClass();
+	//			@SuppressWarnings("unchecked")
+	//			Class<V> toClass = (Class<V>) toKey.getPrimaryClass();
+	//
+	//			// Numbers may simply be converted.
+	//			if (Number.class.isAssignableFrom(fromClass) && Number.class.isAssignableFrom(toClass))
+	//			{
+	//				// Converting from one Number to another is supported with some error checking.
+	//				Number number = (Number) from;
+	//				{
+	//					result = tryConvert(number.byteValue(), toClass);
+	//				}
+	//				if (result == null)
+	//				{
+	//					result = tryConvert(number.doubleValue(), toClass);
+	//				}
+	//				if (result == null)
+	//				{
+	//					result = tryConvert(number.floatValue(), toClass);
+	//				}
+	//				if (result == null)
+	//				{
+	//					result = tryConvert(number.intValue(), toClass);
+	//				}
+	//				if (result == null)
+	//				{
+	//					result = tryConvert(number.longValue(), toClass);
+	//				}
+	//				if (result == null)
+	//				{
+	//					result = tryConvert(number.shortValue(), toClass);
+	//				}
+	//				if (result != null)
+	//				{
+	//					checkForLossOfPrecision(number, (Number) result);
+	//				}
+	//				return result;
+	//			}
+	//
+	//			// This is not a numeric conversion. In order to be sure the conversion will really work,
+	//			// create a new state key from the object with the same name as the key we are converting *to*.
+	//			StateKey<?> fromKey = StateKey.ofObject(toKey.getId(), from);
+	//			if (toKey.equals(fromKey))
+	//			{
+	//				return toClass.cast(from);
+	//			}
+	//			else
+	//			{
+	//				// object is not null, but all attempts to convert it to
+	//				// the type provided by toClass have failed.
+	//				throw new ClassCastException("Unable to convert object " + from + " to a " + toClass.getSimpleName());
+	//			}
+	//		}
+	//		return result;
+	//	}
+	//
 
 	protected <V> V tryConvert(Number number, Class<V> valueClass)
 	{
