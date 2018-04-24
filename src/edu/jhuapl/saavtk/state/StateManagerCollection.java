@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.state;
 
-import java.util.Map.Entry;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -11,15 +12,21 @@ public class StateManagerCollection implements StateManager
 		return new StateManagerCollection();
 	}
 
+	private final List<StateKey<State>> keysInOrder;
 	private final SortedMap<StateKey<State>, StateManager> managers;
 
 	protected StateManagerCollection()
 	{
+		this.keysInOrder = new ArrayList<>();
 		this.managers = new TreeMap<>();
 	}
 
 	public void add(StateKey<State> key, StateManager manager)
 	{
+		if (!managers.containsKey(key))
+		{
+			keysInOrder.add(key);
+		}
 		managers.put(key, manager);
 	}
 
@@ -27,9 +34,9 @@ public class StateManagerCollection implements StateManager
 	public State getState()
 	{
 		State state = State.of();
-		for (Entry<StateKey<State>, StateManager> entry : managers.entrySet())
+		for (StateKey<State> key : keysInOrder)
 		{
-			state.put(entry.getKey(), entry.getValue().getState());
+			state.put(key, managers.get(key).getState());
 		}
 		return state;
 	}
@@ -37,13 +44,12 @@ public class StateManagerCollection implements StateManager
 	@Override
 	public void setState(State state)
 	{
-		for (Entry<StateKey<State>, StateManager> entry : managers.entrySet())
+		for (StateKey<State> key : keysInOrder)
 		{
-			StateKey<State> key = entry.getKey();
 			State subState = state.get(key);
 			if (subState != null)
 			{
-				entry.getValue().setState(subState);
+				managers.get(key).setState(subState);
 			}
 		}
 	}
