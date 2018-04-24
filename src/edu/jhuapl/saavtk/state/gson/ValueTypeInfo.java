@@ -10,6 +10,7 @@ import java.util.SortedSet;
 import com.google.gson.reflect.TypeToken;
 
 import edu.jhuapl.saavtk.state.State;
+import edu.jhuapl.saavtk.state.StateKey;
 
 enum ValueTypeInfo
 {
@@ -17,6 +18,7 @@ enum ValueTypeInfo
 	BOOLEAN("Boolean", new TypeToken<Boolean>() {}.getType(), Boolean.class),
 	DOUBLE("Double", new TypeToken<Double>() {}.getType(), Double.class),
 
+	STATE_KEY("StateKey", new TypeToken<StateKey<?>>() {}.getType(), StateKey.class),
 	STATE("State", new TypeToken<State>() {}.getType(), State.class),
 	INTEGER("Integer", new TypeToken<Integer>() {}.getType(), Integer.class),
 	LONG("Long", new TypeToken<Long>() {}.getType(), Long.class),
@@ -24,8 +26,8 @@ enum ValueTypeInfo
 	BYTE("Byte", new TypeToken<Byte>() {}.getType(), Byte.class),
 	FLOAT("Float", new TypeToken<Float>() {}.getType(), Float.class),
 	CHARACTER("Character", new TypeToken<Character>() {}.getType(), Character.class),
+	DOUBLE_ARRAY("double[]", new TypeToken<double[]>() {}.getType(), double[].class),
 
-	// JsonArray (ends in false, true):
 	SORTED_MAP("SortedMap", new TypeToken<SortedMap<?, ?>>() {}.getType(), SortedMap.class),
 	MAP("Map", new TypeToken<Map<?, ?>>() {}.getType(), Map.class),
 	LIST("List", new TypeToken<List<?>>() {}.getType(), List.class),

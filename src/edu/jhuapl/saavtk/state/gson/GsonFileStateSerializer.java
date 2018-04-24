@@ -23,6 +23,9 @@ import edu.jhuapl.saavtk.state.StateSerializer;
 
 public class GsonFileStateSerializer implements StateSerializer
 {
+	private static final IterableIO ITERABLE_IO = new IterableIO();
+	private static final MapIO MAP_IO = new MapIO();
+	private static final GsonKeyIO STATE_KEY_IO = new GsonKeyIO();
 	private static final StateIO STATE_IO = new StateIO();
 	private static final Gson GSON = configureGson();
 
@@ -82,7 +85,13 @@ public class GsonFileStateSerializer implements StateSerializer
 		builder.serializeNulls();
 		builder.setPrettyPrinting();
 		builder.serializeSpecialFloatingPointValues();
-		builder.registerTypeAdapter(STATE_IO.getTargetType(), STATE_IO);
+		builder.registerTypeAdapter(ValueTypeInfo.SORTED_SET.getType(), ITERABLE_IO);
+		builder.registerTypeAdapter(ValueTypeInfo.SET.getType(), ITERABLE_IO);
+		builder.registerTypeAdapter(ValueTypeInfo.LIST.getType(), ITERABLE_IO);
+		builder.registerTypeAdapter(ValueTypeInfo.SORTED_MAP.getType(), MAP_IO);
+		builder.registerTypeAdapter(ValueTypeInfo.MAP.getType(), MAP_IO);
+		builder.registerTypeAdapter(ValueTypeInfo.STATE_KEY.getType(), STATE_KEY_IO);
+		builder.registerTypeAdapter(ValueTypeInfo.STATE.getType(), STATE_IO);
 		return builder.create();
 	}
 
@@ -118,6 +127,8 @@ public class GsonFileStateSerializer implements StateSerializer
 
 	public static void main(String[] args) throws IOException
 	{
+		GsonFileStateSerializer serializer = new GsonFileStateSerializer();
+
 		String v3 = "Bennu / V3";
 		State v3State = State.of();
 		//		v3State.put(StateKey.ofString("tab"), "1");
@@ -136,36 +147,36 @@ public class GsonFileStateSerializer implements StateSerializer
 		//		v3State.put(StateKey.ofString("stringNull"), null);
 		//		v3State.put(StateKey.ofLong("longNull"), null);
 
-		v3State.put(GsonKey.of("tab"), "1");
-		v3State.put(GsonKey.of("facets"), 2000000001L);
-		v3State.put(GsonKey.of("showBaseMap"), true);
-		v3State.put(GsonKey.of("resolution"), -5.e64);
-		v3State.put(GsonKey.of("int"), 20);
-		v3State.put(GsonKey.of("long"), (long) 20);
-		v3State.put(GsonKey.of("short"), (short) 20);
-		v3State.put(GsonKey.of("byte"), (byte) 20);
-		v3State.put(GsonKey.of("double"), (double) 20);
-		v3State.put(GsonKey.of("float"), (float) 20);
-		v3State.put(GsonKey.of("char"), (char) 20);
-		v3State.put(GsonKey.of("boolean"), false);
-		v3State.put(GsonKey.of("string"), "a string");
-		v3State.put(GsonKey.of("stringNull"), null);
-		v3State.put(GsonKey.of("longNull"), null);
+		v3State.put(serializer.getKey("tab"), "1");
+		v3State.put(serializer.getKey("facets"), 2000000001L);
+		v3State.put(serializer.getKey("showBaseMap"), true);
+		v3State.put(serializer.getKey("resolution"), -5.e64);
+		v3State.put(serializer.getKey("int"), 20);
+		v3State.put(serializer.getKey("long"), (long) 20);
+		v3State.put(serializer.getKey("short"), (short) 20);
+		v3State.put(serializer.getKey("byte"), (byte) 20);
+		v3State.put(serializer.getKey("double"), (double) 20);
+		v3State.put(serializer.getKey("float"), (float) 20);
+		v3State.put(serializer.getKey("char"), (char) 20);
+		v3State.put(serializer.getKey("boolean"), false);
+		v3State.put(serializer.getKey("string"), "a string");
+		v3State.put(serializer.getKey("stringNull"), null);
+		v3State.put(serializer.getKey("longNull"), null);
 
 		List<String> stringList = new ArrayList<>();
 		stringList.add("String0");
 		stringList.add(null);
 		stringList.add("String2");
-		//		StateKey<List<String>> stringListKey = GsonKey.ofList("stringList", String.class);
-		StateKey<List<String>> stringListKey = GsonKey.of("stringList");
+		//		StateKey<List<String>> stringListKey = serializer.getKeyList("stringList", String.class);
+		StateKey<List<String>> stringListKey = serializer.getKey("stringList");
 		v3State.put(stringListKey, stringList);
 
 		List<Integer> intList = new ArrayList<>();
 		intList.add(0);
 		intList.add(null);
 		intList.add(2);
-		//		StateKey<List<Integer>> intListKey = GsonKey.ofList("intList", Integer.class);
-		StateKey<List<Integer>> intListKey = GsonKey.of("intList");
+		//		StateKey<List<Integer>> intListKey = serializer.getKeyList("intList", Integer.class);
+		StateKey<List<Integer>> intListKey = serializer.getKey("intList");
 		v3State.put(intListKey, intList);
 
 		List<List<String>> listStringList = new ArrayList<>();
@@ -175,53 +186,47 @@ public class GsonFileStateSerializer implements StateSerializer
 
 		final State state = State.of();
 		StateManager manager = new TestManager(state);
-		//		state.put(GsonKey.ofState("Bennu / V3"), v3State);
-		//		state.put(GsonKey.ofString("Current View"), v3);
-		//		state.put(GsonKey.ofList("listStringList", ArrayList.class), listStringList);
-		//		state.put(GsonKey.ofSortedSet("stringSet", String.class), ImmutableSortedSet.of("liver", "spleen", "aardvark"));
 
-		StateKey<List<List<String>>> listListStringKey = GsonKey.of("listListString");
-		state.put(GsonKey.of("Bennu / V3"), v3State);
-		state.put(GsonKey.of("Current View"), v3);
-		//		state.put(GsonKey.of("listStringList"), listStringList);
+		StateKey<List<List<String>>> listListStringKey = serializer.getKey("listListString");
+		state.put(serializer.getKey("Bennu / V3"), v3State);
+		state.put(serializer.getKey("Current View"), v3);
 		state.put(listListStringKey, listStringList);
-		state.put(GsonKey.of("stringSet"), ImmutableSortedSet.of("liver", "spleen", "aardvark"));
+		state.put(serializer.getKey("stringSet"), ImmutableSortedSet.of("liver", "spleen", "aardvark"));
 
 		//		Map<Byte, Short> byteShortMap = new HashMap<>();
 		//		byteShortMap.put((byte) 1, null);
 		//		byteShortMap.put(null, (short) 12);
 		//		byteShortMap.put((byte) 11, (short) 23);
 		//		byteShortMap.put((byte) 10, (short) 17);
-		//		StateKey<Map<Byte, Short>> byteShortMapKey = GsonKey.of("byteShortMap");
+		//		StateKey<Map<Byte, Short>> byteShortMapKey = serializer.getKey("byteShortMap");
 		//		state.put(byteShortMapKey, byteShortMap);
 
 		System.out.println("Original state is: " + state);
 
 		File file = new File("/Users/peachjm1/Downloads/MyState.sbmt");
-		StateSerializer serializer = GsonFileStateSerializer.of();
-		serializer.register(GsonKey.of("testState"), manager);
+		serializer.register(serializer.getKey("testState"), manager);
 		serializer.save(file);
 
 		State state2 = State.of();
 		serializer = GsonFileStateSerializer.of();
 		manager = new TestManager(state2);
-		serializer.register(GsonKey.of("testState"), manager);
+		serializer.register(serializer.getKey("testState"), manager);
 		serializer.load(file);
 		System.out.println("Reloaded state is: " + state2);
 		if (state.equals(state2))
 		{
 			System.out.println("States are considered equal");
 		}
-		State v3State2 = state2.get(GsonKey.of("Bennu / V3"));
-		Long longNull = v3State2.get(GsonKey.of("longNull"));
+		State v3State2 = state2.get(serializer.getKey("Bennu / V3"));
+		Long longNull = v3State2.get(serializer.getKey("longNull"));
 		System.out.println("longNull is " + longNull);
 
-		//		Float fVal = v3State2.get(GsonKey.of("long"));
+		//		Float fVal = v3State2.get(serializer.getKey("long"));
 
-		System.out.println("stringSet is " + state2.get(GsonKey.of("stringSet")));
+		System.out.println("stringSet is " + state2.get(serializer.getKey("stringSet")));
 
 		// This doesn't fail but I wish it would:
-		List<List<Integer>> unpackedListList = state2.get(GsonKey.of("listListString"));
+		List<List<Integer>> unpackedListList = state2.get(serializer.getKey("listListString"));
 
 		// But the following does fail to compile, which is probably good enough.
 		//		unpackedListList = state2.get(listListStringKey);
@@ -229,10 +234,10 @@ public class GsonFileStateSerializer implements StateSerializer
 		//		System.out.println(unpackedListList.get(1).get(1) * 7);
 
 		// This one is supposed to succeed. 
-		//		float fVal = v3State2.get(GsonKey.of("resolution"));
+		//		float fVal = v3State2.get(serializer.getKey("resolution"));
 
 		// This one is supposed to throw an exception. 
-		Short floatAsDouble = v3State2.get(GsonKey.of("facets"));
+		Short floatAsDouble = v3State2.get(serializer.getKey("facets"));
 		System.out.println("float as double is " + floatAsDouble);
 	}
 

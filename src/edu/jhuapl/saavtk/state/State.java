@@ -18,13 +18,13 @@ public final class State extends StateBase
 	public <V> V get(StateKey<V> key)
 	{
 		Preconditions.checkNotNull(key);
-		//		return convert(getObject(key), key);
 		return (V) getObject(key);
 	}
 
-	public <V> void put(StateKey<V> key, V value)
+	public <V> State put(StateKey<V> key, V value)
 	{
 		putObject(key, value);
+		return this;
 	}
 
 }
