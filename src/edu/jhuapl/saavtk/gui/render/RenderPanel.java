@@ -12,10 +12,12 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+
 import javax.swing.BorderFactory;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.gui.MainWindow;
@@ -26,8 +28,8 @@ import edu.jhuapl.saavtk.gui.render.camera.CameraEvent;
 import edu.jhuapl.saavtk.gui.render.camera.CameraListener;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent;
-import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarListener;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent.ConstrainRotationAxisEvent;
+import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarListener;
 import vtk.vtkActor;
 import vtk.vtkConeSource;
 import vtk.vtkNativeLibrary;
@@ -38,8 +40,8 @@ import vtk.rendering.vtkEventInterceptor;
 import vtk.rendering.vtkInteractorForwarder;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
-public class RenderPanel extends vtkJoglPanelComponent
-		implements CameraListener, RenderToolbarListener, ComponentListener {
+public class RenderPanel extends vtkJoglPanelComponent implements CameraListener, RenderToolbarListener, ComponentListener
+{
 	Camera viewCamera;
 	RenderToolbar toolbar = null;
 	AxesPanel axesPanel = null;
@@ -52,7 +54,8 @@ public class RenderPanel extends vtkJoglPanelComponent
 
 	// Axes axes=new Axes();
 
-	public AxesPanel getAxesPanel() {
+	public AxesPanel getAxesPanel()
+	{
 		return axesPanel;
 	}
 
@@ -65,7 +68,7 @@ public class RenderPanel extends vtkJoglPanelComponent
 	{
 		return axesFrame.isVisible();
 	}
-	
+
 	public RenderPanel(RenderToolbar toolbar)// , RenderStatusBar statusBar)
 	{
 
@@ -83,9 +86,11 @@ public class RenderPanel extends vtkJoglPanelComponent
 
 		axesFrame = new JFrame() {
 			@Override
-			public void setVisible(boolean b) {
+			public void setVisible(boolean b)
+			{
 				super.setVisible(b);
-				if (!axesPanelShownBefore && MainWindow.getMainWindow() != null && isWindowCreated) {
+				if (!axesPanelShownBefore && MainWindow.getMainWindow() != null && isWindowCreated)
+				{
 					setUpMainWindowListeners();
 					Point point = RenderPanel.this.getComponent().getLocationOnScreen();
 					Dimension dim = RenderPanel.this.getComponent().getSize();
@@ -108,8 +113,10 @@ public class RenderPanel extends vtkJoglPanelComponent
 		toolbar.addToolbarListener(new RenderToolbarListener() {
 
 			@Override
-			public void handle(RenderToolbarEvent event) {
-				if (event instanceof RenderToolbarEvent.ToggleAxesVisibilityEvent) {
+			public void handle(RenderToolbarEvent event)
+			{
+				if (event instanceof RenderToolbarEvent.ToggleAxesVisibilityEvent)
+				{
 					axesFrame.setVisible(((RenderToolbarEvent.ToggleAxesVisibilityEvent) event).show());
 				}
 
@@ -132,7 +139,8 @@ public class RenderPanel extends vtkJoglPanelComponent
 		axesFrame.addWindowListener(new WindowAdapter() {
 
 			@Override
-			public void windowClosing(WindowEvent e) {
+			public void windowClosing(WindowEvent e)
+			{
 				toolbar.setOrientationAxesToggleState(false);
 			}
 
@@ -140,7 +148,8 @@ public class RenderPanel extends vtkJoglPanelComponent
 
 		axesFrame.addComponentListener(new ComponentAdapter() {
 			@Override
-			public void componentResized(ComponentEvent e) {
+			public void componentResized(ComponentEvent e)
+			{
 				Point loc = e.getComponent().getLocation();
 				int w = e.getComponent().getWidth();
 				e.getComponent().setSize(w, w);
@@ -148,9 +157,10 @@ public class RenderPanel extends vtkJoglPanelComponent
 				axesPanel.getComponent().setSize(e.getComponent().getSize());
 				// axesPanel.getRenderer().ResetCamera();
 			}
-			
+
 			@Override
-			public void componentShown(ComponentEvent e) {
+			public void componentShown(ComponentEvent e)
+			{
 				// TODO Auto-generated method stub
 				super.componentShown(e);
 				axesPanel.Render();
@@ -160,23 +170,27 @@ public class RenderPanel extends vtkJoglPanelComponent
 		getComponent().addComponentListener(this);
 	}
 
-	public void setInteractorStyleToDefault() {
+	public void setInteractorStyleToDefault()
+	{
 
-		if (this.windowInteractor != null) {
+		if (this.windowInteractor != null)
+		{
 			this.lock.lock();
 			this.windowInteractor.SetInteractorStyle(defaultInteractorStyle);
 			this.lock.unlock();
 		}
 	}
 
-	public void mouseOff() {
+	public void mouseOff()
+	{
 		vtkInteractorForwarder forwarder = this.getInteractorForwarder();
 		this.uiComponent.removeMouseListener(forwarder);
 		this.uiComponent.removeMouseMotionListener(forwarder);
 		this.uiComponent.removeMouseWheelListener(forwarder);
 	}
 
-	public void mouseOn() {
+	public void mouseOn()
+	{
 		vtkInteractorForwarder forwarder = this.getInteractorForwarder();
 		this.uiComponent.addMouseListener(forwarder);
 		this.uiComponent.addMouseMotionListener(forwarder);
@@ -184,50 +198,60 @@ public class RenderPanel extends vtkJoglPanelComponent
 	}
 
 	@Override
-	public void componentHidden(ComponentEvent e) {
+	public void componentHidden(ComponentEvent e)
+	{
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void componentMoved(ComponentEvent e) {
+	public void componentMoved(ComponentEvent e)
+	{
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void componentResized(ComponentEvent e) {
+	public void componentResized(ComponentEvent e)
+	{
 		// redrawAxes();
 		Render();
 	}
 
 	@Override
-	public void componentShown(ComponentEvent e) {
+	public void componentShown(ComponentEvent e)
+	{
 
 	}
 
 	@Override
-	public void handle(CameraEvent event) {
+	public void handle(CameraEvent event)
+	{
 		// redrawAxes();
 		Render();
 	}
 
 	@Override
-	public void handle(RenderToolbarEvent event) {
+	public void handle(RenderToolbarEvent event)
+	{
 		getActiveCamera().RemoveObserver(cameraObserver);
 		viewCamera.removeCameraListener(this);
-		if (event instanceof RenderToolbarEvent.ConstrainRotationAxisEvent) {
+		if (event instanceof RenderToolbarEvent.ConstrainRotationAxisEvent)
+		{
 			interactorStyle.setRotationConstraint(((ConstrainRotationAxisEvent) event).getAxis());
-		} else if (event instanceof RenderToolbarEvent.LookAlongAxisEvent) {
+		}
+		else if (event instanceof RenderToolbarEvent.LookAlongAxisEvent)
+		{
 			Vector3D position = new Vector3D(getActiveCamera().GetPosition());
 			CartesianViewDirection direction = ((RenderToolbarEvent.LookAlongAxisEvent) event).getDirection();
 			viewCamera.setPosition(direction.getLookUnit().negate().scalarMultiply(position.getNorm()));
 			viewCamera.setUpUnit(direction.getUpUnit());
-		} else if (event instanceof RenderToolbarEvent.ViewAllEvent) {
+		}
+		else if (event instanceof RenderToolbarEvent.ViewAllEvent)
+		{
 			viewAll();
 		} /*
-			 * else if (event instanceof
-			 * RenderToolbarEvent.ToggleAxesVisibilityEvent) {
+			 * else if (event instanceof RenderToolbarEvent.ToggleAxesVisibilityEvent) {
 			 * axes.setVisible(((RenderToolbarEvent.ToggleAxesVisibilityEvent)
 			 * event).show()); super.Render(); }
 			 */
@@ -239,7 +263,8 @@ public class RenderPanel extends vtkJoglPanelComponent
 
 	}
 
-	public void viewAll() {
+	public void viewAll()
+	{
 		// boolean showAxes=axes.isVisible();
 		// axes.setVisible(false);
 		getRenderer().ResetCamera();
@@ -248,17 +273,20 @@ public class RenderPanel extends vtkJoglPanelComponent
 	}
 
 	@Override
-	public void Render() {
+	public void Render()
+	{
 		// redrawAxes();
 		super.Render();
 	}
 
-	public static void main(String[] args) throws InterruptedException {
+	public static void main(String[] args) throws InterruptedException
+	{
 		vtkNativeLibrary.LoadAllNativeLibraries();
 		RenderView renderView = new RenderView();
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override
-			public void run() {
+			public void run()
+			{
 				int w = 600;
 				int h = 600;
 				JFrame frame = new JFrame();
@@ -283,42 +311,50 @@ public class RenderPanel extends vtkJoglPanelComponent
 		renderView.getRenderPanel().getRenderer().AddActor(actor);
 	}
 
-	protected void setUpMainWindowListeners() {
+	protected void setUpMainWindowListeners()
+	{
 
 		WindowAdapter adapter = new WindowAdapter() {
 			@Override
-			public void windowDeiconified(@SuppressWarnings("unused") WindowEvent e) {
+			public void windowDeiconified(@SuppressWarnings("unused") WindowEvent e)
+			{
 				axesFrame.setVisible(showAxesPanelOnRestore);
 			}
 
 			@Override
-			public void windowIconified(@SuppressWarnings("unused") WindowEvent e) {
+			public void windowIconified(@SuppressWarnings("unused") WindowEvent e)
+			{
 				showAxesPanelOnRestore = axesFrame.isVisible();
 				axesFrame.setVisible(false);
 			}
 
 			@Override
-			public void windowActivated(@SuppressWarnings("unused") WindowEvent e) {
+			public void windowActivated(@SuppressWarnings("unused") WindowEvent e)
+			{
 				axesFrame.setAlwaysOnTop(true);
 			}
 
 			@Override
-			public void windowDeactivated(@SuppressWarnings("unused") WindowEvent e) {
+			public void windowDeactivated(@SuppressWarnings("unused") WindowEvent e)
+			{
 				axesFrame.setAlwaysOnTop(false);
 			}
 
 			@Override
-			public void windowGainedFocus(@SuppressWarnings("unused") WindowEvent e) {
+			public void windowGainedFocus(@SuppressWarnings("unused") WindowEvent e)
+			{
 				axesFrame.setAlwaysOnTop(true);
 			}
 
 			@Override
-			public void windowLostFocus(@SuppressWarnings("unused") WindowEvent e) {
+			public void windowLostFocus(@SuppressWarnings("unused") WindowEvent e)
+			{
 				axesFrame.setAlwaysOnTop(false);
 			}
 
 			@Override
-			public void windowStateChanged(WindowEvent e) {
+			public void windowStateChanged(WindowEvent e)
+			{
 				System.err.println(e);
 			}
 		};
@@ -326,38 +362,29 @@ public class RenderPanel extends vtkJoglPanelComponent
 		Window window = MainWindow.getMainWindow();
 		window.addWindowListener(adapter);
 		window.addWindowFocusListener(adapter);
-		
-/*		ComponentListener l=new ComponentListener() {
-			Point location;
-			
-			@Override
-			public void componentShown(ComponentEvent e) {
-				location=e.getComponent().getLocationOnScreen();
-			}
-			
-			@Override
-			public void componentResized(ComponentEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
-			
-			@Override
-			public void componentMoved(ComponentEvent e) {
-				if (location==null)
-					location=e.getComponent().getLocationOnScreen();
-				int dx=(int)(e.getComponent().getLocationOnScreen().getX()-location.getX());
-				int dy=(int)(e.getComponent().getLocationOnScreen().getY()-location.getY());
-				axesFrame.setLocationRelativeTo(window);
-				axesFrame.setLocation(dx, dy);
-			}
-			
-			@Override
-			public void componentHidden(ComponentEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
-		};
-		window.addComponentListener(l);*/
+
+		/*
+		 * ComponentListener l=new ComponentListener() { Point location;
+		 * 
+		 * @Override public void componentShown(ComponentEvent e) {
+		 * location=e.getComponent().getLocationOnScreen(); }
+		 * 
+		 * @Override public void componentResized(ComponentEvent e) { // TODO
+		 * Auto-generated method stub
+		 * 
+		 * }
+		 * 
+		 * @Override public void componentMoved(ComponentEvent e) { if (location==null)
+		 * location=e.getComponent().getLocationOnScreen(); int
+		 * dx=(int)(e.getComponent().getLocationOnScreen().getX()-location.getX()); int
+		 * dy=(int)(e.getComponent().getLocationOnScreen().getY()-location.getY());
+		 * axesFrame.setLocationRelativeTo(window); axesFrame.setLocation(dx, dy); }
+		 * 
+		 * @Override public void componentHidden(ComponentEvent e) { // TODO
+		 * Auto-generated method stub
+		 * 
+		 * } }; window.addComponentListener(l);
+		 */
 	}
 	/*
 	 * private void redrawAxes() { vtkTransform transform=new vtkTransform();
@@ -376,16 +403,15 @@ public class RenderPanel extends vtkJoglPanelComponent
 	 * (MathArithmeticException e) { return; } double W=2*L*tanFovHf; Vector3D
 	 * lambdaVec=right.scalarMultiply(W/2.*axesViewX).add(up.scalarMultiply(W/2.
 	 * *axesViewY)).add(look.scalarMultiply(L)); Vector3D
-	 * origin=campos.add(lambdaVec);
-	 * axes.getActor().SetPosition(origin.toArray());
+	 * origin=campos.add(lambdaVec); axes.getActor().SetPosition(origin.toArray());
 	 * 
 	 * Vector3D xunit=new
-	 * Vector3D(transform.TransformPoint(origin.add(Vector3D.PLUS_I).toArray()))
-	 * ; Vector3D yunit=new
-	 * Vector3D(transform.TransformPoint(origin.add(Vector3D.PLUS_J).toArray()))
-	 * ; Vector3D zunit=new
-	 * Vector3D(transform.TransformPoint(origin.add(Vector3D.PLUS_K).toArray()))
-	 * ; vtkCoordinate coordTransform=new vtkCoordinate();
+	 * Vector3D(transform.TransformPoint(origin.add(Vector3D.PLUS_I).toArray())) ;
+	 * Vector3D yunit=new
+	 * Vector3D(transform.TransformPoint(origin.add(Vector3D.PLUS_J).toArray())) ;
+	 * Vector3D zunit=new
+	 * Vector3D(transform.TransformPoint(origin.add(Vector3D.PLUS_K).toArray())) ;
+	 * vtkCoordinate coordTransform=new vtkCoordinate();
 	 * coordTransform.SetCoordinateSystemToWorld();
 	 * coordTransform.SetValue(xunit.toArray()); double[]
 	 * xpos=coordTransform.GetComputedDoubleViewportValue(getRenderer());
@@ -416,63 +442,75 @@ public class RenderPanel extends vtkJoglPanelComponent
 	 * "redrawAxes"); }
 	 */
 
-	static class Interceptor implements vtkEventInterceptor {
+	static class Interceptor implements vtkEventInterceptor
+	{
 
 		@Override
-		public boolean keyPressed(KeyEvent e) {
+		public boolean keyPressed(KeyEvent e)
+		{
 			// Don't let VTK handle key events.
 			return true;
 		}
 
 		@Override
-		public boolean keyReleased(KeyEvent e) {
+		public boolean keyReleased(KeyEvent e)
+		{
 			// Don't let VTK handle key events.
 			return true;
 		}
 
 		@Override
-		public boolean keyTyped(KeyEvent e) {
+		public boolean keyTyped(KeyEvent e)
+		{
 			// Don't let VTK handle key events.
 			return true;
 		}
 
 		@Override
-		public boolean mouseDragged(MouseEvent e) {
+		public boolean mouseDragged(MouseEvent e)
+		{
 			return false;
 		}
 
 		@Override
-		public boolean mouseMoved(MouseEvent e) {
+		public boolean mouseMoved(MouseEvent e)
+		{
 			return false;
 		}
 
 		@Override
-		public boolean mouseClicked(MouseEvent e) {
+		public boolean mouseClicked(MouseEvent e)
+		{
 			return false;
 		}
 
 		@Override
-		public boolean mouseEntered(MouseEvent e) {
+		public boolean mouseEntered(MouseEvent e)
+		{
 			return false;
 		}
 
 		@Override
-		public boolean mouseExited(MouseEvent e) {
+		public boolean mouseExited(MouseEvent e)
+		{
 			return false;
 		}
 
 		@Override
-		public boolean mousePressed(MouseEvent e) {
+		public boolean mousePressed(MouseEvent e)
+		{
 			return false;
 		}
 
 		@Override
-		public boolean mouseReleased(MouseEvent e) {
+		public boolean mouseReleased(MouseEvent e)
+		{
 			return false;
 		}
 
 		@Override
-		public boolean mouseWheelMoved(MouseWheelEvent e) {
+		public boolean mouseWheelMoved(MouseWheelEvent e)
+		{
 			return false;
 		}
 	}
