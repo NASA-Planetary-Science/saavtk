@@ -225,7 +225,8 @@ public class GsonFileStateSerializer implements StateSerializer
 
 		// But the following does fail to compile, which is probably good enough.
 		//		unpackedListList = state2.get(listListStringKey);
-		System.out.println(unpackedListList.get(1).get(1) * 7);
+		// And this fails at runtime, as it should.
+		//		System.out.println(unpackedListList.get(1).get(1) * 7);
 
 		// This one is supposed to succeed. 
 		//		float fVal = v3State2.get(GsonKey.of("resolution"));
