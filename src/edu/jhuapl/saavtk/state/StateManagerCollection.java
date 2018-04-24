@@ -6,6 +6,11 @@ import java.util.TreeMap;
 
 public class StateManagerCollection implements StateManager
 {
+	public static StateManagerCollection of()
+	{
+		return new StateManagerCollection();
+	}
+
 	private final SortedMap<StateKey<State>, StateManager> managers;
 
 	protected StateManagerCollection()

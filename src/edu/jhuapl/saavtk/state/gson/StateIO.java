@@ -53,8 +53,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		MAP("Map", new TypeToken<Map<?, ?>>() {}.getType(), Map.class, false, true),
 		LIST("List", new TypeToken<List<?>>() {}.getType(), List.class, false, true),
 		SORTED_SET("SortedSet", new TypeToken<SortedSet<?>>() {}.getType(), SortedSet.class, false, true),
-		SET("Set", new TypeToken<Set<?>>() {}.getType(), Set.class, false, true),
-		;
+		SET("Set", new TypeToken<Set<?>>() {}.getType(), Set.class, false, true),;
 
 		private final String typeId;
 		private final Type type;
@@ -104,8 +103,8 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 	}
 
 	private static final ImmutableMap<String, ValueTypeInfo> idMap = createIdMap();
-	private static final ImmutableMap<Type, ValueTypeInfo> typeMap = createTypeMap();
-	//	private static final ImmutableMap<Class<?>, ValueTypeInfo> classMap = createClassMap();
+	//	private static final ImmutableMap<Type, ValueTypeInfo> typeMap = createTypeMap();
+	private static final ImmutableMap<Class<?>, ValueTypeInfo> classMap = createClassMap();
 
 	private static ValueTypeInfo getValueTypeInfo(String typeId)
 	{
@@ -117,28 +116,30 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		return idMap.get(typeId);
 	}
 
-	private static ValueTypeInfo getValueTypeInfo(Type type)
-	{
-		Preconditions.checkNotNull(type);
-		if (!typeMap.containsKey(type))
-		{
-			throw new IllegalArgumentException("No information about how to store/retrieve an object of type " + type.getTypeName());
-		}
-		return typeMap.get(type);
-	}
-
-	//	private static ValueTypeInfo getValueTypeInfo(Class<?> typeClass)
+	//	private static ValueTypeInfo getValueTypeInfo(Type type)
 	//	{
-	//		Preconditions.checkNotNull(typeClass);
-	//		if (!classMap.containsKey(typeClass))
+	//		Preconditions.checkNotNull(type);
+	//		if (!typeMap.containsKey(type))
 	//		{
-	//			throw new IllegalArgumentException("No information about how to store/retrieve an object with class " + typeClass.getSimpleName());
+	//			throw new IllegalArgumentException("No information about how to store/retrieve an object of type " + type.getTypeName());
 	//		}
-	//		return classMap.get(typeClass);
+	//		return typeMap.get(type);
 	//	}
+
+	private static ValueTypeInfo getValueTypeInfo(Class<?> typeClass)
+	{
+		Preconditions.checkNotNull(typeClass);
+		if (!classMap.containsKey(typeClass))
+		{
+			throw new IllegalArgumentException("No information about how to store/retrieve an object with class " + typeClass.getSimpleName());
+		}
+		return classMap.get(typeClass);
+	}
 
 	private static final String STORED_AS_TYPE_KEY = "type";
 	private static final String STORED_AS_ELEMENT_TYPE_KEY = "elementType";
+	private static final String STORED_AS_KEY_TYPE_KEY = "keyType";
+	private static final String STORED_AS_VALUE_TYPE_KEY = "valueType";
 	private static final String STORED_AS_VALUE_KEY = "value";
 
 	// @Override
@@ -213,78 +214,140 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 	private void encode(StateKey<?> key, Object attribute, JsonObject jsonDest, JsonSerializationContext context)
 	{
 		ValueTypeInfo info = classify(attribute);
-		JsonElement jsonElement = null;
-		if (info.useJsonObject())
-		{
-			JsonObject jsonObject = new JsonObject();
-			Type valueType = info.getType();
-
-			jsonObject.addProperty(STORED_AS_TYPE_KEY, info.getTypeId());
-
-			// Serialize the attribute directly into the jsonObject. This may recursively
-			// invoke the serialize method above.
-			jsonObject.add(STORED_AS_VALUE_KEY, context.serialize(attribute, valueType));
-
-			jsonElement = jsonObject;
-		}
-		else if (info.useJsonArray())
-		{
-			if (attribute instanceof Map)
-			{
-				Map<?, ?> map = (Map<?, ?>) attribute;
-				attribute = map.entrySet();
-			}
-			if (!(attribute instanceof Iterable))
-			{
-				throw new AssertionError();
-			}
-			Iterable<?> iterable = (Iterable<?>) attribute;
-
-			JsonObject jsonObject = new JsonObject();
-			jsonObject.addProperty(STORED_AS_TYPE_KEY, info.getTypeId());
-
-			// First pass: look for an element that could give us the type information about the
-			// element(s) stored in the iterable.
-			ValueTypeInfo elementInfo = null;
-			for (Object element : iterable)
-			{
-				if (element != null)
-				{
-					elementInfo = classify(element);
-					jsonObject.addProperty(STORED_AS_ELEMENT_TYPE_KEY, elementInfo.getTypeId());
-					break;
-				}
-			}
-
-			if (elementInfo != null)
-			{
-				Type elementType = elementInfo.getType();
-				JsonArray jsonArray = new JsonArray();
-				for (Object element : (Iterable<?>) attribute)
-				{
-					// Serialize the element directly into the jsonObject. This may recursively
-					// invoke the serialize method above.
-					jsonArray.add(context.serialize(element, elementType));
-				}
-
-				// The Json array gets stored as the value.
-				jsonObject.add(STORED_AS_VALUE_KEY, jsonArray);
-			}
-
-			jsonElement = jsonObject;
-		}
-		else if (ValueTypeInfo.NULL == info)
-		{
-			jsonElement = JsonNull.INSTANCE;
-		}
-		else
+		JsonElement jsonElement = JsonNull.INSTANCE;
+		if (attribute instanceof String || attribute instanceof Boolean || attribute instanceof Double)
 		{
 			// Serialize using Gson built-in behavior.
 			jsonElement = context.serialize(attribute, info.getType());
 		}
+		else if (attribute instanceof Iterable)
+		{
+			jsonElement = encode((Iterable<?>) attribute, info.getTypeId(), context);
+		}
+		else if (attribute instanceof Map)
+		{
+			jsonElement = encode((Map<?, ?>) attribute, info.getTypeId(), context);
+		}
+		else if (ValueTypeInfo.NULL != info)
+		{
+			jsonElement = encode(attribute, info.getTypeId(), info.getType(), context);
+		}
 
 		// Finally, just add the fully serialized element.
 		jsonDest.add(key.getId(), jsonElement);
+	}
+
+	private JsonElement encode(Iterable<?> iterable, String typeId, JsonSerializationContext context)
+	{
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.addProperty(STORED_AS_TYPE_KEY, typeId);
+
+		// First pass: look for an element that could give us the type information about the
+		// element(s) stored in the iterable.
+		ValueTypeInfo elementInfo = null;
+		for (Object element : iterable)
+		{
+			if (element != null)
+			{
+				elementInfo = classify(element);
+				jsonObject.addProperty(STORED_AS_ELEMENT_TYPE_KEY, elementInfo.getTypeId());
+				break;
+			}
+		}
+
+		JsonArray jsonArray = new JsonArray();
+		if (elementInfo != null)
+		{
+			Type elementType = elementInfo.getType();
+			for (Object element : iterable)
+			{
+				// Serialize the element directly into the jsonObject. This may recursively
+				// invoke the serialize method above.
+				jsonArray.add(context.serialize(element, elementType));
+			}
+		}
+
+		// The Json array gets stored as the value.
+		jsonObject.add(STORED_AS_VALUE_KEY, jsonArray);
+
+		return jsonObject;
+	}
+
+	private JsonElement encode(Map<?, ?> map, String typeId, JsonSerializationContext context)
+	{
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.addProperty(STORED_AS_TYPE_KEY, typeId);
+
+		// First pass: look for an element that could give us the type information about the
+		// element(s) stored in the iterable.
+		ValueTypeInfo keyInfo = null;
+		ValueTypeInfo valueInfo = null;
+
+		for (Object element : map.entrySet())
+		{
+			if (element instanceof Map.Entry)
+			{
+				Map.Entry<?, ?> entry = (Entry<?, ?>) element;
+				Object key = entry.getKey();
+				if (keyInfo == null && key != null)
+				{
+					keyInfo = classify(key);
+				}
+				Object value = entry.getValue();
+				if (valueInfo == null && value != null)
+				{
+					valueInfo = classify(value);
+				}
+				if (keyInfo != null && valueInfo != null)
+				{
+					jsonObject.addProperty(STORED_AS_KEY_TYPE_KEY, keyInfo.getTypeId());
+					jsonObject.addProperty(STORED_AS_VALUE_TYPE_KEY, valueInfo.getTypeId());
+					break;
+				}
+			}
+			else
+			{
+				throw new AssertionError();
+			}
+		}
+
+		JsonArray jsonArray = new JsonArray();
+		if (keyInfo != null)
+		{
+			Type keyType = keyInfo.getType();
+			Type valueType = valueInfo != null ? valueInfo.getType() : null;
+			for (Object element : map.entrySet())
+			{
+				if (element instanceof Map.Entry)
+				{
+					Map.Entry<?, ?> entry = (Entry<?, ?>) element;
+
+					JsonArray entryArray = new JsonArray();
+
+					// Serialize the key value pair directly into the entry array. This may recursively
+					// invoke the serialize method above.
+					entryArray.add(context.serialize(entry.getKey(), keyType));
+				}
+			}
+		}
+
+		// The Json array gets stored as the value.
+		jsonObject.add(STORED_AS_VALUE_KEY, jsonArray);
+
+		return jsonObject;
+	}
+
+	private JsonElement encode(Object attribute, String typeId, Type valueType, JsonSerializationContext context)
+	{
+		JsonObject jsonObject = new JsonObject();
+
+		jsonObject.addProperty(STORED_AS_TYPE_KEY, typeId);
+
+		// Serialize the attribute directly into the jsonObject. This may recursively
+		// invoke the serialize method above.
+		jsonObject.add(STORED_AS_VALUE_KEY, context.serialize(attribute, valueType));
+
+		return jsonObject;
 	}
 
 	/**
@@ -321,7 +384,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		}
 		else if (element.isJsonNull())
 		{
-			stateDest.put(StateKey.of(keyId), null);
+			stateDest.put(GsonKey.of(keyId), null);
 		}
 		else
 		{
@@ -484,14 +547,14 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 	private <T> StateKey<T> getKeyForType(String keyId, Type type)
 	{
 		//		return StateKey.of(keyId, (Class<T>) getValueTypeInfo(type).getTypeClass());
-		return StateKey.of(keyId);
+		return GsonKey.of(keyId);
 	}
 
 	@SuppressWarnings("unchecked")
 	private <T> StateKey<T> getKeyForType(String keyId, Type primaryType, Type secondaryType)
 	{
 		//		return StateKey.of(keyId, (Class<T>) getValueTypeInfo(primaryType).getTypeClass(), getValueTypeInfo(secondaryType).getTypeClass());
-		return StateKey.of(keyId);
+		return GsonKey.of(keyId);
 	}
 
 	private static ImmutableMap<String, ValueTypeInfo> createIdMap()

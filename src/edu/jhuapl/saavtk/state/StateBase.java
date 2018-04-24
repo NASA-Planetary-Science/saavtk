@@ -76,7 +76,7 @@ public abstract class StateBase
 		for (StateKey<?> key : new TreeSet<>(map.keySet()))
 		{
 			builder.append("\n");
-			builder.append(key + " = " + map.get(key).toString());
+			builder.append(key + " = " + getObject(key));
 		}
 		return builder.toString();
 	}

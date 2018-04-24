@@ -18,8 +18,8 @@ import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CameraDialog;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
+import edu.jhuapl.saavtk.state.Serializers;
 import edu.jhuapl.saavtk.state.StateSerializer;
-import edu.jhuapl.saavtk.state.gson.GsonFileStateSerializer;
 import edu.jhuapl.saavtk.util.Configuration;
 
 public class FileMenu extends JMenu
@@ -405,10 +405,10 @@ public class FileMenu extends JMenu
 
 	private void saveTo(File file)
 	{
-		StateSerializer serializer = GsonFileStateSerializer.of(file);
+		StateSerializer serializer = Serializers.getDefault();
 		try
 		{
-			serializer.save(rootPanel.getStateManager().getState());
+			serializer.save(file);
 		}
 		catch (IOException e1)
 		{
@@ -419,10 +419,10 @@ public class FileMenu extends JMenu
 
 	private void loadFrom(File file)
 	{
-		StateSerializer serializer = GsonFileStateSerializer.of(file);
+		StateSerializer serializer = Serializers.getDefault();
 		try
 		{
-			rootPanel.getStateManager().setState(serializer.load());
+			serializer.load(file);
 		}
 		catch (IOException e)
 		{

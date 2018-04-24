@@ -1,82 +1,19 @@
 package edu.jhuapl.saavtk.state;
 
-import java.lang.reflect.Type;
-
-import com.google.common.base.Preconditions;
-import com.google.gson.reflect.TypeToken;
-
-public final class StateKey<T> implements Comparable<StateKey<?>>
+public abstract class StateKey<T> implements Comparable<StateKey<?>>
 {
-	public static <T> StateKey<T> of(String keyId)
-	{
-		return new StateKey<>(keyId, new TypeToken<T>() {}.getType());
-	}
-
-	private final String keyId;
-	private final Type type;
-
-	private StateKey(String keyId, Type type)
-	{
-		Preconditions.checkNotNull(keyId);
-		Preconditions.checkArgument(!keyId.isEmpty());
-		Preconditions.checkArgument(!keyId.matches("^\\s"));
-		Preconditions.checkArgument(!keyId.matches("\\s$"));
-		Preconditions.checkNotNull(type);
-		this.keyId = keyId;
-		this.type = type;
-	}
-
-	public String getId()
-	{
-		return keyId;
-	}
-
-	public Type getType()
-	{
-		return type;
-	}
+	public abstract String getId();
 
 	@Override
-	public int compareTo(StateKey<?> that)
-	{
-		int result = keyId.compareTo(that.getId());
-		if (result != 0)
-			return result;
-		return 0;
-	}
+	public abstract int compareTo(StateKey<?> that);
 
 	@Override
-	public int hashCode()
-	{
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + keyId.hashCode();
-		return result;
-	}
+	public abstract int hashCode();
 
 	@Override
-	public boolean equals(Object other)
-	{
-		if (this == other)
-		{
-			return true;
-		}
-		if (other instanceof StateKey)
-		{
-			StateKey<?> that = (StateKey<?>) other;
-			if (!this.keyId.equals(that.keyId))
-			{
-				return false;
-			}
-			return true;
-		}
-		return false;
-	}
+	public abstract boolean equals(Object other);
 
 	@Override
-	public String toString()
-	{
-		return keyId;
-	}
+	public abstract String toString();
 
 }

@@ -1,11 +1,16 @@
 package edu.jhuapl.saavtk.state;
 
+import java.io.File;
 import java.io.IOException;
 
 public interface StateSerializer
 {
-	State load() throws IOException;
+	<T> StateKey<T> getKey(String keyId);
 
-	void save(State state) throws IOException;
+	void register(StateKey<State> key, StateManager manager);
+
+	void load(File file) throws IOException;
+
+	void save(File file) throws IOException;
 
 }
