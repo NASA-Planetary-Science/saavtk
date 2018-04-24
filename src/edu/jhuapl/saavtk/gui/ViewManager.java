@@ -25,7 +25,6 @@ import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
 import edu.jhuapl.saavtk.gui.menu.FileMenu;
 import edu.jhuapl.saavtk.gui.menu.HelpMenu;
-import edu.jhuapl.saavtk.state.StateManager;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.FileCache.UnauthorizedAccessException;
 
@@ -293,6 +292,7 @@ public abstract class ViewManager extends JPanel
 
 	public void setCurrentView(View view)
 	{
+		setUpStateManagerOnce();
 		if (view == currentView)
 		{
 			return;
@@ -373,7 +373,7 @@ public abstract class ViewManager extends JPanel
 
 	public abstract View createCustomView(StatusBar statusBar, String name, boolean temporary);
 
-	public abstract StateManager getStateManager();
+	public abstract void setUpStateManagerOnce();
 
 	public View getCustomView(String name)
 	{

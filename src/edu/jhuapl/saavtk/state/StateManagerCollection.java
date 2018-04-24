@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import javax.swing.SwingUtilities;
 
 public class StateManagerCollection implements StateManager
 {
@@ -44,14 +48,28 @@ public class StateManagerCollection implements StateManager
 	@Override
 	public void setState(State state)
 	{
-		for (StateKey<State> key : keysInOrder)
-		{
-			State subState = state.get(key);
-			if (subState != null)
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		executor.execute(() -> {
+			for (StateKey<State> key : keysInOrder)
 			{
-				managers.get(key).setState(subState);
+				State subState = state.get(key);
+				if (subState != null)
+				{
+					try
+					{
+						SwingUtilities.invokeAndWait(() -> {
+
+							managers.get(key).setState(subState);
+						});
+					}
+					catch (Exception e)
+					{
+						e.printStackTrace();
+					}
+				}
 			}
-		}
+		});
+		executor.shutdown();
 	}
 
 }
