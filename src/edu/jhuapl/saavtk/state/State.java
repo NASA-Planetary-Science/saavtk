@@ -69,7 +69,10 @@ public final class State
 	public <V> State put(StateKey<V> key, V value)
 	{
 		Preconditions.checkNotNull(key);
-		keys.add(key);
+		if (!map.containsKey(key))
+		{
+			keys.add(key);
+		}
 		if (value == null)
 		{
 			map.put(key, NULL_OBJECT);
