@@ -33,16 +33,30 @@ public final class State
 
 	public static State of()
 	{
-		return new State();
+		return null;
 	}
 
+	public static State of(StateKey<State> key, Version version)
+	{
+		return new State(key, version);
+	}
+
+	private final StateKey<State> key;
+	private final Version version;
 	private final List<StateKey<?>> keys;
 	private final Map<StateKey<?>, Object> map;
 
-	private State()
+	private State(StateKey<State> key, Version version)
 	{
+		this.key = key;
+		this.version = version;
 		this.keys = new ArrayList<>();
 		this.map = new HashMap<>();
+	}
+
+	public Version getVersion()
+	{
+		return version;
 	}
 
 	public ImmutableList<StateKey<?>> getKeys()
@@ -84,6 +98,12 @@ public final class State
 		return this;
 	}
 
+	public void clear()
+	{
+		keys.clear();
+		map.clear();
+	}
+
 	@Override
 	public final int hashCode()
 	{
@@ -111,7 +131,8 @@ public final class State
 	@Override
 	public String toString()
 	{
-		StringBuilder builder = new StringBuilder("(State):");
+		StringBuilder builder = new StringBuilder("(State) version ");
+		builder.append(version);
 		for (StateKey<?> key : new TreeSet<>(map.keySet()))
 		{
 			builder.append("\n");

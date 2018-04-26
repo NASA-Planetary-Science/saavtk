@@ -10,20 +10,22 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
-final class GsonKeyIO implements JsonSerializer<GsonKey<?>>, JsonDeserializer<GsonKey<?>>
+import edu.jhuapl.saavtk.state.Version;
+
+final class GsonVersionIO implements JsonSerializer<Version>, JsonDeserializer<Version>
 {
-	private static final String KEY_ID = ValueTypeInfo.STATE_KEY.getTypeId();
+	private static final String KEY_ID = ValueTypeInfo.VERSION.getTypeId();
 
 	@Override
-	public JsonElement serialize(GsonKey<?> src, Type typeOfSrc, JsonSerializationContext context)
+	public JsonElement serialize(Version src, Type typeOfSrc, JsonSerializationContext context)
 	{
 		JsonObject result = new JsonObject();
-		result.addProperty(KEY_ID, src.getId());
+		result.addProperty(KEY_ID, src.toString());
 		return result;
 	}
 
 	@Override
-	public GsonKey<?> deserialize(JsonElement jsonElement, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
+	public Version deserialize(JsonElement jsonElement, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
 	{
 		if (!jsonElement.isJsonObject())
 		{
@@ -39,7 +41,7 @@ final class GsonKeyIO implements JsonSerializer<GsonKey<?>>, JsonDeserializer<Gs
 			throw new IllegalArgumentException("Field \"" + KEY_ID + "\" is missing or has wrong type in Json object");
 		}
 
-		return GsonKey.of(keyIdElement.getAsString());
+		return Version.of(keyIdElement.getAsString());
 	}
 
 }

@@ -292,7 +292,7 @@ public abstract class ViewManager extends JPanel
 
 	public void setCurrentView(View view)
 	{
-		setUpStateManagerOnce();
+		initializeStateManager();
 		if (view == currentView)
 		{
 			return;
@@ -371,9 +371,9 @@ public abstract class ViewManager extends JPanel
 		return null;
 	}
 
-	public abstract View createCustomView(StatusBar statusBar, String name, boolean temporary);
+	protected abstract View createCustomView(StatusBar statusBar, String name, boolean temporary);
 
-	public abstract void setUpStateManagerOnce();
+	protected abstract void initializeStateManager();
 
 	public View getCustomView(String name)
 	{

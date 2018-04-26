@@ -20,8 +20,10 @@ enum ValueTypeInfo
 	DOUBLE("Double", new TypeToken<Double>() {}.getType(), Double.class),
 	VERSION("Version", new TypeToken<Version>() {}.getType(), Version.class),
 
-	STATE_KEY("StateKey", new TypeToken<StateKey<?>>() {}.getType(), StateKey.class),
+	STATE_KEY("Key", new TypeToken<StateKey<?>>() {}.getType(), StateKey.class),
 	STATE("State", new TypeToken<State>() {}.getType(), State.class),
+	ELEMENT("Element", new TypeToken<GsonElement>() {}.getType(), GsonElement.class),
+	//	NUMBER("Number", new TypeToken<Number>() {}.getType(), Number.class),
 	INTEGER("Integer", new TypeToken<Integer>() {}.getType(), Integer.class),
 	LONG("Long", new TypeToken<Long>() {}.getType(), Long.class),
 	SHORT("Short", new TypeToken<Short>() {}.getType(), Short.class),

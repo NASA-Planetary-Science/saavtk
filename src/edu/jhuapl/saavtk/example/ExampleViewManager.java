@@ -28,7 +28,7 @@ public final class ExampleViewManager extends ViewManager
 	}
 
 	@Override
-	public View createCustomView(StatusBar statusBar, String name, boolean temporary)
+	protected View createCustomView(StatusBar statusBar, String name, boolean temporary)
 	{
 		ViewConfig config = new ExampleViewConfig();
 		config.modelLabel = name;
@@ -38,7 +38,7 @@ public final class ExampleViewManager extends ViewManager
 	}
 
 	@Override
-	public void setUpStateManagerOnce()
+	public void initializeStateManager()
 	{
 		// TODO Auto-generated method stub
 	}

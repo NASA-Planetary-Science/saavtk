@@ -13,9 +13,9 @@ public interface StateManager
 	 * Store a (complete and self-consistent) set of metadata in the provided
 	 * destination object.
 	 * 
-	 * @param destination object in which the metadata are stored
+	 * @return destination object in which the metadata are stored
 	 */
-	void store(State destination);
+	State store();
 
 	/**
 	 * Retrieve a (complete and self-consistent) set of metadata in the provided

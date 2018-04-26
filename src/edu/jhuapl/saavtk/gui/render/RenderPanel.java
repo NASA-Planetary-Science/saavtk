@@ -30,13 +30,7 @@ import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent.ConstrainRotationAxisEvent;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarListener;
-import edu.jhuapl.saavtk.state.Serializers;
-import edu.jhuapl.saavtk.state.State;
-import edu.jhuapl.saavtk.state.StateKey;
-import edu.jhuapl.saavtk.state.StateSerializer;
-import edu.jhuapl.saavtk.state.TrackedStateManager;
 import vtk.vtkActor;
-import vtk.vtkCamera;
 import vtk.vtkConeSource;
 import vtk.vtkNativeLibrary;
 import vtk.vtkPolyData;
@@ -48,10 +42,6 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 public class RenderPanel extends vtkJoglPanelComponent implements CameraListener, RenderToolbarListener, ComponentListener
 {
-	private static final StateSerializer SERIALIZER = Serializers.getDefault();
-	private static final StateKey<State> myStateKey = SERIALIZER.getKey("renderPanel.0");
-	private final TrackedStateManager stateManager;
-
 	Camera viewCamera;
 	RenderToolbar toolbar = null;
 	AxesPanel axesPanel = null;
@@ -82,7 +72,6 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 	public RenderPanel(RenderToolbar toolbar)// , RenderStatusBar statusBar)
 	{
 
-		this.stateManager = createStateManager();
 		getInteractorForwarder().setEventInterceptor(new Interceptor());
 		interactorStyle = new CustomInteractorStyle(getRenderWindowInteractor());
 		defaultInteractorStyle = interactorStyle;
@@ -287,7 +276,6 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 	public void Render()
 	{
 		// redrawAxes();
-		setUpStateManagerOnce();
 		super.Render();
 	}
 
@@ -525,42 +513,6 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		{
 			return false;
 		}
-	}
-
-	protected void setUpStateManagerOnce()
-	{
-		this.stateManager.registerOnce();
-	}
-
-	private final TrackedStateManager createStateManager()
-	{
-		return new TrackedStateManager(myStateKey) {
-
-			StateKey<double[]> positionKey = SERIALIZER.getKey("cameraPosition");
-			StateKey<double[]> orientationKey = SERIALIZER.getKey("cameraOrientation");
-
-			@Override
-			public State doGetState()
-			{
-				State state = State.of();
-				vtkCamera camera = RenderPanel.this.getActiveCamera();
-				state.put(positionKey, camera.GetPosition());
-				state.put(orientationKey, camera.GetViewUp());
-				return state;
-			}
-
-			@Override
-			public void doSetState(State state)
-			{
-				vtkCamera camera = RenderPanel.this.getActiveCamera();
-				double[] position = state.get(positionKey);
-				double[] orientation = state.get(orientationKey);
-				camera.SetPosition(position);
-				camera.SetViewUp(orientation);
-				Render();
-			}
-
-		};
 	}
 
 }

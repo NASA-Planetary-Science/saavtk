@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.state.gson;
 
 import java.lang.reflect.Type;
+import java.util.Iterator;
 
 import com.google.common.base.Preconditions;
 import com.google.gson.JsonArray;
@@ -14,18 +15,11 @@ import com.google.gson.JsonSerializer;
 
 import edu.jhuapl.saavtk.state.State;
 import edu.jhuapl.saavtk.state.StateKey;
+import edu.jhuapl.saavtk.state.Version;
 
 final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 {
-	private static final String STORED_AS_KEY = "key";
-	private static final String STORED_AS_VALUE_TYPE_KEY = "valueType";
-	private static final String STORED_AS_VALUE_KEY = "value";
-
-	// @Override
-	public Type getTargetType()
-	{
-		return ValueTypeInfo.STATE.getType();
-	}
+	private static final String STORED_AS_ELEMENTS_KEY = "Elements";
 
 	@Override
 	public JsonElement serialize(State src, Type typeOfSrc, JsonSerializationContext context)
@@ -34,20 +28,23 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		Preconditions.checkArgument(ValueTypeInfo.STATE.getType().equals(typeOfSrc));
 		Preconditions.checkNotNull(context);
 
-		JsonArray jsonArray = new JsonArray();
+		JsonArray array = new JsonArray();
+		array.add(context.serialize(src.getVersion(), ValueTypeInfo.VERSION.getType()));
+
+		JsonArray valueArray = new JsonArray();
 		for (StateKey<?> key : src.getKeys())
 		{
 			Object value = src.get(key);
-			ValueTypeInfo info = ValueTypeInfo.forObject(value);
-			JsonObject jsonEntry = new JsonObject();
-
-			jsonEntry.add(STORED_AS_KEY, context.serialize(key, ValueTypeInfo.STATE_KEY.getType()));
-			jsonEntry.add(STORED_AS_VALUE_TYPE_KEY, context.serialize(info.getTypeId()));
-			jsonEntry.add(STORED_AS_VALUE_KEY, context.serialize(value, info.getType()));
-
-			jsonArray.add(jsonEntry);
+			valueArray.add(context.serialize(GsonElement.of(key, value), ValueTypeInfo.ELEMENT.getType()));
 		}
-		return jsonArray;
+
+		JsonObject jsonObject = null;
+
+		jsonObject = new JsonObject();
+		jsonObject.add(STORED_AS_ELEMENTS_KEY, valueArray);
+		array.add(jsonObject);
+
+		return array;
 	}
 
 	@Override
@@ -58,19 +55,38 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		Preconditions.checkArgument(ValueTypeInfo.STATE.getType().equals(typeOfT));
 		Preconditions.checkNotNull(context);
 
-		final State state = State.of();
-		final JsonArray jsonArray = jsonSrc.getAsJsonArray();
-		for (JsonElement jsonElement : jsonArray)
+		//		JsonObject jsonObject = jsonSrc.getAsJsonObject();
+		//		JsonElement arrayAsElement = jsonObject.get(ValueTypeInfo.STATE.getTypeId());
+		//		if (arrayAsElement == null)
+		//		{
+		//			throw new IllegalArgumentException();
+		//		}
+		//
+		//		JsonArray jsonArray = arrayAsElement.getAsJsonArray();
+		JsonArray jsonArray = jsonSrc.getAsJsonArray();
+		JsonElement jsonElement = null;
+		Iterator<JsonElement> iterator = jsonArray.iterator();
+
+		if (!iterator.hasNext())
 		{
-			if (!jsonElement.isJsonObject())
-			{
-				throw new IllegalArgumentException();
-			}
-			JsonObject jsonObject = jsonElement.getAsJsonObject();
-			StateKey<?> key = context.deserialize(jsonObject.get(STORED_AS_KEY), ValueTypeInfo.STATE_KEY.getType());
-			String typeId = context.deserialize(jsonObject.get(STORED_AS_VALUE_TYPE_KEY), ValueTypeInfo.STRING.getType());
-			JsonElement valueElement = jsonObject.get(STORED_AS_VALUE_KEY);
-			state.put(key, context.deserialize(valueElement, ValueTypeInfo.of(typeId).getType()));
+			throw new IllegalArgumentException();
+		}
+		jsonElement = iterator.next();
+
+		Version version = context.deserialize(jsonElement, ValueTypeInfo.VERSION.getType());
+
+		final State state = State.of(GsonKey.of("spud"), version);
+		if (!iterator.hasNext())
+		{
+			throw new IllegalArgumentException();
+		}
+		jsonElement = iterator.next();
+		JsonObject jsonObject = jsonElement.getAsJsonObject();
+		jsonArray = jsonObject.get(STORED_AS_ELEMENTS_KEY).getAsJsonArray();
+		for (JsonElement arrayElement : jsonArray)
+		{
+			GsonElement element = context.deserialize(arrayElement, ValueTypeInfo.ELEMENT.getType());
+			state.put(element.getKey(), element.getValue());
 		}
 		return state;
 	}

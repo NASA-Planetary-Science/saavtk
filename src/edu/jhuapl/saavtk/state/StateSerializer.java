@@ -20,7 +20,9 @@ public interface StateSerializer
 	 * order of operations that affect the state of the application as a whole.
 	 * 
 	 * @param key the key identifying the State objects this manager manages
-	 * @param manager the manager for State objects associated with the key.
+	 * @param manager the manager for State objects associated with the key
+	 * @throws IllegalStateException if method is called more than once with the
+	 *             same key
 	 */
 	void register(StateKey<State> key, StateManager manager);
 
