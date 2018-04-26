@@ -11,12 +11,14 @@ import com.google.gson.reflect.TypeToken;
 
 import edu.jhuapl.saavtk.state.State;
 import edu.jhuapl.saavtk.state.StateKey;
+import edu.jhuapl.saavtk.state.Version;
 
 enum ValueTypeInfo
 {
 	STRING("String", new TypeToken<String>() {}.getType(), String.class),
 	BOOLEAN("Boolean", new TypeToken<Boolean>() {}.getType(), Boolean.class),
 	DOUBLE("Double", new TypeToken<Double>() {}.getType(), Double.class),
+	VERSION("Version", new TypeToken<Version>() {}.getType(), Version.class),
 
 	STATE_KEY("StateKey", new TypeToken<StateKey<?>>() {}.getType(), StateKey.class),
 	STATE("State", new TypeToken<State>() {}.getType(), State.class),
