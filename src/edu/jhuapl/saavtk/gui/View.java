@@ -234,6 +234,11 @@ public abstract class View extends JPanel
 		initialized = true;
 	}
 
+	protected final boolean isInitialized()
+	{
+		return initialized;
+	}
+
 	private void showDefaultTabSelectionPopup(MouseEvent e)
 	{
 		if (e.isPopupTrigger())
