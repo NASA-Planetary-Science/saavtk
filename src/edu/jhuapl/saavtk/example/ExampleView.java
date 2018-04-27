@@ -168,4 +168,11 @@ public class ExampleView extends View
 	protected void setupSpectrumPanelManager()
 	{}
 
+	@Override
+	protected void initializeStateManager()
+	{
+		// TODO Auto-generated method stub
+
+	}
+
 }

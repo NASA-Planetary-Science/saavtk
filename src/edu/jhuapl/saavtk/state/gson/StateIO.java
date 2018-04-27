@@ -75,7 +75,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 
 		Version version = context.deserialize(jsonElement, ValueTypeInfo.VERSION.getType());
 
-		final State state = State.of(GsonKey.of("spud"), version);
+		final State state = State.of(version);
 		if (!iterator.hasNext())
 		{
 			throw new IllegalArgumentException();

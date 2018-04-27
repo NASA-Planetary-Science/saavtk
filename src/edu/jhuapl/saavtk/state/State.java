@@ -31,24 +31,17 @@ public final class State
 		}
 	};
 
-	public static State of()
+	public static State of(Version version)
 	{
-		return null;
+		return new State(version);
 	}
 
-	public static State of(StateKey<State> key, Version version)
-	{
-		return new State(key, version);
-	}
-
-	private final StateKey<State> key;
 	private final Version version;
 	private final List<StateKey<?>> keys;
 	private final Map<StateKey<?>, Object> map;
 
-	private State(StateKey<State> key, Version version)
+	private State(Version version)
 	{
-		this.key = key;
 		this.version = version;
 		this.keys = new ArrayList<>();
 		this.map = new HashMap<>();

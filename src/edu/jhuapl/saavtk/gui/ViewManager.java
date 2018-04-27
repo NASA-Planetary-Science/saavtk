@@ -312,6 +312,7 @@ public abstract class ViewManager extends JPanel
 
 			updateRecents();
 			currentView = view;
+			currentView.initializeStateManager();
 			currentView.renderer.viewActivating();
 			updateRecents();
 		}

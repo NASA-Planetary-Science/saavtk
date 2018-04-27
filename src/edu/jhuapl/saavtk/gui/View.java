@@ -346,6 +346,8 @@ public abstract class View extends JPanel
 
 	protected abstract void setupPickManager();
 
+	protected abstract void initializeStateManager();
+
 	@Override
 	public String toString()
 	{

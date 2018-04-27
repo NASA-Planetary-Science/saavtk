@@ -8,6 +8,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import javax.swing.SwingUtilities;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -72,21 +76,26 @@ public class GsonFileStateSerializer implements StateSerializer
 	public void load(File file) throws IOException
 	{
 		Preconditions.checkNotNull(file);
-		try (JsonReader reader = GSON.newJsonReader(new FileReader(file)))
+
+		State source = State.of(Version.of(0, 0));
+		try (FileReader fileReader = new FileReader(file))
 		{
-			GsonElement element = GSON.fromJson(reader, ValueTypeInfo.ELEMENT.getType());
-			try
+			try (JsonReader reader = GSON.newJsonReader(fileReader))
 			{
-				StateManager manager = managerCollection.getManager(element.getKey());
-				State state = (State) element.getValue();
-				manager.retrieve(state);
+				while (fileReader.ready())
+				{
+					GsonElement element = GSON.fromJson(reader, ValueTypeInfo.ELEMENT.getType());
+					source.put(element.getKey(), element.getValue());
+				}
 			}
-			catch (IllegalArgumentException e)
-			{
-				// Most likely missing a manager.
-				// Report but keep going.
-				e.printStackTrace();
-			}
+		}
+		if (SwingUtilities.isEventDispatchThread())
+		{
+			retrieveInSwingContext(source);
+		}
+		else
+		{
+			retrieveInSingleThreadContext(source);
 		}
 	}
 
@@ -108,6 +117,50 @@ public class GsonFileStateSerializer implements StateSerializer
 				jsonWriter.flush();
 				fileWriter.write('\n');
 			}
+		}
+	}
+
+	private void retrieveInSwingContext(State source)
+	{
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		executor.execute(() -> {
+			for (StateKey<State> key : managerCollection.getKeys())
+			{
+				try
+				{
+					State element = source.get(key);
+					if (element != null)
+					{
+						SwingUtilities.invokeAndWait(() -> {
+							managerCollection.getManager(key).retrieve(element);
+						});
+					}
+				}
+				catch (@SuppressWarnings("unused") Exception e)
+				{
+					//					e.printStackTrace();
+				}
+			}
+		});
+		executor.shutdown();
+	}
+
+	private void retrieveInSingleThreadContext(State source)
+	{
+		try
+		{
+			for (StateKey<State> key : managerCollection.getKeys())
+			{
+				State element = source.get(key);
+				if (element != null)
+				{
+					managerCollection.getManager(key).retrieve(element);
+				}
+			}
+		}
+		catch (@SuppressWarnings("unused") Exception e)
+		{
+			//			e.printStackTrace();
 		}
 	}
 
@@ -141,7 +194,7 @@ public class GsonFileStateSerializer implements StateSerializer
 		@Override
 		public State store()
 		{
-			State destination = State.of(null, state.getVersion());
+			State destination = State.of(state.getVersion());
 			for (StateKey<?> key : state.getKeys())
 			{
 				@SuppressWarnings("unchecked")
@@ -172,7 +225,7 @@ public class GsonFileStateSerializer implements StateSerializer
 		GsonFileStateSerializer serializer = new GsonFileStateSerializer();
 
 		String v3 = "Bennu / V3";
-		State v3State = State.of(serializer.getKey(v3), Version.of(3, 1));
+		State v3State = State.of(Version.of(3, 1));
 
 		v3State.put(serializer.getKey("tab"), "1");
 		v3State.put(serializer.getKey("facets"), 2000000001L);
@@ -210,7 +263,7 @@ public class GsonFileStateSerializer implements StateSerializer
 		listListString.add(stringList);
 
 		final StateKey<State> testStateKey = serializer.getKey("testState");
-		final State state = State.of(testStateKey, GSON_VERSION);
+		final State state = State.of(GSON_VERSION);
 		StateManager manager = new TestManager(state);
 
 		StateKey<List<List<String>>> listListStringKey = serializer.getKey("listListString");
@@ -234,7 +287,7 @@ public class GsonFileStateSerializer implements StateSerializer
 		serializer.save(file);
 		System.out.println("Original state is: " + state);
 
-		State state2 = State.of(testStateKey, GSON_VERSION);
+		State state2 = State.of(GSON_VERSION);
 		serializer = GsonFileStateSerializer.of();
 		manager = new TestManager(state2);
 		serializer.register(testStateKey, manager);
