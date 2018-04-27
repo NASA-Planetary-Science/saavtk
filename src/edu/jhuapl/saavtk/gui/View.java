@@ -229,6 +229,8 @@ public abstract class View extends JPanel
 
 		renderer.getRenderWindowPanel().resetCamera();
 
+		initializeStateManager();
+
 		initialized = true;
 	}
 
