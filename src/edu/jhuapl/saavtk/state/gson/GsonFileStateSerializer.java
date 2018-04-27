@@ -120,8 +120,8 @@ public class GsonFileStateSerializer implements StateSerializer
 				}
 				jsonWriter.endArray();
 				jsonWriter.flush();
+				fileWriter.write("\n");
 			}
-			fileWriter.write("\n");
 		}
 	}
 
