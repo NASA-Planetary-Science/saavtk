@@ -20,6 +20,8 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
+import org.apache.commons.io.FileUtils;
+
 import edu.jhuapl.saavtk.util.FileCache.FileInfo;
 import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
 
@@ -519,4 +521,24 @@ public class Configuration
     		// Who cares?
     	}
     }
+
+	public static void clearCache() {
+        String cacheDir = getCacheDir();
+        if (cacheDir != null)
+        {
+            System.err.println("Clearing the cache for all models in the directory " + cacheDir);
+            File file = new File(cacheDir);
+            if (file.exists())
+            {
+                try
+                {
+                    FileUtils.deleteDirectory(file);
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }
+	}
 }

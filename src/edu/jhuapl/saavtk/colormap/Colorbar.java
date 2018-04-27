@@ -10,119 +10,119 @@ import vtk.vtkScalarBarWidget;
 
 public class Colorbar implements PropertyChangeListener
 {
-    // for interaction
+	// for interaction
 	Renderer renderer;
-    vtkRenderWindowInteractor interactor;
+	vtkRenderWindowInteractor interactor;
 
-    vtkScalarBarWidget widget=new vtkScalarBarWidget();
-	vtkScalarBarActor actor=new vtkScalarBarActor();
-	boolean visible=false;
-	boolean hovering=false;
+	vtkScalarBarWidget widget = new vtkScalarBarWidget();
+	vtkScalarBarActor actor = new vtkScalarBarActor();
+	boolean visible = false;
+	boolean hovering = false;
 	Colormap cmap;
 
-	boolean widgetInitialized=false;
-	
+	boolean widgetInitialized = false;
+	boolean horizontal;
+	private String horizontalTitle;
+	private String verticalTitle;
+
 	public Colorbar(Renderer renderer)
 	{
-/*		chooser.addPropertyChangeListener(new PropertyChangeListener()
-		{
+		/*
+		 * chooser.addPropertyChangeListener(new PropertyChangeListener() {
+		 * 
+		 * @Override public void propertyChange(PropertyChangeEvent evt) { if (!
+		 * (evt.getNewValue() instanceof String)) {
+		 * System.out.println(evt.getNewValue()+" "+evt.getPropertyName()); return; }
+		 * 
+		 * String cname=(String)evt.getNewValue(); Colormap
+		 * c=Colormaps.getNewInstanceOfBuiltInColormap(cname);
+		 * c.setRangeMin(cmap.getRangeMin()); c.setRangeMax(cmap.getRangeMax());
+		 * c.setLog(cmap.getLog()); c.setNumberOfLevels(cmap.getNumberOfLevels());
+		 * setColormap(c);
+		 * 
+		 * chooser.setVisible(false); } });
+		 */
 
-			@Override
-			public void propertyChange(PropertyChangeEvent evt)
-			{
-				if (! (evt.getNewValue() instanceof String))
-				{
-					System.out.println(evt.getNewValue()+" "+evt.getPropertyName());
-					return;
-				}
+		this.renderer = renderer;
 
-				String cname=(String)evt.getNewValue();
-				Colormap c=Colormaps.getNewInstanceOfBuiltInColormap(cname);
-				c.setRangeMin(cmap.getRangeMin());
-				c.setRangeMax(cmap.getRangeMax());
-				c.setLog(cmap.getLog());
-				c.setNumberOfLevels(cmap.getNumberOfLevels());
-				setColormap(c);
+		//vtkCoordinate coords=actor.GetPositionCoordinate();
+		//coords.SetCoordinateSystemToNormalizedViewport();
+		//coords.SetValue(0.2,0.01);
+		//actor.SetOrientationToHorizontal();
+		//actor.SetWidth(0.6);
+		//actor.SetHeight(0.1275);
+		//vtkTextProperty tp=new vtkTextProperty();
+		//tp.SetFontSize(10);
+		//actor.SetTitleTextProperty(tp);
 
-	            chooser.setVisible(false);
-			}
-		});*/
+		widget.CreateDefaultRepresentation();
+		widget.ResizableOn();
 
-		this.renderer=renderer;
+		actor.SetOrientationToHorizontal();
+		actor.SetTitle(" ");
+		widget.SetScalarBarActor(actor);
 
-        //vtkCoordinate coords=actor.GetPositionCoordinate();
-        //coords.SetCoordinateSystemToNormalizedViewport();
-        //coords.SetValue(0.2,0.01);
-        //actor.SetOrientationToHorizontal();
-        //actor.SetWidth(0.6);
-        //actor.SetHeight(0.1275);
-        //vtkTextProperty tp=new vtkTextProperty();
-        //tp.SetFontSize(10);
-        //actor.SetTitleTextProperty(tp);
-
-        widget.CreateDefaultRepresentation();
-        widget.ResizableOn();
-
-        actor.SetOrientationToHorizontal();
-        actor.SetTitle(" ");
-        widget.SetScalarBarActor(actor);
-
-        this.interactor=renderer.getRenderWindowPanel().getRenderWindowInteractor();
-        interactor.AddObserver("RenderEvent", this, "synchronizationKludge");
-        interactor.AddObserver("MouseMoveEvent", this, "interactionKludge");
-        widget.SetInteractor(interactor);
-        widget.EnabledOn();
+		this.interactor = renderer.getRenderWindowPanel().getRenderWindowInteractor();
+		interactor.AddObserver("RenderEvent", this, "synchronizationKludge");
+		interactor.AddObserver("MouseMoveEvent", this, "interactionKludge");
+		widget.SetInteractor(interactor);
+		widget.EnabledOn();
+		this.horizontal = actor.GetOrientation() == 0;
 	}
-
-
 
 	public void synchronizationKludge()
 	{
 		//if (!widgetInitialized)
 		//	initializeWidget();
-		if (actor.GetLookupTable()!=null && cmap!=null)
+		if (actor.GetLookupTable() != null && cmap != null)
 		{
-	        actor.SetLookupTable(cmap.getLookupTable());
-	        actor.GetLookupTable().SetRange(cmap.getRangeMin(), cmap.getRangeMax());
+			actor.SetLookupTable(cmap.getLookupTable());
+			actor.GetLookupTable().SetRange(cmap.getRangeMin(), cmap.getRangeMax());
 		}
 	}
 
-/*	private void initializeWidget()	// this is presently commented out because it causes the colorbar to be rendered in the wrong location on the screen, and if included in the constructor it generates a harmless error that worries users 
-	{
-		if (visible)
-		{
-			widget.GetScalarBarRepresentation().SetOrientation(0);
-			widget.GetScalarBarRepresentation().SetPosition(0.2, 0.01);
-			widget.GetScalarBarRepresentation().SetPosition2(0.6,0.1275);
-			actor.Modified();
-			widgetInitialized=true;
-		}
-		
-	}*/
-	
+	/*
+	 * private void initializeWidget() // this is presently commented out because it
+	 * causes the colorbar to be rendered in the wrong location on the screen, and
+	 * if included in the constructor it generates a harmless error that worries
+	 * users { if (visible) { widget.GetScalarBarRepresentation().SetOrientation(0);
+	 * widget.GetScalarBarRepresentation().SetPosition(0.2, 0.01);
+	 * widget.GetScalarBarRepresentation().SetPosition2(0.6,0.1275);
+	 * actor.Modified(); widgetInitialized=true; }
+	 * 
+	 * }
+	 */
+
 	public void interactionKludge()
 	{
 		//if (!widgetInitialized)
 		//	initializeWidget();
-		if (widget.GetBorderRepresentation().GetInteractionState()>0 && visible)
+		if (widget.GetBorderRepresentation().GetInteractionState() > 0 && visible)
 		{
-			hovering=true;
-            actor.DrawBackgroundOn();
-            if (interactor.GetControlKey()==1)
-            	widget.GetScalarBarRepresentation().ProportionalResizeOn();
-            else
-            	widget.GetScalarBarRepresentation().ProportionalResizeOff();
+			hovering = true;
+			actor.DrawBackgroundOn();
+			if (interactor.GetControlKey() == 1)
+				widget.GetScalarBarRepresentation().ProportionalResizeOn();
+			else
+				widget.GetScalarBarRepresentation().ProportionalResizeOff();
 		}
 		else
 		{
-			hovering=false;
+			hovering = false;
 			actor.DrawBackgroundOff();
 		}
+		updateTitleOrientation(false);
 	}
 
-	public void setTitle(String str)
+	public void setTitle(String title)
 	{
-		widget.GetScalarBarActor().SetTitle(str);
+		this.horizontalTitle = title;
+		if (title.length() > 16)
+		{
+			title = title.replaceAll("\\s+", "\n");
+		}
+		this.verticalTitle = title;
+		updateTitleOrientation(true);
 	}
 
 	public vtkScalarBarWidget getWidget()
@@ -138,7 +138,7 @@ public class Colorbar implements PropertyChangeListener
 	public void setColormap(Colormap cmap)
 	{
 
-		this.cmap=cmap;
+		this.cmap = cmap;
 		cmap.addPropertyChangeListener(this);
 		widget.GetScalarBarActor().SetLookupTable(cmap.getLookupTable());
 		widget.GetScalarBarActor().Modified();
@@ -153,23 +153,37 @@ public class Colorbar implements PropertyChangeListener
 	{
 		if (flag)
 		{
-            actor.SetVisibility(1);
-			visible=true;
+			actor.SetVisibility(1);
+			visible = true;
 		}
 		else
 		{
 			widget.GetScalarBarActor().SetVisibility(0);
-			visible=false;
+			visible = false;
 		}
 	}
 
+	@Override
+	public void propertyChange(PropertyChangeEvent evt)
+	{
+		if (evt.getPropertyName().equals(Colormap.colormapPropertyChanged))
+			widget.GetScalarBarActor().SetLookupTable(cmap.getLookupTable());
+	}
 
-
-    @Override
-    public void propertyChange(PropertyChangeEvent evt)
-    {
-        if (evt.getPropertyName().equals(Colormap.colormapPropertyChanged))
-            widget.GetScalarBarActor().SetLookupTable(cmap.getLookupTable());
-    }
-   
+	private void updateTitleOrientation(boolean forceUpdate)
+	{
+		int orientation = actor.GetOrientation();
+		if (orientation == 0 && (!horizontal || forceUpdate))
+		{
+			actor.SetTitle(horizontalTitle);
+			widget.Modified();
+			horizontal = true;
+		}
+		else if (orientation != 0 && (horizontal || forceUpdate))
+		{
+			actor.SetTitle(verticalTitle);
+			widget.Modified();
+			horizontal = false;
+		}
+	}
 }
