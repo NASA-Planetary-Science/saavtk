@@ -78,16 +78,19 @@ public class GsonFileStateSerializer implements StateSerializer
 		Preconditions.checkNotNull(file);
 
 		State source = State.of(Version.of(0, 0));
-		try (FileReader fileReader = new FileReader(file))
+		try (JsonReader reader = GSON.newJsonReader(new FileReader(file)))
 		{
-			try (JsonReader reader = GSON.newJsonReader(fileReader))
+			reader.beginArray();
+			while (reader.hasNext())
 			{
-				while (fileReader.ready())
-				{
-					GsonElement element = GSON.fromJson(reader, ValueTypeInfo.ELEMENT.getType());
-					source.put(element.getKey(), element.getValue());
-				}
+				GsonElement element = GSON.fromJson(reader, ValueTypeInfo.ELEMENT.getType());
+				source.put(element.getKey(), element.getValue());
 			}
+			reader.endArray();
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
 		}
 		if (SwingUtilities.isEventDispatchThread())
 		{
@@ -107,6 +110,7 @@ public class GsonFileStateSerializer implements StateSerializer
 		{
 			try (JsonWriter jsonWriter = GSON.newJsonWriter(fileWriter))
 			{
+				jsonWriter.beginArray();
 				for (StateKey<State> key : managerCollection.getKeys())
 				{
 					StateManager manager = managerCollection.getManager(key);
@@ -114,9 +118,10 @@ public class GsonFileStateSerializer implements StateSerializer
 					GsonElement element = GsonElement.of(key, state);
 					GSON.toJson(element, ValueTypeInfo.ELEMENT.getType(), jsonWriter);
 				}
+				jsonWriter.endArray();
 				jsonWriter.flush();
-				fileWriter.write('\n');
 			}
+			fileWriter.write("\n");
 		}
 	}
 
@@ -136,9 +141,9 @@ public class GsonFileStateSerializer implements StateSerializer
 						});
 					}
 				}
-				catch (@SuppressWarnings("unused") Exception e)
+				catch (Exception e)
 				{
-					//					e.printStackTrace();
+					e.printStackTrace();
 				}
 			}
 		});
@@ -158,9 +163,9 @@ public class GsonFileStateSerializer implements StateSerializer
 				}
 			}
 		}
-		catch (@SuppressWarnings("unused") Exception e)
+		catch (Exception e)
 		{
-			//			e.printStackTrace();
+			e.printStackTrace();
 		}
 	}
 
