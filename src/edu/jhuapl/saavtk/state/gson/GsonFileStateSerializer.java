@@ -311,7 +311,7 @@ public class GsonFileStateSerializer implements StateSerializer
 		//		Float fVal = v3State2.get(serializer.getKey("long"));
 
 		// This doesn't fail at runtime or compile time but I wish it would:
-		List<List<Integer>> unpackedListList = state2.get(serializer.getKey("listListString"));
+		//		List<List<Integer>> unpackedListList = state2.get(serializer.getKey("listListString"));
 
 		// But the following does fail to compile, which is probably good enough.
 		//		unpackedListList = state2.get(listListStringKey);
