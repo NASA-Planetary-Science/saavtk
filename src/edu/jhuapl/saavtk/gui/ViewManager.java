@@ -292,7 +292,7 @@ public abstract class ViewManager extends JPanel
 
 	public void setCurrentView(View view)
 	{
-		initializeStateManager();
+		initializeStateManager(); // Call this here for insurance, even if it is called elsewhere.
 		if (view == currentView)
 		{
 			return;
