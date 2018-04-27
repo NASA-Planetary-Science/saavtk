@@ -50,15 +50,15 @@ public class ColorUtil
 
     // Returns a color which is the base color with modified HSL lightness
     // based on value within [minValue, maxValue]
-    static public Color scaleLightness(Color base, double value, double minValue, double maxValue)
+    static public Color scaleLightness(Color base, double value, double minValue, double maxValue, float lightnessSpanBase)
     {
         float[] baseHSL = getHSLColorComponents(base);
-        return scaleLightness(baseHSL, value, minValue, maxValue);
+        return scaleLightness(baseHSL, value, minValue, maxValue, lightnessSpanBase);
     }
 
     // Returns a color which is the base color with modified HSL lightness
     // based on value within [minValue, maxValue]
-    static public Color scaleLightness(float[] baseHSL, double value, double minValue, double maxValue)
+    static public Color scaleLightness(float[] baseHSL, double value, double minValue, double maxValue, float lightnessSpanBase)
     {
         double effectiveLightness;
         if(minValue >= maxValue)
@@ -68,7 +68,7 @@ public class ColorUtil
         else
         {
             // Range considered is lightness +/- lightnessSpan/2 confined in [0,1]
-            float lightnessSpan = 0.5f;
+            float lightnessSpan = lightnessSpanBase;	//was 0.5
             float baseLightness = baseHSL[2];
 
             // Bound value to be within [minValue, maxValue]
@@ -76,7 +76,7 @@ public class ColorUtil
 
             // Now map bounded value to effective lightness
             effectiveLightness =
-                    lightnessSpan*((value-minValue)/(maxValue-minValue)-0.5f) + baseLightness;
+                    lightnessSpan*((value-minValue)/(maxValue-minValue)-lightnessSpanBase) + baseLightness;
         }
 
         // Create color with same HS but a scaled L component
