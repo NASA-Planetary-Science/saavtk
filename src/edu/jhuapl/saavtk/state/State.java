@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeSet;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -126,7 +125,7 @@ public final class State
 	{
 		StringBuilder builder = new StringBuilder("(State) version ");
 		builder.append(version);
-		for (StateKey<?> key : new TreeSet<>(map.keySet()))
+		for (StateKey<?> key : keys)
 		{
 			builder.append("\n");
 			builder.append(key + " = " + get(key));
