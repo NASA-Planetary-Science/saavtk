@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.IOException;
 
 import javax.swing.AbstractAction;
-import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
@@ -126,7 +125,7 @@ public class FileMenu extends JMenu
 		}
 
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
 		{
 			File file = CustomFileChooser.showOpenDialog(FileMenu.this, "Open a previously saved session", fileExtensions);
 			if (file != null)
@@ -136,21 +135,21 @@ public class FileMenu extends JMenu
 		}
 	}
 
-	private class SaveSession extends AbstractAction
-	{
-		private static final long serialVersionUID = 1L;
-
-		public SaveSession()
-		{
-			super("Save Session");
-		}
-
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{
-			// TODO Auto-generated method stub
-		}
-	}
+	//	private class SaveSession extends AbstractAction
+	//	{
+	//		private static final long serialVersionUID = 1L;
+	//
+	//		public SaveSession()
+	//		{
+	//			super("Save Session");
+	//		}
+	//
+	//		@Override
+	//		public void actionPerformed(ActionEvent e)
+	//		{
+	//			// TODO Auto-generated method stub
+	//		}
+	//	}
 
 	private class SaveSessionAs extends AbstractAction
 	{
@@ -304,38 +303,38 @@ public class FileMenu extends JMenu
 		}
 	}
 
-	private class CopyToClipboardAction extends AbstractAction
-	{
-		private static final long serialVersionUID = 1L;
-
-		public CopyToClipboardAction()
-		{
-			super("Copy to Clipboard...");
-		}
-
-		@Override
-		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
-		{
-			// TODO Actually implement this.
-		}
-	}
-
-	private class ShowSimpleCylindricalProjectionAction extends AbstractAction
-	{
-		private static final long serialVersionUID = 1L;
-
-		public ShowSimpleCylindricalProjectionAction()
-		{
-			super("Render using Simple Cylindrical Projection (Experimental)");
-		}
-
-		@Override
-		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
-		{
-			JCheckBoxMenuItem mi = (JCheckBoxMenuItem) e.getSource();
-			rootPanel.getCurrentView().getRenderer().set2DMode(mi.isSelected());
-		}
-	}
+	//	private class CopyToClipboardAction extends AbstractAction
+	//	{
+	//		private static final long serialVersionUID = 1L;
+	//
+	//		public CopyToClipboardAction()
+	//		{
+	//			super("Copy to Clipboard...");
+	//		}
+	//
+	//		@Override
+	//		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
+	//		{
+	//			// TODO Actually implement this.
+	//		}
+	//	}
+	//
+	//	private class ShowSimpleCylindricalProjectionAction extends AbstractAction
+	//	{
+	//		private static final long serialVersionUID = 1L;
+	//
+	//		public ShowSimpleCylindricalProjectionAction()
+	//		{
+	//			super("Render using Simple Cylindrical Projection (Experimental)");
+	//		}
+	//
+	//		@Override
+	//		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
+	//		{
+	//			JCheckBoxMenuItem mi = (JCheckBoxMenuItem) e.getSource();
+	//			rootPanel.getCurrentView().getRenderer().set2DMode(mi.isSelected());
+	//		}
+	//	}
 
 	private class PreferencesAction extends AbstractAction
 	{
@@ -369,7 +368,7 @@ public class FileMenu extends JMenu
 					JOptionPane.showOptionDialog(frame, "Do you wish to clear your local data cache? \nIf you do, all remotely loaded data will need to be reloaded " + "from the server the next time you wish to view it. \nThis may take a few moments.", "Clear cache", 1, 3, null, null, null);
 			if (option == 0)
 			{
-				deleteFile(new File(Configuration.getApplicationDataDir() + File.separator + "cache\\2"));
+				Configuration.clearCache();
 			}
 			else
 			{
@@ -377,14 +376,6 @@ public class FileMenu extends JMenu
 			}
 		}
 
-		private void deleteFile(File file)
-		{
-			if (file.isDirectory())
-				for (File subDir : file.listFiles())
-					deleteFile(subDir);
-
-			file.delete();
-		}
 	}
 
 	private class ExitAction extends AbstractAction
