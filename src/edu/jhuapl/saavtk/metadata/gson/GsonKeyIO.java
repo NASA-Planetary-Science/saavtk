@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.state.gson;
+package edu.jhuapl.saavtk.metadata.gson;
 
 import java.lang.reflect.Type;
 
@@ -10,22 +10,20 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
-import edu.jhuapl.saavtk.metadata.Version;
-
-final class GsonVersionIO implements JsonSerializer<Version>, JsonDeserializer<Version>
+final class GsonKeyIO implements JsonSerializer<GsonKey<?>>, JsonDeserializer<GsonKey<?>>
 {
-	private static final String KEY_ID = ValueTypeInfo.VERSION.getTypeId();
+	private static final String KEY_ID = ValueTypeInfo.METADATA_KEY.getTypeId();
 
 	@Override
-	public JsonElement serialize(Version src, Type typeOfSrc, JsonSerializationContext context)
+	public JsonElement serialize(GsonKey<?> src, Type typeOfSrc, JsonSerializationContext context)
 	{
 		JsonObject result = new JsonObject();
-		result.addProperty(KEY_ID, src.toString());
+		result.addProperty(KEY_ID, src.getId());
 		return result;
 	}
 
 	@Override
-	public Version deserialize(JsonElement jsonElement, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
+	public GsonKey<?> deserialize(JsonElement jsonElement, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
 	{
 		if (!jsonElement.isJsonObject())
 		{
@@ -41,7 +39,7 @@ final class GsonVersionIO implements JsonSerializer<Version>, JsonDeserializer<V
 			throw new IllegalArgumentException("Field \"" + KEY_ID + "\" is missing or has wrong type in Json object");
 		}
 
-		return Version.of(keyIdElement.getAsString());
+		return GsonKey.of(keyIdElement.getAsString());
 	}
 
 }

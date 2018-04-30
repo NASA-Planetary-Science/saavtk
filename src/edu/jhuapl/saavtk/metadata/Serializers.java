@@ -1,6 +1,6 @@
 package edu.jhuapl.saavtk.metadata;
 
-import edu.jhuapl.saavtk.state.gson.GsonSerializer;
+import edu.jhuapl.saavtk.metadata.gson.GsonSerializer;
 
 public class Serializers
 {

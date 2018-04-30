@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.state.gson;
+package edu.jhuapl.saavtk.metadata.gson;
 
 import java.io.File;
 import java.io.FileReader;
@@ -27,7 +27,7 @@ import edu.jhuapl.saavtk.metadata.MetadataManager;
 import edu.jhuapl.saavtk.metadata.MetadataManagerCollection;
 import edu.jhuapl.saavtk.metadata.Serializer;
 import edu.jhuapl.saavtk.metadata.Version;
-import edu.jhuapl.saavtk.state.gson.GsonElement.ElementIO;
+import edu.jhuapl.saavtk.metadata.gson.GsonElement.ElementIO;
 
 public class GsonSerializer implements Serializer
 {
