@@ -17,7 +17,7 @@ import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.Version;
 
-final class StateIO implements JsonSerializer<Metadata>, JsonDeserializer<Metadata>
+final class MetadataIO implements JsonSerializer<Metadata>, JsonDeserializer<Metadata>
 {
 	private static final String STORED_AS_ELEMENTS_KEY = "Elements";
 
@@ -25,7 +25,7 @@ final class StateIO implements JsonSerializer<Metadata>, JsonDeserializer<Metada
 	public JsonElement serialize(Metadata src, Type typeOfSrc, JsonSerializationContext context)
 	{
 		Preconditions.checkNotNull(src);
-		Preconditions.checkArgument(ValueTypeInfo.STATE.getType().equals(typeOfSrc));
+		Preconditions.checkArgument(ValueTypeInfo.METADATA.getType().equals(typeOfSrc));
 		Preconditions.checkNotNull(context);
 
 		JsonArray array = new JsonArray();
@@ -52,17 +52,9 @@ final class StateIO implements JsonSerializer<Metadata>, JsonDeserializer<Metada
 	{
 		Preconditions.checkNotNull(jsonSrc);
 		Preconditions.checkArgument(jsonSrc.isJsonArray());
-		Preconditions.checkArgument(ValueTypeInfo.STATE.getType().equals(typeOfT));
+		Preconditions.checkArgument(ValueTypeInfo.METADATA.getType().equals(typeOfT));
 		Preconditions.checkNotNull(context);
 
-		//		JsonObject jsonObject = jsonSrc.getAsJsonObject();
-		//		JsonElement arrayAsElement = jsonObject.get(ValueTypeInfo.STATE.getTypeId());
-		//		if (arrayAsElement == null)
-		//		{
-		//			throw new IllegalArgumentException();
-		//		}
-		//
-		//		JsonArray jsonArray = arrayAsElement.getAsJsonArray();
 		JsonArray jsonArray = jsonSrc.getAsJsonArray();
 		JsonElement jsonElement = null;
 		Iterator<JsonElement> iterator = jsonArray.iterator();
@@ -75,7 +67,7 @@ final class StateIO implements JsonSerializer<Metadata>, JsonDeserializer<Metada
 
 		Version version = context.deserialize(jsonElement, ValueTypeInfo.VERSION.getType());
 
-		final Metadata state = Metadata.of(version);
+		final Metadata metadata = Metadata.of(version);
 		if (!iterator.hasNext())
 		{
 			throw new IllegalArgumentException();
@@ -86,9 +78,9 @@ final class StateIO implements JsonSerializer<Metadata>, JsonDeserializer<Metada
 		for (JsonElement arrayElement : jsonArray)
 		{
 			GsonElement element = context.deserialize(arrayElement, ValueTypeInfo.ELEMENT.getType());
-			state.put(element.getKey(), element.getValue());
+			metadata.put(element.getKey(), element.getValue());
 		}
-		return state;
+		return metadata;
 	}
 
 }

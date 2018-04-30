@@ -37,8 +37,6 @@ final class GsonElement
 
 	}
 
-	private static final String STORED_AS_VALUE_KEY = "Value";
-
 	public static ElementIO elementIO()
 	{
 		return new ElementIO();
@@ -68,7 +66,7 @@ final class GsonElement
 		JsonArray array = entry.getValue().getAsJsonArray();
 		Preconditions.checkState(array.size() == 2);
 
-		Key<?> key = context.deserialize(array.get(0), ValueTypeInfo.STATE_KEY.getType());
+		Key<?> key = context.deserialize(array.get(0), ValueTypeInfo.METADATA_KEY.getType());
 		JsonObject valueObject = array.get(1).getAsJsonObject();
 
 		entryList = new ArrayList<>(valueObject.entrySet());
@@ -98,7 +96,7 @@ final class GsonElement
 	public JsonElement toElement(JsonSerializationContext context)
 	{
 		JsonArray keyValuePair = new JsonArray();
-		keyValuePair.add(context.serialize(key, ValueTypeInfo.STATE_KEY.getType()));
+		keyValuePair.add(context.serialize(key, ValueTypeInfo.METADATA_KEY.getType()));
 
 		JsonObject valueObject = new JsonObject();
 		valueObject.add(objectInfo.getTypeId(), context.serialize(object, objectInfo.getType()));

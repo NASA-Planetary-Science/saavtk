@@ -12,7 +12,7 @@ import com.google.gson.JsonSerializer;
 
 final class GsonKeyIO implements JsonSerializer<GsonKey<?>>, JsonDeserializer<GsonKey<?>>
 {
-	private static final String KEY_ID = ValueTypeInfo.STATE_KEY.getTypeId();
+	private static final String KEY_ID = ValueTypeInfo.METADATA_KEY.getTypeId();
 
 	@Override
 	public JsonElement serialize(GsonKey<?> src, Type typeOfSrc, JsonSerializationContext context)
