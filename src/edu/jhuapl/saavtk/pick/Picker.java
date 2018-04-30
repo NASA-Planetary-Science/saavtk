@@ -198,12 +198,28 @@ public abstract class Picker implements MouseListener, MouseMotionListener, Mous
 		if (pickingEnabled == false)
 			return 0;
 
-		// Don't do a pick if the event is more than a third of a second old
-		final long currentTime = System.currentTimeMillis();
+		// 2018-04-30 Peachey. Commenting out the elapsed time check below for now to address redmine #1165.
+		// In that issue, a user was unable to create stuctures when using very high resolution
+		// shape models while images are mapped. Debugging revealed that the time lag computed below
+		// in such cases was greater than the 333 ms threshold (frequently much greater), which led doPick
+		// to return 0 (failure), causing the application in turn to ignore mouse clicks.
+		//
+		// Before commenting out, I traced this change all the way back to a very early version of Picker
+		// while it was still in sbmt:
+		//
+		//     commit e008025eb0dc574305f828680b1cbb9f98a460ab
+		//     Author: Eli Kahn <eliezer.kahn@jhuapl.edu> 2010-11-29 18:06:04
+		//
+		// The commit message suggests this *may* have been to prevent unmapped images from continuing
+		// to respond to events. However it's not clear whether this check is now necessary (taking it out
+		// seems to make no difference in anything else I tested).
 
-		//System.err.println("elapsed time " + (currentTime - when));
-		if (currentTime - when > 333)
-			return 0;
+		//		// Don't do a pick if the event is more than a third of a second old
+		//		final long currentTime = System.currentTimeMillis();
+		//
+		//		//System.err.println("elapsed time " + (currentTime - when));
+		//		if (currentTime - when > 333)
+		//			return 0;
 
 		renWin.getVTKLock().lock();
 
