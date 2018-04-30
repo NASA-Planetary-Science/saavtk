@@ -1,10 +1,10 @@
-package edu.jhuapl.saavtk.state;
+package edu.jhuapl.saavtk.metadata;
 
 /**
  * @param <T> type of the object that may be associated with this key, used for
  *            compile-time safety only
  */
-public abstract class StateKey<T>
+public abstract class Key<T>
 {
 	public abstract String getId();
 
@@ -27,9 +27,9 @@ public abstract class StateKey<T>
 		{
 			return true;
 		}
-		if (other instanceof StateKey)
+		if (other instanceof Key)
 		{
-			StateKey<?> that = (StateKey<?>) other;
+			Key<?> that = (Key<?>) other;
 			return this.getId().equals(that.getId());
 		}
 		return false;

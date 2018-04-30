@@ -2,9 +2,9 @@ package edu.jhuapl.saavtk.state.gson;
 
 import com.google.common.base.Preconditions;
 
-import edu.jhuapl.saavtk.state.StateKey;
+import edu.jhuapl.saavtk.metadata.Key;
 
-public final class GsonKey<T> extends StateKey<T> implements Comparable<GsonKey<?>>
+public final class GsonKey<T> extends Key<T> implements Comparable<GsonKey<?>>
 {
 	static <T> GsonKey<T> of(String keyId)
 	{

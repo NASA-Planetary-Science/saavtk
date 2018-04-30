@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.state;
+package edu.jhuapl.saavtk.metadata;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,7 +8,7 @@ import java.util.Map;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-public final class State
+public final class Metadata
 {
 	public static final class InaccurateConversionException extends RuntimeException
 	{
@@ -30,16 +30,16 @@ public final class State
 		}
 	};
 
-	public static State of(Version version)
+	public static Metadata of(Version version)
 	{
-		return new State(version);
+		return new Metadata(version);
 	}
 
 	private final Version version;
-	private final List<StateKey<?>> keys;
-	private final Map<StateKey<?>, Object> map;
+	private final List<Key<?>> keys;
+	private final Map<Key<?>, Object> map;
 
-	private State(Version version)
+	private Metadata(Version version)
 	{
 		this.version = version;
 		this.keys = new ArrayList<>();
@@ -51,19 +51,19 @@ public final class State
 		return version;
 	}
 
-	public ImmutableList<StateKey<?>> getKeys()
+	public ImmutableList<Key<?>> getKeys()
 	{
 		return ImmutableList.copyOf(keys);
 	}
 
 	@SuppressWarnings("unchecked")
-	public <V> V get(StateKey<V> key)
+	public <V> V get(Key<V> key)
 	{
 		Preconditions.checkNotNull(key);
 		Object object = map.get(key);
 		if (object == null)
 		{
-			throw new IllegalArgumentException("State does not contain key " + key);
+			throw new IllegalArgumentException("Metadata does not contain key " + key);
 		}
 		if (object == NULL_OBJECT)
 		{
@@ -72,7 +72,7 @@ public final class State
 		return (V) object;
 	}
 
-	public <V> State put(StateKey<V> key, V value)
+	public <V> Metadata put(Key<V> key, V value)
 	{
 		Preconditions.checkNotNull(key);
 		if (!map.containsKey(key))
@@ -112,9 +112,9 @@ public final class State
 		{
 			return true;
 		}
-		if (other instanceof State)
+		if (other instanceof Metadata)
 		{
-			State that = (State) other;
+			Metadata that = (Metadata) other;
 			return this.map.equals(that.map);
 		}
 		return false;
@@ -123,9 +123,9 @@ public final class State
 	@Override
 	public String toString()
 	{
-		StringBuilder builder = new StringBuilder("(State) version ");
+		StringBuilder builder = new StringBuilder("(Metadata) version ");
 		builder.append(version);
-		for (StateKey<?> key : keys)
+		for (Key<?> key : keys)
 		{
 			builder.append("\n");
 			builder.append(key + " = " + get(key));

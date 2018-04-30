@@ -15,7 +15,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
-import edu.jhuapl.saavtk.state.StateKey;
+import edu.jhuapl.saavtk.metadata.Key;
 
 final class GsonElement
 {
@@ -44,7 +44,7 @@ final class GsonElement
 		return new ElementIO();
 	}
 
-	public static GsonElement of(StateKey<?> key, Object object)
+	public static GsonElement of(Key<?> key, Object object)
 	{
 		return new GsonElement(key, object, ValueTypeInfo.forObject(object));
 	}
@@ -68,7 +68,7 @@ final class GsonElement
 		JsonArray array = entry.getValue().getAsJsonArray();
 		Preconditions.checkState(array.size() == 2);
 
-		StateKey<?> key = context.deserialize(array.get(0), ValueTypeInfo.STATE_KEY.getType());
+		Key<?> key = context.deserialize(array.get(0), ValueTypeInfo.STATE_KEY.getType());
 		JsonObject valueObject = array.get(1).getAsJsonObject();
 
 		entryList = new ArrayList<>(valueObject.entrySet());
@@ -82,11 +82,11 @@ final class GsonElement
 		return new GsonElement(key, object, objectInfo);
 	}
 
-	private final StateKey<?> key;
+	private final Key<?> key;
 	private final Object object;
 	private final ValueTypeInfo objectInfo;
 
-	private GsonElement(StateKey<?> key, Object object, ValueTypeInfo objectInfo)
+	private GsonElement(Key<?> key, Object object, ValueTypeInfo objectInfo)
 	{
 		Preconditions.checkNotNull(key);
 		Preconditions.checkNotNull(objectInfo);
@@ -109,10 +109,10 @@ final class GsonElement
 		return result;
 	}
 
-	public <T> StateKey<T> getKey()
+	public <T> Key<T> getKey()
 	{
 		@SuppressWarnings("unchecked")
-		StateKey<T> result = (StateKey<T>) key;
+		Key<T> result = (Key<T>) key;
 		return result;
 	}
 

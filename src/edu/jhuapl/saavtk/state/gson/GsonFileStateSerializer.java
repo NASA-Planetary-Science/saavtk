@@ -21,15 +21,15 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
-import edu.jhuapl.saavtk.state.State;
-import edu.jhuapl.saavtk.state.StateKey;
-import edu.jhuapl.saavtk.state.StateManager;
-import edu.jhuapl.saavtk.state.StateManagerCollection;
-import edu.jhuapl.saavtk.state.StateSerializer;
-import edu.jhuapl.saavtk.state.Version;
+import edu.jhuapl.saavtk.metadata.Key;
+import edu.jhuapl.saavtk.metadata.Metadata;
+import edu.jhuapl.saavtk.metadata.MetadataManager;
+import edu.jhuapl.saavtk.metadata.MetadataManagerCollection;
+import edu.jhuapl.saavtk.metadata.Serializer;
+import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.state.gson.GsonElement.ElementIO;
 
-public class GsonFileStateSerializer implements StateSerializer
+public class GsonFileStateSerializer implements Serializer
 {
 	private static final Version GSON_VERSION = Version.of(1, 0);
 	private static final IterableIO ITERABLE_IO = new IterableIO();
@@ -40,7 +40,7 @@ public class GsonFileStateSerializer implements StateSerializer
 	private static final ElementIO ELEMENT_IO = new ElementIO();
 	private static final Gson GSON = configureGson();
 
-	private final StateManagerCollection managerCollection;
+	private final MetadataManagerCollection managerCollection;
 
 	public static GsonFileStateSerializer of()
 	{
@@ -49,7 +49,7 @@ public class GsonFileStateSerializer implements StateSerializer
 
 	protected GsonFileStateSerializer()
 	{
-		this.managerCollection = StateManagerCollection.of();
+		this.managerCollection = MetadataManagerCollection.of();
 	}
 
 	/**
@@ -61,13 +61,13 @@ public class GsonFileStateSerializer implements StateSerializer
 	 * @throws NullPointerException if argument is null
 	 */
 	@Override
-	public <T> StateKey<T> getKey(String keyId)
+	public <T> Key<T> getKey(String keyId)
 	{
 		return GsonKey.of(keyId);
 	}
 
 	@Override
-	public void register(StateKey<State> key, StateManager manager)
+	public void register(Key<Metadata> key, MetadataManager manager)
 	{
 		managerCollection.add(key, manager);
 	}
@@ -77,7 +77,7 @@ public class GsonFileStateSerializer implements StateSerializer
 	{
 		Preconditions.checkNotNull(file);
 
-		State source = State.of(Version.of(0, 0));
+		Metadata source = Metadata.of(Version.of(0, 0));
 		try (JsonReader reader = GSON.newJsonReader(new FileReader(file)))
 		{
 			reader.beginArray();
@@ -111,10 +111,10 @@ public class GsonFileStateSerializer implements StateSerializer
 			try (JsonWriter jsonWriter = GSON.newJsonWriter(fileWriter))
 			{
 				jsonWriter.beginArray();
-				for (StateKey<State> key : managerCollection.getKeys())
+				for (Key<Metadata> key : managerCollection.getKeys())
 				{
-					StateManager manager = managerCollection.getManager(key);
-					State state = manager.store();
+					MetadataManager manager = managerCollection.getManager(key);
+					Metadata state = manager.store();
 					GsonElement element = GsonElement.of(key, state);
 					GSON.toJson(element, ValueTypeInfo.ELEMENT.getType(), jsonWriter);
 				}
@@ -125,15 +125,15 @@ public class GsonFileStateSerializer implements StateSerializer
 		}
 	}
 
-	private void retrieveInSwingContext(State source)
+	private void retrieveInSwingContext(Metadata source)
 	{
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		executor.execute(() -> {
-			for (StateKey<State> key : managerCollection.getKeys())
+			for (Key<Metadata> key : managerCollection.getKeys())
 			{
 				try
 				{
-					State element = source.get(key);
+					Metadata element = source.get(key);
 					if (element != null)
 					{
 						SwingUtilities.invokeAndWait(() -> {
@@ -150,13 +150,13 @@ public class GsonFileStateSerializer implements StateSerializer
 		executor.shutdown();
 	}
 
-	private void retrieveInSingleThreadContext(State source)
+	private void retrieveInSingleThreadContext(Metadata source)
 	{
 		try
 		{
-			for (StateKey<State> key : managerCollection.getKeys())
+			for (Key<Metadata> key : managerCollection.getKeys())
 			{
-				State element = source.get(key);
+				Metadata element = source.get(key);
 				if (element != null)
 				{
 					managerCollection.getManager(key).retrieve(element);
@@ -187,23 +187,23 @@ public class GsonFileStateSerializer implements StateSerializer
 		return builder.create();
 	}
 
-	private static class TestManager implements StateManager
+	private static class TestManager implements MetadataManager
 	{
-		private final State state;
+		private final Metadata state;
 
-		TestManager(State state)
+		TestManager(Metadata state)
 		{
 			this.state = state;
 		}
 
 		@Override
-		public State store()
+		public Metadata store()
 		{
-			State destination = State.of(state.getVersion());
-			for (StateKey<?> key : state.getKeys())
+			Metadata destination = Metadata.of(state.getVersion());
+			for (Key<?> key : state.getKeys())
 			{
 				@SuppressWarnings("unchecked")
-				StateKey<Object> newKey = (StateKey<Object>) key;
+				Key<Object> newKey = (Key<Object>) key;
 				destination.put(newKey, state.get(key));
 			}
 
@@ -211,14 +211,14 @@ public class GsonFileStateSerializer implements StateSerializer
 		}
 
 		@Override
-		public void retrieve(State source)
+		public void retrieve(Metadata source)
 		{
 			state.clear();
-			for (StateKey<?> key : source.getKeys())
+			for (Key<?> key : source.getKeys())
 			{
 				Object value = source.get(key);
 				@SuppressWarnings("unchecked")
-				StateKey<Object> newKey = (StateKey<Object>) key;
+				Key<Object> newKey = (Key<Object>) key;
 				state.put(newKey, value);
 			}
 		}
@@ -230,7 +230,7 @@ public class GsonFileStateSerializer implements StateSerializer
 		GsonFileStateSerializer serializer = new GsonFileStateSerializer();
 
 		String v3 = "Bennu / V3";
-		State v3State = State.of(Version.of(3, 1));
+		Metadata v3State = Metadata.of(Version.of(3, 1));
 
 		v3State.put(serializer.getKey("tab"), "1");
 		v3State.put(serializer.getKey("facets"), 2000000001L);
@@ -252,14 +252,14 @@ public class GsonFileStateSerializer implements StateSerializer
 		stringList.add("String0");
 		stringList.add(null);
 		stringList.add("String2");
-		StateKey<List<String>> stringListKey = serializer.getKey("stringList");
+		Key<List<String>> stringListKey = serializer.getKey("stringList");
 		v3State.put(stringListKey, stringList);
 
 		List<Integer> intList = new ArrayList<>();
 		intList.add(0);
 		intList.add(null);
 		intList.add(2);
-		StateKey<List<Integer>> intListKey = serializer.getKey("intList");
+		Key<List<Integer>> intListKey = serializer.getKey("intList");
 		v3State.put(intListKey, intList);
 
 		List<List<String>> listListString = new ArrayList<>();
@@ -267,11 +267,11 @@ public class GsonFileStateSerializer implements StateSerializer
 		listListString.add(ImmutableList.of("X", "y", "z"));
 		listListString.add(stringList);
 
-		final StateKey<State> testStateKey = serializer.getKey("testState");
-		final State state = State.of(GSON_VERSION);
-		StateManager manager = new TestManager(state);
+		final Key<Metadata> testStateKey = serializer.getKey("testState");
+		final Metadata state = Metadata.of(GSON_VERSION);
+		MetadataManager manager = new TestManager(state);
 
-		StateKey<List<List<String>>> listListStringKey = serializer.getKey("listListString");
+		Key<List<List<String>>> listListStringKey = serializer.getKey("listListString");
 		state.put(serializer.getKey("Bennu / V3"), v3State);
 		state.put(serializer.getKey("Current View"), v3);
 		state.put(serializer.getKey("Tab Number"), new Integer(3));
@@ -284,7 +284,7 @@ public class GsonFileStateSerializer implements StateSerializer
 		byteShortMap.put(null, (short) 12);
 		byteShortMap.put((byte) 11, (short) 23);
 		byteShortMap.put((byte) 10, (short) 17);
-		StateKey<Map<Byte, Short>> byteShortMapKey = serializer.getKey("byteShortMap");
+		Key<Map<Byte, Short>> byteShortMapKey = serializer.getKey("byteShortMap");
 		state.put(byteShortMapKey, byteShortMap);
 
 		File file = new File("/Users/peachjm1/Downloads/MyState.sbmt");
@@ -292,7 +292,7 @@ public class GsonFileStateSerializer implements StateSerializer
 		serializer.save(file);
 		System.out.println("Original state is: " + state);
 
-		State state2 = State.of(GSON_VERSION);
+		Metadata state2 = Metadata.of(GSON_VERSION);
 		serializer = GsonFileStateSerializer.of();
 		manager = new TestManager(state2);
 		serializer.register(testStateKey, manager);
@@ -306,7 +306,7 @@ public class GsonFileStateSerializer implements StateSerializer
 		{
 			System.err.println("States were not found equal");
 		}
-		State v3State2 = state2.get(serializer.getKey("Bennu / V3"));
+		Metadata v3State2 = state2.get(serializer.getKey("Bennu / V3"));
 		Long longNull = v3State2.get(serializer.getKey("longNull"));
 		System.out.println("longNull is " + longNull);
 

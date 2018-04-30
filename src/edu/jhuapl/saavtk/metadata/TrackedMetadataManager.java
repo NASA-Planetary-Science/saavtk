@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.state;
+package edu.jhuapl.saavtk.metadata;
 
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -7,19 +7,19 @@ import com.google.common.base.Preconditions;
 
 /**
  * This is a helper implementation designed to wrap another implementation of
- * the {@link StateManager} interface.
+ * the {@link MetadataManager} interface.
  */
-public final class TrackedStateManager implements StateManager
+public final class TrackedMetadataManager implements MetadataManager
 {
-	public static TrackedStateManager of(String stateId)
+	public static TrackedMetadataManager of(String metadataId)
 	{
-		return new TrackedStateManager(stateId, Serializers.getDefault());
+		return new TrackedMetadataManager(metadataId, Serializers.getDefault());
 	}
 
-	private static final SortedSet<String> STATE_MANAGER_IDENTIFIERS = new TreeSet<>();
-	private final StateKey<State> stateKey;
-	private final StateSerializer serializer;
-	private StateManager manager;
+	private static final SortedSet<String> MANAGER_IDENTIFIERS = new TreeSet<>();
+	private final Key<Metadata> metadataKey;
+	private final Serializer serializer;
+	private MetadataManager manager;
 
 	/**
 	 * Construct a new manager that will use the provided serializer. The
@@ -28,28 +28,28 @@ public final class TrackedStateManager implements StateManager
 	 * constructor. That will be done when another manager is registered with this
 	 * manager.
 	 * 
-	 * @param stateId string used to idenfity this manager within the serializer
+	 * @param metadataId string used to idenfity this manager within the serializer
 	 * @param serializer the serializer
-	 * @throws IllegalStateException if the serializer already has a state manager
+	 * @throws IllegalStateException if the serializer already has a manager
 	 *             associated with the provided string
 	 * @throws NullPointerException if any argument is null
 	 */
-	private TrackedStateManager(String stateId, StateSerializer serializer)
+	private TrackedMetadataManager(String metadataId, Serializer serializer)
 	{
-		Preconditions.checkNotNull(stateId);
+		Preconditions.checkNotNull(metadataId);
 		Preconditions.checkNotNull(serializer);
-		Preconditions.checkState(!STATE_MANAGER_IDENTIFIERS.contains(stateId), "Duplicated state manager identifier " + stateId);
-		STATE_MANAGER_IDENTIFIERS.add(stateId);
-		this.stateKey = serializer.getKey(stateId);
+		Preconditions.checkState(!MANAGER_IDENTIFIERS.contains(metadataId), "Duplicated manager identifier " + metadataId);
+		MANAGER_IDENTIFIERS.add(metadataId);
+		this.metadataKey = serializer.getKey(metadataId);
 		this.serializer = serializer;
 		this.manager = null;
 	}
 
 	/**
 	 * Perform all initializations required prior to serializing/deserializing
-	 * states managed by this manager. Note that all this manager's functions as a
-	 * StateManager work just fine without calling this method. Moreover, it is safe
-	 * to call this method multiple times.
+	 * metadata managed by this manager. Note that all of this implementation's
+	 * functions as a manager work just fine without calling this method. Moreover,
+	 * it is safe to call this method multiple times.
 	 * 
 	 * A separate initialize method is provided so that source objects may be
 	 * serialized in the natural order established by the runtime function of the
@@ -59,11 +59,11 @@ public final class TrackedStateManager implements StateManager
 	 * @throws IllegalStateException if a manager was already registered, or if the
 	 *             serializer fails to register this manager cleanly.
 	 */
-	public void register(StateManager manager)
+	public void register(MetadataManager manager)
 	{
 		Preconditions.checkNotNull(manager);
 		Preconditions.checkState(this.manager == null);
-		serializer.register(stateKey, this);
+		serializer.register(metadataKey, this);
 		this.manager = manager;
 	}
 
@@ -72,9 +72,9 @@ public final class TrackedStateManager implements StateManager
 		return manager != null;
 	}
 
-	public StateKey<State> getStateKey()
+	public Key<Metadata> getKey()
 	{
-		return stateKey;
+		return metadataKey;
 	}
 
 	/**
@@ -84,26 +84,26 @@ public final class TrackedStateManager implements StateManager
 	 * @param keyId the identification string for the key
 	 * @return the key
 	 */
-	public <T> StateKey<T> getKey(String keyId)
+	public <T> Key<T> getKey(String keyId)
 	{
 		// Note being registered is not required for this method to work correctly.
 		return serializer.getKey(keyId);
 	}
 
 	@Override
-	public final State store()
+	public final Metadata store()
 	{
 		Preconditions.checkState(manager != null);
 		return manager.store();
 	}
 
 	@Override
-	public final void retrieve(State sourceState)
+	public final void retrieve(Metadata sourceMetadata)
 	{
-		Preconditions.checkNotNull(sourceState);
+		Preconditions.checkNotNull(sourceMetadata);
 		Preconditions.checkState(manager != null);
 
-		manager.retrieve(sourceState);
+		manager.retrieve(sourceMetadata);
 	}
 
 }

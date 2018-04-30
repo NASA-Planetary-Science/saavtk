@@ -9,9 +9,9 @@ import java.util.SortedSet;
 
 import com.google.gson.reflect.TypeToken;
 
-import edu.jhuapl.saavtk.state.State;
-import edu.jhuapl.saavtk.state.StateKey;
-import edu.jhuapl.saavtk.state.Version;
+import edu.jhuapl.saavtk.metadata.Key;
+import edu.jhuapl.saavtk.metadata.Metadata;
+import edu.jhuapl.saavtk.metadata.Version;
 
 enum ValueTypeInfo
 {
@@ -20,8 +20,8 @@ enum ValueTypeInfo
 	DOUBLE("Double", new TypeToken<Double>() {}.getType(), Double.class),
 	VERSION("Version", new TypeToken<Version>() {}.getType(), Version.class),
 
-	STATE_KEY("Key", new TypeToken<StateKey<?>>() {}.getType(), StateKey.class),
-	STATE("State", new TypeToken<State>() {}.getType(), State.class),
+	STATE_KEY("Key", new TypeToken<Key<?>>() {}.getType(), Key.class),
+	STATE("State", new TypeToken<Metadata>() {}.getType(), Metadata.class),
 	ELEMENT("Element", new TypeToken<GsonElement>() {}.getType(), GsonElement.class),
 	//	NUMBER("Number", new TypeToken<Number>() {}.getType(), Number.class),
 	INTEGER("Integer", new TypeToken<Integer>() {}.getType(), Integer.class),

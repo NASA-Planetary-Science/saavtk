@@ -13,16 +13,16 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
-import edu.jhuapl.saavtk.state.State;
-import edu.jhuapl.saavtk.state.StateKey;
-import edu.jhuapl.saavtk.state.Version;
+import edu.jhuapl.saavtk.metadata.Key;
+import edu.jhuapl.saavtk.metadata.Metadata;
+import edu.jhuapl.saavtk.metadata.Version;
 
-final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
+final class StateIO implements JsonSerializer<Metadata>, JsonDeserializer<Metadata>
 {
 	private static final String STORED_AS_ELEMENTS_KEY = "Elements";
 
 	@Override
-	public JsonElement serialize(State src, Type typeOfSrc, JsonSerializationContext context)
+	public JsonElement serialize(Metadata src, Type typeOfSrc, JsonSerializationContext context)
 	{
 		Preconditions.checkNotNull(src);
 		Preconditions.checkArgument(ValueTypeInfo.STATE.getType().equals(typeOfSrc));
@@ -32,7 +32,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 		array.add(context.serialize(src.getVersion(), ValueTypeInfo.VERSION.getType()));
 
 		JsonArray valueArray = new JsonArray();
-		for (StateKey<?> key : src.getKeys())
+		for (Key<?> key : src.getKeys())
 		{
 			Object value = src.get(key);
 			valueArray.add(context.serialize(GsonElement.of(key, value), ValueTypeInfo.ELEMENT.getType()));
@@ -48,7 +48,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 	}
 
 	@Override
-	public State deserialize(JsonElement jsonSrc, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
+	public Metadata deserialize(JsonElement jsonSrc, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
 	{
 		Preconditions.checkNotNull(jsonSrc);
 		Preconditions.checkArgument(jsonSrc.isJsonArray());
@@ -75,7 +75,7 @@ final class StateIO implements JsonSerializer<State>, JsonDeserializer<State>
 
 		Version version = context.deserialize(jsonElement, ValueTypeInfo.VERSION.getType());
 
-		final State state = State.of(version);
+		final Metadata state = Metadata.of(version);
 		if (!iterator.hasNext())
 		{
 			throw new IllegalArgumentException();

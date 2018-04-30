@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.state;
+package edu.jhuapl.saavtk.metadata;
 
 import com.google.common.base.Preconditions;
 
