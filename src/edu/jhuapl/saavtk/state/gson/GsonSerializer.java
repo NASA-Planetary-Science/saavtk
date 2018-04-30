@@ -29,25 +29,25 @@ import edu.jhuapl.saavtk.metadata.Serializer;
 import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.state.gson.GsonElement.ElementIO;
 
-public class GsonFileStateSerializer implements Serializer
+public class GsonSerializer implements Serializer
 {
 	private static final Version GSON_VERSION = Version.of(1, 0);
 	private static final IterableIO ITERABLE_IO = new IterableIO();
 	private static final MapIO MAP_IO = new MapIO();
-	private static final GsonKeyIO STATE_KEY_IO = new GsonKeyIO();
-	private static final StateIO STATE_IO = new StateIO();
+	private static final GsonKeyIO KEY_IO = new GsonKeyIO();
+	private static final MetadataIO METADATA_IO = new MetadataIO();
 	private static final GsonVersionIO VERSION_IO = new GsonVersionIO();
 	private static final ElementIO ELEMENT_IO = new ElementIO();
 	private static final Gson GSON = configureGson();
 
 	private final MetadataManagerCollection managerCollection;
 
-	public static GsonFileStateSerializer of()
+	public static GsonSerializer of()
 	{
-		return new GsonFileStateSerializer();
+		return new GsonSerializer();
 	}
 
-	protected GsonFileStateSerializer()
+	protected GsonSerializer()
 	{
 		this.managerCollection = MetadataManagerCollection.of();
 	}
@@ -114,8 +114,8 @@ public class GsonFileStateSerializer implements Serializer
 				for (Key<Metadata> key : managerCollection.getKeys())
 				{
 					MetadataManager manager = managerCollection.getManager(key);
-					Metadata state = manager.store();
-					GsonElement element = GsonElement.of(key, state);
+					Metadata metadata = manager.store();
+					GsonElement element = GsonElement.of(key, metadata);
 					GSON.toJson(element, ValueTypeInfo.ELEMENT.getType(), jsonWriter);
 				}
 				jsonWriter.endArray();
@@ -180,8 +180,8 @@ public class GsonFileStateSerializer implements Serializer
 		builder.registerTypeAdapter(ValueTypeInfo.LIST.getType(), ITERABLE_IO);
 		builder.registerTypeAdapter(ValueTypeInfo.SORTED_MAP.getType(), MAP_IO);
 		builder.registerTypeAdapter(ValueTypeInfo.MAP.getType(), MAP_IO);
-		builder.registerTypeAdapter(ValueTypeInfo.STATE_KEY.getType(), STATE_KEY_IO);
-		builder.registerTypeAdapter(ValueTypeInfo.STATE.getType(), STATE_IO);
+		builder.registerTypeAdapter(ValueTypeInfo.METADATA_KEY.getType(), KEY_IO);
+		builder.registerTypeAdapter(ValueTypeInfo.METADATA.getType(), METADATA_IO);
 		builder.registerTypeAdapter(ValueTypeInfo.VERSION.getType(), VERSION_IO);
 		builder.registerTypeAdapter(ValueTypeInfo.ELEMENT.getType(), ELEMENT_IO);
 		return builder.create();
@@ -189,22 +189,22 @@ public class GsonFileStateSerializer implements Serializer
 
 	private static class TestManager implements MetadataManager
 	{
-		private final Metadata state;
+		private final Metadata metadata;
 
-		TestManager(Metadata state)
+		TestManager(Metadata metadata)
 		{
-			this.state = state;
+			this.metadata = metadata;
 		}
 
 		@Override
 		public Metadata store()
 		{
-			Metadata destination = Metadata.of(state.getVersion());
-			for (Key<?> key : state.getKeys())
+			Metadata destination = Metadata.of(metadata.getVersion());
+			for (Key<?> key : metadata.getKeys())
 			{
 				@SuppressWarnings("unchecked")
 				Key<Object> newKey = (Key<Object>) key;
-				destination.put(newKey, state.get(key));
+				destination.put(newKey, metadata.get(key));
 			}
 
 			return destination;
@@ -213,13 +213,13 @@ public class GsonFileStateSerializer implements Serializer
 		@Override
 		public void retrieve(Metadata source)
 		{
-			state.clear();
+			metadata.clear();
 			for (Key<?> key : source.getKeys())
 			{
 				Object value = source.get(key);
 				@SuppressWarnings("unchecked")
 				Key<Object> newKey = (Key<Object>) key;
-				state.put(newKey, value);
+				metadata.put(newKey, value);
 			}
 		}
 
@@ -227,7 +227,7 @@ public class GsonFileStateSerializer implements Serializer
 
 	public static void main(String[] args) throws IOException
 	{
-		GsonFileStateSerializer serializer = new GsonFileStateSerializer();
+		GsonSerializer serializer = new GsonSerializer();
 
 		String v3 = "Bennu / V3";
 		Metadata v3State = Metadata.of(Version.of(3, 1));
@@ -293,7 +293,7 @@ public class GsonFileStateSerializer implements Serializer
 		System.out.println("Original state is: " + state);
 
 		Metadata state2 = Metadata.of(GSON_VERSION);
-		serializer = GsonFileStateSerializer.of();
+		serializer = GsonSerializer.of();
 		manager = new TestManager(state2);
 		serializer.register(testStateKey, manager);
 		serializer.load(file);
