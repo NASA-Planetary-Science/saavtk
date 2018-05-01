@@ -52,20 +52,6 @@ public class GsonSerializer implements Serializer
 		this.managerCollection = MetadataManagerCollection.of();
 	}
 
-	/**
-	 * Return a key based on the supplied identification string.
-	 * 
-	 * @param keyId the identification string of the key to be returned.
-	 * @return the key
-	 * 
-	 * @throws NullPointerException if argument is null
-	 */
-	@Override
-	public <T> Key<T> getKey(String keyId)
-	{
-		return GsonKey.of(keyId);
-	}
-
 	@Override
 	public void register(Key<Metadata> key, MetadataManager manager)
 	{
@@ -232,34 +218,34 @@ public class GsonSerializer implements Serializer
 		String v3 = "Bennu / V3";
 		Metadata v3State = Metadata.of(Version.of(3, 1));
 
-		v3State.put(serializer.getKey("tab"), "1");
-		v3State.put(serializer.getKey("facets"), 2000000001L);
-		v3State.put(serializer.getKey("showBaseMap"), true);
-		v3State.put(serializer.getKey("resolution"), -5.e64);
-		v3State.put(serializer.getKey("int"), 20);
-		v3State.put(serializer.getKey("long"), (long) 20);
-		v3State.put(serializer.getKey("short"), (short) 20);
-		v3State.put(serializer.getKey("byte"), (byte) 20);
-		v3State.put(serializer.getKey("double"), (double) 20);
-		v3State.put(serializer.getKey("float"), (float) 20);
-		v3State.put(serializer.getKey("char"), (char) 20);
-		v3State.put(serializer.getKey("boolean"), false);
-		v3State.put(serializer.getKey("string"), "a string");
-		v3State.put(serializer.getKey("stringNull"), null);
-		v3State.put(serializer.getKey("longNull"), null);
+		v3State.put(Key.of("tab"), "1");
+		v3State.put(Key.of("facets"), 2000000001L);
+		v3State.put(Key.of("showBaseMap"), true);
+		v3State.put(Key.of("resolution"), -5.e64);
+		v3State.put(Key.of("int"), 20);
+		v3State.put(Key.of("long"), (long) 20);
+		v3State.put(Key.of("short"), (short) 20);
+		v3State.put(Key.of("byte"), (byte) 20);
+		v3State.put(Key.of("double"), (double) 20);
+		v3State.put(Key.of("float"), (float) 20);
+		v3State.put(Key.of("char"), (char) 20);
+		v3State.put(Key.of("boolean"), false);
+		v3State.put(Key.of("string"), "a string");
+		v3State.put(Key.of("stringNull"), null);
+		v3State.put(Key.of("longNull"), null);
 
 		List<String> stringList = new ArrayList<>();
 		stringList.add("String0");
 		stringList.add(null);
 		stringList.add("String2");
-		Key<List<String>> stringListKey = serializer.getKey("stringList");
+		Key<List<String>> stringListKey = Key.of("stringList");
 		v3State.put(stringListKey, stringList);
 
 		List<Integer> intList = new ArrayList<>();
 		intList.add(0);
 		intList.add(null);
 		intList.add(2);
-		Key<List<Integer>> intListKey = serializer.getKey("intList");
+		Key<List<Integer>> intListKey = Key.of("intList");
 		v3State.put(intListKey, intList);
 
 		List<List<String>> listListString = new ArrayList<>();
@@ -267,24 +253,24 @@ public class GsonSerializer implements Serializer
 		listListString.add(ImmutableList.of("X", "y", "z"));
 		listListString.add(stringList);
 
-		final Key<Metadata> testStateKey = serializer.getKey("testState");
+		final Key<Metadata> testStateKey = Key.of("testState");
 		final Metadata state = Metadata.of(GSON_VERSION);
 		MetadataManager manager = new TestManager(state);
 
-		Key<List<List<String>>> listListStringKey = serializer.getKey("listListString");
-		state.put(serializer.getKey("Bennu / V3"), v3State);
-		state.put(serializer.getKey("Current View"), v3);
-		state.put(serializer.getKey("Tab Number"), new Integer(3));
-		state.put(serializer.getKey("Current View2"), v3);
+		Key<List<List<String>>> listListStringKey = Key.of("listListString");
+		state.put(Key.of("Bennu / V3"), v3State);
+		state.put(Key.of("Current View"), v3);
+		state.put(Key.of("Tab Number"), new Integer(3));
+		state.put(Key.of("Current View2"), v3);
 		state.put(listListStringKey, listListString);
-		state.put(serializer.getKey("stringSet"), ImmutableSortedSet.of("liver", "spleen", "aardvark"));
+		state.put(Key.of("stringSet"), ImmutableSortedSet.of("liver", "spleen", "aardvark"));
 
 		Map<Byte, Short> byteShortMap = new HashMap<>();
 		byteShortMap.put((byte) 1, null);
 		byteShortMap.put(null, (short) 12);
 		byteShortMap.put((byte) 11, (short) 23);
 		byteShortMap.put((byte) 10, (short) 17);
-		Key<Map<Byte, Short>> byteShortMapKey = serializer.getKey("byteShortMap");
+		Key<Map<Byte, Short>> byteShortMapKey = Key.of("byteShortMap");
 		state.put(byteShortMapKey, byteShortMap);
 
 		File file = new File("/Users/peachjm1/Downloads/MyState.sbmt");
@@ -306,17 +292,17 @@ public class GsonSerializer implements Serializer
 		{
 			System.err.println("States were not found equal");
 		}
-		Metadata v3State2 = state2.get(serializer.getKey("Bennu / V3"));
-		Long longNull = v3State2.get(serializer.getKey("longNull"));
+		Metadata v3State2 = state2.get(Key.of("Bennu / V3"));
+		Long longNull = v3State2.get(Key.of("longNull"));
 		System.out.println("longNull is " + longNull);
 
-		System.out.println("stringSet is " + state2.get(serializer.getKey("stringSet")));
+		System.out.println("stringSet is " + state2.get(Key.of("stringSet")));
 
 		// This fails at runtime. If this were a real key templated on Long it would fail at compile time.
-		//		Float fVal = v3State2.get(serializer.getKey("long"));
+		//		Float fVal = v3State2.get(Key.of("long"));
 
 		// This doesn't fail at runtime or compile time but I wish it would:
-		//		List<List<Integer>> unpackedListList = state2.get(serializer.getKey("listListString"));
+		//		List<List<Integer>> unpackedListList = state2.get(Key.of("listListString"));
 
 		// But the following does fail to compile, which is probably good enough.
 		//		unpackedListList = state2.get(listListStringKey);
@@ -324,10 +310,10 @@ public class GsonSerializer implements Serializer
 		//		System.out.println(unpackedListList.get(1).get(1) * 7);
 
 		// It would be OK if this were to work but it doesn't. 
-		//		float fVal = v3State2.get(serializer.getKey("resolution"));
+		//		float fVal = v3State2.get(Key.of("resolution"));
 
 		// This one is supposed to throw an exception. 
-		//		Short floatAsDouble = v3State2.get(serializer.getKey("facets"));
+		//		Short floatAsDouble = v3State2.get(Key.of("facets"));
 		//		System.out.println("float as double is " + floatAsDouble);
 	}
 

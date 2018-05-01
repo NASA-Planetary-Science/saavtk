@@ -1,15 +1,49 @@
 package edu.jhuapl.saavtk.metadata;
 
+import com.google.common.base.Preconditions;
+
 /**
  * @param <T> type of the object that may be associated with this key, used for
  *            compile-time safety only
  */
-public abstract class Key<T>
+public final class Key<T> implements Comparable<Key<?>>
 {
-	public abstract String getId();
+	/**
+	 * Return a key based on the supplied identification string.
+	 * 
+	 * @param keyId the identification string of the key to be returned.
+	 * @return the key
+	 * 
+	 * @throws NullPointerException if argument is null
+	 */
+	public static <T> Key<T> of(String keyId)
+	{
+		return new Key<>(keyId);
+	}
+
+	private final String keyId;
+
+	private Key(String keyId)
+	{
+		Preconditions.checkNotNull(keyId);
+		Preconditions.checkArgument(!keyId.isEmpty());
+		Preconditions.checkArgument(!keyId.matches("^\\s"));
+		Preconditions.checkArgument(!keyId.matches("\\s$"));
+		this.keyId = keyId;
+	}
+
+	public String getId()
+	{
+		return keyId;
+	}
 
 	@Override
-	public abstract String toString();
+	public final int compareTo(Key<?> that)
+	{
+		if (that == null)
+			return 1;
+		return this.getId().compareTo(that.getId());
+	}
 
 	@Override
 	public final int hashCode()
@@ -33,6 +67,12 @@ public abstract class Key<T>
 			return this.getId().equals(that.getId());
 		}
 		return false;
+	}
+
+	@Override
+	public String toString()
+	{
+		return keyId;
 	}
 
 }

@@ -10,4 +10,10 @@ public class Serializers
 	{
 		return INSTANCE;
 	}
+
+	public static Serializer of()
+	{
+		return GsonSerializer.of();
+	}
+
 }

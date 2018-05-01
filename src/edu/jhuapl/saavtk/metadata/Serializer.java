@@ -5,8 +5,6 @@ import java.io.IOException;
 
 public interface Serializer
 {
-	<T> Key<T> getKey(String keyId);
-
 	/**
 	 * Register the provided manager to manage Metadata objects associated with the
 	 * provided key.

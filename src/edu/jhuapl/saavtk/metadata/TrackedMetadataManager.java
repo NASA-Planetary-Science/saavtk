@@ -40,7 +40,7 @@ public final class TrackedMetadataManager implements MetadataManager
 		Preconditions.checkNotNull(serializer);
 		Preconditions.checkState(!MANAGER_IDENTIFIERS.contains(metadataId), "Duplicated manager identifier " + metadataId);
 		MANAGER_IDENTIFIERS.add(metadataId);
-		this.metadataKey = serializer.getKey(metadataId);
+		this.metadataKey = Key.of(metadataId);
 		this.serializer = serializer;
 		this.manager = null;
 	}
@@ -75,19 +75,6 @@ public final class TrackedMetadataManager implements MetadataManager
 	public Key<Metadata> getKey()
 	{
 		return metadataKey;
-	}
-
-	/**
-	 * Return a key that is furnished by the serializer, based on the provided
-	 * identification string.
-	 * 
-	 * @param keyId the identification string for the key
-	 * @return the key
-	 */
-	public <T> Key<T> getKey(String keyId)
-	{
-		// Note being registered is not required for this method to work correctly.
-		return serializer.getKey(keyId);
 	}
 
 	@Override
