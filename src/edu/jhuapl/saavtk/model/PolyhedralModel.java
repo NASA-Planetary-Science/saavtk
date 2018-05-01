@@ -121,6 +121,8 @@ public abstract class PolyhedralModel extends AbstractModel
 
 	public abstract void removeCustomLidarDatasource(int index) throws IOException;
 
+	public abstract ColoringDataManager getColoringDataManager();
+
 	public abstract void setCustomPlateData(int index, ColoringInfo info) throws IOException;
 
 	public abstract void addCustomPlateData(ColoringInfo info) throws IOException;

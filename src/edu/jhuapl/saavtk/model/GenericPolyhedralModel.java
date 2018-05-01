@@ -18,9 +18,13 @@ import java.util.TreeSet;
 
 import javax.swing.JOptionPane;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+
 import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.colormap.Colormaps;
 import edu.jhuapl.saavtk.config.ViewConfig;
+import edu.jhuapl.saavtk.metadata.Serializers;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.ConvertResourceToFile;
@@ -66,6 +70,7 @@ import vtk.vtksbCellLocator;
 
 public class GenericPolyhedralModel extends PolyhedralModel implements PropertyChangeListener
 {
+	private final ColoringDataManager coloringDataManager;
 
 	private List<ColoringInfo> coloringInfo = new ArrayList<ColoringInfo>();
 
@@ -156,6 +161,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public GenericPolyhedralModel()
 	{
 		super(null);
+		coloringDataManager = ColoringDataManager.of("Coloring Data");
 		smallBodyPolyData = new vtkPolyData();
 		genericCell = new vtkGenericCell();
 		idList = new vtkIdList();
@@ -187,6 +193,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public GenericPolyhedralModel(ViewConfig config, String[] modelNames, String[] modelFiles, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls, String[] imageMapNames, ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource)
 	{
 		super(config);
+		this.coloringDataManager = createColoringDataManager(config, coloringFiles, coloringNames, coloringUnits, coloringHasNulls, coloringValueType);
 		this.modelNames = modelNames;
 		this.modelFiles = modelFiles;
 		setDefaultModelFileName(this.modelFiles[0]);
@@ -234,12 +241,69 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	}
 
+	private static ColoringDataManager createColoringDataManager(ViewConfig config, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls, ColoringValueType coloringValueType)
+	{
+		String dataId = config.getUniqueName();
+		if (coloringNames == null)
+			return ColoringDataManager.of(dataId);
+		Preconditions.checkNotNull(coloringFiles);
+		Preconditions.checkArgument(coloringFiles.length == coloringNames.length);
+
+		int[] numberElements = config.smallBodyNumberOfPlatesPerResolutionLevel;
+		Preconditions.checkNotNull(numberElements);
+		Preconditions.checkArgument(numberElements.length > 0);
+
+		// Don't trust the other inputs.
+		if (coloringUnits == null)
+			coloringUnits = new String[] {};
+		if (coloringHasNulls == null)
+			coloringHasNulls = new boolean[] {};
+		if (coloringValueType == null)
+			coloringValueType = ColoringValueType.CELLDATA;
+
+		ImmutableList.Builder<ColoringData> builder = ImmutableList.builder();
+		for (int index = 0; index < coloringFiles.length; ++index)
+		{
+			String baseFileName = coloringFiles[index];
+			Format fileFormat = baseFileName.matches(".*\\.[Ff][Ii][Tt][Ss]?$") ? Format.FIT : baseFileName.matches(".*//.[Tt][Xx][Tt]$") ? Format.TXT : Format.UNKNOWN;
+			for (int resolutionLevel = 0; resolutionLevel < numberElements.length; ++resolutionLevel)
+			{
+				String fileName = getColoringFileName(baseFileName, resolutionLevel, fileFormat);
+				if (fileName != null)
+				{
+					if (fileFormat == Format.UNKNOWN)
+					{
+						fileFormat = fileName.endsWith(".fits.gz") ? Format.FIT : fileName.endsWith(".txt.gz") ? Format.TXT : Format.UNKNOWN;
+					}
+					String name = coloringNames[index];
+					ImmutableList<String> elementNames = ImmutableList.of(name);
+					String units = coloringUnits.length > index ? coloringUnits[index] : "";
+					boolean hasNulls = coloringHasNulls.length > index ? coloringHasNulls[index] : false;
+					builder.add(ColoringData.of(name, fileName, fileFormat, elementNames, units, numberElements[resolutionLevel], hasNulls));
+				}
+			}
+		}
+
+		ColoringDataManager result = ColoringDataManager.of(dataId, builder.build());
+		try
+		{
+			Serializers.serialize("Coloring Data", result.getMetadataManager(), new File("/Users/peachjm1/Downloads/pc.sbmt"));
+		}
+		catch (IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return result;
+	}
+
 	// Note this change has been merged back into sbmt1dev, but not
 	// all SBMT2 changes were initially.
 	// SBMT 2 constructor
 	public GenericPolyhedralModel(ViewConfig config)
 	{
 		super(config);
+		this.coloringDataManager = ColoringDataManager.of(config.getUniqueName());
 	}
 
 	protected void initializeConfigParameters(String[] modelFiles, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls, String[] imageMapNames, ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource)
@@ -1681,30 +1745,51 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	private boolean isColoringAvailable(ColoringInfo info)
 	{
-		String fileName = info.coloringFile;
-		if (!fileName.startsWith(FileCache.FILE_PREFIX))
-		{
-			return isColoringAvailable(fileName + "_res" + resolutionLevel, info.format) || isColoringAvailable(fileName + resolutionLevel, info.format);
-		}
-		return FileCache.isFileGettable(fileName);
+		return getColoringFileName(info.coloringFile, this.resolutionLevel, info.format) != null;
 	}
 
-	private boolean isColoringAvailable(String fileName, Format format)
+	private static String getColoringFileName(String baseFileName, int resolutionLevel, Format format)
 	{
+		String fileName = null;
+		if (!baseFileName.startsWith(FileCache.FILE_PREFIX))
+		{
+			fileName = getColoringFileName(baseFileName + "_res" + resolutionLevel, format);
+			if (fileName == null)
+			{
+				fileName = getColoringFileName(baseFileName + resolutionLevel, format);
+			}
+		}
+		else
+		{
+			fileName = FileCache.isFileGettable(baseFileName) ? baseFileName : null;
+		}
+
+		return fileName;
+	}
+
+	private static String getColoringFileName(String baseFileName, Format format)
+	{
+		String fileName = null;
 		switch (format)
 		{
 		case TXT:
-			fileName += ".txt.gz";
+			fileName = baseFileName + ".txt.gz";
 			break;
 		case FIT:
-			fileName += ".fits.gz";
+			fileName = baseFileName + ".fits.gz";
 			break;
 		case UNKNOWN:
-			return FileCache.isFileGettable(fileName + ".fits.gz") || FileCache.isFileGettable(fileName + ".txt.gz");
+			fileName = baseFileName + ".fits.gz";
+			if (FileCache.isFileGettable(fileName))
+			{
+				return fileName;
+			}
+			fileName = baseFileName + ".txt.gz";
+			break;
 		default:
 			throw new AssertionError("Unhandled case " + format);
 		}
-		return FileCache.isFileGettable(fileName);
+		return FileCache.isFileGettable(fileName) ? fileName : null;
 	}
 
 	/**
@@ -2960,6 +3045,12 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		info.coloringValues = null;
 		info.defaultColoringRange = null;
 		coloringInfo.add(info);
+	}
+
+	@Override
+	public ColoringDataManager getColoringDataManager()
+	{
+		return coloringDataManager;
 	}
 
 	@Override
