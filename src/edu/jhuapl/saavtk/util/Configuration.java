@@ -33,7 +33,7 @@ public class Configuration
 			"<html>The Small Body Mapping Tool will work without a password, but data for some models is restricted.<br>If you have credentials to access restricted models, enter them here.</html>";
 
 	static private String webURL = "http://sbmt.jhuapl.edu";
-	static private String rootURL = webURL + "/sbmt";
+	static private String rootURL = webURL + "/sbmt/prod";
 	static private String helpURL = webURL;
 
 	static private String appName = null;
@@ -475,21 +475,6 @@ public class Configuration
 	static public void setAPLVersion(boolean b)
 	{
 		APLVersion = b;
-
-		// If APL version, then change root URL to the default internal root URL
-		// unless user set sbmt.root.url property.
-		if (APLVersion)
-		{
-			String rootURLProperty = System.getProperty("sbmt.root.url");
-			if (rootURLProperty != null)
-			{
-				rootURL = rootURLProperty;
-			}
-			else
-			{
-				rootURL = "http://sbmt.jhuapl.edu/sbmt/prod";
-			}
-		}
 	}
 
 	static public void setUseFileCache(boolean use)
