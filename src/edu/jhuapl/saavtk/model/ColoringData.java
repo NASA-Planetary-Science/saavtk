@@ -14,16 +14,17 @@ import vtk.vtkFloatArray;
 public class ColoringData
 {
 	private static final Version COLORING_DATA_VERSION = Version.of(1, 0);
+
 	// Metadata keys.
-	public static final Key<String> NAME = Key.of("Coloring name"); // Slope or Gravitational Vector
+	static final Key<String> NAME = Key.of("Coloring name"); // Slope or Gravitational Vector
 
-	public static final Key<String> FILE_NAME = Key.of("File name");
-	public static final Key<String> FILE_FORMAT = Key.of("File format"); // Stand-in for Format enumeration.
-	public static final Key<List<String>> ELEMENT_NAMES = Key.of("Element names"); // [ "Slope" ] or [ "G_x", "G_y", "G_z" ]
+	static final Key<String> FILE_NAME = Key.of("File name");
+	static final Key<String> FILE_FORMAT = Key.of("File format"); // Stand-in for Format enumeration.
+	static final Key<List<String>> ELEMENT_NAMES = Key.of("Element names"); // [ "Slope" ] or [ "G_x", "G_y", "G_z" ]
 
-	public static final Key<String> UNITS = Key.of("Coloring units"); // deg or m/s^2
-	public static final Key<Integer> NUMBER_ELEMENTS = Key.of("Number of elements"); // 49xxx
-	public static final Key<Boolean> HAS_NULLS = Key.of("Coloring has nulls");
+	static final Key<String> UNITS = Key.of("Coloring units"); // deg or m/s^2
+	static final Key<Integer> NUMBER_ELEMENTS = Key.of("Number of elements"); // 49xxx
+	static final Key<Boolean> HAS_NULLS = Key.of("Coloring has nulls");
 
 	public static ColoringData of(String name, String fileName, Format fileFormat, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
 	{
