@@ -161,7 +161,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public GenericPolyhedralModel()
 	{
 		super(null);
-		coloringDataManager = ColoringDataManager.of("Coloring Data");
+		coloringDataManager = CustomizableColoringDataManager.of("Coloring Data");
 		smallBodyPolyData = new vtkPolyData();
 		genericCell = new vtkGenericCell();
 		idList = new vtkIdList();
@@ -216,6 +216,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					System.err.println("Plate coloring is not available. Disabling " + info.coloringName);
 					continue;
 				}
+				info.numberElements = config.smallBodyNumberOfPlatesPerResolutionLevel[resolutionLevel];
 				coloringInfo.add(info);
 			}
 		}
@@ -245,7 +246,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	{
 		String dataId = config.getUniqueName();
 		if (coloringNames == null)
-			return ColoringDataManager.of(dataId);
+			return CustomizableColoringDataManager.of(dataId);
 		Preconditions.checkNotNull(coloringFiles);
 		Preconditions.checkArgument(coloringFiles.length == coloringNames.length);
 
@@ -284,7 +285,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			}
 		}
 
-		ColoringDataManager result = ColoringDataManager.of(dataId, builder.build());
+		CustomizableColoringDataManager result = CustomizableColoringDataManager.of(dataId, builder.build());
 		try
 		{
 			Serializers.serialize("Coloring Data", result.getMetadataManager(), new File("/Users/peachjm1/Downloads/pc.sbmt"));
@@ -303,7 +304,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public GenericPolyhedralModel(ViewConfig config)
 	{
 		super(config);
-		this.coloringDataManager = ColoringDataManager.of(config.getUniqueName());
+		this.coloringDataManager = CustomizableColoringDataManager.of(config.getUniqueName());
 	}
 
 	protected void initializeConfigParameters(String[] modelFiles, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls, String[] imageMapNames, ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource)
@@ -589,6 +590,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			if (!coloringInfo.get(i).builtIn)
 				coloringInfo.remove(i);
 		}
+		coloringDataManager.clear();
 	}
 
 	public void loadCustomColoringInfo() throws IOException
@@ -2170,17 +2172,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return true;
 	}
 
-	// Compute the range of an array but account for the fact that for some datasets,
-	// some of the data is missing as represented by the lowest valued. So compute
-	// the range ignoring this lowest value (i.e take the lowest value to be the value
-	// just higher than the lowest value).
-	private double[] computeDefaultColoringRange(int index)//, boolean adjustForColorTable)
-	{
-		ColoringInfo info = coloringInfo.get(index);
-		computeDefaultColoringRange(info);
-		return info.defaultColoringRange;
-	}
-
 	// Compute the range of an array but account for the fact that for some
 	// datasets,
 	// some of the data is missing as represented by the lowest valued. So
@@ -3044,7 +3035,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		info.resolutionLevel = resolutionLevel;
 		info.coloringValues = null;
 		info.defaultColoringRange = null;
+		info.numberElements = getConfig().smallBodyNumberOfPlatesPerResolutionLevel[resolutionLevel];
 		coloringInfo.add(info);
+		coloringDataManager.add(info.toColoringData());
 	}
 
 	@Override
