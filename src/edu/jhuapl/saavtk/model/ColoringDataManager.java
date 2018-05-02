@@ -2,11 +2,9 @@ package edu.jhuapl.saavtk.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Table;
 import com.google.common.collect.TreeBasedTable;
 
@@ -31,15 +29,15 @@ public class ColoringDataManager
 
 	private final String dataId;
 	private final List<String> names;
-	private final Set<Integer> numberElements;
-	private final Table<String, Integer, ColoringData> data;
+	private final Table<String, Integer, ColoringData> dataTable;
+	private ImmutableList<Integer> resolutions;
 
 	private ColoringDataManager(String dataId, Iterable<ColoringData> coloringData)
 	{
 		this.dataId = dataId;
 		this.names = new ArrayList<>();
-		this.numberElements = new TreeSet<>();
-		this.data = TreeBasedTable.create();
+		this.dataTable = TreeBasedTable.create();
+		this.resolutions = ImmutableList.of();
 		for (ColoringData data : coloringData)
 		{
 			add(data);
@@ -51,22 +49,24 @@ public class ColoringDataManager
 		return ImmutableList.copyOf(names);
 	}
 
-	public ImmutableSet<Integer> getNumberElements()
+	public ImmutableList<Integer> getNumberElements()
 	{
-		return ImmutableSet.copyOf(numberElements);
+		return resolutions;
 	}
 
-	public boolean has(String name, int numberElements)
+	public boolean has(String name, int resolutionLevel)
 	{
-		return data.contains(name, numberElements);
+		Preconditions.checkNotNull(name);
+		return dataTable.contains(name, resolutions.get(resolutionLevel));
 	}
 
-	public ColoringData get(String name, int numberElements)
+	public ColoringData get(String name, int resolutionLevel)
 	{
-		ColoringData result = data.get(name, numberElements);
+		Preconditions.checkNotNull(name);
+		ColoringData result = dataTable.get(name, resolutions.get(resolutionLevel));
 		if (result == null)
 		{
-			throw new IllegalArgumentException("Cannot find coloring for " + name + " (" + numberElements + " elements)");
+			throw new IllegalArgumentException("Cannot find coloring for " + name + " (" + resolutions + " elements)");
 		}
 		return result;
 	}
@@ -76,19 +76,19 @@ public class ColoringDataManager
 		Metadata metadata = data.getMetadata();
 		String name = metadata.get(ColoringData.NAME);
 		Integer numberElements = metadata.get(ColoringData.NUMBER_ELEMENTS);
-		if (this.data.contains(name, numberElements))
+		if (dataTable.contains(name, numberElements))
 		{
 			throw new IllegalArgumentException("Duplicated coloring for " + name + " (" + numberElements + " elements)");
 		}
-		if (!this.data.rowKeySet().contains(name))
+		if (!dataTable.rowKeySet().contains(name))
 		{
-			this.names.add(name);
+			names.add(name);
 		}
-		this.numberElements.add(numberElements);
-		this.data.put(name, numberElements, data);
+		dataTable.put(name, numberElements, data);
+		this.resolutions = ImmutableList.copyOf(dataTable.columnKeySet());
 	}
 
-	public MetadataManager getMetadataManager()
+	MetadataManager getMetadataManager()
 	{
 		return new MetadataManager() {
 
@@ -97,7 +97,7 @@ public class ColoringDataManager
 			{
 				Metadata result = Metadata.of(METADATA_VERSION);
 				ImmutableList.Builder<Metadata> builder = ImmutableList.builder();
-				for (ColoringData data : data.values())
+				for (ColoringData data : dataTable.values())
 				{
 					builder.add(data.getMetadata());
 				}
@@ -109,8 +109,8 @@ public class ColoringDataManager
 			public void retrieve(Metadata source)
 			{
 				names.clear();
-				numberElements.clear();
-				data.clear();
+				resolutions.clear();
+				dataTable.clear();
 
 			}
 
