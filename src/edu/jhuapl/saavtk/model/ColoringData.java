@@ -59,9 +59,14 @@ public class ColoringData
 		this.data = null;
 	}
 
-	public Metadata getMetadata()
+	public String getName()
 	{
-		return metadata;
+		return metadata.get(NAME);
+	}
+
+	public String getUnits()
+	{
+		return metadata.get(UNITS);
 	}
 
 	public vtkFloatArray getData()
@@ -71,6 +76,21 @@ public class ColoringData
 			data = load();
 		}
 		return null;
+	}
+
+	//	String getFileName()
+	//	{
+	//		return metadata.get(FILE_NAME);
+	//	}
+
+	int getNumberElements()
+	{
+		return metadata.get(NUMBER_ELEMENTS);
+	}
+
+	Metadata getMetadata()
+	{
+		return metadata;
 	}
 
 	private vtkFloatArray load()
