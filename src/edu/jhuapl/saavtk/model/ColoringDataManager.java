@@ -88,6 +88,13 @@ public class ColoringDataManager
 		this.resolutions = ImmutableList.copyOf(dataTable.columnKeySet());
 	}
 
+	void clear()
+	{
+		names.clear();
+		dataTable.clear();
+		resolutions = ImmutableList.of();
+	}
+
 	MetadataManager getMetadataManager()
 	{
 		return new MetadataManager() {
