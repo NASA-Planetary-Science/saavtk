@@ -18,9 +18,8 @@ public class ColoringInfo
 	public String coloringFile = null;
 	public boolean builtIn = true;
 	public Format format = Format.UNKNOWN;
-	public int numberElements = -1;
 
-	ColoringData toColoringData()
+	ColoringData toColoringData(int numberElements)
 	{
 		return ColoringData.of(coloringName, coloringFile, format, ImmutableList.of(coloringName), coloringUnits, numberElements, coloringHasNulls);
 	}

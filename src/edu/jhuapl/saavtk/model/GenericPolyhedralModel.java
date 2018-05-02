@@ -70,9 +70,9 @@ import vtk.vtksbCellLocator;
 
 public class GenericPolyhedralModel extends PolyhedralModel implements PropertyChangeListener
 {
-	private final ColoringDataManager coloringDataManager;
+	private ColoringDataManager coloringDataManager;
 
-	private List<ColoringInfo> coloringInfo = new ArrayList<ColoringInfo>();
+	private final List<ColoringInfo> coloringInfo = new ArrayList<ColoringInfo>();
 
 	private ColoringValueType coloringValueType;
 
@@ -161,7 +161,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public GenericPolyhedralModel()
 	{
 		super(null);
-		coloringDataManager = CustomizableColoringDataManager.of("Coloring Data");
+		//		coloringDataManager = CustomizableColoringDataManager.of("Coloring Data");
 		smallBodyPolyData = new vtkPolyData();
 		genericCell = new vtkGenericCell();
 		idList = new vtkIdList();
@@ -216,7 +216,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					System.err.println("Plate coloring is not available. Disabling " + info.coloringName);
 					continue;
 				}
-				info.numberElements = config.smallBodyNumberOfPlatesPerResolutionLevel[resolutionLevel];
 				coloringInfo.add(info);
 			}
 		}
@@ -304,11 +303,12 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public GenericPolyhedralModel(ViewConfig config)
 	{
 		super(config);
-		this.coloringDataManager = CustomizableColoringDataManager.of(config.getUniqueName());
+		//		this.coloringDataManager = CustomizableColoringDataManager.of(config.getUniqueName());
 	}
 
 	protected void initializeConfigParameters(String[] modelFiles, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls, String[] imageMapNames, ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource)
 	{
+		this.coloringDataManager = createColoringDataManager(getConfig(), coloringFiles, coloringNames, coloringUnits, coloringHasNulls, coloringValueType);
 		this.modelFiles = modelFiles;
 		setDefaultModelFileName(this.modelFiles[0]);
 		this.imageMapNames = imageMapNames;
@@ -461,6 +461,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		{
 			smallBodyPolyData.DeepCopy(polydata);
 		}
+		coloringDataManager.clear();
 		coloringInfo.clear();
 		for (int i = 0; i < coloringNames.length; ++i)
 		{
@@ -474,6 +475,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			info.coloringUnits = coloringUnits[i];
 			info.coloringValues = coloringValues[i];
 			coloringInfo.add(info);
+			int numberElements = getConfig().smallBodyNumberOfPlatesPerResolutionLevel[getModelResolution()];
+			coloringDataManager.add(info.toColoringData(numberElements));
 		}
 		this.coloringValueType = coloringValueType;
 
@@ -599,6 +602,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		if (coloringIndex >= 0)
 			prevColoringName = coloringInfo.get(coloringIndex).coloringName;
 
+		coloringDataManager.clear();
 		clearCustomColoringInfo();
 
 		String configFilename = getConfigFilename();
@@ -632,16 +636,21 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					info.coloringUnits = cellDataUnits[i];
 					info.coloringHasNulls = Boolean.parseBoolean(cellDataHasNulls[i]);
 					info.builtIn = false;
+					int numberElements = getConfig().smallBodyNumberOfPlatesPerResolutionLevel[info.resolutionLevel];
 					if (cellDataResolutionLevels != null)
 					{
 						info.resolutionLevel = Integer.parseInt(cellDataResolutionLevels[i]);
 						if (info.resolutionLevel == getModelResolution())
+						{
 							coloringInfo.add(info);
+							coloringDataManager.add(info.toColoringData(numberElements));
+						}
 					}
 					else
 					{
 						info.resolutionLevel = 0;
 						coloringInfo.add(info);
+						coloringDataManager.add(info.toColoringData(numberElements));
 					}
 				}
 			}
@@ -1747,6 +1756,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	private boolean isColoringAvailable(ColoringInfo info)
 	{
+		// Wouldn't this be the right thing?
+		//		return getColoringFileName(info.coloringFile, info.resolutionLevel, info.format) != null;
 		return getColoringFileName(info.coloringFile, this.resolutionLevel, info.format) != null;
 	}
 
@@ -3035,9 +3046,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		info.resolutionLevel = resolutionLevel;
 		info.coloringValues = null;
 		info.defaultColoringRange = null;
-		info.numberElements = getConfig().smallBodyNumberOfPlatesPerResolutionLevel[resolutionLevel];
+		int numberElements = getConfig().smallBodyNumberOfPlatesPerResolutionLevel[resolutionLevel];
 		coloringInfo.add(info);
-		coloringDataManager.add(info.toColoringData());
+		coloringDataManager.add(info.toColoringData(numberElements));
 	}
 
 	@Override
