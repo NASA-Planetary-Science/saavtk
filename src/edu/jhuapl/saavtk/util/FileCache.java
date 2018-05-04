@@ -161,6 +161,13 @@ public class FileCache
 					// These two properties seem to be still necessary as of 2017-12-19.
 					connection.setRequestProperty("User-Agent", "Mozilla/4.0");
 					connection.setRequestProperty("Accept", "*/*");
+
+					// Skip access test if downloading may be necessary. This is because
+					// otherwise a mysterious exception gets thrown if trying to unzip
+					// a gzipped stream after this block of code executes. It is safe
+					// to skip the check because in a sense it doesn't matter if
+					// this check says the URL is authorized and exists if the
+					// file fails to download.
 					if (!doDownloadIfNeeded && connection instanceof HttpURLConnection)
 					{
 						// This access test seems to run quicker, doesn't throw as
@@ -190,16 +197,6 @@ public class FileCache
 							urlExists = YesOrNo.NO;
 						}
 					}
-					else
-					{
-						// This access test is much simpler and perhaps more robust, but gives less info
-						// and is slower because it gets an input stream to the whole file.
-						// Count on this throwing an exception if we don't have access or the file doesn't exist.
-						connection.getInputStream();
-						// It didn't throw, so assume all is well.
-						authorized = YesOrNo.YES;
-						urlExists = YesOrNo.YES;
-					}
 
 					// Check file existence and modification time to decide if we need to download.
 					// TODO: this seems always to return 0: does this in fact work?
@@ -217,17 +214,19 @@ public class FileCache
 						}
 						if (doDownloadIfNeeded)
 						{
+							failedToDownload = true;
 							File cachedFile = addToCache(path, connection.getInputStream(), urlLastModified, length);
-							if (cachedFile != null) // file can be null if the user aborted the download
+							if (cachedFile != null && cachedFile.exists()) // file can be null if the user aborted the download
 							{
 								downloadedFiles.put(path, "");
 								file = cachedFile;
 								length = file.length();
 								needToDownload = false;
-							}
-							else
-							{
-								failedToDownload = true;
+								failedToDownload = false;
+
+								// No exception was thrown and the file exists. These are defacto true. 
+								authorized = YesOrNo.YES;
+								urlExists = YesOrNo.YES;
 							}
 						}
 					}
