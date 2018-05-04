@@ -19,9 +19,9 @@ public class ColoringInfo
 	public boolean builtIn = true;
 	public Format format = Format.UNKNOWN;
 
-	ColoringData toColoringData(int numberElements)
+	ColoringData toCustomColoringData(int numberElements)
 	{
-		return ColoringData.of(coloringName, coloringFile, format, ImmutableList.of(coloringName), coloringUnits, numberElements, coloringHasNulls);
+		return ColoringData.of(coloringName, coloringFile, format, ImmutableList.of(coloringName), coloringUnits, numberElements, coloringHasNulls, coloringValues);
 	}
 
 	@Override
