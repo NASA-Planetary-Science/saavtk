@@ -1,6 +1,13 @@
 package edu.jhuapl.saavtk.model;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.List;
+
+import javax.swing.JOptionPane;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -9,6 +16,11 @@ import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.model.PolyhedralModel.Format;
+import edu.jhuapl.saavtk.util.FileCache;
+import nom.tam.fits.BasicHDU;
+import nom.tam.fits.Fits;
+import nom.tam.fits.FitsException;
+import nom.tam.fits.TableHDU;
 import vtk.vtkFloatArray;
 
 public class ColoringData
@@ -70,19 +82,19 @@ public class ColoringData
 		return metadata.get(UNITS);
 	}
 
-	public vtkFloatArray getData()
+	public vtkFloatArray getData() throws IOException
 	{
 		if (data == null)
 		{
-			data = load();
+			load();
 		}
-		return null;
+		return data;
 	}
 
-	//	String getFileName()
-	//	{
-	//		return metadata.get(FILE_NAME);
-	//	}
+	private String getFileName()
+	{
+		return metadata.get(FILE_NAME);
+	}
 
 	int getNumberElements()
 	{
@@ -94,10 +106,127 @@ public class ColoringData
 		return metadata;
 	}
 
-	private vtkFloatArray load()
+	private void load() throws IOException
 	{
-		// TODO put load code here.
-		return null;
+		String fileName = getFileName();
+		File file = FileCache.getFileFromServer(fileName);
+		if (file == null)
+		{
+			String message = "Unable to download file " + fileName;
+			JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
+			throw new IOException(message);
+		}
+
+		// If we get this far, the file was successfully downloaded.
+		Format format = getFileFormat(file);
+		switch (format)
+		{
+		case FIT:
+			loadColoringDataFits(file);
+			break;
+		case TXT:
+			loadColoringDataTxt(file);
+			break;
+		case UNKNOWN:
+			throw new IOException("Do not recognize the type of file " + fileName);
+		default:
+			throw new AssertionError("Unhandled file format type");
+		}
 	}
 
+	private Format getFileFormat(File file)
+	{
+		try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file))))
+		{
+			String line = in.readLine();
+			if (line.matches("^[Ss][Ii][Mm][Pp][Ll][Ee]\\s*=\\s*[Tt][Rr]?[Uu]?[Ee]?\\b.*$"))
+			{
+				return Format.FIT;
+			}
+			else
+			{
+				Float.parseFloat(line);
+				return Format.TXT;
+			}
+		}
+		catch (@SuppressWarnings("unused") IOException | NumberFormatException e)
+		{
+			return Format.UNKNOWN;
+		}
+	}
+
+	private void loadColoringDataFits(File file) throws IOException
+	{
+		try (Fits fits = new Fits(file))
+		{
+			fits.read();
+			int numberElements = metadata.get(NUMBER_ELEMENTS);
+
+			BasicHDU<?> hdu = fits.getHDU(1);
+			if (hdu instanceof TableHDU)
+			{
+				TableHDU<?> table = (TableHDU<?>) hdu;
+				int numberRows = table.getNRows();
+				if (numberRows != numberElements)
+				{
+					String message = "Number of lines in FITS file " + file + " is " + numberRows + ", not " + numberElements + " as expected.";
+					JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
+					throw new IOException(message);
+				}
+
+				vtkFloatArray data = new vtkFloatArray();
+
+				data.SetNumberOfComponents(1);
+				data.SetNumberOfTuples(numberElements);
+
+				float[] floatData = (float[]) table.getColumn(metadata.get(ELEMENT_NAMES).get(0).toUpperCase());
+				for (int index = 0; index < numberElements; index++)
+				{
+					float value = floatData[index];
+					data.SetTuple1(index, value);
+				}
+
+				this.data = data;
+			}
+			else
+			{
+				throw new IOException("First extension of file " + file + " is not a FITS table HDU");
+			}
+		}
+		catch (FitsException e)
+		{
+			throw new IOException(e);
+		}
+	}
+
+	private void loadColoringDataTxt(File file) throws IOException
+	{
+		try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file))))
+		{
+			vtkFloatArray data = new vtkFloatArray();
+
+			int numberElements = metadata.get(NUMBER_ELEMENTS);
+			data.SetNumberOfComponents(1);
+			data.SetNumberOfTuples(numberElements);
+
+			String line;
+			int index = 0;
+			while ((line = in.readLine()) != null)
+			{
+				float value = Float.parseFloat(line);
+				data.SetTuple1(index, value);
+				++index;
+			}
+
+			if (index != numberElements)
+			{
+				String message = "Number of lines in text file " + file + " is " + index + ", not " + numberElements + " as expected.";
+				JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
+				throw new IOException(message);
+			}
+			// Everything worked so assign to the data field.
+			this.data = data;
+		}
+
+	}
 }
