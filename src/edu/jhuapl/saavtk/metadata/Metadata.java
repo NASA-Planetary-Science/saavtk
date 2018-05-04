@@ -10,16 +10,6 @@ import com.google.common.collect.ImmutableList;
 
 public final class Metadata
 {
-	public static final class InaccurateConversionException extends RuntimeException
-	{
-		private static final long serialVersionUID = 1332273620795657017L;
-
-		public InaccurateConversionException(String msg)
-		{
-			super(msg);
-		}
-	}
-
 	private static final Object NULL_OBJECT = new Object() {
 		@Override
 		public String toString()
@@ -65,7 +55,7 @@ public final class Metadata
 		{
 			throw new IllegalArgumentException("Metadata does not contain key " + key);
 		}
-		if (object == NULL_OBJECT)
+		if (isNullObject(object))
 		{
 			return null;
 		}
@@ -124,8 +114,8 @@ public final class Metadata
 	public String toString()
 	{
 		StringBuilder builder = new StringBuilder("(Metadata) version ");
-		builder.append(version);
-		for (Key<?> key : keys)
+		builder.append(getVersion());
+		for (Key<?> key : getKeys())
 		{
 			builder.append("\n");
 			builder.append(key + " = " + get(key));
@@ -133,4 +123,8 @@ public final class Metadata
 		return builder.toString();
 	}
 
+	static final boolean isNullObject(Object object)
+	{
+		return object == NULL_OBJECT;
+	}
 }
