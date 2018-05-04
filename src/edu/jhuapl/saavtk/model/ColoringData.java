@@ -5,7 +5,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.JOptionPane;
 
@@ -40,6 +42,18 @@ public class ColoringData
 
 	public static ColoringData of(String name, String fileName, Format fileFormat, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
 	{
+		Metadata metadata = createMetadata(name, fileName, fileFormat, elementNames, units, numberElements, hasNulls);
+		return new ColoringData(metadata, null);
+	}
+
+	public static ColoringData of(String name, String fileName, Format fileFormat, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
+	{
+		Metadata metadata = createMetadata(name, fileName, fileFormat, elementNames, units, numberElements, hasNulls);
+		return new ColoringData(metadata, data);
+	}
+
+	private static Metadata createMetadata(String name, String fileName, Format fileFormat, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
+	{
 		Preconditions.checkNotNull(name);
 		// TODO check others too.
 
@@ -54,22 +68,16 @@ public class ColoringData
 		metadata.put(ColoringData.NUMBER_ELEMENTS, numberElements);
 		metadata.put(ColoringData.HAS_NULLS, hasNulls);
 
-		return new ColoringData(metadata);
-	}
-
-	public static ColoringData of(Metadata metadata)
-	{
-		// TODO validate metadata before using.
-		return new ColoringData(metadata);
+		return metadata;
 	}
 
 	private final Metadata metadata;
 	private vtkFloatArray data;
 
-	protected ColoringData(Metadata metadata)
+	protected ColoringData(Metadata metadata, vtkFloatArray data)
 	{
 		this.metadata = metadata;
-		this.data = null;
+		this.data = data;
 	}
 
 	public String getName()
@@ -91,11 +99,6 @@ public class ColoringData
 		return data;
 	}
 
-	private String getFileName()
-	{
-		return metadata.get(FILE_NAME);
-	}
-
 	int getNumberElements()
 	{
 		return metadata.get(NUMBER_ELEMENTS);
@@ -104,6 +107,11 @@ public class ColoringData
 	Metadata getMetadata()
 	{
 		return metadata;
+	}
+
+	private String getFileName()
+	{
+		return metadata.get(FILE_NAME);
 	}
 
 	private void load() throws IOException
@@ -174,12 +182,14 @@ public class ColoringData
 					throw new IOException(message);
 				}
 
+				ImmutableList<String> columnNames = findMatchingColumnNameCaseInsensitive(table, metadata.get(ELEMENT_NAMES));
+
 				vtkFloatArray data = new vtkFloatArray();
 
 				data.SetNumberOfComponents(1);
 				data.SetNumberOfTuples(numberElements);
 
-				float[] floatData = (float[]) table.getColumn(metadata.get(ELEMENT_NAMES).get(0).toUpperCase());
+				float[] floatData = (float[]) table.getColumn(columnNames.get(0));
 				for (int index = 0; index < numberElements; index++)
 				{
 					float value = floatData[index];
@@ -197,6 +207,33 @@ public class ColoringData
 		{
 			throw new IOException(e);
 		}
+	}
+
+	private ImmutableList<String> findMatchingColumnNameCaseInsensitive(TableHDU<?> table, List<String> columnNames) throws IOException
+	{
+		// Make a map of the table's actual file names, keyed on the all uppercase version of each name.
+		Map<String, String> tableColumnNames = new HashMap<>();
+		for (int index = 0; index < table.getNCols(); ++index)
+		{
+			String columnName = table.getColumnName(index);
+			tableColumnNames.put(columnName.toUpperCase(), columnName);
+		}
+
+		// Use the table map to look up the case-sensitive names that match the input column names.
+		ImmutableList.Builder<String> builder = ImmutableList.builder();
+		for (String columnName : columnNames)
+		{
+			String tableColumnName = tableColumnNames.get(columnName.toUpperCase());
+			if (tableColumnName != null)
+			{
+				builder.add(tableColumnName);
+			}
+			else
+			{
+				throw new IOException("Cannot find a column with name matching " + columnName.toUpperCase());
+			}
+		}
+		return builder.build();
 	}
 
 	private void loadColoringDataTxt(File file) throws IOException
