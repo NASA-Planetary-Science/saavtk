@@ -476,7 +476,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			info.coloringValues = coloringValues[i];
 			coloringInfo.add(info);
 			int numberElements = getConfig().smallBodyNumberOfPlatesPerResolutionLevel[getModelResolution()];
-			coloringDataManager.add(info.toColoringData(numberElements));
+			coloringDataManager.add(info.toCustomColoringData(numberElements));
 		}
 		this.coloringValueType = coloringValueType;
 
@@ -627,9 +627,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			for (int i = 0; i < cellDataFilenames.length; ++i)
 			{
 				ColoringInfo info = new ColoringInfo();
-				info.coloringFile = cellDataFilenames[i];
-				if (!info.coloringFile.trim().isEmpty())
+				String coloringFile = cellDataFilenames[i];
+				if (!coloringFile.trim().isEmpty())
 				{
+					info.coloringFile = FileCache.FILE_PREFIX + getCustomDataFolder() + "/" + coloringFile;
 					info.coloringName = cellDataNames[i];
 					if (info.coloringFile.toLowerCase().endsWith(".fit") || info.coloringFile.toLowerCase().endsWith(".fits"))
 						info.format = Format.FIT;
@@ -643,14 +644,14 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 						if (info.resolutionLevel == getModelResolution())
 						{
 							coloringInfo.add(info);
-							coloringDataManager.add(info.toColoringData(numberElements));
+							coloringDataManager.add(info.toCustomColoringData(numberElements));
 						}
 					}
 					else
 					{
 						info.resolutionLevel = 0;
 						coloringInfo.add(info);
-						coloringDataManager.add(info.toColoringData(numberElements));
+						coloringDataManager.add(info.toCustomColoringData(numberElements));
 					}
 				}
 			}
@@ -1632,6 +1633,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		if (info.coloringValues != null)
 			return;
 		loadFile(info);
+		String coloringName = coloringDataManager.getNames().get(coloringIndex);
+		int numberElements = coloringDataManager.getResolutions().get(resolutionLevel);
+		ColoringData coloringData = coloringDataManager.get(coloringName, numberElements);
+		coloringData.getData();
 	}
 
 	private void loadFile(ColoringInfo info) throws IOException
@@ -1676,8 +1681,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	private File retrieveAndCacheFile(ColoringInfo info)
 	{
 		String fileName = new String(info.coloringFile);
-		if (!info.builtIn)
-			fileName = FileCache.FILE_PREFIX + getCustomDataFolder() + File.separator + fileName;
+		//		if (!info.builtIn)
+		//			fileName = FileCache.FILE_PREFIX + getCustomDataFolder() + File.separator + fileName;
 		// Cache the file, which may be text or fits, but we may not know which at this point.
 		File file = null;
 		if (fileName.startsWith(FileCache.FILE_PREFIX))
@@ -3048,7 +3053,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		info.defaultColoringRange = null;
 		int numberElements = getConfig().smallBodyNumberOfPlatesPerResolutionLevel[resolutionLevel];
 		coloringInfo.add(info);
-		coloringDataManager.add(info.toColoringData(numberElements));
+		coloringDataManager.add(info.toCustomColoringData(numberElements));
 	}
 
 	@Override
