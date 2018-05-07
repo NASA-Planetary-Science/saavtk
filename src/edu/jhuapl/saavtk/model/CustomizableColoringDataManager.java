@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableList;
 import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.MetadataManager;
+import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
 
 public final class CustomizableColoringDataManager implements ColoringDataManager
@@ -87,7 +88,7 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 			@Override
 			public Metadata store()
 			{
-				Metadata result = Metadata.of(METADATA_VERSION);
+				SettableMetadata result = SettableMetadata.of(METADATA_VERSION);
 				result.put(Key.of(builtIn.getId()), builtIn.getMetadataManager().store());
 				result.put(Key.of(custom.getId()), custom.getMetadataManager().store());
 				return result;
@@ -97,6 +98,7 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 			public void retrieve(Metadata source)
 			{
 				clear();
+				// TODO finish writing this.
 			}
 
 		};
