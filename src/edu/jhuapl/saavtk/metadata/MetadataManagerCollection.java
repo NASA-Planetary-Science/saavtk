@@ -15,8 +15,8 @@ public class MetadataManagerCollection
 		return new MetadataManagerCollection();
 	}
 
-	private final List<Key<Metadata>> keysInOrder;
-	private final SortedMap<Key<Metadata>, MetadataManager> managers;
+	private final List<Key<? extends Metadata>> keysInOrder;
+	private final SortedMap<Key<? extends Metadata>, MetadataManager> managers;
 
 	private MetadataManagerCollection()
 	{
@@ -34,7 +34,7 @@ public class MetadataManagerCollection
 	 *             the supplied key
 	 * @throws NullPointerException if any argument is null
 	 */
-	public void add(Key<Metadata> key, MetadataManager manager)
+	public void add(Key<? extends Metadata> key, MetadataManager manager)
 	{
 		Preconditions.checkNotNull(key);
 		Preconditions.checkNotNull(manager);
@@ -44,12 +44,12 @@ public class MetadataManagerCollection
 		managers.put(key, manager);
 	}
 
-	public ImmutableList<Key<Metadata>> getKeys()
+	public ImmutableList<Key<? extends Metadata>> getKeys()
 	{
 		return ImmutableList.copyOf(keysInOrder);
 	}
 
-	public MetadataManager getManager(Key<Metadata> key)
+	public MetadataManager getManager(Key<? extends Metadata> key)
 	{
 		Preconditions.checkNotNull(key);
 		Preconditions.checkArgument(managers.containsKey(key));

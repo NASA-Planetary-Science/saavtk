@@ -10,8 +10,8 @@ package edu.jhuapl.saavtk.metadata;
 public interface MetadataManager
 {
 	/**
-	 * Store a (complete and self-consistent) set of metadata in the provided
-	 * destination object.
+	 * Return a (complete and self-consistent) set of metadata, typically derived
+	 * from the state of some other type of object.
 	 * 
 	 * @return destination object in which the metadata are stored
 	 */

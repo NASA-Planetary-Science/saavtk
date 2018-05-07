@@ -15,6 +15,7 @@ import com.google.gson.JsonSerializer;
 
 import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
+import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
 
 final class MetadataIO implements JsonSerializer<Metadata>, JsonDeserializer<Metadata>
@@ -67,7 +68,7 @@ final class MetadataIO implements JsonSerializer<Metadata>, JsonDeserializer<Met
 
 		Version version = context.deserialize(jsonElement, ValueTypeInfo.VERSION.getType());
 
-		final Metadata metadata = Metadata.of(version);
+		final SettableMetadata metadata = SettableMetadata.of(version);
 		if (!iterator.hasNext())
 		{
 			throw new IllegalArgumentException();

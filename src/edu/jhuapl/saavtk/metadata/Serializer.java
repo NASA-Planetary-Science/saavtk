@@ -23,7 +23,7 @@ public interface Serializer
 	 * @throws IllegalStateException if method is called more than once with the
 	 *             same key
 	 */
-	void register(Key<Metadata> key, MetadataManager manager);
+	void register(Key<? extends Metadata> key, MetadataManager manager);
 
 	void load(File file) throws IOException;
 

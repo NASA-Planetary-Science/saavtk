@@ -26,6 +26,7 @@ import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.MetadataManager;
 import edu.jhuapl.saavtk.metadata.MetadataManagerCollection;
 import edu.jhuapl.saavtk.metadata.Serializer;
+import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.metadata.gson.GsonElement.ElementIO;
 
@@ -53,7 +54,7 @@ public class GsonSerializer implements Serializer
 	}
 
 	@Override
-	public void register(Key<Metadata> key, MetadataManager manager)
+	public void register(Key<? extends Metadata> key, MetadataManager manager)
 	{
 		managerCollection.add(key, manager);
 	}
@@ -63,7 +64,7 @@ public class GsonSerializer implements Serializer
 	{
 		Preconditions.checkNotNull(file);
 
-		Metadata source = Metadata.of(Version.of(0, 0));
+		SettableMetadata source = SettableMetadata.of(Version.of(0, 0));
 		try (JsonReader reader = GSON.newJsonReader(new FileReader(file)))
 		{
 			reader.beginArray();
@@ -97,7 +98,7 @@ public class GsonSerializer implements Serializer
 			try (JsonWriter jsonWriter = GSON.newJsonWriter(fileWriter))
 			{
 				jsonWriter.beginArray();
-				for (Key<Metadata> key : managerCollection.getKeys())
+				for (Key<? extends Metadata> key : managerCollection.getKeys())
 				{
 					MetadataManager manager = managerCollection.getManager(key);
 					Metadata metadata = manager.store();
@@ -115,7 +116,7 @@ public class GsonSerializer implements Serializer
 	{
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		executor.execute(() -> {
-			for (Key<Metadata> key : managerCollection.getKeys())
+			for (Key<? extends Metadata> key : managerCollection.getKeys())
 			{
 				try
 				{
@@ -140,7 +141,7 @@ public class GsonSerializer implements Serializer
 	{
 		try
 		{
-			for (Key<Metadata> key : managerCollection.getKeys())
+			for (Key<? extends Metadata> key : managerCollection.getKeys())
 			{
 				Metadata element = source.get(key);
 				if (element != null)
@@ -175,9 +176,9 @@ public class GsonSerializer implements Serializer
 
 	private static class TestManager implements MetadataManager
 	{
-		private final Metadata metadata;
+		private final SettableMetadata metadata;
 
-		TestManager(Metadata metadata)
+		TestManager(SettableMetadata metadata)
 		{
 			this.metadata = metadata;
 		}
@@ -185,7 +186,7 @@ public class GsonSerializer implements Serializer
 		@Override
 		public Metadata store()
 		{
-			Metadata destination = Metadata.of(metadata.getVersion());
+			SettableMetadata destination = SettableMetadata.of(metadata.getVersion());
 			for (Key<?> key : metadata.getKeys())
 			{
 				@SuppressWarnings("unchecked")
@@ -216,7 +217,7 @@ public class GsonSerializer implements Serializer
 		GsonSerializer serializer = new GsonSerializer();
 
 		String v3 = "Bennu / V3";
-		Metadata v3State = Metadata.of(Version.of(3, 1));
+		SettableMetadata v3State = SettableMetadata.of(Version.of(3, 1));
 
 		v3State.put(Key.of("tab"), "1");
 		v3State.put(Key.of("facets"), 2000000001L);
@@ -253,8 +254,8 @@ public class GsonSerializer implements Serializer
 		listListString.add(ImmutableList.of("X", "y", "z"));
 		listListString.add(stringList);
 
-		final Key<Metadata> testStateKey = Key.of("testState");
-		final Metadata state = Metadata.of(GSON_VERSION);
+		final Key<SettableMetadata> testStateKey = Key.of("testState");
+		final SettableMetadata state = SettableMetadata.of(GSON_VERSION);
 		MetadataManager manager = new TestManager(state);
 
 		Key<List<List<String>>> listListStringKey = Key.of("listListString");
@@ -278,7 +279,7 @@ public class GsonSerializer implements Serializer
 		serializer.save(file);
 		System.out.println("Original state is: " + state);
 
-		Metadata state2 = Metadata.of(GSON_VERSION);
+		SettableMetadata state2 = SettableMetadata.of(GSON_VERSION);
 		serializer = GsonSerializer.of();
 		manager = new TestManager(state2);
 		serializer.register(testStateKey, manager);
@@ -292,7 +293,7 @@ public class GsonSerializer implements Serializer
 		{
 			System.err.println("States were not found equal");
 		}
-		Metadata v3State2 = state2.get(Key.of("Bennu / V3"));
+		SettableMetadata v3State2 = state2.get(Key.of("Bennu / V3"));
 		Long longNull = v3State2.get(Key.of("longNull"));
 		System.out.println("longNull is " + longNull);
 
