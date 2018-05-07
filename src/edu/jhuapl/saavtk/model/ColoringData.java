@@ -16,6 +16,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
+import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.model.PolyhedralModel.Format;
 import edu.jhuapl.saavtk.util.FileCache;
@@ -57,7 +58,7 @@ public class ColoringData
 		Preconditions.checkNotNull(name);
 		// TODO check others too.
 
-		Metadata metadata = Metadata.of(COLORING_DATA_VERSION);
+		SettableMetadata metadata = SettableMetadata.of(COLORING_DATA_VERSION);
 		metadata.put(ColoringData.NAME, name);
 
 		metadata.put(ColoringData.FILE_NAME, fileName);
