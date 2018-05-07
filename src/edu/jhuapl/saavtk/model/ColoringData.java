@@ -74,6 +74,7 @@ public class ColoringData
 
 	private final Metadata metadata;
 	private vtkFloatArray data;
+	private double[] defaultRange;
 
 	protected ColoringData(Metadata metadata, vtkFloatArray data)
 	{
@@ -98,6 +99,15 @@ public class ColoringData
 			load();
 		}
 		return data;
+	}
+
+	public double[] getDefaultRange() throws IOException
+	{
+		if (data == null)
+		{
+			load();
+		}
+		return defaultRange;
 	}
 
 	int getNumberElements()
@@ -197,6 +207,7 @@ public class ColoringData
 					data.SetTuple1(index, value);
 				}
 
+				this.defaultRange = data.GetRange();
 				this.data = data;
 			}
 			else
