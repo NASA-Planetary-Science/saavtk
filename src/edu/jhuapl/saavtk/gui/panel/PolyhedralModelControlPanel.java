@@ -38,10 +38,13 @@ import javax.swing.event.ChangeListener;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.jhuapl.saavtk.colormap.ColormapController;
 import edu.jhuapl.saavtk.colormap.ColormapControllerWithContouring;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomPlateDataDialog;
+import edu.jhuapl.saavtk.model.ColoringDataManager;
 import edu.jhuapl.saavtk.model.Graticule;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
@@ -60,10 +63,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	private JRadioButton standardColoringButton;
 	private JRadioButton rgbColoringButton;
 	private ButtonGroup coloringButtonGroup;
-	private JComboBox<String> coloringComboBox;
-	private JComboBox<String> customColorRedComboBox;
-	private JComboBox<String> customColorGreenComboBox;
-	private JComboBox<String> customColorBlueComboBox;
+	private JComboBoxWithItemState<String> coloringComboBox;
+	private JComboBoxWithItemState<String> customColorRedComboBox;
+	private JComboBoxWithItemState<String> customColorGreenComboBox;
+	private JComboBoxWithItemState<String> customColorBlueComboBox;
 	private JLabel customColorRedLabel;
 	private JLabel customColorGreenLabel;
 	private JLabel customColorBlueLabel;
@@ -271,7 +274,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		JLabel coloringLabel = new JLabel();
 		coloringLabel.setText("Plate Coloring");
 
-		coloringComboBox = new JComboBox();
+		coloringComboBox = new JComboBoxWithItemState<>();
 		coloringComboBox.addItemListener(this);
 
 		noColoringButton = new JRadioButton(NO_COLORING);
@@ -324,11 +327,11 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		customColorGreenLabel = new JLabel("Green: ");
 		customColorBlueLabel = new JLabel("Blue: ");
 
-		customColorRedComboBox = new JComboBox();
+		customColorRedComboBox = new JComboBoxWithItemState<>();
 		customColorRedComboBox.addItemListener(this);
-		customColorGreenComboBox = new JComboBox();
+		customColorGreenComboBox = new JComboBoxWithItemState<>();
 		customColorGreenComboBox.addItemListener(this);
-		customColorBlueComboBox = new JComboBox();
+		customColorBlueComboBox = new JComboBoxWithItemState<>();
 		customColorBlueComboBox.addItemListener(this);
 
 		customColorRedComboBox.setEnabled(false);
@@ -704,12 +707,23 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		customColorGreenComboBox.addItem("");
 		customColorBlueComboBox.addItem("");
 
-		for (int i = 0; i < smallBodyModel.getNumberOfColors(); ++i)
+		ColoringDataManager coloringDataManager = smallBodyModel.getColoringDataManager();
+		ImmutableList<String> names = coloringDataManager.getNames();
+		ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
+		int resolution = resolutions.get(smallBodyModel.getModelResolution());
+		for (int index = 0; index < names.size(); ++index)
 		{
-			coloringComboBox.addItem(smallBodyModel.getColoringName(i));
-			customColorRedComboBox.addItem(smallBodyModel.getColoringName(i));
-			customColorGreenComboBox.addItem(smallBodyModel.getColoringName(i));
-			customColorBlueComboBox.addItem(smallBodyModel.getColoringName(i));
+			String name = names.get(index);
+			coloringComboBox.addItem(name);
+			customColorRedComboBox.addItem(name);
+			customColorGreenComboBox.addItem(name);
+			customColorBlueComboBox.addItem(name);
+
+			boolean enabled = coloringDataManager.has(name, resolution);
+			coloringComboBox.setEnabled(name, enabled);
+			customColorRedComboBox.setEnabled(name, enabled);
+			customColorGreenComboBox.setEnabled(name, enabled);
+			customColorBlueComboBox.setEnabled(name, enabled);
 		}
 
 		// Add Ancillary selections here... -turnerj1
