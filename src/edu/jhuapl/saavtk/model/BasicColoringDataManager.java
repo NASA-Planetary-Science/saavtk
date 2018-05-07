@@ -11,6 +11,7 @@ import com.google.common.collect.TreeBasedTable;
 import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.MetadataManager;
+import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
 
 public class BasicColoringDataManager implements ColoringDataManager
@@ -117,7 +118,7 @@ public class BasicColoringDataManager implements ColoringDataManager
 			@Override
 			public Metadata store()
 			{
-				Metadata result = Metadata.of(METADATA_VERSION);
+				SettableMetadata result = SettableMetadata.of(METADATA_VERSION);
 				ImmutableList.Builder<Metadata> builder = ImmutableList.builder();
 				for (String name : names)
 				{
@@ -137,6 +138,7 @@ public class BasicColoringDataManager implements ColoringDataManager
 			public void retrieve(Metadata source)
 			{
 				clear();
+				// TODO write the rest of this.
 			}
 
 		};
