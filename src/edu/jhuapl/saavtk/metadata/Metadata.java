@@ -10,4 +10,5 @@ public interface Metadata
 
 	<V> V get(Key<V> key);
 
+	Metadata copy();
 }

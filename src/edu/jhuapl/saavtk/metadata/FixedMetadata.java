@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableMap;
 
 public final class FixedMetadata extends BasicMetadata
 {
-	public static Metadata of(BasicMetadata metadata)
+	public static FixedMetadata of(BasicMetadata metadata)
 	{
 		Version version = metadata.getVersion();
 		ImmutableList<Key<?>> keys = metadata.getKeys();
@@ -29,9 +29,14 @@ public final class FixedMetadata extends BasicMetadata
 	}
 
 	@Override
+	public FixedMetadata copy()
+	{
+		return this;
+	}
+
+	@Override
 	protected ImmutableMap<Key<?>, Object> getMap()
 	{
 		return map;
 	}
-
 }

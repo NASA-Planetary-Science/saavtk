@@ -12,17 +12,19 @@ public final class SettableMetadata extends BasicMetadata
 {
 	public static SettableMetadata of(Version version)
 	{
-		return new SettableMetadata(version);
+		return new SettableMetadata(version, new ArrayList<>(), new HashMap<>());
 	}
 
 	private final List<Key<?>> keys;
 	private final Map<Key<?>, Object> map;
 
-	private SettableMetadata(Version version)
+	private SettableMetadata(Version version, List<Key<?>> keys, Map<Key<?>, Object> map)
 	{
 		super(version);
-		this.keys = new ArrayList<>();
-		this.map = new HashMap<>();
+		Preconditions.checkNotNull(keys);
+		Preconditions.checkNotNull(map);
+		this.keys = keys;
+		this.map = map;
 	}
 
 	@Override
@@ -32,9 +34,9 @@ public final class SettableMetadata extends BasicMetadata
 	}
 
 	@Override
-	protected Map<Key<?>, Object> getMap()
+	public SettableMetadata copy()
 	{
-		return map;
+		return new SettableMetadata(getVersion(), new ArrayList<>(keys), new HashMap<>(map));
 	}
 
 	public <V> SettableMetadata put(Key<V> key, V value)
@@ -46,7 +48,7 @@ public final class SettableMetadata extends BasicMetadata
 		}
 		if (value == null)
 		{
-			setNullObject(key, map);
+			putNullObject(key, map);
 		}
 		else
 		{
@@ -59,6 +61,12 @@ public final class SettableMetadata extends BasicMetadata
 	{
 		keys.clear();
 		map.clear();
+	}
+
+	@Override
+	protected Map<Key<?>, Object> getMap()
+	{
+		return map;
 	}
 
 }

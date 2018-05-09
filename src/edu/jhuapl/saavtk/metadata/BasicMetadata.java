@@ -41,7 +41,7 @@ public abstract class BasicMetadata implements Metadata
 		{
 			throw new IllegalArgumentException("FixedMetadata does not contain key " + key);
 		}
-		if (isNullObject(object))
+		if (NULL_OBJECT == object)
 		{
 			return null;
 		}
@@ -85,12 +85,7 @@ public abstract class BasicMetadata implements Metadata
 		return builder.toString();
 	}
 
-	private static final boolean isNullObject(Object object)
-	{
-		return NULL_OBJECT == object;
-	}
-
-	protected static final void setNullObject(Key<?> key, Map<Key<?>, Object> map)
+	protected static final void putNullObject(Key<?> key, Map<Key<?>, Object> map)
 	{
 		map.put(key, NULL_OBJECT);
 	}

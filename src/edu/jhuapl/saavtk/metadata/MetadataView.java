@@ -4,7 +4,7 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
-public class MetadataView extends BasicMetadata
+public final class MetadataView extends BasicMetadata
 {
 	public static MetadataView of(BasicMetadata metadata)
 	{
@@ -27,6 +27,12 @@ public class MetadataView extends BasicMetadata
 	public ImmutableList<Key<?>> getKeys()
 	{
 		return metadata.getKeys();
+	}
+
+	@Override
+	public MetadataView copy()
+	{
+		return this;
 	}
 
 	@Override
