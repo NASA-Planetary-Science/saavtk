@@ -1,5 +1,5 @@
 <ColorMaps>
-  <!--O-REx colormaps (from JAsteroid)--><ColorMap name="O-REx Scalar Ramp" space="RGB">
+  <!--O-REx colormaps (from JAsteroid)--><ColorMap name="OREX Scalar Ramp" space="RGB">
   <Point x="0.000000" o="1" r="0.000000" g="0.000000" b="0.000000" />
 <Point x="0.003920" o="1" r="0.313720" g="0.000000" b="0.819600" />
 <Point x="0.007840" o="1" r="0.325490" g="0.007840" b="0.827450" />
@@ -259,7 +259,7 @@
     <NaN r="0.0" g="1.0" b="0.0" />
 
 </ColorMap>
-	<ColorMap name="O-REx Stoplight Ramp" space="RGB">
+	<ColorMap name="OREX Stoplight Ramp" space="RGB">
 		<Point x="0" r="0.6" g="0.6" b="0.6" o="1"></Point>
 		<Point x="0.5" r="1" g="0" b="0" o="1"></Point>
 		<Point x="0.95" r="1" g="1" b="0" o="1"></Point>
