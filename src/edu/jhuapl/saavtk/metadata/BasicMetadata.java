@@ -49,6 +49,9 @@ public abstract class BasicMetadata implements Metadata
 	}
 
 	@Override
+	public abstract BasicMetadata copy();
+
+	@Override
 	public final int hashCode()
 	{
 		final int prime = 31;
