@@ -1357,7 +1357,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					result += ", ";
 				}
 				float red = (float) getColoringValue(redFalseColor, pickPosition);
-				result += getColoringValueLabel(coloringIndex, red);
+				result += getColoringValueLabel(redFalseColor, red);
 			}
 			if (isColoringIndexInRange(greenFalseColor))
 			{
@@ -1370,7 +1370,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					result += ", ";
 				}
 				float green = (float) getColoringValue(greenFalseColor, pickPosition);
-				result += getColoringValueLabel(coloringIndex, green);
+				result += getColoringValueLabel(greenFalseColor, green);
 			}
 			if (isColoringIndexInRange(blueFalseColor))
 			{
@@ -1383,7 +1383,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					result += ", ";
 				}
 				float blue = (float) getColoringValue(blueFalseColor, pickPosition);
-				result += getColoringValueLabel(coloringIndex, blue);
+				result += getColoringValueLabel(blueFalseColor, blue);
 			}
 			return result;
 		}
@@ -2268,49 +2268,76 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 	}
 
+	private interface Indexable
+	{
+		int size();
+
+		double get(int index);
+	}
+
+	private Indexable getIndexable(final int coloringIndex, final int missingTuple) throws IOException
+	{
+		if (isColoringIndexInRange(coloringIndex))
+		{
+			ColoringData coloringData = getColoringData(coloringIndex);
+			coloringData.load();
+			int size = coloringData.getNumberElements();
+
+			final vtkFloatArray floatArray = coloringData.getData();
+			final double[] range = floatArray.GetRange();
+			final double extent = range[1] - range[0];
+			if (Double.compare(extent, 0.) < 0)
+			{
+				throw new IllegalStateException();
+			}
+
+			return new Indexable() {
+				final double scale = 255.;
+
+				@Override
+				public int size()
+				{
+					return size;
+				}
+
+				@Override
+				public double get(int index)
+				{
+					return scale * (floatArray.GetTuple1(index) - range[0]) / extent;
+				}
+
+			};
+		}
+		return new Indexable() {
+			final double colorMissing = 0.;
+
+			@Override
+			public int size()
+			{
+				return missingTuple;
+			}
+
+			@Override
+			public double get(@SuppressWarnings("unused") int index)
+			{
+				return colorMissing;
+			}
+		};
+	}
+
 	/**
 	 * Update the false color point or cell data if
+	 * 
+	 * @throws IOException
 	 */
-	private void updateFalseColorArray()
+	private void updateFalseColorArray() throws IOException
 	{
-		int numberTuples = -1;
-		vtkFloatArray red = null;
-		vtkFloatArray green = null;
-		vtkFloatArray blue = null;
-		double[] redRange = null;
-		double[] greenRange = null;
-		double[] blueRange = null;
-		double redExtent = -1.;
-		double greenExtent = -1.;
-		double blueExtent = -1.;
-		if (isColoringIndexInRange(redFalseColor))
-		{
-			numberTuples = getColoringData(redFalseColor).getNumberElements();
-			redRange = getCurrentColoringRange(redFalseColor);
-			if (redRange != null && redRange.length == 2)
-			{
-				redExtent = redRange[1] - redRange[0];
-			}
-		}
-		if (isColoringIndexInRange(greenFalseColor))
-		{
-			numberTuples = getColoringData(greenFalseColor).getNumberElements();
-			greenRange = getCurrentColoringRange(greenFalseColor);
-			if (greenRange != null && greenRange.length == 2)
-			{
-				greenExtent = greenRange[1] - greenRange[0];
-			}
-		}
-		if (isColoringIndexInRange(blueFalseColor))
-		{
-			numberTuples = getColoringData(blueFalseColor).getNumberElements();
-			blueRange = getCurrentColoringRange(blueFalseColor);
-			if (blueRange != null && blueRange.length == 2)
-			{
-				blueExtent = blueRange[1] - blueRange[0];
-			}
-		}
+		final int missingTuple = -1;
+		Indexable red = getIndexable(redFalseColor, missingTuple);
+		Indexable green = getIndexable(greenFalseColor, missingTuple);
+		Indexable blue = getIndexable(blueFalseColor, missingTuple);
 
+		int numberTuples = Math.max(red.size(), Math.max(green.size(), blue.size()));
 		if (numberTuples <= 0)
 		{
 			return;
@@ -2324,23 +2351,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		falseColorArray.SetNumberOfTuples(numberTuples);
 
-		final double colorMissing = 0.; // Experimentally found this to give the best color definition.
-		final double invalidColor = 255.; // This actually should never be used below.
-		final double scale = 255.;
-		for (int i = 0; i < numberTuples; ++i)
+		for (int index = 0; index < numberTuples; ++index)
 		{
-			double redValue = redExtent > 0. ? scale * (red.GetTuple1(i) - redRange[0]) / redExtent : colorMissing;
-			double greenValue = greenExtent > 0. ? scale * (green.GetTuple1(i) - greenRange[0]) / greenExtent : colorMissing;
-			double blueValue = blueExtent > 0. ? scale * (blue.GetTuple1(i) - blueRange[0]) / blueExtent : colorMissing;
-
-			if (redValue < 0.0)
-				redValue = invalidColor;
-			if (greenValue < 0.0)
-				greenValue = invalidColor;
-			if (blueValue < 0.0)
-				blueValue = invalidColor;
-
-			falseColorArray.SetTuple3(i, redValue, greenValue, blueValue);
+			falseColorArray.SetTuple3(index, red.get(index), green.get(index), blue.get(index));
 		}
 	}
 
