@@ -21,7 +21,7 @@ public class ColoringInfo
 
 	ColoringData toCustomColoringData(int numberElements)
 	{
-		return ColoringData.of(coloringName, coloringFile, format, ImmutableList.of(coloringName), coloringUnits, numberElements, coloringHasNulls, coloringValues);
+		return ColoringData.of(coloringName, coloringFile, ImmutableList.of(coloringName), coloringUnits, numberElements, coloringHasNulls, coloringValues);
 	}
 
 	@Override

@@ -83,6 +83,42 @@ public class BasicColoringDataManager implements ColoringDataManager
 	}
 
 	@Override
+	public BasicColoringDataManager copy()
+	{
+		ImmutableList.Builder<ColoringData> builder = ImmutableList.builder();
+		for (String name : names)
+		{
+			for (Integer resolution : resolutions)
+			{
+				ColoringData coloringData = dataTable.get(name, resolution);
+				if (coloringData != null)
+				{
+					builder.add(coloringData);
+				}
+			}
+		}
+		return new BasicColoringDataManager(dataId, builder.build());
+	}
+
+	public ImmutableList<ColoringData> get(int numberElements)
+	{
+		ImmutableList.Builder<ColoringData> builder = ImmutableList.builder();
+		for (String name : getNames())
+		{
+			if (has(name, numberElements))
+			{
+				builder.add(get(name, numberElements));
+			}
+		}
+		return builder.build();
+	}
+
+	public final boolean has(ColoringData data)
+	{
+		Preconditions.checkNotNull(data);
+		return dataTable.get(data.getName(), data.getNumberElements()) == data;
+	}
+
 	public final void add(ColoringData data)
 	{
 		Metadata metadata = data.getMetadata();
@@ -103,7 +139,36 @@ public class BasicColoringDataManager implements ColoringDataManager
 		dataTable.put(name, numberElements, data);
 	}
 
-	@Override
+	public final void remove(ColoringData data)
+	{
+		Metadata metadata = data.getMetadata();
+		String name = metadata.get(ColoringData.NAME);
+		Integer numberElements = metadata.get(ColoringData.NUMBER_ELEMENTS);
+		dataTable.remove(name, numberElements);
+
+		if (!dataTable.rowKeySet().contains(name))
+		{
+			names.remove(name);
+		}
+
+		if (!dataTable.columnKeySet().contains(numberElements))
+		{
+			resolutions.remove(numberElements);
+		}
+	}
+
+	public final void replace(ColoringData data)
+	{
+		Metadata metadata = data.getMetadata();
+		String name = metadata.get(ColoringData.NAME);
+		Integer numberElements = metadata.get(ColoringData.NUMBER_ELEMENTS);
+		if (!dataTable.contains(name, numberElements))
+		{
+			throw new IllegalArgumentException("Cannot replace coloring " + name + " (" + numberElements + " elements)");
+		}
+		dataTable.put(name, numberElements, data);
+	}
+
 	public void clear()
 	{
 		names.clear();

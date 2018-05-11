@@ -15,25 +15,25 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 
 	public static CustomizableColoringDataManager of(String dataId)
 	{
-		return new CustomizableColoringDataManager(dataId, ImmutableList.of());
+		return new CustomizableColoringDataManager(dataId, BasicColoringDataManager.of(dataId + " (built-in)"), BasicColoringDataManager.of(dataId + " (custom)"));
 	}
 
-	public static CustomizableColoringDataManager of(String dataId, Iterable<? extends ColoringData> coloringData)
+	public static CustomizableColoringDataManager of(String dataId, Iterable<? extends ColoringData> builtIn)
 	{
-		return new CustomizableColoringDataManager(dataId, coloringData);
+		return new CustomizableColoringDataManager(dataId, BasicColoringDataManager.of(dataId + " (built-in)", builtIn), BasicColoringDataManager.of(dataId + " (custom)"));
 	}
 
 	private final BasicColoringDataManager builtIn;
 	private final BasicColoringDataManager custom;
 	private final BasicColoringDataManager all;
 
-	private CustomizableColoringDataManager(String id, Iterable<? extends ColoringData> builtIn)
+	private CustomizableColoringDataManager(String dataId, BasicColoringDataManager builtIn, BasicColoringDataManager custom)
 	{
-		Preconditions.checkNotNull(id);
+		Preconditions.checkNotNull(dataId);
 		Preconditions.checkNotNull(builtIn);
-		this.builtIn = BasicColoringDataManager.of(id + " (built-in)", builtIn);
-		this.custom = BasicColoringDataManager.of(id + " (custom)");
-		this.all = BasicColoringDataManager.of(id);
+		this.builtIn = builtIn;
+		this.custom = custom;
+		this.all = BasicColoringDataManager.of(dataId);
 		update();
 	}
 
@@ -68,16 +68,53 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 	}
 
 	@Override
-	public void clear()
+	public CustomizableColoringDataManager copy()
 	{
-		custom.clear();
+		return new CustomizableColoringDataManager(all.getId(), builtIn.copy(), custom.copy());
+	}
+
+	public ImmutableList<ColoringData> get(int numberElements)
+	{
+		return all.get(numberElements);
+	}
+
+	public boolean isBuiltIn(ColoringData data)
+	{
+		return builtIn.has(data);
+	}
+
+	public boolean isCustom(ColoringData data)
+	{
+		return custom.has(data);
+	}
+
+	public void addBuiltIn(ColoringData data)
+	{
+		builtIn.add(data);
 		update();
 	}
 
-	@Override
-	public void add(ColoringData data)
+	public void addCustom(ColoringData data)
 	{
 		custom.add(data);
+		update();
+	}
+
+	public void removeCustom(ColoringData data)
+	{
+		custom.remove(data);
+		update();
+	}
+
+	public void replaceCustom(ColoringData data)
+	{
+		custom.replace(data);
+		update();
+	}
+
+	public void clearCustom()
+	{
+		custom.clear();
 		update();
 	}
 
@@ -97,7 +134,9 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 			@Override
 			public void retrieve(Metadata source)
 			{
-				clear();
+				all.clear();
+				builtIn.clear();
+				custom.clear();
 				// TODO finish writing this.
 			}
 

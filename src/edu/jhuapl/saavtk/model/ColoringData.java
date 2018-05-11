@@ -34,26 +34,25 @@ public class ColoringData
 	static final Key<String> NAME = Key.of("Coloring name"); // Slope or Gravitational Vector
 
 	static final Key<String> FILE_NAME = Key.of("File name");
-	static final Key<String> FILE_FORMAT = Key.of("File format"); // Stand-in for Format enumeration.
 	static final Key<List<String>> ELEMENT_NAMES = Key.of("Element names"); // [ "Slope" ] or [ "G_x", "G_y", "G_z" ]
 
 	static final Key<String> UNITS = Key.of("Coloring units"); // deg or m/s^2
 	static final Key<Integer> NUMBER_ELEMENTS = Key.of("Number of elements"); // 49xxx
 	static final Key<Boolean> HAS_NULLS = Key.of("Coloring has nulls");
 
-	public static ColoringData of(String name, String fileName, Format fileFormat, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
+	public static ColoringData of(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
 	{
-		Metadata metadata = createMetadata(name, fileName, fileFormat, elementNames, units, numberElements, hasNulls);
+		Metadata metadata = createMetadata(name, fileName, elementNames, units, numberElements, hasNulls);
 		return new ColoringData(metadata, null);
 	}
 
-	public static ColoringData of(String name, String fileName, Format fileFormat, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
+	public static ColoringData of(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
 	{
-		Metadata metadata = createMetadata(name, fileName, fileFormat, elementNames, units, numberElements, hasNulls);
+		Metadata metadata = createMetadata(name, fileName, elementNames, units, numberElements, hasNulls);
 		return new ColoringData(metadata, data);
 	}
 
-	private static Metadata createMetadata(String name, String fileName, Format fileFormat, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
+	private static Metadata createMetadata(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
 	{
 		Preconditions.checkNotNull(name);
 		// TODO check others too.
@@ -62,7 +61,6 @@ public class ColoringData
 		metadata.put(ColoringData.NAME, name);
 
 		metadata.put(ColoringData.FILE_NAME, fileName);
-		metadata.put(ColoringData.FILE_FORMAT, fileFormat.toString());
 		metadata.put(ColoringData.ELEMENT_NAMES, ImmutableList.copyOf(elementNames));
 
 		metadata.put(ColoringData.UNITS, units);
@@ -80,6 +78,7 @@ public class ColoringData
 	{
 		this.metadata = metadata;
 		this.data = data;
+		this.defaultRange = this.data != null ? defaultRange = this.data.GetRange() : null;
 	}
 
 	public String getName()
@@ -92,65 +91,108 @@ public class ColoringData
 		return metadata.get(UNITS);
 	}
 
-	public vtkFloatArray getData() throws IOException
+	public Integer getNumberElements()
 	{
-		if (data == null)
+		return metadata.get(NUMBER_ELEMENTS);
+	}
+
+	public String getFileName()
+	{
+		return metadata.get(FILE_NAME);
+	}
+
+	public List<String> getElementNames()
+	{
+		return ImmutableList.copyOf(metadata.get(ELEMENT_NAMES));
+	}
+
+	public Boolean hasNulls()
+	{
+		return metadata.get(HAS_NULLS);
+	}
+
+	public void load() throws IOException
+	{
+		if (this.data == null)
 		{
-			load();
+			String fileName = getFileName();
+			File file = FileCache.getFileFromServer(fileName);
+			if (file == null)
+			{
+				String message = "Unable to download file " + fileName;
+				JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
+				throw new IOException(message);
+			}
+
+			// If we get this far, the file was successfully downloaded.
+			Format format = getFileFormat(file);
+			switch (format)
+			{
+			case FIT:
+				loadColoringDataFits(file);
+				break;
+			case TXT:
+				loadColoringDataTxt(file);
+				break;
+			case UNKNOWN:
+				throw new IOException("Do not recognize the type of file " + fileName);
+			default:
+				throw new AssertionError("Unhandled file format type");
+			}
 		}
+	}
+
+	public void clear()
+	{
+		data = null;
+	}
+
+	public void reload() throws IOException
+	{
+		clear();
+		load();
+	}
+
+	public vtkFloatArray getData()
+	{
+		Preconditions.checkState(data != null);
 		return data;
 	}
 
-	public double[] getDefaultRange() throws IOException
+	public double[] getDefaultRange()
 	{
-		if (data == null)
-		{
-			load();
-		}
+		Preconditions.checkState(data != null);
 		return defaultRange;
 	}
 
-	int getNumberElements()
+	public ColoringData copy()
 	{
-		return metadata.get(NUMBER_ELEMENTS);
+		return new ColoringData(metadata.copy(), data);
+	}
+
+	@Override
+	public String toString()
+	{
+		StringBuilder builder = new StringBuilder(getName());
+		append(builder, getUnits());
+		String fileFormat = getFileName().replaceFirst("[^\\.]*\\.", "");
+		fileFormat = fileFormat.replaceFirst("\\.gz$", "").toUpperCase();
+		append(builder, fileFormat);
+		return builder.toString();
+	}
+
+	private final void append(StringBuilder builder, String toAppend)
+	{
+		if (toAppend != null && toAppend.matches(".*\\S.*"))
+		{
+			builder.append(", ");
+			builder.append(toAppend);
+		}
 	}
 
 	Metadata getMetadata()
 	{
 		return metadata;
-	}
-
-	private String getFileName()
-	{
-		return metadata.get(FILE_NAME);
-	}
-
-	private void load() throws IOException
-	{
-		String fileName = getFileName();
-		File file = FileCache.getFileFromServer(fileName);
-		if (file == null)
-		{
-			String message = "Unable to download file " + fileName;
-			JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
-			throw new IOException(message);
-		}
-
-		// If we get this far, the file was successfully downloaded.
-		Format format = getFileFormat(file);
-		switch (format)
-		{
-		case FIT:
-			loadColoringDataFits(file);
-			break;
-		case TXT:
-			loadColoringDataTxt(file);
-			break;
-		case UNKNOWN:
-			throw new IOException("Do not recognize the type of file " + fileName);
-		default:
-			throw new AssertionError("Unhandled file format type");
-		}
 	}
 
 	private Format getFileFormat(File file)
@@ -193,21 +235,24 @@ public class ColoringData
 					throw new IOException(message);
 				}
 
-				ImmutableList<String> columnNames = findMatchingColumnNameCaseInsensitive(table, metadata.get(ELEMENT_NAMES));
+				//				ImmutableList<String> columnNames = findMatchingColumnNameCaseInsensitive(table, metadata.get(ELEMENT_NAMES));
 
 				vtkFloatArray data = new vtkFloatArray();
 
 				data.SetNumberOfComponents(1);
 				data.SetNumberOfTuples(numberElements);
 
-				float[] floatData = (float[]) table.getColumn(columnNames.get(0));
+				//				float[] floatData = (float[]) table.getColumn(columnNames.get(0));
+				float[] floatData = (float[]) table.getColumn(4);
 				for (int index = 0; index < numberElements; index++)
 				{
 					float value = floatData[index];
 					data.SetTuple1(index, value);
 				}
 
-				this.defaultRange = data.GetRange();
+				this.defaultRange = computeDefaultColoringRange(data);
+
+				// Everything worked so assign to the data field.
 				this.data = data;
 			}
 			else
@@ -273,9 +318,33 @@ public class ColoringData
 				JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
 				throw new IOException(message);
 			}
+
+			this.defaultRange = computeDefaultColoringRange(data);
+
 			// Everything worked so assign to the data field.
 			this.data = data;
 		}
 
 	}
+
+	private final double[] computeDefaultColoringRange(vtkFloatArray data)
+	{
+		double[] result = data.GetRange();
+		if (metadata.get(HAS_NULLS))
+		{
+			int numberValues = data.GetNumberOfTuples();
+			double maximum = result[1];
+			double minimum = maximum;
+			for (int index = 0; index < numberValues; ++index)
+			{
+				double value = data.GetValue(index);
+				if (value < minimum && value > result[0])
+					minimum = value;
+			}
+
+			result[0] = minimum;
+		}
+		return result;
+	}
+
 }

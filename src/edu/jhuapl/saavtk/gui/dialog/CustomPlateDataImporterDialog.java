@@ -21,9 +21,10 @@ import java.io.InputStreamReader;
 
 import javax.swing.JOptionPane;
 
-import edu.jhuapl.saavtk.model.ColoringInfo;
+import com.google.common.collect.ImmutableList;
+
+import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.PolyhedralModel.Format;
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
 import nom.tam.fits.FitsException;
@@ -33,60 +34,53 @@ import nom.tam.fits.TableHDU;
 public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 {
 	private boolean okayPressed = false;
-	private int numCells = 0;
+	private final int numCells;
 	private boolean isEditMode;
 	private static final String LEAVE_UNMODIFIED = "<leave unmodified or empty to use existing plate data>";
 	private String origColoringFile; // used in Edit mode only to store original filename
 
 	/** Creates new form ShapeModelImporterDialog */
-	public CustomPlateDataImporterDialog(java.awt.Window parent, boolean isEditMode)
+	public CustomPlateDataImporterDialog(java.awt.Window parent, boolean isEditMode, int numCells)
 	{
 		super(parent, "Import Plate Data", Dialog.ModalityType.DOCUMENT_MODAL);
 		initComponents();
 		this.isEditMode = isEditMode;
+		this.numCells = numCells;
 	}
 
 	/**
 	 * Set the cell data info
 	 */
-	public void setCellDataInfo(ColoringInfo info, int numCells)
+	public void setColoringData(ColoringData data)
 	{
 		if (isEditMode)
 		{
 			cellDataPathTextField.setText(LEAVE_UNMODIFIED);
-			origColoringFile = info.coloringFile;
+			origColoringFile = data.getFileName();
 		}
 
-		nameTextField.setText(info.coloringName);
-		unitsTextField.setText(info.coloringUnits);
-		hasNullsCheckBox.setSelected(info.coloringHasNulls);
-		this.numCells = numCells;
+		nameTextField.setText(data.getName());
+		unitsTextField.setText(data.getUnits());
+		hasNullsCheckBox.setSelected(data.hasNulls());
 	}
 
 	/**
 	 * @return
 	 */
-	public ColoringInfo getCellDataInfo()
+	public ColoringData getColoringData()
 	{
 		String errorString = validateInput();
 		if (errorString != null)
 		{
 			throw new RuntimeException(errorString);
 		}
-		ColoringInfo info = new ColoringInfo();
-		info.builtIn = false;
-		info.coloringFile = cellDataPathTextField.getText();
-		if (info.coloringFile.toLowerCase().endsWith(".fits") || info.coloringFile.toLowerCase().endsWith(".fit"))
-			info.format = Format.FIT;
 
-		if (isEditMode && (LEAVE_UNMODIFIED.equals(info.coloringFile) || info.coloringFile == null || info.coloringFile.isEmpty()))
-			info.coloringFile = origColoringFile;
+		String fileName = cellDataPathTextField.getText();
 
-		info.coloringName = nameTextField.getText();
-		info.coloringUnits = unitsTextField.getText();
-		info.coloringHasNulls = hasNullsCheckBox.isSelected();
+		if (isEditMode && (LEAVE_UNMODIFIED.equals(fileName) || fileName == null || fileName.isEmpty()))
+			fileName = origColoringFile;
 
-		return info;
+		return ColoringData.of(nameTextField.getText(), fileName, ImmutableList.of(), unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
 	}
 
 	private String validateInput()

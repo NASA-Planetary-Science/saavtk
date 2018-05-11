@@ -121,7 +121,7 @@ public abstract class PolyhedralModel extends AbstractModel
 
 	public abstract void removeCustomLidarDatasource(int index) throws IOException;
 
-	public abstract ColoringDataManager getColoringDataManager();
+	public abstract CustomizableColoringDataManager getColoringDataManager();
 
 	public abstract void setCustomPlateData(int index, ColoringInfo info) throws IOException;
 
@@ -130,8 +130,6 @@ public abstract class PolyhedralModel extends AbstractModel
 	public abstract void removeCustomPlateData(int index) throws IOException;
 
 	public abstract List<ColoringInfo> getColoringInfoList();
-
-	public abstract int getNumberOfCustomColors();
 
 	public abstract void saveAsPLT(File file) throws IOException;
 
@@ -156,8 +154,6 @@ public abstract class PolyhedralModel extends AbstractModel
 	public abstract String getDEMConfigFilename();
 
 	public abstract boolean isImageMapAvailable();
-
-	public abstract int getNumberOfBuiltInColors();
 
 	public abstract void setShowSmallBody(boolean show);
 

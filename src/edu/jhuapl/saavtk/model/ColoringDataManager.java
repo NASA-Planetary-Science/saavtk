@@ -14,8 +14,6 @@ public interface ColoringDataManager
 
 	ColoringData get(String name, int numberElements);
 
-	void clear();
-
-	void add(ColoringData data);
+	ColoringDataManager copy();
 
 }
