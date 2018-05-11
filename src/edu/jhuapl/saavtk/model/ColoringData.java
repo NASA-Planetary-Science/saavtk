@@ -336,7 +336,10 @@ public class ColoringData
 			while ((line = in.readLine()) != null)
 			{
 				float value = Float.parseFloat(line);
-				data.SetTuple1(index, value);
+				if (index < numberElements)
+				{
+					data.SetTuple1(index, value);
+				}
 				++index;
 			}
 
