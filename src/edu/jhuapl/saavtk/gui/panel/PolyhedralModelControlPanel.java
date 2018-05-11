@@ -416,7 +416,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
 		// Only show coloring in APL version or if there are built in colors.
 		// In the non-APL version, do not allow customization.
-		if (Configuration.isAPLVersion() || smallBodyModel.getNumberOfBuiltInColors() > 0)
+		if (Configuration.isAPLVersion())
 		{
 			panel.add(coloringLabel, "wrap");
 			panel.add(noColoringButton, "wrap, gapleft 25");
@@ -671,10 +671,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	protected void setColoring(int idx)
 	{
 		PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
-		if (idx < 0 || idx >= smallBodyModel.getColoringInfoList().size())
-		{
-			return;
-		}
+		//		if (idx < 0 || idx >= smallBodyModel.getColoringInfoList().size())
+		//		{
+		//			return;
+		//		}
 		try
 		{
 			smallBodyModel.setColoringIndex(idx);
