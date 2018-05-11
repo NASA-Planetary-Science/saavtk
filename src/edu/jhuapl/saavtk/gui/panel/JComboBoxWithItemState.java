@@ -48,6 +48,14 @@ public class JComboBoxWithItemState<E> extends JComboBox<E>
 	}
 
 	@Override
+	public void addItem(E item)
+	{
+		super.addItem(item);
+		// Enable by default.
+		setEnabled(item, true);
+	}
+
+	@Override
 	public final void setModel(ComboBoxModel<E> model)
 	{
 		super.setModel(wrapModel(model));
