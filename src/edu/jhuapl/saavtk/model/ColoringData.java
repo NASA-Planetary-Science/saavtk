@@ -14,8 +14,8 @@ import javax.swing.JOptionPane;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import edu.jhuapl.saavtk.metadata.FixedMetadata;
 import edu.jhuapl.saavtk.metadata.Key;
-import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.model.PolyhedralModel.Format;
@@ -42,17 +42,17 @@ public class ColoringData
 
 	public static ColoringData of(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
 	{
-		Metadata metadata = createMetadata(name, fileName, elementNames, units, numberElements, hasNulls);
+		FixedMetadata metadata = createMetadata(name, fileName, elementNames, units, numberElements, hasNulls);
 		return new ColoringData(metadata, null);
 	}
 
 	public static ColoringData of(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
 	{
-		Metadata metadata = createMetadata(name, fileName, elementNames, units, numberElements, hasNulls);
+		FixedMetadata metadata = createMetadata(name, fileName, elementNames, units, numberElements, hasNulls);
 		return new ColoringData(metadata, data);
 	}
 
-	private static Metadata createMetadata(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
+	private static FixedMetadata createMetadata(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
 	{
 		Preconditions.checkNotNull(name);
 		// TODO check others too.
@@ -67,14 +67,14 @@ public class ColoringData
 		metadata.put(ColoringData.NUMBER_ELEMENTS, numberElements);
 		metadata.put(ColoringData.HAS_NULLS, hasNulls);
 
-		return metadata;
+		return FixedMetadata.of(metadata);
 	}
 
-	private final Metadata metadata;
+	private final FixedMetadata metadata;
 	private vtkFloatArray data;
 	private double[] defaultRange;
 
-	protected ColoringData(Metadata metadata, vtkFloatArray data)
+	protected ColoringData(FixedMetadata metadata, vtkFloatArray data)
 	{
 		this.metadata = metadata;
 		this.data = data;
@@ -83,32 +83,32 @@ public class ColoringData
 
 	public String getName()
 	{
-		return metadata.get(NAME);
+		return getMetadata().get(NAME);
 	}
 
 	public String getUnits()
 	{
-		return metadata.get(UNITS);
+		return getMetadata().get(UNITS);
 	}
 
 	public Integer getNumberElements()
 	{
-		return metadata.get(NUMBER_ELEMENTS);
+		return getMetadata().get(NUMBER_ELEMENTS);
 	}
 
 	public String getFileName()
 	{
-		return metadata.get(FILE_NAME);
+		return getMetadata().get(FILE_NAME);
 	}
 
 	public List<String> getElementNames()
 	{
-		return ImmutableList.copyOf(metadata.get(ELEMENT_NAMES));
+		return ImmutableList.copyOf(getMetadata().get(ELEMENT_NAMES));
 	}
 
 	public Boolean hasNulls()
 	{
-		return metadata.get(HAS_NULLS);
+		return getMetadata().get(HAS_NULLS);
 	}
 
 	public void load() throws IOException
@@ -167,7 +167,35 @@ public class ColoringData
 
 	public ColoringData copy()
 	{
-		return new ColoringData(metadata.copy(), data);
+		return new ColoringData(getMetadata().copy(), data);
+	}
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + getMetadata().hashCode();
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object other)
+	{
+		if (this == other)
+		{
+			return true;
+		}
+		if (!(other instanceof ColoringData))
+		{
+			return false;
+		}
+		ColoringData that = (ColoringData) other;
+		if (!this.getMetadata().equals(that.getMetadata()))
+		{
+			return false;
+		}
+		return true;
 	}
 
 	@Override
@@ -175,7 +203,7 @@ public class ColoringData
 	{
 		StringBuilder builder = new StringBuilder(getName());
 		append(builder, getUnits());
-		String fileFormat = getFileName().replaceFirst("[^\\.]*\\.", "");
+		String fileFormat = getFileName().replaceFirst(".*[/\\\\]", "").replaceFirst("[^\\.]*\\.", "");
 		fileFormat = fileFormat.replaceFirst("\\.gz$", "").toUpperCase();
 		append(builder, fileFormat);
 		return builder.toString();
@@ -190,7 +218,7 @@ public class ColoringData
 		}
 	}
 
-	Metadata getMetadata()
+	FixedMetadata getMetadata()
 	{
 		return metadata;
 	}
@@ -221,7 +249,7 @@ public class ColoringData
 		try (Fits fits = new Fits(file))
 		{
 			fits.read();
-			int numberElements = metadata.get(NUMBER_ELEMENTS);
+			int numberElements = getMetadata().get(NUMBER_ELEMENTS);
 
 			BasicHDU<?> hdu = fits.getHDU(1);
 			if (hdu instanceof TableHDU)
@@ -299,7 +327,7 @@ public class ColoringData
 		{
 			vtkFloatArray data = new vtkFloatArray();
 
-			int numberElements = metadata.get(NUMBER_ELEMENTS);
+			int numberElements = getMetadata().get(NUMBER_ELEMENTS);
 			data.SetNumberOfComponents(1);
 			data.SetNumberOfTuples(numberElements);
 
@@ -330,7 +358,7 @@ public class ColoringData
 	private final double[] computeDefaultColoringRange(vtkFloatArray data)
 	{
 		double[] result = data.GetRange();
-		if (metadata.get(HAS_NULLS))
+		if (getMetadata().get(HAS_NULLS))
 		{
 			int numberValues = data.GetNumberOfTuples();
 			double maximum = result[1];
