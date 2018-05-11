@@ -600,7 +600,17 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	{
 		String prevColoringName = null;
 		if (coloringIndex >= 0)
-			prevColoringName = getColoringData(coloringIndex).getName();
+		{
+			try
+			{
+				prevColoringName = getColoringData(coloringIndex).getName();
+			}
+			catch (IllegalStateException e)
+			{
+				// Indicates the previous coloring is not available for this resolution.
+				coloringIndex = -1;
+			}
+		}
 
 		coloringDataManager.clearCustom();
 		clearCustomColoringInfo();
@@ -637,22 +647,21 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					info.coloringUnits = cellDataUnits[i];
 					info.coloringHasNulls = Boolean.parseBoolean(cellDataHasNulls[i]);
 					info.builtIn = false;
-					int numberElements = getConfig().smallBodyNumberOfPlatesPerResolutionLevel[info.resolutionLevel];
 					if (cellDataResolutionLevels != null)
 					{
 						info.resolutionLevel = Integer.parseInt(cellDataResolutionLevels[i]);
 						if (info.resolutionLevel == getModelResolution())
 						{
 							coloringInfo.add(info);
-							coloringDataManager.addCustom(info.toCustomColoringData(numberElements));
 						}
 					}
 					else
 					{
 						info.resolutionLevel = 0;
 						coloringInfo.add(info);
-						coloringDataManager.addCustom(info.toCustomColoringData(numberElements));
 					}
+					int numberElements = getConfig().smallBodyNumberOfPlatesPerResolutionLevel[info.resolutionLevel];
+					coloringDataManager.addCustom(info.toCustomColoringData(numberElements));
 				}
 			}
 		}
