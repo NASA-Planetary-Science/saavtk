@@ -182,7 +182,6 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			model.set(index, newColoringData);
 		}
 
-		updateConfigFile();
 		return newColoringData;
 	}
 
@@ -195,7 +194,6 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 			modelManager.getPolyhedralModel().removeCustomPlateData(index);
 			model.remove(index);
-			updateConfigFile();
 
 			Path fileName = SafePaths.get(getCustomDataFolder(), cellDataInfo.getFileName());
 			Files.delete(fileName);
@@ -339,6 +337,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		{
 			ColoringData coloringData = copyCellData(cellDataList.getModel().getSize(), dialog.getColoringData());
 			coloringDataManager.addCustom(coloringData);
+			updateConfigFile();
 		}
 	}//GEN-LAST:event_newButtonActionPerformed
 
@@ -348,6 +347,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		if (selectedItem >= 0)
 		{
 			removeCellData(selectedItem);
+			updateConfigFile();
 		}
 	}//GEN-LAST:event_deleteButtonActionPerformed
 
@@ -372,7 +372,14 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 				{
 					newColoringData = copyCellData(selectedItem, newColoringData);
 				}
-				coloringDataManager.replaceCustom(newColoringData);
+
+				if (!oldColoringData.equals(newColoringData))
+				{
+					coloringDataManager.removeCustom(oldColoringData);
+					coloringDataManager.addCustom(newColoringData);
+					updateConfigFile();
+				}
+				cellDataListModel.set(selectedItem, newColoringData);
 			}
 		}
 	}//GEN-LAST:event_editButtonActionPerformed
