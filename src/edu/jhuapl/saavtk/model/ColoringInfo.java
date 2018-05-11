@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.model;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel.Format;
@@ -21,6 +22,7 @@ public class ColoringInfo
 
 	ColoringData toCustomColoringData(int numberElements)
 	{
+		Preconditions.checkArgument(coloringValues == null || coloringValues.GetNumberOfTuples() == numberElements);
 		return ColoringData.of(coloringName, coloringFile, ImmutableList.of(coloringName), coloringUnits, numberElements, coloringHasNulls, coloringValues);
 	}
 
