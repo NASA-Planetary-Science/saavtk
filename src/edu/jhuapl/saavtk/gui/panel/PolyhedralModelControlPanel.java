@@ -668,25 +668,18 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		}
 	}
 
-	protected void setColoring(int idx)
+	protected void setColoring(int idx) throws IOException
 	{
 		PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
 		//		if (idx < 0 || idx >= smallBodyModel.getColoringInfoList().size())
 		//		{
 		//			return;
 		//		}
-		try
-		{
-			smallBodyModel.setColoringIndex(idx);
-			double[] range = smallBodyModel.getCurrentColoringRange(idx);
-			colormapController.setMinMax(range[0], range[1]);
-			range = smallBodyModel.getDefaultColoringRange(idx);
-			colormapController.setDefaultRange(range[0], range[1]);
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
+		smallBodyModel.setColoringIndex(idx);
+		double[] range = smallBodyModel.getCurrentColoringRange(idx);
+		colormapController.setMinMax(range[0], range[1]);
+		range = smallBodyModel.getDefaultColoringRange(idx);
+		colormapController.setDefaultRange(range[0], range[1]);
 	}
 
 	protected void updateColoringComboBoxes()
