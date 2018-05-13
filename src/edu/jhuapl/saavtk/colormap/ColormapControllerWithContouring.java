@@ -53,8 +53,6 @@ public class ColormapControllerWithContouring extends ColormapController impleme
 			updateLineWidthEnabled();
 		}
 		super.actionPerformed(e);
-		if (syncButton.isSelected())
-			pcs.firePropertyChange(CONTOUR_BUTTON_TOGGLED, null, null);
 	}
 
 	@Override

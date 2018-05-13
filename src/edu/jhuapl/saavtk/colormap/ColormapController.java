@@ -106,11 +106,13 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
 		this.add(track(panel3), BorderLayout.EAST);
 		//
 
+		colormapComboBox.setActionCommand(colormapChanged);
 		colormapComboBox.addActionListener(this);
 		nLevelsTextField.addActionListener(this);
 		lowTextField.addActionListener(this);
 		highTextField.addActionListener(this);
 		logScaleCheckbox.addActionListener(this);
+		resetButton.setActionCommand(colormapRangeChanged);
 		resetButton.addActionListener(this);
 		refreshButton.addActionListener(this);
 
@@ -225,10 +227,7 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
 			pcs.firePropertyChange(colormapRangeChanged, null, null);
 		if (syncButton.isSelected())
 		{
-			if (e.getSource().equals(colormapComboBox))
-				pcs.firePropertyChange(colormapChanged, null, null);
-			else if (e.getSource().equals(resetButton))
-				pcs.firePropertyChange(colormapRangeChanged, null, null);
+			pcs.firePropertyChange(e.getActionCommand(), null, null);
 		}
 	}
 
