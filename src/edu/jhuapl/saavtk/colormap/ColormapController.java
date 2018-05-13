@@ -13,6 +13,7 @@ import java.awt.event.FocusListener;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -23,7 +24,6 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.JSeparator;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
@@ -36,32 +36,34 @@ import com.google.common.collect.Lists;
 
 public class ColormapController extends JPanel implements ActionListener, FocusListener, ChangeListener
 {
-	PropertyChangeSupport		pcs						= new PropertyChangeSupport(this);
-	List<ActionListener>		actionListeners			= Lists.newArrayList();
-	public static final String	colormapChanged			= "Colormap changed";
-	public static final String	colormapRangeChanged	= "Colormap range changed";
+	private final List<Component> componentTracker;
+	private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
+	private final List<ActionListener> actionListeners = Lists.newArrayList();
+	public static final String colormapChanged = "Colormap changed";
+	public static final String colormapRangeChanged = "Colormap range changed";
 
-	double						defaultMin, defaultMax;
+	private double defaultMin, defaultMax;
 
-	Colormap					colormap				= Colormaps.getNewInstanceOfBuiltInColormap(Colormaps.getDefaultColormapName());
-	JComboBox					colormapComboBox		= new JComboBox<>();
-	JCheckBox					logScaleCheckbox		= new JCheckBox("Log scale");
-	JTextField					lowTextField			= new JTextField("0");
-	JTextField					highTextField			= new JTextField("1");
-	JTextField					nLevelsTextField		= new JTextField("32");
-	JButton						resetButton				= new JButton("Range Reset");
-	JSpinner					nLabelsSpinner			= new JSpinner(new SpinnerNumberModel(4, 0, 20, 1));
-	JToggleButton				syncButton				= new JToggleButton("Sync");
-	JButton						refreshButton			= new JButton("Refresh");
+	private Colormap colormap;
+	private final JComboBox<Colormap> colormapComboBox = new JComboBox<>();
+	private final JCheckBox logScaleCheckbox = new JCheckBox("Log scale");
+	private final JTextField lowTextField = new JTextField("0");
+	private final JTextField highTextField = new JTextField("1");
+	private final JTextField nLevelsTextField = new JTextField("32");
+	private final JButton resetButton = new JButton("Range Reset");
+	private final JSpinner nLabelsSpinner = new JSpinner(new SpinnerNumberModel(4, 0, 20, 1));
+	private final JToggleButton syncButton = new JToggleButton("Sync");
+	private final JButton refreshButton = new JButton("Refresh");
 
-	JPanel						panel1					= new JPanel();
-	JPanel						panel2r					= new JPanel();
-	JPanel						panel3					= new JPanel();
-	JPanel						panel2l					= new JPanel();
-	JPanel						panel2					= new JPanel();
+	private final JPanel panel1 = new JPanel();
+	private final JPanel panel2r = new JPanel();
+	private final JPanel panel3 = new JPanel();
+	private final JPanel panel2l = new JPanel();
+	private final JPanel panel2 = new JPanel();
 
 	public ColormapController()
 	{
+		this.componentTracker = new ArrayList<>();
 		setLayout(new BorderLayout());
 		colormapComboBox.setRenderer(new ColormapComboBoxRenderer());
 		for (String str : Colormaps.getAllBuiltInColormapNames())
@@ -73,35 +75,35 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
 		}
 		//
 		colormap = Colormaps.getNewInstanceOfBuiltInColormap(Colormaps.getDefaultColormapName());
-		panel1.add(colormapComboBox);
+		panel1.add(track(colormapComboBox));
 		//
 		panel2r.setLayout(new GridLayout(4, 2));
-		panel2r.add(new JLabel("Min Value", JLabel.RIGHT));
-		panel2r.add(lowTextField);
-		panel2r.add(new JLabel("Max Value", JLabel.RIGHT));
-		panel2r.add(highTextField);
-		panel2r.add(new JLabel("# Color Levels", JLabel.RIGHT));
-		panel2r.add(nLevelsTextField);
-		panel2r.add(new JLabel("# Ticks", JLabel.RIGHT));
-		panel2r.add(nLabelsSpinner);
+		panel2r.add(track(new JLabel("Min Value", JLabel.RIGHT)));
+		panel2r.add(track(lowTextField));
+		panel2r.add(track(new JLabel("Max Value", JLabel.RIGHT)));
+		panel2r.add(track(highTextField));
+		panel2r.add(track(new JLabel("# Color Levels", JLabel.RIGHT)));
+		panel2r.add(track(nLevelsTextField));
+		panel2r.add(track(new JLabel("# Ticks", JLabel.RIGHT)));
+		panel2r.add(track(nLabelsSpinner));
 		//
 		//
 		panel3.setLayout(new GridLayout(2, 1));
-		panel3.add(logScaleCheckbox);
-		panel3.add(resetButton);
+		panel3.add(track(logScaleCheckbox));
+		panel3.add(track(resetButton));
 
 		//
 		panel2l.setLayout(new GridLayout(2, 1));
-		panel2l.add(syncButton);
-		panel2l.add(refreshButton);
+		panel2l.add(track(syncButton));
+		panel2l.add(track(refreshButton));
 
 		panel2.setLayout(new FlowLayout());
-		panel2.add(panel2l);
-		panel2.add(panel2r);
+		panel2.add(track(panel2l));
+		panel2.add(track(panel2r));
 
-		this.add(panel1, BorderLayout.NORTH);
-		this.add(panel2, BorderLayout.CENTER);
-		this.add(panel3, BorderLayout.EAST);
+		this.add(track(panel1), BorderLayout.NORTH);
+		this.add(track(panel2), BorderLayout.CENTER);
+		this.add(track(panel3), BorderLayout.EAST);
 		//
 
 		colormapComboBox.addActionListener(this);
@@ -130,14 +132,10 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
 	@Override
 	public void setEnabled(boolean enabled)
 	{
-		colormapComboBox.setEnabled(enabled);
-		lowTextField.setEnabled(enabled);
-		highTextField.setEnabled(enabled);
-		logScaleCheckbox.setEnabled(enabled);
-		nLevelsTextField.setEnabled(enabled);
-		resetButton.setEnabled(enabled);
-		syncButton.setEnabled(enabled);
-		refreshButton.setEnabled(enabled);
+		for (Component component : componentTracker)
+		{
+			component.setEnabled(enabled);
+		}
 	}
 
 	public void setMinMax(double min, double max)
@@ -162,24 +160,25 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
 		return logScaleCheckbox.isSelected();
 	}
 
-	protected class ColormapComboBoxRenderer extends JLabel implements ListCellRenderer
+	protected class ColormapComboBoxRenderer extends JLabel implements ListCellRenderer<Colormap>
 	{
 
 		@Override
-		public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus)
+		public Component getListCellRendererComponent(JList<? extends Colormap> list, Colormap value, int index, boolean isSelected, boolean cellHasFocus)
 		{
 			if (isSelected)
 			{
 				setBackground(Color.DARK_GRAY);
 				setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
-			} else
+			}
+			else
 			{
 				setBackground(list.getBackground());
 				setBorder(null);
 			}
 
-			setIcon(createIcon((Colormap) value));
-			setText(((Colormap) value).getName());
+			setIcon(createIcon(value));
+			setText(value.getName());
 			return this;
 		}
 
@@ -253,12 +252,14 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
 		this.defaultMax = max;
 	}
 
+	@Override
 	public void addPropertyChangeListener(PropertyChangeListener l)
 	{
 		pcs.addPropertyChangeListener(l);
 
 	}
 
+	@Override
 	public void removePropertyChangeListener(PropertyChangeListener l)
 	{
 		pcs.removePropertyChangeListener(l);
@@ -275,8 +276,9 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
 	}
 
 	@Override
-	public void focusGained(FocusEvent e)
+	public void focusGained(@SuppressWarnings("unused") FocusEvent e)
 	{
+
 	}
 
 	@Override
@@ -293,7 +295,7 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
 	}
 
 	@Override
-	public void stateChanged(ChangeEvent e)
+	public void stateChanged(@SuppressWarnings("unused") ChangeEvent e)
 	{
 		if (!syncButton.isSelected())
 			return;
@@ -302,4 +304,9 @@ public class ColormapController extends JPanel implements ActionListener, FocusL
 		pcs.firePropertyChange(colormapChanged, null, null);
 	}
 
+	private Component track(Component c)
+	{
+		componentTracker.add(c);
+		return c;
+	}
 }
