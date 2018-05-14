@@ -60,9 +60,9 @@ public abstract class PolyhedralModel extends AbstractModel
 	static public final String FlatShadingStr = "Flat";
 	static public final String SmoothShadingStr = "Smooth";
 
-	private ViewConfig config;
+	private final ViewConfig config;
 
-	public PolyhedralModel(ViewConfig config)
+	protected PolyhedralModel(ViewConfig config)
 	{
 		this.config = config;
 	}
@@ -187,7 +187,7 @@ public abstract class PolyhedralModel extends AbstractModel
 	}
 
 	@Override
-	public void setOpacity(double opacity)
+	public void setOpacity(@SuppressWarnings("unused") double opacity)
 	{
 		// Do nothing. Subclasses should redefine this if they support opacity.
 	}

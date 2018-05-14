@@ -69,7 +69,7 @@ import vtk.vtksbCellLocator;
 
 public class GenericPolyhedralModel extends PolyhedralModel implements PropertyChangeListener
 {
-	private CustomizableColoringDataManager coloringDataManager;
+	private final CustomizableColoringDataManager coloringDataManager;
 
 	private final List<ColoringInfo> coloringInfo = new ArrayList<ColoringInfo>();
 
@@ -157,10 +157,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	/**
 	 * Default constructor. Must be followed by a call to setSmallBodyPolyData.
 	 */
-	public GenericPolyhedralModel()
+	public GenericPolyhedralModel(String uniqueModelId)
 	{
 		super(null);
-		//		coloringDataManager = CustomizableColoringDataManager.of("Coloring Data");
+		coloringDataManager = CustomizableColoringDataManager.of(uniqueModelId);
 		smallBodyPolyData = new vtkPolyData();
 		genericCell = new vtkGenericCell();
 		idList = new vtkIdList();
@@ -172,9 +172,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	 * 
 	 * @param polyData
 	 */
-	public GenericPolyhedralModel(vtkPolyData polyData)
+	public GenericPolyhedralModel(String uniqueModelId, vtkPolyData polyData)
 	{
-		this();
+		this(uniqueModelId);
 
 		vtkFloatArray[] coloringValues = {};
 		String[] coloringNames = {};
@@ -291,12 +291,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public GenericPolyhedralModel(ViewConfig config)
 	{
 		super(config);
-		//		this.coloringDataManager = CustomizableColoringDataManager.of(config.getUniqueName());
+		this.coloringDataManager = CustomizableColoringDataManager.of(config.getUniqueName());
 	}
 
 	protected void initializeConfigParameters(String[] modelFiles, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls, String[] imageMapNames, ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource)
 	{
-		this.coloringDataManager = createColoringDataManager(getConfig(), coloringFiles, coloringNames, coloringUnits, coloringHasNulls);
 		this.modelFiles = modelFiles;
 		setDefaultModelFileName(this.modelFiles[0]);
 		this.imageMapNames = imageMapNames;
