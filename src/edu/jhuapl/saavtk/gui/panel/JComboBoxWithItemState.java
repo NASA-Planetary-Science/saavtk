@@ -104,7 +104,7 @@ public class JComboBoxWithItemState<E> extends JComboBox<E>
 			@Override
 			public void setSelectedItem(Object item)
 			{
-				if (enabledObjects.contains(item))
+				if (item == null || enabledObjects.contains(item))
 				{
 					sourceModel.setSelectedItem(item);
 				}
