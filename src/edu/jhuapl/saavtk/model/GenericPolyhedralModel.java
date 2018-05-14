@@ -193,7 +193,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public GenericPolyhedralModel(ViewConfig config, String[] modelNames, String[] modelFiles, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls, String[] imageMapNames, ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource)
 	{
 		super(config);
-		this.coloringDataManager = createColoringDataManager(config, coloringFiles, coloringNames, coloringUnits, coloringHasNulls, coloringValueType);
+		this.coloringDataManager = createColoringDataManager(config, coloringFiles, coloringNames, coloringUnits, coloringHasNulls);
 		this.modelNames = modelNames;
 		this.modelFiles = modelFiles;
 		setDefaultModelFileName(this.modelFiles[0]);
@@ -241,7 +241,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	}
 
-	private static CustomizableColoringDataManager createColoringDataManager(ViewConfig config, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls, ColoringValueType coloringValueType)
+	private static CustomizableColoringDataManager createColoringDataManager(ViewConfig config, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls)
 	{
 		String dataId = config.getUniqueName();
 		if (coloringNames == null)
@@ -258,8 +258,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			coloringUnits = new String[] {};
 		if (coloringHasNulls == null)
 			coloringHasNulls = new boolean[] {};
-		if (coloringValueType == null)
-			coloringValueType = ColoringValueType.CELLDATA;
 
 		ImmutableList.Builder<ColoringData> builder = ImmutableList.builder();
 		for (int index = 0; index < coloringFiles.length; ++index)
@@ -308,7 +306,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	protected void initializeConfigParameters(String[] modelFiles, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls, String[] imageMapNames, ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource)
 	{
-		this.coloringDataManager = createColoringDataManager(getConfig(), coloringFiles, coloringNames, coloringUnits, coloringHasNulls, coloringValueType);
+		this.coloringDataManager = createColoringDataManager(getConfig(), coloringFiles, coloringNames, coloringUnits, coloringHasNulls);
 		this.modelFiles = modelFiles;
 		setDefaultModelFileName(this.modelFiles[0]);
 		this.imageMapNames = imageMapNames;
