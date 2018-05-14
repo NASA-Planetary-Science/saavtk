@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableList;
 import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.colormap.Colormaps;
 import edu.jhuapl.saavtk.config.ViewConfig;
-import edu.jhuapl.saavtk.metadata.Serializers;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.ConvertResourceToFile;
@@ -283,15 +282,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 
 		CustomizableColoringDataManager result = CustomizableColoringDataManager.of(dataId, builder.build());
-		try
-		{
-			Serializers.serialize("Coloring Data", result.getMetadataManager(), new File("/Users/peachjm1/Downloads/pc.sbmt"));
-		}
-		catch (IOException e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		return result;
 	}
 
