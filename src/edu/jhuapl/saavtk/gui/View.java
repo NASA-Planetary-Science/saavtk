@@ -216,7 +216,8 @@ public abstract class View extends JPanel
 			});
 
 			initializedPanelSizing = true;
-		} else
+		}
+		else
 		{
 			renderer.setMinimumSize(new Dimension(100, 100));
 			renderer.setPreferredSize(new Dimension(800, 800));
@@ -228,7 +229,14 @@ public abstract class View extends JPanel
 
 		renderer.getRenderWindowPanel().resetCamera();
 
+		initializeStateManager();
+
 		initialized = true;
+	}
+
+	protected final boolean isInitialized()
+	{
+		return initialized;
 	}
 
 	private void showDefaultTabSelectionPopup(MouseEvent e)
@@ -242,8 +250,7 @@ public abstract class View extends JPanel
 				@Override
 				public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
 				{
-					FavoriteTabsFile.getInstance().setFavoriteTab(config.getUniqueName(),
-							controlPanel.getSelectedIndex());
+					FavoriteTabsFile.getInstance().setFavoriteTab(config.getUniqueName(), controlPanel.getSelectedIndex());
 				}
 			});
 			tabMenu.add(menuItem);
@@ -346,6 +353,8 @@ public abstract class View extends JPanel
 
 	protected abstract void setupPickManager();
 
+	protected abstract void initializeStateManager();
+
 	@Override
 	public String toString()
 	{
@@ -355,4 +364,5 @@ public abstract class View extends JPanel
 		}
 		return "View of (null)";
 	}
+
 }
