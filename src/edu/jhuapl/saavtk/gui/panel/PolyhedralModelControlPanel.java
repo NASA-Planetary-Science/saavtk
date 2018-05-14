@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.AbstractAction;
-import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -39,6 +38,7 @@ import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import edu.jhuapl.saavtk.colormap.ColormapController;
 import edu.jhuapl.saavtk.colormap.ColormapControllerWithContouring;
@@ -56,6 +56,12 @@ import net.miginfocom.swing.MigLayout;
 
 public class PolyhedralModelControlPanel extends JPanel implements ItemListener, ChangeListener
 {
+	private static final String NO_COLORING = "None";
+	private static final String STANDARD_COLORING = "Standard";
+	private static final String RGB_COLORING = "RGB";
+	private static final String EMPTY_SELECTION = "None";
+	private static final String IMAGE_MAP_TEXT = "Show Image Map";
+
 	private JCheckBox modelCheckBox;
 	private ModelManager modelManager;
 
@@ -70,7 +76,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	private JLabel customColorRedLabel;
 	private JLabel customColorGreenLabel;
 	private JLabel customColorBlueLabel;
-	private List<JRadioButton> resModelButtons = new ArrayList<JRadioButton>();
+	private List<JRadioButton> resModelButtons = new ArrayList<>();
 	private ButtonGroup resolutionButtonGroup;
 	private JCheckBox gridCheckBox;
 	protected JCheckBox gridLabelCheckBox;
@@ -93,36 +99,11 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	private JEditorPane statisticsLabel;
 	private JScrollPane scrollPane;
 	private JButton additionalStatisticsButton;
-
-	private static final String NO_COLORING = "None";
-	private static final String STANDARD_COLORING = "Standard";
-	private static final String RGB_COLORING = "RGB";
-	private static final String EMPTY_SELECTION = "None";
-	private static final String IMAGE_MAP_TEXT = "Show Image Map";
+	private final ImmutableMap<String, Integer> resolutionLevels;
 
 	public ModelManager getModelManager()
 	{
 		return modelManager;
-	}
-
-	public JCheckBox getModelCheckBox()
-	{
-		return modelCheckBox;
-	}
-
-	public JRadioButton getNoColoringButton()
-	{
-		return noColoringButton;
-	}
-
-	public JRadioButton getRgbColoringButton()
-	{
-		return rgbColoringButton;
-	}
-
-	public JCheckBox getGridCheckBox()
-	{
-		return gridCheckBox;
 	}
 
 	public String getSelectedImageMapName()
@@ -146,51 +127,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		return saveColoringButton;
 	}
 
-	public JRadioButton getStandardColoringButton()
-	{
-		return standardColoringButton;
-	}
-
-	public JComboBox getColoringComboBox()
-	{
-		return coloringComboBox;
-	}
-
-	public JComboBox getCustomColorRedComboBox()
-	{
-		return customColorRedComboBox;
-	}
-
-	public JComboBox getCustomColorGreenComboBox()
-	{
-		return customColorGreenComboBox;
-	}
-
-	public JComboBox getCustomColorBlueComboBox()
-	{
-		return customColorBlueComboBox;
-	}
-
-	public JLabel getCustomColorRedLabel()
-	{
-		return customColorRedLabel;
-	}
-
-	public JLabel getCustomColorGreenLabel()
-	{
-		return customColorGreenLabel;
-	}
-
-	public JLabel getCustomColorBlueLabel()
-	{
-		return customColorBlueLabel;
-	}
-
-	public List<JRadioButton> getResModelButtons()
-	{
-		return resModelButtons;
-	}
-
 	public JLabel getOpacityLabel()
 	{
 		return opacityLabel;
@@ -209,11 +145,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	public JScrollPane getScrollPane()
 	{
 		return scrollPane;
-	}
-
-	public JButton getAdditionalStatisticsButton()
-	{
-		return additionalStatisticsButton;
 	}
 
 	public PolyhedralModelControlPanel(ModelManager modelManager, String bodyName)
@@ -236,27 +167,33 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		final PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
 
 		int numberResolutionLevels = smallBodyModel.getNumberResolutionLevels();
-		String[] labels = smallBodyModel.getConfig().smallBodyLabelPerResolutionLevel;
 		int[] plateCount = smallBodyModel.getConfig().smallBodyNumberOfPlatesPerResolutionLevel;
 
+		ImmutableMap.Builder<String, Integer> builder = ImmutableMap.builder();
 		if (numberResolutionLevels > 1)
 		{
 			resolutionButtonGroup = new ButtonGroup();
-
+			ActionListener listener = (e) -> {
+				updateModelResolution(e.getActionCommand());
+			};
+			String[] levels = smallBodyModel.getConfig().smallBodyLabelPerResolutionLevel;
 			for (int i = 0; i < numberResolutionLevels; ++i)
 			{
-				JRadioButton resButton = new JRadioButton(labels[i]);
-				if (i == 0)
-					resButton.setSelected(true);
-				resButton.setActionCommand(labels[i]);
-				resButton.addItemListener(this);
+				String label = levels[i];
+				builder.put(label, i);
+				JRadioButton resButton = new JRadioButton(label);
+				resButton.setActionCommand(label);
 				resButton.setEnabled(true);
 				resButton.setToolTipText("<html>Click here to show a model of " + bodyName + " <br />" + "containing " + plateCount[i] + " plates</html>");
+				resButton.addActionListener(listener);
 				resModelButtons.add(resButton);
 
 				resolutionButtonGroup.add(resButton);
+				if (i == 0)
+					resButton.setSelected(true);
 			}
 		}
+		resolutionLevels = builder.build();
 
 		// The following snippet was taken from https://explodingpixels.wordpress.com/2008/10/28/make-jeditorpane-use-the-system-font/
 		// which shows how to make a JEditorPane behave look like a JLabel but still be selectable.
@@ -278,14 +215,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		coloringComboBox.addItemListener(this);
 
 		noColoringButton = new JRadioButton(NO_COLORING);
-		noColoringButton.setActionCommand(NO_COLORING);
-		noColoringButton.addItemListener(this);
-		noColoringButton.setEnabled(true);
 
 		standardColoringButton = new JRadioButton(STANDARD_COLORING);
-		standardColoringButton.setActionCommand(STANDARD_COLORING);
-		standardColoringButton.addItemListener(this);
-		standardColoringButton.setEnabled(smallBodyModel.getNumberOfColors() > 0);
 
 		smallBodyModel.setColormap(colormapController.getColormap());
 		colormapController.addPropertyChangeListener(new PropertyChangeListener() {
@@ -319,27 +250,16 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		});
 
 		rgbColoringButton = new JRadioButton(RGB_COLORING);
-		rgbColoringButton.setActionCommand(RGB_COLORING);
-		rgbColoringButton.addItemListener(this);
-		rgbColoringButton.setEnabled(smallBodyModel.getNumberOfColors() > 0);
 
 		customColorRedLabel = new JLabel("Red: ");
 		customColorGreenLabel = new JLabel("Green: ");
 		customColorBlueLabel = new JLabel("Blue: ");
 
 		customColorRedComboBox = new JComboBoxWithItemState<>();
-		customColorRedComboBox.addItemListener(this);
 		customColorGreenComboBox = new JComboBoxWithItemState<>();
-		customColorGreenComboBox.addItemListener(this);
 		customColorBlueComboBox = new JComboBoxWithItemState<>();
-		customColorBlueComboBox.addItemListener(this);
 
-		customColorRedComboBox.setEnabled(false);
-		customColorGreenComboBox.setEnabled(false);
-		customColorBlueComboBox.setEnabled(false);
-		customColorRedLabel.setEnabled(false);
-		customColorGreenLabel.setEnabled(false);
-		customColorBlueLabel.setEnabled(false);
+		updateColoringOptions(smallBodyModel.getModelResolution());
 
 		saveColoringButton = new JButton("Save Plate Data...");
 		saveColoringButton.setEnabled(true);
@@ -356,10 +276,24 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		coloringButtonGroup.add(noColoringButton);
 		coloringButtonGroup.add(standardColoringButton);
 		coloringButtonGroup.add(rgbColoringButton);
-		coloringButtonGroup.setSelected(noColoringButton.getModel(), true);
+
+		ActionListener coloringButtonGroupListener = (e) -> {
+			updateColoringControls();
+			setColoring();
+		};
+		noColoringButton.addActionListener(coloringButtonGroupListener);
+		standardColoringButton.addActionListener(coloringButtonGroupListener);
+		rgbColoringButton.addActionListener(coloringButtonGroupListener);
+		noColoringButton.setSelected(true);
+		updateColoringControls();
+
+		// First item is blank -- select first plate coloring by default.
+		if (coloringComboBox.getItemCount() > 1)
+		{
+			coloringComboBox.setSelectedIndex(1);
+		}
 
 		setStatisticsLabel();
-		updateColoringComboBoxes();
 
 		gridCheckBox = new JCheckBox();
 		gridCheckBox.setText("Show Coordinate Grid");
@@ -397,13 +331,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		JPanel surfacePropertiesEditorPanel = new DisplayPropertyEditorPanel(smallBodyModel);
 
 		additionalStatisticsButton = new JButton("Show more statistics");
-		additionalStatisticsButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e)
-			{
-				additionalStatisticsButton.setVisible(false);
-				addAdditionalStatisticsToLabel();
-			}
+		additionalStatisticsButton.addActionListener(e -> {
+			additionalStatisticsButton.setVisible(false);
+			addAdditionalStatisticsToLabel();
 		});
 
 		panel.add(modelCheckBox, "wrap");
@@ -425,6 +355,14 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			panel.add(colormapController);
 			if (Configuration.isAPLVersion())
 			{
+				ActionListener listener = (e) -> {
+					setColoring();
+				};
+				coloringComboBox.addActionListener(listener);
+				customColorRedComboBox.addActionListener(listener);
+				customColorGreenComboBox.addActionListener(listener);
+				customColorBlueComboBox.addActionListener(listener);
+
 				panel.add(rgbColoringButton, "wrap, gapleft 25");
 				panel.add(customColorRedLabel, "gapleft 75, split 2");
 				panel.add(customColorRedComboBox, "width 200!, gapleft push, wrap");
@@ -466,6 +404,38 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		scrollPane.setViewportView(panel);
 
 		add(scrollPane, BorderLayout.CENTER);
+	}
+
+	private void updateModelResolution(String actionCommand)
+	{
+		if (!resolutionLevels.containsKey(actionCommand))
+		{
+			// This should not (probably can't) happen
+			throw new AssertionError();
+		}
+		int newResolutionLevel = resolutionLevels.get(actionCommand);
+		PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
+		if (smallBodyModel.getModelResolution() == newResolutionLevel)
+		{
+			// This probably won't happen, but just in case this gets
+			// called when there was no change, do no harm.
+			return;
+		}
+
+		// If we get this far, the model has changed, so update everything that
+		// needs to be updated in this case.
+		try
+		{
+			updateColoringOptions(newResolutionLevel);
+			smallBodyModel.setModelResolution(newResolutionLevel);
+			setStatisticsLabel();
+			additionalStatisticsButton.setVisible(true);
+		}
+		catch (IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -550,53 +520,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			opacityLabel.setEnabled(show);
 			imageMapOpacitySpinner.setEnabled(show);
 		}
-		else if (this.resModelButtons.contains(e.getItemSelectable()))
-		{
-			if (((AbstractButton) e.getItemSelectable()).isSelected())
-				try
-				{
-					int level = this.resModelButtons.indexOf(e.getItemSelectable());
-					smallBodyModel.setModelResolution(level);
-					setStatisticsLabel();
-					additionalStatisticsButton.setVisible(true);
-					updateColoringComboBoxes();
-				}
-				catch (IOException e1)
-				{
-					e1.printStackTrace();
-				}
-		}
-		else if (e.getItemSelectable() == this.noColoringButton)
-		{
-			updateColoringControls();
-
-			try
-			{
-				smallBodyModel.setColoringIndex(-1);
-			}
-			catch (IOException e1)
-			{
-				e1.printStackTrace();
-			}
-		}
-		else if (e.getItemSelectable() == this.standardColoringButton)
-		{
-			updateColoringControls();
-			setColoring();
-		}
-		else if (e.getItemSelectable() == this.rgbColoringButton)
-		{
-			updateColoringControls();
-			setColoring();
-		}
-		else if (e.getItemSelectable() == this.coloringComboBox)
-		{
-			setColoring();
-		}
-		else if (e.getItemSelectable() == customColorRedComboBox || e.getItemSelectable() == customColorGreenComboBox || e.getItemSelectable() == customColorBlueComboBox)
-		{
-			setColoring();
-		}
 
 		Picker.setPickingEnabled(true);
 	}
@@ -606,6 +529,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		boolean selected = standardColoringButton.isSelected();
 		coloringComboBox.setEnabled(selected);
 		colormapController.setEnabled(selected);
+
 		selected = rgbColoringButton.isSelected();
 		customColorRedComboBox.setEnabled(selected);
 		customColorGreenComboBox.setEnabled(selected);
@@ -613,14 +537,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		customColorRedLabel.setEnabled(selected);
 		customColorGreenLabel.setEnabled(selected);
 		customColorBlueLabel.setEnabled(selected);
-
-		// Make sure *something* is selected in the RGB family if custom coloring is enabled.
-		if (selected && customColorRedComboBox.getSelectedIndex() < 1 && customColorGreenComboBox.getSelectedIndex() < 1 && customColorBlueComboBox.getSelectedIndex() < 1)
-		{
-			// Select the 1st (or 0th) element in red.
-			customColorRedComboBox.setSelectedIndex(Math.min(customColorRedComboBox.getItemCount() - 1, 1));
-		}
-
 	}
 
 	protected void setColoring()
@@ -631,7 +547,13 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		{
 			if (standardColoringButton.isSelected())
 			{
-				setColoring(coloringComboBox.getSelectedIndex());
+				int selectedIndex = coloringComboBox.getSelectedIndex() - 1;
+				if (selectedIndex < 0)
+				{
+					smallBodyModel.setColoringIndex(-1);
+					return;
+				}
+				smallBodyModel.setColoringIndex(selectedIndex);
 				smallBodyModel.setColormap(colormapController.getColormap());
 				smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
 				smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
@@ -648,12 +570,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 					smallBodyModel.setColoringIndex(-1);
 					return;
 				}
-				setColoring(redIndex);
-				setColoring(greenIndex);
-				setColoring(blueIndex);
-				smallBodyModel.setColormap(colormapController.getColormap());
-				smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
-				smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
 				colormapController.refresh();
 				smallBodyModel.setFalseColoring(redIndex, greenIndex, blueIndex);
 			}
@@ -686,63 +602,43 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		colormapController.setDefaultRange(range[0], range[1]);
 	}
 
-	protected void updateColoringComboBoxes()
+	protected void updateColoringOptions(int newResolutionLevel)
 	{
 		PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
 
-		coloringComboBox.removeItemListener(this);
-		customColorRedComboBox.removeItemListener(this);
-		customColorGreenComboBox.removeItemListener(this);
-		customColorBlueComboBox.removeItemListener(this);
-
-		coloringComboBox.removeAllItems();
-		customColorRedComboBox.removeAllItems();
-		customColorGreenComboBox.removeAllItems();
-		customColorBlueComboBox.removeAllItems();
-
-		customColorRedComboBox.addItem("");
-		customColorGreenComboBox.addItem("");
-		customColorBlueComboBox.addItem("");
-
 		ColoringDataManager coloringDataManager = smallBodyModel.getColoringDataManager();
-		ImmutableList<String> names = coloringDataManager.getNames();
 		ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
-		int resolution = resolutions.get(smallBodyModel.getModelResolution());
-		for (int index = 0; index < names.size(); ++index)
+		int numberElements = resolutions.get(newResolutionLevel);
+
+		updateColoringComboBox(coloringComboBox, coloringDataManager, numberElements);
+		updateColoringComboBox(customColorRedComboBox, coloringDataManager, numberElements);
+		updateColoringComboBox(customColorGreenComboBox, coloringDataManager, numberElements);
+		updateColoringComboBox(customColorBlueComboBox, coloringDataManager, numberElements);
+	}
+
+	protected void updateColoringComboBox(JComboBoxWithItemState<String> box, ColoringDataManager coloringDataManager, int numberElements)
+	{
+		String newSelection = "";
+		String previousSelection = (String) box.getSelectedItem();
+		box.setSelectedIndex(-1);
+		box.removeAllItems();
+		box.addItem("");
+		for (String name : coloringDataManager.getNames())
 		{
-			String name = names.get(index);
-			coloringComboBox.addItem(name);
-			customColorRedComboBox.addItem(name);
-			customColorGreenComboBox.addItem(name);
-			customColorBlueComboBox.addItem(name);
-
-			boolean enabled = coloringDataManager.has(name, resolution);
-			coloringComboBox.setEnabled(name, enabled);
-			customColorRedComboBox.setEnabled(name, enabled);
-			customColorGreenComboBox.setEnabled(name, enabled);
-			customColorBlueComboBox.setEnabled(name, enabled);
+			box.addItem(name);
+			if (coloringDataManager.has(name, numberElements))
+			{
+				if (name.equals(previousSelection))
+				{
+					newSelection = previousSelection;
+				}
+			}
+			else
+			{
+				box.setEnabled(name, false);
+			}
 		}
-
-		// Add Ancillary selections here... -turnerj1
-
-		if (smallBodyModel.getColoringIndex() < 0 && !smallBodyModel.isFalseColoringEnabled())
-		{
-			noColoringButton.setSelected(true);
-		}
-		else if (smallBodyModel.getNumberOfColors() > 0)
-		{
-			int index = smallBodyModel.getColoringIndex();
-			coloringComboBox.setSelectedIndex(Math.max(index, 0));
-			int[] falseColoring = smallBodyModel.getFalseColoring();
-			customColorRedComboBox.setSelectedIndex(Math.max(falseColoring[0], 0));
-			customColorGreenComboBox.setSelectedIndex(Math.max(falseColoring[1], 0));
-			customColorBlueComboBox.setSelectedIndex(Math.max(falseColoring[2], 0));
-		}
-
-		coloringComboBox.addItemListener(this);
-		customColorRedComboBox.addItemListener(this);
-		customColorGreenComboBox.addItemListener(this);
-		customColorBlueComboBox.addItemListener(this);
+		box.setSelectedItem(newSelection);
 	}
 
 	protected void setStatisticsLabel()
@@ -777,7 +673,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	//
 	// for subclasses that support images
 	//
-	protected void showImageMap(boolean show)
+	protected void showImageMap(@SuppressWarnings("unused") boolean show)
 	{}
 
 	protected void addAdditionalStatisticsToLabel()
@@ -835,13 +731,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			dialog.setVisible(true);
 
 			PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
-			standardColoringButton.setEnabled(smallBodyModel.getNumberOfColors() > 0);
-			rgbColoringButton.setEnabled(smallBodyModel.getNumberOfColors() > 0);
-
-			if (smallBodyModel.getNumberOfColors() == 0)
-				noColoringButton.setSelected(true);
-
-			updateColoringComboBoxes();
+			updateColoringOptions(smallBodyModel.getModelResolution());
 		}
 	}
 
