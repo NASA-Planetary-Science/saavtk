@@ -6,7 +6,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.swing.ComboBoxModel;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
+import javax.swing.JList;
 import javax.swing.ListCellRenderer;
 import javax.swing.MutableComboBoxModel;
 import javax.swing.event.ListDataListener;
@@ -74,87 +76,150 @@ public class JComboBoxWithItemState<E> extends JComboBox<E>
 		super.setRenderer(wrapRenderer(sourceRenderer));
 	}
 
-	protected final ComboBoxModel<E> wrapModel(final ComboBoxModel<E> sourceModel)
+	/**
+	 * This override is provided as an optimization based on a modified version of the
+	 * implementation in JComboBox at the time JComboBoxWithItemState was developed.
+	 * The reason for repeating the guts of the implementation here is that.
+	 */
+	@Override
+	public void removeAllItems()
 	{
-		return new MutableComboBoxModel<E>() {
-			@Override
-			public int getSize()
-			{
-				return sourceModel.getSize();
-			}
+		WrappedMutableComboBoxModel sourceModel = (JComboBoxWithItemState<E>.WrappedMutableComboBoxModel) getModel();
 
-			@Override
-			public E getElementAt(int index)
+		MutableComboBoxModel<E> model = sourceModel.getWrappedModel();
+		int size = model.getSize();
+		if (model instanceof DefaultComboBoxModel)
+		{
+			((DefaultComboBoxModel<E>) model).removeAllElements();
+		}
+		else
+		{
+			for (int i = 0; i < size; ++i)
 			{
-				return sourceModel.getElementAt(index);
+				E element = sourceModel.getElementAt(0);
+				sourceModel.removeElement(element);
 			}
-
-			@Override
-			public void addListDataListener(ListDataListener l)
-			{
-				sourceModel.addListDataListener(l);
-			}
-
-			@Override
-			public void removeListDataListener(ListDataListener l)
-			{
-				sourceModel.removeListDataListener(l);
-			}
-
-			@Override
-			public void setSelectedItem(Object item)
-			{
-				if (item == null || enabledObjects.contains(item))
-				{
-					sourceModel.setSelectedItem(item);
-				}
-			}
-
-			@Override
-			public Object getSelectedItem()
-			{
-				return sourceModel.getSelectedItem();
-			}
-
-			@Override
-			public void addElement(E item)
-			{
-				toMutableComboBoxModel().addElement(item);
-			}
-
-			@Override
-			public void removeElement(Object obj)
-			{
-				toMutableComboBoxModel().removeElement(obj);
-			}
-
-			@Override
-			public void insertElementAt(E item, int index)
-			{
-				toMutableComboBoxModel().insertElementAt(item, index);
-			}
-
-			@Override
-			public void removeElementAt(int index)
-			{
-				toMutableComboBoxModel().removeElementAt(index);
-			}
-
-			private MutableComboBoxModel<E> toMutableComboBoxModel()
-			{
-				if (sourceModel instanceof MutableComboBoxModel)
-				{
-					return (MutableComboBoxModel<E>) sourceModel;
-				}
-				throw new RuntimeException("Cannot use this method with a non-Mutable data model.");
-			}
-
-		};
+		}
+		selectedItemReminder = null;
+		if (isEditable())
+		{
+			editor.setItem(null);
+		}
 	}
 
-	protected final ListCellRenderer<? super E> wrapRenderer(final ListCellRenderer<? super E> sourceRenderer)
+	protected final class WrappedMutableComboBoxModel implements MutableComboBoxModel<E>
 	{
-		return (list, value, index, isSelected, cellHasFocus) -> {
+
+		private final MutableComboBoxModel<E> mutableModel;
+
+		protected WrappedMutableComboBoxModel(MutableComboBoxModel<E> mutableModel)
+		{
+			this.mutableModel = mutableModel;
+		}
+
+		protected MutableComboBoxModel<E> getWrappedModel()
+		{
+			return mutableModel;
+		}
+
+		@Override
+		public int getSize()
+		{
+			return mutableModel.getSize();
+		}
+
+		@Override
+		public E getElementAt(int index)
+		{
+			return mutableModel.getElementAt(index);
+		}
+
+		@Override
+		public void addListDataListener(ListDataListener l)
+		{
+			mutableModel.addListDataListener(l);
+		}
+
+		@Override
+		public void removeListDataListener(ListDataListener l)
+		{
+			mutableModel.removeListDataListener(l);
+		}
+
+		@Override
+		public void setSelectedItem(Object item)
+		{
+			if (!enabledObjects.contains(item))
+			{
+				item = null;
+			}
+			mutableModel.setSelectedItem(item);
+		}
+
+		@Override
+		public Object getSelectedItem()
+		{
+			return mutableModel.getSelectedItem();
+		}
+
+		@Override
+		public void addElement(E item)
+		{
+			mutableModel.addElement(item);
+		}
+
+		@Override
+		public void removeElement(Object obj)
+		{
+			mutableModel.removeElement(obj);
+		}
+
+		@Override
+		public void insertElementAt(E item, int index)
+		{
+			mutableModel.insertElementAt(item, index);
+		}
+
+		@Override
+		public void removeElementAt(int index)
+		{
+			mutableModel.removeElementAt(index);
+		}
+
+	}
+
+	protected final ComboBoxModel<E> wrapModel(final ComboBoxModel<E> sourceModel)
+	{
+		// Prevent double-wrapping. That is the reason for using a named class rather
+		// than an anonymous one here.
+		if (sourceModel instanceof JComboBoxWithItemState.WrappedMutableComboBoxModel)
+		{
+			return sourceModel;
+		}
+
+		// Only wrap mutable source models.
+		if (!(sourceModel instanceof MutableComboBoxModel))
+		{
+			throw new RuntimeException("Cannot use this class with a non-Mutable data model.");
+		}
+
+		return new WrappedMutableComboBoxModel((MutableComboBoxModel<E>) sourceModel);
+		//		return sourceModel;
+	}
+
+	protected final class WrappedListCellRenderer implements ListCellRenderer<E>
+	{
+		private final ListCellRenderer<? super E> sourceRenderer;
+
+		protected WrappedListCellRenderer(ListCellRenderer<? super E> sourceRenderer)
+		{
+			this.sourceRenderer = sourceRenderer;
+
+		}
+
+		@Override
+		public Component getListCellRendererComponent(JList<? extends E> list, E value, int index, boolean isSelected, boolean cellHasFocus)
+		{
 			boolean enabled = enabledObjects.contains(value);
 			Component component = sourceRenderer.getListCellRendererComponent(list, value, index, isSelected && enabled, cellHasFocus && enabled);
 			if (isSelected)
@@ -190,7 +255,18 @@ public class JComboBoxWithItemState<E> extends JComboBox<E>
 				component.setBackground(enabledBackground);
 			}
 			return component;
-		};
+		}
+
+	}
+
+	protected final ListCellRenderer<? super E> wrapRenderer(final ListCellRenderer<? super E> sourceRenderer)
+	{
+		if (sourceRenderer instanceof JComboBoxWithItemState.WrappedListCellRenderer)
+		{
+			return sourceRenderer;
+		}
+
+		return new WrappedListCellRenderer(sourceRenderer);
 	}
 
 }
