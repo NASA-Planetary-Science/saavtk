@@ -57,6 +57,12 @@ public class JComboBoxWithItemState<E> extends JComboBox<E>
 		setEnabled(item, true);
 	}
 
+	/**
+	 * At the time JComboBoxWithState was developed, JComboBox.setModel
+	 * was called in its constructor, so do in future change this method
+	 * to use any fields defined in the subclass, as they won't have been
+	 * initialized yet when the base class constructor is called.
+	 */
 	@Override
 	public final void setModel(ComboBoxModel<E> model)
 	{
@@ -79,7 +85,10 @@ public class JComboBoxWithItemState<E> extends JComboBox<E>
 	/**
 	 * This override is provided as an optimization based on a modified version of the
 	 * implementation in JComboBox at the time JComboBoxWithItemState was developed.
-	 * The reason for repeating the guts of the implementation here is that.
+	 * The reason for repeating the guts of the implementation here is that the
+	 * loop below executes very slowly because removeElement calls fireIntervalRemoved
+	 * (for each element) whereas the DefaultComboBoxModel version calls it only once after
+	 * all elements are removed.
 	 */
 	@Override
 	public void removeAllItems()
