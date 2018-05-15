@@ -123,14 +123,6 @@ public abstract class PolyhedralModel extends AbstractModel
 
 	public abstract CustomizableColoringDataManager getColoringDataManager();
 
-	public abstract void setCustomPlateData(int index, ColoringInfo info) throws IOException;
-
-	public abstract void addCustomPlateData(ColoringInfo info) throws IOException;
-
-	public abstract void removeCustomPlateData(int index) throws IOException;
-
-	public abstract List<ColoringInfo> getColoringInfoList();
-
 	public abstract void saveAsPLT(File file) throws IOException;
 
 	public abstract void saveAsOBJ(File file) throws IOException;
