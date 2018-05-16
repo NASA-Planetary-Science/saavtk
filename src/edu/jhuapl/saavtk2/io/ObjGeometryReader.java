@@ -5,7 +5,7 @@ import java.nio.file.Path;
 import edu.jhuapl.saavtk2.geom.Geometry;
 import edu.jhuapl.saavtk2.geom.OBJGeometry;
 
-public class ObjGeometryReader implements GeometryReader {
+public class ObjGeometryReader implements GeometrySource {
 
 	Path file;
 	
@@ -14,7 +14,7 @@ public class ObjGeometryReader implements GeometryReader {
 	}
 	
 	@Override
-	public Geometry readAndBuild() {
+	public Geometry get() {
 		return new OBJGeometry(file);
 	}
 
