@@ -42,8 +42,12 @@ public class ColoringData
 
 	public static ColoringData of(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
 	{
-		FixedMetadata metadata = createMetadata(name, fileName, elementNames, units, numberElements, hasNulls);
-		return new ColoringData(metadata, null);
+		return of(name, fileName, elementNames, units, numberElements, hasNulls, null);
+	}
+
+	public static ColoringData of(String name, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
+	{
+		return of(name, null, elementNames, units, numberElements, hasNulls, data);
 	}
 
 	public static ColoringData of(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
@@ -55,7 +59,9 @@ public class ColoringData
 	private static FixedMetadata createMetadata(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
 	{
 		Preconditions.checkNotNull(name);
-		// TODO check others too.
+		//		Preconditions.checkNotNull(fileName); // This one may be null.
+		Preconditions.checkNotNull(elementNames);
+		Preconditions.checkNotNull(units);
 
 		SettableMetadata metadata = SettableMetadata.of(COLORING_DATA_VERSION);
 		metadata.put(ColoringData.NAME, name);
@@ -116,6 +122,10 @@ public class ColoringData
 		if (this.data == null)
 		{
 			String fileName = getFileName();
+			if (fileName == null)
+			{
+				throw new IllegalStateException();
+			}
 			File file = FileCache.getFileFromServer(fileName);
 			if (file == null)
 			{
@@ -144,7 +154,10 @@ public class ColoringData
 
 	public void clear()
 	{
-		data = null;
+		if (getFileName() != null)
+		{
+			data = null;
+		}
 	}
 
 	public void reload() throws IOException
