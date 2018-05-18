@@ -608,6 +608,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
 		ColoringDataManager coloringDataManager = smallBodyModel.getColoringDataManager();
 		ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
+		if (resolutions.isEmpty())
+		{
+			return;
+		}
 		int numberElements = resolutions.get(newResolutionLevel);
 
 		updateColoringComboBox(coloringComboBox, coloringDataManager, numberElements);
