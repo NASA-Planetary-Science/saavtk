@@ -2324,7 +2324,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	private ImmutableList<ColoringData> getAllColoringDataForThisResolution()
 	{
-		return coloringDataManager.get(coloringDataManager.getResolutions().get(resolutionLevel));
+		ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
+		return resolutions.isEmpty() ? ImmutableList.of() : coloringDataManager.get(resolutions.get(resolutionLevel));
 	}
 
 	private void paintBody() throws IOException
