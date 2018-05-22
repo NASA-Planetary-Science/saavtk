@@ -17,260 +17,261 @@ import java.beans.PropertyChangeSupport;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
+import edu.jhuapl.saavtk.util.Configuration;
 import vtk.vtkCellPicker;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
-import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
-import edu.jhuapl.saavtk.util.Configuration;
 
 /**
- * A picker is a class that listens on mouse events on the renderer and
- * responds appropriately. There can be more than 1 picker active at any
- * given time. The PickManager class (also a subclass of this) is responsible
- * for initializing and managing all the pickers.
+ * A picker is a class that listens on mouse events on the renderer and responds
+ * appropriately. There can be more than 1 picker active at any given time. The
+ * PickManager class (also a subclass of this) is responsible for initializing
+ * and managing all the pickers.
  */
-public abstract class Picker implements
-    MouseListener,
-    MouseMotionListener,
-    MouseWheelListener,
-    KeyListener,
-    PropertyChangeListener
+public abstract class Picker implements MouseListener, MouseMotionListener, MouseWheelListener, KeyListener, PropertyChangeListener
 {
-    protected final PropertyChangeSupport pcs = new PropertyChangeSupport( this );
-    public void addPropertyChangeListener( PropertyChangeListener listener )
-    { this.pcs.addPropertyChangeListener( listener ); }
-    public void removePropertyChangeListener( PropertyChangeListener listener )
-    { this.pcs.removePropertyChangeListener( listener ); }
+	protected final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
 
-    // not sure if volatile is really needed, but just to be sure
-    private static volatile boolean pickingEnabled = true;
+	public void addPropertyChangeListener(PropertyChangeListener listener)
+	{
+		this.pcs.addPropertyChangeListener(listener);
+	}
 
-    public static final double DEFAULT_PICK_TOLERANCE = 0.002;
-    public static final double MINIMUM_PICK_TOLERANCE = 0.0002;
-    public static final double MAXIMUM_PICK_TOLERANCE = 0.005;
+	public void removePropertyChangeListener(PropertyChangeListener listener)
+	{
+		this.pcs.removePropertyChangeListener(listener);
+	}
 
-    private double pickTolerance = DEFAULT_PICK_TOLERANCE;
+	// not sure if volatile is really needed, but just to be sure
+	private static volatile boolean pickingEnabled = true;
 
+	public static final double DEFAULT_PICK_TOLERANCE = 0.002;
+	public static final double MINIMUM_PICK_TOLERANCE = 0.0002;
+	public static final double MAXIMUM_PICK_TOLERANCE = 0.005;
 
-    public double getPickTolerance()
-    {
-        return pickTolerance;
-    }
+	private double pickTolerance = DEFAULT_PICK_TOLERANCE;
 
-    public void setPickTolerance(double pickTolerance)
-    {
-        this.pickTolerance = pickTolerance;
-    }
+	public double getPickTolerance()
+	{
+		return pickTolerance;
+	}
 
-    /**
-     * Unfortunately, crashes sometimes occur if the user drags around the mouse during
-     * a long running operation (e.g. changing to a high resolution). To prevent this,
-     * the following global function is provided to allow disabling of picking during such
-     * operations. Note that if the picking is requested to be enabled, a delay of half
-     * a second is made before enabling picking.
-     *
-     * TODO This is just a hack, investigate the cause of the crash more fully.
-     *
-     * @param b
-     */
-    public static void setPickingEnabled(boolean b)
-    {
-        if (b == false)
-        {
-            pickingEnabled = false;
-        }
-        else
-        {
-            // Delay half a second before enabling picking. This helps prevent some crashes.
+	public void setPickTolerance(double pickTolerance)
+	{
+		this.pickTolerance = pickTolerance;
+	}
 
-            int delay = 500; //milliseconds
-            ActionListener taskPerformer = new ActionListener() {
-                public void actionPerformed(ActionEvent evt)
-                {
-                    pickingEnabled = true;
-                }
-            };
+	/**
+	 * Unfortunately, crashes sometimes occur if the user drags around the mouse
+	 * during a long running operation (e.g. changing to a high resolution). To
+	 * prevent this, the following global function is provided to allow disabling of
+	 * picking during such operations. Note that if the picking is requested to be
+	 * enabled, a delay of half a second is made before enabling picking.
+	 *
+	 * TODO This is just a hack, investigate the cause of the crash more fully.
+	 *
+	 * @param b
+	 */
+	public static void setPickingEnabled(boolean b)
+	{
+		if (b == false)
+		{
+			pickingEnabled = false;
+		}
+		else
+		{
+			// Delay half a second before enabling picking. This helps prevent some crashes.
 
-            Timer timer = new Timer(delay, taskPerformer);
-            timer.setRepeats(false);
-            timer.start();
-        }
-    }
+			int delay = 500; //milliseconds
+			ActionListener taskPerformer = new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent evt)
+				{
+					pickingEnabled = true;
+				}
+			};
 
-    public void mouseClicked(MouseEvent e)
-    {
-    }
+			Timer timer = new Timer(delay, taskPerformer);
+			timer.setRepeats(false);
+			timer.start();
+		}
+	}
 
-    public void mouseEntered(MouseEvent e)
-    {
-    }
+	@Override
+	public void mouseClicked(MouseEvent e)
+	{}
 
-    public void mouseExited(MouseEvent e)
-    {
-    }
+	@Override
+	public void mouseEntered(MouseEvent e)
+	{}
 
-    public void mousePressed(MouseEvent e)
-    {
-    }
+	@Override
+	public void mouseExited(MouseEvent e)
+	{}
 
-    public void mouseReleased(MouseEvent e)
-    {
-    }
+	@Override
+	public void mousePressed(MouseEvent e)
+	{}
 
-    public void mouseDragged(MouseEvent e)
-    {
-    }
+	@Override
+	public void mouseReleased(MouseEvent e)
+	{}
 
-    public void mouseMoved(MouseEvent e)
-    {
-    }
+	@Override
+	public void mouseDragged(MouseEvent e)
+	{}
 
-    public void mouseWheelMoved(MouseWheelEvent e)
-    {
-    }
+	@Override
+	public void mouseMoved(MouseEvent e)
+	{}
 
-    public void keyTyped(KeyEvent e)
-    {
-    }
+	@Override
+	public void mouseWheelMoved(MouseWheelEvent e)
+	{}
 
-    public void keyPressed(KeyEvent e)
-    {
-    }
+	@Override
+	public void keyTyped(KeyEvent e)
+	{}
 
-    public void keyReleased(KeyEvent e)
-    {
-    }
+	@Override
+	public void keyPressed(KeyEvent e)
+	{}
 
-    public void propertyChange(PropertyChangeEvent evt)
-    {
-    }
+	@Override
+	public void keyReleased(KeyEvent e)
+	{}
 
-    /**
-     * Get the default cursor to be used when this picker is active.
-     * Note this may be different than the value of Cursor.DEFAULT_CURSOR
-     * or Cursor.getDefaultCursor().
-     *
-     * @return
-     */
-    public int getDefaultCursor()
-    {
-        return Cursor.DEFAULT_CURSOR;
-    }
-/*
-    protected int doPick(MouseEvent e, vtkCellPicker picker, vtksbmtJoglCanvas renWin)
-    {
-        if (pickingEnabled == false)
-            return 0;
+	@Override
+	public void propertyChange(PropertyChangeEvent evt)
+	{}
 
-        // Don't do a pick if the event is more than a third of a second old
-        final long currentTime = System.currentTimeMillis();
-        final long when = e.getWhen();
+	/**
+	 * Get the default cursor to be used when this picker is active. Note this may
+	 * be different than the value of Cursor.DEFAULT_CURSOR or
+	 * Cursor.getDefaultCursor().
+	 *
+	 * @return
+	 */
+	public int getDefaultCursor()
+	{
+		return Cursor.DEFAULT_CURSOR;
+	}
+	/*
+	 * protected int doPick(MouseEvent e, vtkCellPicker picker, vtksbmtJoglCanvas
+	 * renWin) { if (pickingEnabled == false) return 0;
+	 * 
+	 * // Don't do a pick if the event is more than a third of a second old final
+	 * long currentTime = System.currentTimeMillis(); final long when = e.getWhen();
+	 * 
+	 * //System.err.println("elapsed time " + (currentTime - when)); if (currentTime
+	 * - when > 333) return 0;
+	 * 
+	 * // When picking, choosing the right tolerance is not simple. If it's too
+	 * small, then // the pick will only work well if we are zoomed in very close to
+	 * the object. If it's // too large, the pick will only work well when we are
+	 * zoomed out a lot. To deal // with this situation, do a series of picks
+	 * starting out with a low tolerance // and increase the tolerance after each
+	 * new pick. Stop as soon as the pick succeeds // or we reach the maximum
+	 * tolerance.
+	 * 
+	 * int pickSucceeded = 0; double tolerance = 0.0002; final double
+	 * originalTolerance = picker.GetTolerance(); final double maxTolerance = 0.004;
+	 * final double incr = 0.0002; renWin.lock(); picker.SetTolerance(tolerance);
+	 * while (tolerance <= maxTolerance) { picker.SetTolerance(tolerance);
+	 * 
+	 * pickSucceeded = picker.Pick(e.getX(), renWin.getHeight()-e.getY()-1, 0.0,
+	 * renWin.GetRenderer());
+	 * 
+	 * if (pickSucceeded == 1) break;
+	 * 
+	 * tolerance += incr; } picker.SetTolerance(originalTolerance); renWin.unlock();
+	 * 
+	 * return pickSucceeded; }
+	 */
 
-        //System.err.println("elapsed time " + (currentTime - when));
-        if (currentTime - when > 333)
-            return 0;
+	protected int doPick(MouseEvent e, vtkCellPicker picker, vtkJoglPanelComponent renWin)
+	{
+		return doPick(e.getWhen(), e.getX(), e.getY(), picker, renWin);
+	}
 
-        // When picking, choosing the right tolerance is not simple. If it's too small, then
-        // the pick will only work well if we are zoomed in very close to the object. If it's
-        // too large, the pick will only work well when we are zoomed out a lot. To deal
-        // with this situation, do a series of picks starting out with a low tolerance
-        // and increase the tolerance after each new pick. Stop as soon as the pick succeeds
-        // or we reach the maximum tolerance.
+	protected int doPick(final long when, int x, int y, vtkCellPicker picker, vtkJoglPanelComponent renWin)
+	{
+		if (pickingEnabled == false)
+			return 0;
 
-        int pickSucceeded = 0;
-        double tolerance = 0.0002;
-        final double originalTolerance = picker.GetTolerance();
-        final double maxTolerance = 0.004;
-        final double incr = 0.0002;
-        renWin.lock();
-        picker.SetTolerance(tolerance);
-        while (tolerance <= maxTolerance)
-        {
-            picker.SetTolerance(tolerance);
+		// 2018-04-30 Peachey. Commenting out the elapsed time check below for now to address redmine #1165.
+		// In that issue, a user was unable to create stuctures when using very high resolution
+		// shape models while images are mapped. Debugging revealed that the time lag computed below
+		// in such cases was greater than the 333 ms threshold (frequently much greater), which led doPick
+		// to return 0 (failure), causing the application in turn to ignore mouse clicks.
+		//
+		// Before commenting out, I traced this change all the way back to a very early version of Picker
+		// while it was still in sbmt:
+		//
+		//     commit e008025eb0dc574305f828680b1cbb9f98a460ab
+		//     Author: Eli Kahn <eliezer.kahn@jhuapl.edu> 2010-11-29 18:06:04
+		//
+		// The commit message suggests this *may* have been to prevent unmapped images from continuing
+		// to respond to events. However it's not clear whether this check is now necessary (taking it out
+		// seems to make no difference in anything else I tested).
 
-            pickSucceeded = picker.Pick(e.getX(), renWin.getHeight()-e.getY()-1, 0.0, renWin.GetRenderer());
+		//		// Don't do a pick if the event is more than a third of a second old
+		//		final long currentTime = System.currentTimeMillis();
+		//
+		//		//System.err.println("elapsed time " + (currentTime - when));
+		//		if (currentTime - when > 333)
+		//			return 0;
 
-            if (pickSucceeded == 1)
-                break;
+		renWin.getVTKLock().lock();
 
-            tolerance += incr;
-        }
-        picker.SetTolerance(originalTolerance);
-        renWin.unlock();
+		picker.SetTolerance(pickTolerance);
 
-        return pickSucceeded;
-    }
-*/
+		// Note that on some displays, such as a retina display, the height used by
+		// OpenGL is different than the height used by Java. Therefore we need
+		// scale the mouse coordinates to get the right position for OpenGL.
+		//       double openGlHeight = renWin.getComponent().getSurfaceHeight();
+		//        double openGlHeight = renWin.getComponent().getHeight();
+		double javaHeight = renWin.getComponent().getHeight();
+		//        double scale = openGlHeight / javaHeight;
+		double scale = 1.0;
+		int pickSucceeded = picker.Pick(scale * x, scale * (javaHeight - y - 1), 0.0, renWin.getRenderer());
 
+		renWin.getVTKLock().unlock();
 
-    protected int doPick(MouseEvent e, vtkCellPicker picker, vtkJoglPanelComponent renWin)
-    {
-        return doPick(e.getWhen(), e.getX(), e.getY(), picker, renWin);
-    }
+		return pickSucceeded;
+	}
 
-    protected int doPick(final long when, int x, int y, vtkCellPicker picker, vtkJoglPanelComponent renWin)
-    {
-        if (pickingEnabled == false)
-            return 0;
+	// We do not rely on the OS for the popup trigger in the renderer (as explained in a comment
+	// in the DefaultPicker.mouseClicked function), we need to role out our own popup trigger logic.
+	// That's we why have the following complicated function. It's easier on non-macs. On macs
+	// we try to mimic the default behaviour where a Control + left mouse click is a popup trigger.
+	// Also for some reason, if you left mouse click while holding down the Command button, then
+	// SwingUtilities.isRightMouseButton() returns true. We therefore also prevent a popup from
+	// showing in this situation.
+	static public boolean isPopupTrigger(MouseEvent e)
+	{
+		if (Configuration.isMac())
+		{
+			if (e.getButton() == MouseEvent.BUTTON1 && e.isControlDown())
+			{
+				return true;
+			}
 
-        // Don't do a pick if the event is more than a third of a second old
-        final long currentTime = System.currentTimeMillis();
+			if (!(e.getButton() == MouseEvent.BUTTON1 && e.isMetaDown()) && SwingUtilities.isRightMouseButton(e))
+			{
+				return true;
+			}
+		}
+		else if (SwingUtilities.isRightMouseButton(e))
+		{
+			return true;
+		}
 
-        //System.err.println("elapsed time " + (currentTime - when));
-        if (currentTime - when > 333)
-            return 0;
+		return false;
+	}
 
-        renWin.getVTKLock().lock();
-
-        picker.SetTolerance(pickTolerance);
-
-        // Note that on some displays, such as a retina display, the height used by
-        // OpenGL is different than the height used by Java. Therefore we need
-        // scale the mouse coordinates to get the right position for OpenGL.
-//       double openGlHeight = renWin.getComponent().getSurfaceHeight();
-//        double openGlHeight = renWin.getComponent().getHeight();
-        double javaHeight = renWin.getComponent().getHeight();
-//        double scale = openGlHeight / javaHeight;
-        double scale = 1.0;
-        int pickSucceeded = picker.Pick(scale * x, scale * (javaHeight-y-1), 0.0, renWin.getRenderer());
-
-        renWin.getVTKLock().unlock();
-
-        return pickSucceeded;
-    }
-
-    // We do not rely on the OS for the popup trigger in the renderer (as explained in a comment
-    // in the DefaultPicker.mouseClicked function), we need to role out our own popup trigger logic.
-    // That's we why have the following complicated function. It's easier on non-macs. On macs
-    // we try to mimic the default behaviour where a Control + left mouse click is a popup trigger.
-    // Also for some reason, if you left mouse click while holding down the Command button, then
-    // SwingUtilities.isRightMouseButton() returns true. We therefore also prevent a popup from
-    // showing in this situation.
-    static public boolean isPopupTrigger(MouseEvent e)
-    {
-        if (Configuration.isMac())
-        {
-            if (e.getButton()==MouseEvent.BUTTON1 && e.isControlDown())
-            {
-                return true;
-            }
-
-            if (!(e.getButton()==MouseEvent.BUTTON1 && e.isMetaDown()) && SwingUtilities.isRightMouseButton(e))
-            {
-                return true;
-            }
-        }
-        else if (SwingUtilities.isRightMouseButton(e))
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    public boolean isPickingEnabled()
-    {
-        return pickingEnabled;
-    }
-
+	public boolean isPickingEnabled()
+	{
+		return pickingEnabled;
+	}
 
 }
