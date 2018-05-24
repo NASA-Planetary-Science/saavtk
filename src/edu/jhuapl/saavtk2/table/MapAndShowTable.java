@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk2.table.search;
+package edu.jhuapl.saavtk2.table;
 
 
 import java.awt.BorderLayout;
@@ -12,10 +12,7 @@ import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk2.event.Event;
 import edu.jhuapl.saavtk2.event.EventListener;
-import edu.jhuapl.saavtk2.table.BasicTable;
-import edu.jhuapl.saavtk2.table.TableSwingWrapper;
-import edu.jhuapl.saavtk2.table.TableColumn;
-import edu.jhuapl.saavtk2.table.TableEntryChangedEvent;
+import edu.jhuapl.saavtk2.gui.BasicFrame;
 
 public class MapAndShowTable extends BasicTable {
 

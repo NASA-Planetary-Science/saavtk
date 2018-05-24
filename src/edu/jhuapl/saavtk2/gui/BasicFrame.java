@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk2.table.search;
+package edu.jhuapl.saavtk2.gui;
 
 import java.awt.BorderLayout;
 

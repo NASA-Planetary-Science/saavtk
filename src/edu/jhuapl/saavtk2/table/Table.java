@@ -2,8 +2,6 @@ package edu.jhuapl.saavtk2.table;
 
 import edu.jhuapl.saavtk2.event.Event;
 import edu.jhuapl.saavtk2.event.EventSource;
-import edu.jhuapl.saavtk2.table.search.ImageSearchResultsTable;
-import edu.jhuapl.saavtk2.table.search.MapAndShowTable;
 
 
 /**

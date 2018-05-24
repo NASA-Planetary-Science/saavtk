@@ -19,10 +19,9 @@ import com.google.common.collect.Maps;
 
 import edu.jhuapl.saavtk2.event.Event;
 import edu.jhuapl.saavtk2.event.EventListener;
+import edu.jhuapl.saavtk2.gui.BasicFrame;
 import edu.jhuapl.saavtk2.table.TableRowAddedEvent;
 import edu.jhuapl.saavtk2.table.TableRowRemovedEvent;
-import edu.jhuapl.saavtk2.table.search.BasicFrame;
-import edu.jhuapl.saavtk2.table.search.MapAndShowTable;
 
 public class TableSwingWrapper implements EventListener, TableModelListener {
 
