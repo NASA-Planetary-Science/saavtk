@@ -2333,99 +2333,95 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		initializeActorsAndMappers();
 
-		if (coloringIndex >= 0)
+		if (coloringIndex >= 0 && isColoringAvailable(coloringIndex))
 		{
-			if (isColoringAvailable(coloringIndex))
+			loadColoringData();
+
+			ColoringData coloringData = getColoringData(coloringIndex);
+
+			String title = coloringData.getName();
+			String units = coloringData.getUnits();
+			if (!units.isEmpty())
 			{
+				title += " (" + units + ")";
+			}
+			scalarBarActor.SetTitle(title);
 
-				loadColoringData();
+			vtkFloatArray floatArray = coloringData.getData();
 
-				ColoringData coloringData = getColoringData(coloringIndex);
+			initColormap();
+			if (!showColorsAsContourLines)
+			{
+				if (smallBodyActors.contains(linesActor))
+					smallBodyActors.remove(linesActor);
 
-				String title = coloringData.getName();
-				String units = coloringData.getUnits();
-				if (!units.isEmpty())
+				vtkUnsignedCharArray rgbColorData = new vtkUnsignedCharArray();
+				rgbColorData.SetNumberOfComponents(3);
+				for (int index = 0; index < floatArray.GetNumberOfTuples(); ++index)
 				{
-					title += " (" + units + ")";
+					double value = floatArray.GetValue(index);
+					Color c = colormap.getColor(value);
+					rgbColorData.InsertNextTuple3(c.getRed(), c.getGreen(), c.getBlue());
 				}
-				scalarBarActor.SetTitle(title);
 
-				vtkFloatArray floatArray = coloringData.getData();
+				smallBodyMapper.SetLookupTable(colormap.getLookupTable());
 
-				initColormap();
-				if (!showColorsAsContourLines)
+				vtkPolyDataMapper decimatedMapper =
+						((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+				decimatedMapper.SetLookupTable(colormap.getLookupTable());
+				decimatedMapper.UseLookupTableScalarRangeOn();
+
+				if (coloringValueType == ColoringValueType.POINT_DATA)
+					this.smallBodyPolyData.GetPointData().SetScalars(rgbColorData);
+				else
+					this.smallBodyPolyData.GetCellData().SetScalars(rgbColorData);
+
+				smallBodyMapper.ScalarVisibilityOn();
+
+			}
+			else
+			{
+				vtkPolyDataMapper decimatedMapper =
+						((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+				decimatedMapper.ScalarVisibilityOff();
+				smallBodyMapper.ScalarVisibilityOff();
+
+				vtkPolyData polyData;
+				if (coloringValueType == ColoringValueType.POINT_DATA)
 				{
-					if (smallBodyActors.contains(linesActor))
-						smallBodyActors.remove(linesActor);
-
-					vtkUnsignedCharArray rgbColorData = new vtkUnsignedCharArray();
-					rgbColorData.SetNumberOfComponents(3);
-					for (int index = 0; index < floatArray.GetNumberOfTuples(); ++index)
-					{
-						double value = floatArray.GetValue(index);
-						Color c = colormap.getColor(value);
-						rgbColorData.InsertNextTuple3(c.getRed(), c.getGreen(), c.getBlue());
-					}
-
-					smallBodyMapper.SetLookupTable(colormap.getLookupTable());
-
-					vtkPolyDataMapper decimatedMapper =
-							((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
-					decimatedMapper.SetLookupTable(colormap.getLookupTable());
-					decimatedMapper.UseLookupTableScalarRangeOn();
-
-					if (coloringValueType == ColoringValueType.POINT_DATA)
-						this.smallBodyPolyData.GetPointData().SetScalars(rgbColorData);
-					else
-						this.smallBodyPolyData.GetCellData().SetScalars(rgbColorData);
-
-					smallBodyMapper.ScalarVisibilityOn();
-
+					smallBodyPolyData.GetPointData().SetScalars(floatArray);
+					polyData = smallBodyPolyData;
 				}
 				else
 				{
-					vtkPolyDataMapper decimatedMapper =
-							((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
-					decimatedMapper.ScalarVisibilityOff();
-					smallBodyMapper.ScalarVisibilityOff();
-
-					vtkPolyData polyData;
-					if (coloringValueType == ColoringValueType.POINT_DATA)
-					{
-						smallBodyPolyData.GetPointData().SetScalars(floatArray);
-						polyData = smallBodyPolyData;
-					}
-					else
-					{
-						smallBodyPolyData.GetCellData().SetScalars(floatArray);
-						vtkCellDataToPointData converter = new vtkCellDataToPointData();
-						converter.SetInputData(smallBodyPolyData);
-						converter.PassCellDataOff();
-						converter.Update();
-						polyData = converter.GetPolyDataOutput(); // contour filter requires point data with one component
-					}
-
-					vtkContourFilter contourFilter = new vtkContourFilter();
-					contourFilter.SetInputData(polyData);
-					contourFilter.GenerateValues(colormap.getNumberOfLevels(), colormap.getRangeMin(), colormap.getRangeMax());
-					contourFilter.Update();
-
-					linesMapper =
-							((SaavtkLODActor) linesActor).setQuadricDecimatedLODMapper(contourFilter.GetOutput());
-
-					linesMapper.SetInputData(contourFilter.GetOutput());
-					linesMapper.ScalarVisibilityOn();
-					linesMapper.SetScalarModeToDefault();
-					linesMapper.SetLookupTable(colormap.getLookupTable());
-					linesMapper.UseLookupTableScalarRangeOn();
-
-					linesActor.VisibilityOn();
-					linesActor.SetMapper(linesMapper);
-					linesActor.GetProperty().SetLineWidth(contourLineWidth);
-
-					if (!smallBodyActors.contains(linesActor))
-						smallBodyActors.add(linesActor);
+					smallBodyPolyData.GetCellData().SetScalars(floatArray);
+					vtkCellDataToPointData converter = new vtkCellDataToPointData();
+					converter.SetInputData(smallBodyPolyData);
+					converter.PassCellDataOff();
+					converter.Update();
+					polyData = converter.GetPolyDataOutput(); // contour filter requires point data with one component
 				}
+
+				vtkContourFilter contourFilter = new vtkContourFilter();
+				contourFilter.SetInputData(polyData);
+				contourFilter.GenerateValues(colormap.getNumberOfLevels(), colormap.getRangeMin(), colormap.getRangeMax());
+				contourFilter.Update();
+
+				linesMapper =
+						((SaavtkLODActor) linesActor).setQuadricDecimatedLODMapper(contourFilter.GetOutput());
+
+				linesMapper.SetInputData(contourFilter.GetOutput());
+				linesMapper.ScalarVisibilityOn();
+				linesMapper.SetScalarModeToDefault();
+				linesMapper.SetLookupTable(colormap.getLookupTable());
+				linesMapper.UseLookupTableScalarRangeOn();
+
+				linesActor.VisibilityOn();
+				linesActor.SetMapper(linesMapper);
+				linesActor.GetProperty().SetLineWidth(contourLineWidth);
+
+				if (!smallBodyActors.contains(linesActor))
+					smallBodyActors.add(linesActor);
 			}
 		}
 		else
