@@ -14,7 +14,9 @@ import java.util.List;
 import java.util.TreeSet;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Table;
 
 import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.colormap.Colormaps;
@@ -109,11 +111,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	private vtkGenericCell genericCell;
 	private String[] modelNames;
 	private String[] modelFiles;
-
-	public String[] getModelFiles()
-	{
-		return modelFiles;
-	}
 
 	private String[] imageMapNames = null;
 	private BoundingBox boundingBox = null;
@@ -225,7 +222,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		Preconditions.checkNotNull(numberElements);
 		Preconditions.checkArgument(numberElements.size() > 0);
 
-		// Don't trust the other inputs.
+		// Don't trust the other inputs, but don't throw, just make them blank.
 		if (coloringUnits == null)
 			coloringUnits = new String[] {};
 		if (coloringHasNulls == null)
@@ -1263,7 +1260,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		{
 			String result = "";
 			boolean firstColor = true;
-			if (isColoringIndexInRange(redFalseColor))
+			if (isColoringAvailable(redFalseColor))
 			{
 				if (firstColor)
 				{
@@ -1276,7 +1273,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				float red = (float) getColoringValue(redFalseColor, pickPosition);
 				result += getColoringValueLabel(redFalseColor, red);
 			}
-			if (isColoringIndexInRange(greenFalseColor))
+			if (isColoringAvailable(greenFalseColor))
 			{
 				if (firstColor)
 				{
@@ -1289,7 +1286,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				float green = (float) getColoringValue(greenFalseColor, pickPosition);
 				result += getColoringValueLabel(greenFalseColor, green);
 			}
-			if (isColoringIndexInRange(blueFalseColor))
+			if (isColoringAvailable(blueFalseColor))
 			{
 				if (firstColor)
 				{
@@ -1651,12 +1648,24 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	{
 		if (coloringIndex != index || useFalseColoring)
 		{
+			final int currentIndex = coloringIndex;
+			final boolean currentFalseColoring = useFalseColoring;
+
 			coloringIndex = index;
 			useFalseColoring = false;
 
 			if (index != -1)
 			{
-				loadColoringData();
+				try
+				{
+					loadColoringData();
+				}
+				catch (Throwable t)
+				{
+					coloringIndex = currentIndex;
+					useFalseColoring = currentFalseColoring;
+					throw t;
+				}
 				double[] range = getCurrentColoringRange(coloringIndex);
 				if (colormap == null)
 					initColormap();
@@ -1681,7 +1690,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		greenFalseColor = greenChannel;
 		blueFalseColor = blueChannel;
 
-		if (isColoringIndexInRange(redFalseColor) || isColoringIndexInRange(greenFalseColor) || isColoringIndexInRange(blueFalseColor))
+		if (isColoringAvailable(redFalseColor) || isColoringAvailable(greenFalseColor) || isColoringAvailable(blueFalseColor))
 		{
 			coloringIndex = -1;
 			useFalseColoring = true;
@@ -2777,14 +2786,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return coloringDataManager;
 	}
 
-	public void reloadColoringData() throws IOException
-	{
-		for (ColoringData data : getAllColoringDataForThisResolution())
-		{
-			data.reload();
-		}
-	}
-
 	@Override
 	public void addCustomLidarDatasource(LidarDatasourceInfo info) throws IOException
 	{
@@ -2825,8 +2826,4 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return lidarDatasourceInfo;
 	}
 
-	private boolean isColoringIndexInRange(int index)
-	{
-		return index >= 0 && index < coloringDataManager.getNames().size();
-	}
 }
