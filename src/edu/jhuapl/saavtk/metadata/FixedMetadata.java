@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.metadata;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -7,6 +8,7 @@ public final class FixedMetadata extends BasicMetadata
 {
 	public static FixedMetadata of(BasicMetadata metadata)
 	{
+		Preconditions.checkNotNull(metadata);
 		Version version = metadata.getVersion();
 		ImmutableList<Key<?>> keys = metadata.getKeys();
 		return new FixedMetadata(version, keys, ImmutableMap.copyOf(metadata.getMap()));
