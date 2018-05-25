@@ -1,10 +1,8 @@
 package edu.jhuapl.saavtk.model;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -278,63 +276,60 @@ public class ColoringData
 			BasicHDU<?> hdu = fits.getHDU(1);
 			if (hdu instanceof TableHDU)
 			{
-				try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File("/Users/peachjm1/Downloads/custom-vector-pc.csv"))))
-				{
-					TableHDU<?> table = (TableHDU<?>) hdu;
-					int numberRows = table.getNRows();
-					if (numberRows != numberElements)
-					{
-						String message = "Number of rows in FITS file " + file + " is " + numberRows + ", not " + numberElements + " as expected.";
-						JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
-						throw new IOException(message);
-					}
-
-					//				ImmutableList<String> columnNames = findMatchingColumnNameCaseInsensitive(table, metadata.get(ELEMENT_NAMES));
-
-					vtkFloatArray data = new vtkFloatArray();
-
-					int numberColumns = table.getNCols();
-					int numberComponents = numberColumns > 9 ? 3 : numberColumns > 7 ? 2 : 1;
-					data.SetNumberOfComponents(numberComponents);
-					data.SetNumberOfTuples(numberElements);
-
-					//				float[] floatData = (float[]) table.getColumn(columnNames.get(0));
-					float[] xColumn = null;
-					float[] yColumn = null;
-					float[] zColumn = null;
-					xColumn = (float[]) table.getColumn(4);
-					if (table.getNCols() > 7)
-					{
-						yColumn = (float[]) table.getColumn(6);
-					}
-					if (table.getNCols() > 9)
-					{
-						zColumn = (float[]) table.getColumn(8);
-					}
-					for (int index = 0; index < numberElements; index++)
-					{
-						if (yColumn != null && zColumn != null)
-						{
-							data.SetTuple3(index, xColumn[index], yColumn[index], zColumn[index]);
-						}
-						else if (yColumn != null)
-						{
-							data.SetTuple2(index, xColumn[index], yColumn[index]);
-						}
-						else
-						{
-							data.SetTuple1(index, xColumn[index]);
-						}
-					}
-
-					this.defaultRange = computeDefaultColoringRange(data);
-
-					// Everything worked so assign to the data field.
-					this.data = data;
-				}
-				//				catch (IOException e)
+				//				try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File("/Users/peachjm1/Downloads/custom-vector-pc.csv"))))
 				//				{
-				//
+				TableHDU<?> table = (TableHDU<?>) hdu;
+				int numberRows = table.getNRows();
+				if (numberRows != numberElements)
+				{
+					String message = "Number of rows in FITS file " + file + " is " + numberRows + ", not " + numberElements + " as expected.";
+					JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
+					throw new IOException(message);
+				}
+
+				//				ImmutableList<String> columnNames = findMatchingColumnNameCaseInsensitive(table, metadata.get(ELEMENT_NAMES));
+
+				vtkFloatArray data = new vtkFloatArray();
+
+				int numberColumns = table.getNCols();
+				int numberComponents = numberColumns > 9 ? 3 : numberColumns > 7 ? 2 : 1;
+				data.SetNumberOfComponents(numberComponents);
+				data.SetNumberOfTuples(numberElements);
+
+				//				float[] floatData = (float[]) table.getColumn(columnNames.get(0));
+				float[] xColumn = null;
+				float[] yColumn = null;
+				float[] zColumn = null;
+				xColumn = (float[]) table.getColumn(4);
+				if (table.getNCols() > 7)
+				{
+					yColumn = (float[]) table.getColumn(6);
+				}
+				if (table.getNCols() > 9)
+				{
+					zColumn = (float[]) table.getColumn(8);
+				}
+				for (int index = 0; index < numberElements; index++)
+				{
+					if (yColumn != null && zColumn != null)
+					{
+						//							writer.write(xColumn[index] + ", " + yColumn[index] + ", " + zColumn[index] + "\n");
+						data.SetTuple3(index, xColumn[index], yColumn[index], zColumn[index]);
+					}
+					else if (yColumn != null)
+					{
+						data.SetTuple2(index, xColumn[index], yColumn[index]);
+					}
+					else
+					{
+						data.SetTuple1(index, xColumn[index]);
+					}
+				}
+
+				this.defaultRange = computeDefaultColoringRange(data);
+
+				// Everything worked so assign to the data field.
+				this.data = data;
 				//				}
 			}
 			else
