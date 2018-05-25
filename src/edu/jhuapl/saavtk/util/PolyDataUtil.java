@@ -2388,6 +2388,32 @@ public class PolyDataUtil
 	}
 
 	/**
+	 * Get the number of facets in a PolyData file.
+	 * 
+	 * @param fileName the name of the file
+	 * @return the number of facets.
+	 */
+	public static int getVTKPolyDataSize(String fileName)
+	{
+		vtkPolyDataReader smallBodyReader = null;
+		try
+		{
+			smallBodyReader = new vtkPolyDataReader();
+			smallBodyReader.SetFileName(fileName);
+			smallBodyReader.Update();
+			vtkPolyData output = smallBodyReader.GetOutput();
+			return output.GetNumberOfPolys();
+		}
+		finally
+		{
+			if (smallBodyReader != null)
+			{
+				smallBodyReader.Delete();
+			}
+		}
+	}
+
+	/**
 	 * Read in PDS vertex file format. There are 2 variants of this file. In one the
 	 * first line contains the number of points and the number of cells and then
 	 * follows the points and vertices. In the other variant the first line only
