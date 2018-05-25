@@ -13,66 +13,16 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.TreeSet;
 
-import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
-import com.google.common.collect.Lists;
-
-import vtk.vtkAbstractPointLocator;
-import vtk.vtkActor;
-import vtk.vtkActor2D;
-import vtk.vtkAppendPolyData;
-import vtk.vtkCell;
-import vtk.vtkCellArray;
-import vtk.vtkCellData;
-import vtk.vtkCellDataToPointData;
-import vtk.vtkClipPolyData;
-import vtk.vtkContourFilter;
-import vtk.vtkCoordinate;
-import vtk.vtkCutter;
-import vtk.vtkDataArray;
-import vtk.vtkExtractSelectedThresholds;
-import vtk.vtkExtractSelection;
-import vtk.vtkFloatArray;
-import vtk.vtkGenericCell;
-import vtk.vtkIdFilter;
-import vtk.vtkIdList;
-import vtk.vtkIdTypeArray;
-import vtk.vtkImplicitFunction;
-import vtk.vtkInformation;
-import vtk.vtkLookupTable;
-import vtk.vtkMarchingContourFilter;
-import vtk.vtkMassProperties;
-import vtk.vtkPointLocator;
-import vtk.vtkPoints;
-import vtk.vtkPolyData;
-import vtk.vtkPolyDataMapper;
-import vtk.vtkPolyDataMapper2D;
-import vtk.vtkPolyDataNormals;
-import vtk.vtkPolyDataWriter;
-import vtk.vtkProp;
-import vtk.vtkProperty;
-import vtk.vtkScalarBarActor;
-import vtk.vtkSelection;
-import vtk.vtkSelectionNode;
-import vtk.vtkStripper;
-import vtk.vtkTextActor;
-import vtk.vtkTextProperty;
-import vtk.vtkThreshold;
-import vtk.vtkTriangle;
-import vtk.vtkTubeFilter;
-import vtk.vtkUnsignedCharArray;
-import vtk.vtkUnstructuredGrid;
-import vtk.vtksbCellLocator;
 import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.colormap.Colormaps;
-import edu.jhuapl.saavtk.colormap.RgbColormap;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
@@ -80,7 +30,6 @@ import edu.jhuapl.saavtk.util.ConvertResourceToFile;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.Frustum;
 import edu.jhuapl.saavtk.util.LatLon;
-import edu.jhuapl.saavtk.util.LinearSpace;
 import edu.jhuapl.saavtk.util.MapUtil;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
@@ -88,14 +37,46 @@ import edu.jhuapl.saavtk.util.Preferences;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
 import edu.jhuapl.saavtk.util.SmallBodyCubes;
+import vtk.vtkActor;
+import vtk.vtkActor2D;
+import vtk.vtkCell;
+import vtk.vtkCellArray;
+import vtk.vtkCellData;
+import vtk.vtkCellDataToPointData;
+import vtk.vtkContourFilter;
+import vtk.vtkCoordinate;
+import vtk.vtkDataArray;
+import vtk.vtkFloatArray;
+import vtk.vtkGenericCell;
+import vtk.vtkIdList;
+import vtk.vtkIdTypeArray;
+import vtk.vtkLookupTable;
+import vtk.vtkMassProperties;
+import vtk.vtkPointLocator;
+import vtk.vtkPoints;
+import vtk.vtkPolyData;
+import vtk.vtkPolyDataMapper;
+import vtk.vtkPolyDataMapper2D;
+import vtk.vtkPolyDataNormals;
+import vtk.vtkProp;
+import vtk.vtkProperty;
+import vtk.vtkScalarBarActor;
+import vtk.vtkTextActor;
+import vtk.vtkTextProperty;
+import vtk.vtkTriangle;
+import vtk.vtkUnsignedCharArray;
+import vtk.vtksbCellLocator;
 
 public class GenericPolyhedralModel extends PolyhedralModel implements PropertyChangeListener
 {
-
-	private List<ColoringInfo> coloringInfo = new ArrayList<ColoringInfo>();
+	private final CustomizableColoringDataManager coloringDataManager;
 
 	private ColoringValueType coloringValueType;
-	public ColoringValueType getColoringValueType() { return coloringValueType; }
+
+	public ColoringValueType getColoringValueType()
+	{
+		return coloringValueType;
+	}
 
 	private int coloringIndex = -1;
 	// If true, a false color will be used by using 3 of the existing
@@ -116,7 +97,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	private vtkPolyDataMapper smallBodyMapper;
 
 	private List<vtkProp> smallBodyActors = new ArrayList<vtkProp>();
-	public List<vtkProp> getSmallBodyActors() { return smallBodyActors; }
+
+	public List<vtkProp> getSmallBodyActors()
+	{
+		return smallBodyActors;
+	}
 
 	private vtksbCellLocator cellLocator;
 	private vtkPointLocator pointLocator;
@@ -129,6 +114,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	private vtkGenericCell genericCell;
 	private String[] modelNames;
 	private String[] modelFiles;
+
 	public String[] getModelFiles()
 	{
 		return modelFiles;
@@ -156,34 +142,37 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	private double scaleBarWidthInKm = -1.0;
 	private boolean showScaleBar = true;
 
-	vtkIdTypeArray cellIds=new vtkIdTypeArray();
-	public static final String cellIdsArrayName="cellIds";
+	vtkIdTypeArray cellIds = new vtkIdTypeArray();
+	public static final String cellIdsArrayName = "cellIds";
 
-	private Colormap colormap=null;
-	private boolean colormapInitialized=false;
-	private boolean showColorsAsContourLines=false;
-	private double contourLineWidth=1;
+	private Colormap colormap = null;
+	private boolean colormapInitialized = false;
+	private boolean showColorsAsContourLines = false;
+	private double contourLineWidth = 1;
 	private vtkPolyDataMapper linesMapper;
 	private vtkActor linesActor;
 
 	/**
 	 * Default constructor. Must be followed by a call to setSmallBodyPolyData.
 	 */
-	public GenericPolyhedralModel()
+	public GenericPolyhedralModel(String uniqueModelId)
 	{
 		super(null);
+		coloringDataManager = CustomizableColoringDataManager.of(uniqueModelId);
 		smallBodyPolyData = new vtkPolyData();
 		genericCell = new vtkGenericCell();
 		idList = new vtkIdList();
 	}
 
 	/**
-	 * Convenience method for initializing a GenericPolyhedralModel with just a vtkPolyData.
+	 * Convenience method for initializing a GenericPolyhedralModel with just a
+	 * vtkPolyData.
+	 * 
 	 * @param polyData
 	 */
-	public GenericPolyhedralModel(vtkPolyData polyData)
+	public GenericPolyhedralModel(String uniqueModelId, vtkPolyData polyData)
 	{
-		this();
+		this(uniqueModelId);
 
 		vtkFloatArray[] coloringValues = {};
 		String[] coloringNames = {};
@@ -198,19 +187,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	 * resolution levels whereas modelNames is an array of names that is specific
 	 * for each resolution level.
 	 */
-	public GenericPolyhedralModel(
-			ViewConfig config,
-			String[] modelNames,
-			String[] modelFiles,
-			String[] coloringFiles,
-			String[] coloringNames,
-			String[] coloringUnits,
-			boolean[] coloringHasNulls,
-			String[] imageMapNames,
-			ColoringValueType coloringValueType,
-			boolean lowestResolutionModelStoredInResource)
+	public GenericPolyhedralModel(ViewConfig config, String[] modelNames, String[] modelFiles, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls, String[] imageMapNames, ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource)
 	{
 		super(config);
+		this.coloringDataManager = createColoringDataManager(config, coloringFiles, coloringNames, coloringUnits, coloringHasNulls);
 		this.modelNames = modelNames;
 		this.modelFiles = modelFiles;
 		setDefaultModelFileName(this.modelFiles[0]);
@@ -218,7 +198,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		this.coloringValueType = coloringValueType;
 		if (coloringNames != null)
 		{
-			for (int i=0; i<coloringNames.length; ++i)
+			for (int i = 0; i < coloringNames.length; ++i)
 			{
 				ColoringInfo info = new ColoringInfo();
 				info.coloringName = coloringNames[i];
@@ -233,7 +213,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					System.err.println("Plate coloring is not available. Disabling " + info.coloringName);
 					continue;
 				}
-				coloringInfo.add(info);
 			}
 		}
 
@@ -245,10 +224,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		if (Configuration.useFileCache())
 		{
 			if (lowestResolutionModelStoredInResource)
-				defaultModelFile = ConvertResourceToFile.convertResourceToRealFile(
-						this,
-						modelFiles[0],
-						Configuration.getApplicationDataDir());
+				defaultModelFile = ConvertResourceToFile.convertResourceToRealFile(this, modelFiles[0], Configuration.getApplicationDataDir());
 			else
 				defaultModelFile = FileCache.getFileFromServer(modelFiles[0]);
 		}
@@ -257,9 +233,53 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			defaultModelFile = new File(modelFiles[0]);
 		}
 
-
 		initialize(defaultModelFile);
 
+	}
+
+	private static CustomizableColoringDataManager createColoringDataManager(ViewConfig config, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls)
+	{
+		String dataId = config.getUniqueName();
+		if (coloringNames == null)
+			return CustomizableColoringDataManager.of(dataId);
+		Preconditions.checkNotNull(coloringFiles);
+		Preconditions.checkArgument(coloringFiles.length == coloringNames.length);
+
+		int[] numberElements = config.smallBodyNumberOfPlatesPerResolutionLevel;
+		Preconditions.checkNotNull(numberElements);
+		Preconditions.checkArgument(numberElements.length > 0);
+
+		// Don't trust the other inputs.
+		if (coloringUnits == null)
+			coloringUnits = new String[] {};
+		if (coloringHasNulls == null)
+			coloringHasNulls = new boolean[] {};
+
+		ImmutableList.Builder<ColoringData> builder = ImmutableList.builder();
+		for (int index = 0; index < coloringFiles.length; ++index)
+		{
+			String baseFileName = coloringFiles[index];
+			Format fileFormat = baseFileName.matches(".*\\.[Ff][Ii][Tt][Ss]?$") ? Format.FIT : baseFileName.matches(".*//.[Tt][Xx][Tt]$") ? Format.TXT : Format.UNKNOWN;
+			for (int resolutionLevel = 0; resolutionLevel < numberElements.length; ++resolutionLevel)
+			{
+				String fileName = getColoringFileName(baseFileName, resolutionLevel, fileFormat);
+				if (fileName != null)
+				{
+					if (fileFormat == Format.UNKNOWN)
+					{
+						fileFormat = fileName.endsWith(".fits.gz") ? Format.FIT : fileName.endsWith(".txt.gz") ? Format.TXT : Format.UNKNOWN;
+					}
+					String name = coloringNames[index];
+					ImmutableList<String> elementNames = ImmutableList.of(name);
+					String units = coloringUnits.length > index ? coloringUnits[index] : "";
+					boolean hasNulls = coloringHasNulls.length > index ? coloringHasNulls[index] : false;
+					builder.add(ColoringData.of(name, fileName, elementNames, units, numberElements[resolutionLevel], hasNulls));
+				}
+			}
+		}
+
+		CustomizableColoringDataManager result = CustomizableColoringDataManager.of(dataId, builder.build());
+		return result;
 	}
 
 	// Note this change has been merged back into sbmt1dev, but not
@@ -268,17 +288,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public GenericPolyhedralModel(ViewConfig config)
 	{
 		super(config);
+		this.coloringDataManager = CustomizableColoringDataManager.of(config.getUniqueName());
 	}
 
-	protected void initializeConfigParameters(
-			String[] modelFiles,
-			String[] coloringFiles,
-			String[] coloringNames,
-			String[] coloringUnits,
-			boolean[] coloringHasNulls,
-			String[] imageMapNames,
-			ColoringValueType coloringValueType,
-			boolean lowestResolutionModelStoredInResource)
+	protected void initializeConfigParameters(String[] modelFiles, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls, String[] imageMapNames, ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource)
 	{
 		this.modelFiles = modelFiles;
 		setDefaultModelFileName(this.modelFiles[0]);
@@ -286,7 +299,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		this.coloringValueType = coloringValueType;
 		if (coloringNames != null)
 		{
-			for (int i=0; i<coloringNames.length; ++i)
+			for (int i = 0; i < coloringNames.length; ++i)
 			{
 				ColoringInfo info = new ColoringInfo();
 				info.coloringName = coloringNames[i];
@@ -301,7 +314,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					System.err.println("Plate coloring is not available. Disabling " + info.coloringName);
 					continue;
 				}
-				coloringInfo.add(info);
 			}
 		}
 
@@ -313,10 +325,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		if (Configuration.useFileCache())
 		{
 			if (lowestResolutionModelStoredInResource)
-				defaultModelFile = ConvertResourceToFile.convertResourceToRealFile(
-						this,
-						modelFiles[0],
-						Configuration.getApplicationDataDir());
+				defaultModelFile = ConvertResourceToFile.convertResourceToRealFile(this, modelFiles[0], Configuration.getApplicationDataDir());
 			else
 				defaultModelFile = FileCache.getFileFromServer(modelFiles[0]);
 		}
@@ -332,15 +341,16 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		initialize(defaultModelFile);
 	}
 
+	@Override
 	public void setColormap(Colormap colormap)
 	{
-		if (this.colormap!=null)
+		if (this.colormap != null)
 			this.colormap.removePropertyChangeListener(this);
 		initializeActorsAndMappers();
-		this.colormap=colormap;
-		if (coloringIndex!=-1)
+		this.colormap = colormap;
+		if (coloringIndex != -1)
 		{
-			double[] range=coloringInfo.get(coloringIndex).currentColoringRange;
+			double[] range = getColoringData(coloringIndex).getData().GetRange();
 			colormap.setRangeMin(range[0]);
 			colormap.setRangeMax(range[1]);
 		}
@@ -357,6 +367,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 	}
 
+	@Override
 	public Colormap getColormap()
 	{
 		return colormap;
@@ -364,15 +375,15 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	protected void initColormap()
 	{
-		if (colormap==null)
-			colormap=Colormaps.getNewInstanceOfBuiltInColormap(Colormaps.getDefaultColormapName());
-		if (!colormapInitialized && !(colormap==null) && coloringIndex>-1)
+		if (colormap == null)
+			colormap = Colormaps.getNewInstanceOfBuiltInColormap(Colormaps.getDefaultColormapName());
+		if (!colormapInitialized && !(colormap == null) && coloringIndex > -1)
 		{
 			double[] range = getCurrentColoringRange(coloringIndex);
 			colormap.removePropertyChangeListener(this);
 			colormap.setRangeMin(range[0]);
 			colormap.setRangeMax(range[1]);
-			colormapInitialized=true;
+			colormapInitialized = true;
 			colormap.addPropertyChangeListener(this);
 		}
 	}
@@ -380,7 +391,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	@Override
 	public void showScalarsAsContours(boolean flag)
 	{
-		showColorsAsContourLines=flag;
+		showColorsAsContourLines = flag;
 		try
 		{
 			paintBody();
@@ -390,34 +401,32 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 	}
-	
+
 	@Override
 	public void setContourLineWidth(double width)
 	{
-		contourLineWidth=width;
+		contourLineWidth = width;
 	}
-	
-	
+
 	@Override
 	public void propertyChange(PropertyChangeEvent evt)
 	{
 		if (evt.getSource().equals(colormap))
 			try
-		{
+			{
 				paintBody();
-		}
-		catch (IOException e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+			}
+			catch (IOException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 
 	}
 
-
-
+	@Override
 	public List<vtkPolyData> getSmallBodyPolyDatas()
 	{
 		return null;
@@ -429,19 +438,14 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		defaultModelFile = new File(defaultModelFileName);
 	}
 
-
-	public void setSmallBodyPolyData(vtkPolyData polydata,
-			vtkFloatArray[] coloringValues,
-			String[] coloringNames,
-			String[] coloringUnits,
-			ColoringValueType coloringValueType)
+	public void setSmallBodyPolyData(vtkPolyData polydata, vtkFloatArray[] coloringValues, String[] coloringNames, String[] coloringUnits, ColoringValueType coloringValueType)
 	{
-		if(polydata != null)
+		if (polydata != null)
 		{
 			smallBodyPolyData.DeepCopy(polydata);
 		}
-		coloringInfo.clear();
-		for (int i=0; i<coloringNames.length; ++i)
+		coloringDataManager.clearCustom();
+		for (int i = 0; i < coloringNames.length; ++i)
 		{
 			ColoringInfo info = new ColoringInfo();
 			info.coloringName = coloringNames[i];
@@ -452,12 +456,12 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			}
 			info.coloringUnits = coloringUnits[i];
 			info.coloringValues = coloringValues[i];
-			coloringInfo.add(info);
+			int numberElements = coloringValues[i].GetNumberOfTuples();
+			coloringDataManager.addCustom(info.toCustomColoringData(numberElements));
 		}
 		this.coloringValueType = coloringValueType;
 
 		initializeLocators();
-		initializeColoringRanges();
 		initializeCellIds();
 
 		lowResSmallBodyPolyData = smallBodyPolyData;
@@ -466,9 +470,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	private void initializeCellIds()
 	{
-		cellIds=new vtkIdTypeArray();
+		cellIds = new vtkIdTypeArray();
 		cellIds.SetName(cellIdsArrayName);
-		for (int i=0; i<smallBodyPolyData.GetNumberOfCells(); i++)
+		for (int i = 0; i < smallBodyPolyData.GetNumberOfCells(); i++)
 			cellIds.InsertNextValue(i);
 		smallBodyPolyData.GetCellData().AddArray(cellIds);
 	}
@@ -478,6 +482,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return getConfig();
 	}
 
+	@Override
 	public boolean isBuiltIn()
 	{
 		return true;
@@ -499,10 +504,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			String[] cellDataPaths = configMap.get(GenericPolyhedralModel.CELL_DATA_PATHS).split(",", -1);
 			String cellDataFilenames = "";
 
-			for (int i=0; i<cellDataPaths.length; ++i)
+			for (int i = 0; i < cellDataPaths.length; ++i)
 			{
 				cellDataFilenames += "platedata" + i + ".txt";
-				if (i < cellDataPaths.length-1)
+				if (i < cellDataPaths.length - 1)
 					cellDataFilenames += GenericPolyhedralModel.LIST_SEPARATOR;
 			}
 
@@ -511,6 +516,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 	}
 
+	@Override
 	public String getCustomDataFolder()
 	{
 		String imagesDir = null;
@@ -533,6 +539,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return imagesDir;
 	}
 
+	@Override
 	public String getCustomDataRootFolder()
 	{
 		String customDataRootDir = Configuration.getCustomDataFolderForBuiltInViews();
@@ -547,11 +554,13 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return customDataRootDir;
 	}
 
+	@Override
 	public String getConfigFilename()
 	{
 		return getCustomDataFolder() + File.separator + "config.txt";
 	}
 
+	@Override
 	public String getDEMConfigFilename()
 	{
 		return getCustomDataFolder() + File.separator + "demConfig.txt";
@@ -559,19 +568,29 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	private void clearCustomColoringInfo()
 	{
-		for (int i=coloringInfo.size()-1; i>=0; --i)
-		{
-			if (!coloringInfo.get(i).builtIn)
-				coloringInfo.remove(i);
-		}
+		coloringDataManager.clearCustom();
 	}
 
 	public void loadCustomColoringInfo() throws IOException
 	{
+		ViewConfig config = getConfig();
+		// Get the current selection so we can try to restore it at the end.
 		String prevColoringName = null;
+		int numberElements = config.smallBodyNumberOfPlatesPerResolutionLevel[getModelResolution()];
 		if (coloringIndex >= 0)
-			prevColoringName = coloringInfo.get(coloringIndex).coloringName;
+		{
+			ImmutableList<String> names = coloringDataManager.getNames();
+			if (coloringIndex < names.size())
+			{
+				String name = names.get(coloringIndex);
+				if (coloringDataManager.has(name, numberElements))
+				{
+					prevColoringName = name;
+				}
+			}
+		}
 
+		coloringDataManager.clearCustom();
 		clearCustomColoringInfo();
 
 		String configFilename = getConfigFilename();
@@ -583,10 +602,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		convertOldConfigFormatToNewVersion(configMap);
 
-		if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_FILENAMES) &&
-				configMap.containsKey(GenericPolyhedralModel.CELL_DATA_NAMES) &&
-				configMap.containsKey(GenericPolyhedralModel.CELL_DATA_UNITS) &&
-				configMap.containsKey(GenericPolyhedralModel.CELL_DATA_HAS_NULLS))
+		if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_UNITS) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_HAS_NULLS))
 		{
 			String[] cellDataFilenames = configMap.get(GenericPolyhedralModel.CELL_DATA_FILENAMES).split(",", -1);
 			String[] cellDataNames = configMap.get(GenericPolyhedralModel.CELL_DATA_NAMES).split(",", -1);
@@ -596,12 +612,13 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_RESOLUTION_LEVEL))
 				cellDataResolutionLevels = configMap.get(GenericPolyhedralModel.CELL_DATA_RESOLUTION_LEVEL).split(",", -1);
 
-			for (int i=0; i<cellDataFilenames.length; ++i)
+			for (int i = 0; i < cellDataFilenames.length; ++i)
 			{
 				ColoringInfo info = new ColoringInfo();
-				info.coloringFile = cellDataFilenames[i];
-				if (!info.coloringFile.trim().isEmpty())
+				String coloringFile = cellDataFilenames[i];
+				if (!coloringFile.trim().isEmpty())
 				{
+					info.coloringFile = FileCache.FILE_PREFIX + getCustomDataFolder() + "/" + coloringFile;
 					info.coloringName = cellDataNames[i];
 					if (info.coloringFile.toLowerCase().endsWith(".fit") || info.coloringFile.toLowerCase().endsWith(".fits"))
 						info.format = Format.FIT;
@@ -611,25 +628,25 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					if (cellDataResolutionLevels != null)
 					{
 						info.resolutionLevel = Integer.parseInt(cellDataResolutionLevels[i]);
-						if (info.resolutionLevel == getModelResolution())
-							coloringInfo.add(info);
 					}
 					else
 					{
 						info.resolutionLevel = 0;
-						coloringInfo.add(info);
 					}
+					int customNumberElements = config.smallBodyNumberOfPlatesPerResolutionLevel[info.resolutionLevel];
+					coloringDataManager.addCustom(info.toCustomColoringData(customNumberElements));
 				}
 			}
 		}
 
-		// See if there's color of the same name as previously shown and set it to that.
+		// Now that we're done loading the custom colors, see if it's possible again to select the original selection.
 		coloringIndex = -1;
-		for (int i=0; i<coloringInfo.size(); ++i)
+		ImmutableList<String> names = coloringDataManager.getNames();
+		for (int index = 0; index < names.size(); ++index)
 		{
-			if (prevColoringName != null && prevColoringName.equals(coloringInfo.get(i).coloringName))
+			if (names.get(index).equals(prevColoringName))
 			{
-				coloringIndex = i;
+				coloringIndex = index;
 				break;
 			}
 		}
@@ -637,13 +654,14 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	private void clearCustomLidarDatasourceInfo()
 	{
-		for (int i=lidarDatasourceInfo.size()-1; i>=0; --i)
+		for (int i = lidarDatasourceInfo.size() - 1; i >= 0; --i)
 		{
 			lidarDatasourceInfo.remove(i);
 		}
 		lidarDatasourceIndex = -1;
 	}
 
+	@Override
 	public void loadCustomLidarDatasourceInfo()
 	{
 		String prevLidarDatasourceName = null;
@@ -672,7 +690,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			String[] lidarDatasourceNames = configMap.get(GenericPolyhedralModel.LIDAR_DATASOURCE_NAMES).split(",", -1);
 			String[] lidarDatasourcePaths = configMap.get(GenericPolyhedralModel.LIDAR_DATASOURCE_PATHS).split(",", -1);
 
-			for (int i=0; i<lidarDatasourceNames.length; ++i)
+			for (int i = 0; i < lidarDatasourceNames.length; ++i)
 			{
 				LidarDatasourceInfo info = new LidarDatasourceInfo();
 				info.name = lidarDatasourceNames[i];
@@ -688,7 +706,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		// See if there's a Lidar datasource of the same name as previously shown and set it to that.
 		lidarDatasourceIndex = -1;
-		for (int i=0; i<lidarDatasourceInfo.size(); ++i)
+		for (int i = 0; i < lidarDatasourceInfo.size(); ++i)
 		{
 			if (prevLidarDatasourceName != null && prevLidarDatasourceName.equals(lidarDatasourceInfo.get(i).name))
 			{
@@ -709,8 +727,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				loadCustomLidarDatasourceInfo();
 			}
 
-			smallBodyPolyData.ShallowCopy(
-					PolyDataUtil.loadShapeModel(modelFile.getAbsolutePath()));
+			smallBodyPolyData.ShallowCopy(PolyDataUtil.loadShapeModel(modelFile.getAbsolutePath()));
 		}
 		catch (Exception e)
 		{
@@ -726,11 +743,12 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		//this.computeSurfaceArea();
 	}
 
-
-
-
 	private boolean defaultModelInitialized;
-	public boolean isDefaultModelInitialized() { return defaultModelInitialized; }
+
+	public boolean isDefaultModelInitialized()
+	{
+		return defaultModelInitialized;
+	}
 
 	public void initializeDefaultModel()
 	{
@@ -739,8 +757,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		{
 			loadCustomColoringInfo();
 
-			smallBodyPolyData.ShallowCopy(
-					PolyDataUtil.loadShapeModel(defaultModelFile.getAbsolutePath()));
+			smallBodyPolyData.ShallowCopy(PolyDataUtil.loadShapeModel(defaultModelFile.getAbsolutePath()));
 		}
 		catch (Exception e)
 		{
@@ -756,10 +773,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		defaultModelInitialized = true;
 	}
-
-
-
-
 
 	protected void initializeLocators()
 	{
@@ -793,8 +806,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 			try
 			{
-				lowResSmallBodyPolyData.ShallowCopy(
-						PolyDataUtil.loadShapeModel(defaultModelFile.getAbsolutePath()));
+				lowResSmallBodyPolyData.ShallowCopy(PolyDataUtil.loadShapeModel(defaultModelFile.getAbsolutePath()));
 			}
 			catch (Exception e)
 			{
@@ -807,6 +819,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 	}
 
+	@Override
 	public vtkPolyData getSmallBodyPolyData()
 	{
 		return smallBodyPolyData;
@@ -829,6 +842,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return lowResSmallBodyPolyData;
 	}
 
+	@Override
 	public vtksbCellLocator getCellLocator()
 	{
 		return cellLocator;
@@ -846,7 +860,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		{
 			// Compute bounding box diagonal length of lowest res shape model
 			double cubeSize;
-			if(getConfig().hasCustomBodyCubeSize)
+			if (getConfig().hasCustomBodyCubeSize)
 			{
 				// Custom specified cube size
 				cubeSize = getConfig().customBodyCubeSize;
@@ -862,21 +876,19 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			}
 
 			// Generate cubes based on chosen resolution
-			smallBodyCubes = new SmallBodyCubes(
-					getLowResSmallBodyPolyData(),
-					cubeSize,
-					0.01 * cubeSize,
-					true);
+			smallBodyCubes = new SmallBodyCubes(getLowResSmallBodyPolyData(), cubeSize, 0.01 * cubeSize, true);
 		}
 
 		return smallBodyCubes;
 	}
 
+	@Override
 	public TreeSet<Integer> getIntersectingCubes(vtkPolyData polydata)
 	{
 		return getSmallBodyCubes().getIntersectingCubes(polydata);
 	}
 
+	@Override
 	public TreeSet<Integer> getIntersectingCubes(BoundingBox bb)
 	{
 		return getSmallBodyCubes().getIntersectingCubes(bb);
@@ -903,7 +915,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 			vtkPolyData normalsFilterOutput = normalsFilter.GetOutput();
 			vtkCellData normalsFilterOutputCellData = normalsFilterOutput.GetCellData();
-			vtkFloatArray normals = (vtkFloatArray)normalsFilterOutputCellData.GetNormals();
+			vtkFloatArray normals = (vtkFloatArray) normalsFilterOutputCellData.GetNormals();
 
 			cellNormals = new vtkFloatArray();
 			cellNormals.DeepCopy(normals);
@@ -917,6 +929,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return cellNormals;
 	}
 
+	@Override
 	public void setShowSmallBody(boolean show)
 	{
 		if (show)
@@ -933,12 +946,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 	}
 
-	public vtkPolyData computeFrustumIntersection(
-			double[] origin,
-			double[] ul,
-			double[] ur,
-			double[] lr,
-			double[] ll)
+	public vtkPolyData computeFrustumIntersection(double[] origin, double[] ul, double[] ur, double[] lr, double[] ll)
 	{
 		return PolyDataUtil.computeFrustumIntersection(smallBodyPolyData, cellLocator, pointLocator, origin, ul, ur, lr, ll);
 	}
@@ -949,77 +957,39 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	}
 
 	/**
-	 * Given 2 points on the surface of the body, draw a nice looking path between the 2
-	 * that is not obscured anywhere or too distant from the surface. Return this
-	 * path as a vtkPolyData
+	 * Given 2 points on the surface of the body, draw a nice looking path between
+	 * the 2 that is not obscured anywhere or too distant from the surface. Return
+	 * this path as a vtkPolyData
+	 * 
 	 * @param pt1
 	 * @param pt2
 	 * @return
 	 */
-	public vtkPolyData drawPath(
-			double[] pt1,
-			double[] pt2)
+	@Override
+	public vtkPolyData drawPath(double[] pt1, double[] pt2)
 	{
 		return PolyDataUtil.drawPathOnPolyData(smallBodyPolyData, pointLocator, pt1, pt2);
 	}
 
-	public void drawPolygon(
-			List<LatLon> controlPoints,
-			vtkPolyData outputInterior,
-			vtkPolyData outputBoundary)
+	@Override
+	public void drawPolygon(List<LatLon> controlPoints, vtkPolyData outputInterior, vtkPolyData outputBoundary)
 	{
-		PolyDataUtil.drawPolygonOnPolyData(
-				smallBodyPolyData,
-				pointLocator,
-				controlPoints,
-				outputInterior,
-				outputBoundary);
+		PolyDataUtil.drawPolygonOnPolyData(smallBodyPolyData, pointLocator, controlPoints, outputInterior, outputBoundary);
 	}
 
-	public void drawRegularPolygon(
-			double[] center,
-			double radius,
-			int numberOfSides,
-			vtkPolyData outputInterior,
-			vtkPolyData outputBoundary)
+	public void drawRegularPolygon(double[] center, double radius, int numberOfSides, vtkPolyData outputInterior, vtkPolyData outputBoundary)
 	{
-		PolyDataUtil.drawRegularPolygonOnPolyData(
-				smallBodyPolyData,
-				pointLocator,
-				center,
-				radius,
-				numberOfSides,
-				outputInterior,
-				outputBoundary);
+		PolyDataUtil.drawRegularPolygonOnPolyData(smallBodyPolyData, pointLocator, center, radius, numberOfSides, outputInterior, outputBoundary);
 	}
 
-	public void drawEllipticalPolygon(
-			double[] center,
-			double radius,
-			double flattening,
-			double angle,
-			int numberOfSides,
-			vtkPolyData outputInterior,
-			vtkPolyData outputBoundary)
+	@Override
+	public void drawEllipticalPolygon(double[] center, double radius, double flattening, double angle, int numberOfSides, vtkPolyData outputInterior, vtkPolyData outputBoundary)
 	{
-		PolyDataUtil.drawEllipseOnPolyData(
-				smallBodyPolyData,
-				pointLocator,
-				center,
-				radius,
-				flattening,
-				angle,
-				numberOfSides,
-				outputInterior,
-				outputBoundary);
+		PolyDataUtil.drawEllipseOnPolyData(smallBodyPolyData, pointLocator, center, radius, flattening, angle, numberOfSides, outputInterior, outputBoundary);
 	}
 
-	public void drawRegularPolygonLowRes(
-			double[] center,
-			double radius,
-			int numberOfSides,
-			vtkPolyData outputInterior,
-			vtkPolyData outputBoundary)
+	@Override
+	public void drawRegularPolygonLowRes(double[] center, double radius, int numberOfSides, vtkPolyData outputInterior, vtkPolyData outputBoundary)
 	{
 		if (resolutionLevel == 0)
 		{
@@ -1029,51 +999,27 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		initializeLowResData();
 
-		PolyDataUtil.drawRegularPolygonOnPolyData(
-				lowResSmallBodyPolyData,
-				lowResPointLocator,
-				center,
-				radius,
-				numberOfSides,
-				outputInterior,
-				outputBoundary);
+		PolyDataUtil.drawRegularPolygonOnPolyData(lowResSmallBodyPolyData, lowResPointLocator, center, radius, numberOfSides, outputInterior, outputBoundary);
 	}
 
-	public void drawCone(
-			double[] vertex,
-			double[] axis,
-			double angle,
-			int numberOfSides,
-			vtkPolyData outputInterior,
-			vtkPolyData outputBoundary)
+	public void drawCone(double[] vertex, double[] axis, double angle, int numberOfSides, vtkPolyData outputInterior, vtkPolyData outputBoundary)
 	{
-		PolyDataUtil.drawConeOnPolyData(
-				smallBodyPolyData,
-				pointLocator,
-				vertex,
-				axis,
-				angle,
-				numberOfSides,
-				outputInterior,
-				outputBoundary);
+		PolyDataUtil.drawConeOnPolyData(smallBodyPolyData, pointLocator, vertex, axis, angle, numberOfSides, outputInterior, outputBoundary);
 	}
 
-	public void shiftPolyLineInNormalDirection(
-			vtkPolyData polyLine,
-			double shiftAmount)
+	@Override
+	public void shiftPolyLineInNormalDirection(vtkPolyData polyLine, double shiftAmount)
 	{
-		PolyDataUtil.shiftPolyLineInNormalDirectionOfPolyData(
-				polyLine,
-				smallBodyPolyData,
-				pointLocator,
-				shiftAmount);
+		PolyDataUtil.shiftPolyLineInNormalDirectionOfPolyData(polyLine, smallBodyPolyData, pointLocator, shiftAmount);
 	}
 
+	@Override
 	public double[] getNormalAtPoint(double[] point)
 	{
 		return PolyDataUtil.getPolyDataNormalAtPoint(point, smallBodyPolyData, pointLocator);
 	}
 
+	@Override
 	public double[] getClosestNormal(double[] point)
 	{
 		int closestCell = findClosestCell(point);
@@ -1081,11 +1027,13 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	}
 
 	/**
-	 * This returns the closest point to the model to pt. Note the returned point need
-	 * not be a vertex of the model and can lie anywhere on a plate.
+	 * This returns the closest point to the model to pt. Note the returned point
+	 * need not be a vertex of the model and can lie anywhere on a plate.
+	 * 
 	 * @param pt
 	 * @return
 	 */
+	@Override
 	public double[] findClosestPoint(double[] pt)
 	{
 		double[] closestPoint = new double[3];
@@ -1099,9 +1047,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	}
 
 	/**
-	 * This returns the closest vertex in the shape model to pt. Unlike findClosestPoin
-	 * this functions only returns one of the vertices of the shape model not an arbitrary
-	 * point lying on a cell.
+	 * This returns the closest vertex in the shape model to pt. Unlike
+	 * findClosestPoin this functions only returns one of the vertices of the shape
+	 * model not an arbitrary point lying on a cell.
 	 *
 	 * @param pt
 	 * @return
@@ -1117,11 +1065,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return pointLocator.FindClosestPoint(pt);
 	}
 
-
-
 	/**
-	 * This returns the index of the closest cell in the model to pt.
-	 * The closest point within the cell is returned in closestPoint
+	 * This returns the index of the closest cell in the model to pt. The closest
+	 * point within the cell is returned in closestPoint
+	 * 
 	 * @param pt
 	 * @param closestPoint the closest point within the cell is returned here
 	 * @return
@@ -1140,6 +1087,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	/**
 	 * This returns the index of the closest cell in the model to pt.
+	 * 
 	 * @param pt
 	 * @return
 	 */
@@ -1150,19 +1098,21 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	}
 
 	/**
-	 * Compute the point on the asteroid that has the specified latitude and longitude. Returns the
-	 * cell id of the cell containing that point. This is done by shooting a ray from the origin in the
-	 * specified direction.
+	 * Compute the point on the asteroid that has the specified latitude and
+	 * longitude. Returns the cell id of the cell containing that point. This is
+	 * done by shooting a ray from the origin in the specified direction.
+	 * 
 	 * @param lat - in radians
 	 * @param lon - in radians
 	 * @param intersectPoint
 	 * @return the cellId of the cell containing the intersect point
 	 */
+	@Override
 	public int getPointAndCellIdFromLatLon(double lat, double lon, double[] intersectPoint)
 	{
 		LatLon lla = new LatLon(lat, lon);
 		double[] lookPt = MathUtil.latrec(lla);
-		
+
 		// Move in the direction of lookPt until we are definitely outside the asteroid
 		BoundingBox bb = getBoundingBox();
 		double largestSide = bb.getLargestSide() * 1.1;
@@ -1170,7 +1120,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		lookPt[1] *= largestSide;
 		lookPt[2] *= largestSide;
 
-		double[] origin = {0.0, 0.0, 0.0};
+		double[] origin = { 0.0, 0.0, 0.0 };
 		double tol = 1e-6;
 		double[] t = new double[1];
 		double[] x = new double[3];
@@ -1179,7 +1129,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		int[] cellId = new int[1];
 
 		int result = cellLocator.IntersectWithLine(origin, lookPt, tol, t, x, pcoords, subId, cellId, genericCell);
-		
+
 		intersectPoint[0] = x[0];
 		intersectPoint[1] = x[1];
 		intersectPoint[2] = x[2];
@@ -1191,9 +1141,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	}
 
 	/**
-	 * Compute the intersection of a ray with the asteroid. Returns the
-	 * cell id of the cell containing that point. This is done by shooting
-	 * a ray from the specified origin in the specified direction.
+	 * Compute the intersection of a ray with the asteroid. Returns the cell id of
+	 * the cell containing that point. This is done by shooting a ray from the
+	 * specified origin in the specified direction.
+	 * 
 	 * @param origin point
 	 * @param direction vector (must be unit vector)
 	 * @param intersectPoint (returned)
@@ -1203,9 +1154,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	{
 		double distance = MathUtil.vnorm(origin);
 		double[] lookPt = new double[3];
-		lookPt[0] = origin[0] + 2.0*distance*direction[0];
-		lookPt[1] = origin[1] + 2.0*distance*direction[1];
-		lookPt[2] = origin[2] + 2.0*distance*direction[2];
+		lookPt[0] = origin[0] + 2.0 * distance * direction[0];
+		lookPt[1] = origin[1] + 2.0 * distance * direction[1];
+		lookPt[2] = origin[2] + 2.0 * distance * direction[2];
 
 		double tol = 1e-6;
 		double[] t = new double[1];
@@ -1246,7 +1197,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			smallBodyActor.SetMapper(smallBodyMapper);
 
 			vtkPolyDataMapper decimatedMapper =
-					((SaavtkLODActor)smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+					((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
 			decimatedMapper.SetLookupTable(lookupTable);
 			decimatedMapper.UseLookupTableScalarRangeOn();
 			vtkProperty smallBodyProperty = smallBodyActor.GetProperty();
@@ -1269,13 +1220,14 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 			setupScaleBar();
 
-			linesMapper=new vtkPolyDataMapper();
-			linesActor=new SaavtkLODActor();
+			linesMapper = new vtkPolyDataMapper();
+			linesActor = new SaavtkLODActor();
 			smallBodyActors.add(linesActor);
 
 		}
 	}
 
+	@Override
 	public List<vtkProp> getProps()
 	{
 		initializeActorsAndMappers();
@@ -1283,6 +1235,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return smallBodyActors;
 	}
 
+	@Override
 	public void setShadingToFlat()
 	{
 		initializeActorsAndMappers();
@@ -1296,6 +1249,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 	}
 
+	@Override
 	public void setShadingToSmooth()
 	{
 		initializeActorsAndMappers();
@@ -1309,6 +1263,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 	}
 
+	@Override
 	public BoundingBox getBoundingBox()
 	{
 		if (boundingBox == null)
@@ -1320,42 +1275,46 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return boundingBox;
 
 		/*
-        BoundingBox bb = new BoundingBox();
-        vtkPoints points = smallBodyPolyData.GetPoints();
-        int numberPoints = points.GetNumberOfPoints();
-        for (int i=0; i<numberPoints; ++i)
-        {
-            double[] pt = points.GetPoint(i);
-            bb.update(pt[0], pt[1], pt[2]);
-        }
-
-        return bb;
+		 * BoundingBox bb = new BoundingBox(); vtkPoints points =
+		 * smallBodyPolyData.GetPoints(); int numberPoints = points.GetNumberOfPoints();
+		 * for (int i=0; i<numberPoints; ++i) { double[] pt = points.GetPoint(i);
+		 * bb.update(pt[0], pt[1], pt[2]); }
+		 * 
+		 * return bb;
 		 */
 	}
 
+	@Override
 	public double getBoundingBoxDiagonalLength()
 	{
 		return getBoundingBox().getDiagonalLength();
 	}
 
 	/**
-	 * Get the minimum shift amount needed so shift an object away from
-	 * the model so it is not obscured by the model and looks like it's
-	 * laying on the model
+	 * Get the minimum shift amount needed so shift an object away from the model so
+	 * it is not obscured by the model and looks like it's laying on the model
+	 * 
 	 * @return
 	 */
+	@Override
 	public double getMinShiftAmount()
 	{
 		return getBoundingBoxDiagonalLength() / 38660.0;
 	}
 
+	private String getColoringValueLabel(int coloringIndex, float value)
+	{
+		ColoringData data = getColoringData(coloringIndex);
+		return data.getName() + ": " + value + " " + data.getUnits();
+	}
+
+	@Override
 	public String getClickStatusBarText(vtkProp prop, int cellId, double[] pickPosition)
 	{
 		if (coloringIndex >= 0)
 		{
-			float value = (float)getColoringValue(coloringIndex, pickPosition);
-			ColoringInfo info = coloringInfo.get(coloringIndex);
-			return info.coloringName + ": " + value + " " + info.coloringUnits;
+			float value = (float) getColoringValue(coloringIndex, pickPosition);
+			return getColoringValueLabel(coloringIndex, value);
 		}
 		else if (useFalseColoring)
 		{
@@ -1371,9 +1330,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				{
 					result += ", ";
 				}
-				float red = (float)getColoringValue(redFalseColor, pickPosition);
-				ColoringInfo redInfo = coloringInfo.get(redFalseColor);
-				result += redInfo.coloringName + ": " + red + " " + redInfo.coloringUnits;
+				float red = (float) getColoringValue(redFalseColor, pickPosition);
+				result += getColoringValueLabel(redFalseColor, red);
 			}
 			if (isColoringIndexInRange(greenFalseColor))
 			{
@@ -1385,9 +1343,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				{
 					result += ", ";
 				}
-				float green = (float)getColoringValue(greenFalseColor, pickPosition);
-				ColoringInfo greenInfo = coloringInfo.get(greenFalseColor);
-				result += greenInfo.coloringName + ": " + green + " " + greenInfo.coloringUnits;
+				float green = (float) getColoringValue(greenFalseColor, pickPosition);
+				result += getColoringValueLabel(greenFalseColor, green);
 			}
 			if (isColoringIndexInRange(blueFalseColor))
 			{
@@ -1399,9 +1356,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				{
 					result += ", ";
 				}
-				float blue = (float)getColoringValue(blueFalseColor, pickPosition);
-				ColoringInfo blueInfo = coloringInfo.get(blueFalseColor);
-				result += blueInfo.coloringName + ": " + blue + " " + blueInfo.coloringUnits;
+				float blue = (float) getColoringValue(blueFalseColor, pickPosition);
+				result += getColoringValueLabel(blueFalseColor, blue);
 			}
 			return result;
 		}
@@ -1420,7 +1376,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		System.out.println(numberOfCells);
 
-		for (int i=0; i<numberOfCells; ++i)
+		for (int i = 0; i < numberOfCells; ++i)
 		{
 			vtkCell cell = smallBodyPolyData.GetCell(i);
 			vtkPoints points = cell.GetPoints();
@@ -1448,7 +1404,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			cell.Delete();
 		}
 
-		meanLength /= ((double)(numberOfCells * 3));
+		meanLength /= (numberOfCells * 3);
 
 		System.out.println("minLength  " + minLength);
 		System.out.println("maxLength  " + maxLength);
@@ -1469,74 +1425,71 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		surfaceArea = massProp.GetSurfaceArea();
 		volume = massProp.GetVolume();
-		meanCellArea = surfaceArea / (double)smallBodyPolyData.GetNumberOfCells();
+		meanCellArea = surfaceArea / smallBodyPolyData.GetNumberOfCells();
 		minCellArea = massProp.GetMinCellArea();
 		maxCellArea = massProp.GetMaxCellArea();
 
 		/*
-
-        // The following computes the surface area directly rather than using vtkMassProperties
-        // It gives exactly the same results as vtkMassProperties but is much slower.
-
-        int numberOfCells = smallBodyPolyData.GetNumberOfCells();
-
-        System.out.println(numberOfCells);
-        double totalArea = 0.0;
-        minCellArea = Double.MAX_VALUE;
-        maxCellArea = 0.0;
-        for (int i=0; i<numberOfCells; ++i)
-        {
-            vtkCell cell = smallBodyPolyData.GetCell(i);
-            vtkPoints points = cell.GetPoints();
-            double[] pt0 = points.GetPoint(0);
-            double[] pt1 = points.GetPoint(1);
-            double[] pt2 = points.GetPoint(2);
-            double area = MathUtil.triangleArea(pt0, pt1, pt2);
-            totalArea += area;
-            if (area < minCellArea)
-                minCellArea = area;
-            if (area > maxCellArea)
-                maxCellArea = area;
-        }
-
-        meanCellArea = totalArea / (double)(numberOfCells);
-
-
-        System.out.println("Surface area   " + massProp.GetSurfaceArea());
-        System.out.println("Surface area2  " + totalArea);
-        System.out.println("min cell area  " + massProp.GetMinCellArea());
-        System.out.println("min cell area2 " + minCellArea);
-        System.out.println("max cell area  " + massProp.GetMaxCellArea());
-        System.out.println("max cell area2 " + maxCellArea);
-        System.out.println("Volume " + massProp.GetVolume());
+		 * 
+		 * // The following computes the surface area directly rather than using
+		 * vtkMassProperties // It gives exactly the same results as vtkMassProperties
+		 * but is much slower.
+		 * 
+		 * int numberOfCells = smallBodyPolyData.GetNumberOfCells();
+		 * 
+		 * System.out.println(numberOfCells); double totalArea = 0.0; minCellArea =
+		 * Double.MAX_VALUE; maxCellArea = 0.0; for (int i=0; i<numberOfCells; ++i) {
+		 * vtkCell cell = smallBodyPolyData.GetCell(i); vtkPoints points =
+		 * cell.GetPoints(); double[] pt0 = points.GetPoint(0); double[] pt1 =
+		 * points.GetPoint(1); double[] pt2 = points.GetPoint(2); double area =
+		 * MathUtil.triangleArea(pt0, pt1, pt2); totalArea += area; if (area <
+		 * minCellArea) minCellArea = area; if (area > maxCellArea) maxCellArea = area;
+		 * }
+		 * 
+		 * meanCellArea = totalArea / (double)(numberOfCells);
+		 * 
+		 * 
+		 * System.out.println("Surface area   " + massProp.GetSurfaceArea());
+		 * System.out.println("Surface area2  " + totalArea);
+		 * System.out.println("min cell area  " + massProp.GetMinCellArea());
+		 * System.out.println("min cell area2 " + minCellArea);
+		 * System.out.println("max cell area  " + massProp.GetMaxCellArea());
+		 * System.out.println("max cell area2 " + maxCellArea);
+		 * System.out.println("Volume " + massProp.GetVolume());
 		 */
 	}
 
+	@Override
 	public double getSurfaceArea()
 	{
 		return surfaceArea;
 	}
 
+	@Override
 	public double getVolume()
 	{
 		return volume;
 	}
 
+	@Override
 	public double getMeanCellArea()
 	{
 		return meanCellArea;
 	}
 
+	@Override
 	public double getMinCellArea()
 	{
 		return minCellArea;
 	}
 
+	@Override
 	public double getMaxCellArea()
 	{
 		return maxCellArea;
 	}
 
+	@Override
 	public void setModelResolution(int level) throws IOException
 	{
 		if (level == resolutionLevel)
@@ -1545,19 +1498,19 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		resolutionLevel = level;
 		if (level < 0)
 			resolutionLevel = 0;
-		else if (level > getNumberResolutionLevels()-1)
-			resolutionLevel = getNumberResolutionLevels()-1;
+		else if (level > getNumberResolutionLevels() - 1)
+			resolutionLevel = getNumberResolutionLevels() - 1;
 
 		reloadShapeModel();
 	}
 
+	@Override
 	public void reloadShapeModel() throws IOException
 	{
 		smallBodyCubes = null;
-		for (ColoringInfo info : coloringInfo)
+		for (ColoringData data : getAllColoringDataForThisResolution())
 		{
-			info.coloringValues = null;
-			info.defaultColoringRange = null;
+			data.clear();
 		}
 
 		cellNormals = null;
@@ -1583,16 +1536,19 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
+	@Override
 	public int getModelResolution()
 	{
 		return resolutionLevel;
 	}
 
+	@Override
 	public int getNumberResolutionLevels()
 	{
 		return modelFiles.length;
 	}
 
+	@Override
 	public String getModelName()
 	{
 		if (resolutionLevel >= 0 && resolutionLevel < modelNames.length)
@@ -1601,6 +1557,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			return null;
 	}
 
+	@Override
 	public String getLidarDatasourceName(int i)
 	{
 		if (i < 0)
@@ -1611,6 +1568,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			return null;
 	}
 
+	@Override
 	public String getLidarDatasourcePath(int i)
 	{
 		if (i < 0)
@@ -1621,11 +1579,13 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			return null;
 	}
 
+	@Override
 	public int getLidarDatasourceIndex()
 	{
 		return lidarDatasourceIndex;
 	}
 
+	@Override
 	public void setLidarDatasourceIndex(int index)
 	{
 		if (lidarDatasourceIndex != index)
@@ -1634,6 +1594,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 	}
 
+	@Override
 	public int getNumberOfLidarDatasources()
 	{
 		return lidarDatasourceInfo.size();
@@ -1641,20 +1602,13 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	/**
 	 * Load just the current plate coloring identified by coloringIndex.
+	 * 
 	 * @throws IOException if the plate coloring fails to load
 	 */
 	protected void loadColoringData() throws IOException
 	{
-		if (coloringIndex < 0 || coloringIndex >= coloringInfo.size())
-		{
-			return;
-		}
-
-		ColoringInfo info = coloringInfo.get(coloringIndex);
-		// If not null, that means we've already loaded it.
-		if (info.coloringValues != null)
-			return;
-		loadFile(info);
+		ColoringData coloringData = getColoringData(coloringIndex);
+		coloringData.load();
 	}
 
 	private void loadFile(ColoringInfo info) throws IOException
@@ -1666,7 +1620,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		File file = retrieveAndCacheFile(info);
 		if (file == null)
 		{
-			String message="Unable to download file " + (info.format == Format.UNKNOWN ? "with base name " : "") + info.coloringFile;
+			String message = "Unable to download file " + (info.format == Format.UNKNOWN ? "with base name " : "") + info.coloringFile;
 			JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
 			throw new IOException(message);
 		}
@@ -1681,9 +1635,12 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			loadColoringDataFits(file, info);
 			break;
 		case UNKNOWN:
-			try {
+			try
+			{
 				loadColoringDataFits(file, info);
-			} catch (@SuppressWarnings("unused") Exception e) {
+			}
+			catch (@SuppressWarnings("unused") Exception e)
+			{
 				loadColoringDataTxt(file, info);
 			}
 			break;
@@ -1693,10 +1650,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		computeDefaultColoringRange(info);
 	}
 
-	private File retrieveAndCacheFile(ColoringInfo info) {
+	private File retrieveAndCacheFile(ColoringInfo info)
+	{
 		String fileName = new String(info.coloringFile);
-		if (!info.builtIn)
-			fileName = FileCache.FILE_PREFIX + getCustomDataFolder() + File.separator + fileName;
+		//		if (!info.builtIn)
+		//			fileName = FileCache.FILE_PREFIX + getCustomDataFolder() + File.separator + fileName;
 		// Cache the file, which may be text or fits, but we may not know which at this point.
 		File file = null;
 		if (fileName.startsWith(FileCache.FILE_PREFIX))
@@ -1705,18 +1663,24 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 		else
 		{
-			try {
+			try
+			{
 				file = retrieveAndCacheFile(fileName + "_res" + resolutionLevel, info.format);
 				System.err.println("Found FITS or TEXT file for coloring " + fileName + "_res" + resolutionLevel);
-			} catch (FileNotFoundException e) {
+			}
+			catch (FileNotFoundException e)
+			{
 				System.err.println("Did not find FITS or TEXT file for coloring " + fileName + "_res" + resolutionLevel);
 			}
 			if (file == null)
 			{
-				try {
+				try
+				{
 					file = retrieveAndCacheFile(fileName + resolutionLevel, info.format);
 					System.err.println("Found FITS or TEXT file for coloring " + fileName + resolutionLevel);
-				} catch (FileNotFoundException e) {
+				}
+				catch (FileNotFoundException e)
+				{
 					e.printStackTrace();
 				}
 			}
@@ -1740,7 +1704,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		case UNKNOWN:
 			// Prefer FITS if that exists.
 			if (FileCache.isFileGettable(fileName + ".fits.gz"))
-			{					
+			{
 				File fitsFile = FileCache.getFileFromServer(fileName + ".fits.gz");
 				if (fitsFile != null && fitsFile.exists())
 				{
@@ -1756,7 +1720,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					file = textFile;
 				}
 			}
-			if (file == null) {
+			if (file == null)
+			{
 				throw new FileNotFoundException("Did not find file with base name " + fileName + " (.fits.gz or .txt.gz)");
 			}
 			break;
@@ -1766,51 +1731,73 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return file;
 	}
 
-	private boolean isColoringAvailable(ColoringInfo info) {
-		String fileName = info.coloringFile;
-		if (!fileName.startsWith(FileCache.FILE_PREFIX))
-		{
-			return isColoringAvailable(fileName + "_res" + resolutionLevel, info.format) ||
-				isColoringAvailable(fileName + resolutionLevel, info.format);
-		}
-		return FileCache.isFileGettable(fileName);
+	private boolean isColoringAvailable(ColoringInfo info)
+	{
+		// Wouldn't this be the right thing?
+		//		return getColoringFileName(info.coloringFile, info.resolutionLevel, info.format) != null;
+		return getColoringFileName(info.coloringFile, this.resolutionLevel, info.format) != null;
 	}
 
-	private boolean isColoringAvailable(String fileName, Format format)
+	private static String getColoringFileName(String baseFileName, int resolutionLevel, Format format)
 	{
+		String fileName = null;
+		if (!baseFileName.startsWith(FileCache.FILE_PREFIX))
+		{
+			fileName = getColoringFileName(baseFileName + "_res" + resolutionLevel, format);
+			if (fileName == null)
+			{
+				fileName = getColoringFileName(baseFileName + resolutionLevel, format);
+			}
+		}
+		else
+		{
+			fileName = FileCache.isFileGettable(baseFileName) ? baseFileName : null;
+		}
+
+		return fileName;
+	}
+
+	private static String getColoringFileName(String baseFileName, Format format)
+	{
+		String fileName = null;
 		switch (format)
 		{
 		case TXT:
-			fileName += ".txt.gz";
+			fileName = baseFileName + ".txt.gz";
 			break;
 		case FIT:
-			fileName += ".fits.gz";
+			fileName = baseFileName + ".fits.gz";
 			break;
 		case UNKNOWN:
-			return FileCache.isFileGettable(fileName + ".fits.gz") || FileCache.isFileGettable(fileName + ".txt.gz");
+			fileName = baseFileName + ".fits.gz";
+			if (FileCache.isFileGettable(fileName))
+			{
+				return fileName;
+			}
+			fileName = baseFileName + ".txt.gz";
+			break;
 		default:
 			throw new AssertionError("Unhandled case " + format);
 		}
-		return FileCache.isFileGettable(fileName);
+		return FileCache.isFileGettable(fileName) ? fileName : null;
 	}
 
 	/**
 	 * This file loads the coloring data.
+	 * 
 	 * @throws IOException
 	 */
 	protected void loadAllColoringData() throws IOException
 	{
-		for (ColoringInfo info : coloringInfo)
+		for (ColoringData data : getAllColoringDataForThisResolution())
 		{
-			loadFile(info);
+			data.load();
 		}
-
-		initializeColoringRanges();
 	}
 
 	private void loadColoringDataTxt(File file, ColoringInfo info) throws IOException
 	{
-		FileInputStream fs =  new FileInputStream(file);
+		FileInputStream fs = new FileInputStream(file);
 		InputStreamReader isr = new InputStreamReader(fs);
 		BufferedReader in = new BufferedReader(isr);
 
@@ -1832,38 +1819,39 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			++j;
 		}
 		in.close();
-		
-		if (array.GetNumberOfTuples()!=getSmallBodyPolyData().GetNumberOfCells())
+
+		if (array.GetNumberOfTuples() != getSmallBodyPolyData().GetNumberOfCells())
 		{
-			String message="Plate data length in file "+file+" does not match number of faces in small body model.";
+			String message = "Plate data length in file " + file + " does not match number of faces in small body model.";
 			JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
 			throw new IOException(message);
 		}
-		
+
 		info.coloringValues = array;
 	}
 
-	protected void loadColoringDataFits(File file, ColoringInfo info) throws IOException {}
+	protected void loadColoringDataFits(File file, ColoringInfo info) throws IOException
+	{}
 
 	private void invertLookupTableCharArray(vtkUnsignedCharArray table)
 	{
 		int numberOfValues = table.GetNumberOfTuples();
-		for (int i=0; i<numberOfValues/2; ++i)
+		for (int i = 0; i < numberOfValues / 2; ++i)
 		{
 			double[] v1 = table.GetTuple4(i);
-			double[] v2 = table.GetTuple4(numberOfValues-i-1);
+			double[] v2 = table.GetTuple4(numberOfValues - i - 1);
 			table.SetTuple4(i, v2[0], v2[1], v2[2], v2[3]);
-			table.SetTuple4(numberOfValues-i-1, v1[0], v1[1], v1[2], v1[3]);
+			table.SetTuple4(numberOfValues - i - 1, v1[0], v1[1], v1[2], v1[3]);
 		}
 	}
 
 	/**
-	 * Invert the lookup table so that red is high values
-	 * and blue is low values (rather than the reverse).
+	 * Invert the lookup table so that red is high values and blue is low values
+	 * (rather than the reverse).
 	 */
 	private void invertLookupTable()
 	{
-		vtkLookupTable lookupTable = (vtkLookupTable)smallBodyMapper.GetLookupTable();
+		vtkLookupTable lookupTable = (vtkLookupTable) smallBodyMapper.GetLookupTable();
 		vtkUnsignedCharArray table = lookupTable.GetTable();
 
 		invertLookupTableCharArray(table);
@@ -1880,18 +1868,19 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		smallBodyMapper.Modified();
 	}
 
+	@Override
 	public void setColoringIndex(int index) throws IOException
 	{
 		if (coloringIndex != index || useFalseColoring)
 		{
 			coloringIndex = index;
-			loadColoringData();
 			useFalseColoring = false;
-			
-			if (index!=-1)
+
+			if (index != -1)
 			{
-				double[] range=getCurrentColoringRange(coloringIndex);
-				if (colormap==null)
+				loadColoringData();
+				double[] range = getCurrentColoringRange(coloringIndex);
+				if (colormap == null)
 					initColormap();
 				colormap.setRangeMin(range[0]);
 				colormap.setRangeMax(range[1]);
@@ -1901,22 +1890,21 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 	}
 
+	@Override
 	public int getColoringIndex()
 	{
 		return coloringIndex;
 	}
 
+	@Override
 	public void setFalseColoring(int redChannel, int greenChannel, int blueChannel) throws IOException
 	{
 		redFalseColor = redChannel;
 		greenFalseColor = greenChannel;
 		blueFalseColor = blueChannel;
 
-		if (
-				isColoringIndexInRange(redFalseColor) ||
-				isColoringIndexInRange(greenFalseColor) ||
-				isColoringIndexInRange(blueFalseColor))
-		{			
+		if (isColoringIndexInRange(redFalseColor) || isColoringIndexInRange(greenFalseColor) || isColoringIndexInRange(blueFalseColor))
+		{
 			coloringIndex = -1;
 			useFalseColoring = true;
 		}
@@ -1928,72 +1916,52 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		paintBody();
 	}
 
+	@Override
 	public int[] getFalseColoring()
 	{
-		return new int[]{redFalseColor, greenFalseColor, blueFalseColor};
+		return new int[] { redFalseColor, greenFalseColor, blueFalseColor };
 	}
 
+	@Override
 	public boolean isFalseColoringEnabled()
 	{
 		return useFalseColoring;
 	}
 
+	@Override
 	public boolean isColoringDataAvailable()
 	{
-		return coloringInfo.size() > 0;
+		return !getAllColoringDataForThisResolution().isEmpty();
 	}
 
+	@Override
 	public boolean isImageMapAvailable()
 	{
 		return imageMapNames != null && imageMapNames.length > 0;
 	}
 
+	@Override
 	public String[] getImageMapNames()
 	{
 		return imageMapNames;
 	}
 
+	@Override
 	public int getNumberOfColors()
 	{
-		return coloringInfo.size();
+		return coloringDataManager.getNames().size();
 	}
 
-	public int getNumberOfCustomColors()
-	{
-		int num = 0;
-		for (ColoringInfo info : coloringInfo)
-		{
-			if (!info.builtIn)
-				++num;
-		}
-		return num;
-	}
-
-	public int getNumberOfBuiltInColors()
-	{
-		int num = 0;
-		for (ColoringInfo info : coloringInfo)
-		{
-			if (info.builtIn)
-				++num;
-		}
-		return num;
-	}
-
+	@Override
 	public String getColoringName(int i)
 	{
-		if (i < coloringInfo.size())
-			return coloringInfo.get(i).coloringName;
-		else
-			return null;
+		return getColoringData(i).getName();
 	}
 
+	@Override
 	public String getColoringUnits(int i)
 	{
-		if (i < coloringInfo.size())
-			return coloringInfo.get(i).coloringUnits;
-		else
-			return null;
+		return getColoringData(i).getUnits();
 	}
 
 	private double getColoringValue(double[] pt, vtkFloatArray pointOrCellData)
@@ -2002,8 +1970,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		int cellId = findClosestCell(pt, closestPoint);
 		if (coloringValueType == ColoringValueType.POINT_DATA)
 		{
-			return PolyDataUtil.interpolateWithinCell(
-					smallBodyPolyData, pointOrCellData, cellId, closestPoint, idList);
+			return PolyDataUtil.interpolateWithinCell(smallBodyPolyData, pointOrCellData, cellId, closestPoint, idList);
 		}
 		else
 		{
@@ -2013,6 +1980,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	/**
 	 * Get value assuming pt is exactly on the asteroid and cellId is provided
+	 * 
 	 * @param pt
 	 * @param pointOrCellData
 	 * @param cellId
@@ -2022,8 +1990,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	{
 		if (coloringValueType == ColoringValueType.POINT_DATA)
 		{
-			return PolyDataUtil.interpolateWithinCell(
-					smallBodyPolyData, pointOrCellData, cellId, pt, idList);
+			return PolyDataUtil.interpolateWithinCell(smallBodyPolyData, pointOrCellData, cellId, pt, idList);
 		}
 		else
 		{
@@ -2031,22 +1998,23 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 	}
 
+	@Override
 	public double getColoringValue(int index, double[] pt)
 	{
+		ColoringData coloringData = getColoringData(index);
 		try
 		{
-			if (index >= 0 && index < coloringInfo.size() && coloringInfo.get(index).coloringValues == null)
-				loadFile(coloringInfo.get(index));
+			coloringData.load();
 		}
-		catch (Exception e)
+		catch (IOException e)
 		{
-			e.printStackTrace();
-			return 0.0;
+			throw new RuntimeException(e);
 		}
 
-		return getColoringValue(pt, coloringInfo.get(index).coloringValues);
+		return getColoringValue(pt, coloringData.getData());
 	}
 
+	@Override
 	public double[] getAllColoringValues(double[] pt)
 	{
 		try
@@ -2062,19 +2030,20 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		double[] closestPoint = new double[3];
 		int cellId = findClosestCell(pt, closestPoint);
 
-		int numColors = coloringInfo.size();
+		ImmutableList<ColoringData> coloringData = getAllColoringDataForThisResolution();
+		int numColors = coloringData.size();
 		double[] values = new double[numColors];
-		for (int i=0; i<numColors; ++i)
+		for (int index = 0; index < numColors; ++index)
 		{
-			values[i] = getColoringValue(closestPoint, coloringInfo.get(i).coloringValues, cellId);
+			values[index] = getColoringValue(closestPoint, coloringData.get(index).getData(), cellId);
 		}
 
 		return values;
 	}
 
 	/**
-	 * Subclass must override this method if it wants to support loading
-	 * gravity vector.
+	 * Subclass must override this method if it wants to support loading gravity
+	 * vector.
 	 *
 	 * @param resolutionLevel
 	 * @return
@@ -2084,6 +2053,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return null;
 	}
 
+	@Override
 	public double[] getGravityVector(double[] pt)
 	{
 		try
@@ -2106,6 +2076,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return gravityVector.GetTuple3(cellId);
 	}
 
+	@Override
 	public vtkDataArray getGravityVectorData()
 	{
 		try
@@ -2157,17 +2128,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return true;
 	}
 
-	// Compute the range of an array but account for the fact that for some datasets,
-	// some of the data is missing as represented by the lowest valued. So compute
-	// the range ignoring this lowest value (i.e take the lowest value to be the value
-	// just higher than the lowest value).
-	private double[] computeDefaultColoringRange(int index)//, boolean adjustForColorTable)
-	{
-		ColoringInfo info = coloringInfo.get(index);
-		computeDefaultColoringRange(info);
-		return info.defaultColoringRange;
-	}
-
 	// Compute the range of an array but account for the fact that for some
 	// datasets,
 	// some of the data is missing as represented by the lowest valued. So
@@ -2176,7 +2136,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	// value
 	// just higher than the lowest value).
 	private void computeDefaultColoringRange(ColoringInfo info)// , boolean
-															// adjustForColorTable)
+																// adjustForColorTable)
 	{
 		if (info.defaultColoringRange != null)
 			return;
@@ -2189,7 +2149,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			vtkFloatArray array = info.coloringValues;
 			int numberValues = array.GetNumberOfTuples();
 			double adjustedMin = range[1];
-			for (int i=0; i<numberValues; ++i)
+			for (int i = 0; i < numberValues; ++i)
 			{
 				double v = array.GetValue(i);
 				if (v < adjustedMin && v > range[0])
@@ -2208,35 +2168,38 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		info.currentColoringRange[1] = range[1];
 	}
 
-	private void initializeColoringRanges()
-	{
-		for (ColoringInfo info: coloringInfo)
-		{
-			computeDefaultColoringRange(info);
-		}
-	}
-
+	@Override
 	public double[] getDefaultColoringRange(int coloringIndex)
 	{
-		return coloringInfo.get(coloringIndex).defaultColoringRange;
+		return getColoringData(coloringIndex).getDefaultRange();
 	}
 
+	@Override
 	public double[] getCurrentColoringRange(int coloringIndex)
 	{
-		return coloringInfo.get(coloringIndex).currentColoringRange;
+		return getColoringData(coloringIndex).getData().GetRange();
 	}
 
+	@Override
 	public void setCurrentColoringRange(int coloringIndex, double[] range) throws IOException
 	{
-		ColoringInfo info = coloringInfo.get(coloringIndex);
-		if (range[0] != info.currentColoringRange[0] ||
-				range[1] != info.currentColoringRange[1])
+		boolean doSet = false;
+		if (colormap == null)
 		{
-			info.currentColoringRange[0] = range[0];
-			info.currentColoringRange[1] = range[1];
-
-			if (colormap==null)
-				initColormap();
+			initColormap();
+			doSet = true;
+		}
+		else
+		{
+			double min = colormap.getRangeMin();
+			double max = colormap.getRangeMax();
+			if (Double.compare(min, range[0]) != 0 || Double.compare(max, range[1]) != 0)
+			{
+				doSet = true;
+			}
+		}
+		if (doSet)
+		{
 			colormap.setRangeMin(range[0]);
 			colormap.setRangeMax(range[1]);
 
@@ -2244,52 +2207,76 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 	}
 
-	/**
-	 *  Update the false color point or cell data if
-	 */
-	private void updateFalseColorArray()
+	private interface Indexable
 	{
-		int numberTuples = -1;
-		vtkFloatArray red = null;
-		vtkFloatArray green = null;
-		vtkFloatArray blue = null;
-		double[] redRange = null;
-		double[] greenRange = null;
-		double[] blueRange = null;
-		double redExtent = -1.;
-		double greenExtent = -1.;
-		double blueExtent = -1.;
-		if (isColoringIndexInRange(redFalseColor))
-		{
-			red = coloringInfo.get(redFalseColor).coloringValues;
-			numberTuples = red.GetNumberOfTuples();
-			redRange = getCurrentColoringRange(redFalseColor);
-			if (redRange != null && redRange.length == 2)
-			{				
-				redExtent = redRange[1] - redRange[0];
-			}
-		}
-		if (isColoringIndexInRange(greenFalseColor))
-		{
-			green = coloringInfo.get(greenFalseColor).coloringValues;
-			numberTuples = green.GetNumberOfTuples();			
-			greenRange = getCurrentColoringRange(greenFalseColor);
-			if (greenRange != null && greenRange.length == 2)
-			{				
-				greenExtent = greenRange[1] - greenRange[0];
-			}
-		}
-		if (isColoringIndexInRange(blueFalseColor))
-		{
-			blue = coloringInfo.get(blueFalseColor).coloringValues;
-			numberTuples = blue.GetNumberOfTuples();			
-			blueRange = getCurrentColoringRange(blueFalseColor);
-			if (blueRange != null && blueRange.length == 2)
-			{				
-				blueExtent = blueRange[1] - blueRange[0];
-			}
-		}
+		int size();
 
+		double get(int index);
+	}
+
+	private Indexable getIndexable(final int coloringIndex, final int missingTuple) throws IOException
+	{
+		if (isColoringAvailable(coloringIndex))
+		{
+			ColoringData coloringData = getColoringData(coloringIndex);
+			coloringData.load();
+			int size = coloringData.getNumberElements();
+
+			final vtkFloatArray floatArray = coloringData.getData();
+			final double[] range = floatArray.GetRange();
+			final double extent = range[1] - range[0];
+			if (Double.compare(extent, 0.) < 0)
+			{
+				throw new IllegalStateException();
+			}
+
+			return new Indexable() {
+				final double scale = 255.;
+
+				@Override
+				public int size()
+				{
+					return size;
+				}
+
+				@Override
+				public double get(int index)
+				{
+					return scale * (floatArray.GetTuple1(index) - range[0]) / extent;
+				}
+
+			};
+		}
+		return new Indexable() {
+			final double colorMissing = 0.;
+
+			@Override
+			public int size()
+			{
+				return missingTuple;
+			}
+
+			@Override
+			public double get(@SuppressWarnings("unused") int index)
+			{
+				return colorMissing;
+			}
+		};
+	}
+
+	/**
+	 * Update the false color point or cell data if
+	 * 
+	 * @throws IOException
+	 */
+	private void updateFalseColorArray() throws IOException
+	{
+		final int missingTuple = -1;
+		Indexable red = getIndexable(redFalseColor, missingTuple);
+		Indexable green = getIndexable(greenFalseColor, missingTuple);
+		Indexable blue = getIndexable(blueFalseColor, missingTuple);
+
+		int numberTuples = Math.max(red.size(), Math.max(green.size(), blue.size()));
 		if (numberTuples <= 0)
 		{
 			return;
@@ -2303,28 +2290,43 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		falseColorArray.SetNumberOfTuples(numberTuples);
 
-		final double colorMissing = 0.; // Experimentally found this to give the best color definition.
-		final double invalidColor = 255.; // This actually should never be used below.
-		final double scale = 255.;
-		for (int i=0; i<numberTuples; ++i)
+		for (int index = 0; index < numberTuples; ++index)
 		{
-			double redValue = redExtent > 0. ? scale * (red.GetTuple1(i) - redRange[0]) / redExtent : colorMissing;
-			double greenValue = greenExtent > 0. ? scale * (green.GetTuple1(i) - greenRange[0]) / greenExtent : colorMissing;
-			double blueValue = blueExtent > 0. ? scale * (blue.GetTuple1(i) - blueRange[0]) / blueExtent : colorMissing;
-
-			if (redValue < 0.0)   redValue   = invalidColor;
-			if (greenValue < 0.0) greenValue = invalidColor;
-			if (blueValue < 0.0)  blueValue  = invalidColor;
-
-			falseColorArray.SetTuple3(i, redValue, greenValue, blueValue);
+			falseColorArray.SetTuple3(index, red.get(index), green.get(index), blue.get(index));
 		}
 	}
 
-
 	private void loadLidarDatasourceData() throws IOException
+	{}
+
+	private boolean isColoringAvailable(int coloringIndex)
 	{
+		boolean result = false;
+		if (coloringIndex >= 0)
+		{
+			ImmutableList<String> names = coloringDataManager.getNames();
+			if (names.size() > coloringIndex)
+			{
+				String name = coloringDataManager.getNames().get(coloringIndex);
+				int numberElements = coloringDataManager.getResolutions().get(resolutionLevel);
+				return coloringDataManager.has(name, numberElements);
+			}
+		}
+		return result;
 	}
 
+	private ColoringData getColoringData(int coloringIndex)
+	{
+		String name = coloringDataManager.getNames().get(coloringIndex);
+		int numberElements = coloringDataManager.getResolutions().get(resolutionLevel);
+		return coloringDataManager.get(name, numberElements);
+	}
+
+	private ImmutableList<ColoringData> getAllColoringDataForThisResolution()
+	{
+		ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
+		return resolutions.isEmpty() ? ImmutableList.of() : coloringDataManager.get(resolutions.get(resolutionLevel));
+	}
 
 	private void paintBody() throws IOException
 	{
@@ -2333,86 +2335,97 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		if (coloringIndex >= 0)
 		{
-			loadColoringData();			
-			ColoringInfo info = coloringInfo.get(coloringIndex);
-			String title = info.coloringName;
-			if (!info.coloringUnits.isEmpty())
-				title += " (" + info.coloringUnits + ")";
-			scalarBarActor.SetTitle(title);
-
-			initColormap();
-			if (!showColorsAsContourLines)
+			if (isColoringAvailable(coloringIndex))
 			{
-				if (smallBodyActors.contains(linesActor))
-					smallBodyActors.remove(linesActor);
-				
-				colorData=new vtkUnsignedCharArray();
-				colorData.SetNumberOfComponents(3);
-				for (int i=0; i<info.coloringValues.GetNumberOfTuples(); i++)
+
+				loadColoringData();
+
+				ColoringData coloringData = getColoringData(coloringIndex);
+
+				String title = coloringData.getName();
+				String units = coloringData.getUnits();
+				if (!units.isEmpty())
 				{
-					double value=info.coloringValues.GetValue(i);
-					Color c=colormap.getColor(value);
-					colorData.InsertNextTuple3(c.getRed(), c.getGreen(), c.getBlue());
+					title += " (" + units + ")";
 				}
+				scalarBarActor.SetTitle(title);
 
-				smallBodyMapper.SetLookupTable(colormap.getLookupTable());
+				vtkFloatArray floatArray = coloringData.getData();
 
-				vtkPolyDataMapper decimatedMapper =
-						((SaavtkLODActor)smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
-				decimatedMapper.SetLookupTable(colormap.getLookupTable());
-				decimatedMapper.UseLookupTableScalarRangeOn();
-
-				if (coloringValueType == ColoringValueType.POINT_DATA)
-					this.smallBodyPolyData.GetPointData().SetScalars(colorData);
-				else
-					this.smallBodyPolyData.GetCellData().SetScalars(colorData);
-
-				smallBodyMapper.ScalarVisibilityOn();
-
-			}
-			else
-			{
-				vtkPolyDataMapper decimatedMapper =
-						((SaavtkLODActor)smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
-				decimatedMapper.ScalarVisibilityOff();
-				smallBodyMapper.ScalarVisibilityOff();
-
-				vtkPolyData polyData;
-				if (coloringValueType == ColoringValueType.POINT_DATA)
+				initColormap();
+				if (!showColorsAsContourLines)
 				{
-					smallBodyPolyData.GetPointData().SetScalars(info.coloringValues);
-					polyData=smallBodyPolyData;
+					if (smallBodyActors.contains(linesActor))
+						smallBodyActors.remove(linesActor);
+
+					vtkUnsignedCharArray rgbColorData = new vtkUnsignedCharArray();
+					rgbColorData.SetNumberOfComponents(3);
+					for (int index = 0; index < floatArray.GetNumberOfTuples(); ++index)
+					{
+						double value = floatArray.GetValue(index);
+						Color c = colormap.getColor(value);
+						rgbColorData.InsertNextTuple3(c.getRed(), c.getGreen(), c.getBlue());
+					}
+
+					smallBodyMapper.SetLookupTable(colormap.getLookupTable());
+
+					vtkPolyDataMapper decimatedMapper =
+							((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+					decimatedMapper.SetLookupTable(colormap.getLookupTable());
+					decimatedMapper.UseLookupTableScalarRangeOn();
+
+					if (coloringValueType == ColoringValueType.POINT_DATA)
+						this.smallBodyPolyData.GetPointData().SetScalars(rgbColorData);
+					else
+						this.smallBodyPolyData.GetCellData().SetScalars(rgbColorData);
+
+					smallBodyMapper.ScalarVisibilityOn();
+
 				}
 				else
 				{
-					smallBodyPolyData.GetCellData().SetScalars(info.coloringValues);
-					vtkCellDataToPointData converter=new vtkCellDataToPointData();
-					converter.SetInputData(smallBodyPolyData);
-					converter.PassCellDataOff();
-					converter.Update();
-					polyData=converter.GetPolyDataOutput();	// contour filter requires point data with one component
+					vtkPolyDataMapper decimatedMapper =
+							((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+					decimatedMapper.ScalarVisibilityOff();
+					smallBodyMapper.ScalarVisibilityOff();
+
+					vtkPolyData polyData;
+					if (coloringValueType == ColoringValueType.POINT_DATA)
+					{
+						smallBodyPolyData.GetPointData().SetScalars(floatArray);
+						polyData = smallBodyPolyData;
+					}
+					else
+					{
+						smallBodyPolyData.GetCellData().SetScalars(floatArray);
+						vtkCellDataToPointData converter = new vtkCellDataToPointData();
+						converter.SetInputData(smallBodyPolyData);
+						converter.PassCellDataOff();
+						converter.Update();
+						polyData = converter.GetPolyDataOutput(); // contour filter requires point data with one component
+					}
+
+					vtkContourFilter contourFilter = new vtkContourFilter();
+					contourFilter.SetInputData(polyData);
+					contourFilter.GenerateValues(colormap.getNumberOfLevels(), colormap.getRangeMin(), colormap.getRangeMax());
+					contourFilter.Update();
+
+					linesMapper =
+							((SaavtkLODActor) linesActor).setQuadricDecimatedLODMapper(contourFilter.GetOutput());
+
+					linesMapper.SetInputData(contourFilter.GetOutput());
+					linesMapper.ScalarVisibilityOn();
+					linesMapper.SetScalarModeToDefault();
+					linesMapper.SetLookupTable(colormap.getLookupTable());
+					linesMapper.UseLookupTableScalarRangeOn();
+
+					linesActor.VisibilityOn();
+					linesActor.SetMapper(linesMapper);
+					linesActor.GetProperty().SetLineWidth(contourLineWidth);
+
+					if (!smallBodyActors.contains(linesActor))
+						smallBodyActors.add(linesActor);
 				}
-
-				vtkContourFilter contourFilter=new vtkContourFilter();
-				contourFilter.SetInputData(polyData);
-				contourFilter.GenerateValues(colormap.getNumberOfLevels(), colormap.getRangeMin(), colormap.getRangeMax());
-				contourFilter.Update();
-
-				linesMapper =
-						((SaavtkLODActor)linesActor).setQuadricDecimatedLODMapper(contourFilter.GetOutput());
-
-				linesMapper.SetInputData(contourFilter.GetOutput());
-				linesMapper.ScalarVisibilityOn();
-				linesMapper.SetScalarModeToDefault();
-				linesMapper.SetLookupTable(colormap.getLookupTable());
-				linesMapper.UseLookupTableScalarRangeOn();
-
-				linesActor.VisibilityOn();
-				linesActor.SetMapper(linesMapper);
-				linesActor.GetProperty().SetLineWidth(contourLineWidth);
-				
-				if (!smallBodyActors.contains(linesActor))
-					smallBodyActors.add(linesActor);
 			}
 		}
 		else
@@ -2424,20 +2437,24 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 			if (useFalseColoring)
 			{
-				updateFalseColorArray();
-				if (coloringValueType == ColoringValueType.POINT_DATA)
-					this.smallBodyPolyData.GetPointData().SetScalars(falseColorArray);
-				else
-					this.smallBodyPolyData.GetCellData().SetScalars(falseColorArray);
-				smallBodyMapper.ScalarVisibilityOn();
-				vtkPolyDataMapper decimatedMapper =
-						((SaavtkLODActor)smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
-				
+				if (isColoringAvailable(redFalseColor) || isColoringAvailable(greenFalseColor) || isColoringAvailable(blueFalseColor))
+				{
+
+					updateFalseColorArray();
+					if (coloringValueType == ColoringValueType.POINT_DATA)
+						this.smallBodyPolyData.GetPointData().SetScalars(falseColorArray);
+					else
+						this.smallBodyPolyData.GetCellData().SetScalars(falseColorArray);
+					smallBodyMapper.ScalarVisibilityOn();
+					vtkPolyDataMapper decimatedMapper =
+							((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+
+				}
 			}
 			else
 			{
 				vtkPolyDataMapper decimatedMapper =
-						((SaavtkLODActor)smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+						((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
 				decimatedMapper.ScalarVisibilityOff();
 				smallBodyMapper.ScalarVisibilityOff();
 			}
@@ -2448,7 +2465,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
-
+	@Override
 	public void setOpacity(double opacity)
 	{
 		vtkProperty smallBodyProperty = smallBodyActor.GetProperty();
@@ -2456,18 +2473,21 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
+	@Override
 	public void setSpecularCoefficient(double value)
 	{
 		smallBodyActor.GetProperty().SetSpecular(value);
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
+	@Override
 	public void setSpecularPower(double value)
 	{
 		smallBodyActor.GetProperty().SetSpecularPower(value);
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
+	@Override
 	public void setRepresentationToSurface()
 	{
 		smallBodyActor.GetProperty().SetRepresentationToSurface();
@@ -2475,18 +2495,21 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
+	@Override
 	public void setRepresentationToWireframe()
 	{
 		smallBodyActor.GetProperty().SetRepresentationToWireframe();
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
+	@Override
 	public void setRepresentationToPoints()
 	{
 		smallBodyActor.GetProperty().SetRepresentationToPoints();
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
+	@Override
 	public void setRepresentationToSurfaceWithEdges()
 	{
 		smallBodyActor.GetProperty().SetRepresentationToSurface();
@@ -2494,18 +2517,21 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
+	@Override
 	public void setPointSize(double value)
 	{
 		smallBodyActor.GetProperty().SetPointSize(value);
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
+	@Override
 	public void setLineWidth(double value)
 	{
 		smallBodyActor.GetProperty().SetLineWidth(value);
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
+	@Override
 	public void setCullFrontface(boolean enable)
 	{
 		smallBodyActor.GetProperty().SetFrontfaceCulling(enable ? 1 : 0);
@@ -2518,21 +2544,31 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
-
+	@Override
 	public void delete()
 	{
-		if (smallBodyPolyData != null) smallBodyPolyData.Delete();
-		if (lowResSmallBodyPolyData != null) lowResSmallBodyPolyData.Delete();
-		if (smallBodyActor != null) smallBodyActor.Delete();
-		if (smallBodyMapper != null) smallBodyMapper.Delete();
+		if (smallBodyPolyData != null)
+			smallBodyPolyData.Delete();
+		if (lowResSmallBodyPolyData != null)
+			lowResSmallBodyPolyData.Delete();
+		if (smallBodyActor != null)
+			smallBodyActor.Delete();
+		if (smallBodyMapper != null)
+			smallBodyMapper.Delete();
 		for (vtkProp prop : smallBodyActors)
-			if (prop != null) prop.Delete();
-		if (cellLocator != null) cellLocator.Delete();
-		if (pointLocator != null) pointLocator.Delete();
+			if (prop != null)
+				prop.Delete();
+		if (cellLocator != null)
+			cellLocator.Delete();
+		if (pointLocator != null)
+			pointLocator.Delete();
 		//if (lowResPointLocator != null) lowResPointLocator.Delete();
-		if (genericCell != null) genericCell.Delete();
-		if (scalarBarActor != null) scalarBarActor.Delete();
-		if (smallBodyPolyData != null) smallBodyPolyData.Delete();
+		if (genericCell != null)
+			genericCell.Delete();
+		if (scalarBarActor != null)
+			scalarBarActor.Delete();
+		if (smallBodyPolyData != null)
+			smallBodyPolyData.Delete();
 		//if (lowResSmallBodyPolyData != null) lowResSmallBodyPolyData.Delete();
 	}
 
@@ -2548,7 +2584,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		vtkIdList idList = new vtkIdList();
 		idList.SetNumberOfIds(4);
-		for (int i=0; i<4; ++i)
+		for (int i = 0; i < 4; ++i)
 			idList.SetId(i, i);
 		polys.InsertNextCell(idList);
 
@@ -2575,33 +2611,34 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		showScaleBar = Preferences.getInstance().getAsBoolean(Preferences.SHOW_SCALE_BAR, true);
 	}
 
+	@Override
 	public void updateScaleBarPosition(int windowWidth, int windowHeight)
 	{
 		vtkPoints points = scaleBarPolydata.GetPoints();
 
-		int newScaleBarWidthInPixels = (int)Math.min(0.75*windowWidth, 150.0);
+		int newScaleBarWidthInPixels = (int) Math.min(0.75 * windowWidth, 150.0);
 
 		scaleBarWidthInPixels = newScaleBarWidthInPixels;
-		int scaleBarHeight = scaleBarWidthInPixels/9;
-		int buffer = scaleBarWidthInPixels/20;
+		int scaleBarHeight = scaleBarWidthInPixels / 9;
+		int buffer = scaleBarWidthInPixels / 20;
 		int x = windowWidth - scaleBarWidthInPixels - buffer; // lower left corner x
 		int y = buffer; // lower left corner y
 
 		points.SetPoint(0, x, y, 0.0);
-		points.SetPoint(1, x+scaleBarWidthInPixels, y, 0.0);
-		points.SetPoint(2, x+scaleBarWidthInPixels, y+scaleBarHeight, 0.0);
-		points.SetPoint(3, x, y+scaleBarHeight, 0.0);
+		points.SetPoint(1, x + scaleBarWidthInPixels, y, 0.0);
+		points.SetPoint(2, x + scaleBarWidthInPixels, y + scaleBarHeight, 0.0);
+		points.SetPoint(3, x, y + scaleBarHeight, 0.0);
 
-		scaleBarTextActor.SetPosition(x+scaleBarWidthInPixels/2, y+2);
-		scaleBarTextActor.GetTextProperty().SetFontSize(scaleBarHeight-4);
+		scaleBarTextActor.SetPosition(x + scaleBarWidthInPixels / 2, y + 2);
+		scaleBarTextActor.GetTextProperty().SetFontSize(scaleBarHeight - 4);
 
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
+	@Override
 	public void updateScaleBarValue(double pixelSizeInKm)
 	{
-		if (scaleBarWidthInPixels <= 0 ||
-				scaleBarWidthInKm == scaleBarWidthInPixels * pixelSizeInKm)
+		if (scaleBarWidthInPixels <= 0 || scaleBarWidthInKm == scaleBarWidthInPixels * pixelSizeInKm)
 		{
 			return;
 		}
@@ -2622,7 +2659,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		if (pixelSizeInKm > 0.0)
 		{
 			if (scaleBarWidthInKm < 1.0)
-				scaleBarTextActor.SetInput(String.format("%.2f m", 1000.0*scaleBarWidthInKm));
+				scaleBarTextActor.SetInput(String.format("%.2f m", 1000.0 * scaleBarWidthInKm));
 			else
 				scaleBarTextActor.SetInput(String.format("%.2f km", scaleBarWidthInKm));
 		}
@@ -2630,6 +2667,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
+	@Override
 	public void setShowScaleBar(boolean enabled)
 	{
 		this.showScaleBar = enabled;
@@ -2640,53 +2678,59 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
+	@Override
 	public boolean getShowScaleBar()
 	{
 		return showScaleBar;
 	}
 
+	@Override
 	public void saveAsPLT(File file) throws IOException
 	{
 		PolyDataUtil.saveShapeModelAsPLT(smallBodyPolyData, file.getAbsolutePath());
 	}
 
+	@Override
 	public void saveAsOBJ(File file) throws IOException
 	{
 		PolyDataUtil.saveShapeModelAsOBJ(smallBodyPolyData, file.getAbsolutePath());
 	}
 
+	@Override
 	public void saveAsVTK(File file) throws IOException
 	{
 		PolyDataUtil.saveShapeModelAsVTK(smallBodyPolyData, file.getAbsolutePath());
 	}
 
+	@Override
 	public void saveAsSTL(File file) throws IOException
 	{
 		PolyDataUtil.saveShapeModelAsSTL(smallBodyPolyData, file.getAbsolutePath());
 	}
 
-
 	/**
 	 * Return if this model is an ellipsoid. If so, some operations on ellipsoids
-	 * are much easier than general shape models. By default return false, unless
-	 * a subclasses overrides it.
+	 * are much easier than general shape models. By default return false, unless a
+	 * subclasses overrides it.
+	 * 
 	 * @return
 	 */
+	@Override
 	public boolean isEllipsoid()
 	{
 		return false;
 	}
 
 	/**
-	 * Return the index of the elevation coloring. Return -1 if no elevation
-	 * is available.
+	 * Return the index of the elevation coloring. Return -1 if no elevation is
+	 * available.
 	 *
 	 * @return
 	 */
 	public int getElevationDataColoringIndex()
 	{
 		int numberOfColoringTypes = getNumberOfColors();
-		for (int i = 0;i<numberOfColoringTypes; ++i)
+		for (int i = 0; i < numberOfColoringTypes; ++i)
 		{
 			String name = getColoringName(i);
 			if (GenericPolyhedralModel.ElevStr.toLowerCase().equals(name.toLowerCase()))
@@ -2699,88 +2743,86 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	}
 
 	/**
-	 * Subclass should override this if it needs it. Currently only
-	 * shape models with lidar data need this.
-	 * Return density of shape model in g/cm^3.
+	 * Subclass should override this if it needs it. Currently only shape models
+	 * with lidar data need this. Return density of shape model in g/cm^3.
+	 * 
 	 * @return
 	 */
+	@Override
 	public double getDensity()
 	{
 		return 0.0;
 	}
 
 	/**
-	 * Subclass should override this if it needs it. Currently only
-	 * shape models with lidar data need this.
-	 * Return rotation rate in radians/sec.
+	 * Subclass should override this if it needs it. Currently only shape models
+	 * with lidar data need this. Return rotation rate in radians/sec.
+	 * 
 	 * @return
 	 */
+	@Override
 	public double getRotationRate()
 	{
 		return 0.0;
 	}
 
 	/**
-	 * Subclass should override this if it needs it. Currently only
-	 * shape models with lidar data need this.
-	 * Return reference potential in m^2/sec^2. The reference potential
-	 * is defined as SUM(P_p*A_p)/SUM(A_p), where P_p is the potential at the
-	 * center of plate p, A_p is the area of plate p, and the sum is over
-	 * all plates in the shape model.
+	 * Subclass should override this if it needs it. Currently only shape models
+	 * with lidar data need this. Return reference potential in m^2/sec^2. The
+	 * reference potential is defined as SUM(P_p*A_p)/SUM(A_p), where P_p is the
+	 * potential at the center of plate p, A_p is the area of plate p, and the sum
+	 * is over all plates in the shape model.
+	 * 
 	 * @return
 	 */
+	@Override
 	public double getReferencePotential()
 	{
-		int numColors = coloringInfo.size();
-		for (int j=0; j<numColors; ++j)
+		try
 		{
-			if (coloringInfo.get(j).coloringName.equals(GravPotStr))
+			ColoringData gravColoring = coloringDataManager.get(GravPotStr, coloringDataManager.getResolutions().get(resolutionLevel));
+			gravColoring.load();
+			vtkFloatArray floatArray = gravColoring.getData();
+
+			double potTimesAreaSum = 0.0;
+			double totalArea = 0.0;
+			double minRefPot = Double.MAX_VALUE;
+			int numFaces = smallBodyPolyData.GetNumberOfCells();
+			for (int i = 0; i < numFaces; ++i)
 			{
-				try
+				double potential = floatArray.GetTuple1(i);
+				if (potential < minRefPot)
 				{
-					loadFile(coloringInfo.get(j));
+					minRefPot = potential;
 				}
-				catch (Exception e)
-				{
-					e.printStackTrace();
-					return Double.MAX_VALUE;
-				}
-				double potTimesAreaSum = 0.0;
-				double totalArea = 0.0;
-				double minRefPot = Double.MAX_VALUE;
-				int numFaces = smallBodyPolyData.GetNumberOfCells();
-				for (int i = 0; i < numFaces; ++i)
-				{
-					double potential = coloringInfo.get(j).coloringValues.GetTuple1(i);
-					if (potential < minRefPot)
-					{
-						minRefPot = potential;
-					}
-					double area = ((vtkTriangle)smallBodyPolyData.GetCell(i)).ComputeArea();
+				double area = ((vtkTriangle) smallBodyPolyData.GetCell(i)).ComputeArea();
 
-					potTimesAreaSum += potential * area;
-					totalArea += area;
-				}
+				potTimesAreaSum += potential * area;
+				totalArea += area;
+			}
 
-				if (getConfig().useMinimumReferencePotential)
-				{
-					return minRefPot;
-				}
-				else
-				{
-					return potTimesAreaSum / totalArea;
-				}
+			if (getConfig().useMinimumReferencePotential)
+			{
+				return minRefPot;
+			}
+			else
+			{
+				return potTimesAreaSum / totalArea;
 			}
 		}
-
-		return Double.MAX_VALUE;
+		catch (Exception e)
+		{
+			e.printStackTrace();
+			return Double.MAX_VALUE;
+		}
 	}
 
 	/**
-	 * Subclass should override this if it needs it. Currently only
-	 * shape models with lidar data need this.
-	 * Return path on server to shape model in PLT format. Needed because
-	 * gravity program only supports PLT format, not VTK format.
+	 * Subclass should override this if it needs it. Currently only shape models
+	 * with lidar data need this. Return path on server to shape model in PLT
+	 * format. Needed because gravity program only supports PLT format, not VTK
+	 * format.
+	 * 
 	 * @return
 	 */
 	public String getServerPathToShapeModelFileInPlateFormat()
@@ -2812,22 +2854,21 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	}
 
 	/**
-	 * Saves out file with information about each plate of shape model that contains these columns.
-	 * Each row contains information about a single plate in the order the plates define the model.
+	 * Saves out file with information about each plate of shape model that contains
+	 * these columns. Each row contains information about a single plate in the
+	 * order the plates define the model.
 	 *
-	 * 1. Surface area of plate
-	 * 2. X coordinate of center of plate
-	 * 3. Y coordinate of center of plate
-	 * 4. Z coordinate of center of plate
-	 * 5. Latitude of center of plate (in degrees)
-	 * 6. Longitude of center of plate (in degrees)
-	 * 7. Distance of center of plate to origin
-	 * 8+. coloring data of plate, both built-in and custom
+	 * 1. Surface area of plate 2. X coordinate of center of plate 3. Y coordinate
+	 * of center of plate 4. Z coordinate of center of plate 5. Latitude of center
+	 * of plate (in degrees) 6. Longitude of center of plate (in degrees) 7.
+	 * Distance of center of plate to origin 8+. coloring data of plate, both
+	 * built-in and custom
 	 *
 	 * @param polydata
 	 * @param file
 	 * @throws IOException
 	 */
+	@Override
 	public void savePlateData(File file) throws IOException
 	{
 		loadAllColoringData();
@@ -2845,7 +2886,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		out.write(",Center Longitude (deg)");
 		out.write(",Center Radius (km)");
 		int numColors = getNumberOfColors();
-		for (int i=0; i<numColors; ++i)
+		for (int i = 0; i < numColors; ++i)
 		{
 			out.write("," + getColoringName(i));
 			String units = getColoringUnits(i);
@@ -2864,7 +2905,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		double[] pt1 = new double[3];
 		double[] pt2 = new double[3];
 		double[] center = new double[3];
-		for (int i=0; i<numberCells; ++i)
+		for (int i = 0; i < numberCells; ++i)
 		{
 			smallBodyPolyData.GetCellPoints(i, idList);
 			int id0 = idList.GetId(0);
@@ -2882,12 +2923,12 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			out.write(center[0] + ",");
 			out.write(center[1] + ",");
 			out.write(center[2] + ",");
-			out.write((llr.lat*180.0/Math.PI) + ",");
-			out.write((llr.lon*180.0/Math.PI) + ",");
+			out.write((llr.lat * 180.0 / Math.PI) + ",");
+			out.write((llr.lon * 180.0 / Math.PI) + ",");
 			out.write(String.valueOf(llr.rad));
 
-			for (int j=0; j<numColors; ++j)
-				out.write("," + coloringInfo.get(j).coloringValues.GetTuple1(i));
+			for (int j = 0; j < numColors; ++j)
+				out.write("," + getColoringData(j).getData().GetTuple1(i));
 
 			out.write(lineSeparator);
 		}
@@ -2898,14 +2939,15 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	}
 
 	/**
-	 * Given a polydata that is coincident with part of the shape model, save out the
-	 * plate data for all cells of the shape model that touch the polydata (even a
-	 * little bit).
+	 * Given a polydata that is coincident with part of the shape model, save out
+	 * the plate data for all cells of the shape model that touch the polydata (even
+	 * a little bit).
 	 *
 	 * @param polydata
 	 * @param file
 	 * @throws IOException
 	 */
+	@Override
 	public void savePlateDataInsidePolydata(vtkPolyData polydata, File file) throws IOException
 	{
 		// Go through every cell inside the polydata and find the closest cell to it
@@ -2923,7 +2965,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		double[] center = new double[3];
 		double[] closestPoint = new double[3];
 
-		for (int i=0; i<numCells; ++i)
+		for (int i = 0; i < numCells; ++i)
 		{
 			vtkTriangle cell = (vtkTriangle) polydata.GetCell(i);
 			vtkPoints points = cell.GetPoints();
@@ -2946,10 +2988,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		out.write("Plate Id\tLatitude\tLongitude\t");
 		int numColoringData = getNumberOfColors();
-		for (int j=0; j<numColoringData; ++j)
+		for (int j = 0; j < numColoringData; ++j)
 		{
 			out.write(getColoringName(j));
-			if (j < numColoringData-1)
+			if (j < numColoringData - 1)
 				out.write("\t");
 		}
 		out.write(nl);
@@ -2957,7 +2999,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		numCells = cellIds.size();
 		for (int cellId : cellIds)
 		{
-			vtkTriangle cell = (vtkTriangle)smallBodyPolyData.GetCell(cellId);
+			vtkTriangle cell = (vtkTriangle) smallBodyPolyData.GetCell(cellId);
 			vtkPoints points = cell.GetPoints();
 			points.GetPoint(0, pt0);
 			points.GetPoint(1, pt1);
@@ -2965,18 +3007,18 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			cell.TriangleCenter(pt0, pt1, pt2, center);
 
 			LatLon llr = MathUtil.reclat(center);
-			double lat = llr.lat*180.0/Math.PI;
-			double lon = llr.lon*180.0/Math.PI;
+			double lat = llr.lat * 180.0 / Math.PI;
+			double lon = llr.lon * 180.0 / Math.PI;
 			if (lon < 0.0)
 				lon += 360.0;
 
 			String str = cellId + "\t" + lat + "\t" + lon + "\t";
 
 			double[] values = getAllColoringValues(center);
-			for (int j=0; j<values.length; ++j)
+			for (int j = 0; j < values.length; ++j)
 			{
 				str += values[j];
-				if (j < values.length-1)
+				if (j < values.length - 1)
 					str += "\t";
 			}
 
@@ -2991,102 +3033,33 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		out.close();
 	}
 
-	public void addCustomPlateData(ColoringInfo info) throws IOException
+	@Override
+	public CustomizableColoringDataManager getColoringDataManager()
 	{
-		info.builtIn = false;
-		info.resolutionLevel = resolutionLevel;
-		info.coloringValues = null;
-		info.defaultColoringRange = null;
-		coloringInfo.add(info);
-	}
-
-	public void setCustomPlateData(int index, ColoringInfo info) throws IOException
-	{
-		if (coloringInfo.get(index).builtIn)
-			return;
-
-		info.builtIn = false;
-		info.coloringValues = null;
-		info.defaultColoringRange = null;
-
-		coloringInfo.set(index, info);
-
-		if (coloringIndex >= 0)
-		{
-			paintBody();
-		}
-	}
-
-	public void removeCustomPlateData(int index) throws IOException
-	{
-		if (coloringInfo.get(index).builtIn)
-			return;
-
-		boolean needToRepaint = coloringIndex >= 0 || useFalseColoring;
-
-		coloringInfo.remove(index);
-
-		if (useFalseColoring)
-		{
-			if (redFalseColor == index)
-				redFalseColor = -1;
-			else if (redFalseColor > index)
-				--redFalseColor;
-			if (greenFalseColor == index)
-				greenFalseColor = -1;
-			else if (greenFalseColor > index)
-				--greenFalseColor;
-			if (blueFalseColor == index)
-				blueFalseColor = -1;
-			else if (blueFalseColor > index)
-				--blueFalseColor;
-
-			if (redFalseColor < 0 || greenFalseColor < 0 || blueFalseColor < 0)
-				useFalseColoring = false;
-		}
-		else
-		{
-			if (coloringIndex == index)
-				coloringIndex = -1;
-			else if (coloringIndex > index)
-				--coloringIndex;
-		}
-
-		if (needToRepaint)
-			paintBody();
+		return coloringDataManager;
 	}
 
 	public void reloadColoringData() throws IOException
 	{
-		for (ColoringInfo info : coloringInfo)
+		for (ColoringData data : getAllColoringDataForThisResolution())
 		{
-			info.coloringValues = null;
-			info.defaultColoringRange = null;
+			data.reload();
 		}
-
-		if (coloringIndex >= 0 && coloringIndex < coloringInfo.size())
-			loadColoringData();
 	}
 
-	public List<ColoringInfo> getColoringInfoList()
-	{
-		return coloringInfo;
-	}
-
-
-
-
-
+	@Override
 	public void addCustomLidarDatasource(LidarDatasourceInfo info) throws IOException
 	{
 		lidarDatasourceInfo.add(info);
 	}
 
+	@Override
 	public void setCustomLidarDatasource(int index, LidarDatasourceInfo info) throws IOException
 	{
 		lidarDatasourceInfo.set(index, info);
 	}
 
+	@Override
 	public void removeCustomLidarDatasource(int index) throws IOException
 	{
 		lidarDatasourceInfo.remove(index);
@@ -3108,6 +3081,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		loadLidarDatasourceData();
 	}
 
+	@Override
 	public List<LidarDatasourceInfo> getLidarDasourceInfoList()
 	{
 		return lidarDatasourceInfo;
@@ -3115,6 +3089,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	private boolean isColoringIndexInRange(int index)
 	{
-		return index >= 0 && index < coloringInfo.size();
+		return index >= 0 && index < coloringDataManager.getNames().size();
 	}
 }

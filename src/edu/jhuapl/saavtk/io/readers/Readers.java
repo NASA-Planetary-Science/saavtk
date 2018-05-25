@@ -19,9 +19,9 @@ public class Readers {
 			reader = new ObjReader();
 		} else if (fileName.endsWith(STL_EXT)) {
 			reader = new StlReader();
-		} else if (fileName.endsWith(PLY_EXT)) {
+		}/* else if (fileName.endsWith(PLY_EXT)) {
 			reader = new PlyReader();
-		}
+		}*/
 		reader.SetFileName(file.getAbsolutePath());
 		return reader;
 	}
