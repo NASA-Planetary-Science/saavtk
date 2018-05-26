@@ -20,6 +20,7 @@ public abstract class BasicMetadata implements Metadata
 
 	protected BasicMetadata(Version version)
 	{
+		Preconditions.checkNotNull(version);
 		this.version = version;
 	}
 
