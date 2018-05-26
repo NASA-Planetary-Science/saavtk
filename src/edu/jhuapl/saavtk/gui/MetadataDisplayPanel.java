@@ -214,6 +214,10 @@ public class MetadataDisplayPanel
 	 */
 	private void addVerticalSpace(Object object, Dimension columnDim)
 	{
+		if (object == null)
+		{
+			return;
+		}
 		Dimension objectDim = getTextDimension(object);
 
 		// Width is the larger of the two widths.
@@ -291,7 +295,17 @@ public class MetadataDisplayPanel
 		// Uncomment this to confirm it makes the test fail to start.
 		//		list.add(Key.of("Illegal key not bound to metadata"));
 
-		MetadataDisplayPanel displayPanel = new MetadataDisplayPanel(metadata, list, "Keyword", ImmutableList.of("Value", "Comment"));
+		display(metadata, list, "Keyword", ImmutableList.of("Value", "Comment"));
+	}
+
+	public static void display(Metadata metadata, String keyColumnLabel, Collection<String> valueColumnLabels)
+	{
+		display(metadata, metadata.getKeys(), keyColumnLabel, valueColumnLabels);
+	}
+
+	public static void display(Metadata metadata, Collection<Key<?>> keys, String keyColumnLabel, Collection<String> valueColumnLabels)
+	{
+		MetadataDisplayPanel displayPanel = new MetadataDisplayPanel(metadata, keys, keyColumnLabel, valueColumnLabels);
 		JFrame jFrame = new JFrame("Test MetatdataDisplayPanel");
 		JPanel jPanel = displayPanel.getPanel();
 
@@ -308,6 +322,7 @@ public class MetadataDisplayPanel
 		jFrame.pack();
 		jFrame.validate();
 		jFrame.setVisible(true);
+
 	}
 
 	// Just needed for the test main.
