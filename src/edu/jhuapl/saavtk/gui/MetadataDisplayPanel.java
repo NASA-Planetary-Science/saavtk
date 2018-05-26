@@ -19,72 +19,134 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
 
+/**
+ * Panel capable of displaying metadata that meet one of the following criteria:
+ * 
+ * 1) Key-value pairs where the value is a scalar, e.g., String, Double, etc.
+ * 
+ * 2) Key-value pairs where the value is an iterable. No recursion is performed
+ * for iterables of iterable etc.
+ *
+ * @author peachjm1
+ *
+ */
 public class MetadataDisplayPanel
 {
-	//	private static final int EM_WIDTH = new JLabel("M").getPreferredSize().width;
-	//	private static final int EM_HEIGHT = new JLabel("M").getPreferredSize().height;
+	public static MetadataDisplayPanel of(String keyColumnLabel, Collection<String> valueColumnLabels, Metadata metadata)
+	{
+		Preconditions.checkNotNull(metadata);
+		return new MetadataDisplayPanel(metadata, metadata.getKeys(), keyColumnLabel, valueColumnLabels);
+	}
+
+	public static MetadataDisplayPanel of(String keyColumnLabel, Collection<String> valueColumnLabels, Collection<Key<?>> keys, Metadata metadata)
+	{
+		return new MetadataDisplayPanel(metadata, keys, keyColumnLabel, valueColumnLabels);
+	}
+
 	private static final double VERT_SCROLL_BAR_WIDTH = new JScrollBar(JScrollBar.VERTICAL).getPreferredSize().getWidth();
 	private static final double HOR_SCROLL_BAR_HEIGHT = new JScrollBar(JScrollBar.HORIZONTAL).getPreferredSize().getHeight();
 	private final JPanel jPanel;
 
-	protected MetadataDisplayPanel(String keyColumnLabel, String valueColumnLabel, Collection<Key<?>> keys, Metadata metadata)
+	/**
+	 * Construct a display of the provided metadata, using the supplied labels for
+	 * the key column and value columns, and a collection of keys that must be
+	 * contained in the metadata (this allows for a subset of the metadata to be
+	 * displayed).
+	 * 
+	 * @param metadata the metadata to display
+	 * @param keys the keys whose key/value to display
+	 * @param keyColumnLabel the label displayed for the "key" column
+	 * @param valueColumnLabels the labels displayed for the "value" columns
+	 */
+	protected MetadataDisplayPanel(Metadata metadata, Collection<Key<?>> keys, String keyColumnLabel, Collection<String> valueColumnLabels)
 	{
-		Preconditions.checkNotNull(keyColumnLabel);
-		Preconditions.checkNotNull(valueColumnLabel);
-		Preconditions.checkNotNull(keys);
 		Preconditions.checkNotNull(metadata);
+		Preconditions.checkNotNull(keys);
+		Preconditions.checkNotNull(keyColumnLabel);
+		Preconditions.checkNotNull(valueColumnLabels);
 
 		JPanel jPanel = new JPanel();
 		jPanel.setLayout(new GridBagLayout());
 
 		// Keep track of size needed to display the table without scrollbars.
-		final Dimension dim0 = getDimension(keyColumnLabel);
+		List<Dimension> dims = new ArrayList<>();
+		Dimension dim0 = getTextDimension(keyColumnLabel);
 		dim0.setSize(dim0.getWidth(), dim0.getHeight() + 5.); // Title row seems to need a little padding.
-		final Dimension dim1 = getDimension(valueColumnLabel);
-		dim1.setSize(dim1.getWidth(), dim1.getHeight() + 5.); // Title row seems to need a little padding.
+		dims.add(dim0);
+		for (String label : valueColumnLabels)
+		{
+			Dimension dim = getTextDimension(label);
+			dim.setSize(dim.getWidth(), dim.getHeight() + 5.); // Title row seems to need a little padding.
+			dims.add(dim);
+		}
 
 		// Use arguments to construct the labels for the columns.
-		Vector<Object> columnNames = new Vector<>(2);
-		columnNames.add(0, keyColumnLabel);
-		columnNames.add(1, valueColumnLabel);
+		Vector<Object> columnNames = new Vector<>(1 + valueColumnLabels.size());
+		columnNames.add(keyColumnLabel);
+		columnNames.addAll(valueColumnLabels);
 
 		// Extract key-value pairs from Metadata.
 		Vector<Vector<Object>> rowData = new Vector<>(keys.size());
 		for (Key<?> key : keys)
 		{
 			Object value = metadata.get(key);
+			Vector<Object> row = new Vector<>();
 			if (value instanceof String || value instanceof Number || value instanceof Boolean || value instanceof Character)
 			{
-				// Add to the table rows.
-				Vector<Object> row = new Vector<>(2);
-				row.add(0, key);
-				row.add(1, value);
-				rowData.add(row);
+				// Add scalar to the table rows.
+				row.add(key);
+				row.add(value);
+			}
+			else if (value instanceof Iterable)
+			{
+				Iterable<?> iterable = (Iterable<?>) value;
 
-				// Update the dimension needed for the table.
-				addVerticalSpace(key, dim0);
-				addVerticalSpace(value, dim1);
+				// Add iterable to the table rows.
+				row.add(key);
+				for (Object object : iterable)
+				{
+					row.add(object);
+				}
+			}
+			else
+			{
+				// row == null in this case; don't fall through the if.
+				continue;
+			}
+
+			// Add this row.
+			rowData.add(row);
+
+			// Update space needed for display. Need to be careful because there is no guarantee that rows (unpacked from metadata)
+			// and dims (key label + value column labels) to have the same size.
+			int size = Math.min(row.size(), dims.size());
+			for (int index = 0; index < size; ++index)
+			{
+				addVerticalSpace(row.get(index), dims.get(index));
 			}
 		}
 
-		Dimension tableDim = addHorizontalSpace(addHorizontalSpace(dim0, dim1), new Dimension((int) VERT_SCROLL_BAR_WIDTH, (int) HOR_SCROLL_BAR_HEIGHT));
+		Dimension tableDim = addHorizontalSpace(addHorizontalSpace(dims), new Dimension((int) VERT_SCROLL_BAR_WIDTH, (int) HOR_SCROLL_BAR_HEIGHT));
 
 		// Create the table to be displayed.
 		JTable jTable = createTable(rowData, columnNames);
 
 		TableColumnModel columnModel = jTable.getColumnModel();
-		columnModel.getColumn(0).setPreferredWidth((int) dim0.getWidth());
-		columnModel.getColumn(1).setPreferredWidth((int) dim1.getWidth());
+		for (int index = 0; index < columnModel.getColumnCount(); ++index)
+		{
+			columnModel.getColumn(index).setPreferredWidth((int) dims.get(index).getWidth());
+		}
 
 		// Put the table in a scroll pane.
 		JScrollPane jScrollPane = new JScrollPane(jTable);
-		final Dimension maxInitialSize = new Dimension(800, 600 - 22); // 22 is the the amount of room a JFrame title bar typically occupies.
+		Dimension maxInitialSize = new Dimension(800, 600 - 22); // 22 is the the amount of room a JFrame title bar typically occupies.
 
 		// Add the scroll pane to the panel.
 		GridBagConstraints gbc = new GridBagConstraints(-1, -1, 1, 1, 1., 1., GridBagConstraints.FIRST_LINE_START, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0);
@@ -130,12 +192,12 @@ public class MetadataDisplayPanel
 	 * @param object the object to display
 	 * @return the space needed to display it
 	 */
-	private Dimension getDimension(Object object)
+	private Dimension getTextDimension(Object object)
 	{
 		// Base size on how large a JLabel to display the object would be.
-		final Dimension result = new JLabel(object.toString()).getPreferredSize();
+		Dimension result = new JLabel(object.toString()).getPreferredSize();
 		// Pad the space because for short strings this isn't accurate.
-		result.setSize(Math.ceil(result.getWidth() + 6.), Math.ceil(result.getHeight()));
+		result.setSize(Math.ceil(result.getWidth() + 5.), Math.ceil(result.getHeight()));
 		return result;
 	}
 
@@ -152,7 +214,7 @@ public class MetadataDisplayPanel
 	 */
 	private void addVerticalSpace(Object object, Dimension columnDim)
 	{
-		final Dimension objectDim = getDimension(object);
+		Dimension objectDim = getTextDimension(object);
 
 		// Width is the larger of the two widths.
 		double width = Math.max(objectDim.getWidth(), columnDim.getWidth());
@@ -174,13 +236,22 @@ public class MetadataDisplayPanel
 	 */
 	private Dimension addHorizontalSpace(Dimension dim0, Dimension dim1)
 	{
-		// Width is the sum of the two widths + one Em for each.
-		int width = (int) (dim0.getWidth() + dim1.getWidth());
+		return addHorizontalSpace(ImmutableList.of(dim0, dim1));
+	}
 
-		// Height is the maximum of the two heights + one Em.
-		int height = (int) (Math.max(dim0.getHeight(), dim1.getHeight()));
+	private Dimension addHorizontalSpace(Iterable<Dimension> dims)
+	{
+		double width = 0;
+		double height = 0;
+		for (Dimension dim : dims)
+		{
+			// Width is the sum of the widths.
+			width += dim.getWidth();
 
-		return new Dimension(width, height);
+			// Height is the larger of the heights.
+			height = Math.max(height, dim.getHeight());
+		}
+		return new Dimension((int) width, (int) height);
 	}
 
 	/**
@@ -193,9 +264,9 @@ public class MetadataDisplayPanel
 	 */
 	private Dimension getMinimum(Dimension dim0, Dimension dim1)
 	{
-		int width = (int) Math.min(dim0.getWidth(), dim1.getWidth());
-		int height = (int) Math.min(dim0.getHeight(), dim1.getHeight());
-		return new Dimension(width, height);
+		double width = Math.min(dim0.getWidth(), dim1.getWidth());
+		double height = Math.min(dim0.getHeight(), dim1.getHeight());
+		return new Dimension((int) width, (int) height);
 	}
 
 	// Test code.
@@ -206,17 +277,21 @@ public class MetadataDisplayPanel
 		SettableMetadata metadata = SettableMetadata.of(Version.of(0, 1));
 		metadata.put(keyOf("SIMPLE", list), Boolean.TRUE);
 		metadata.put(keyOf("NAXIS1", list), 0);
-		//		metadata.put(keyOf(÷"DATE", list), "20180525");
+		metadata.put(keyOf("DATE", list), ImmutableList.of("20180525", "/ Here's a fits comment", "Fictitious third element"));
 		//		metadata.put(keyOf("DATE long title should make the column wider", list), "20180525");
 		//		metadata.put(keyOf("DATE", list), "20180525 Sure and tis a very long string, to be sure, oh yes oy what else could I say to make it longer still?");
-		metadata.put(keyOf("DATE", list), "20180525 Sure and tis a very long string, to be sure, oh yes oy what else could I say to make it longer still? I mean so ridiculatloyl long that it exceeds the width of a normal labptop screeen  to ever even conceive of diplaying it without cutting off the dsmn table?");
-		//		metadata.put(keyOf("X", list), 0.5);
-		for (int index = 0; index < 80; ++index)
+		//		metadata.put(keyOf("DATE", list), "20180525 Sure and tis a very long string, to be sure, oh yes oy what else could I say to make it longer still? I mean so ridiculatloyl long that it exceeds the width of a normal labptop screeen  to ever even conceive of diplaying it without cutting off the dsmn table?");
+		metadata.put(keyOf("X", list), 0.5);
+		metadata.put(Key.of("DO NOT DISPLAY THIS!"), "This key isn't tracked, so it should not show up in the table");
+		for (int index = 0; index < 30; ++index)
 		{
 			metadata.put(keyOf("Spud" + index, list), "Potato " + index);
 		}
 
-		MetadataDisplayPanel displayPanel = new MetadataDisplayPanel("Keyword", "Value", list, metadata);
+		// Uncomment this to confirm it makes the test fail to start.
+		//		list.add(Key.of("Illegal key not bound to metadata"));
+
+		MetadataDisplayPanel displayPanel = new MetadataDisplayPanel(metadata, list, "Keyword", ImmutableList.of("Value", "Comment"));
 		JFrame jFrame = new JFrame("Test MetatdataDisplayPanel");
 		JPanel jPanel = displayPanel.getPanel();
 
