@@ -158,8 +158,7 @@ public class FileMetadata
 
 	private FixedMetadata textSummary(File file) throws IOException
 	{
-		// TODO Auto-generated method stub
-		return null;
+		throw new IOException("CSV files do not have summary metadata for now.");
 	}
 
 	//	private FixedMetadata tableSummary(TableHDU<?> tableHdu) throws IOException
