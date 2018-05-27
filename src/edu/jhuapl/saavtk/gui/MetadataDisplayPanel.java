@@ -39,13 +39,13 @@ import edu.jhuapl.saavtk.metadata.Version;
  */
 public class MetadataDisplayPanel
 {
-	public static MetadataDisplayPanel of(String keyColumnLabel, Collection<String> valueColumnLabels, Metadata metadata)
+	public static MetadataDisplayPanel of(Metadata metadata, String keyColumnLabel, Collection<String> valueColumnLabels)
 	{
 		Preconditions.checkNotNull(metadata);
 		return new MetadataDisplayPanel(metadata, metadata.getKeys(), keyColumnLabel, valueColumnLabels);
 	}
 
-	public static MetadataDisplayPanel of(String keyColumnLabel, Collection<String> valueColumnLabels, Collection<Key<?>> keys, Metadata metadata)
+	public static MetadataDisplayPanel of(Metadata metadata, Collection<Key<?>> keys, String keyColumnLabel, Collection<String> valueColumnLabels)
 	{
 		return new MetadataDisplayPanel(metadata, keys, keyColumnLabel, valueColumnLabels);
 	}
