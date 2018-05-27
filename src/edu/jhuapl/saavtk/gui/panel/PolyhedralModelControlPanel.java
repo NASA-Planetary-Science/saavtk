@@ -352,29 +352,25 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			panel.add(standardColoringButton, "split 2, gapleft 25");
 			panel.add(coloringComboBox, "width 200!, wrap");
 			panel.add(colormapController);
-			if (Configuration.isAPLVersion())
-			{
-				ItemListener listener = (e) -> {
-					setColoring();
-				};
-				coloringComboBox.addItemListener(listener);
-				customColorRedComboBox.addItemListener(listener);
-				customColorGreenComboBox.addItemListener(listener);
-				customColorBlueComboBox.addItemListener(listener);
 
-				panel.add(rgbColoringButton, "wrap, gapleft 25");
-				panel.add(customColorRedLabel, "gapleft 75, split 2");
-				panel.add(customColorRedComboBox, "width 200!, gapleft push, wrap");
-				panel.add(customColorGreenLabel, "gapleft 75, split 2");
-				panel.add(customColorGreenComboBox, "width 200!, gapleft push, wrap");
-				panel.add(customColorBlueLabel, "gapleft 75, split 2");
-				panel.add(customColorBlueComboBox, "width 200!, gapleft push, wrap");
-			}
+			ItemListener listener = (e) -> {
+				setColoring();
+			};
+			coloringComboBox.addItemListener(listener);
+			customColorRedComboBox.addItemListener(listener);
+			customColorGreenComboBox.addItemListener(listener);
+			customColorBlueComboBox.addItemListener(listener);
+
+			panel.add(rgbColoringButton, "wrap, gapleft 25");
+			panel.add(customColorRedLabel, "gapleft 75, split 2");
+			panel.add(customColorRedComboBox, "width 200!, gapleft push, wrap");
+			panel.add(customColorGreenLabel, "gapleft 75, split 2");
+			panel.add(customColorGreenComboBox, "width 200!, gapleft push, wrap");
+			panel.add(customColorBlueLabel, "gapleft 75, split 2");
+			panel.add(customColorBlueComboBox, "width 200!, gapleft push, wrap");
+
 			panel.add(saveColoringButton, "wrap, gapleft 25");
-			if (Configuration.isAPLVersion())
-			{
-				panel.add(customizeColoringButton, "wrap, gapleft 25");
-			}
+			panel.add(customizeColoringButton, "wrap, gapleft 25");
 		}
 
 		if (modelManager.getPolyhedralModel().isImageMapAvailable())
