@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JFrame;
+import javax.swing.JTabbedPane;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -26,7 +29,9 @@ public class FileMetadata
 	public static final Version VERSION = Version.of(0, 1);
 
 	// Data object (FITS: list of HDUs in the file).
-	public static final Key<List<FixedMetadata>> DATA_OBJECTS = Key.of("Data objects"); // Each has DESCRIPTION_FIELDS, DESCRIPTION
+	public static final Key<List<FixedMetadata>> DATA_OBJECTS = Key.of("Data objects"); // Each has TITLE, DESCRIPTION_FIELDS, DESCRIPTION
+
+	public static final Key<String> TITLE = Key.of("Title");
 
 	// Key-value pairs in this metadata must be displayable, i.e., its keys are Key<List<?>>.
 	public static final Key<FixedMetadata> DESCRIPTION = Key.of("Data object description");
@@ -88,11 +93,12 @@ public class FileMetadata
 			{
 				SettableMetadata metadata = SettableMetadata.of(version);
 				ImmutableList.Builder<FixedMetadata> builder = ImmutableList.builder();
-				for (BasicHDU<?> hdu : fits.read())
+
+				BasicHDU<?>[] hdus = fits.read();
+				for (int hduNum = 0; hduNum < hdus.length; ++hduNum)
 				{
 					SettableMetadata hduMetadata = SettableMetadata.of(version);
-					addFitsKeywords(hdu, hduMetadata);
-
+					addFitsKeywords(hduNum, hdus[hduNum], hduMetadata);
 					//					if (hdu instanceof TableHDU)
 					//					{
 					//						TableHDU<?> tableHdu = (TableHDU<?>) hdu;
@@ -121,12 +127,22 @@ public class FileMetadata
 		return result;
 	}
 
-	private void addFitsKeywords(BasicHDU<?> hdu, SettableMetadata hduMetadata)
+	private void addFitsKeywords(int hduNum, BasicHDU<?> hdu, SettableMetadata hduMetadata)
 	{
-		hduMetadata.put(DESCRIPTION_FIELDS, FITS_KEYWORD_FIELDS);
 
 		SettableMetadata keywordMetadata = SettableMetadata.of(VERSION);
 		Header header = hdu.getHeader();
+
+		// Derive the title.
+		String extName = header.getStringValue("EXTNAME");
+		boolean isPrimary = extName == null && header.getBooleanValue("SIMPLE");
+		final String title = extName != null ? extName : isPrimary ? "Primary" : "HDU " + hduNum;
+		hduMetadata.put(TITLE, title);
+
+		// Add boilerplate FITS meta-metadata.
+		hduMetadata.put(DESCRIPTION_FIELDS, FITS_KEYWORD_FIELDS);
+
+		// Get all the keywords.
 		Cursor<String, HeaderCard> iterator = header.iterator();
 		while (iterator.hasNext())
 		{
@@ -136,6 +152,7 @@ public class FileMetadata
 			valueAndComment.add(card.getComment());
 			keywordMetadata.put(Key.of(card.getKey()), valueAndComment);
 		}
+
 		hduMetadata.put(DESCRIPTION, FixedMetadata.of(keywordMetadata));
 	}
 
@@ -189,12 +206,20 @@ public class FileMetadata
 
 	private static void display(FixedMetadata fileMetadata)
 	{
+		JTabbedPane jTabbedPane = new JTabbedPane();
 		List<FixedMetadata> dataObjects = fileMetadata.get(DATA_OBJECTS);
 		for (FixedMetadata metadata : dataObjects)
 		{
 			List<String> fields = metadata.get(DESCRIPTION_FIELDS);
 			FixedMetadata description = metadata.get(DESCRIPTION);
-			MetadataDisplayPanel.display(description, "Keyword", fields);
+			MetadataDisplayPanel panel = MetadataDisplayPanel.of(description, "Keyword", fields);
+			jTabbedPane.add(metadata.get(TITLE), panel.getPanel());
 		}
+
+		JFrame jFrame = new JFrame("Test tabbed metadata display");
+		jFrame.add(jTabbedPane);
+		jFrame.pack();
+		jFrame.validate();
+		jFrame.setVisible(true);
 	}
 }
