@@ -14,6 +14,8 @@ public interface ColoringDataManager
 
 	ColoringData get(String name, int numberElements);
 
+	ImmutableList<ColoringData> get(int numberElements);
+
 	ColoringDataManager copy();
 
 }

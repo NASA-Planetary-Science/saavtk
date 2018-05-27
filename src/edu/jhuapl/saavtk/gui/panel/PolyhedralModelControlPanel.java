@@ -167,7 +167,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		final PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
 
 		int numberResolutionLevels = smallBodyModel.getNumberResolutionLevels();
-		int[] plateCount = smallBodyModel.getConfig().smallBodyNumberOfPlatesPerResolutionLevel;
+		ImmutableList<Integer> plateCount = smallBodyModel.getConfig().getResolutionNumberElements();
 
 		ImmutableMap.Builder<String, Integer> builder = ImmutableMap.builder();
 		if (numberResolutionLevels > 1)
@@ -176,15 +176,15 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			ActionListener listener = (e) -> {
 				updateModelResolution(e.getActionCommand());
 			};
-			String[] levels = smallBodyModel.getConfig().smallBodyLabelPerResolutionLevel;
+			ImmutableList<String> levels = smallBodyModel.getConfig().getResolutionLabels();
 			for (int i = 0; i < numberResolutionLevels; ++i)
 			{
-				String label = levels[i];
+				String label = levels.get(i);
 				builder.put(label, i);
 				JRadioButton resButton = new JRadioButton(label);
 				resButton.setActionCommand(label);
 				resButton.setEnabled(true);
-				resButton.setToolTipText("<html>Click here to show a model of " + bodyName + " <br />" + "containing " + plateCount[i] + " plates</html>");
+				resButton.setToolTipText("<html>Click here to show a model of " + bodyName + " <br />" + "containing " + plateCount.get(i) + " plates</html>");
 				resButton.addActionListener(listener);
 				resModelButtons.add(resButton);
 

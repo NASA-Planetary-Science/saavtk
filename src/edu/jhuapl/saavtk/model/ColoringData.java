@@ -88,12 +88,14 @@ public class ColoringData
 	private final FixedMetadata metadata;
 	private vtkFloatArray data;
 	private double[] defaultRange;
+	private boolean loadFailed;
 
 	protected ColoringData(FixedMetadata metadata, vtkFloatArray data)
 	{
 		this.metadata = metadata;
 		this.data = data;
 		this.defaultRange = this.data != null ? defaultRange = this.data.GetRange() : null;
+		this.loadFailed = false;
 	}
 
 	public String getName()
@@ -124,6 +126,11 @@ public class ColoringData
 	public Boolean hasNulls()
 	{
 		return getMetadata().get(HAS_NULLS);
+	}
+
+	public boolean loadFailed()
+	{
+		return loadFailed;
 	}
 
 	public void load() throws IOException
@@ -166,6 +173,8 @@ public class ColoringData
 		if (getFileName() != null)
 		{
 			data = null;
+			defaultRange = null;
+			loadFailed = false;
 		}
 	}
 
@@ -183,7 +192,7 @@ public class ColoringData
 
 	public double[] getDefaultRange()
 	{
-		Preconditions.checkState(data != null);
+		Preconditions.checkState(defaultRange != null);
 		return defaultRange;
 	}
 
@@ -268,6 +277,10 @@ public class ColoringData
 
 	private void loadColoringDataFits(File file) throws IOException
 	{
+		if (loadFailed)
+		{
+			throw new IOException("Coloring data failed to load");
+		}
 		try (Fits fits = new Fits(file))
 		{
 			fits.read();
@@ -282,8 +295,8 @@ public class ColoringData
 				int numberRows = table.getNRows();
 				if (numberRows != numberElements)
 				{
+					loadFailed = true;
 					String message = "Number of rows in FITS file " + file + " is " + numberRows + ", not " + numberElements + " as expected.";
-					JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
 					throw new IOException(message);
 				}
 
@@ -372,6 +385,10 @@ public class ColoringData
 
 	private void loadColoringDataTxt(File file) throws IOException
 	{
+		if (loadFailed)
+		{
+			throw new IOException("Coloring data failed to load");
+		}
 		try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file))))
 		{
 			int numberElements = getMetadata().get(NUMBER_ELEMENTS);
@@ -426,8 +443,8 @@ public class ColoringData
 
 			if (index != numberElements)
 			{
+				loadFailed = true;
 				String message = "Number of lines in text file " + file + " is " + index + ", not " + numberElements + " as expected.";
-				JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
 				throw new IOException(message);
 			}
 

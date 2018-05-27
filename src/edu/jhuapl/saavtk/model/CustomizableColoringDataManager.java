@@ -68,14 +68,15 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 	}
 
 	@Override
-	public CustomizableColoringDataManager copy()
-	{
-		return new CustomizableColoringDataManager(all.getId(), builtIn.copy(), custom.copy());
-	}
-
 	public ImmutableList<ColoringData> get(int numberElements)
 	{
 		return all.get(numberElements);
+	}
+
+	@Override
+	public CustomizableColoringDataManager copy()
+	{
+		return new CustomizableColoringDataManager(all.getId(), builtIn.copy(), custom.copy());
 	}
 
 	public boolean isBuiltIn(ColoringData data)
