@@ -184,6 +184,7 @@ public class FileMetadata
 	//		return FixedMetadata.of(metadata);
 	//	}
 
+	// Test code below here.
 	public static void main(String[] args)
 	{
 		FileMetadata fileMetadata = FileMetadata.of();
