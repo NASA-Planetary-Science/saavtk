@@ -355,13 +355,13 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			panel.add(colormapController);
 			if (Configuration.isAPLVersion())
 			{
-				ActionListener listener = (e) -> {
+				ItemListener listener = (e) -> {
 					setColoring();
 				};
-				coloringComboBox.addActionListener(listener);
-				customColorRedComboBox.addActionListener(listener);
-				customColorGreenComboBox.addActionListener(listener);
-				customColorBlueComboBox.addActionListener(listener);
+				coloringComboBox.addItemListener(listener);
+				customColorRedComboBox.addItemListener(listener);
+				customColorGreenComboBox.addItemListener(listener);
+				customColorBlueComboBox.addItemListener(listener);
 
 				panel.add(rgbColoringButton, "wrap, gapleft 25");
 				panel.add(customColorRedLabel, "gapleft 75, split 2");
