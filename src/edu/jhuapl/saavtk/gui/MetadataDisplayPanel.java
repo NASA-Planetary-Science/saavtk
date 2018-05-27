@@ -50,6 +50,32 @@ public class MetadataDisplayPanel
 		return new MetadataDisplayPanel(metadata, keys, keyColumnLabel, valueColumnLabels);
 	}
 
+	public static void display(Metadata metadata, String keyColumnLabel, Collection<String> valueColumnLabels)
+	{
+		display(metadata, metadata.getKeys(), keyColumnLabel, valueColumnLabels);
+	}
+
+	public static void display(Metadata metadata, Collection<Key<?>> keys, String keyColumnLabel, Collection<String> valueColumnLabels)
+	{
+		MetadataDisplayPanel displayPanel = new MetadataDisplayPanel(metadata, keys, keyColumnLabel, valueColumnLabels);
+		JFrame jFrame = new JFrame("Test MetatdataDisplayPanel");
+		JPanel jPanel = displayPanel.getPanel();
+
+		Dimension dim = jPanel.getPreferredSize();
+		dim.setSize(dim.getWidth() + 1., dim.getHeight() + 22.);
+		jFrame.setPreferredSize(dim);
+
+		dim = jPanel.getMaximumSize();
+		dim.setSize(dim.getWidth() + 1., dim.getHeight() + 22.);
+		jFrame.setMaximumSize(dim);
+
+		jFrame.add(displayPanel.getPanel());
+
+		jFrame.pack();
+		jFrame.validate();
+		jFrame.setVisible(true);
+	}
+
 	private static final double VERT_SCROLL_BAR_WIDTH = new JScrollBar(JScrollBar.VERTICAL).getPreferredSize().getWidth();
 	private static final double HOR_SCROLL_BAR_HEIGHT = new JScrollBar(JScrollBar.HORIZONTAL).getPreferredSize().getHeight();
 	private final JPanel jPanel;
@@ -296,33 +322,6 @@ public class MetadataDisplayPanel
 		//		list.add(Key.of("Illegal key not bound to metadata"));
 
 		display(metadata, list, "Keyword", ImmutableList.of("Value", "Comment"));
-	}
-
-	public static void display(Metadata metadata, String keyColumnLabel, Collection<String> valueColumnLabels)
-	{
-		display(metadata, metadata.getKeys(), keyColumnLabel, valueColumnLabels);
-	}
-
-	public static void display(Metadata metadata, Collection<Key<?>> keys, String keyColumnLabel, Collection<String> valueColumnLabels)
-	{
-		MetadataDisplayPanel displayPanel = new MetadataDisplayPanel(metadata, keys, keyColumnLabel, valueColumnLabels);
-		JFrame jFrame = new JFrame("Test MetatdataDisplayPanel");
-		JPanel jPanel = displayPanel.getPanel();
-
-		Dimension dim = jPanel.getPreferredSize();
-		dim.setSize(dim.getWidth() + 1., dim.getHeight() + 22.);
-		jFrame.setPreferredSize(dim);
-
-		dim = jPanel.getMaximumSize();
-		dim.setSize(dim.getWidth() + 1., dim.getHeight() + 22.);
-		jFrame.setMaximumSize(dim);
-
-		jFrame.add(displayPanel.getPanel());
-
-		jFrame.pack();
-		jFrame.validate();
-		jFrame.setVisible(true);
-
 	}
 
 	// Just needed for the test main.
