@@ -212,7 +212,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		coloringLabel.setText("Plate Coloring");
 
 		coloringComboBox = new JComboBoxWithItemState<>();
-		coloringComboBox.addItemListener(this);
 
 		noColoringButton = new JRadioButton(NO_COLORING);
 
