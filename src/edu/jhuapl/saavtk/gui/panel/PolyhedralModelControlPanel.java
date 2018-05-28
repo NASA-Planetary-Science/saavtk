@@ -100,6 +100,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	private JScrollPane scrollPane;
 	private JButton additionalStatisticsButton;
 	private final ImmutableMap<String, Integer> resolutionLevels;
+	private CustomPlateDataDialog customPlateDialog;
 
 	public ModelManager getModelManager()
 	{
@@ -697,7 +698,11 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
 	protected CustomPlateDataDialog getPlateDataDialog(ModelManager modelManager)
 	{
-		return new CustomPlateDataDialog(this);
+		if (customPlateDialog == null)
+		{
+			customPlateDialog = new CustomPlateDataDialog(this);
+		}
+		return customPlateDialog;
 	}
 
 	private static JSpinner createOpacitySpinner()
