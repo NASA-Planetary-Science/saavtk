@@ -10,6 +10,9 @@
  */
 package edu.jhuapl.saavtk.gui.dialog;
 
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,8 +21,14 @@ import java.util.Map;
 import java.util.UUID;
 
 import javax.swing.DefaultListModel;
+import javax.swing.JDialog;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
+import javax.swing.JTabbedPane;
 
+import edu.jhuapl.saavtk.gui.MetadataDisplay;
+import edu.jhuapl.saavtk.gui.panel.PolyhedralModelControlPanel;
 import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.CustomizableColoringDataManager;
 import edu.jhuapl.saavtk.model.ModelManager;
@@ -31,13 +40,15 @@ import edu.jhuapl.saavtk.util.SafePaths;
 
 public class CustomPlateDataDialog extends javax.swing.JDialog
 {
+	private final PolyhedralModelControlPanel controlPanel;
 	private final ModelManager modelManager;
 	private final CustomizableColoringDataManager coloringDataManager;
 
 	/** Creates new form CustomImageLoaderPanel */
-	public CustomPlateDataDialog(ModelManager modelManager)
+	public CustomPlateDataDialog(PolyhedralModelControlPanel controlPanel)
 	{
-		this.modelManager = modelManager;
+		this.controlPanel = controlPanel;
+		this.modelManager = controlPanel.getModelManager();
 		this.coloringDataManager = modelManager.getPolyhedralModel().getColoringDataManager();
 
 		initComponents();
@@ -48,6 +59,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		initializeList(model);
 
 		pack();
+		setModal(false);
 	}
 
 	private final void initializeList(DefaultListModel<ColoringData> model)
@@ -201,7 +213,43 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		{
 			e.printStackTrace();
 		}
+		controlPanel.updateColoringOptions();
+	}
 
+	private void showMetadataPopup(MouseEvent event)
+	{
+		if (event.isPopupTrigger())
+		{
+			ColoringData coloringData = cellDataList.getSelectedValue();
+			if (coloringData != null)
+			{
+				File file = FileCache.getFileFromServer(coloringData.getFileName());
+				JPopupMenu popup = new JPopupMenu();
+				JMenuItem menuItem = null;
+				try
+				{
+					JTabbedPane jTabbedPane = MetadataDisplay.summary(file);
+					menuItem = new JMenuItem("Show metadata");
+					menuItem.addActionListener((e) -> {
+						JDialog metadataDialog = new JDialog();
+						metadataDialog.setModal(false);
+						metadataDialog.setTitle(file.getName());
+						metadataDialog.add(jTabbedPane);
+						metadataDialog.pack();
+						metadataDialog.validate();
+						metadataDialog.setVisible(true);
+					});
+				}
+				catch (IOException e)
+				{
+					e.printStackTrace();
+					menuItem = new JMenuItem("No metadata available");
+					menuItem.setEnabled(false);
+				}
+				popup.add(menuItem);
+				popup.show(event.getComponent(), event.getX(), event.getY());
+			}
+		}
 	}
 
 	/**
@@ -233,6 +281,14 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			}
 		});
 		jScrollPane1.setViewportView(cellDataList);
+
+		cellDataList.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				showMetadataPopup(e);
+			}
+		});
 
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 0;
@@ -337,6 +393,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			coloringDataManager.addCustom(coloringData);
 			updateConfigFile();
 		}
+		controlPanel.updateColoringOptions();
 	}//GEN-LAST:event_newButtonActionPerformed
 
 	private void deleteButtonActionPerformed(java.awt.event.ActionEvent evt)
@@ -378,6 +435,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 					updateConfigFile();
 				}
 				cellDataListModel.set(selectedItem, newColoringData);
+				controlPanel.updateColoringOptions();
 			}
 		}
 	}//GEN-LAST:event_editButtonActionPerformed

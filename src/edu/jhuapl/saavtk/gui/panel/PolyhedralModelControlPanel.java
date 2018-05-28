@@ -519,6 +519,12 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		Picker.setPickingEnabled(true);
 	}
 
+	public void updateColoringOptions()
+	{
+		PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
+		updateColoringOptions(smallBodyModel.getModelResolution());
+	}
+
 	protected void updateColoringControls()
 	{
 		boolean selected = standardColoringButton.isSelected();
@@ -691,7 +697,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
 	protected CustomPlateDataDialog getPlateDataDialog(ModelManager modelManager)
 	{
-		return new CustomPlateDataDialog(modelManager);
+		return new CustomPlateDataDialog(this);
 	}
 
 	private static JSpinner createOpacitySpinner()
@@ -728,9 +734,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			CustomPlateDataDialog dialog = getPlateDataDialog(modelManager);
 			dialog.setLocationRelativeTo(JOptionPane.getFrameForComponent(PolyhedralModelControlPanel.this));
 			dialog.setVisible(true);
-
-			PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
-			updateColoringOptions(smallBodyModel.getModelResolution());
 		}
 	}
 
