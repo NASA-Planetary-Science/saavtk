@@ -43,7 +43,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 	private final PolyhedralModelControlPanel controlPanel;
 	private final ModelManager modelManager;
 	private final CustomizableColoringDataManager coloringDataManager;
-	private final Map<File, JPopupMenu> metadataPopups;
+	private final Map<File, MetadataDialog> metadataDialogs;
 
 	/** Creates new form CustomImageLoaderPanel */
 	public CustomPlateDataDialog(PolyhedralModelControlPanel controlPanel)
@@ -51,7 +51,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		this.controlPanel = controlPanel;
 		this.modelManager = controlPanel.getModelManager();
 		this.coloringDataManager = modelManager.getPolyhedralModel().getColoringDataManager();
-		this.metadataPopups = new HashMap<>();
+		this.metadataDialogs = new HashMap<>();
 
 		initComponents();
 
@@ -209,12 +209,9 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			coloringDataManager.removeCustom(cellDataInfo);
 
 			File file = FileCache.getFileFromServer(cellDataInfo.getFileName());
-			JPopupMenu popup = metadataPopups.get(file);
-			if (popup != null)
-			{
-				popup.setVisible(false);
-			}
-			metadataPopups.remove(file);
+			JDialog dialog = metadataDialogs.get(file);
+			dialog.setVisible(false);
+			metadataDialogs.remove(file);
 			Files.delete(file.toPath());
 		}
 		catch (IOException e)
@@ -222,6 +219,34 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			e.printStackTrace();
 		}
 		controlPanel.updateColoringOptions();
+	}
+
+	@SuppressWarnings("serial")
+	private final class MetadataDialog extends JDialog
+	{
+		private final boolean haveMetadata;
+
+		MetadataDialog(File file)
+		{
+			setModal(false);
+			setTitle(file.getName());
+			JTabbedPane jTabbedPane = null;
+			try
+			{
+				jTabbedPane = MetadataDisplay.summary(file);
+				add(jTabbedPane);
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace();
+			}
+			this.haveMetadata = jTabbedPane != null;
+		}
+
+		public boolean hasMetadata()
+		{
+			return haveMetadata;
+		}
 	}
 
 	private void showMetadataPopup(MouseEvent event)
@@ -232,34 +257,31 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			if (coloringData != null)
 			{
 				File file = FileCache.getFileFromServer(coloringData.getFileName());
-				JPopupMenu popup = metadataPopups.get(file);
-				if (popup == null)
+				MetadataDialog metadataDialog = metadataDialogs.get(file);
+				if (metadataDialog == null)
 				{
-					popup = new JPopupMenu();
-					JMenuItem menuItem = null;
-					try
-					{
-						JTabbedPane jTabbedPane = MetadataDisplay.summary(file);
-						menuItem = new JMenuItem("Show metadata");
-						final JDialog metadataDialog = new JDialog();
-						metadataDialog.setModal(false);
-						metadataDialog.setTitle(file.getName());
-						metadataDialog.add(jTabbedPane);
-						menuItem.addActionListener((e) -> {
-							metadataDialog.pack();
-							metadataDialog.validate();
-							metadataDialog.setVisible(true);
-						});
-					}
-					catch (IOException e)
-					{
-						e.printStackTrace();
-						menuItem = new JMenuItem("No metadata available");
-						menuItem.setEnabled(false);
-					}
-					popup.add(menuItem);
-					metadataPopups.put(file, popup);
+					metadataDialog = new MetadataDialog(file);
+					metadataDialogs.put(file, metadataDialog);
 				}
+
+				JPopupMenu popup = new JPopupMenu();
+				JMenuItem menuItem = null;
+				if (metadataDialog.hasMetadata())
+				{
+					menuItem = new JMenuItem("Show metadata");
+					final MetadataDialog dialog = metadataDialog;
+					menuItem.addActionListener((e) -> {
+						dialog.pack();
+						dialog.validate();
+						dialog.setVisible(true);
+					});
+				}
+				else
+				{
+					menuItem = new JMenuItem("No metadata available");
+					menuItem.setEnabled(false);
+				}
+				popup.add(menuItem);
 				popup.show(event.getComponent(), event.getX(), event.getY());
 			}
 		}
