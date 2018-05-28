@@ -15,7 +15,7 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -43,6 +43,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 	private final PolyhedralModelControlPanel controlPanel;
 	private final ModelManager modelManager;
 	private final CustomizableColoringDataManager coloringDataManager;
+	private final Map<File, JPopupMenu> metadataPopups;
 
 	/** Creates new form CustomImageLoaderPanel */
 	public CustomPlateDataDialog(PolyhedralModelControlPanel controlPanel)
@@ -50,6 +51,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		this.controlPanel = controlPanel;
 		this.modelManager = controlPanel.getModelManager();
 		this.coloringDataManager = modelManager.getPolyhedralModel().getColoringDataManager();
+		this.metadataPopups = new HashMap<>();
 
 		initComponents();
 
@@ -206,8 +208,14 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			model.remove(index);
 			coloringDataManager.removeCustom(cellDataInfo);
 
-			Path fileName = SafePaths.get(getCustomDataFolder(), cellDataInfo.getFileName());
-			Files.delete(fileName);
+			File file = FileCache.getFileFromServer(cellDataInfo.getFileName());
+			JPopupMenu popup = metadataPopups.get(file);
+			if (popup != null)
+			{
+				popup.setVisible(false);
+			}
+			metadataPopups.remove(file);
+			Files.delete(file.toPath());
 		}
 		catch (IOException e)
 		{
@@ -224,29 +232,34 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			if (coloringData != null)
 			{
 				File file = FileCache.getFileFromServer(coloringData.getFileName());
-				JPopupMenu popup = new JPopupMenu();
-				JMenuItem menuItem = null;
-				try
+				JPopupMenu popup = metadataPopups.get(file);
+				if (popup == null)
 				{
-					JTabbedPane jTabbedPane = MetadataDisplay.summary(file);
-					menuItem = new JMenuItem("Show metadata");
-					menuItem.addActionListener((e) -> {
-						JDialog metadataDialog = new JDialog();
+					popup = new JPopupMenu();
+					JMenuItem menuItem = null;
+					try
+					{
+						JTabbedPane jTabbedPane = MetadataDisplay.summary(file);
+						menuItem = new JMenuItem("Show metadata");
+						final JDialog metadataDialog = new JDialog();
 						metadataDialog.setModal(false);
 						metadataDialog.setTitle(file.getName());
 						metadataDialog.add(jTabbedPane);
-						metadataDialog.pack();
-						metadataDialog.validate();
-						metadataDialog.setVisible(true);
-					});
+						menuItem.addActionListener((e) -> {
+							metadataDialog.pack();
+							metadataDialog.validate();
+							metadataDialog.setVisible(true);
+						});
+					}
+					catch (IOException e)
+					{
+						e.printStackTrace();
+						menuItem = new JMenuItem("No metadata available");
+						menuItem.setEnabled(false);
+					}
+					popup.add(menuItem);
+					metadataPopups.put(file, popup);
 				}
-				catch (IOException e)
-				{
-					e.printStackTrace();
-					menuItem = new JMenuItem("No metadata available");
-					menuItem.setEnabled(false);
-				}
-				popup.add(menuItem);
 				popup.show(event.getComponent(), event.getX(), event.getY());
 			}
 		}
