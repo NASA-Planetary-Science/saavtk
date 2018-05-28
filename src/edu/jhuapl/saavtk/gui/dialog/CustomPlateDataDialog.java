@@ -211,7 +211,10 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 			File file = FileCache.getFileFromServer(cellDataInfo.getFileName());
 			JDialog dialog = metadataDialogs.get(file);
-			dialog.setVisible(false);
+			if (dialog != null)
+			{
+				dialog.setVisible(false);
+			}
 			metadataDialogs.remove(file);
 			Files.delete(file.toPath());
 		}
