@@ -228,12 +228,13 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 	@SuppressWarnings("serial")
 	private final class MetadataDialog extends JDialog
 	{
-		private final boolean haveMetadata;
+		private final JPopupMenu jPopupMenu;
 
 		MetadataDialog(File file)
 		{
 			setModal(false);
 			setTitle(file.getName());
+
 			JTabbedPane jTabbedPane = null;
 			try
 			{
@@ -244,25 +245,42 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			{
 				e.printStackTrace();
 			}
-			this.haveMetadata = jTabbedPane != null;
+
+			JPopupMenu popup = new JPopupMenu();
+			JMenuItem menuItem = null;
+			if (jTabbedPane != null)
+			{
+				menuItem = new JMenuItem("Show metadata");
+				final MetadataDialog dialog = this;
+				menuItem.addActionListener((e) -> {
+					dialog.pack();
+					dialog.validate();
+					dialog.setVisible(true);
+				});
+			}
+			else
+			{
+				menuItem = new JMenuItem("No metadata available");
+				menuItem.setEnabled(false);
+			}
+			popup.add(menuItem);
+			this.jPopupMenu = popup;
 		}
 
-		public boolean hasMetadata()
+		public void showPopupMenu(MouseEvent event)
 		{
-			return haveMetadata;
+			jPopupMenu.show(event.getComponent(), event.getX(), event.getY());
 		}
 	}
 
 	private void showMetadataPopup(MouseEvent event)
 	{
-		// First make a right click do what a left click does as well.
 		if (SwingUtilities.isRightMouseButton(event))
 		{
+			// First make a right click do what a left click does as well.
 			int row = cellDataList.locationToIndex(event.getPoint());
 			cellDataList.setSelectedIndex(row);
-		}
-		if (event.isPopupTrigger())
-		{
+
 			ColoringData coloringData = cellDataList.getSelectedValue();
 			if (coloringData != null)
 			{
@@ -273,26 +291,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 					metadataDialog = new MetadataDialog(file);
 					metadataDialogs.put(file, metadataDialog);
 				}
-
-				JPopupMenu popup = new JPopupMenu();
-				JMenuItem menuItem = null;
-				if (metadataDialog.hasMetadata())
-				{
-					menuItem = new JMenuItem("Show metadata");
-					final MetadataDialog dialog = metadataDialog;
-					menuItem.addActionListener((e) -> {
-						dialog.pack();
-						dialog.validate();
-						dialog.setVisible(true);
-					});
-				}
-				else
-				{
-					menuItem = new JMenuItem("No metadata available");
-					menuItem.setEnabled(false);
-				}
-				popup.add(menuItem);
-				popup.show(event.getComponent(), event.getX(), event.getY());
+				metadataDialog.showPopupMenu(event);
 			}
 		}
 	}
@@ -330,6 +329,12 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		cellDataList.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e)
+			{
+				showMetadataPopup(e);
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e)
 			{
 				showMetadataPopup(e);
 			}
