@@ -43,40 +43,40 @@ public class ColoringData
 	static final Key<String> NAME = Key.of("Coloring name"); // Slope or Gravitational Vector
 
 	static final Key<String> FILE_NAME = Key.of("File name");
-	static final Key<List<String>> ELEMENT_NAMES = Key.of("Element names"); // [ "Slope" ] or [ "G_x", "G_y", "G_z" ]
+	static final Key<List<String>> FIELD_NAMES = Key.of("Field names"); // [ "Slope" ] or [ "G_x", "G_y", "G_z" ]
 
 	static final Key<String> UNITS = Key.of("Coloring units"); // deg or m/s^2
 	static final Key<Integer> NUMBER_ELEMENTS = Key.of("Number of elements"); // 49xxx
 	static final Key<Boolean> HAS_NULLS = Key.of("Coloring has nulls");
 
-	public static ColoringData of(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
+	public static ColoringData of(String name, String fileName, Iterable<String> fieldNames, String units, int numberElements, boolean hasNulls)
 	{
-		return of(name, fileName, elementNames, units, numberElements, hasNulls, null);
+		return of(name, fileName, fieldNames, units, numberElements, hasNulls, null);
 	}
 
-	public static ColoringData of(String name, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
+	public static ColoringData of(String name, Iterable<String> fieldNames, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
 	{
-		return of(name, null, elementNames, units, numberElements, hasNulls, data);
+		return of(name, null, fieldNames, units, numberElements, hasNulls, data);
 	}
 
-	public static ColoringData of(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
+	public static ColoringData of(String name, String fileName, Iterable<String> fieldNames, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
 	{
-		FixedMetadata metadata = createMetadata(name, fileName, elementNames, units, numberElements, hasNulls);
+		FixedMetadata metadata = createMetadata(name, fileName, fieldNames, units, numberElements, hasNulls);
 		return new ColoringData(metadata, data);
 	}
 
-	private static FixedMetadata createMetadata(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
+	private static FixedMetadata createMetadata(String name, String fileName, Iterable<String> fieldNames, String units, int numberElements, boolean hasNulls)
 	{
 		Preconditions.checkNotNull(name);
 		//		Preconditions.checkNotNull(fileName); // This one may be null.
-		Preconditions.checkNotNull(elementNames);
+		Preconditions.checkNotNull(fieldNames);
 		Preconditions.checkNotNull(units);
 
 		SettableMetadata metadata = SettableMetadata.of(COLORING_DATA_VERSION);
 		metadata.put(ColoringData.NAME, name);
 
 		metadata.put(ColoringData.FILE_NAME, fileName);
-		metadata.put(ColoringData.ELEMENT_NAMES, ImmutableList.copyOf(elementNames));
+		metadata.put(ColoringData.FIELD_NAMES, ImmutableList.copyOf(fieldNames));
 
 		metadata.put(ColoringData.UNITS, units);
 		metadata.put(ColoringData.NUMBER_ELEMENTS, numberElements);
@@ -118,9 +118,9 @@ public class ColoringData
 		return getMetadata().get(FILE_NAME);
 	}
 
-	public List<String> getElementNames()
+	public List<String> getFieldNames()
 	{
-		return ImmutableList.copyOf(getMetadata().get(ELEMENT_NAMES));
+		return ImmutableList.copyOf(getMetadata().get(FIELD_NAMES));
 	}
 
 	public Boolean hasNulls()
@@ -300,7 +300,7 @@ public class ColoringData
 					throw new IOException(message);
 				}
 
-				//				ImmutableList<String> columnNames = findMatchingColumnNameCaseInsensitive(table, metadata.get(ELEMENT_NAMES));
+				//				ImmutableList<String> columnNames = findMatchingColumnNameCaseInsensitive(table, metadata.get(FIELD_NAMES));
 
 				vtkFloatArray data = new vtkFloatArray();
 
