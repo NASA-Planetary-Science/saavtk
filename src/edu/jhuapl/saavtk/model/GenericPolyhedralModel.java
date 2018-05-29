@@ -2463,27 +2463,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	}
 
 	/**
-	 * Return the index of the elevation coloring. Return -1 if no elevation is
-	 * available.
-	 *
-	 * @return
-	 */
-	public int getElevationDataColoringIndex()
-	{
-		int numberOfColoringTypes = getNumberOfColors();
-		for (int i = 0; i < numberOfColoringTypes; ++i)
-		{
-			String name = getColoringName(i);
-			if (GenericPolyhedralModel.ElevStr.toLowerCase().equals(name.toLowerCase()))
-			{
-				return i;
-			}
-		}
-
-		return -1;
-	}
-
-	/**
 	 * Subclass should override this if it needs it. Currently only shape models
 	 * with lidar data need this. Return density of shape model in g/cm^3.
 	 * 
@@ -2733,10 +2712,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		String nl = System.getProperty("line.separator");
 
 		out.write("Plate Id\tLatitude\tLongitude\t");
-		int numColoringData = getNumberOfColors();
+		ImmutableList<ColoringData> coloringData = getAllColoringDataForThisResolution();
+		int numColoringData = coloringData.size();
 		for (int j = 0; j < numColoringData; ++j)
 		{
-			out.write(getColoringName(j));
+			out.write(coloringData.get(j).getName());
 			if (j < numColoringData - 1)
 				out.write("\t");
 		}
