@@ -14,9 +14,7 @@ import java.util.List;
 import java.util.TreeSet;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Table;
 
 import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.colormap.Colormaps;
@@ -2616,69 +2614,74 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	{
 		loadAllColoringData();
 
-		FileWriter fstream = new FileWriter(file);
-		BufferedWriter out = new BufferedWriter(fstream);
-
-		final String lineSeparator = System.getProperty("line.separator");
-
-		out.write("Area (km^2)");
-		out.write(",Center X (km)");
-		out.write(",Center Y (km)");
-		out.write(",Center Z (km)");
-		out.write(",Center Latitude (deg)");
-		out.write(",Center Longitude (deg)");
-		out.write(",Center Radius (km)");
-		int numColors = getNumberOfColors();
-		for (int i = 0; i < numColors; ++i)
+		try (FileWriter fstream = new FileWriter(file))
 		{
-			out.write("," + getColoringName(i));
-			String units = getColoringUnits(i);
-			if (units != null && !units.isEmpty())
-				out.write(" (" + units + ")");
+			try (BufferedWriter out = new BufferedWriter(fstream))
+			{
+				final String lineSeparator = System.getProperty("line.separator");
+
+				out.write("Area (km^2)");
+				out.write(",Center X (km)");
+				out.write(",Center Y (km)");
+				out.write(",Center Z (km)");
+				out.write(",Center Latitude (deg)");
+				out.write(",Center Longitude (deg)");
+				out.write(",Center Radius (km)");
+				ImmutableList<ColoringData> allColoringData = getAllColoringDataForThisResolution();
+				for (ColoringData data : allColoringData)
+				{
+					out.write("," + data.getName());
+					String units = data.getUnits();
+					if (units != null && !units.isEmpty())
+						out.write(" (" + units + ")");
+				}
+				out.write(lineSeparator);
+
+				vtkTriangle triangle = new vtkTriangle();
+
+				vtkPoints points = smallBodyPolyData.GetPoints();
+				int numberCells = smallBodyPolyData.GetNumberOfCells();
+				smallBodyPolyData.BuildCells();
+				vtkIdList idList = new vtkIdList();
+				double[] pt0 = new double[3];
+				double[] pt1 = new double[3];
+				double[] pt2 = new double[3];
+				double[] center = new double[3];
+				for (int i = 0; i < numberCells; ++i)
+				{
+					smallBodyPolyData.GetCellPoints(i, idList);
+					int id0 = idList.GetId(0);
+					int id1 = idList.GetId(1);
+					int id2 = idList.GetId(2);
+					points.GetPoint(id0, pt0);
+					points.GetPoint(id1, pt1);
+					points.GetPoint(id2, pt2);
+
+					double area = triangle.TriangleArea(pt0, pt1, pt2);
+					triangle.TriangleCenter(pt0, pt1, pt2, center);
+					LatLon llr = MathUtil.reclat(center);
+
+					out.write(area + ",");
+					out.write(center[0] + ",");
+					out.write(center[1] + ",");
+					out.write(center[2] + ",");
+					out.write((llr.lat * 180.0 / Math.PI) + ",");
+					out.write((llr.lon * 180.0 / Math.PI) + ",");
+					out.write(String.valueOf(llr.rad));
+
+					for (ColoringData data : allColoringData)
+					{
+						out.write("," + data.getData().GetTuple1(i));
+					}
+
+					out.write(lineSeparator);
+				}
+
+				triangle.Delete();
+				idList.Delete();
+
+			}
 		}
-		out.write(lineSeparator);
-
-		vtkTriangle triangle = new vtkTriangle();
-
-		vtkPoints points = smallBodyPolyData.GetPoints();
-		int numberCells = smallBodyPolyData.GetNumberOfCells();
-		smallBodyPolyData.BuildCells();
-		vtkIdList idList = new vtkIdList();
-		double[] pt0 = new double[3];
-		double[] pt1 = new double[3];
-		double[] pt2 = new double[3];
-		double[] center = new double[3];
-		for (int i = 0; i < numberCells; ++i)
-		{
-			smallBodyPolyData.GetCellPoints(i, idList);
-			int id0 = idList.GetId(0);
-			int id1 = idList.GetId(1);
-			int id2 = idList.GetId(2);
-			points.GetPoint(id0, pt0);
-			points.GetPoint(id1, pt1);
-			points.GetPoint(id2, pt2);
-
-			double area = triangle.TriangleArea(pt0, pt1, pt2);
-			triangle.TriangleCenter(pt0, pt1, pt2, center);
-			LatLon llr = MathUtil.reclat(center);
-
-			out.write(area + ",");
-			out.write(center[0] + ",");
-			out.write(center[1] + ",");
-			out.write(center[2] + ",");
-			out.write((llr.lat * 180.0 / Math.PI) + ",");
-			out.write((llr.lon * 180.0 / Math.PI) + ",");
-			out.write(String.valueOf(llr.rad));
-
-			for (int j = 0; j < numColors; ++j)
-				out.write("," + getColoringData(j).getData().GetTuple1(i));
-
-			out.write(lineSeparator);
-		}
-
-		triangle.Delete();
-		idList.Delete();
-		out.close();
 	}
 
 	/**
