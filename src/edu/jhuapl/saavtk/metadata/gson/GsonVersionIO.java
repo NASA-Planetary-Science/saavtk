@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.state.gson;
+package edu.jhuapl.saavtk.metadata.gson;
 
 import java.lang.reflect.Type;
 
@@ -10,7 +10,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
-import edu.jhuapl.saavtk.state.Version;
+import edu.jhuapl.saavtk.metadata.Version;
 
 final class GsonVersionIO implements JsonSerializer<Version>, JsonDeserializer<Version>
 {

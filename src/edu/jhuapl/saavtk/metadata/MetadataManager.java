@@ -1,21 +1,21 @@
-package edu.jhuapl.saavtk.state;
+package edu.jhuapl.saavtk.metadata;
 
 /**
  * Abstraction representing a manager of metadata, capable of storing/retrieving
  * a collection of elements to/from a Metadata object. An implementation
- * typically stores/retrieves all the information associated with the state of a
- * particular Java object or class, or some other resource (e.g., a specific
+ * typically stores/retrieves all relevant metadata associated with the state of
+ * a particular Java object or class, or some other resource (e.g., a specific
  * type of file or image, URI, URL, database query).
  */
-public interface StateManager
+public interface MetadataManager
 {
 	/**
-	 * Store a (complete and self-consistent) set of metadata in the provided
-	 * destination object.
+	 * Return a (complete and self-consistent) set of metadata, typically derived
+	 * from the state of some other type of object.
 	 * 
 	 * @return destination object in which the metadata are stored
 	 */
-	State store();
+	Metadata store();
 
 	/**
 	 * Retrieve a (complete and self-consistent) set of metadata in the provided
@@ -24,6 +24,6 @@ public interface StateManager
 	 * 
 	 * @param source the source of metadata
 	 */
-	void retrieve(State source);
+	void retrieve(Metadata source);
 
 }

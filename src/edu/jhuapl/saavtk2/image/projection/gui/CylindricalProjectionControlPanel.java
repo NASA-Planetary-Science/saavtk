@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridLayout;
-import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
@@ -14,7 +13,6 @@ import javax.swing.JSlider;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-
 
 import edu.jhuapl.saavtk.gui.render.RenderPanel;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
@@ -30,7 +28,8 @@ import vtk.vtkPolyDataMapper;
 import vtk.vtkPolyDataNormals;
 import vtk.vtkSphereSource;
 
-public class CylindricalProjectionControlPanel extends JPanel implements ChangeListener {
+public class CylindricalProjectionControlPanel extends JPanel implements ChangeListener
+{
 
 	RenderToolbar toolbar = new RenderToolbar();
 	RenderPanel renderObject = new RenderPanel(toolbar);
@@ -55,12 +54,13 @@ public class CylindricalProjectionControlPanel extends JPanel implements ChangeL
 
 	GenericPolyhedralModel model;
 	CylindricalProjection projection;
-	
-	vtkPolyData graticulePolyData=new vtkPolyData();
-	vtkPolyDataMapper graticuleMapper=new vtkPolyDataMapper();
-	vtkActor graticuleActor=new vtkActor();
-	
-	public CylindricalProjectionControlPanel(GenericPolyhedralModel model) {
+
+	vtkPolyData graticulePolyData = new vtkPolyData();
+	vtkPolyDataMapper graticuleMapper = new vtkPolyDataMapper();
+	vtkActor graticuleActor = new vtkActor();
+
+	public CylindricalProjectionControlPanel(GenericPolyhedralModel model)
+	{
 		this.model = model;
 
 		bodyPolyData = model.getSmallBodyPolyData();
@@ -123,34 +123,35 @@ public class CylindricalProjectionControlPanel extends JPanel implements ChangeL
 		deltaLatSlider.addChangeListener(this);
 		deltaLonSlider.addChangeListener(this);
 
-		/*vtkPolyData graticules = CylindricalProjection.generateGraticules(36, 10, bodyPolyData);
-		vtkPolyDataMapper mapper = new vtkPolyDataMapper();
-		mapper.SetInputData(graticules);
-		mapper.Update();
-		vtkActor actor = new vtkActor();
-		actor.SetMapper(mapper);
-		actor.GetProperty().SetRepresentationToWireframe();
-		actor.GetProperty().SetColor(0.25, 0, 0.5);
-		actor.GetProperty().SetLineWidth(3);
-		renderObject.getRenderer().AddActor(actor);*/
+		/*
+		 * vtkPolyData graticules = CylindricalProjection.generateGraticules(36, 10,
+		 * bodyPolyData); vtkPolyDataMapper mapper = new vtkPolyDataMapper();
+		 * mapper.SetInputData(graticules); mapper.Update(); vtkActor actor = new
+		 * vtkActor(); actor.SetMapper(mapper);
+		 * actor.GetProperty().SetRepresentationToWireframe();
+		 * actor.GetProperty().SetColor(0.25, 0, 0.5);
+		 * actor.GetProperty().SetLineWidth(3);
+		 * renderObject.getRenderer().AddActor(actor);
+		 */
 		renderObject.getRenderer().AddActor(graticuleActor);
 
-/*		List<vtkActor2D> longitudeLabels = CylindricalProjection.generateLongitudeLabels(36, 0, model);
-		for (int i = 0; i < longitudeLabels.size(); i++)
-			renderObject.getRenderer().AddActor(longitudeLabels.get(i));
+		/*
+		 * List<vtkActor2D> longitudeLabels =
+		 * CylindricalProjection.generateLongitudeLabels(36, 0, model); for (int i = 0;
+		 * i < longitudeLabels.size(); i++)
+		 * renderObject.getRenderer().AddActor(longitudeLabels.get(i));
+		 * 
+		 * int nlatBands = 3; for (int j = 0; j < 3; j++) { double lonDeg = 360. /
+		 * nlatBands *j; List<vtkActor2D> latitudeLabels =
+		 * CylindricalProjection.generateLatitudeLabels(10, lonDeg, model, j==0); for
+		 * (int i = 0; i < latitudeLabels.size(); i++)
+		 * renderObject.getRenderer().AddActor(latitudeLabels.get(i)); }
+		 */
 
-		int nlatBands = 3;
-		for (int j = 0; j < 3; j++) {
-			double lonDeg = 360. / nlatBands *j;
-			List<vtkActor2D> latitudeLabels = CylindricalProjection.generateLatitudeLabels(10, lonDeg, model, j==0);
-			for (int i = 0; i < latitudeLabels.size(); i++)
-				renderObject.getRenderer().AddActor(latitudeLabels.get(i));
-		}*/
-		
-		
 	}
 
-	protected void regenerateProjectionGeometry() {
+	protected void regenerateProjectionGeometry()
+	{
 		double minLat = Math.max(-90, midLatSlider.getValue() - deltaLatSlider.getValue() / 2.);
 		double maxLat = Math.min(90, midLatSlider.getValue() + deltaLatSlider.getValue() / 2.);
 		double minLon = midLonSlider.getValue() - deltaLonSlider.getValue() / 2.;
@@ -174,45 +175,48 @@ public class CylindricalProjectionControlPanel extends JPanel implements ChangeL
 		footprintMapper.Update();
 		footprintActor.SetMapper(footprintMapper);
 		footprintActor.GetProperty().SetColor(1, 1, 0);
-		
-		vtkAppendPolyData appendFilter=new vtkAppendPolyData();
+
+		vtkAppendPolyData appendFilter = new vtkAppendPolyData();
 		appendFilter.AddInputData(CylindricalProjection.generateLatitudeLine(maxLat, bodyPolyData));
 		appendFilter.AddInputData(CylindricalProjection.generateLatitudeLine(minLat, bodyPolyData));
 		appendFilter.AddInputData(CylindricalProjection.generateLongitudeLine(maxLon, bodyPolyData));
 		appendFilter.AddInputData(CylindricalProjection.generateLongitudeLine(minLon, bodyPolyData));
 		appendFilter.Update();
-		
-		graticulePolyData=appendFilter.GetOutput();
+
+		graticulePolyData = appendFilter.GetOutput();
 		graticuleMapper.SetInputData(graticulePolyData);
 		graticuleMapper.Update();
 		graticuleActor.SetMapper(graticuleMapper);
 		graticuleActor.GetProperty().SetRepresentationToWireframe();
 		graticuleActor.GetProperty().SetLineWidth(3);
-		graticuleActor.GetProperty().SetColor(0.25,0,0.75);
+		graticuleActor.GetProperty().SetColor(0.25, 0, 0.75);
 	}
 
 	@Override
-	public void stateChanged(ChangeEvent e) {
-		if (e.getSource() == midLatSlider || e.getSource() == midLonSlider || e.getSource() == deltaLatSlider
-				|| e.getSource() == deltaLonSlider) {
+	public void stateChanged(ChangeEvent e)
+	{
+		if (e.getSource() == midLatSlider || e.getSource() == midLonSlider || e.getSource() == deltaLatSlider || e.getSource() == deltaLonSlider)
+		{
 			regenerateProjectionGeometry();
 			renderObject.Render();
 		}
 
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args)
+	{
 		vtkNativeLibrary.LoadAllNativeLibraries();
 		SwingUtilities.invokeLater(new Runnable() {
 
 			@Override
-			public void run() {
+			public void run()
+			{
 
 				vtkSphereSource source = new vtkSphereSource();
 				source.SetPhiResolution(18);
 				source.SetThetaResolution(36);
 				source.Update();
-				GenericPolyhedralModel model = new GenericPolyhedralModel(source.GetOutput());
+				GenericPolyhedralModel model = new GenericPolyhedralModel("Model-Identifier", source.GetOutput());
 				CylindricalProjectionControlPanel controlPanel = new CylindricalProjectionControlPanel(model);
 
 				JFrame frame = new JFrame();

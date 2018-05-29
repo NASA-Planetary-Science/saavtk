@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.state.gson;
+package edu.jhuapl.saavtk.metadata.gson;
 
 import java.io.FileReader;
 import java.io.FileWriter;

@@ -17,8 +17,8 @@ import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CameraDialog;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
-import edu.jhuapl.saavtk.state.Serializers;
-import edu.jhuapl.saavtk.state.StateSerializer;
+import edu.jhuapl.saavtk.metadata.Serializer;
+import edu.jhuapl.saavtk.metadata.Serializers;
 import edu.jhuapl.saavtk.util.Configuration;
 
 public class FileMenu extends JMenu
@@ -396,7 +396,7 @@ public class FileMenu extends JMenu
 
 	private void saveTo(File file)
 	{
-		StateSerializer serializer = Serializers.getDefault();
+		Serializer serializer = Serializers.getDefault();
 		try
 		{
 			serializer.save(file);
@@ -410,7 +410,7 @@ public class FileMenu extends JMenu
 
 	private void loadFrom(File file)
 	{
-		StateSerializer serializer = Serializers.getDefault();
+		Serializer serializer = Serializers.getDefault();
 		try
 		{
 			serializer.load(file);

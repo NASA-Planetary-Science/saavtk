@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.state.gson;
+package edu.jhuapl.saavtk.metadata.gson;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
-import edu.jhuapl.saavtk.state.StateKey;
+import edu.jhuapl.saavtk.metadata.Key;
 
 final class GsonElement
 {
@@ -37,14 +37,12 @@ final class GsonElement
 
 	}
 
-	private static final String STORED_AS_VALUE_KEY = "Value";
-
 	public static ElementIO elementIO()
 	{
 		return new ElementIO();
 	}
 
-	public static GsonElement of(StateKey<?> key, Object object)
+	public static GsonElement of(Key<?> key, Object object)
 	{
 		return new GsonElement(key, object, ValueTypeInfo.forObject(object));
 	}
@@ -68,7 +66,7 @@ final class GsonElement
 		JsonArray array = entry.getValue().getAsJsonArray();
 		Preconditions.checkState(array.size() == 2);
 
-		StateKey<?> key = context.deserialize(array.get(0), ValueTypeInfo.STATE_KEY.getType());
+		Key<?> key = context.deserialize(array.get(0), ValueTypeInfo.METADATA_KEY.getType());
 		JsonObject valueObject = array.get(1).getAsJsonObject();
 
 		entryList = new ArrayList<>(valueObject.entrySet());
@@ -82,11 +80,11 @@ final class GsonElement
 		return new GsonElement(key, object, objectInfo);
 	}
 
-	private final StateKey<?> key;
+	private final Key<?> key;
 	private final Object object;
 	private final ValueTypeInfo objectInfo;
 
-	private GsonElement(StateKey<?> key, Object object, ValueTypeInfo objectInfo)
+	private GsonElement(Key<?> key, Object object, ValueTypeInfo objectInfo)
 	{
 		Preconditions.checkNotNull(key);
 		Preconditions.checkNotNull(objectInfo);
@@ -98,7 +96,7 @@ final class GsonElement
 	public JsonElement toElement(JsonSerializationContext context)
 	{
 		JsonArray keyValuePair = new JsonArray();
-		keyValuePair.add(context.serialize(key, ValueTypeInfo.STATE_KEY.getType()));
+		keyValuePair.add(context.serialize(key, ValueTypeInfo.METADATA_KEY.getType()));
 
 		JsonObject valueObject = new JsonObject();
 		valueObject.add(objectInfo.getTypeId(), context.serialize(object, objectInfo.getType()));
@@ -109,10 +107,10 @@ final class GsonElement
 		return result;
 	}
 
-	public <T> StateKey<T> getKey()
+	public <T> Key<T> getKey()
 	{
 		@SuppressWarnings("unchecked")
-		StateKey<T> result = (StateKey<T>) key;
+		Key<T> result = (Key<T>) key;
 		return result;
 	}
 
