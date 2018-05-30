@@ -360,6 +360,10 @@ public abstract class ViewManager extends JPanel
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(null, "Access to this model is restricted. Please email sbmt@jhuapl.edu to request access.", "Access not authorized", JOptionPane.ERROR_MESSAGE);
 		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
 
 		if (currentView != null)
 			currentView.renderer.viewActivating();
