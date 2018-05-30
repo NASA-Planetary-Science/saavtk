@@ -60,20 +60,21 @@ public class FavoritesMenu extends JMenu
 		defaultItem.setEnabled(false);
 		add(defaultItem);
 
-		String defaultToLoad = manager.getDefaultBodyToLoad();
-		View defaultView = manager.getBuiltInView(0);
 		try
 		{
-			defaultView = manager.getView(defaultToLoad);
+			View defaultToLoad = manager.getView(manager.getDefaultBodyToLoad());
+			JMenuItem menuItem = new FavoritesMenuItem(defaultToLoad);
+			if (!defaultToLoad.getConfig().isAccessible())
+			{
+				menuItem.setEnabled(false);
+			}
+			add(menuItem);
+
 		}
-		catch (@SuppressWarnings("unused") Exception e)
+		catch (Exception e)
 		{
-			System.out.println("\nDefault view " + defaultToLoad + " is not available.");
-			System.out.println("Starting with " + defaultView.getPathRepresentation());
-			manager.resetDefaultBodyToLoad();
+			e.printStackTrace();
 		}
-		JMenuItem menuItem = new FavoritesMenuItem(defaultView);
-		add(menuItem);
 
 		//
 		add(new JSeparator());
