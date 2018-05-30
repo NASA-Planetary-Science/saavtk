@@ -266,7 +266,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 			String name = (String) evt.getNewValue();
 			View view = getRootPanel().getCustomView("Custom/" + name);
 
-			ModelManager modelManager = view.getModelManager();
+			ModelManager modelManager = view != null ? view.getModelManager() : null;
 
 			// If model manager is null, it means the model has not been displayed yet,
 			// so no need to reset anything.
