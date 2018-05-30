@@ -21,6 +21,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 
+import com.google.common.base.Preconditions;
+
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
 import edu.jhuapl.saavtk.gui.menu.FileMenu;
@@ -63,6 +65,7 @@ public abstract class ViewManager extends JPanel
 	{
 		super(new CardLayout());
 		setBorder(BorderFactory.createEmptyBorder());
+		this.currentView = null;
 		this.statusBar = statusBar;
 		this.frame = frame;
 		this.tempCustomShapeModelPath = tempCustomShapeModelPath;
@@ -331,6 +334,8 @@ public abstract class ViewManager extends JPanel
 
 	public void setCurrentView(View view)
 	{
+		Preconditions.checkNotNull(view);
+
 		initializeStateManager(); // Call this here for insurance, even if it is called elsewhere.
 		if (view == currentView)
 		{
@@ -348,17 +353,18 @@ public abstract class ViewManager extends JPanel
 		try
 		{
 			view.initialize();
-
-			updateRecents();
 			currentView = view;
-			currentView.renderer.viewActivating();
-			updateRecents();
 		}
 		catch (UnauthorizedAccessException e)
 		{
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(null, "Access to this model is restricted. Please email sbmt@jhuapl.edu to request access.", "Access not authorized", JOptionPane.ERROR_MESSAGE);
 		}
+
+		if (currentView != null)
+			currentView.renderer.viewActivating();
+
+		updateRecents();
 		frame.setTitle(view.getPathRepresentation());
 	}
 
