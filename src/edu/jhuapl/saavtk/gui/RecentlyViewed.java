@@ -46,7 +46,9 @@ public class RecentlyViewed extends JMenu
 						if (view.getUniqueName().equals(line) && !this.recentViews.contains(view))
 						{
 							recentViews.add(view);
-							add(createMenuItem(view));
+							JMenuItem menuItem = createMenuItem(view);
+							menuItem.setEnabled(view.isEnabled());
+							add(menuItem);
 							break;
 						}
 					}
@@ -91,7 +93,9 @@ public class RecentlyViewed extends JMenu
 
 		// Update both the collection and the view menu.
 		recentViews.add(0, view);
-		add(createMenuItem(view), 0);
+		JMenuItem menuItem = createMenuItem(view);
+		menuItem.setEnabled(view.isEnabled());
+		add(menuItem, 0);
 		clearAllMenuItem.setEnabled(true);
 
 		// Enforce the limit on number of recents.
