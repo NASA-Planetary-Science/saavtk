@@ -61,7 +61,7 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
 			{
 				File file = FileCache.getFileFromServer(filename);
 
-				if (file != null && needToUnzip)
+				if (file.exists() && needToUnzip)
 					FileUtil.unzipFile(file);
 			}
 		};

@@ -14,9 +14,7 @@ import java.util.List;
 import java.util.TreeSet;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Table;
 
 import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.colormap.Colormaps;
@@ -205,6 +203,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		else
 		{
 			defaultModelFile = new File(modelFiles[0]);
+		}
+
+		if (!defaultModelFile.exists())
+		{
+			throw new RuntimeException("Shape model file not found: " + defaultModelFile.getPath());
 		}
 
 		initialize(defaultModelFile);
@@ -685,13 +688,13 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	private boolean defaultModelInitialized;
 
-	public boolean isDefaultModelInitialized()
-	{
-		return defaultModelInitialized;
-	}
-
 	public void initializeDefaultModel()
 	{
+		if (defaultModelInitialized)
+		{
+			return;
+		}
+
 		// Load in custom plate data
 		try
 		{
@@ -1457,13 +1460,12 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		gravityVector = null;
 		boundingBox = null;
 
-		File smallBodyFile = defaultModelFile;
-		//        if (resolutionLevel > 0)
-		{
-			smallBodyFile = FileCache.getFileFromServer(modelFiles[resolutionLevel]);
-			//defaultModelFile = smallBodyFile;
-		}
+		File smallBodyFile = FileCache.getFileFromServer(modelFiles[resolutionLevel]);
 
+		if (!smallBodyFile.exists())
+		{
+			throw new IOException("Unable to load shape model " + smallBodyFile.getName());
+		}
 		this.initializeDefaultModel();
 
 		this.initialize(smallBodyFile);
@@ -1486,6 +1488,16 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public int getNumberResolutionLevels()
 	{
 		return modelFiles.length;
+	}
+
+	@Override
+	public boolean isResolutionLevelAvailable(int resolutionLevel)
+	{
+		if (resolutionLevel >= 0 && resolutionLevel < modelFiles.length)
+		{
+			return FileCache.isFileGettable(modelFiles[resolutionLevel]);
+		}
+		return false;
 	}
 
 	@Override
