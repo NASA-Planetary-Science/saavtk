@@ -46,7 +46,7 @@ public final class FileCache
 		}
 	}
 
-	public static abstract class FileInfo
+	public static class FileInfo
 	{
 		// TODO move this somewhere?
 		public enum YesOrNo
@@ -58,28 +58,32 @@ public final class FileCache
 
 		private final URL url;
 		private final File file;
-		private YesOrNo urlAccessAuthorized;
-		private YesOrNo existsOnServer;
+		private final YesOrNo urlAccessAuthorized;
+		private final YesOrNo existsOnServer;
+		private final long lastModified;
 		private volatile long totalByteCount;
 		private volatile long byteCount;
 
-		protected FileInfo(URL url, File file, YesOrNo urlAccessAuthorized, YesOrNo existsOnServer)
+		protected FileInfo(URL url, File file, YesOrNo urlAccessAuthorized, YesOrNo existsOnServer, long lastModified)
 		{
 			Preconditions.checkNotNull(url);
 			Preconditions.checkNotNull(file);
 			Preconditions.checkNotNull(urlAccessAuthorized);
 			Preconditions.checkNotNull(existsOnServer);
+			Preconditions.checkNotNull(lastModified);
 			this.url = url;
 			this.file = file;
 			this.urlAccessAuthorized = urlAccessAuthorized;
 			this.existsOnServer = existsOnServer;
+			this.lastModified = lastModified;
 			this.totalByteCount = 0;
 			this.byteCount = 0;
 		}
 
-		public abstract URLConnection getConnection() throws IOException;
-
-		public abstract long getLastModifiedTime();
+		public long getLastModifiedTime()
+		{
+			return lastModified;
+		}
 
 		public URL getURL()
 		{
@@ -158,15 +162,6 @@ public final class FileCache
 			builder.append(isURLAccessAuthorized());
 			builder.append(", exists = ");
 			builder.append(isExistsOnServer());
-			try
-			{
-				getConnection();
-				builder.append(", connected");
-			}
-			catch (@SuppressWarnings("unused") Exception e)
-			{
-				builder.append(", not connected");
-			}
 			builder.append(") ->");
 			builder.append(getFile());
 			builder.append(" (exists = ");
@@ -282,28 +277,7 @@ public final class FileCache
 						authorized = YesOrNo.YES;
 						urlExists = YesOrNo.NO;
 					}
-					final long lastModifiedTime = connection.getLastModified();
-					info = new FileInfo(url, file, authorized, urlExists) {
-
-						@Override
-						public URLConnection getConnection() throws IOException
-						{
-							URLConnection connection = url.openConnection();
-
-							// These two properties seem to be still necessary as of 2017-12-19.
-							connection.setRequestProperty("User-Agent", "Mozilla/4.0");
-							connection.setRequestProperty("Accept", "*/*");
-
-							return connection;
-						}
-
-						@Override
-						public long getLastModifiedTime()
-						{
-							return lastModifiedTime;
-						}
-
-					};
+					info = new FileInfo(url, file, authorized, urlExists, connection.getLastModified());
 				}
 
 			}
@@ -317,7 +291,6 @@ public final class FileCache
 				}
 				info = new LocalFileInfo(url, file, authorized, urlExists);
 			}
-			//			System.err.println("info is " + info);
 			INFO_MAP.put(file, info);
 		}
 
@@ -498,13 +471,7 @@ public final class FileCache
 	{
 		protected LocalFileInfo(URL url, File file, YesOrNo urlAccessAuthorized, YesOrNo existsOnServer)
 		{
-			super(url, file, urlAccessAuthorized, existsOnServer);
-		}
-
-		@Override
-		public URLConnection getConnection()
-		{
-			throw new IllegalStateException();
+			super(url, file, urlAccessAuthorized, existsOnServer, file.lastModified());
 		}
 
 		@Override
@@ -522,7 +489,6 @@ public final class FileCache
 
 	private static final class WrappedInputStream implements Closeable
 	{
-		private final URLConnection connection;
 		private final long totalByteCount;
 		private final long lastModifiedTime;
 		private InputStream inputStream;
@@ -530,9 +496,14 @@ public final class FileCache
 
 		private WrappedInputStream(FileInfo fileInfo) throws IOException
 		{
-			final boolean gunzip = fileInfo.getURL().getPath().toLowerCase().endsWith(".gz");
+			URL url = fileInfo.getURL();
+			final boolean gunzip = url.getPath().toLowerCase().endsWith(".gz");
+			URLConnection connection = url.openConnection();
 
-			this.connection = fileInfo.getConnection();
+			// These two properties seem to be still necessary as of 2017-12-19.
+			connection.setRequestProperty("User-Agent", "Mozilla/4.0");
+			connection.setRequestProperty("Accept", "*/*");
+
 			this.totalByteCount = connection.getContentLengthLong();
 			this.lastModifiedTime = connection.getLastModified();
 			this.inputStream = connection.getInputStream();
