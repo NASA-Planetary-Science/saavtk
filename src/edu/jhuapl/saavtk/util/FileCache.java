@@ -203,7 +203,7 @@ public final class FileCache
 
 		if (!Configuration.useFileCache())
 		{
-			throw new UnsupportedOperationException("Running without a cache not supported at present");
+			throw new UnsupportedOperationException("Running without the cache not supported at present");
 		}
 
 		path = cleanPath(path);
@@ -213,7 +213,7 @@ public final class FileCache
 
 		if (offlineMode)
 		{
-			return new LocalFileInfo(url, new File(SafePaths.getString(offlineModeRootFolder, ungzippedPath)), YesOrNo.UNKNOWN, YesOrNo.UNKNOWN);
+			return new FileInfo(url, new File(SafePaths.getString(offlineModeRootFolder, ungzippedPath)), YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0);
 		}
 
 		if (ungzippedPath.equals(path) && dataRoot.toLowerCase().startsWith(FILE_PREFIX))
@@ -225,7 +225,7 @@ public final class FileCache
 			FileInfo info = INFO_MAP.get(file);
 			if (info == null)
 			{
-				info = new LocalFileInfo(url, file, YesOrNo.YES, file.exists() ? YesOrNo.YES : YesOrNo.NO);
+				info = new FileInfo(url, file, YesOrNo.YES, file.exists() ? YesOrNo.YES : YesOrNo.NO, file.lastModified());
 				INFO_MAP.put(file, info);
 			}
 			return info;
@@ -235,6 +235,10 @@ public final class FileCache
 		File file = SafePaths.get(Configuration.getCacheDir(), ungzippedPath).toFile();
 
 		FileInfo info = INFO_MAP.get(file);
+		if (info == null && file.isDirectory())
+		{
+			info = new FileInfo(url, file, YesOrNo.YES, YesOrNo.YES, 0);
+		}
 		if (info == null)
 		{
 			// This code is based on code from stacktrace. The stacktrace code
@@ -246,7 +250,7 @@ public final class FileCache
 			try
 			{
 				final URLConnection connection = url.openConnection();
-				Debug.out().println("FileInfo(): opened connection to " + url);
+				Debug.out().println("Opened connection for info to " + url);
 				if (!Debug.isEnabled() && showDotsForFiles)
 				{
 					System.out.print('.');
@@ -283,13 +287,13 @@ public final class FileCache
 			}
 			catch (Exception e)
 			{
-				e.printStackTrace();
 				String message = e.getMessage();
 				if (message != null && (message.contains("401") || message.contains("403")))
 				{
+					e.printStackTrace();
 					authorized = YesOrNo.NO;
 				}
-				info = new LocalFileInfo(url, file, authorized, urlExists);
+				info = new FileInfo(url, file, authorized, urlExists, 0);
 			}
 			INFO_MAP.put(file, info);
 		}
@@ -467,26 +471,6 @@ public final class FileCache
 		throw new AssertionError();
 	}
 
-	private static class LocalFileInfo extends FileInfo
-	{
-		protected LocalFileInfo(URL url, File file, YesOrNo urlAccessAuthorized, YesOrNo existsOnServer)
-		{
-			super(url, file, urlAccessAuthorized, existsOnServer, file.lastModified());
-		}
-
-		@Override
-		public boolean isNeedToDownload()
-		{
-			return !getFile().exists();
-		}
-
-		@Override
-		public long getLastModifiedTime()
-		{
-			return getFile().lastModified();
-		}
-	}
-
 	private static final class WrappedInputStream implements Closeable
 	{
 		private final long totalByteCount;
@@ -498,7 +482,13 @@ public final class FileCache
 		{
 			URL url = fileInfo.getURL();
 			final boolean gunzip = url.getPath().toLowerCase().endsWith(".gz");
+
 			URLConnection connection = url.openConnection();
+			Debug.out().println("Opened connection for download to " + url);
+			if (!Debug.isEnabled() && showDotsForFiles)
+			{
+				System.out.print('.');
+			}
 
 			// These two properties seem to be still necessary as of 2017-12-19.
 			connection.setRequestProperty("User-Agent", "Mozilla/4.0");
