@@ -45,8 +45,6 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
 		if (!needToDownload && !needToUnzip)
 			return null;
 
-		if (needToDownload)
-			FileCache.resetDownloadProgess();
 		if (needToUnzip)
 		{
 			FileUtil.resetUnzipProgress();
@@ -121,7 +119,7 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
 		if (isCancelled())
 		{
 			if (needToDownload)
-				FileCache.abortDownload();
+				fileInfo.requestAbortDownload();
 			if (needToUnzip)
 				FileUtil.abortUnzip();
 		}

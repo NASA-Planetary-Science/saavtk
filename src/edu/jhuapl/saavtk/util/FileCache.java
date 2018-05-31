@@ -63,6 +63,7 @@ public final class FileCache
 		private final long lastModified;
 		private volatile long totalByteCount;
 		private volatile long byteCount;
+		private volatile boolean abortDownloadRequested;
 
 		protected FileInfo(URL url, File file, YesOrNo urlAccessAuthorized, YesOrNo existsOnServer, long lastModified)
 		{
@@ -153,6 +154,24 @@ public final class FileCache
 			return totalByteCount > 0 ? (double) byteCount / totalByteCount : 0.37;
 		}
 
+		public void requestAbortDownload()
+		{
+			abortDownloadRequested = true;
+		}
+
+		void startDownload()
+		{
+			abortDownloadRequested = false;
+		}
+
+		public void maybeAbort()
+		{
+			if (abortDownloadRequested)
+			{
+				throw new RuntimeException("Download aborted");
+			}
+		}
+
 		@Override
 		public String toString()
 		{
@@ -225,7 +244,8 @@ public final class FileCache
 			FileInfo info = INFO_MAP.get(file);
 			if (info == null)
 			{
-				info = new FileInfo(url, file, YesOrNo.YES, file.exists() ? YesOrNo.YES : YesOrNo.NO, file.lastModified());
+				File urlFile = new File(url.getFile());
+				info = new FileInfo(url, file, YesOrNo.YES, urlFile.exists() ? YesOrNo.YES : YesOrNo.NO, urlFile.lastModified());
 				INFO_MAP.put(file, info);
 			}
 			return info;
@@ -356,42 +376,31 @@ public final class FileCache
 		final File file = fileInfo.getFile();
 		if (fileInfo.isNeedToDownload())
 		{
+			fileInfo.startDownload();
+			File tmpFile = null;
 			try (WrappedInputStream wrappedStream = new WrappedInputStream(fileInfo))
 			{
 				final long totalByteCount = wrappedStream.getTotalByteCount();
 				fileInfo.setTotalByteCount(totalByteCount);
-				final File tmpFile = new File(fileInfo.getFile() + FileUtil.getTemporarySuffix());
+				tmpFile = new File(fileInfo.getFile() + FileUtil.getTemporarySuffix());
 
 				file.getParentFile().mkdirs();
+				fileInfo.maybeAbort();
 				try (FileOutputStream os = new FileOutputStream(tmpFile))
 				{
 					InputStream is = wrappedStream.getStream();
-					//					abortDownload = false;
-					//					boolean downloadAborted = false;
-					//
-					final int bufferSize = 4096;
+					final int bufferSize = Math.max(is.available(), 8192);
 					byte[] buff = new byte[bufferSize];
 					int len;
 					while ((len = is.read(buff)) > 0)
 					{
 						fileInfo.setByteCount(wrappedStream.getByteCount());
-
-						//						if (abortDownload)
-						//						{
-						//							downloadAborted = true;
-						//							break;
-						//						}
-						//
+						fileInfo.maybeAbort();
 						os.write(buff, 0, len);
 					}
 					fileInfo.setByteCount(totalByteCount);
-					//
-					//					if (downloadAborted)
-					//					{
-					//						file.delete();
-					//						return null;
-					//					}
-					//
+					fileInfo.maybeAbort();
+
 					// Change the modified time of the file to that of the server.
 					final long lastModified = wrappedStream.getLastModifiedTime();
 					if (lastModified > 0)
@@ -411,31 +420,14 @@ public final class FileCache
 			}
 			catch (IOException e)
 			{
-				// TODO Auto-generated catch block
 				e.printStackTrace();
+				if (tmpFile != null && !Debug.isEnabled())
+				{
+					tmpFile.delete();
+				}
 			}
 		}
 		return fileInfo.getFile();
-	}
-
-	public static void abortDownload()
-	{
-
-	}
-
-	/**
-	 * Get download progress as number of bytes downloaded so far.
-	 * 
-	 * @return
-	 */
-	public static long getDownloadProgess()
-	{
-		return -1;
-	}
-
-	public static void resetDownloadProgess()
-	{
-
 	}
 
 	public static void setOfflineMode(boolean offlineMode, String offlineModeRootFolder)
