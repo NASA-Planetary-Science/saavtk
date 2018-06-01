@@ -231,19 +231,18 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		if (coloringHasNulls == null)
 			coloringHasNulls = new boolean[] {};
 
+		boolean sbmt2style = false;
 		for (int index = 0; index < coloringFiles.length; ++index)
 		{
 			String baseFileName = coloringFiles[index];
-			Format fileFormat = baseFileName.matches(".*\\.[Ff][Ii][Tt][Ss]?$") ? Format.FIT : baseFileName.matches(".*//.[Tt][Xx][Tt]$") ? Format.TXT : Format.UNKNOWN;
+			Format fileFormat = guessFormat(baseFileName);
 			for (int resolutionLevel = 0; resolutionLevel < numberElements.size(); ++resolutionLevel)
 			{
-				String fileName = getColoringFileName(baseFileName, resolutionLevel, fileFormat);
+				String fileName = getColoringFileName(baseFileName, resolutionLevel, fileFormat, sbmt2style);
 				if (fileName != null)
 				{
-					if (fileFormat == Format.UNKNOWN)
-					{
-						fileFormat = fileName.endsWith(".fits.gz") ? Format.FIT : fileName.endsWith(".txt.gz") ? Format.TXT : Format.UNKNOWN;
-					}
+					fileFormat = guessFormat(fileName);
+					sbmt2style = guessSbmt2Style(fileName);
 					String name = coloringNames[index];
 					ImmutableList<String> elementNames = ImmutableList.of(name);
 					String units = coloringUnits.length > index ? coloringUnits[index] : "";
@@ -252,6 +251,21 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				}
 			}
 		}
+	}
+
+	private static Format guessFormat(String baseFileName)
+	{
+		Format fileFormat = baseFileName.matches(".*\\.[Ff][Ii][Tt][Ss]?$") ? Format.FIT : baseFileName.matches(".*//.[Tt][Xx][Tt]$") ? Format.TXT : Format.UNKNOWN;
+		if (fileFormat == Format.UNKNOWN)
+		{
+			fileFormat = baseFileName.matches(".*\\.[Ff][Ii][Tt][Ss]?\\.[Gg][Zz]$") ? Format.FIT : baseFileName.matches(".*//.[Tt][Xx][Tt]\\.[Gg][Zz]$") ? Format.TXT : Format.UNKNOWN;
+		}
+		return fileFormat;
+	}
+
+	private static boolean guessSbmt2Style(String fileName)
+	{
+		return !fileName.contains("_res");
 	}
 
 	// Note this change has been merged back into sbmt1dev, but not
@@ -1563,15 +1577,26 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		coloringData.load();
 	}
 
-	private static String getColoringFileName(String baseFileName, int resolutionLevel, Format format)
+	private static String getColoringFileName(String baseFileName, int resolutionLevel, Format format, boolean sbmt2Style)
 	{
 		String fileName = null;
 		if (!baseFileName.startsWith(FileCache.FILE_PREFIX))
 		{
-			fileName = getColoringFileName(baseFileName + "_res" + resolutionLevel, format);
-			if (fileName == null)
+			if (sbmt2Style)
 			{
 				fileName = getColoringFileName(baseFileName + resolutionLevel, format);
+				if (fileName == null)
+				{
+					fileName = getColoringFileName(baseFileName + "_res" + resolutionLevel, format);
+				}
+			}
+			else
+			{
+				fileName = getColoringFileName(baseFileName + "_res" + resolutionLevel, format);
+				if (fileName == null)
+				{
+					fileName = getColoringFileName(baseFileName + resolutionLevel, format);
+				}
 			}
 		}
 		else
@@ -1589,10 +1614,13 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		{
 		case TXT:
 			fileName = baseFileName + ".txt.gz";
-			break;
-		case FIT:
+			if (FileCache.isFileGettable(fileName))
+			{
+				return fileName;
+			}
 			fileName = baseFileName + ".fits.gz";
 			break;
+		case FIT:
 		case UNKNOWN:
 			fileName = baseFileName + ".fits.gz";
 			if (FileCache.isFileGettable(fileName))
@@ -2020,6 +2048,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			{
 				return colorMissing;
 			}
+
 		};
 	}
 
