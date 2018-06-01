@@ -192,7 +192,7 @@ public final class FileCache
 		}
 	}
 
-	public static final String FILE_PREFIX = "file://";
+	public static final String FILE_PREFIX = "file:/";
 	private static final ConcurrentHashMap<File, FileInfo> INFO_MAP = new ConcurrentHashMap<>();
 	private static boolean showDotsForFiles = false;
 	private static boolean offlineMode;
@@ -205,7 +205,24 @@ public final class FileCache
 
 	public static FileInfo getFileInfoFromServer(String path)
 	{
-		return getFileInfoFromServer(Configuration.getDataRootURL(), path);
+		URL url = null;
+		try
+		{
+			url = new URL(path);
+			path = "";
+		}
+		catch (@SuppressWarnings("unused") MalformedURLException e)
+		{
+			try
+			{
+				url = new URL(Configuration.getDataRootURL());
+			}
+			catch (MalformedURLException e1)
+			{
+				throw new AssertionError(e1);
+			}
+		}
+		return getFileInfoFromServer(url.toString(), path);
 	}
 
 	/**
@@ -225,7 +242,7 @@ public final class FileCache
 			throw new UnsupportedOperationException("Running without the cache not supported at present");
 		}
 
-		path = cleanPath(path);
+		path = toUrlSegment(path);
 		final String ungzippedPath = path.toLowerCase().endsWith(".gz") ? path.substring(0, path.length() - 3) : path;
 
 		URL url = getURL(dataRoot + path);
@@ -239,13 +256,12 @@ public final class FileCache
 		{
 			// File "on the server" is not gzipped, and is allegedly on local file system,
 			// so just try to use it directly.
-			File file = new File(url.getPath());
+			File file = SafePaths.get(dataRoot.substring(FILE_PREFIX.length() - 1), path).toFile();
 
 			FileInfo info = INFO_MAP.get(file);
 			if (info == null)
 			{
-				File urlFile = new File(url.getFile());
-				info = new FileInfo(url, file, YesOrNo.YES, urlFile.exists() ? YesOrNo.YES : YesOrNo.NO, urlFile.lastModified());
+				info = new FileInfo(url, file, YesOrNo.YES, file.exists() ? YesOrNo.YES : YesOrNo.NO, file.lastModified());
 				INFO_MAP.put(file, info);
 			}
 			return info;
@@ -365,7 +381,7 @@ public final class FileCache
 	 */
 	public static File getFileFromServer(String path) throws UnauthorizedAccessException
 	{
-		FileInfo fileInfo = getFileInfoFromServer(Configuration.getDataRootURL(), path);
+		FileInfo fileInfo = getFileInfoFromServer(path);
 
 		if (fileInfo.isURLAccessAuthorized() == YesOrNo.NO)
 		{
@@ -440,9 +456,13 @@ public final class FileCache
 		FileCache.offlineModeRootFolder = offlineModeRootFolder;
 	}
 
-	private static String cleanPath(String path)
+	private static String toUrlSegment(String path)
 	{
 		path = SafePaths.getString(path).replace('\\', '/');
+		if (path.matches("^\\s*$"))
+		{
+			return "";
+		}
 		return path.replaceFirst("^/*", "/");
 	}
 
