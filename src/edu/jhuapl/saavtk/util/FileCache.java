@@ -46,6 +46,32 @@ public final class FileCache
 		}
 	}
 
+	// TODO this should extend Exception and thus be checked, but waiting to
+	// see whether this works out before going that route, since it would
+	// require many files to change.
+	public static class NonexistentRemoteFile extends RuntimeException
+	{
+		private static final long serialVersionUID = 7671006960310656926L;
+		private final URL url;
+
+		private NonexistentRemoteFile(String cause, URL url)
+		{
+			super(cause);
+			this.url = url;
+		}
+
+		private NonexistentRemoteFile(Exception cause, URL url)
+		{
+			super(cause);
+			this.url = url;
+		}
+
+		public URL getURL()
+		{
+			return url;
+		}
+	}
+
 	public static class FileInfo
 	{
 		// TODO move this somewhere?
@@ -275,7 +301,7 @@ public final class FileCache
 		{
 			info = new FileInfo(url, file, YesOrNo.YES, YesOrNo.YES, 0);
 		}
-		if (info == null)
+		if (info == null || info.isURLAccessAuthorized() != YesOrNo.YES)
 		{
 			// This code is based on code from stacktrace. The stacktrace code
 			// specifically included disabling redirects, but that leads to
@@ -392,6 +418,12 @@ public final class FileCache
 		final File file = fileInfo.getFile();
 		if (fileInfo.isNeedToDownload())
 		{
+			if (fileInfo.isExistsOnServer() == YesOrNo.NO)
+			{
+				URL url = fileInfo.getURL();
+				throw new NonexistentRemoteFile("File pointed to does not exist: " + url, url);
+			}
+
 			fileInfo.startDownload();
 			File tmpFile = null;
 			try (WrappedInputStream wrappedStream = new WrappedInputStream(fileInfo))
