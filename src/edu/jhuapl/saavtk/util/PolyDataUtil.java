@@ -3272,7 +3272,7 @@ public class PolyDataUtil
 		}
 		else
 		{
-			System.out.println("Error: Unrecognized file extension");
+			System.out.println("Error: Unrecognized extension in file name " + filename);
 			return null;
 		}
 
