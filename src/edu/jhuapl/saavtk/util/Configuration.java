@@ -353,7 +353,7 @@ public class Configuration
 	 */
 	static public URL getDataRootURL()
 	{
-		return dataRootURL;
+		return FileCache.createURL(rootURL, "data");
 	}
 
 	static public String getQueryRootURL()
