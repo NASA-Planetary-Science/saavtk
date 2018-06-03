@@ -100,6 +100,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	private JScrollPane scrollPane;
 	private JButton additionalStatisticsButton;
 	private final ImmutableMap<String, Integer> resolutionLevels;
+	private CustomPlateDataDialog customPlateDialog;
 
 	public ModelManager getModelManager()
 	{
@@ -167,7 +168,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		final PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
 
 		int numberResolutionLevels = smallBodyModel.getNumberResolutionLevels();
-		int[] plateCount = smallBodyModel.getConfig().smallBodyNumberOfPlatesPerResolutionLevel;
+		ImmutableList<Integer> plateCount = smallBodyModel.getConfig().getResolutionNumberElements();
 
 		ImmutableMap.Builder<String, Integer> builder = ImmutableMap.builder();
 		if (numberResolutionLevels > 1)
@@ -176,15 +177,15 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			ActionListener listener = (e) -> {
 				updateModelResolution(e.getActionCommand());
 			};
-			String[] levels = smallBodyModel.getConfig().smallBodyLabelPerResolutionLevel;
+			ImmutableList<String> levels = smallBodyModel.getConfig().getResolutionLabels();
 			for (int i = 0; i < numberResolutionLevels; ++i)
 			{
-				String label = levels[i];
+				String label = levels.get(i);
 				builder.put(label, i);
 				JRadioButton resButton = new JRadioButton(label);
 				resButton.setActionCommand(label);
-				resButton.setEnabled(true);
-				resButton.setToolTipText("<html>Click here to show a model of " + bodyName + " <br />" + "containing " + plateCount[i] + " plates</html>");
+				resButton.setEnabled(smallBodyModel.isResolutionLevelAvailable(i));
+				resButton.setToolTipText("<html>Click here to show a model of " + bodyName + " <br />" + "containing " + plateCount.get(i) + " plates</html>");
 				resButton.addActionListener(listener);
 				resModelButtons.add(resButton);
 
@@ -212,7 +213,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		coloringLabel.setText("Plate Coloring");
 
 		coloringComboBox = new JComboBoxWithItemState<>();
-		coloringComboBox.addItemListener(this);
 
 		noColoringButton = new JRadioButton(NO_COLORING);
 
@@ -353,29 +353,25 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			panel.add(standardColoringButton, "split 2, gapleft 25");
 			panel.add(coloringComboBox, "width 200!, wrap");
 			panel.add(colormapController);
-			if (Configuration.isAPLVersion())
-			{
-				ActionListener listener = (e) -> {
-					setColoring();
-				};
-				coloringComboBox.addActionListener(listener);
-				customColorRedComboBox.addActionListener(listener);
-				customColorGreenComboBox.addActionListener(listener);
-				customColorBlueComboBox.addActionListener(listener);
 
-				panel.add(rgbColoringButton, "wrap, gapleft 25");
-				panel.add(customColorRedLabel, "gapleft 75, split 2");
-				panel.add(customColorRedComboBox, "width 200!, gapleft push, wrap");
-				panel.add(customColorGreenLabel, "gapleft 75, split 2");
-				panel.add(customColorGreenComboBox, "width 200!, gapleft push, wrap");
-				panel.add(customColorBlueLabel, "gapleft 75, split 2");
-				panel.add(customColorBlueComboBox, "width 200!, gapleft push, wrap");
-			}
+			ItemListener listener = (e) -> {
+				setColoring();
+			};
+			coloringComboBox.addItemListener(listener);
+			customColorRedComboBox.addItemListener(listener);
+			customColorGreenComboBox.addItemListener(listener);
+			customColorBlueComboBox.addItemListener(listener);
+
+			panel.add(rgbColoringButton, "wrap, gapleft 25");
+			panel.add(customColorRedLabel, "gapleft 75, split 2");
+			panel.add(customColorRedComboBox, "width 200!, gapleft push, wrap");
+			panel.add(customColorGreenLabel, "gapleft 75, split 2");
+			panel.add(customColorGreenComboBox, "width 200!, gapleft push, wrap");
+			panel.add(customColorBlueLabel, "gapleft 75, split 2");
+			panel.add(customColorBlueComboBox, "width 200!, gapleft push, wrap");
+
 			panel.add(saveColoringButton, "wrap, gapleft 25");
-			if (Configuration.isAPLVersion())
-			{
-				panel.add(customizeColoringButton, "wrap, gapleft 25");
-			}
+			panel.add(customizeColoringButton, "wrap, gapleft 25");
 		}
 
 		if (modelManager.getPolyhedralModel().isImageMapAvailable())
@@ -522,6 +518,12 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		}
 
 		Picker.setPickingEnabled(true);
+	}
+
+	public void updateColoringOptions()
+	{
+		PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
+		updateColoringOptions(smallBodyModel.getModelResolution());
 	}
 
 	protected void updateColoringControls()
@@ -696,7 +698,11 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
 	protected CustomPlateDataDialog getPlateDataDialog(ModelManager modelManager)
 	{
-		return new CustomPlateDataDialog(modelManager);
+		if (customPlateDialog == null)
+		{
+			customPlateDialog = new CustomPlateDataDialog(this);
+		}
+		return customPlateDialog;
 	}
 
 	private static JSpinner createOpacitySpinner()
@@ -733,9 +739,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			CustomPlateDataDialog dialog = getPlateDataDialog(modelManager);
 			dialog.setLocationRelativeTo(JOptionPane.getFrameForComponent(PolyhedralModelControlPanel.this));
 			dialog.setVisible(true);
-
-			PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
-			updateColoringOptions(smallBodyModel.getModelResolution());
 		}
 	}
 

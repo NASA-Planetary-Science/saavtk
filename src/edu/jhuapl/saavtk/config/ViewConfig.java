@@ -3,6 +3,9 @@ package edu.jhuapl.saavtk.config;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+
 import edu.jhuapl.saavtk.model.ShapeModelBody;
 import edu.jhuapl.saavtk.model.ShapeModelType;
 
@@ -25,11 +28,70 @@ public abstract class ViewConfig implements Cloneable
 	public boolean hasCustomBodyCubeSize = false;
 	// if hasCustomBodyCubeSize is true, the following must be filled in and valid
 	public double customBodyCubeSize; // km
-	public String[] smallBodyLabelPerResolutionLevel; // only needed when number resolution levels > 1
-	public int[] smallBodyNumberOfPlatesPerResolutionLevel; // only needed when number resolution levels > 1
+	private ImmutableList<String> smallBodyLabelPerResolutionLevel;
+	private ImmutableList<Integer> smallBodyNumberOfPlatesPerResolutionLevel;
 	private boolean enabled = true;
 
 	public abstract boolean isAccessible();
+
+	protected ViewConfig(String[] resolutionLabels, int[] resolutionNumberElements)
+	{
+		setResolution(resolutionLabels, resolutionNumberElements);
+	}
+
+	protected ViewConfig(Iterable<String> resolutionLabels, Iterable<Integer> resolutionNumberElements)
+	{
+		setResolution(resolutionLabels, resolutionNumberElements);
+	}
+
+	public final void setResolution(String[] resolutionLabels, int[] resolutionNumberElements)
+	{
+		Preconditions.checkNotNull(resolutionLabels);
+		Preconditions.checkNotNull(resolutionNumberElements);
+
+		// One argument has to be an actual Iterable for this to call the overload correctly.
+		ImmutableList.Builder<Integer> builder = ImmutableList.builder();
+		for (int numberElements : resolutionNumberElements)
+		{
+			builder.add(numberElements);
+		}
+
+		setResolution(ImmutableList.copyOf(resolutionLabels), builder.build());
+	}
+
+	public final void setResolution(Iterable<Integer> resolutionNumberElements)
+	{
+		Preconditions.checkNotNull(resolutionNumberElements);
+		ImmutableList<Integer> numberElementsList = ImmutableList.copyOf(resolutionNumberElements);
+		ImmutableList.Builder<String> builder = ImmutableList.builder();
+		for (Integer numberElements : numberElementsList)
+		{
+			builder.add(numberElements + " plates");
+		}
+		setResolution(builder.build(), numberElementsList);
+	}
+
+	public final void setResolution(Iterable<String> resolutionLabels, Iterable<Integer> resolutionNumberElements)
+	{
+		Preconditions.checkNotNull(resolutionLabels);
+		Preconditions.checkNotNull(resolutionNumberElements);
+		ImmutableList<String> labelList = ImmutableList.copyOf(resolutionLabels);
+		ImmutableList<Integer> numberElementsList = ImmutableList.copyOf(resolutionNumberElements);
+		Preconditions.checkArgument(labelList.size() > 0);
+		Preconditions.checkArgument(labelList.size() == numberElementsList.size());
+		this.smallBodyLabelPerResolutionLevel = labelList;
+		this.smallBodyNumberOfPlatesPerResolutionLevel = numberElementsList;
+	}
+
+	public ImmutableList<String> getResolutionLabels()
+	{
+		return smallBodyLabelPerResolutionLevel;
+	}
+
+	public ImmutableList<Integer> getResolutionNumberElements()
+	{
+		return smallBodyNumberOfPlatesPerResolutionLevel;
+	}
 
 	@Override
 	public ViewConfig clone() // throws CloneNotSupportedException
@@ -39,26 +101,10 @@ public abstract class ViewConfig implements Cloneable
 		{
 			c = (ViewConfig) super.clone();
 		}
-		catch (Exception e)
+		catch (CloneNotSupportedException e)
 		{
-			e.printStackTrace();
+			throw new AssertionError(e);
 		}
-
-		c.author = this.author;
-		c.version = this.version;
-
-		c.modelLabel = this.modelLabel;
-		c.customTemporary = this.customTemporary;
-
-		c.useMinimumReferencePotential = this.useMinimumReferencePotential;
-		c.hasCustomBodyCubeSize = this.hasCustomBodyCubeSize;
-		c.customBodyCubeSize = this.customBodyCubeSize;
-
-		if (this.smallBodyLabelPerResolutionLevel != null)
-			c.smallBodyLabelPerResolutionLevel = this.smallBodyLabelPerResolutionLevel.clone();
-		if (this.smallBodyNumberOfPlatesPerResolutionLevel != null)
-			c.smallBodyNumberOfPlatesPerResolutionLevel = this.smallBodyNumberOfPlatesPerResolutionLevel.clone();
-
 		return c;
 	}
 
@@ -71,7 +117,6 @@ public abstract class ViewConfig implements Cloneable
 	 * 
 	 * @return
 	 */
-
 	public String getUniqueName()
 	{
 		if (ShapeModelType.CUSTOM == author)
@@ -104,6 +149,7 @@ public abstract class ViewConfig implements Cloneable
 	}
 
 	static private List<ViewConfig> builtInConfigs = new ArrayList<>();
+	private static String firstTimeDefaultModel = null;
 
 	static public List<ViewConfig> getBuiltInConfigs()
 	{
@@ -146,6 +192,22 @@ public abstract class ViewConfig implements Cloneable
 		System.err.println("Error: Cannot find Config with name " + name + " and author " + author + " and version " + version);
 
 		return null;
+	}
+
+	public static String getFirstTimeDefaultModelName()
+	{
+		Preconditions.checkState(firstTimeDefaultModel != null || !builtInConfigs.isEmpty());
+		if (firstTimeDefaultModel == null)
+		{
+			firstTimeDefaultModel = builtInConfigs.get(0).getUniqueName();
+		}
+		return firstTimeDefaultModel;
+	}
+
+	protected static void setFirstTimeDefaultModelName(String firstTimeDefaultModel)
+	{
+		Preconditions.checkState(ViewConfig.firstTimeDefaultModel == null);
+		ViewConfig.firstTimeDefaultModel = firstTimeDefaultModel;
 	}
 
 	@Override

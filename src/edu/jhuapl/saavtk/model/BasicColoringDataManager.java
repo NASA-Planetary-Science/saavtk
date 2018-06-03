@@ -83,6 +83,20 @@ public class BasicColoringDataManager implements ColoringDataManager
 	}
 
 	@Override
+	public ImmutableList<ColoringData> get(int numberElements)
+	{
+		ImmutableList.Builder<ColoringData> builder = ImmutableList.builder();
+		for (String name : getNames())
+		{
+			if (has(name, numberElements))
+			{
+				builder.add(get(name, numberElements));
+			}
+		}
+		return builder.build();
+	}
+
+	@Override
 	public BasicColoringDataManager copy()
 	{
 		ImmutableList.Builder<ColoringData> builder = ImmutableList.builder();
@@ -98,19 +112,6 @@ public class BasicColoringDataManager implements ColoringDataManager
 			}
 		}
 		return new BasicColoringDataManager(dataId, builder.build());
-	}
-
-	public ImmutableList<ColoringData> get(int numberElements)
-	{
-		ImmutableList.Builder<ColoringData> builder = ImmutableList.builder();
-		for (String name : getNames())
-		{
-			if (has(name, numberElements))
-			{
-				builder.add(get(name, numberElements));
-			}
-		}
-		return builder.build();
 	}
 
 	public final boolean has(ColoringData data)

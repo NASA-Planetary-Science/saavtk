@@ -152,7 +152,10 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		{
 			while ((line = in.readLine()) != null)
 			{
-				Double.parseDouble(line);
+				// This check would need to be generalized to handle
+				// the case of multiple CSV separated values. Not bothering
+				// to do this because file checking will be redone soon.
+				//				Double.parseDouble(line);
 				++lineCount;
 			}
 

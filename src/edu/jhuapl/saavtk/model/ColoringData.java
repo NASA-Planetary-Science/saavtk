@@ -5,9 +5,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.JOptionPane;
 
@@ -29,6 +32,12 @@ import vtk.vtkFloatArray;
 public class ColoringData
 {
 	private static final Version COLORING_DATA_VERSION = Version.of(1, 0);
+	/*
+	 * This Pattern will match on either quoted text or text between commas,
+	 * including whitespace, and accounting for beginning and end of line. Cribbed
+	 * from a Stacktrace post.
+	 */
+	private static final Pattern CSV_PATTERN = Pattern.compile("\"([^\"]*)\"|(?<=,|^)([^,]*)(?:,|$)");
 
 	// Metadata keys.
 	static final Key<String> NAME = Key.of("Coloring name"); // Slope or Gravitational Vector
@@ -79,12 +88,14 @@ public class ColoringData
 	private final FixedMetadata metadata;
 	private vtkFloatArray data;
 	private double[] defaultRange;
+	private boolean loadFailed;
 
 	protected ColoringData(FixedMetadata metadata, vtkFloatArray data)
 	{
 		this.metadata = metadata;
 		this.data = data;
 		this.defaultRange = this.data != null ? defaultRange = this.data.GetRange() : null;
+		this.loadFailed = false;
 	}
 
 	public String getName()
@@ -117,6 +128,11 @@ public class ColoringData
 		return getMetadata().get(HAS_NULLS);
 	}
 
+	public boolean loadFailed()
+	{
+		return loadFailed;
+	}
+
 	public void load() throws IOException
 	{
 		if (this.data == null)
@@ -127,7 +143,7 @@ public class ColoringData
 				throw new IllegalStateException();
 			}
 			File file = FileCache.getFileFromServer(fileName);
-			if (file == null)
+			if (!file.exists())
 			{
 				String message = "Unable to download file " + fileName;
 				JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
@@ -157,6 +173,8 @@ public class ColoringData
 		if (getFileName() != null)
 		{
 			data = null;
+			defaultRange = null;
+			loadFailed = false;
 		}
 	}
 
@@ -174,7 +192,7 @@ public class ColoringData
 
 	public double[] getDefaultRange()
 	{
-		Preconditions.checkState(data != null);
+		Preconditions.checkState(defaultRange != null);
 		return defaultRange;
 	}
 
@@ -247,7 +265,7 @@ public class ColoringData
 			}
 			else
 			{
-				Float.parseFloat(line);
+				//				Float.parseFloat(line);
 				return Format.TXT;
 			}
 		}
@@ -259,6 +277,10 @@ public class ColoringData
 
 	private void loadColoringDataFits(File file) throws IOException
 	{
+		if (loadFailed)
+		{
+			throw new IOException("Coloring data failed to load");
+		}
 		try (Fits fits = new Fits(file))
 		{
 			fits.read();
@@ -267,12 +289,14 @@ public class ColoringData
 			BasicHDU<?> hdu = fits.getHDU(1);
 			if (hdu instanceof TableHDU)
 			{
+				//				try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File("/Users/peachjm1/Downloads/custom-vector-pc.csv"))))
+				//				{
 				TableHDU<?> table = (TableHDU<?>) hdu;
 				int numberRows = table.getNRows();
 				if (numberRows != numberElements)
 				{
-					String message = "Number of lines in FITS file " + file + " is " + numberRows + ", not " + numberElements + " as expected.";
-					JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
+					loadFailed = true;
+					String message = "Number of rows in FITS file " + file + " is " + numberRows + ", not " + numberElements + " as expected.";
 					throw new IOException(message);
 				}
 
@@ -280,21 +304,46 @@ public class ColoringData
 
 				vtkFloatArray data = new vtkFloatArray();
 
-				data.SetNumberOfComponents(1);
+				int numberColumns = table.getNCols();
+				int numberComponents = numberColumns > 9 ? 3 : numberColumns > 7 ? 2 : 1;
+				data.SetNumberOfComponents(numberComponents);
 				data.SetNumberOfTuples(numberElements);
 
 				//				float[] floatData = (float[]) table.getColumn(columnNames.get(0));
-				float[] floatData = (float[]) table.getColumn(4);
+				float[] xColumn = null;
+				float[] yColumn = null;
+				float[] zColumn = null;
+				xColumn = (float[]) table.getColumn(4);
+				if (table.getNCols() > 7)
+				{
+					yColumn = (float[]) table.getColumn(6);
+				}
+				if (table.getNCols() > 9)
+				{
+					zColumn = (float[]) table.getColumn(8);
+				}
 				for (int index = 0; index < numberElements; index++)
 				{
-					float value = floatData[index];
-					data.SetTuple1(index, value);
+					if (yColumn != null && zColumn != null)
+					{
+						//							writer.write(xColumn[index] + ", " + yColumn[index] + ", " + zColumn[index] + "\n");
+						data.SetTuple3(index, xColumn[index], yColumn[index], zColumn[index]);
+					}
+					else if (yColumn != null)
+					{
+						data.SetTuple2(index, xColumn[index], yColumn[index]);
+					}
+					else
+					{
+						data.SetTuple1(index, xColumn[index]);
+					}
 				}
 
 				this.defaultRange = computeDefaultColoringRange(data);
 
 				// Everything worked so assign to the data field.
 				this.data = data;
+				//				}
 			}
 			else
 			{
@@ -336,30 +385,66 @@ public class ColoringData
 
 	private void loadColoringDataTxt(File file) throws IOException
 	{
+		if (loadFailed)
+		{
+			throw new IOException("Coloring data failed to load");
+		}
 		try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file))))
 		{
+			int numberElements = getMetadata().get(NUMBER_ELEMENTS);
+
+			int index = 0;
+			String[] line = parseCSV(in.readLine());
+
+			if (line.length < 1 || line.length > 3)
+			{
+				throw new IOException("Text (CSV) coloring data must have between 1 and 3 elements per line");
+			}
 			vtkFloatArray data = new vtkFloatArray();
 
-			int numberElements = getMetadata().get(NUMBER_ELEMENTS);
-			data.SetNumberOfComponents(1);
+			data.SetNumberOfComponents(line.length);
 			data.SetNumberOfTuples(numberElements);
 
-			String line;
-			int index = 0;
-			while ((line = in.readLine()) != null)
+			float[] values = new float[line.length];
+			do
 			{
-				float value = Float.parseFloat(line);
+				if (line.length < 1 || line.length > 3)
+				{
+					throw new IOException("Text (CSV) coloring data must have between 1 and 3 elements per line");
+				}
+				// This will pass the first time, but need to confirm this is true for every line in the loop.
+				if (line.length != values.length)
+				{
+					throw new IOException("Text (CSV) coloring data must have the same number of elements on each line");
+				}
+
 				if (index < numberElements)
 				{
-					data.SetTuple1(index, value);
+					for (int fieldIndex = 0; fieldIndex < values.length; ++fieldIndex)
+					{
+						values[fieldIndex] = Float.parseFloat(line[fieldIndex]);
+					}
+					if (values.length == 1)
+					{
+						data.SetTuple1(index, values[0]);
+					}
+					else if (values.length == 2)
+					{
+						data.SetTuple2(index, values[0], values[1]);
+					}
+					else if (values.length == 3)
+					{
+						data.SetTuple3(index, values[0], values[1], values[2]);
+					}
 				}
 				++index;
 			}
+			while ((line = parseCSV(in.readLine())) != null);
 
 			if (index != numberElements)
 			{
+				loadFailed = true;
 				String message = "Number of lines in text file " + file + " is " + index + ", not " + numberElements + " as expected.";
-				JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
 				throw new IOException(message);
 			}
 
@@ -368,6 +453,33 @@ public class ColoringData
 			// Everything worked so assign to the data field.
 			this.data = data;
 		}
+
+	}
+
+	private String[] parseCSV(String line)
+	{
+		if (line == null)
+		{
+			return null;
+		}
+
+		Matcher matcher = CSV_PATTERN.matcher(line);
+		List<String> matches = new ArrayList<>();
+		while (matcher.find())
+		{
+			String match = matcher.group(1);
+			if (match != null)
+			{
+				matches.add(match);
+			}
+			else
+			{
+				matches.add(matcher.group(2));
+			}
+		}
+
+		int size = matches.size();
+		return matches.toArray(new String[size]);
 
 	}
 
