@@ -21,6 +21,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 
+import com.google.common.base.Preconditions;
+
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
 import edu.jhuapl.saavtk.gui.menu.FileMenu;
@@ -63,6 +65,7 @@ public abstract class ViewManager extends JPanel
 	{
 		super(new CardLayout());
 		setBorder(BorderFactory.createEmptyBorder());
+		this.currentView = null;
 		this.statusBar = statusBar;
 		this.frame = frame;
 		this.tempCustomShapeModelPath = tempCustomShapeModelPath;
@@ -134,41 +137,75 @@ public abstract class ViewManager extends JPanel
 
 	protected void setupViews()
 	{
-		// add in any built-in views
+		// Add in any built-in views.
 		addBuiltInViews(statusBar);
 
-		// add built-in views to the top-level JPanel
+		// Add built-in views to the top-level JPanel.
 		for (View view : getBuiltInViews())
 			add(view, view.getUniqueName());
 
-		// load in any custom views specified on the command line or in the
-		// configuration directory
-		loadCustomViews(getTempCustomShapeModelPath(), statusBar);
+		View initialView = null;
+		// Add a new model passed on the command line, if any.
+		final String tempCustomShapeModel = getTempCustomShapeModelPath();
+		if (tempCustomShapeModel != null)
+		{
+			initialView = addCustomView(statusBar, tempCustomShapeModel);
+			if (initialView == null)
+			{
+				// Not sure this is even possible, but just in case.
+				System.err.println("Unable to load custom model specified on command line \"" + tempCustomShapeModel + "\"");
+			}
+		}
 
-		// add custom views to the top-level JPanel
+		// Load in any other custom views found in the configuration directory
+		loadCustomViews(statusBar);
+
+		// Add custom views to the top-level JPanel
 		for (View view : getCustomViews())
 			add(view, view.getUniqueName());
 
-		// if no view was specified on the command line, search the built-in views for
-		// the default body to load,
-		// or the first built-in view if no default body has been specified
-		if (getTempCustomShapeModelPath() == null)
+		// If no model was specified on the command line, try to determine
+		// some other body to load initially.
+		if (tempCustomShapeModel == null)
 		{
-			int idxToShow = 0;
-			for (int i = 0; i < getBuiltInViews().size(); i++)
-				if (getBuiltInViews().get(i).getConfig().getUniqueName().equals(getDefaultBodyToLoad()))
-					idxToShow = i;
-			setCurrentView(getBuiltInViews().get(idxToShow));
+			// First try the default model, which may be built-in or custom.
+			final String defaultModelName = getDefaultBodyToLoad();
+			initialView = getBuiltInView(defaultModelName);
+			if (initialView == null)
+			{
+				initialView = getCustomView(defaultModelName);
+			}
+
+			// Default model is not available. Try to find the first accessible model.
+			if (initialView == null)
+			{
+				System.err.println("\nDefault model " + defaultModelName + " is not available.");
+				for (View view : getAllViews())
+				{
+					if (view.getConfig().isAccessible())
+					{
+						initialView = view;
+						break;
+					}
+				}
+
+				// Report substitition for the default model.
+				if (initialView != null)
+				{
+					System.err.println("Starting with first available model: " + initialView.getPathRepresentation());
+				}
+			}
+
+			if (initialView == null)
+			{
+				System.err.println("Cannot find another available model to start with.");
+			}
+
 		}
-		// if a custom view was specified on the command line, set that as the current
-		// view
-		else
+
+		if (initialView != null)
 		{
-			int idxToShow = 0;
-			for (int i = 0; i < getCustomViews().size(); i++)
-				if (getCustomViews().get(i).getConfig().getUniqueName().equals(getDefaultBodyToLoad()))
-					idxToShow = i;
-			setCurrentView(getCustomViews().get(idxToShow));
+			setCurrentView(initialView);
 		}
 	}
 
@@ -193,7 +230,7 @@ public abstract class ViewManager extends JPanel
 
 	public String getDefaultBodyToLoad()
 	{
-		defaultModelName = ViewConfig.getBuiltInConfigs().get(0).getUniqueName();
+		defaultModelName = ViewConfig.getFirstTimeDefaultModelName();
 		if (defaultModelFile.toFile().exists())
 		{
 			try (Scanner scanner = new Scanner(ViewManager.defaultModelFile.toFile()))
@@ -217,34 +254,37 @@ public abstract class ViewManager extends JPanel
 			defaultModelFile.toFile().delete();
 	}
 
-	public View getView(String uniqueName)
+	/**
+	 * Returns the View whose unique name matches the supplied unique name.
+	 * 
+	 * This method does *NOT* guarantee that the returned View is actually
+	 * accessible.
+	 * 
+	 * @param uniqueName the name of the View to return
+	 * @return the View
+	 * @throws IllegalArgumentException if the View was not found
+	 */
+	public View getView(String uniqueName) throws IllegalArgumentException
 	{
-		for (View view : builtInViews)
+		for (View view : getBuiltInViews())
 		{
 			if (view.getUniqueName().equals(uniqueName))
 			{
 				return view;
 			}
 		}
-
-		for (View view : customViews)
+		for (View view : getCustomViews())
 		{
 			if (view.getUniqueName().equals(uniqueName))
 			{
 				return view;
 			}
 		}
-
-		throw new IllegalArgumentException();
+		throw new IllegalArgumentException("Could not find a model/view with name " + uniqueName);
 	}
 
-	protected void loadCustomViews(String newCustomShapeModelPath, StatusBar statusBar)
+	protected void loadCustomViews(StatusBar statusBar)
 	{
-		if (newCustomShapeModelPath != null)
-		{
-			addCustomView(statusBar, newCustomShapeModelPath);
-		}
-
 		File modelsDir = new File(Configuration.getImportedShapeModelsDir());
 		File[] dirs = modelsDir.listFiles();
 		if (dirs != null && dirs.length > 0)
@@ -260,9 +300,11 @@ public abstract class ViewManager extends JPanel
 		}
 	}
 
-	protected void addCustomView(StatusBar statusBar, String shapeModelPath)
+	protected View addCustomView(StatusBar statusBar, String shapeModelPath)
 	{
-		addCustomView(createCustomView(statusBar, shapeModelPath, true));
+		View customView = createCustomView(statusBar, shapeModelPath, true);
+		addCustomView(customView);
+		return customView;
 	}
 
 	public List<View> getBuiltInViews()
@@ -292,6 +334,8 @@ public abstract class ViewManager extends JPanel
 
 	public void setCurrentView(View view)
 	{
+		Preconditions.checkNotNull(view);
+
 		initializeStateManager(); // Call this here for insurance, even if it is called elsewhere.
 		if (view == currentView)
 		{
@@ -309,17 +353,22 @@ public abstract class ViewManager extends JPanel
 		try
 		{
 			view.initialize();
-
-			updateRecents();
 			currentView = view;
-			currentView.renderer.viewActivating();
-			updateRecents();
 		}
 		catch (UnauthorizedAccessException e)
 		{
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(null, "Access to this model is restricted. Please email sbmt@jhuapl.edu to request access.", "Access not authorized", JOptionPane.ERROR_MESSAGE);
 		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+
+		if (currentView != null)
+			currentView.renderer.viewActivating();
+
+		updateRecents();
 		frame.setTitle(view.getPathRepresentation());
 	}
 
@@ -375,11 +424,38 @@ public abstract class ViewManager extends JPanel
 
 	protected abstract void initializeStateManager();
 
-	public View getCustomView(String name)
+	/**
+	 * Return the built-in View that matches the supplied name. Note that this
+	 * method does check that the view be accessible.
+	 * 
+	 * @param uniqueName name of the view
+	 * @return the view with the name, or null if it's not found, or not accessible
+	 */
+	View getBuiltInView(String uniqueName)
 	{
-		for (View view : customViews)
+		for (View view : getBuiltInViews())
 		{
-			if (view.getUniqueName().equals(name))
+			if (view.getUniqueName().equals(uniqueName) && view.getConfig().isAccessible())
+			{
+				return view;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Return the custom View that matches the supplied name. Note that this method
+	 * does check that the view be accessible.
+	 * 
+	 * @param uniqueName name of the view
+	 * @return the view with the name, or null if it's not found, or not accessible
+	 */
+	View getCustomView(String uniqueName)
+	{
+		for (View view : getCustomViews())
+		{
+			if (view.getUniqueName().equals(uniqueName) && view.getConfig().isAccessible())
 			{
 				return view;
 			}

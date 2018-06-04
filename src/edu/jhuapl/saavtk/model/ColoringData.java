@@ -143,7 +143,7 @@ public class ColoringData
 				throw new IllegalStateException();
 			}
 			File file = FileCache.getFileFromServer(fileName);
-			if (file == null)
+			if (!file.exists())
 			{
 				String message = "Unable to download file " + fileName;
 				JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
