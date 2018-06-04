@@ -28,6 +28,8 @@ import javax.swing.JPopupMenu;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.jhuapl.saavtk.gui.MetadataDisplay;
 import edu.jhuapl.saavtk.gui.panel.PolyhedralModelControlPanel;
 import edu.jhuapl.saavtk.model.ColoringData;
@@ -67,11 +69,15 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 	private final void initializeList(DefaultListModel<ColoringData> model)
 	{
-		int resolution = modelManager.getPolyhedralModel().getModelResolution();
-		int numberElements = coloringDataManager.getResolutions().get(resolution);
-		for (ColoringData data : coloringDataManager.get(numberElements))
+		ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
+		if (!resolutions.isEmpty())
 		{
-			model.addElement(data);
+			int resolution = modelManager.getPolyhedralModel().getModelResolution();
+			int numberElements = coloringDataManager.getResolutions().get(resolution);
+			for (ColoringData data : coloringDataManager.get(numberElements))
+			{
+				model.addElement(data);
+			}
 		}
 	}
 
