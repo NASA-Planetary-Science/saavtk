@@ -7,7 +7,7 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
-import edu.jhuapl.saavtk2.util.VtkDataTypes;
+import edu.jhuapl.saavtk.util.VtkDataTypes;
 import vtk.vtkImageData;
 
 public class AwtImageReader implements ImageDataReader
@@ -21,7 +21,7 @@ public class AwtImageReader implements ImageDataReader
 			BufferedImage image = ImageIO.read(file.getAbsoluteFile());
 			vtkImageData imageData = new vtkImageData();
 			imageData.SetDimensions(image.getWidth(), image.getHeight(), 1);
-			imageData.AllocateScalars(VtkDataTypes.VTK_UNSIGNED_CHAR.ordinal(), 4);
+			imageData.AllocateScalars(VtkDataTypes.VTK_UNSIGNED_CHAR, 4);
 			//final byte[] pixels = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
 			int[] data=image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth());
 			for (int j=0; j<image.getHeight(); j++)

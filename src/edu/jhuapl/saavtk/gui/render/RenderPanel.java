@@ -12,6 +12,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.Set;
 
 import javax.swing.BorderFactory;
 import javax.swing.JDialog;
@@ -19,6 +20,8 @@ import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
+import com.google.common.collect.Sets;
 
 import edu.jhuapl.saavtk.gui.MainWindow;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
@@ -29,13 +32,22 @@ import edu.jhuapl.saavtk.gui.render.camera.CameraListener;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent.ConstrainRotationAxisEvent;
+import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarListener;
 import vtk.vtkActor;
 import vtk.vtkConeSource;
+import vtk.vtkIdFilter;
+import vtk.vtkIdList;
+import vtk.vtkIdTypeArray;
 import vtk.vtkNativeLibrary;
+import vtk.vtkPoints;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
+import vtk.vtkPolyDataWriter;
+import vtk.vtkProp;
+import vtk.vtkPropCollection;
 import vtk.vtkRenderer;
+import vtk.vtkSelectVisiblePoints;
 import vtk.rendering.vtkEventInterceptor;
 import vtk.rendering.vtkInteractorForwarder;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
@@ -64,8 +76,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 	JFrame axesFrame;
 	Point location;
 
-	public boolean isAxesPanelVisible()
-	{
+	public boolean isAxesPanelVisible() {
 		return axesFrame.isVisible();
 	}
 
@@ -374,11 +385,13 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		 * 
 		 * }
 		 * 
-		 * @Override public void componentMoved(ComponentEvent e) { if (location==null)
-		 * location=e.getComponent().getLocationOnScreen(); int
-		 * dx=(int)(e.getComponent().getLocationOnScreen().getX()-location.getX()); int
-		 * dy=(int)(e.getComponent().getLocationOnScreen().getY()-location.getY());
-		 * axesFrame.setLocationRelativeTo(window); axesFrame.setLocation(dx, dy); }
+		 * @Override public void componentMoved(ComponentEvent e) { if
+		 * (location==null) location=e.getComponent().getLocationOnScreen(); int
+		 * dx=(int)(e.getComponent().getLocationOnScreen().getX()-location.getX(
+		 * )); int
+		 * dy=(int)(e.getComponent().getLocationOnScreen().getY()-location.getY(
+		 * )); axesFrame.setLocationRelativeTo(window);
+		 * axesFrame.setLocation(dx, dy); }
 		 * 
 		 * @Override public void componentHidden(ComponentEvent e) { // TODO
 		 * Auto-generated method stub

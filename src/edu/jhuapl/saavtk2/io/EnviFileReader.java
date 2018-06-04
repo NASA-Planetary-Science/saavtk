@@ -11,7 +11,7 @@ import java.nio.FloatBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 
-import edu.jhuapl.saavtk2.util.ImageDataUtil;
+import edu.jhuapl.saavtk.util.ImageDataUtil;
 import vtk.vtkImageData;
 import vtk.vtkImageReader2;
 

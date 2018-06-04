@@ -3,7 +3,7 @@ package edu.jhuapl.saavtk2.io;
 import java.io.File;
 import java.io.IOException;
 
-import edu.jhuapl.saavtk2.util.ImageDataUtil;
+import edu.jhuapl.saavtk.util.ImageDataUtil;
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
 import nom.tam.fits.FitsException;

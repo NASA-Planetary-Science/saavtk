@@ -9,7 +9,7 @@ import java.io.OutputStreamWriter;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import edu.jhuapl.saavtk2.util.ImageDataUtil;
+import edu.jhuapl.saavtk.util.ImageDataUtil;
 import vtk.vtkImageData;
 
 public class EnviFileWriter implements ImageDataWriter {

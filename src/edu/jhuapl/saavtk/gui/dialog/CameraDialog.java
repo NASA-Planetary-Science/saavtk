@@ -193,6 +193,8 @@ public class CameraDialog extends JDialog implements ActionListener
             {
                 double newFov = Double.parseDouble(fovField.getText());
                 renderer.setCameraViewAngle(newFov);
+        		
+
             }
             catch (NumberFormatException ex)
             {
@@ -270,6 +272,7 @@ public class CameraDialog extends JDialog implements ActionListener
             catch (Exception e2)
             {
             }
+            printCameraOrientation();
         }
         else if (e.getSource() == resetButton)
         {
