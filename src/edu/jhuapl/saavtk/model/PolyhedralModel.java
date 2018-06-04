@@ -133,6 +133,8 @@ public abstract class PolyhedralModel extends AbstractModel
 
 	public abstract int getNumberResolutionLevels();
 
+	public abstract boolean isResolutionLevelAvailable(int resolutionLevel);
+
 	public abstract void setColormap(Colormap colormap);
 
 	public abstract Colormap getColormap();

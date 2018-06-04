@@ -25,6 +25,9 @@ import org.apache.commons.io.FileUtils;
 import edu.jhuapl.saavtk.util.FileCache.FileInfo;
 import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
 
+/**
+ * Static class containing general settings needed by any application.
+ */
 public class Configuration
 {
 	private static final int DEFAULT_MAXIMUM_NUMBER_TRIES = 3;
@@ -34,6 +37,7 @@ public class Configuration
 
 	static private String webURL = "http://sbmt.jhuapl.edu";
 	static private String rootURL = webURL + "/sbmt/prod";
+	static private URL dataRootURL = FileCache.createURL(rootURL, "data");
 	static private String helpURL = webURL;
 
 	static private String appName = null;
@@ -47,7 +51,7 @@ public class Configuration
 	// Flag indicating if this version of the tool is APL in-house only ("private")
 	static private boolean APLVersion = false;
 	private static boolean userPasswordAccepted = false;
-	private static String restrictedAccessRoot = null;
+	private static URL restrictedAccessRoot = null;
 	private static String restrictedFileName = null;
 	private static Iterable<Path> passwordFilesToTry = null;
 
@@ -63,7 +67,7 @@ public class Configuration
 	//            rootURL = rootURLProperty;
 	//    }
 
-	public static void setupPasswordAuthentication(final String restrictedAccessRoot, final String restrictedFileName, final Iterable<Path> passwordFilesToTry) throws IOException
+	public static void setupPasswordAuthentication(final URL restrictedAccessRoot, final String restrictedFileName, final Iterable<Path> passwordFilesToTry) throws IOException
 	{
 		if (restrictedAccessRoot == null || restrictedFileName == null || passwordFilesToTry == null)
 		{
@@ -140,7 +144,7 @@ public class Configuration
 		Configuration.userPasswordAccepted = userPasswordAccepted;
 	}
 
-	private static boolean promptUserForPassword(final String restrictedAccessRoot, final String restrictedFileName, final Path passwordFile, final boolean updateMode) throws IOException
+	private static boolean promptUserForPassword(final URL restrictedAccessRoot, final String restrictedFileName, final Path passwordFile, final boolean updateMode) throws IOException
 	{
 		JPanel mainPanel = new JPanel();
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
@@ -342,14 +346,15 @@ public class Configuration
 	public static void setRootURL(String rootURL)
 	{
 		Configuration.rootURL = rootURL;
+		Configuration.dataRootURL = FileCache.createURL(rootURL, "data");
 	}
 
 	/**
 	 * @return Return the url of the server where data is downloaded from.
 	 */
-	static public String getDataRootURL()
+	static public URL getDataRootURL()
 	{
-		return rootURL + "/data";
+		return dataRootURL;
 	}
 
 	static public String getQueryRootURL()
@@ -542,4 +547,10 @@ public class Configuration
 			}
 		}
 	}
+
+	private Configuration()
+	{
+		throw new AssertionError();
+	}
+
 }

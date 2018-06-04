@@ -184,7 +184,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 				builder.put(label, i);
 				JRadioButton resButton = new JRadioButton(label);
 				resButton.setActionCommand(label);
-				resButton.setEnabled(true);
+				resButton.setEnabled(smallBodyModel.isResolutionLevelAvailable(i));
 				resButton.setToolTipText("<html>Click here to show a model of " + bodyName + " <br />" + "containing " + plateCount.get(i) + " plates</html>");
 				resButton.addActionListener(listener);
 				resModelButtons.add(resButton);
