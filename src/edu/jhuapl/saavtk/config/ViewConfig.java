@@ -34,29 +34,9 @@ public abstract class ViewConfig implements Cloneable
 
 	public abstract boolean isAccessible();
 
-	protected ViewConfig(String[] resolutionLabels, int[] resolutionNumberElements)
-	{
-		setResolution(resolutionLabels, resolutionNumberElements);
-	}
-
 	protected ViewConfig(Iterable<String> resolutionLabels, Iterable<Integer> resolutionNumberElements)
 	{
 		setResolution(resolutionLabels, resolutionNumberElements);
-	}
-
-	public final void setResolution(String[] resolutionLabels, int[] resolutionNumberElements)
-	{
-		Preconditions.checkNotNull(resolutionLabels);
-		Preconditions.checkNotNull(resolutionNumberElements);
-
-		// One argument has to be an actual Iterable for this to call the overload correctly.
-		ImmutableList.Builder<Integer> builder = ImmutableList.builder();
-		for (int numberElements : resolutionNumberElements)
-		{
-			builder.add(numberElements);
-		}
-
-		setResolution(ImmutableList.copyOf(resolutionLabels), builder.build());
 	}
 
 	public final void setResolution(Iterable<Integer> resolutionNumberElements)
