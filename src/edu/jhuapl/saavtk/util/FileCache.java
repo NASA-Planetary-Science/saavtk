@@ -394,31 +394,6 @@ public final class FileCache
 
 		if (offlineMode)
 		{
-//<<<<<<< HEAD
-//			if (fileName.startsWith(FILE_PREFIX))
-//			{
-//				file = new File(fileName.substring(FILE_PREFIX.length()));
-//			}
-//			else
-//			{
-//				FileInfo fi = getFileInfoFromServer(fileName);
-//				if (fi.isExistsLocally() || fi.isExistsOnServer() == YesOrNo.YES)
-//				{
-//					return true;
-//				}
-//				else if (fi.isURLAccessAuthorized() == YesOrNo.NO)
-//				{
-//					URL url = fi.getURL();
-//					throw new UnauthorizedAccessException("Cannot access information about restricted URL: " + url, url);
-//                }
-//                file = fi.getFile();
-//            }
-//        }
-//        return file != null && file.exists();
-//    }
-//     
-//
-//=======
 			return new FileInfo(url, new File(SafePaths.getString(offlineModeRootFolder, ungzippedPath)), YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0);
 		}
 
@@ -534,7 +509,6 @@ public final class FileCache
 		}
 		return false;
 	}
-//>>>>>>> refs/remotes/origin/saavtk1dev
 
 	/**
 	 * Get (download) the file from the server. Place it in the cache for future
