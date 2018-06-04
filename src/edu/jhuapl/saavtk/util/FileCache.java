@@ -338,36 +338,7 @@ public final class FileCache
 		return getFileInfoFromServer(url, urlOrPathSegment);
 	}
 
-    /**
-     * The function loads a file from the server and returns its contents as a list of strings,
-     * one line per string.
-     * @param filename file to read
-     * @return contents of file as list of strings
-     * @throws IOException
-     */
-    public static List<String> getFileLinesFromServerAsStringList(String filename) throws IOException
-    {
-    	File file = getFileFromServer(filename);
-        InputStream fs = new FileInputStream(file);
-        if (filename.toLowerCase().endsWith(".gz"))
-            fs = new GZIPInputStream(fs);
-        InputStreamReader isr = new InputStreamReader(fs);
-        BufferedReader in = new BufferedReader(isr);
-
-        List<String> lines = new ArrayList<String>();
-        String line;
-
-        while ((line = in.readLine()) != null)
-        {
-            lines.add(line);
-        }
-
-        in.close();
-
-        return lines;
-    }
-
-    /**
+	/**
 	 * Get information about the file on the server identified by the provided URL
 	 * object supplemented with the provieded path segment. See the other overload
 	 * of this method for more details about how the arguments are processed.
@@ -597,6 +568,36 @@ public final class FileCache
 			}
 		}
 		return fileInfo.getFile();
+	}
+
+	/**
+	 * The function loads a file from the server and returns its contents as a list
+	 * of strings, one line per string.
+	 * 
+	 * @param filename file to read
+	 * @return contents of file as list of strings
+	 * @throws IOException
+	 */
+	public static List<String> getFileLinesFromServerAsStringList(String filename) throws IOException
+	{
+		File file = getFileFromServer(filename);
+		InputStream fs = new FileInputStream(file);
+		if (filename.toLowerCase().endsWith(".gz"))
+			fs = new GZIPInputStream(fs);
+		InputStreamReader isr = new InputStreamReader(fs);
+		BufferedReader in = new BufferedReader(isr);
+
+		List<String> lines = new ArrayList<String>();
+		String line;
+
+		while ((line = in.readLine()) != null)
+		{
+			lines.add(line);
+		}
+
+		in.close();
+
+		return lines;
 	}
 
 	/**
