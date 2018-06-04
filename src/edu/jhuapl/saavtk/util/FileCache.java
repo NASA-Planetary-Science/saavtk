@@ -1,14 +1,19 @@
 package edu.jhuapl.saavtk.util;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 
@@ -333,7 +338,36 @@ public final class FileCache
 		return getFileInfoFromServer(url, urlOrPathSegment);
 	}
 
-	/**
+    /**
+     * The function loads a file from the server and returns its contents as a list of strings,
+     * one line per string.
+     * @param filename file to read
+     * @return contents of file as list of strings
+     * @throws IOException
+     */
+    public static List<String> getFileLinesFromServerAsStringList(String filename) throws IOException
+    {
+    	File file = getFileFromServer(filename);
+        InputStream fs = new FileInputStream(file);
+        if (filename.toLowerCase().endsWith(".gz"))
+            fs = new GZIPInputStream(fs);
+        InputStreamReader isr = new InputStreamReader(fs);
+        BufferedReader in = new BufferedReader(isr);
+
+        List<String> lines = new ArrayList<String>();
+        String line;
+
+        while ((line = in.readLine()) != null)
+        {
+            lines.add(line);
+        }
+
+        in.close();
+
+        return lines;
+    }
+
+    /**
 	 * Get information about the file on the server identified by the provided URL
 	 * object supplemented with the provieded path segment. See the other overload
 	 * of this method for more details about how the arguments are processed.
@@ -360,6 +394,31 @@ public final class FileCache
 
 		if (offlineMode)
 		{
+//<<<<<<< HEAD
+//			if (fileName.startsWith(FILE_PREFIX))
+//			{
+//				file = new File(fileName.substring(FILE_PREFIX.length()));
+//			}
+//			else
+//			{
+//				FileInfo fi = getFileInfoFromServer(fileName);
+//				if (fi.isExistsLocally() || fi.isExistsOnServer() == YesOrNo.YES)
+//				{
+//					return true;
+//				}
+//				else if (fi.isURLAccessAuthorized() == YesOrNo.NO)
+//				{
+//					URL url = fi.getURL();
+//					throw new UnauthorizedAccessException("Cannot access information about restricted URL: " + url, url);
+//                }
+//                file = fi.getFile();
+//            }
+//        }
+//        return file != null && file.exists();
+//    }
+//     
+//
+//=======
 			return new FileInfo(url, new File(SafePaths.getString(offlineModeRootFolder, ungzippedPath)), YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0);
 		}
 
@@ -475,6 +534,7 @@ public final class FileCache
 		}
 		return false;
 	}
+//>>>>>>> refs/remotes/origin/saavtk1dev
 
 	/**
 	 * Get (download) the file from the server. Place it in the cache for future
