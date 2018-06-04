@@ -587,7 +587,7 @@ public final class FileCache
 		InputStreamReader isr = new InputStreamReader(fs);
 		BufferedReader in = new BufferedReader(isr);
 
-		List<String> lines = new ArrayList<String>();
+		List<String> lines = new ArrayList<>();
 		String line;
 
 		while ((line = in.readLine()) != null)
