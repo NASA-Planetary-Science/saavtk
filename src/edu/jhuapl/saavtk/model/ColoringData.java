@@ -43,6 +43,11 @@ public class ColoringData
 	static final Key<String> NAME = Key.of("Coloring name"); // Slope or Gravitational Vector
 
 	static final Key<String> FILE_NAME = Key.of("File name");
+
+	// Note: the metadata associated with this key is not yet being used. The ELEMENT_NAMES are supposed to tell
+	// the load methods which columns to read from a CSV or FITS file, but there is not currently any way
+	// for calling code to know which columns are correct, since the coloring metadata is set up before the files
+	// are downloaded. If/when metadata is downloaded from the server, this key may be used.
 	static final Key<List<String>> ELEMENT_NAMES = Key.of("Element names"); // [ "Slope" ] or [ "G_x", "G_y", "G_z" ]
 
 	static final Key<String> UNITS = Key.of("Coloring units"); // deg or m/s^2
