@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
