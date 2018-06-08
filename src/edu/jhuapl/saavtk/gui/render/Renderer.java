@@ -635,6 +635,13 @@ public class Renderer extends JPanel implements ActionListener
 	{
 		setCameraViewAngle(30.0);
 	}
+	
+	public void resetCamera()
+	{
+		mainCanvas.resetCamera();
+		
+	}
+	
 
 	public void setProjectionType(ProjectionType projectionType)
 	{
