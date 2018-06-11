@@ -122,9 +122,8 @@ public class BasicColoringDataManager implements ColoringDataManager
 
 	public final void add(ColoringData data)
 	{
-		Metadata metadata = data.getMetadata();
-		String name = metadata.get(ColoringData.NAME);
-		Integer numberElements = metadata.get(ColoringData.NUMBER_ELEMENTS);
+		String name = data.getName();
+		Integer numberElements = data.getNumberElements();
 		if (dataTable.contains(name, numberElements))
 		{
 			throw new IllegalArgumentException("Duplicated coloring for " + name + " (" + numberElements + " elements)");
@@ -142,9 +141,8 @@ public class BasicColoringDataManager implements ColoringDataManager
 
 	public final void remove(ColoringData data)
 	{
-		Metadata metadata = data.getMetadata();
-		String name = metadata.get(ColoringData.NAME);
-		Integer numberElements = metadata.get(ColoringData.NUMBER_ELEMENTS);
+		String name = data.getName();
+		Integer numberElements = data.getNumberElements();
 		dataTable.remove(name, numberElements);
 
 		if (!dataTable.rowKeySet().contains(name))
@@ -160,9 +158,8 @@ public class BasicColoringDataManager implements ColoringDataManager
 
 	public final void replace(ColoringData data)
 	{
-		Metadata metadata = data.getMetadata();
-		String name = metadata.get(ColoringData.NAME);
-		Integer numberElements = metadata.get(ColoringData.NUMBER_ELEMENTS);
+		String name = data.getName();
+		Integer numberElements = data.getNumberElements();
 		if (!dataTable.contains(name, numberElements))
 		{
 			throw new IllegalArgumentException("Cannot replace coloring " + name + " (" + numberElements + " elements)");
