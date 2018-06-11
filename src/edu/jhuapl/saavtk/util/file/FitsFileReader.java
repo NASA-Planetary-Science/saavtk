@@ -2,6 +2,8 @@ package edu.jhuapl.saavtk.util.file;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -107,7 +109,7 @@ public final class FitsFileReader extends FileReader
 
 		ImmutableList.Builder<GettableAsDouble> columnBuilder = ImmutableList.builder();
 		ImmutableList.Builder<String> nameBuilder = ImmutableList.builder();
-		ImmutableList.Builder<String> unitsBuilder = ImmutableList.builder();
+		final List<String> unitsList = new ArrayList<>(); // Needs to accept null values.
 
 		for (Integer columnNumber : columnNumbers)
 		{
@@ -148,16 +150,15 @@ public final class FitsFileReader extends FileReader
 				throw new IOException("Column #" + columnNumber + " from FITS table/HDU #" + tableHduNumber + " is not a supported numeric array type");
 			}
 			nameBuilder.add(name);
-			unitsBuilder.add(units == null ? "" : units);
+			unitsList.add(units);
 		}
 
 		final ImmutableList<GettableAsDouble> columns = columnBuilder.build();
 		final ImmutableList<String> names = nameBuilder.build();
-		final ImmutableList<String> units = unitsBuilder.build();
 
 		// This is a bit of paranoid defensive programming. Should any changes
 		// to the above code result in violating this invariant, detect it here.
-		if (columns.size() != names.size() || columns.size() != units.size())
+		if (columns.size() != names.size() || columns.size() != unitsList.size())
 		{
 			throw new AssertionError();
 		}
@@ -181,7 +182,7 @@ public final class FitsFileReader extends FileReader
 			@Override
 			public String getUnits(int cellIndex)
 			{
-				return units.get(cellIndex);
+				return unitsList.get(cellIndex);
 			}
 
 			@Override

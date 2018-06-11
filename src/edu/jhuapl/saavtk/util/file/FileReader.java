@@ -15,13 +15,13 @@ class FileReader
 		@Override
 		public String getName(@SuppressWarnings("unused") int cellIndex)
 		{
-			throw new UnsupportedOperationException();
+			return null;
 		}
 
 		@Override
 		public String getUnits(@SuppressWarnings("unused") int cellIndex)
 		{
-			throw new UnsupportedOperationException();
+			return null;
 		}
 
 		@Override

@@ -103,7 +103,7 @@ public class CsvFileReader extends FileReader
 				@Override
 				public String getUnits(@SuppressWarnings("unused") int cellIndex)
 				{
-					throw new UnsupportedOperationException("CSV files have no units");
+					return null;
 				}
 
 				@Override
