@@ -6,12 +6,25 @@ import com.google.common.collect.ImmutableMap;
 
 public final class FixedMetadata extends BasicMetadata
 {
-	public static FixedMetadata of(BasicMetadata metadata)
+	public static FixedMetadata of(Metadata metadata)
 	{
 		Preconditions.checkNotNull(metadata);
+
+		if (metadata instanceof FixedMetadata)
+		{
+			return (FixedMetadata) metadata;
+		}
+
 		Version version = metadata.getVersion();
 		ImmutableList<Key<?>> keys = metadata.getKeys();
-		return new FixedMetadata(version, keys, ImmutableMap.copyOf(metadata.getMap()));
+
+		ImmutableMap.Builder<Key<?>, Object> builder = ImmutableMap.builder();
+		for (Key<?> key : keys)
+		{
+			builder.put(key, metadata.get(key));
+		}
+
+		return new FixedMetadata(version, keys, builder.build());
 	}
 
 	private final ImmutableList<Key<?>> keys;
