@@ -189,7 +189,9 @@ public class BasicColoringDataManager implements ColoringDataManager
 					{
 						if (has(name, numberElements))
 						{
-							builder.add(get(name, numberElements).getMetadata());
+							MetadataManager coloringMetadataManager = get(name, numberElements).getMetadataManager();
+							Metadata coloringMetadata = coloringMetadataManager.store();
+							builder.add(coloringMetadata);
 						}
 					}
 				}
@@ -201,7 +203,22 @@ public class BasicColoringDataManager implements ColoringDataManager
 			public void retrieve(Metadata source)
 			{
 				clear();
-				// TODO write the rest of this.
+				Metadata metadata = source.get(Key.of(dataId));
+				for (Key<?> key : metadata.getKeys())
+				{
+					Object object = metadata.get(key);
+					if (object instanceof Metadata)
+					{
+						Metadata coloringMetadata = (Metadata) object;
+						ColoringData coloringData = ColoringData.of();
+						coloringData.getMetadataManager().retrieve(coloringMetadata);
+						add(coloringData);
+					}
+					else
+					{
+						throw new IllegalArgumentException();
+					}
+				}
 			}
 
 		};
