@@ -20,6 +20,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 
 import edu.jhuapl.saavtk.gui.JTextFieldDoubleVerifier;
 import edu.jhuapl.saavtk.gui.render.Renderer;
+import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.gui.render.Renderer.ProjectionType;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -279,34 +280,8 @@ public class CameraDialog extends JDialog implements ActionListener
         {
             renderer.resetToDefaultCameraViewAngle();
             renderer.resetCamera();
-//            renderer.setCameraFocalPoint(origin);
-            System.out.println(renderer.getCameraFocalPoint());
-            for(int i = 0; i< renderer.getCameraFocalPoint().length; i++) {
-            	System.out.println("Point: " + renderer.getCameraFocalPoint()[i] + "\t");
-            }
-            
-//            GenericPolyhedralModel model = renderer.getGenericPolyhedralModel();
-//            double[] direction = new double[3];
-//            int result = model.computeRayIntersection(origin, renderer.getCameraPosition(), direction);
-// REMOVED because it causes Renderer to freeze. -turnerj1
-            
-            fovField.setText(String.valueOf(renderer.getCameraViewAngle()));
-            
-            double[] pos = renderer.getCameraFocalPoint();
-            //MathUtil.unorm(renderer.getCameraFocalPoint(), pos);
-            System.out.println();
-            System.out.println(Math.acos(pos[2] / MathUtil.vnorm(renderer.getCameraFocalPoint())));
-            LatLon focalPoint = new LatLon(Math.atan(pos[1] / pos[0]), Math.acos(pos[2] / MathUtil.vnorm(renderer.getCameraFocalPoint())));
-            boresightLatitiudeField.setText(String.valueOf(focalPoint.toRadians().lat));
-            boresightLongitudeField.setText(String.valueOf(focalPoint.toRadians().lon));
-            System.out.println(MathUtil.vnorm(renderer.getCameraFocalPoint()));
-            lineOfSightDistanceField.setText(String.valueOf(MathUtil.vnorm(direction)));
-            
-            projComboBox.setSelectedItem(Renderer.ProjectionType.PERSPECTIVE);
-            subSpacecraftLatitudeField.setText(String.valueOf(renderer.getCameraLatLon().lat));
-            subspacecraftLongitudeField.setText(String.valueOf(renderer.getCameraLatLon().lon));
-            spacecraftAltitudeField.setText(String.valueOf(renderer.getCameraDistance()));
-            cameraRollField.setText(String.valueOf(renderer.getCameraRoll()));
+            renderer.setCameraOrientationInDirectionOfAxis(AxisType.NEGATIVE_Z, true);
+        	setVisible(true);
         }
 
         if (e.getSource() == okayButton || e.getSource() == cancelButton)
