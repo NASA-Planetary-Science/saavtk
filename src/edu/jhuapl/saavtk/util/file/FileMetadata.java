@@ -14,6 +14,7 @@ import com.google.common.collect.ImmutableList;
 import edu.jhuapl.saavtk.gui.MetadataDisplayPanel;
 import edu.jhuapl.saavtk.metadata.FixedMetadata;
 import edu.jhuapl.saavtk.metadata.Key;
+import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.Serializers;
 import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
@@ -204,7 +205,7 @@ public class FileMetadata
 		}
 	}
 
-	private static void display(FixedMetadata fileMetadata)
+	private static void display(Metadata fileMetadata)
 	{
 		JTabbedPane jTabbedPane = new JTabbedPane();
 		List<FixedMetadata> dataObjects = fileMetadata.get(DATA_OBJECTS);
