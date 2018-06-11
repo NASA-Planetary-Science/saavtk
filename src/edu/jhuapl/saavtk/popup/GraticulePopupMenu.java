@@ -31,6 +31,8 @@ public class GraticulePopupMenu extends PopupMenu
     private JMenuItem thicknessMenuItem;
     private JMenuItem setLatLongSpacing;
     private ColorChooser colorChooser;
+    private double[] bounds = new double[2];
+    private double[] factors = {1, 2, 3, 4, 5, 6, 9, 10, 12, 15, 18, 20, 30, 36, 45, 60, 90, 180};
 
     public GraticulePopupMenu(ModelManager modelManager,
             Component invoker)
@@ -121,6 +123,21 @@ public class GraticulePopupMenu extends PopupMenu
 
             if (option == JOptionPane.OK_OPTION)
             {
+            	if(180 % (Double)longitudeSpinner.getValue() != 0) 
+            	{
+                	findBounds((Double)longitudeSpinner.getValue());
+//                	System.out.println(" Bound: " + (((bounds[1] - bounds[0]) / 2.0) + bounds[0]));
+                	if( (((bounds[1] - bounds[0]) / 2.0) + bounds[0]) >= (Double)longitudeSpinner.getValue())
+                	{
+                		longitudeSpinner.setValue(bounds[0]);
+                	} 
+                	else 
+                	{
+                		longitudeSpinner.setValue(bounds[1]);
+                	}
+            		JOptionPane.showMessageDialog(invoker, "Value not factor of 180. Nearest factor (" + longitudeSpinner.getValue() + ") will be chosen.", "Longitude Value Warning", JOptionPane.WARNING_MESSAGE);
+            	}
+            	
                 graticule.setLongitudeSpacing((Double)longitudeSpinner.getValue());
                 graticule.setLatitudeSpacing((Double)latitudeSpinner.getValue());
                 graticule.propertyChange(new PropertyChangeEvent(this, Properties.MODEL_RESOLUTION_CHANGED, null, null));
@@ -134,5 +151,19 @@ public class GraticulePopupMenu extends PopupMenu
     {
         show(e.getComponent(), e.getX(), e.getY());
     }
-
+    
+    private void findBounds(double input)
+    {
+    	int size = factors.length;
+    	for(int i = 0; i < size; i++)
+    	{
+    		if(factors[i]>input)
+    		{
+    			bounds[1] = factors[i];
+    			bounds[0] = factors[i-1];
+    			System.out.println(bounds[0] + "   " + bounds[1]);
+    			break;
+    		}
+    	}
+    }
 }

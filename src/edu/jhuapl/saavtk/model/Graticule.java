@@ -7,8 +7,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.math3.exception.MathUnsupportedOperationException;
-
 import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
@@ -87,7 +85,7 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
     	actors.clear();
     	captionActors.clear();
     	
-		int numberLonCircles = 5;//(int) Math.ceil(180.0 / longitudeSpacing);
+		int numberLonCircles = (int) Math.ceil(180.0 / longitudeSpacing);
 		int numberLatCircles = (int) Math.ceil(90.0 / latitudeSpacing);
 
 		double[] origin = { 0.0, 0.0, 0.0 };
@@ -98,8 +96,7 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 		vtkPolyData[] tmps = new vtkPolyData[numberLatCircles + numberLonCircles];
 
 		cutPolyData.SetInputData(smallBodyPolyData);
-		
-		vtkPlane plane2 = new vtkPlane();
+
 		// First do the longitudes.
 		for (int i = 0; i < numberLonCircles; ++i)
 		{
@@ -107,7 +104,6 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 			double[] vec = MathUtil.latrec(new LatLon(0.0, lon, 1.0));
 			double[] normal = new double[3];
 			MathUtil.vcrss(vec, zaxis, normal);
-			System.out.println("normal: " + MathUtil.vnorm(normal));
 
 			plane.SetOrigin(origin);
 			plane.SetNormal(normal);
@@ -117,20 +113,6 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 
 			tmps[i] = new vtkPolyData();
 			tmps[i].DeepCopy(cutPolyData.GetOutput());
-			
-//			for( double j : tmps[i].GetBounds())
-//				System.out.println(j);
-//			System.out.println();
-			
-//			plane2.SetOrigin(origin);
-//			plane2.SetNormal(vec);
-//			
-//			cutPolyData.SetCutFunction(plane2);
-//			cutPolyData.Update();
-
-			//tmps[i] = new vtkPolyData();
-//			tmps[i].DeepCopy(cutPolyData.GetOutput());
-			
 			appendFilter.SetInputDataByNumber(i, tmps[i]);
 		}
 
