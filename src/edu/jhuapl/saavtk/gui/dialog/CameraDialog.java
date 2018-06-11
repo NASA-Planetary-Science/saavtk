@@ -310,7 +310,7 @@ public class CameraDialog extends JDialog implements ActionListener
       
       calculateViewRadius();
       if(nadirFocalPoint){
-          System.out.println("11");
+//          System.out.println("11");
           boresightLatitiudeField.setText("");
           boresightLongitudeField.setText("");
           lat = String.valueOf(cameraLatLon.lat);
