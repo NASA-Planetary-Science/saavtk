@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.metadata.FixedMetadata;
 import edu.jhuapl.saavtk.metadata.Key;
+import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.util.FileCache;
@@ -82,9 +83,9 @@ public class ColoringData
 	private double[] defaultRange;
 	private boolean loadFailed;
 
-	protected ColoringData(FixedMetadata metadata, vtkFloatArray data)
+	protected ColoringData(Metadata metadata, vtkFloatArray data)
 	{
-		this.metadata = metadata;
+		this.metadata = FixedMetadata.of(metadata);
 		this.data = data;
 		this.defaultRange = this.data != null ? defaultRange = this.data.GetRange() : null;
 		this.loadFailed = false;
