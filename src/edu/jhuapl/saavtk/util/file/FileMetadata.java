@@ -7,8 +7,6 @@ import java.util.List;
 import javax.swing.JFrame;
 import javax.swing.JTabbedPane;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.jhuapl.saavtk.gui.MetadataDisplayPanel;
 import edu.jhuapl.saavtk.metadata.FixedMetadata;
 import edu.jhuapl.saavtk.metadata.Key;
@@ -31,9 +29,6 @@ public class FileMetadata
 
 	// Fields used to describe the data object.
 	public static final Key<List<String>> DESCRIPTION_FIELDS = Key.of("Fields"); // Meta-metadata that tells us what is in the description.
-
-	// These are the fields from a FITS keyword other than the name of the keyword.
-	public static final List<String> FITS_KEYWORD_FIELDS = ImmutableList.of("Value", "Comment");
 
 	public static final Key<List<FixedMetadata>> COLUMNS = Key.of("Columns");
 	public static final Key<Integer> NUMBER_RECORDS = Key.of("Number of records");
