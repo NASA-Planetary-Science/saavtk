@@ -1,6 +1,6 @@
 package edu.jhuapl.saavtk.util.file;
 
-public interface IndexableTuple
+public interface IndexableTuple extends DataObject
 {
 	int getNumberCells();
 
