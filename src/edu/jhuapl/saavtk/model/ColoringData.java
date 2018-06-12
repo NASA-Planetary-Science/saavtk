@@ -17,8 +17,8 @@ import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.file.CsvFileReader;
 import edu.jhuapl.saavtk.util.file.FieldNotFoundException;
+import edu.jhuapl.saavtk.util.file.FileReader;
 import edu.jhuapl.saavtk.util.file.FitsFileReader;
-import edu.jhuapl.saavtk.util.file.FitsFileReader.NotFitsFileException;
 import edu.jhuapl.saavtk.util.file.IndexableTuple;
 import edu.jhuapl.saavtk.util.file.Tuple;
 import vtk.vtkFloatArray;
@@ -52,7 +52,25 @@ public class ColoringData
 		return of(name, null, elementNames, units, numberElements, hasNulls, data);
 	}
 
-	public static ColoringData of(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
+	static ColoringData of(String name, File file)
+	{
+		FixedMetadata metadata = loadMetadata(name, file);
+		return new ColoringData(metadata, null);
+	}
+
+	static ColoringData of(Metadata metadata)
+	{
+		Preconditions.checkNotNull(metadata);
+		String name = metadata.get(NAME);
+		String fileName = metadata.get(FILE_NAME);
+		List<String> elementNames = metadata.get(ELEMENT_NAMES);
+		String units = metadata.get(UNITS);
+		int numberElements = metadata.get(NUMBER_ELEMENTS);
+		boolean hasNulls = metadata.get(HAS_NULLS);
+		return of(name, fileName, elementNames, units, numberElements, hasNulls);
+	}
+
+	private static ColoringData of(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
 	{
 		FixedMetadata metadata = createMetadata(name, fileName, elementNames, units, numberElements, hasNulls);
 		return new ColoringData(metadata, data);
@@ -74,6 +92,17 @@ public class ColoringData
 		metadata.put(ColoringData.UNITS, units);
 		metadata.put(ColoringData.NUMBER_ELEMENTS, numberElements);
 		metadata.put(ColoringData.HAS_NULLS, hasNulls);
+
+		return FixedMetadata.of(metadata);
+	}
+
+	private static FixedMetadata loadMetadata(String name, File coloringFile)
+	{
+		Preconditions.checkNotNull(name);
+		Preconditions.checkNotNull(coloringFile);
+		Preconditions.checkArgument(coloringFile.exists());
+
+		SettableMetadata metadata = SettableMetadata.of(COLORING_DATA_VERSION);
 
 		return FixedMetadata.of(metadata);
 	}
@@ -295,6 +324,11 @@ public class ColoringData
 		return builder.toString();
 	}
 
+	FixedMetadata getMetadata()
+	{
+		return metadata;
+	}
+
 	private final void append(StringBuilder builder, String toAppend)
 	{
 		if (toAppend != null && toAppend.matches(".*\\S.*"))
@@ -302,11 +336,6 @@ public class ColoringData
 			builder.append(", ");
 			builder.append(toAppend);
 		}
-	}
-
-	FixedMetadata getMetadata()
-	{
-		return metadata;
 	}
 
 	private final double[] computeDefaultColoringRange(vtkFloatArray data)
@@ -340,9 +369,9 @@ public class ColoringData
 		IndexableTuple result = null;
 		try
 		{
-			result = FitsFileReader.readTuples(file, 1, columnNumbers);
+			result = FitsFileReader.of().readTuples(file, 1, columnNumbers);
 		}
-		catch (NotFitsFileException e)
+		catch (FileReader.IncorrectFileFormatException e)
 		{
 			throw new IOException(e);
 		}
@@ -360,12 +389,12 @@ public class ColoringData
 		{
 			try
 			{
-				result = FitsFileReader.readTuples(file, 1, fitsColumnNumbers);
+				result = FitsFileReader.of().readTuples(file, 1, fitsColumnNumbers);
 			}
-			catch (@SuppressWarnings("unused") NotFitsFileException e)
+			catch (@SuppressWarnings("unused") FileReader.IncorrectFileFormatException e)
 			{
 				// Try as a CSV file now.
-				result = CsvFileReader.readTuples(file, csvColumnNumbers);
+				result = CsvFileReader.of().readTuples(file, csvColumnNumbers);
 			}
 		}
 		catch (@SuppressWarnings("unused") FieldNotFoundException e)
