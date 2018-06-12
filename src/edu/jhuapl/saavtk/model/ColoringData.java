@@ -17,7 +17,7 @@ import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.file.CsvFileReader;
 import edu.jhuapl.saavtk.util.file.FieldNotFoundException;
-import edu.jhuapl.saavtk.util.file.FileReader;
+import edu.jhuapl.saavtk.util.file.FileReader.IncorrectFileFormatException;
 import edu.jhuapl.saavtk.util.file.FitsFileReader;
 import edu.jhuapl.saavtk.util.file.IndexableTuple;
 import edu.jhuapl.saavtk.util.file.Tuple;
@@ -371,7 +371,7 @@ public class ColoringData
 		{
 			result = FitsFileReader.of().readTuples(file, 1, columnNumbers);
 		}
-		catch (FileReader.IncorrectFileFormatException e)
+		catch (IncorrectFileFormatException e)
 		{
 			throw new IOException(e);
 		}
@@ -391,7 +391,7 @@ public class ColoringData
 			{
 				result = FitsFileReader.of().readTuples(file, 1, fitsColumnNumbers);
 			}
-			catch (@SuppressWarnings("unused") FileReader.IncorrectFileFormatException e)
+			catch (@SuppressWarnings("unused") IncorrectFileFormatException e)
 			{
 				// Try as a CSV file now.
 				result = CsvFileReader.of().readTuples(file, csvColumnNumbers);

@@ -36,7 +36,7 @@ public final class FitsFileReader extends FileReader
 	}
 
 	@Override
-	public FixedMetadata readMetadata(File file) throws IOException, FileReader.IncorrectFileFormatException
+	public FixedMetadata readMetadata(File file) throws IOException, IncorrectFileFormatException
 	{
 		FixedMetadata result = null;
 		try (Fits fits = new Fits(file))
@@ -55,7 +55,7 @@ public final class FitsFileReader extends FileReader
 		}
 		catch (FitsException e)
 		{
-			throw new FileReader.IncorrectFileFormatException(e);
+			throw new IncorrectFileFormatException(e);
 		}
 		return result;
 	}
@@ -70,12 +70,12 @@ public final class FitsFileReader extends FileReader
 	 * @param columnNumbers the column numbers to read
 	 * @return a row-oriented accessor to the slice of the table identified by the
 	 *         arguments
-	 * @throws FileReader.IncorrectFileFormatException if the file appears not to be
-	 *             a FITS file
+	 * @throws IncorrectFileFormatException if the file appears not to be a FITS
+	 *             file
 	 * @throws IOException if any other error occurs in reading the slice of the
 	 *             table identified by the arguments
 	 */
-	public IndexableTuple readTuples(File file, int tableHduNumber, Iterable<Integer> columnNumbers) throws FileReader.IncorrectFileFormatException, FieldNotFoundException, IOException
+	public IndexableTuple readTuples(File file, int tableHduNumber, Iterable<Integer> columnNumbers) throws IncorrectFileFormatException, FieldNotFoundException, IOException
 	{
 		Preconditions.checkNotNull(file);
 		Preconditions.checkArgument(file.exists());
@@ -125,7 +125,7 @@ public final class FitsFileReader extends FileReader
 			// This can only come from fits.read(), probably a corrupt FITS header
 			// error. Since the file is known to exist, the most likely cause
 			// is that it's not a FITS file.
-			throw new FileReader.IncorrectFileFormatException(e);
+			throw new IncorrectFileFormatException(e);
 		}
 	}
 
