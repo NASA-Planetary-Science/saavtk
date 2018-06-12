@@ -11,8 +11,11 @@ import java.util.regex.Pattern;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import edu.jhuapl.saavtk.metadata.Metadata;
+
 public class CsvFileReader extends FileReader
 {
+	private static final CsvFileReader INSTANCE = new CsvFileReader();
 	/*
 	 * This Pattern will match on either quoted text or text between commas,
 	 * including whitespace, and accounting for beginning and end of line. Cribbed
@@ -20,7 +23,18 @@ public class CsvFileReader extends FileReader
 	 */
 	private static final Pattern CSV_PATTERN = Pattern.compile("\"([^\"]*)\"|(?<=,|^)([^,]*)(?:,|$)");
 
-	public static IndexableTuple readTuples(File file, Iterable<Integer> columnNumbers) throws FieldNotFoundException, IOException
+	public static CsvFileReader of()
+	{
+		return INSTANCE;
+	}
+
+	@Override
+	public Metadata readMetadata(@SuppressWarnings("unused") File file) throws IOException
+	{
+		return EMPTY_METADATA;
+	}
+
+	public IndexableTuple readTuples(File file, Iterable<Integer> columnNumbers) throws FieldNotFoundException, IOException
 	{
 		Preconditions.checkNotNull(file);
 		Preconditions.checkArgument(file.exists());
@@ -86,7 +100,14 @@ public class CsvFileReader extends FileReader
 
 			final ImmutableList<ImmutableList<Double>> valuesList = builder.build();
 			final int numberRecords = valuesList.size();
+
 			return new IndexableTuple() {
+
+				@Override
+				public Metadata getMetadata()
+				{
+					return EMPTY_METADATA;
+				}
 
 				@Override
 				public int getNumberCells()
@@ -103,7 +124,7 @@ public class CsvFileReader extends FileReader
 				@Override
 				public String getUnits(@SuppressWarnings("unused") int cellIndex)
 				{
-					return null;
+					return "";
 				}
 
 				@Override
@@ -136,7 +157,7 @@ public class CsvFileReader extends FileReader
 
 	}
 
-	private static ImmutableList<String> getColumnValues(ImmutableList<String> line, Iterable<Integer> columnNumbers)
+	private ImmutableList<String> getColumnValues(ImmutableList<String> line, Iterable<Integer> columnNumbers)
 	{
 		ImmutableList.Builder<String> builder = ImmutableList.builder();
 		for (Integer column : columnNumbers)

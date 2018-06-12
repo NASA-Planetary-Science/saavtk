@@ -8,25 +8,56 @@ import java.util.List;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import edu.jhuapl.saavtk.metadata.FixedMetadata;
+import edu.jhuapl.saavtk.metadata.Key;
+import edu.jhuapl.saavtk.metadata.Metadata;
+import edu.jhuapl.saavtk.metadata.SettableMetadata;
+import edu.jhuapl.saavtk.metadata.Version;
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
 import nom.tam.fits.FitsException;
+import nom.tam.fits.Header;
+import nom.tam.fits.HeaderCard;
 import nom.tam.fits.TableHDU;
+import nom.tam.util.Cursor;
 
 public final class FitsFileReader extends FileReader
 {
-	/**
-	 * This exception indicates an attempt to access a non-FITS file using a FITS
-	 * file reader.
-	 */
-	public static final class NotFitsFileException extends Exception
-	{
-		private static final long serialVersionUID = -3268081959880597315L;
+	public static final Version VERSION = Version.of(0, 1);
 
-		private NotFitsFileException(Exception e)
+	// These are the fields from a FITS keyword other than the name of the keyword.
+	private static final List<String> FITS_KEYWORD_FIELDS = ImmutableList.of("Value", "Comment");
+
+	private static final FitsFileReader INSTANCE = new FitsFileReader();
+
+	public static FitsFileReader of()
+	{
+		return INSTANCE;
+	}
+
+	@Override
+	public FixedMetadata readMetadata(File file) throws IOException, FileReader.IncorrectFileFormatException
+	{
+		FixedMetadata result = null;
+		try (Fits fits = new Fits(file))
 		{
-			super(e);
+			BasicHDU<?>[] hdus = fits.read();
+			SettableMetadata metadata = SettableMetadata.of(VERSION);
+			ImmutableList.Builder<FixedMetadata> builder = ImmutableList.builder();
+
+			for (int hduNum = 0; hduNum < hdus.length; ++hduNum)
+			{
+				Metadata hduMetadata = readMetadata(hdus[hduNum], hduNum);
+				builder.add(FixedMetadata.of(hduMetadata));
+			}
+			metadata.put(FileMetadata.DATA_OBJECTS, builder.build());
+			result = FixedMetadata.of(metadata);
 		}
+		catch (FitsException e)
+		{
+			throw new FileReader.IncorrectFileFormatException(e);
+		}
+		return result;
 	}
 
 	/**
@@ -39,11 +70,12 @@ public final class FitsFileReader extends FileReader
 	 * @param columnNumbers the column numbers to read
 	 * @return a row-oriented accessor to the slice of the table identified by the
 	 *         arguments
-	 * @throws NotFitsFileException if the file appears not to be a FITS file
+	 * @throws FileReader.IncorrectFileFormatException if the file appears not to be
+	 *             a FITS file
 	 * @throws IOException if any other error occurs in reading the slice of the
 	 *             table identified by the arguments
 	 */
-	public static IndexableTuple readTuples(File file, int tableHduNumber, Iterable<Integer> columnNumbers) throws NotFitsFileException, FieldNotFoundException, IOException
+	public IndexableTuple readTuples(File file, int tableHduNumber, Iterable<Integer> columnNumbers) throws FileReader.IncorrectFileFormatException, FieldNotFoundException, IOException
 	{
 		Preconditions.checkNotNull(file);
 		Preconditions.checkArgument(file.exists());
@@ -93,8 +125,38 @@ public final class FitsFileReader extends FileReader
 			// This can only come from fits.read(), probably a corrupt FITS header
 			// error. Since the file is known to exist, the most likely cause
 			// is that it's not a FITS file.
-			throw new NotFitsFileException(e);
+			throw new FileReader.IncorrectFileFormatException(e);
 		}
+	}
+
+	private SettableMetadata readMetadata(BasicHDU<?> hdu, int hduNumber)
+	{
+		SettableMetadata hduMetadata = SettableMetadata.of(VERSION);
+		Header header = hdu.getHeader();
+
+		// Derive the title.
+		String extName = header.getStringValue("EXTNAME");
+		boolean isPrimary = extName == null && header.getBooleanValue("SIMPLE");
+		final String title = extName != null ? extName : isPrimary ? "Primary Image" : "HDU " + hduNumber;
+		hduMetadata.put(FileMetadata.TITLE, title);
+
+		// Add boilerplate FITS meta-metadata.
+		hduMetadata.put(FileMetadata.DESCRIPTION_FIELDS, FITS_KEYWORD_FIELDS);
+
+		// Get all the keywords and put them in a self-contained "sub-metadata" object.
+		SettableMetadata keywordMetadata = SettableMetadata.of(VERSION);
+		Cursor<String, HeaderCard> iterator = header.iterator();
+		while (iterator.hasNext())
+		{
+			HeaderCard card = iterator.next();
+			ArrayList<String> valueAndComment = new ArrayList<>();
+			valueAndComment.add(card.getValue());
+			valueAndComment.add(card.getComment());
+			keywordMetadata.put(Key.of(card.getKey()), valueAndComment);
+		}
+
+		hduMetadata.put(FileMetadata.DESCRIPTION, FixedMetadata.of(keywordMetadata));
+		return hduMetadata;
 	}
 
 	private interface GettableAsDouble
@@ -102,7 +164,7 @@ public final class FitsFileReader extends FileReader
 		double get(int cellIndex);
 	}
 
-	private static IndexableTuple readTuples(TableHDU<?> table, int tableHduNumber, Iterable<Integer> columnNumbers) throws FitsException, FieldNotFoundException, IOException
+	private IndexableTuple readTuples(TableHDU<?> table, int tableHduNumber, Iterable<Integer> columnNumbers) throws FitsException, FieldNotFoundException, IOException
 	{
 		final int numberRecords = table.getNRows();
 		final int numberColumnsInTable = table.getNCols();
@@ -165,7 +227,15 @@ public final class FitsFileReader extends FileReader
 
 		final int numberCells = columns.size();
 
+		final Metadata metadata = readMetadata(table, tableHduNumber);
+
 		return new IndexableTuple() {
+
+			@Override
+			public Metadata getMetadata()
+			{
+				return metadata;
+			}
 
 			@Override
 			public int getNumberCells()
@@ -211,10 +281,5 @@ public final class FitsFileReader extends FileReader
 			}
 
 		};
-	}
-
-	private FitsFileReader()
-	{
-		throw new AssertionError();
 	}
 }
