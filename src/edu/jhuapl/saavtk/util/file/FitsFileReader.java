@@ -21,7 +21,7 @@ import nom.tam.fits.HeaderCard;
 import nom.tam.fits.TableHDU;
 import nom.tam.util.Cursor;
 
-public final class FitsFileReader extends FileReader
+public final class FitsFileReader extends DataFileReader
 {
 	public static final Version VERSION = Version.of(0, 1);
 

@@ -17,7 +17,7 @@ import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.file.CsvFileReader;
 import edu.jhuapl.saavtk.util.file.FieldNotFoundException;
-import edu.jhuapl.saavtk.util.file.FileReader.IncorrectFileFormatException;
+import edu.jhuapl.saavtk.util.file.DataFileReader.IncorrectFileFormatException;
 import edu.jhuapl.saavtk.util.file.FitsFileReader;
 import edu.jhuapl.saavtk.util.file.IndexableTuple;
 import edu.jhuapl.saavtk.util.file.Tuple;

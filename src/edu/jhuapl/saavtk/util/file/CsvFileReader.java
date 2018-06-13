@@ -13,7 +13,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.metadata.FixedMetadata;
 
-public class CsvFileReader extends FileReader
+public class CsvFileReader extends DataFileReader
 {
 	private static final CsvFileReader INSTANCE = new CsvFileReader();
 	/*

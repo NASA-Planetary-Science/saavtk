@@ -8,8 +8,8 @@ import javax.swing.JTabbedPane;
 
 import edu.jhuapl.saavtk.metadata.FixedMetadata;
 import edu.jhuapl.saavtk.util.file.FileMetadata;
-import edu.jhuapl.saavtk.util.file.FileReader;
-import edu.jhuapl.saavtk.util.file.FileReader.IncorrectFileFormatException;
+import edu.jhuapl.saavtk.util.file.DataFileReader;
+import edu.jhuapl.saavtk.util.file.DataFileReader.IncorrectFileFormatException;
 
 public class MetadataDisplay
 {
@@ -19,7 +19,7 @@ public class MetadataDisplay
 		FixedMetadata fileMetadata;
 		try
 		{
-			fileMetadata = FileReader.of().readMetadata(file).getMetadata();
+			fileMetadata = DataFileReader.of().readMetadata(file).getMetadata();
 			List<FixedMetadata> dataObjects = fileMetadata.get(FileMetadata.DATA_OBJECTS);
 			for (FixedMetadata metadata : dataObjects)
 			{

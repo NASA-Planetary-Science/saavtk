@@ -8,7 +8,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.metadata.FixedMetadata;
 
-public abstract class FileReader
+public abstract class DataFileReader
 {
 	/**
 	 * This exception indicates an attempt to access a non-FITS file using a FITS
@@ -28,9 +28,9 @@ public abstract class FileReader
 	protected static final FixedMetadata EMPTY_TABLE_METADATA = FixedMetadata.of(FileMetadata.createColumnsMetadata(ImmutableList.of()));
 	protected static final FileMetadata EMPTY_FILE_METADATA = FileMetadata.of(ImmutableList.of());
 
-	private static final FileReader INSTANCE = createInstance();
+	private static final DataFileReader INSTANCE = createInstance();
 
-	public static FileReader of()
+	public static DataFileReader of()
 	{
 		return INSTANCE;
 	}
@@ -49,9 +49,9 @@ public abstract class FileReader
 		return numberColumns;
 	}
 
-	private static FileReader createInstance()
+	private static DataFileReader createInstance()
 	{
-		return new FileReader() {
+		return new DataFileReader() {
 
 			@Override
 			public FileMetadata readMetadata(File file) throws IncorrectFileFormatException, IOException
