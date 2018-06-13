@@ -1,8 +1,8 @@
 package edu.jhuapl.saavtk.util.file;
 
-import edu.jhuapl.saavtk.metadata.Metadata;
+import edu.jhuapl.saavtk.metadata.FixedMetadata;
 
 public interface DataObject
 {
-	Metadata getMetadata();
+	FixedMetadata getMetadata();
 }

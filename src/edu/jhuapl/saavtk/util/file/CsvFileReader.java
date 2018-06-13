@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.metadata.Metadata;
+import edu.jhuapl.saavtk.metadata.FixedMetadata;
 
 public class CsvFileReader extends FileReader
 {
@@ -29,9 +29,9 @@ public class CsvFileReader extends FileReader
 	}
 
 	@Override
-	public Metadata readMetadata(@SuppressWarnings("unused") File file) throws IOException
+	public FileMetadata readMetadata(@SuppressWarnings("unused") File file) throws IOException
 	{
-		return EMPTY_METADATA;
+		return EMPTY_FILE_METADATA;
 	}
 
 	public IndexableTuple readTuples(File file, Iterable<Integer> columnNumbers) throws FieldNotFoundException, IOException
@@ -104,9 +104,9 @@ public class CsvFileReader extends FileReader
 			return new IndexableTuple() {
 
 				@Override
-				public Metadata getMetadata()
+				public FixedMetadata getMetadata()
 				{
-					return EMPTY_METADATA;
+					return EMPTY_TABLE_METADATA;
 				}
 
 				@Override

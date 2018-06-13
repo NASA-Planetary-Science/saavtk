@@ -36,13 +36,11 @@ public final class FitsFileReader extends FileReader
 	}
 
 	@Override
-	public FixedMetadata readMetadata(File file) throws IOException, IncorrectFileFormatException
+	public FileMetadata readMetadata(File file) throws IOException, IncorrectFileFormatException
 	{
-		FixedMetadata result = null;
 		try (Fits fits = new Fits(file))
 		{
 			BasicHDU<?>[] hdus = fits.read();
-			SettableMetadata metadata = SettableMetadata.of(VERSION);
 			ImmutableList.Builder<FixedMetadata> builder = ImmutableList.builder();
 
 			for (int hduNum = 0; hduNum < hdus.length; ++hduNum)
@@ -50,14 +48,12 @@ public final class FitsFileReader extends FileReader
 				Metadata hduMetadata = readMetadata(hdus[hduNum], hduNum);
 				builder.add(FixedMetadata.of(hduMetadata));
 			}
-			metadata.put(FileMetadata.DATA_OBJECTS, builder.build());
-			result = FixedMetadata.of(metadata);
+			return FileMetadata.of(builder.build());
 		}
 		catch (FitsException e)
 		{
 			throw new IncorrectFileFormatException(e);
 		}
-		return result;
 	}
 
 	/**
@@ -79,13 +75,8 @@ public final class FitsFileReader extends FileReader
 	{
 		Preconditions.checkNotNull(file);
 		Preconditions.checkArgument(file.exists());
-		Preconditions.checkArgument(tableHduNumber >= 0); // Catch the case of primary HDU below.
-		int numberColumns = checkColumnNumbers(columnNumbers);
-
-		if (numberColumns == 0)
-		{
-			return EMPTY_INDEXABLE;
-		}
+		Preconditions.checkArgument(tableHduNumber >= 0); // Handle the case of primary HDU below.
+		checkColumnNumbers(columnNumbers);
 
 		try (Fits fits = new Fits(file))
 		{
@@ -131,19 +122,14 @@ public final class FitsFileReader extends FileReader
 
 	private SettableMetadata readMetadata(BasicHDU<?> hdu, int hduNumber)
 	{
-		SettableMetadata hduMetadata = SettableMetadata.of(VERSION);
 		Header header = hdu.getHeader();
 
 		// Derive the title.
 		String extName = header.getStringValue("EXTNAME");
 		boolean isPrimary = extName == null && header.getBooleanValue("SIMPLE");
 		final String title = extName != null ? extName : isPrimary ? "Primary Image" : "HDU " + hduNumber;
-		hduMetadata.put(FileMetadata.TITLE, title);
 
-		// Add boilerplate FITS meta-metadata.
-		hduMetadata.put(FileMetadata.DESCRIPTION_FIELDS, FITS_KEYWORD_FIELDS);
-
-		// Get all the keywords and put them in a self-contained "sub-metadata" object.
+		// Put all the keywords in the data object metadata.
 		SettableMetadata keywordMetadata = SettableMetadata.of(VERSION);
 		Cursor<String, HeaderCard> iterator = header.iterator();
 		while (iterator.hasNext())
@@ -154,9 +140,28 @@ public final class FitsFileReader extends FileReader
 			valueAndComment.add(card.getComment());
 			keywordMetadata.put(Key.of(card.getKey()), valueAndComment);
 		}
+		SettableMetadata dataObjectMetadata = FileMetadata.createDataObjectMetadata(title, FITS_KEYWORD_FIELDS, keywordMetadata);
 
-		hduMetadata.put(FileMetadata.DESCRIPTION, FixedMetadata.of(keywordMetadata));
-		return hduMetadata;
+		if (hdu instanceof TableHDU)
+		{
+			// Read structural metadata about table.
+			TableHDU<?> table = (TableHDU<?>) hdu;
+			final int numberRecords = table.getNRows();
+			ImmutableList.Builder<Metadata> builder = ImmutableList.builder();
+			for (int columnIndex = 0; columnIndex < table.getNCols(); ++columnIndex)
+			{
+				String name = table.getColumnName(columnIndex);
+				String units = table.getColumnMeta(columnIndex, "TUNIT");
+				builder.add(FileMetadata.createColumnMetadata(name, units, numberRecords));
+			}
+
+			SettableMetadata columnsMetadata = FileMetadata.createColumnsMetadata(builder.build());
+
+			// Return the data object metadata combined with the column metadata.
+			return FileMetadata.createTableMetadata(dataObjectMetadata, columnsMetadata);
+		}
+		// Not a table, so just return the data object metadata.
+		return dataObjectMetadata;
 	}
 
 	private interface GettableAsDouble
@@ -166,13 +171,13 @@ public final class FitsFileReader extends FileReader
 
 	private IndexableTuple readTuples(TableHDU<?> table, int tableHduNumber, Iterable<Integer> columnNumbers) throws FitsException, FieldNotFoundException, IOException
 	{
+		// Read metadata first so we process the table in the natural FITS order: header then data.
+		final FixedMetadata metadata = FixedMetadata.of(readMetadata(table, tableHduNumber));
+
 		final int numberRecords = table.getNRows();
 		final int numberColumnsInTable = table.getNCols();
 
 		ImmutableList.Builder<GettableAsDouble> columnBuilder = ImmutableList.builder();
-		ImmutableList.Builder<String> nameBuilder = ImmutableList.builder();
-		final List<String> unitsList = new ArrayList<>(); // Needs to accept null values.
-
 		for (Integer columnNumber : columnNumbers)
 		{
 			if (Integer.compare(numberColumnsInTable, columnNumber) <= 0)
@@ -181,8 +186,6 @@ public final class FitsFileReader extends FileReader
 			}
 
 			Object column = table.getColumn(columnNumber);
-			String name = table.getColumnName(columnNumber);
-			String units = table.getColumnMeta(columnNumber, "TUNIT");
 			if (column instanceof double[])
 			{
 				columnBuilder.add((cellIndex) -> {
@@ -211,28 +214,16 @@ public final class FitsFileReader extends FileReader
 			{
 				throw new IOException("Column #" + columnNumber + " from FITS table/HDU #" + tableHduNumber + " is not a supported numeric array type");
 			}
-			nameBuilder.add(name);
-			unitsList.add(units);
 		}
-
 		final ImmutableList<GettableAsDouble> columns = columnBuilder.build();
-		final ImmutableList<String> names = nameBuilder.build();
 
-		// This is a bit of paranoid defensive programming. Should any changes
-		// to the above code result in violating this invariant, detect it here.
-		if (columns.size() != names.size() || columns.size() != unitsList.size())
-		{
-			throw new AssertionError();
-		}
-
+		final List<FixedMetadata> columnsMetadata = metadata.get(FileMetadata.COLUMNS);
 		final int numberCells = columns.size();
-
-		final Metadata metadata = readMetadata(table, tableHduNumber);
 
 		return new IndexableTuple() {
 
 			@Override
-			public Metadata getMetadata()
+			public FixedMetadata getMetadata()
 			{
 				return metadata;
 			}
@@ -246,13 +237,13 @@ public final class FitsFileReader extends FileReader
 			@Override
 			public String getName(int cellIndex)
 			{
-				return names.get(cellIndex);
+				return columnsMetadata.get(cellIndex).get(FileMetadata.COLUMN_NAME);
 			}
 
 			@Override
 			public String getUnits(int cellIndex)
 			{
-				return unitsList.get(cellIndex);
+				return columnsMetadata.get(cellIndex).get(FileMetadata.UNITS);
 			}
 
 			@Override
