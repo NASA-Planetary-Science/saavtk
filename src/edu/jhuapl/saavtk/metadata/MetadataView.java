@@ -29,6 +29,12 @@ public final class MetadataView implements Metadata
 	}
 
 	@Override
+	public boolean hasKey(Key<?> key)
+	{
+		return metadata.hasKey(key);
+	}
+
+	@Override
 	public ImmutableList<Key<?>> getKeys()
 	{
 		return metadata.getKeys();
