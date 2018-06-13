@@ -21,7 +21,12 @@ public final class FixedMetadata extends BasicMetadata
 		ImmutableMap.Builder<Key<?>, Object> builder = ImmutableMap.builder();
 		for (Key<?> key : keys)
 		{
-			builder.put(key, metadata.get(key));
+			Object object = metadata.get(key);
+			if (object == null)
+			{
+				object = getNullObject();
+			}
+			builder.put(key, object);
 		}
 
 		return new FixedMetadata(version, keys, builder.build());

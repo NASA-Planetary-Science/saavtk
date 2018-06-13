@@ -33,6 +33,13 @@ public abstract class BasicMetadata implements Metadata
 	}
 
 	@Override
+	public final boolean hasKey(Key<?> key)
+	{
+		Preconditions.checkNotNull(key);
+		return getMap().containsKey(key);
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public final <V> V get(Key<V> key)
 	{
@@ -89,8 +96,8 @@ public abstract class BasicMetadata implements Metadata
 		return builder.toString();
 	}
 
-	protected static final void putNullObject(Key<?> key, Map<Key<?>, Object> map)
+	protected static Object getNullObject()
 	{
-		map.put(key, NULL_OBJECT);
+		return NULL_OBJECT;
 	}
 }

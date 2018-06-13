@@ -76,7 +76,7 @@ public final class SettableMetadata extends BasicMetadata
 		}
 		if (value == null)
 		{
-			putNullObject(key, map);
+			map.put(key, getNullObject());
 		}
 		else
 		{
