@@ -4,9 +4,6 @@ import java.io.File;
 import java.io.IOException;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-
-import edu.jhuapl.saavtk.metadata.FixedMetadata;
 
 public abstract class DataFileReader
 {
@@ -25,8 +22,6 @@ public abstract class DataFileReader
 	}
 
 	protected static final IndexableTuple EMPTY_INDEXABLE = createEmptyIndexable();
-	protected static final FixedMetadata EMPTY_TABLE_METADATA = FixedMetadata.of(FileMetadata.createColumnsMetadata(ImmutableList.of()));
-	protected static final FileMetadata EMPTY_FILE_METADATA = FileMetadata.of(ImmutableList.of());
 
 	private static final DataFileReader INSTANCE = createInstance();
 
