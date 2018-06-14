@@ -10,7 +10,6 @@ import java.util.regex.Pattern;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.metadata.FixedMetadata;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo.Description;
 import edu.jhuapl.saavtk.util.file.TableInfo.ColumnInfo;
 
@@ -122,12 +121,6 @@ public class CsvFileReader extends DataFileReader
 			final int numberRecords = valuesList.size();
 
 			return new IndexableTuple() {
-
-				@Override
-				public FixedMetadata getMetadata()
-				{
-					return EMPTY_TABLE_METADATA;
-				}
 
 				@Override
 				public int getNumberCells()

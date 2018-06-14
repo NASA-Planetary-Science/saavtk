@@ -93,12 +93,6 @@ public abstract class DataFileReader
 	{
 		return new IndexableTuple() {
 			@Override
-			public FixedMetadata getMetadata()
-			{
-				return EMPTY_TABLE_METADATA;
-			}
-
-			@Override
 			public int getNumberCells()
 			{
 				return 0;

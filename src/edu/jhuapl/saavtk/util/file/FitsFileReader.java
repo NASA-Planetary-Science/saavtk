@@ -292,12 +292,6 @@ public final class FitsFileReader extends DataFileReader
 		return new IndexableTuple() {
 
 			@Override
-			public FixedMetadata getMetadata()
-			{
-				return metadata;
-			}
-
-			@Override
 			public int getNumberCells()
 			{
 				return numberCells;
