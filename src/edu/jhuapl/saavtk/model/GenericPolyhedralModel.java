@@ -236,7 +236,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		if (coloringHasNulls == null)
 			coloringHasNulls = new boolean[] {};
 
-		String metadataFileName = SafePaths.getString(SafePaths.get(coloringFiles[0]).toFile().getParent(), "coloring.smdx");
+		String metadataFileName = SafePaths.getString(SafePaths.get(coloringFiles[0]).toFile().getParent(), "coloring.smd");
 		if (FileCache.isFileGettable(metadataFileName))
 		{
 			File metadataFile = FileCache.getFileFromServer(metadataFileName);
@@ -244,7 +244,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			{
 				try
 				{
-					Serializers.deserialize(metadataFile, COLORING_METADATA_ID, coloringDataManager.getMetadataManager());
+					Serializers.deserialize(metadataFile, COLORING_METADATA_ID, coloringDataManager.getMetadataManager(false));
 				}
 				catch (IOException e)
 				{
@@ -279,7 +279,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		metadataFileName = SafePaths.getString(Configuration.getCacheDir(), metadataFileName);
 		try
 		{
-			Serializers.serialize(COLORING_METADATA_ID, coloringDataManager.getMetadataManager().store(), new File(metadataFileName));
+			Serializers.serialize(COLORING_METADATA_ID, coloringDataManager.getMetadataManager(false).store(), new File(metadataFileName));
 		}
 		catch (IOException e)
 		{
