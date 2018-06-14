@@ -3,15 +3,10 @@ package edu.jhuapl.saavtk.util.file;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.metadata.FixedMetadata;
-import edu.jhuapl.saavtk.metadata.Key;
-import edu.jhuapl.saavtk.metadata.Metadata;
-import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo.Description;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo.InfoElements;
@@ -59,49 +54,6 @@ public final class FitsFileReader extends DataFileReader
 		{
 			throw new IncorrectFileFormatException(e);
 		}
-	}
-
-	private DataObjectInfo readInfo(BasicHDU<?> hdu, int hduNumber) throws IOException, IncorrectFileFormatException
-	{
-		Header header = hdu.getHeader();
-
-		// Derive the title.
-		String extName = header.getStringValue("EXTNAME");
-		boolean isPrimary = extName == null && header.getBooleanValue("SIMPLE");
-		final String title = extName != null ? extName : isPrimary ? "Primary Image" : "HDU " + hduNumber;
-
-		// Put all the keywords in the data object info.
-		Cursor<String, HeaderCard> iterator = header.iterator();
-		ImmutableList.Builder<InfoElements> infoElementsBuilder = ImmutableList.builder();
-		while (iterator.hasNext())
-		{
-			HeaderCard card = iterator.next();
-			ArrayList<String> keywordInfo = new ArrayList<>();
-			keywordInfo.add(card.getKey());
-			keywordInfo.add(card.getValue());
-			keywordInfo.add(card.getComment());
-			infoElementsBuilder.add(InfoElements.of(keywordInfo));
-		}
-		Description description = Description.of(FITS_KEYWORD_FIELDS, infoElementsBuilder.build());
-
-		if (hdu instanceof TableHDU)
-		{
-			// Read structural metadata about table.
-			TableHDU<?> table = (TableHDU<?>) hdu;
-			ImmutableList.Builder<ColumnInfo> columnInfoBuilder = ImmutableList.builder();
-			for (int columnIndex = 0; columnIndex < table.getNCols(); ++columnIndex)
-			{
-				String name = table.getColumnName(columnIndex);
-				String units = table.getColumnMeta(columnIndex, "TUNIT");
-				columnInfoBuilder.add(ColumnInfo.of(name, units != null ? units : ""));
-			}
-
-			// Return the data object metadata combined with the column metadata.
-			return TableInfo.of(title, description, columnInfoBuilder.build());
-		}
-
-		// Not a table, so just return the data object metadata.
-		return DataObjectInfo.of(title, description);
 	}
 
 	/**
@@ -168,50 +120,6 @@ public final class FitsFileReader extends DataFileReader
 		}
 	}
 
-	private SettableMetadata readMetadata(BasicHDU<?> hdu, int hduNumber)
-	{
-		Header header = hdu.getHeader();
-
-		// Derive the title.
-		String extName = header.getStringValue("EXTNAME");
-		boolean isPrimary = extName == null && header.getBooleanValue("SIMPLE");
-		final String title = extName != null ? extName : isPrimary ? "Primary Image" : "HDU " + hduNumber;
-
-		// Put all the keywords in the data object metadata.
-		SettableMetadata keywordMetadata = SettableMetadata.of(VERSION);
-		Cursor<String, HeaderCard> iterator = header.iterator();
-		while (iterator.hasNext())
-		{
-			HeaderCard card = iterator.next();
-			ArrayList<String> valueAndComment = new ArrayList<>();
-			valueAndComment.add(card.getValue());
-			valueAndComment.add(card.getComment());
-			keywordMetadata.put(Key.of(card.getKey()), valueAndComment);
-		}
-		SettableMetadata dataObjectMetadata = FileMetadata.createDataObjectMetadata(title, FITS_KEYWORD_FIELDS, keywordMetadata);
-
-		if (hdu instanceof TableHDU)
-		{
-			// Read structural metadata about table.
-			TableHDU<?> table = (TableHDU<?>) hdu;
-			final int numberRecords = table.getNRows();
-			ImmutableList.Builder<Metadata> builder = ImmutableList.builder();
-			for (int columnIndex = 0; columnIndex < table.getNCols(); ++columnIndex)
-			{
-				String name = table.getColumnName(columnIndex);
-				String units = table.getColumnMeta(columnIndex, "TUNIT");
-				builder.add(FileMetadata.createColumnMetadata(name, units, numberRecords));
-			}
-
-			SettableMetadata columnsMetadata = FileMetadata.createColumnsMetadata(builder.build());
-
-			// Return the data object metadata combined with the column metadata.
-			return FileMetadata.createTableMetadata(dataObjectMetadata, columnsMetadata);
-		}
-		// Not a table, so just return the data object metadata.
-		return dataObjectMetadata;
-	}
-
 	private interface GettableAsDouble
 	{
 		double get(int cellIndex);
@@ -219,8 +127,8 @@ public final class FitsFileReader extends DataFileReader
 
 	private IndexableTuple readTuples(TableHDU<?> table, int tableHduNumber, Iterable<Integer> columnNumbers) throws FitsException, FieldNotFoundException, IOException
 	{
-		// Read metadata first so we process the table in the natural FITS order: header then data.
-		final FixedMetadata metadata = FixedMetadata.of(readMetadata(table, tableHduNumber));
+		// Read file info first so we process the table in the natural FITS order: header then data.
+		TableInfo dataObjectInfo = (TableInfo) readInfo(table, tableHduNumber);
 
 		final int numberRecords = table.getNRows();
 		final int numberColumnsInTable = table.getNCols();
@@ -265,7 +173,6 @@ public final class FitsFileReader extends DataFileReader
 		}
 		final ImmutableList<GettableAsDouble> columns = columnBuilder.build();
 
-		final List<FixedMetadata> columnsMetadata = metadata.get(FileMetadata.COLUMNS);
 		final int numberCells = columns.size();
 
 		return new IndexableTuple() {
@@ -279,13 +186,13 @@ public final class FitsFileReader extends DataFileReader
 			@Override
 			public String getName(int cellIndex)
 			{
-				return columnsMetadata.get(cellIndex).get(FileMetadata.COLUMN_NAME);
+				return dataObjectInfo.getColumnInfo(cellIndex).getName();
 			}
 
 			@Override
 			public String getUnits(int cellIndex)
 			{
-				return columnsMetadata.get(cellIndex).get(FileMetadata.UNITS);
+				return dataObjectInfo.getColumnInfo(cellIndex).getUnits();
 			}
 
 			@Override
@@ -314,6 +221,49 @@ public final class FitsFileReader extends DataFileReader
 			}
 
 		};
+	}
+
+	private DataObjectInfo readInfo(BasicHDU<?> hdu, int hduNumber) throws IOException
+	{
+		Header header = hdu.getHeader();
+
+		// Derive the title.
+		String extName = header.getStringValue("EXTNAME");
+		boolean isPrimary = extName == null && header.getBooleanValue("SIMPLE");
+		final String title = extName != null ? extName : isPrimary ? "Primary Image" : "HDU " + hduNumber;
+
+		// Put all the keywords in the data object info.
+		Cursor<String, HeaderCard> iterator = header.iterator();
+		ImmutableList.Builder<InfoElements> infoElementsBuilder = ImmutableList.builder();
+		while (iterator.hasNext())
+		{
+			HeaderCard card = iterator.next();
+			ArrayList<String> keywordInfo = new ArrayList<>();
+			keywordInfo.add(card.getKey());
+			keywordInfo.add(card.getValue());
+			keywordInfo.add(card.getComment());
+			infoElementsBuilder.add(InfoElements.of(keywordInfo));
+		}
+		Description description = Description.of(FITS_KEYWORD_FIELDS, infoElementsBuilder.build());
+
+		if (hdu instanceof TableHDU)
+		{
+			// Read structural metadata about table.
+			TableHDU<?> table = (TableHDU<?>) hdu;
+			ImmutableList.Builder<ColumnInfo> columnInfoBuilder = ImmutableList.builder();
+			for (int columnIndex = 0; columnIndex < table.getNCols(); ++columnIndex)
+			{
+				String name = table.getColumnName(columnIndex);
+				String units = table.getColumnMeta(columnIndex, "TUNIT");
+				columnInfoBuilder.add(ColumnInfo.of(name, units != null ? units : ""));
+			}
+
+			// Return the data object metadata combined with the column metadata.
+			return TableInfo.of(title, description, columnInfoBuilder.build());
+		}
+
+		// Not a table, so just return the data object metadata.
+		return DataObjectInfo.of(title, description);
 	}
 
 }
