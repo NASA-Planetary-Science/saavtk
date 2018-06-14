@@ -13,6 +13,9 @@ import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
+import edu.jhuapl.saavtk.util.file.DataObjectInfo.Description;
+import edu.jhuapl.saavtk.util.file.DataObjectInfo.InfoElements;
+import edu.jhuapl.saavtk.util.file.TableInfo.ColumnInfo;
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
 import nom.tam.fits.FitsException;
@@ -26,13 +29,79 @@ public final class FitsFileReader extends DataFileReader
 	public static final Version VERSION = Version.of(0, 1);
 
 	// These are the fields from a FITS keyword other than the name of the keyword.
-	private static final List<String> FITS_KEYWORD_FIELDS = ImmutableList.of("Value", "Comment");
+	private static final ImmutableList<String> FITS_KEYWORD_FIELDS = ImmutableList.of("Keyword", "Value", "Comment");
 
 	private static final FitsFileReader INSTANCE = new FitsFileReader();
 
 	public static FitsFileReader of()
 	{
 		return INSTANCE;
+	}
+
+	@Override
+	public DataFileInfo readFileInfo(File file) throws IncorrectFileFormatException, IOException
+	{
+		Preconditions.checkNotNull(file);
+
+		try (Fits fits = new Fits(file))
+		{
+			BasicHDU<?>[] hdus = fits.read();
+			ImmutableList.Builder<DataObjectInfo> builder = ImmutableList.builder();
+
+			for (int hduNum = 0; hduNum < hdus.length; ++hduNum)
+			{
+				DataObjectInfo hduInfo = readInfo(hdus[hduNum], hduNum);
+				builder.add(hduInfo);
+			}
+			return DataFileInfo.of(builder.build());
+		}
+		catch (FitsException e)
+		{
+			throw new IncorrectFileFormatException(e);
+		}
+	}
+
+	private DataObjectInfo readInfo(BasicHDU<?> hdu, int hduNumber) throws IOException, IncorrectFileFormatException
+	{
+		Header header = hdu.getHeader();
+
+		// Derive the title.
+		String extName = header.getStringValue("EXTNAME");
+		boolean isPrimary = extName == null && header.getBooleanValue("SIMPLE");
+		final String title = extName != null ? extName : isPrimary ? "Primary Image" : "HDU " + hduNumber;
+
+		// Put all the keywords in the data object info.
+		Cursor<String, HeaderCard> iterator = header.iterator();
+		ImmutableList.Builder<InfoElements> infoElementsBuilder = ImmutableList.builder();
+		while (iterator.hasNext())
+		{
+			HeaderCard card = iterator.next();
+			ArrayList<String> keywordInfo = new ArrayList<>();
+			keywordInfo.add(card.getKey());
+			keywordInfo.add(card.getValue());
+			keywordInfo.add(card.getComment());
+			infoElementsBuilder.add(InfoElements.of(keywordInfo));
+		}
+		Description description = Description.of(FITS_KEYWORD_FIELDS, infoElementsBuilder.build());
+
+		if (hdu instanceof TableHDU)
+		{
+			// Read structural metadata about table.
+			TableHDU<?> table = (TableHDU<?>) hdu;
+			ImmutableList.Builder<ColumnInfo> columnInfoBuilder = ImmutableList.builder();
+			for (int columnIndex = 0; columnIndex < table.getNCols(); ++columnIndex)
+			{
+				String name = table.getColumnName(columnIndex);
+				String units = table.getColumnMeta(columnIndex, "TUNIT");
+				columnInfoBuilder.add(ColumnInfo.of(name, units != null ? units : ""));
+			}
+
+			// Return the data object metadata combined with the column metadata.
+			return TableInfo.of(title, description, columnInfoBuilder.build());
+		}
+
+		// Not a table, so just return the data object metadata.
+		return DataObjectInfo.of(title, description);
 	}
 
 	@Override
@@ -273,4 +342,5 @@ public final class FitsFileReader extends DataFileReader
 
 		};
 	}
+
 }

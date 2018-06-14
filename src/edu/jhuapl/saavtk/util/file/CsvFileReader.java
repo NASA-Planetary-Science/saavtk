@@ -2,9 +2,8 @@ package edu.jhuapl.saavtk.util.file;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,6 +11,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.metadata.FixedMetadata;
+import edu.jhuapl.saavtk.util.file.DataObjectInfo.Description;
+import edu.jhuapl.saavtk.util.file.TableInfo.ColumnInfo;
 
 public class CsvFileReader extends DataFileReader
 {
@@ -26,6 +27,25 @@ public class CsvFileReader extends DataFileReader
 	public static CsvFileReader of()
 	{
 		return INSTANCE;
+	}
+
+	@Override
+	public DataFileInfo readFileInfo(File file) throws IncorrectFileFormatException, IOException
+	{
+		try (BufferedReader in = new BufferedReader(new FileReader(file)))
+		{
+			ImmutableList.Builder<ColumnInfo> builder = ImmutableList.builder();
+			// Parse the first line, which is interpreted as the column titles.
+			String line = in.readLine();
+			if (line != null)
+			{
+				for (String columnName : parseCSV(line))
+				{
+					builder.add(ColumnInfo.of(columnName, ""));
+				}
+			}
+			return DataFileInfo.of(ImmutableList.of(TableInfo.of(file.getName(), Description.of(ImmutableList.of(), ImmutableList.of()), builder.build())));
+		}
 	}
 
 	@Override
@@ -47,7 +67,7 @@ public class CsvFileReader extends DataFileReader
 
 		final int numberCells = numberColumns;
 
-		try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file))))
+		try (BufferedReader in = new BufferedReader(new FileReader(file)))
 		{
 			ImmutableList.Builder<ImmutableList<Double>> builder = ImmutableList.builder();
 

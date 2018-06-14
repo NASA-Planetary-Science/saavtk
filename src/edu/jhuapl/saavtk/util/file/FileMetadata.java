@@ -164,7 +164,7 @@ public class FileMetadata
 			Object value = description.get(key);
 			Preconditions.checkArgument(value instanceof List);
 			List<?> list = (List<?>) value;
-			Preconditions.checkArgument(list.size() == numberFields);
+			Preconditions.checkArgument(list.size() == numberFields - 1);
 			for (Object cell : list)
 			{
 				Preconditions.checkArgument(cell == null || cell instanceof String);

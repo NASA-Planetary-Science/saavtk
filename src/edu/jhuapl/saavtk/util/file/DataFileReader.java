@@ -35,6 +35,8 @@ public abstract class DataFileReader
 		return INSTANCE;
 	}
 
+	public abstract DataFileInfo readFileInfo(File file) throws IncorrectFileFormatException, IOException;
+
 	public abstract FileMetadata readMetadata(File file) throws IncorrectFileFormatException, IOException;
 
 	protected static int checkColumnNumbers(Iterable<Integer> columnNumbers)
@@ -52,6 +54,22 @@ public abstract class DataFileReader
 	private static DataFileReader createInstance()
 	{
 		return new DataFileReader() {
+
+			@Override
+			public DataFileInfo readFileInfo(File file) throws IncorrectFileFormatException, IOException
+			{
+				Preconditions.checkNotNull(file);
+				Preconditions.checkArgument(file.exists());
+
+				try
+				{
+					return FitsFileReader.of().readFileInfo(file);
+				}
+				catch (@SuppressWarnings("unused") IncorrectFileFormatException e)
+				{
+					return CsvFileReader.of().readFileInfo(file);
+				}
+			}
 
 			@Override
 			public FileMetadata readMetadata(File file) throws IncorrectFileFormatException, IOException
