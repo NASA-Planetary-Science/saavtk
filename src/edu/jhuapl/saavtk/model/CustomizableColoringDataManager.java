@@ -138,7 +138,7 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 				builtIn.clear();
 				custom.clear();
 				builtIn.getMetadataManager().retrieve(source.get(Key.of(builtIn.getId())));
-				custom.getMetadataManager().retrieve(source.get(Key.of(builtIn.getId())));
+				custom.getMetadataManager().retrieve(source.get(Key.of(custom.getId())));
 				update();
 			}
 
