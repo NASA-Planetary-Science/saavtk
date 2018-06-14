@@ -26,7 +26,6 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JTabbedPane;
-import javax.swing.SwingUtilities;
 
 import edu.jhuapl.saavtk.gui.MetadataDisplay;
 import edu.jhuapl.saavtk.gui.panel.PolyhedralModelControlPanel;
@@ -283,7 +282,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 	private void showMetadataPopup(MouseEvent event)
 	{
-		if (SwingUtilities.isRightMouseButton(event))
+		if (event.isPopupTrigger())
 		{
 			// First make a right click do what a left click does as well.
 			int row = cellDataList.locationToIndex(event.getPoint());
