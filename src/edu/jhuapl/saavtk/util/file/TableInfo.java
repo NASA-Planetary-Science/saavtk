@@ -62,6 +62,11 @@ public class TableInfo extends DataObjectInfo
 		return columnInfo.size();
 	}
 
+	public ColumnInfo getColumnInfo(int columnNumber)
+	{
+		return columnInfo.get(columnNumber);
+	}
+
 	@Override
 	public String toString()
 	{
