@@ -47,12 +47,6 @@ public class CsvFileReader extends DataFileReader
 		}
 	}
 
-	@Override
-	public FileMetadata readMetadata(@SuppressWarnings("unused") File file) throws IOException
-	{
-		return EMPTY_FILE_METADATA;
-	}
-
 	public IndexableTuple readTuples(File file, Iterable<Integer> columnNumbers) throws FieldNotFoundException, IOException
 	{
 		Preconditions.checkNotNull(file);

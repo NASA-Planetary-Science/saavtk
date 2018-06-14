@@ -104,27 +104,6 @@ public final class FitsFileReader extends DataFileReader
 		return DataObjectInfo.of(title, description);
 	}
 
-	@Override
-	public FileMetadata readMetadata(File file) throws IOException, IncorrectFileFormatException
-	{
-		try (Fits fits = new Fits(file))
-		{
-			BasicHDU<?>[] hdus = fits.read();
-			ImmutableList.Builder<FixedMetadata> builder = ImmutableList.builder();
-
-			for (int hduNum = 0; hduNum < hdus.length; ++hduNum)
-			{
-				Metadata hduMetadata = readMetadata(hdus[hduNum], hduNum);
-				builder.add(FixedMetadata.of(hduMetadata));
-			}
-			return FileMetadata.of(builder.build());
-		}
-		catch (FitsException e)
-		{
-			throw new IncorrectFileFormatException(e);
-		}
-	}
-
 	/**
 	 * Read a set of columns from a table from a FITS file, returning an object that
 	 * provides random access to the table elements. The columns are all loaded into
