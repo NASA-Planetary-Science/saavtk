@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.colormap.Colormaps;
 import edu.jhuapl.saavtk.config.ViewConfig;
+import edu.jhuapl.saavtk.metadata.Serializers;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.ConvertResourceToFile;
@@ -31,6 +32,7 @@ import edu.jhuapl.saavtk.util.PolyDataUtil;
 import edu.jhuapl.saavtk.util.Preferences;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
+import edu.jhuapl.saavtk.util.SafePaths;
 import edu.jhuapl.saavtk.util.SmallBodyCubes;
 import vtk.vtkActor;
 import vtk.vtkActor2D;
@@ -214,12 +216,15 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	}
 
+	private static final String COLORING_METADATA_ID = "Coloring Metadata";
+
 	private static void initializeColoringDataManager(CustomizableColoringDataManager coloringDataManager, ImmutableList<Integer> numberElements, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls)
 	{
 		Preconditions.checkNotNull(coloringDataManager);
 		if (coloringNames == null)
 			return;
 		Preconditions.checkNotNull(coloringFiles);
+		Preconditions.checkArgument(coloringFiles.length > 0);
 		Preconditions.checkArgument(coloringFiles.length == coloringNames.length);
 
 		Preconditions.checkNotNull(numberElements);
@@ -230,6 +235,25 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			coloringUnits = new String[] {};
 		if (coloringHasNulls == null)
 			coloringHasNulls = new boolean[] {};
+
+		String metadataFileName = SafePaths.getString(SafePaths.get(coloringFiles[0]).toFile().getParent(), "coloring.smdx");
+		if (FileCache.isFileGettable(metadataFileName))
+		{
+			File metadataFile = FileCache.getFileFromServer(metadataFileName);
+			if (metadataFile.exists())
+			{
+				try
+				{
+					Serializers.deserialize(metadataFile, COLORING_METADATA_ID, coloringDataManager.getMetadataManager());
+				}
+				catch (IOException e)
+				{
+					System.err.println("Exception when trying to load plate coloring metadata file");
+					e.printStackTrace();
+				}
+				return;
+			}
+		}
 
 		boolean sbmt2style = false;
 		for (int index = 0; index < coloringFiles.length; ++index)
@@ -250,6 +274,17 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					coloringDataManager.addBuiltIn(ColoringData.of(name, fileName, elementNames, units, numberElements.get(resolutionLevel), hasNulls));
 				}
 			}
+		}
+
+		metadataFileName = SafePaths.getString(Configuration.getCacheDir(), metadataFileName);
+		try
+		{
+			Serializers.serialize(COLORING_METADATA_ID, coloringDataManager.getMetadataManager().store(), new File(metadataFileName));
+		}
+		catch (IOException e)
+		{
+			System.err.println("Exception when trying to save plate coloring metadata file");
+			e.printStackTrace();
 		}
 	}
 
