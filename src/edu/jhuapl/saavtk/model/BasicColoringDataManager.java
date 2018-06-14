@@ -1,7 +1,5 @@
 package edu.jhuapl.saavtk.model;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,10 +11,8 @@ import com.google.common.collect.TreeBasedTable;
 import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.MetadataManager;
-import edu.jhuapl.saavtk.metadata.Serializers;
 import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
-import edu.jhuapl.saavtk.util.SafePaths;
 
 public class BasicColoringDataManager implements ColoringDataManager
 {
@@ -205,18 +201,10 @@ public class BasicColoringDataManager implements ColoringDataManager
 			public void retrieve(Metadata source)
 			{
 				clear();
-				Metadata metadata = source.get(Key.of(dataId));
-				for (Key<?> key : metadata.getKeys())
+				List<Metadata> metadataList = source.get(Key.of(dataId));
+				for (Metadata metadata : metadataList)
 				{
-					Object object = metadata.get(key);
-					if (object instanceof Metadata)
-					{
-						add(ColoringData.of((Metadata) object));
-					}
-					else
-					{
-						throw new IllegalArgumentException();
-					}
+					add(ColoringData.of(metadata));
 				}
 			}
 
