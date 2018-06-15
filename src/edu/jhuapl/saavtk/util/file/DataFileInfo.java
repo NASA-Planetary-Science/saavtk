@@ -34,6 +34,11 @@ public class DataFileInfo
 		this.dataObjectInfo = ImmutableList.copyOf(dataObjectInfo);
 	}
 
+	public File getFile()
+	{
+		return file;
+	}
+
 	public ImmutableList<DataObjectInfo> getDataObjectInfo()
 	{
 		return dataObjectInfo;
