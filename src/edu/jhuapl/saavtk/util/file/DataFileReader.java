@@ -15,6 +15,11 @@ public abstract class DataFileReader
 	{
 		private static final long serialVersionUID = -3268081959880597315L;
 
+		IncorrectFileFormatException(String msg)
+		{
+			super(msg);
+		}
+
 		IncorrectFileFormatException(Exception e)
 		{
 			super(e);
@@ -60,8 +65,18 @@ public abstract class DataFileReader
 				}
 				catch (@SuppressWarnings("unused") IncorrectFileFormatException e)
 				{
+					// Fall through to avoid nesting try-catch.
+				}
+
+				String lowerCaseUnzippedName = file.toString().toLowerCase().replaceFirst("\\.gz$", "");
+				if (lowerCaseUnzippedName.endsWith(".csv") || lowerCaseUnzippedName.endsWith(".txt"))
+				{
 					return CsvFileReader.of().readFileInfo(file);
 				}
+
+				String fileType = file.toString().replaceFirst("\\.gz$", "");
+				fileType = fileType.replaceFirst(".*\\.", "");
+				throw new IncorrectFileFormatException("File has unsupported type: " + fileType);
 			}
 
 		};
