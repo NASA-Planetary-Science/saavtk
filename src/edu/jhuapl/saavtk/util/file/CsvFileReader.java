@@ -86,6 +86,27 @@ public class CsvFileReader extends DataFileReader
 		}
 	}
 
+	public IndexableTuple readTuples(File file, Iterable<Integer> columnNumbers) throws FieldNotFoundException, IOException
+	{
+		int numberColumns = checkColumnNumbers(columnNumbers);
+
+		if (numberColumns == 0)
+		{
+			return EMPTY_INDEXABLE;
+		}
+		Preconditions.checkNotNull(file);
+		Preconditions.checkArgument(file.exists());
+
+		if (file.toString().toLowerCase().endsWith(".gz"))
+		{
+			return null;
+		}
+		else
+		{
+			return readTuplesUncompressed(file, numberColumns, columnNumbers);
+		}
+	}
+
 	protected DataFileInfo readFileInfoGzipped(File file) throws IOException
 	{
 		try (BufferedReader in = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file)))))
@@ -102,7 +123,7 @@ public class CsvFileReader extends DataFileReader
 		}
 	}
 
-	private DataFileInfo readFileInfo(File file, BufferedReader in) throws IOException
+	protected DataFileInfo readFileInfo(File file, BufferedReader in) throws IOException
 	{
 		ImmutableList.Builder<ColumnInfo> builder = ImmutableList.builder();
 		// Parse the first line, which is interpreted as the column titles.
@@ -117,120 +138,123 @@ public class CsvFileReader extends DataFileReader
 		return DataFileInfo.of(file, FileFormat.CSV, ImmutableList.of(TableInfo.of(file.getName(), Description.of(ImmutableList.of(), ImmutableList.of()), builder.build())));
 	}
 
-	public IndexableTuple readTuples(File file, Iterable<Integer> columnNumbers) throws FieldNotFoundException, IOException
+	protected IndexableTuple readTuplesGzipped(File file, int numberColumns, Iterable<Integer> columnNumbers) throws FieldNotFoundException, IOException
 	{
-		Preconditions.checkNotNull(file);
-		Preconditions.checkArgument(file.exists());
-		int numberColumns = checkColumnNumbers(columnNumbers);
-
-		if (numberColumns == 0)
+		try (BufferedReader in = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file)))))
 		{
-			return EMPTY_INDEXABLE;
+			return readTuples(file, in, numberColumns, columnNumbers);
 		}
+	}
 
-		final int numberCells = numberColumns;
-
+	protected IndexableTuple readTuplesUncompressed(File file, int numberColumns, Iterable<Integer> columnNumbers) throws FieldNotFoundException, IOException
+	{
 		try (BufferedReader in = new BufferedReader(new FileReader(file)))
 		{
-			ImmutableList.Builder<ImmutableList<Double>> builder = ImmutableList.builder();
+			return readTuples(file, in, numberColumns, columnNumbers);
+		}
+	}
 
-			// Parse the first line, which is interpreted as the column titles.
-			String line = in.readLine();
-			if (line == null)
+	protected IndexableTuple readTuples(File file, BufferedReader in, int numberColumns, Iterable<Integer> columnNumbers) throws FieldNotFoundException, IOException
+	{
+		final int numberCells = numberColumns;
+		ImmutableList.Builder<ImmutableList<Double>> builder = ImmutableList.builder();
+
+		// Parse the first line, which is interpreted as the column titles.
+		String line = in.readLine();
+		if (line == null)
+		{
+			throw new FieldNotFoundException("CSV file has no content: " + file);
+		}
+
+		ImmutableList<String> values = parseCSV(line);
+		final int numberColumnsInTable = values.size();
+		for (Integer columnNumber : columnNumbers)
+		{
+			if (Integer.compare(numberColumnsInTable, columnNumber) <= 0)
 			{
-				throw new FieldNotFoundException("CSV file has no content: " + file);
+				throw new FieldNotFoundException("Cannot get column #" + columnNumber + "; CSV file has only " + numberColumnsInTable + " columns in file " + file);
 			}
+		}
 
-			ImmutableList<String> values = parseCSV(line);
-			final int numberColumnsInTable = values.size();
-			for (Integer columnNumber : columnNumbers)
+		final ImmutableList<String> names = getColumnValues(values, columnNumbers);
+
+		try
+		{
+			// Also try to interpret the first row as numbers, since files
+			// may actually not have titles.
+			builder.add(stringsToDoubles(values, columnNumbers));
+		}
+		catch (@SuppressWarnings("unused") NumberFormatException e)
+		{
+			// Must be just column titles -- just skip this one.
+		}
+
+		while ((line = in.readLine()) != null)
+		{
+			values = parseCSV(line);
+			if (values.size() != numberColumnsInTable)
 			{
-				if (Integer.compare(numberColumnsInTable, columnNumber) <= 0)
-				{
-					throw new FieldNotFoundException("Cannot get column #" + columnNumber + "; CSV file has only " + numberColumnsInTable + " columns in file " + file);
-				}
+				throw new IOException("Line in CSV file: " + line + " does not have " + numberColumnsInTable + " values in file " + file);
 			}
-
-			final ImmutableList<String> names = getColumnValues(values, columnNumbers);
-
 			try
 			{
-				// Also try to interpret the first row as numbers, since files
-				// may actually not have titles.
 				builder.add(stringsToDoubles(values, columnNumbers));
 			}
-			catch (@SuppressWarnings("unused") NumberFormatException e)
+			catch (NumberFormatException e)
 			{
-				// Must be just column titles -- just skip this one.
+				throw new IOException(e);
 			}
-
-			while ((line = in.readLine()) != null)
-			{
-				values = parseCSV(line);
-				if (values.size() != numberColumnsInTable)
-				{
-					throw new IOException("Line in CSV file: " + line + " does not have " + numberColumnsInTable + " values in file " + file);
-				}
-				try
-				{
-					builder.add(stringsToDoubles(values, columnNumbers));
-				}
-				catch (NumberFormatException e)
-				{
-					throw new IOException(e);
-				}
-			}
-
-			final ImmutableList<ImmutableList<Double>> valuesList = builder.build();
-			final int numberRecords = valuesList.size();
-
-			return new IndexableTuple() {
-
-				@Override
-				public int getNumberCells()
-				{
-					return numberCells;
-				}
-
-				@Override
-				public String getName(int cellIndex)
-				{
-					return names.get(cellIndex);
-				}
-
-				@Override
-				public String getUnits(@SuppressWarnings("unused") int cellIndex)
-				{
-					return "";
-				}
-
-				@Override
-				public int size()
-				{
-					return numberRecords;
-				}
-
-				@Override
-				public Tuple get(int index)
-				{
-					return new Tuple() {
-
-						@Override
-						public int size()
-						{
-							return numberCells;
-						}
-
-						@Override
-						public double get(int cellIndex)
-						{
-							return valuesList.get(index).get(cellIndex);
-						}
-					};
-				}
-
-			};
 		}
+
+		final ImmutableList<ImmutableList<Double>> valuesList = builder.build();
+		final int numberRecords = valuesList.size();
+
+		return new IndexableTuple() {
+
+			@Override
+			public int getNumberCells()
+			{
+				return numberCells;
+			}
+
+			@Override
+			public String getName(int cellIndex)
+			{
+				return names.get(cellIndex);
+			}
+
+			@Override
+			public String getUnits(@SuppressWarnings("unused") int cellIndex)
+			{
+				return "";
+			}
+
+			@Override
+			public int size()
+			{
+				return numberRecords;
+			}
+
+			@Override
+			public Tuple get(int index)
+			{
+				return new Tuple() {
+
+					@Override
+					public int size()
+					{
+						return numberCells;
+					}
+
+					@Override
+					public double get(int cellIndex)
+					{
+						return valuesList.get(index).get(cellIndex);
+					}
+				};
+			}
+
+		};
 
 	}
 
