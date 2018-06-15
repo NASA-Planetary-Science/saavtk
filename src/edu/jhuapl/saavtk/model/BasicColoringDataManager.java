@@ -174,7 +174,7 @@ public class BasicColoringDataManager implements ColoringDataManager
 		dataTable.clear();
 	}
 
-	MetadataManager getMetadataManager()
+	public MetadataManager getMetadataManager()
 	{
 		return new MetadataManager() {
 
