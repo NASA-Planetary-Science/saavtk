@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.gui.panel;
 
 import java.awt.BorderLayout;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Frame;
@@ -175,7 +176,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		{
 			resolutionButtonGroup = new ButtonGroup();
 			ActionListener listener = (e) -> {
+				setCursor(new Cursor(Cursor.WAIT_CURSOR));
 				updateModelResolution(e.getActionCommand());
+				setCursor(Cursor.getDefaultCursor());
 			};
 			ImmutableList<String> levels = smallBodyModel.getConfig().getResolutionLabels();
 			for (int i = 0; i < numberResolutionLevels; ++i)
@@ -224,28 +227,25 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			@Override
 			public void propertyChange(PropertyChangeEvent evt)
 			{
+				setCursor(new Cursor(Cursor.WAIT_CURSOR));
 				smallBodyModel.setColormap(colormapController.getColormap());
 				smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
 				smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
-				if (evt.getPropertyName().equals(ColormapController.colormapChanged))
-				{
+				if (evt.getPropertyName().equals(ColormapController.colormapChanged)) {
 					double[] range = smallBodyModel.getCurrentColoringRange(smallBodyModel.getColoringIndex());
 					colormapController.setMinMax(range[0], range[1]);
 					range = smallBodyModel.getDefaultColoringRange(smallBodyModel.getColoringIndex());
 					colormapController.setDefaultRange(range[0], range[1]);
-				}
-				else if (evt.getPropertyName().equals(ColormapController.colormapRangeChanged))
-				{
-					try
-					{
-						smallBodyModel.setCurrentColoringRange(smallBodyModel.getColoringIndex(), colormapController.getMinMax());
-					}
-					catch (IOException e)
-					{
+				} else if (evt.getPropertyName().equals(ColormapController.colormapRangeChanged)) {
+					try {
+						smallBodyModel.setCurrentColoringRange(smallBodyModel.getColoringIndex(),
+								colormapController.getMinMax());
+					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-				}
+				} 
+				setCursor(Cursor.getDefaultCursor());
 			}
 		});
 
@@ -278,8 +278,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		coloringButtonGroup.add(rgbColoringButton);
 
 		ActionListener coloringButtonGroupListener = (e) -> {
+			setCursor(new Cursor(Cursor.WAIT_CURSOR));
 			updateColoringControls();
 			setColoring();
+			setCursor(Cursor.getDefaultCursor());
 		};
 		noColoringButton.addActionListener(coloringButtonGroupListener);
 		standardColoringButton.addActionListener(coloringButtonGroupListener);
@@ -452,8 +454,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 				smallBodyModel.setShowSmallBody(true);
 				if (graticule != null && gridCheckBox.isSelected())
 				{
+					setCursor(new Cursor(Cursor.WAIT_CURSOR));
 					graticule.setShowGraticule(true);
 					gridLabelCheckBox.setEnabled(true);
+					setCursor(Cursor.getDefaultCursor());
 				}
 				else
 					gridLabelCheckBox.setEnabled(false);
@@ -464,7 +468,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 				if (graticule != null && gridCheckBox.isSelected())
 					graticule.setShowGraticule(false);
 			}
+			setCursor(new Cursor(Cursor.WAIT_CURSOR));
 			showImageMap(isImageMapEnabled());
+			setCursor(Cursor.getDefaultCursor());
 		}
 		else if (e.getItemSelectable() == this.gridCheckBox)
 		{
@@ -473,8 +479,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			{
 				if (e.getStateChange() == ItemEvent.SELECTED)
 				{
+					setCursor(new Cursor(Cursor.WAIT_CURSOR));
 					graticule.setShowGraticule(true);
 					gridLabelCheckBox.setEnabled(true);
+					setCursor(Cursor.getDefaultCursor());
 				}
 				else
 				{
@@ -488,9 +496,11 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
 			if (graticule != null)
 			{
-				if (e.getStateChange() == ItemEvent.SELECTED)
+				if (e.getStateChange() == ItemEvent.SELECTED) {
+					setCursor(new Cursor(Cursor.WAIT_CURSOR));
 					graticule.setShowCaptions(true);
-				else
+					setCursor(Cursor.getDefaultCursor());
+				} else
 					graticule.setShowCaptions(false);
 			}
 		}
@@ -498,23 +508,29 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		{
 			if (e.getStateChange() == ItemEvent.SELECTED)
 			{
+				setCursor(new Cursor(Cursor.WAIT_CURSOR));
 				showImageMap(true);
 				opacityLabel.setEnabled(true);
 				imageMapOpacitySpinner.setEnabled(true);
+				setCursor(Cursor.getDefaultCursor());
 			}
 			else
 			{
+				setCursor(new Cursor(Cursor.WAIT_CURSOR));
 				showImageMap(false);
 				opacityLabel.setEnabled(false);
 				imageMapOpacitySpinner.setEnabled(false);
+				setCursor(Cursor.getDefaultCursor());
 			}
 		}
 		else if (e.getItemSelectable() == this.imageMapComboBox)
 		{
 			boolean show = this.imageMapComboBox.getSelectedIndex() != 0;
+			setCursor(new Cursor(Cursor.WAIT_CURSOR));
 			showImageMap(show);
 			opacityLabel.setEnabled(show);
 			imageMapOpacitySpinner.setEnabled(show);
+			setCursor(Cursor.getDefaultCursor());
 		}
 
 		Picker.setPickingEnabled(true);
