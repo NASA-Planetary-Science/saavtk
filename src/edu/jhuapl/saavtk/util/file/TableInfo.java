@@ -70,7 +70,8 @@ public class TableInfo extends DataObjectInfo
 	@Override
 	public String toString()
 	{
-		StringBuilder builder = new StringBuilder("Table with columns ");
+		StringBuilder builder = new StringBuilder(super.toString());
+		builder.append("; table with columns ");
 		boolean firstTime = true;
 		for (ColumnInfo info : columnInfo)
 		{

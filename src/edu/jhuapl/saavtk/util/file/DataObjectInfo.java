@@ -106,7 +106,7 @@ public class DataObjectInfo
 		@Override
 		public String toString()
 		{
-			return "Description including " + String.join(" ", getFields());
+			return "Fields: " + getFields();
 		}
 	}
 
@@ -139,7 +139,7 @@ public class DataObjectInfo
 	@Override
 	public String toString()
 	{
-		return "Data object " + getTitle();
+		return getTitle() + ": " + getDescription();
 	}
 
 	protected static void checkStringBeginsAndEndsWithText(String string)

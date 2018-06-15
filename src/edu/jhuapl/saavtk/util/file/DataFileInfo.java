@@ -43,6 +43,6 @@ public class DataFileInfo
 	public String toString()
 	{
 		int numberObjects = dataObjectInfo.size();
-		return format + "file " + file + ": " + numberObjects + " data object" + (numberObjects != 1 ? "s " : " ") + dataObjectInfo;
+		return format + " format file " + file + ": " + numberObjects + " data object" + (numberObjects != 1 ? "s: " : ": ") + dataObjectInfo;
 	}
 }
