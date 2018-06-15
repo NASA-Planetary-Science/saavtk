@@ -34,9 +34,10 @@ import edu.jhuapl.saavtk.util.file.TableInfo.ColumnInfo;
  * 
  * Data -   1 or more rows of comma-separated values. Leading and trailing whitespace is ignored
  *          for each value. Double quotes are optional, but may be used to include commas or
- *          whitespace within a value. Each row in the data block must have same
+ *          whitespace within a value. Each row in the data block must have the same
  *          number of fields (commas). Individual blank fields are acceptable and are
- *          interpreted as null strings.
+ *          interpreted as null strings. Note however, that null may not be an acceptable
+ *          value for all contexts.
  * 
  *          Example showing header and data:
  *          
@@ -49,6 +50,12 @@ import edu.jhuapl.saavtk.util.file.TableInfo.ColumnInfo;
  * 
  * Any line anywhere that begins with whitespace followed by a # is a comment and is ignored.
  * Blank lines are also ignored.
+ * 
+ * CURRENTLY THIS READER DOES NOT SUPPORT THIS FORMAT! Instead it parses the first line of
+ * the file as strings to form the "column names". If there is no top line defining column names,
+ * the names will be the values of the first line of data. If the first line consists only
+ * of numbers, the first line is also included in the data. Thus this works for legacy coloring
+ * files, and would work for plain 3-column CSV vector coloring data.
  */
 public class CsvFileReader extends DataFileReader
 {
