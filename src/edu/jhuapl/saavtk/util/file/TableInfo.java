@@ -44,17 +44,24 @@ public class TableInfo extends DataObjectInfo
 		}
 	}
 
-	public static TableInfo of(String title, Description description, List<? extends ColumnInfo> columnInfo)
+	public static TableInfo of(String title, Description description, int numberRows, List<? extends ColumnInfo> columnInfo)
 	{
-		return new TableInfo(title, description, columnInfo);
+		return new TableInfo(title, description, numberRows, columnInfo);
 	}
 
+	private final int numberRows;
 	private final ImmutableList<ColumnInfo> columnInfo;
 
-	protected TableInfo(String title, Description description, List<? extends ColumnInfo> columnInfo)
+	protected TableInfo(String title, Description description, int numberRows, List<? extends ColumnInfo> columnInfo)
 	{
 		super(title, description);
+		this.numberRows = numberRows;
 		this.columnInfo = ImmutableList.copyOf(columnInfo);
+	}
+
+	public int getNumberRows()
+	{
+		return numberRows;
 	}
 
 	public int getNumberColumns()
@@ -71,7 +78,11 @@ public class TableInfo extends DataObjectInfo
 	public String toString()
 	{
 		StringBuilder builder = new StringBuilder(super.toString());
-		builder.append("; table with columns ");
+		builder.append("; table with ");
+		builder.append(getNumberRows());
+		builder.append(" row(s), ");
+		builder.append(getNumberColumns());
+		builder.append(" column(s): ");
 		boolean firstTime = true;
 		for (ColumnInfo info : columnInfo)
 		{

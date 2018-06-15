@@ -125,17 +125,42 @@ public class CsvFileReader extends DataFileReader
 
 	protected DataFileInfo readFileInfo(File file, BufferedReader in) throws IOException
 	{
-		ImmutableList.Builder<ColumnInfo> builder = ImmutableList.builder();
 		// Parse the first line, which is interpreted as the column titles.
 		String line = in.readLine();
-		if (line != null)
+		if (line == null)
 		{
-			for (String columnName : parseCSV(line))
+			throw new IOException("File is empty");
+		}
+
+		ImmutableList.Builder<ColumnInfo> builder = ImmutableList.builder();
+		boolean firstLineAllNumbers = true;
+		for (String columnName : parseCSV(line))
+		{
+			builder.add(ColumnInfo.of(columnName, ""));
+			try
 			{
-				builder.add(ColumnInfo.of(columnName, ""));
+				Double.parseDouble(columnName);
+			}
+			catch (NumberFormatException e)
+			{
+				firstLineAllNumbers = false;
 			}
 		}
-		return DataFileInfo.of(file, FileFormat.CSV, ImmutableList.of(TableInfo.of(file.getName(), Description.of(ImmutableList.of(), ImmutableList.of()), builder.build())));
+		ImmutableList<ColumnInfo> columnInfo = builder.build();
+		final int numberColumns = columnInfo.size();
+
+		int numberRows = firstLineAllNumbers ? 1 : 0;
+		while ((line = in.readLine()) != null)
+		{
+			int numberColumnsInLine = parseCSV(line).size();
+			if (numberColumnsInLine != numberColumns)
+			{
+				throw new IOException("Number of columns is " + numberColumnsInLine + ", not " + numberColumns + " as expected in line " + line);
+			}
+			++numberRows;
+		}
+
+		return DataFileInfo.of(file, FileFormat.CSV, ImmutableList.of(TableInfo.of(file.getName(), Description.of(ImmutableList.of(), ImmutableList.of()), numberRows, columnInfo)));
 	}
 
 	protected IndexableTuple readTuplesGzipped(File file, int numberColumns, Iterable<Integer> columnNumbers) throws FieldNotFoundException, IOException

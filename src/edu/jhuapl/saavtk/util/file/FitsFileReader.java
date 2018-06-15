@@ -258,9 +258,10 @@ public final class FitsFileReader extends DataFileReader
 				String units = table.getColumnMeta(columnIndex, "TUNIT");
 				columnInfoBuilder.add(ColumnInfo.of(name, units != null ? units : ""));
 			}
+			final int numberRows = table.getNRows();
 
 			// Return the data object metadata combined with the column metadata.
-			return TableInfo.of(title, description, columnInfoBuilder.build());
+			return TableInfo.of(title, description, numberRows, columnInfoBuilder.build());
 		}
 
 		// Not a table, so just return the data object metadata.
