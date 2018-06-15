@@ -8,6 +8,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.metadata.Version;
+import edu.jhuapl.saavtk.util.file.DataFileInfo.FileFormat;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo.Description;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo.InfoElements;
 import edu.jhuapl.saavtk.util.file.TableInfo.ColumnInfo;
@@ -48,7 +49,7 @@ public final class FitsFileReader extends DataFileReader
 				DataObjectInfo hduInfo = readInfo(hdus[hduNum], hduNum);
 				builder.add(hduInfo);
 			}
-			return DataFileInfo.of(builder.build());
+			return DataFileInfo.of(file, FileFormat.FITS, builder.build());
 		}
 		catch (FitsException e)
 		{

@@ -2,20 +2,58 @@ package edu.jhuapl.saavtk.util.file;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import edu.jhuapl.saavtk.util.file.DataFileInfo.FileFormat;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo.Description;
 import edu.jhuapl.saavtk.util.file.TableInfo.ColumnInfo;
 
+/*
+ * Reader for CSV files. Required format for accepted files is:
+ * 
+ * Header - (optional) metadata. If present, it may have any number of lines, 
+ *          but it must have the form:
+ * 
+ *          <CSV>, first-line-content, second-line-content ...
+ *          first-line-value-0, first-line-value-1, ...
+ *          second-line-value-0, second-line-value-1, ...
+ *          ...
+ * 
+ *          The header is comma-delimited. All the lines except the first must have the
+ *          same number of fields as the Data block (see below). The first line (including
+ *          the <CSV>) must have M+1 fields, where M is the number of lines of *metadata*.
+ * 
+ * Data -   1 or more rows of comma-separated values. Leading and trailing whitespace is ignored
+ *          for each value. Double quotes are optional, but may be used to include commas or
+ *          whitespace within a value. Each row in the data block must have same
+ *          number of fields (commas). Individual blank fields are acceptable and are
+ *          interpreted as null strings.
+ * 
+ *          Example showing header and data:
+ *          
+ *          # This example shows how to give the name and units of each column in the header.
+ *          <CSV>, Name, Units
+ *          File, X, Y, Z, P, Q
+ *                   ,  deg,  deg,  deg,     ,   kg-m/s^2
+ *          file1.txt,   3.,   4.,   5.,  17.,   42.
+ *          file2.pdf,  -4.,  -2.,    7,  14.,   9.8e1
+ * 
+ * Any line anywhere that begins with whitespace followed by a # is a comment and is ignored.
+ * Blank lines are also ignored.
+ */
 public class CsvFileReader extends DataFileReader
 {
 	private static final CsvFileReader INSTANCE = new CsvFileReader();
+
 	/*
 	 * This Pattern will match on either quoted text or text between commas,
 	 * including whitespace, and accounting for beginning and end of line. Cribbed
@@ -31,20 +69,45 @@ public class CsvFileReader extends DataFileReader
 	@Override
 	public DataFileInfo readFileInfo(File file) throws IncorrectFileFormatException, IOException
 	{
+		if (file.toString().toLowerCase().endsWith(".gz"))
+		{
+			return readFileInfoGzipped(file);
+		}
+		else
+		{
+			return readFileInfoUncompressed(file);
+		}
+	}
+
+	protected DataFileInfo readFileInfoGzipped(File file) throws IOException
+	{
+		try (BufferedReader in = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file)))))
+		{
+			return readFileInfo(file, in);
+		}
+	}
+
+	protected DataFileInfo readFileInfoUncompressed(File file) throws IOException
+	{
 		try (BufferedReader in = new BufferedReader(new FileReader(file)))
 		{
-			ImmutableList.Builder<ColumnInfo> builder = ImmutableList.builder();
-			// Parse the first line, which is interpreted as the column titles.
-			String line = in.readLine();
-			if (line != null)
-			{
-				for (String columnName : parseCSV(line))
-				{
-					builder.add(ColumnInfo.of(columnName, ""));
-				}
-			}
-			return DataFileInfo.of(ImmutableList.of(TableInfo.of(file.getName(), Description.of(ImmutableList.of(), ImmutableList.of()), builder.build())));
+			return readFileInfo(file, in);
 		}
+	}
+
+	private DataFileInfo readFileInfo(File file, BufferedReader in) throws IOException
+	{
+		ImmutableList.Builder<ColumnInfo> builder = ImmutableList.builder();
+		// Parse the first line, which is interpreted as the column titles.
+		String line = in.readLine();
+		if (line != null)
+		{
+			for (String columnName : parseCSV(line))
+			{
+				builder.add(ColumnInfo.of(columnName, ""));
+			}
+		}
+		return DataFileInfo.of(file, FileFormat.CSV, ImmutableList.of(TableInfo.of(file.getName(), Description.of(ImmutableList.of(), ImmutableList.of()), builder.build())));
 	}
 
 	public IndexableTuple readTuples(File file, Iterable<Integer> columnNumbers) throws FieldNotFoundException, IOException
