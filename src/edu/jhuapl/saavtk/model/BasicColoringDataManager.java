@@ -2,6 +2,8 @@ package edu.jhuapl.saavtk.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -30,14 +32,14 @@ public class BasicColoringDataManager implements ColoringDataManager
 
 	private final String dataId;
 	private final List<String> names;
-	private final List<Integer> resolutions;
+	private final SortedSet<Integer> resolutions;
 	private final Table<String, Integer, ColoringData> dataTable;
 
 	private BasicColoringDataManager(String dataId, Iterable<? extends ColoringData> coloringData)
 	{
 		this.dataId = dataId;
 		this.names = new ArrayList<>();
-		this.resolutions = new ArrayList<>();
+		this.resolutions = new TreeSet<>();
 		this.dataTable = TreeBasedTable.create();
 		for (ColoringData data : coloringData)
 		{
