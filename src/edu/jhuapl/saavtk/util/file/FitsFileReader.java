@@ -1,8 +1,10 @@
 package edu.jhuapl.saavtk.util.file;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.zip.GZIPInputStream;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -39,21 +41,13 @@ public final class FitsFileReader extends DataFileReader
 	{
 		Preconditions.checkNotNull(file);
 
-		try (Fits fits = new Fits(file))
+		if (file.getName().toLowerCase().endsWith(".gz"))
 		{
-			BasicHDU<?>[] hdus = fits.read();
-			ImmutableList.Builder<DataObjectInfo> builder = ImmutableList.builder();
-
-			for (int hduNum = 0; hduNum < hdus.length; ++hduNum)
-			{
-				DataObjectInfo hduInfo = readInfo(hdus[hduNum], hduNum);
-				builder.add(hduInfo);
-			}
-			return DataFileInfo.of(file, FileFormat.FITS, builder.build());
+			return readFileInfoGzipped(file);
 		}
-		catch (FitsException e)
+		else
 		{
-			throw new IncorrectFileFormatException(e);
+			return readFileInfoUncompressed(file);
 		}
 	}
 
@@ -119,6 +113,44 @@ public final class FitsFileReader extends DataFileReader
 			// is that it's not a FITS file.
 			throw new IncorrectFileFormatException(e);
 		}
+	}
+
+	private DataFileInfo readFileInfoGzipped(File file) throws IncorrectFileFormatException, IOException
+	{
+		try (Fits fits = new Fits(new GZIPInputStream(new FileInputStream(file))))
+		{
+			return readFileInfo(file, fits);
+		}
+		catch (FitsException e)
+		{
+			throw new IncorrectFileFormatException(e);
+		}
+	}
+
+	private DataFileInfo readFileInfoUncompressed(File file) throws IncorrectFileFormatException, IOException
+	{
+		try (Fits fits = new Fits(file))
+		{
+			return readFileInfo(file, fits);
+		}
+		catch (FitsException e)
+		{
+			throw new IncorrectFileFormatException(e);
+		}
+
+	}
+
+	private DataFileInfo readFileInfo(File file, Fits fits) throws FitsException, IOException
+	{
+		BasicHDU<?>[] hdus = fits.read();
+		ImmutableList.Builder<DataObjectInfo> builder = ImmutableList.builder();
+
+		for (int hduNum = 0; hduNum < hdus.length; ++hduNum)
+		{
+			DataObjectInfo hduInfo = readInfo(hdus[hduNum], hduNum);
+			builder.add(hduInfo);
+		}
+		return DataFileInfo.of(file, FileFormat.FITS, builder.build());
 	}
 
 	private interface GettableAsDouble
