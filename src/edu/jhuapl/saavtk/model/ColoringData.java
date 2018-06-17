@@ -16,8 +16,8 @@ import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.file.CsvFileReader;
-import edu.jhuapl.saavtk.util.file.FieldNotFoundException;
 import edu.jhuapl.saavtk.util.file.DataFileReader.IncorrectFileFormatException;
+import edu.jhuapl.saavtk.util.file.FieldNotFoundException;
 import edu.jhuapl.saavtk.util.file.FitsFileReader;
 import edu.jhuapl.saavtk.util.file.IndexableTuple;
 import edu.jhuapl.saavtk.util.file.Tuple;
@@ -178,7 +178,7 @@ public class ColoringData
 			IndexableTuple indexable = null;
 
 			String coloringName = getName();
-			if (coloringName.endsWith("-error"))
+			if (coloringName.toLowerCase().contains("error"))
 			{
 				// Try first for a vector.
 				indexable = tryLoadFitsTuplesOnly(file, FitsColumnId.VECTOR_ERROR.getColumnNumbers());
