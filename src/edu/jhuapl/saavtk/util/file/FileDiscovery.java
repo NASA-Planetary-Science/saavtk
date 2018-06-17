@@ -2,6 +2,8 @@ package edu.jhuapl.saavtk.util.file;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -12,10 +14,13 @@ import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.ColoringDataManager;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.util.SafePaths;
+import edu.jhuapl.saavtk.util.file.DataObjectInfo.InfoElements;
 import edu.jhuapl.saavtk.util.file.TableInfo.ColumnInfo;
 
 public class FileDiscovery
 {
+	private static final String MAP_NAME = "map_name";
+
 	private final File topDirectory;
 	private final File coloringDirectory;
 	private final BasicColoringDataManager coloringDataManager;
@@ -47,7 +52,8 @@ public class FileDiscovery
 				try
 				{
 					DataFileInfo fileInfo = DataFileReader.of().readFileInfo(file);
-					System.err.println(fileInfo);
+					System.out.println(fileInfo);
+					System.out.flush();
 					extractColorings(fileInfo);
 				}
 				catch (Exception e)
@@ -67,8 +73,13 @@ public class FileDiscovery
 
 	protected void extractColorings(DataFileInfo fileInfo)
 	{
+		String mapName = null;
 		for (DataObjectInfo objectInfo : fileInfo.getDataObjectInfo())
 		{
+			if (mapName == null)
+			{
+				mapName = getMapName(objectInfo);
+			}
 			if (objectInfo instanceof TableInfo)
 			{
 				TableInfo tableInfo = (TableInfo) objectInfo;
@@ -79,7 +90,7 @@ public class FileDiscovery
 				if (numberColumns == 1)
 				{
 					// One scalar coloring, presumably from text file.
-					addScalarColoring(file, tableInfo, 0);
+					addScalarColoring(mapName, file, tableInfo, 0);
 				}
 				else if (numberColumns == 3)
 				{
@@ -89,14 +100,14 @@ public class FileDiscovery
 				{
 					// While this could be a text file with vector + vector error, the more likely scenario is
 					// a FITS file with scalar coloring in column 4, sigma in column 5. Assume that to be true.
-					addScalarColoring(file, tableInfo, 4);
-					addScalarColoring(file, tableInfo, 5);
+					addScalarColoring(mapName, file, tableInfo, 4);
+					addScalarColoring(mapName, file, tableInfo, 5);
 				}
 				else if (numberColumns == 10)
 				{
 					// Assume FITS file with vector coloring in 4, 6, 8, vector sigma in 5, 7, 9.
-					addVectorColoring(file, tableInfo, 4, 6, 8);
-					addVectorColoring(file, tableInfo, 5, 7, 9);
+					addVectorColoring(mapName, file, tableInfo, 4, 6, 8);
+					addVectorColoring(mapName, file, tableInfo, 5, 7, 9);
 				}
 				else
 				{
@@ -106,12 +117,25 @@ public class FileDiscovery
 		}
 	}
 
-	protected void addScalarColoring(File file, TableInfo tableInfo, int columnNumber)
+	protected String getMapName(DataObjectInfo objectInfo)
+	{
+		for (InfoElements info : objectInfo.getDescription().get())
+		{
+			List<String> stringList = info.get();
+			if (MAP_NAME.equalsIgnoreCase(stringList.get(0)))
+			{
+				return stringList.get(1);
+			}
+		}
+		return null;
+	}
+
+	protected void addScalarColoring(String mapName, File file, TableInfo tableInfo, int columnNumber)
 	{
 		String name = null;
 		try
 		{
-			name = getColoringName(file, tableInfo, columnNumber);
+			name = getColoringName(mapName, file, tableInfo, columnNumber);
 			if (name == null)
 			{
 				throw new IllegalArgumentException("Cannot deduce scalar coloring name for column " + tableInfo.getColumnInfo(columnNumber));
@@ -129,12 +153,12 @@ public class FileDiscovery
 		}
 	}
 
-	protected void addVectorColoring(File file, TableInfo tableInfo, int xColumn, int yColumn, int zColumn)
+	protected void addVectorColoring(String mapName, File file, TableInfo tableInfo, int xColumn, int yColumn, int zColumn)
 	{
 		String name = null;
 		try
 		{
-			name = getColoringName(file, tableInfo, xColumn);
+			name = getColoringName(mapName, file, tableInfo, xColumn);
 			if (name == null)
 			{
 				throw new IllegalArgumentException("Cannot deduce vector coloring name for table " + tableInfo);
@@ -155,7 +179,7 @@ public class FileDiscovery
 				units = "";
 			}
 			file = new File(file.getAbsolutePath().replace(topDirectory.getAbsolutePath() + File.separator, ""));
-			coloringDataManager.add(ColoringData.of(name, file.toString(), ImmutableList.of(name + "X", name + "Y", name + "Z"), units, tableInfo.getNumberRows(), false));
+			coloringDataManager.add(ColoringData.of(name, file.toString(), ImmutableList.of(name + " X", name + " Y", name + " Z"), units, tableInfo.getNumberRows(), false));
 		}
 		catch (Exception e)
 		{
@@ -164,12 +188,12 @@ public class FileDiscovery
 		}
 	}
 
-	private String getColoringName(File file, TableInfo tableInfo, int columnNumber)
+	private String getColoringName(String mapName, File file, TableInfo tableInfo, int columnNumber)
 	{
 		ColumnInfo info = tableInfo.getColumnInfo(columnNumber);
 		final String columnName = info.getName();
 
-		String name = guessColoringName(file.getName());
+		String name = mapName != null ? mapName : guessColoringName(file.getName());
 		if (name != null)
 		{
 			String lowerCaseColumnName = columnName.toLowerCase();
@@ -183,23 +207,26 @@ public class FileDiscovery
 			name = guessColoringName(columnName);
 			if (name == null)
 			{
-				name = validateString(columnName, info);
+				name = validateString(columnName, info).replaceAll("[\\s_]*[XxYyZz]", "");
 			}
 		}
-		return name;
+		return fixCase(name);
 	}
 
 	private String getUnits(String name, TableInfo tableInfo, int columnNumber)
 	{
+		String units = null;
 		try
 		{
 			ColumnInfo columnInfo = tableInfo.getColumnInfo(columnNumber);
-			return validateString(columnInfo.getUnits(), columnInfo);
+			units = validateString(columnInfo.getUnits(), columnInfo);
 		}
 		catch (@SuppressWarnings("unused") IllegalArgumentException e)
 		{
-			return getUnits(name);
+			units = getUnits(name);
 		}
+		// Except for Joules, all units are lower case.
+		return units != null ? units.toLowerCase().replace('j', 'J') : null;
 	}
 
 	private String guessColoringName(String string)
@@ -277,6 +304,28 @@ public class FileDiscovery
 		}
 	}
 
+	private static String fixCase(String string)
+	{
+		if (string != null)
+		{
+			List<String> words = new ArrayList<>();
+			for (String word : string.split("\\s+"))
+			{
+				if (word.length() > 1)
+				{
+					word = word.substring(0, 1).toUpperCase() + word.substring(1).toLowerCase();
+				}
+				else if (word.length() == 1)
+				{
+					word = word.toUpperCase();
+				}
+				words.add(word);
+			}
+			string = String.join(" ", words);
+		}
+		return string;
+	}
+
 	private static void usage()
 	{
 		System.err.println("Usage:\tdiscovery unique-model-id model-top-directory-name coloring-file-directory-name");
@@ -288,6 +337,7 @@ public class FileDiscovery
 		{
 			FileDiscovery discovery = new FileDiscovery(args);
 			discovery.run();
+			System.out.println("Done");
 		}
 		catch (IllegalArgumentException e)
 		{
