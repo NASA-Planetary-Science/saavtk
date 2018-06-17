@@ -244,7 +244,15 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			{
 				try
 				{
-					Serializers.deserialize(metadataFile, COLORING_METADATA_ID, coloringDataManager.getMetadataManager(false));
+					BasicColoringDataManager builtInColoring = BasicColoringDataManager.of(coloringDataManager.getId());
+					Serializers.deserialize(metadataFile, COLORING_METADATA_ID, builtInColoring.getMetadataManager());
+					for (int builtInNumberElements : builtInColoring.getResolutions())
+					{
+						for (ColoringData coloring : builtInColoring.get(builtInNumberElements))
+						{
+							coloringDataManager.addBuiltIn(coloring);
+						}
+					}
 				}
 				catch (IOException e)
 				{
@@ -276,16 +284,16 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			}
 		}
 
-		metadataFileName = SafePaths.getString(Configuration.getCacheDir(), metadataFileName);
-		try
-		{
-			Serializers.serialize(COLORING_METADATA_ID, coloringDataManager.getMetadataManager(false).store(), new File(metadataFileName));
-		}
-		catch (IOException e)
-		{
-			System.err.println("Exception when trying to save plate coloring metadata file");
-			e.printStackTrace();
-		}
+		//		metadataFileName = SafePaths.getString(Configuration.getCacheDir(), metadataFileName);
+		//		try
+		//		{
+		//			Serializers.serialize(COLORING_METADATA_ID, coloringDataManager.getMetadataManager(false).store(), new File(metadataFileName));
+		//		}
+		//		catch (IOException e)
+		//		{
+		//			System.err.println("Exception when trying to save plate coloring metadata file");
+		//			e.printStackTrace();
+		//		}
 	}
 
 	private static Format guessFormat(String baseFileName)
