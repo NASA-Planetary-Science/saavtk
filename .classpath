@@ -21,7 +21,7 @@
 	<classpathentry exported="true" kind="lib" path="lib/vtk6.3/vtk-6.3.jar"/>
 	<classpathentry exported="true" kind="lib" path="jgoodies-forms-1.8.0.jar" sourcepath="jgoodies-forms-1.8.0-sources.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jide-oss-3.6.9.jar"/>
-	<classpathentry kind="lib" path="lib/gson-2.8.0.jar" sourcepath="lib/gson-2.8.0-sources.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/gson-2.8.0.jar" sourcepath="lib/gson-2.8.0-sources.jar"/>
 	<classpathentry kind="lib" path="lib/gson-2.8.0-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
