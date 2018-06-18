@@ -464,9 +464,11 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			}
 			else
 			{
+				setCursor(new Cursor(Cursor.WAIT_CURSOR));
 				smallBodyModel.setShowSmallBody(false);
 				if (graticule != null && gridCheckBox.isSelected())
 					graticule.setShowGraticule(false);
+				setCursor(Cursor.getDefaultCursor());
 			}
 			setCursor(new Cursor(Cursor.WAIT_CURSOR));
 			showImageMap(isImageMapEnabled());
@@ -486,8 +488,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 				}
 				else
 				{
+					setCursor(new Cursor(Cursor.WAIT_CURSOR));
 					graticule.setShowGraticule(false);
 					gridLabelCheckBox.setEnabled(false);
+					setCursor(Cursor.getDefaultCursor());
 				}
 			}
 		}
@@ -565,9 +569,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		{
 			if (standardColoringButton.isSelected())
 			{
+				setCursor(Cursor.getDefaultCursor());
+				setCursor(new Cursor(Cursor.WAIT_CURSOR));
 				int selectedIndex = coloringComboBox.getSelectedIndex() - 1;
-				if (selectedIndex < 0)
-				{
+				if (selectedIndex < 0) {
 					smallBodyModel.setColoringIndex(-1);
 					return;
 				}
@@ -576,6 +581,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 				smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
 				smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
 				colormapController.refresh();
+				setCursor(Cursor.getDefaultCursor());
 			}
 			else if (rgbColoringButton.isSelected())
 			{
