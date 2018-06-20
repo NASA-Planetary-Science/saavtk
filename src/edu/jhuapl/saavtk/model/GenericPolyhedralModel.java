@@ -2136,10 +2136,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		if (coloringIndex >= 0)
 		{
 			ImmutableList<String> names = coloringDataManager.getNames();
-			if (names.size() > coloringIndex)
+			ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
+			if (names.size() > coloringIndex && !resolutions.isEmpty())
 			{
-				String name = coloringDataManager.getNames().get(coloringIndex);
-				int numberElements = coloringDataManager.getResolutions().get(resolutionLevel);
+				String name = names.get(coloringIndex);
+				int numberElements = resolutions.get(resolutionLevel);
 				return coloringDataManager.has(name, numberElements);
 			}
 		}
