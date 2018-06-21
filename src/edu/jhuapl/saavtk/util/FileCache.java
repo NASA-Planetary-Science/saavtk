@@ -12,6 +12,8 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -507,7 +509,6 @@ public final class FileCache
 			throw new UnauthorizedAccessException("Cannot get file: access is restricted to URL: " + url, url);
 		}
 
-		final File file = fileInfo.getFile();
 		if (fileInfo.isNeedToDownload())
 		{
 			if (fileInfo.isExistsOnServer() == YesOrNo.NO)
@@ -516,57 +517,74 @@ public final class FileCache
 				throw new NonexistentRemoteFile("File pointed to does not exist: " + url, url);
 			}
 
-			fileInfo.startDownload();
-			File tmpFile = null;
-			try (WrappedInputStream wrappedStream = new WrappedInputStream(fileInfo))
+			try
 			{
-				final long totalByteCount = wrappedStream.getTotalByteCount();
-				fileInfo.setTotalByteCount(totalByteCount);
-				tmpFile = new File(fileInfo.getFile() + FileUtil.getTemporarySuffix());
+				final File file = fileInfo.getFile();
+				final Path tmpFilePath = SafePaths.get(file + FileUtil.getTemporarySuffix());
+				long lastModified = 0;
 
-				file.getParentFile().mkdirs();
-				fileInfo.maybeAbort();
-				try (FileOutputStream os = new FileOutputStream(tmpFile))
+				Files.deleteIfExists(tmpFilePath);
+
+				fileInfo.startDownload();
+				try (WrappedInputStream wrappedStream = new WrappedInputStream(fileInfo))
 				{
-					InputStream is = wrappedStream.getStream();
-					final int bufferSize = Math.max(is.available(), 8192);
-					byte[] buff = new byte[bufferSize];
-					int len;
-					while ((len = is.read(buff)) > 0)
-					{
-						fileInfo.setByteCount(wrappedStream.getByteCount());
-						fileInfo.maybeAbort();
-						os.write(buff, 0, len);
-					}
-					fileInfo.setByteCount(totalByteCount);
+					final long totalByteCount = wrappedStream.getTotalByteCount();
+					fileInfo.setTotalByteCount(totalByteCount);
+					File tmpFile = tmpFilePath.toFile();
+
+					file.getParentFile().mkdirs();
 					fileInfo.maybeAbort();
+					try (FileOutputStream os = new FileOutputStream(tmpFile))
+					{
+						InputStream is = wrappedStream.getStream();
+						final int bufferSize = Math.max(is.available(), 8192);
+						byte[] buff = new byte[bufferSize];
+						int len;
+						while ((len = is.read(buff)) > 0)
+						{
+							fileInfo.setByteCount(wrappedStream.getByteCount());
+							fileInfo.maybeAbort();
+							os.write(buff, 0, len);
+						}
+						fileInfo.setByteCount(totalByteCount);
+						fileInfo.maybeAbort();
 
-					// Change the modified time of the file to that of the server.
-					final long lastModified = wrappedStream.getLastModifiedTime();
-					if (lastModified > 0)
-						tmpFile.setLastModified(lastModified);
-
-					// Okay, now rename the file to the real name.
-					file.delete();
-					tmpFile.renameTo(file);
-
-					// Change the modified time again just in case the process of
-					// renaming the file caused the modified time to change.
-					// (On Linux, changing the filename, does not change the modified
-					// time so this is not necessary, but I'm not sure about other platforms)
-					if (lastModified > 0)
-						file.setLastModified(lastModified);
+						// Change the modified time of the file to that of the server.
+						lastModified = wrappedStream.getLastModifiedTime();
+						if (lastModified > 0)
+							tmpFile.setLastModified(lastModified);
+					}
 				}
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-				if (tmpFile != null && !Debug.isEnabled())
+				catch (Exception e)
 				{
-					tmpFile.delete();
+					if (!Debug.isEnabled())
+					{
+						Files.deleteIfExists(tmpFilePath);
+					}
+					throw e;
 				}
+
+				// Okay, now rename the file to the real name.
+				File tmpFile = tmpFilePath.toFile();
+				file.delete();
+				if (!tmpFile.renameTo(file))
+				{
+					throw new IOException("Failed to rename temporary file " + tmpFile);
+				}
+
+				// Change the modified time again just in case the process of
+				// renaming the file caused the modified time to change.
+				// (On Linux, changing the filename, does not change the modified
+				// time so this is not necessary, but I'm not sure about other platforms)
+				if (lastModified > 0)
+					file.setLastModified(lastModified);
+			}
+			catch (IOException e)
+			{
+				throw new RuntimeException(e);
 			}
 		}
+
 		return fileInfo.getFile();
 	}
 
