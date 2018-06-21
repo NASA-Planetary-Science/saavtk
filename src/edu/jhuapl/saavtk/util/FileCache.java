@@ -548,7 +548,10 @@ public final class FileCache
 
 					// Okay, now rename the file to the real name.
 					file.delete();
-					tmpFile.renameTo(file);
+					if (!tmpFile.renameTo(file))
+					{
+						throw new IOException("Failed to rename temporary file " + tmpFile);
+					}
 
 					// Change the modified time again just in case the process of
 					// renaming the file caused the modified time to change.
@@ -558,13 +561,21 @@ public final class FileCache
 						file.setLastModified(lastModified);
 				}
 			}
-			catch (Exception e)
+			catch (IOException e)
 			{
-				e.printStackTrace();
 				if (tmpFile != null && !Debug.isEnabled())
 				{
 					tmpFile.delete();
 				}
+				throw new RuntimeException(e);
+			}
+			catch (Exception e)
+			{
+				if (tmpFile != null && !Debug.isEnabled())
+				{
+					tmpFile.delete();
+				}
+				throw e;
 			}
 		}
 		return fileInfo.getFile();
