@@ -374,7 +374,7 @@ public final class FileCache
 		{
 			// File "on the server" is not gzipped, and is allegedly on local file system,
 			// so just try to use it directly.
-			File file = SafePaths.get(urlString.substring(FILE_PREFIX.length() - 1)).toFile();
+			File file = SafePaths.get(urlString.substring(FILE_PREFIX.length())).toFile();
 
 			FileInfo info = INFO_MAP.get(file);
 			if (info == null)
