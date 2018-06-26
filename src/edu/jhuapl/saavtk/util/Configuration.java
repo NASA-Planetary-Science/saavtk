@@ -346,6 +346,7 @@ public class Configuration
 	public static void setRootURL(String rootURL)
 	{
 		Configuration.rootURL = rootURL;
+		Configuration.dataRootURL = FileCache.createURL(rootURL, "data");
 	}
 
 	/**

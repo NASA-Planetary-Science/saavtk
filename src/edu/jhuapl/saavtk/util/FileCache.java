@@ -1,14 +1,19 @@
 package edu.jhuapl.saavtk.util;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 
@@ -367,7 +372,7 @@ public final class FileCache
 		{
 			// File "on the server" is not gzipped, and is allegedly on local file system,
 			// so just try to use it directly.
-			File file = SafePaths.get(urlString.substring(FILE_PREFIX.length() - 1)).toFile();
+			File file = SafePaths.get(urlString.substring(FILE_PREFIX.length())).toFile();
 
 			FileInfo info = INFO_MAP.get(file);
 			if (info == null)
@@ -543,7 +548,10 @@ public final class FileCache
 
 					// Okay, now rename the file to the real name.
 					file.delete();
-					tmpFile.renameTo(file);
+					if (!tmpFile.renameTo(file))
+					{
+						throw new IOException("Failed to rename temporary file " + tmpFile);
+					}
 
 					// Change the modified time again just in case the process of
 					// renaming the file caused the modified time to change.
@@ -553,16 +561,54 @@ public final class FileCache
 						file.setLastModified(lastModified);
 				}
 			}
-			catch (Exception e)
+			catch (IOException e)
 			{
-				e.printStackTrace();
 				if (tmpFile != null && !Debug.isEnabled())
 				{
 					tmpFile.delete();
 				}
+				throw new RuntimeException(e);
+			}
+			catch (Exception e)
+			{
+				if (tmpFile != null && !Debug.isEnabled())
+				{
+					tmpFile.delete();
+				}
+				throw e;
 			}
 		}
 		return fileInfo.getFile();
+	}
+
+	/**
+	 * The function loads a file from the server and returns its contents as a list
+	 * of strings, one line per string.
+	 * 
+	 * @param filename file to read
+	 * @return contents of file as list of strings
+	 * @throws IOException
+	 */
+	public static List<String> getFileLinesFromServerAsStringList(String filename) throws IOException
+	{
+		File file = getFileFromServer(filename);
+		InputStream fs = new FileInputStream(file);
+		if (filename.toLowerCase().endsWith(".gz"))
+			fs = new GZIPInputStream(fs);
+		InputStreamReader isr = new InputStreamReader(fs);
+		BufferedReader in = new BufferedReader(isr);
+
+		List<String> lines = new ArrayList<>();
+		String line;
+
+		while ((line = in.readLine()) != null)
+		{
+			lines.add(line);
+		}
+
+		in.close();
+
+		return lines;
 	}
 
 	/**

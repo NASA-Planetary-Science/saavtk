@@ -341,19 +341,27 @@ public abstract class ViewManager extends JPanel
 		{
 			return;
 		}
-		if (currentView != null)
-			currentView.renderer.viewDeactivating();
 
-		CardLayout cardLayout = (CardLayout) (getLayout());
-		cardLayout.show(this, view.getUniqueName());
-
-		// defer initialization of View until we show it.
-		repaint();
-		validate();
 		try
 		{
 			view.initialize();
+
+			if (currentView != null)
+				currentView.renderer.viewDeactivating();
+
+			CardLayout cardLayout = (CardLayout) (getLayout());
+			cardLayout.show(this, view.getUniqueName());
+
+			// defer initialization of View until we show it.
+			repaint();
+			validate();
+
 			currentView = view;
+
+			currentView.renderer.viewActivating();
+
+			updateRecents();
+			frame.setTitle(view.getPathRepresentation());
 		}
 		catch (UnauthorizedAccessException e)
 		{
@@ -363,13 +371,8 @@ public abstract class ViewManager extends JPanel
 		catch (Exception e)
 		{
 			e.printStackTrace();
+			JOptionPane.showMessageDialog(null, "Unable to switch to model " + view.getUniqueName() + ". See console for more information", "Problem initializing model", JOptionPane.ERROR_MESSAGE);
 		}
-
-		if (currentView != null)
-			currentView.renderer.viewActivating();
-
-		updateRecents();
-		frame.setTitle(view.getPathRepresentation());
 	}
 
 	public View getBuiltInView(int i)
