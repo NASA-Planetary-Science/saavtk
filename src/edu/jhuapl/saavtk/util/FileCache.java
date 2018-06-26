@@ -564,19 +564,14 @@ public final class FileCache
 			}
 			catch (IOException e)
 			{
-				if (tmpFile != null && !Debug.isEnabled())
-				{
-					tmpFile.delete();
-				}
 				throw new RuntimeException(e);
 			}
-			catch (Exception e)
+			finally
 			{
 				if (tmpFile != null && !Debug.isEnabled())
 				{
 					tmpFile.delete();
 				}
-				throw e;
 			}
 		}
 		return fileInfo.getFile();
@@ -670,39 +665,28 @@ public final class FileCache
 
 		private WrappedInputStream(FileInfo fileInfo) throws IOException
 		{
-			try
+			URL url = fileInfo.getURL();
+			final boolean gunzip = url.getPath().toLowerCase().endsWith(".gz");
+
+			URLConnection connection = url.openConnection();
+			Debug.out().println("Opened connection for download to " + url);
+			if (!Debug.isEnabled() && showDotsForFiles)
 			{
-				URL url = fileInfo.getURL();
-				final boolean gunzip = url.getPath().toLowerCase().endsWith(".gz");
-
-				URLConnection connection = url.openConnection();
-				Debug.out().println("Opened connection for download to " + url);
-				if (!Debug.isEnabled() && showDotsForFiles)
-				{
-					System.out.print('.');
-				}
-
-				// These two properties seem to be still necessary as of 2017-12-19.
-				connection.setRequestProperty("User-Agent", "Mozilla/4.0");
-				connection.setRequestProperty("Accept", "*/*");
-
-				this.totalByteCount = connection.getContentLengthLong();
-				this.lastModifiedTime = connection.getLastModified();
-				this.inputStream = connection.getInputStream();
-				this.countingInputStream = new CountingInputStream(this.inputStream);
-				this.inputStream = this.countingInputStream;
-				if (gunzip)
-				{
-					this.inputStream = new GZIPInputStream(this.inputStream);
-				}
+				System.out.print('.');
 			}
-			catch (Exception e)
+
+			// These two properties seem to be still necessary as of 2017-12-19.
+			connection.setRequestProperty("User-Agent", "Mozilla/4.0");
+			connection.setRequestProperty("Accept", "*/*");
+
+			this.totalByteCount = connection.getContentLengthLong();
+			this.lastModifiedTime = connection.getLastModified();
+			this.inputStream = connection.getInputStream();
+			this.countingInputStream = new CountingInputStream(this.inputStream);
+			this.inputStream = this.countingInputStream;
+			if (gunzip)
 			{
-				if (e instanceof IOException)
-				{
-					throw e;
-				}
-				throw new IOException(e);
+				this.inputStream = new GZIPInputStream(this.inputStream);
 			}
 		}
 
