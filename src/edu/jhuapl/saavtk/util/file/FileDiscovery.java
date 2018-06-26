@@ -1,6 +1,8 @@
 package edu.jhuapl.saavtk.util.file;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,12 +25,13 @@ public class FileDiscovery
 
 	private final File topDirectory;
 	private final File coloringDirectory;
+	private final File txtFile;
 	private final BasicColoringDataManager coloringDataManager;
 
 	protected FileDiscovery(String[] args)
 	{
 		Preconditions.checkNotNull(args);
-		Preconditions.checkArgument(args.length > 2, "Too few arguments");
+		Preconditions.checkArgument(args.length > 3, "Too few arguments");
 
 		String dataId = args[0];
 
@@ -37,32 +40,46 @@ public class FileDiscovery
 
 		File coloringDirectory = new File(args[2]);
 		Preconditions.checkArgument(coloringDirectory.isDirectory(), "Not a directory " + coloringDirectory);
-
+		
+		File txtFile = new File(args[3]);
+		Preconditions.checkArgument(txtFile.isFile(), "Not a file " + txtFile);
+		
 		this.topDirectory = topDirectory;
 		this.coloringDirectory = coloringDirectory;
 		this.coloringDataManager = BasicColoringDataManager.of(dataId);
+		this.txtFile = txtFile;
 	}
-
+	
 	public void run() throws IOException
-	{
-		for (File file : coloringDirectory.listFiles())
+	{ 
+		FileReader fileReader = new FileReader(txtFile);
+		BufferedReader bufferedReader = new BufferedReader(fileReader);
+		String line;
+		
+			
+		while ((line = bufferedReader.readLine()) != null) 
 		{
-			if (file.isFile())
-			{
-				try
-				{
-					DataFileInfo fileInfo = DataFileReader.of().readFileInfo(file);
-					System.out.println(fileInfo);
-					System.out.flush();
-					extractColorings(fileInfo);
-				}
-				catch (Exception e)
-				{
-					reportThrowable(e);
-					System.err.println("Skipping file " + file);
-				}
-			}
+			File colorFile = new File(coloringDirectory + "//" + line);
+		
+			if (colorFile.isFile())
+					{
+						try
+						{
+							DataFileInfo fileInfo = DataFileReader.of().readFileInfo(colorFile);
+							System.out.println(fileInfo);
+							System.out.flush();
+							extractColorings(fileInfo);
+						}
+						catch (Exception e)
+						{
+							reportThrowable(e);
+							System.err.println("Skipping file " + colorFile);
+						}
+					}
 		}
+		
+		bufferedReader.close();
+			
 		Serializers.serialize("Coloring Metadata", coloringDataManager.getMetadataManager(), SafePaths.get(coloringDirectory.getPath(), "coloring.smd").toFile());
 	}
 
