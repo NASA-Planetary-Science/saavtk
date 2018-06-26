@@ -399,6 +399,7 @@ public final class FileCache
 			//                  HttpURLConnection.setFollowRedirects(false);
 			YesOrNo authorized = YesOrNo.UNKNOWN;
 			YesOrNo urlExists = YesOrNo.UNKNOWN;
+			long lastModified = 0;
 			try
 			{
 				final URLConnection connection = url.openConnection();
@@ -434,7 +435,7 @@ public final class FileCache
 						urlExists = YesOrNo.NO;
 					}
 				}
-				info = new FileInfo(url, file, authorized, urlExists, connection.getLastModified());
+				lastModified = connection.getLastModified();
 			}
 			catch (Exception e)
 			{
@@ -444,8 +445,9 @@ public final class FileCache
 					e.printStackTrace();
 					authorized = YesOrNo.NO;
 				}
-				info = new FileInfo(url, file, authorized, urlExists, 0);
 			}
+
+			info = new FileInfo(url, file, authorized, urlExists, lastModified);
 			INFO_MAP.put(file, info);
 		}
 
