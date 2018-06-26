@@ -433,9 +433,8 @@ public final class FileCache
 						authorized = YesOrNo.YES;
 						urlExists = YesOrNo.NO;
 					}
-					info = new FileInfo(url, file, authorized, urlExists, connection.getLastModified());
 				}
-
+				info = new FileInfo(url, file, authorized, urlExists, connection.getLastModified());
 			}
 			catch (Exception e)
 			{
