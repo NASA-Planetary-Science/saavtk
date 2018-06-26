@@ -47,6 +47,12 @@ import edu.jhuapl.saavtk.util.file.TableInfo.ColumnInfo;
  *                   ,  deg,  deg,  deg,     ,   kg-m/s^2
  *          file1.txt,   3.,   4.,   5.,  17.,   42.
  *          file2.pdf,  -4.,  -2.,    7,  14.,   9.8e1
+ *          
+ *          # This example shows how one would use a CSV file for imagefile/sumfile correspondence.
+ *          <CSV>, title
+ *          Image file, sum file
+ *          file1.fits, file1.sum
+ *          ...
  * 
  * Any line anywhere that begins with whitespace followed by a # is a comment and is ignored.
  * Blank lines are also ignored.
