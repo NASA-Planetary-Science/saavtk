@@ -230,7 +230,7 @@ public final class FileCache
 			builder.append(isURLAccessAuthorized());
 			builder.append(", exists = ");
 			builder.append(isExistsOnServer());
-			builder.append(") ->");
+			builder.append(") -> ");
 			builder.append(getFile());
 			builder.append(" (exists = ");
 			builder.append(isExistsLocally());
@@ -325,6 +325,8 @@ public final class FileCache
 	 */
 	public static FileInfo getFileInfoFromServer(String urlOrPathSegment)
 	{
+		Preconditions.checkNotNull(urlOrPathSegment);
+
 		URL url = null;
 		try
 		{
@@ -354,7 +356,7 @@ public final class FileCache
 
 		if (!Configuration.useFileCache())
 		{
-			throw new UnsupportedOperationException("This method cannot be used if the file cache is disabled.");
+			throw new UnsupportedOperationException("This method is not currently supported if the file cache is disabled.");
 		}
 
 		String urlPathSegment = toUrlSegment(pathSegment);
