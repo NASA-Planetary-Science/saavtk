@@ -12,6 +12,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.security.Permission;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -328,30 +329,55 @@ public final class FileCache
 		Preconditions.checkNotNull(urlOrPathSegment);
 
 		URL url = null;
+		URL dataRootUrl = Configuration.getDataRootURL();
 		try
 		{
+			// First parse the whole thing to see if it can be done without
+			// throwing an exception.
 			url = new URL(urlOrPathSegment);
-			urlOrPathSegment = "";
+
+			// Handle case where this URL starts at the top
+			// of the server path.
+			if (urlOrPathSegment.startsWith(dataRootUrl.toString() + "/"))
+			{
+				urlOrPathSegment = urlOrPathSegment.substring(dataRootUrl.toString().length() + 1);
+			}
+			else
+			{
+				// Extract the path portion of the URL.
+				urlOrPathSegment = url.getFile();
+				System.err.println("Shpud " + urlOrPathSegment);
+			}
 		}
 		catch (@SuppressWarnings("unused") MalformedURLException e)
 		{
-			url = Configuration.getDataRootURL();
+			// Assume the argument is a path segment and use it to
+			// construct the URL relative to the data root.
+			try
+			{
+				url = new URL(dataRootUrl + toUrlSegment(urlOrPathSegment));
+			}
+			catch (MalformedURLException e1)
+			{
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 		}
 		return getFileInfoFromServer(url, urlOrPathSegment);
 	}
 
 	/**
-	 * Get information about the file on the server identified by the provided URL
-	 * object supplemented with the provieded path segment. See the other overload
-	 * of this method for more details about how the arguments are processed.
+	 * Get information about the cached file, which is identified by the provided URL
+	 * object, and located in the cache using the provided path segment.
 	 *
-	 * @param rootUrl the root URL, used without modification
-	 * @param pathSegment the path relative to the URL for the remote object
+	 * @param url the complete URL used without modification
+	 * @param pathSegment the path relative to the data cache top for the local
+	 *            object
 	 * @return the file information object
 	 */
-	public static FileInfo getFileInfoFromServer(URL rootUrl, String pathSegment)
+	public static FileInfo getFileInfoFromServer(final URL url, String pathSegment)
 	{
-		Preconditions.checkNotNull(rootUrl);
+		Preconditions.checkNotNull(url);
 		Preconditions.checkNotNull(pathSegment);
 
 		if (!Configuration.useFileCache())
@@ -359,10 +385,8 @@ public final class FileCache
 			throw new UnsupportedOperationException("This method is not currently supported if the file cache is disabled.");
 		}
 
-		String urlPathSegment = toUrlSegment(pathSegment);
 		final String ungzippedPath = pathSegment.toLowerCase().endsWith(".gz") ? pathSegment.substring(0, pathSegment.length() - 3) : pathSegment;
 
-		URL url = createURL(rootUrl + urlPathSegment);
 		String urlString = url.toString();
 
 		if (offlineMode)
@@ -437,6 +461,13 @@ public final class FileCache
 						urlExists = YesOrNo.NO;
 					}
 				}
+				else
+				{
+//					Permission permission = connection.getPermission();
+//					System.err.println("permission is " + permission);
+					authorized = YesOrNo.YES;
+					urlExists = YesOrNo.YES;
+				}
 				lastModified = connection.getLastModified();
 			}
 			catch (Exception e)
@@ -503,10 +534,10 @@ public final class FileCache
 	public static File getFileFromServer(String urlOrPathSegment) throws UnauthorizedAccessException
 	{
 		FileInfo fileInfo = getFileInfoFromServer(urlOrPathSegment);
+		URL url = fileInfo.getURL();
 
 		if (fileInfo.isURLAccessAuthorized() == YesOrNo.NO)
 		{
-			URL url = fileInfo.getURL();
 			throw new UnauthorizedAccessException("Cannot get file: access is restricted to URL: " + url, url);
 		}
 
@@ -515,17 +546,15 @@ public final class FileCache
 		{
 			if (fileInfo.isExistsOnServer() == YesOrNo.NO)
 			{
-				URL url = fileInfo.getURL();
 				throw new NonexistentRemoteFile("File pointed to does not exist: " + url, url);
 			}
 
 			fileInfo.startDownload();
-			File tmpFile = null;
+			File tmpFile = new File(fileInfo.getFile() + FileUtil.getTemporarySuffix());
 			try (WrappedInputStream wrappedStream = new WrappedInputStream(fileInfo))
 			{
 				final long totalByteCount = wrappedStream.getTotalByteCount();
 				fileInfo.setTotalByteCount(totalByteCount);
-				tmpFile = new File(fileInfo.getFile() + FileUtil.getTemporarySuffix());
 
 				file.getParentFile().mkdirs();
 				fileInfo.maybeAbort();
@@ -570,7 +599,7 @@ public final class FileCache
 			}
 			finally
 			{
-				if (tmpFile != null && !Debug.isEnabled())
+				if (!Debug.isEnabled())
 				{
 					tmpFile.delete();
 				}
@@ -724,9 +753,9 @@ public final class FileCache
 
 	public static void main(String[] args) throws MalformedURLException
 	{
-		URL url = new URL(FILE_PREFIX + "\\");
-		System.err.println(url);
-		String path = SafePaths.getString("/", "spud", "charmed///");
-		System.err.println(path);
+		Debug.setEnabled(true);
+		System.err.println(getFileInfoFromServer("file://Users/peachjm1/jhuapl/dev/sbmt/bennu/bennu-simulated-v4/coloring/Elevation0.fits.gz"));
+		File file = getFileFromServer("file://Users/peachjm1/jhuapl/dev/sbmt/bennu/bennu-simulated-v4/coloring/Elevation0.fits.gz");
+		System.err.println("File " + file + " exists? " + file.exists());
 	}
 }
