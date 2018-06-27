@@ -440,13 +440,6 @@ public final class FileCache
 						urlExists = YesOrNo.NO;
 					}
 				}
-				else
-				{
-					//					Permission permission = connection.getPermission();
-					//					System.err.println("permission is " + permission);
-					authorized = YesOrNo.YES;
-					urlExists = YesOrNo.YES;
-				}
 				lastModified = connection.getLastModified();
 			}
 			catch (Exception e)
