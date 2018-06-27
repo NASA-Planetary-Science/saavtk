@@ -12,7 +12,6 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.security.Permission;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -242,7 +241,7 @@ public final class FileCache
 		}
 	}
 
-	public static final String FILE_PREFIX = "file:/";
+	public static final String FILE_PREFIX = "file://";
 
 	private static final ConcurrentHashMap<File, FileInfo> INFO_MAP = new ConcurrentHashMap<>();
 	private static boolean showDotsForFiles = false;
@@ -330,23 +329,22 @@ public final class FileCache
 
 		URL url = null;
 		URL dataRootUrl = Configuration.getDataRootURL();
+		String path = null;
+
 		try
 		{
-			// First parse the whole thing to see if it can be done without
-			// throwing an exception.
+			// First see if it works as a fully-formed URL.
 			url = new URL(urlOrPathSegment);
 
-			// Handle case where this URL starts at the top
-			// of the server path.
-			if (urlOrPathSegment.startsWith(dataRootUrl.toString() + "/"))
+			String urlString = url.toString();
+			String dataRootString = dataRootUrl.toString();
+			if (urlString.startsWith(dataRootString + "/"))
 			{
-				urlOrPathSegment = urlOrPathSegment.substring(dataRootUrl.toString().length() + 1);
+				path = urlString.substring(dataRootString.length() + 1);
 			}
 			else
 			{
-				// Extract the path portion of the URL.
-				urlOrPathSegment = url.getFile();
-				System.err.println("Shpud " + urlOrPathSegment);
+				path = url.getFile();
 			}
 		}
 		catch (@SuppressWarnings("unused") MalformedURLException e)
@@ -356,57 +354,38 @@ public final class FileCache
 			try
 			{
 				url = new URL(dataRootUrl + toUrlSegment(urlOrPathSegment));
+				path = urlOrPathSegment;
 			}
 			catch (MalformedURLException e1)
 			{
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+				throw new IllegalArgumentException(e1);
 			}
 		}
-		return getFileInfoFromServer(url, urlOrPathSegment);
+		return getFileInfoFromServer(url, path);
 	}
 
 	/**
-	 * Get information about the cached file, which is identified by the provided URL
-	 * object, and located in the cache using the provided path segment.
+	 * Get information about the cached file, which is identified by the provided
+	 * URL object, and located in the cache using the provided path segment.
 	 *
 	 * @param url the complete URL used without modification
-	 * @param pathSegment the path relative to the data cache top for the local
-	 *            object
+	 * @param path the path relative to the data cache top for the local object
 	 * @return the file information object
 	 */
-	public static FileInfo getFileInfoFromServer(final URL url, String pathSegment)
+	public static FileInfo getFileInfoFromServer(final URL url, String path)
 	{
 		Preconditions.checkNotNull(url);
-		Preconditions.checkNotNull(pathSegment);
+		Preconditions.checkNotNull(path);
 
 		if (!Configuration.useFileCache())
 		{
 			throw new UnsupportedOperationException("This method is not currently supported if the file cache is disabled.");
 		}
 
-		final String ungzippedPath = pathSegment.toLowerCase().endsWith(".gz") ? pathSegment.substring(0, pathSegment.length() - 3) : pathSegment;
-
-		String urlString = url.toString();
-
+		final String ungzippedPath = path.toLowerCase().endsWith(".gz") ? path.substring(0, path.length() - 3) : path;
 		if (offlineMode)
 		{
 			return new FileInfo(url, new File(SafePaths.getString(offlineModeRootFolder, ungzippedPath)), YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0);
-		}
-
-		if (ungzippedPath.equals(pathSegment) && urlString.toLowerCase().startsWith(FILE_PREFIX))
-		{
-			// File "on the server" is not gzipped, and is allegedly on local file system,
-			// so just try to use it directly.
-			File file = SafePaths.get(urlString.substring(FILE_PREFIX.length())).toFile();
-
-			FileInfo info = INFO_MAP.get(file);
-			if (info == null)
-			{
-				info = new FileInfo(url, file, YesOrNo.YES, file.exists() ? YesOrNo.YES : YesOrNo.NO, file.lastModified());
-				INFO_MAP.put(file, info);
-			}
-			return info;
 		}
 
 		// Local file must be gunzipped, so need the full FileInfo no matter where the URL points.
@@ -463,8 +442,8 @@ public final class FileCache
 				}
 				else
 				{
-//					Permission permission = connection.getPermission();
-//					System.err.println("permission is " + permission);
+					//					Permission permission = connection.getPermission();
+					//					System.err.println("permission is " + permission);
 					authorized = YesOrNo.YES;
 					urlExists = YesOrNo.YES;
 				}
@@ -754,8 +733,8 @@ public final class FileCache
 	public static void main(String[] args) throws MalformedURLException
 	{
 		Debug.setEnabled(true);
-		System.err.println(getFileInfoFromServer("file://Users/peachjm1/jhuapl/dev/sbmt/bennu/bennu-simulated-v4/coloring/Elevation0.fits.gz"));
-		File file = getFileFromServer("file://Users/peachjm1/jhuapl/dev/sbmt/bennu/bennu-simulated-v4/coloring/Elevation0.fits.gz");
+		//		System.err.println(getFileInfoFromServer("file:///Users/peachjm1/jhuapl/dev/sbmt/bennu/bennu-simulated-v4/coloring/Elevation0.fits.gz"));
+		File file = getFileFromServer("file:///Users/peachjm1/jhuapl/dev/sbmt/bennu/bennu-simulated-v4/coloring/Elevation0.fits.gz");
 		System.err.println("File " + file + " exists? " + file.exists());
 	}
 }
