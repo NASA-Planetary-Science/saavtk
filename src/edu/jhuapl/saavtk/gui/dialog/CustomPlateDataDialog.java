@@ -190,7 +190,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 		// After copying the file, convert the file path to a URL format.
 		destFilePath = FileCache.FILE_PREFIX + getCustomDataFolder() + "/" + destFileName;
-		ColoringData newColoringData = ColoringData.of(source.getName(), destFilePath, source.getFieldNames(), source.getUnits(), source.getNumberElements(), source.hasNulls());
+		ColoringData newColoringData = ColoringData.of(source.getName(), destFilePath, source.getElementNames(), source.getUnits(), source.getNumberElements(), source.hasNulls());
 
 		DefaultListModel<ColoringData> model = (DefaultListModel<ColoringData>) cellDataList.getModel();
 		if (index >= model.getSize())
@@ -244,7 +244,15 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			try
 			{
 				jTabbedPane = MetadataDisplay.summary(file);
-				add(jTabbedPane);
+				if (jTabbedPane.getTabCount() > 0)
+				{
+					add(jTabbedPane);
+				}
+				else
+				{
+					// Don't bother displaying empty metadata.
+					jTabbedPane = null;
+				}
 			}
 			catch (IOException e)
 			{

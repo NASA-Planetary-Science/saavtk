@@ -30,6 +30,19 @@ public final class SettableMetadata extends BasicMetadata
 		return result;
 	}
 
+	public static SettableMetadata of(Metadata metadata)
+	{
+		Preconditions.checkNotNull(metadata);
+		SettableMetadata result = SettableMetadata.of(metadata.getVersion());
+		for (Key<?> key : metadata.getKeys())
+		{
+			@SuppressWarnings("unchecked")
+			Key<Object> objectKey = (Key<Object>) key;
+			result.put(objectKey, metadata.get(key));
+		}
+		return result;
+	}
+
 	private final List<Key<?>> keys;
 	private final Map<Key<?>, Object> map;
 
@@ -63,7 +76,7 @@ public final class SettableMetadata extends BasicMetadata
 		}
 		if (value == null)
 		{
-			putNullObject(key, map);
+			map.put(key, getNullObject());
 		}
 		else
 		{

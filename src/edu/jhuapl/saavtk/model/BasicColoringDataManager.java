@@ -2,6 +2,8 @@ package edu.jhuapl.saavtk.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -30,14 +32,14 @@ public class BasicColoringDataManager implements ColoringDataManager
 
 	private final String dataId;
 	private final List<String> names;
-	private final List<Integer> resolutions;
+	private final SortedSet<Integer> resolutions;
 	private final Table<String, Integer, ColoringData> dataTable;
 
 	private BasicColoringDataManager(String dataId, Iterable<? extends ColoringData> coloringData)
 	{
 		this.dataId = dataId;
 		this.names = new ArrayList<>();
-		this.resolutions = new ArrayList<>();
+		this.resolutions = new TreeSet<>();
 		this.dataTable = TreeBasedTable.create();
 		for (ColoringData data : coloringData)
 		{
@@ -122,9 +124,8 @@ public class BasicColoringDataManager implements ColoringDataManager
 
 	public final void add(ColoringData data)
 	{
-		Metadata metadata = data.getMetadata();
-		String name = metadata.get(ColoringData.NAME);
-		Integer numberElements = metadata.get(ColoringData.NUMBER_ELEMENTS);
+		String name = data.getName();
+		Integer numberElements = data.getNumberElements();
 		if (dataTable.contains(name, numberElements))
 		{
 			throw new IllegalArgumentException("Duplicated coloring for " + name + " (" + numberElements + " elements)");
@@ -142,9 +143,8 @@ public class BasicColoringDataManager implements ColoringDataManager
 
 	public final void remove(ColoringData data)
 	{
-		Metadata metadata = data.getMetadata();
-		String name = metadata.get(ColoringData.NAME);
-		Integer numberElements = metadata.get(ColoringData.NUMBER_ELEMENTS);
+		String name = data.getName();
+		Integer numberElements = data.getNumberElements();
 		dataTable.remove(name, numberElements);
 
 		if (!dataTable.rowKeySet().contains(name))
@@ -160,9 +160,8 @@ public class BasicColoringDataManager implements ColoringDataManager
 
 	public final void replace(ColoringData data)
 	{
-		Metadata metadata = data.getMetadata();
-		String name = metadata.get(ColoringData.NAME);
-		Integer numberElements = metadata.get(ColoringData.NUMBER_ELEMENTS);
+		String name = data.getName();
+		Integer numberElements = data.getNumberElements();
 		if (!dataTable.contains(name, numberElements))
 		{
 			throw new IllegalArgumentException("Cannot replace coloring " + name + " (" + numberElements + " elements)");
@@ -177,7 +176,7 @@ public class BasicColoringDataManager implements ColoringDataManager
 		dataTable.clear();
 	}
 
-	MetadataManager getMetadataManager()
+	public MetadataManager getMetadataManager()
 	{
 		return new MetadataManager() {
 
@@ -204,7 +203,11 @@ public class BasicColoringDataManager implements ColoringDataManager
 			public void retrieve(Metadata source)
 			{
 				clear();
-				// TODO write the rest of this.
+				List<Metadata> metadataList = source.get(Key.of(dataId));
+				for (Metadata metadata : metadataList)
+				{
+					add(ColoringData.of(metadata));
+				}
 			}
 
 		};
