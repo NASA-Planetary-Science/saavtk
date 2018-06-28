@@ -329,22 +329,22 @@ public final class FileCache
 
 		URL url = null;
 		URL dataRootUrl = Configuration.getDataRootURL();
-		String path = null;
-
 		try
 		{
-			// First see if it works as a fully-formed URL.
+			// First parse the whole thing to see if it can be done without
+			// throwing an exception.
 			url = new URL(urlOrPathSegment);
 
-			String urlString = url.toString();
-			String dataRootString = dataRootUrl.toString();
-			if (urlString.startsWith(dataRootString + "/"))
+			// Handle case where this URL starts at the top
+			// of the server path.
+			if (urlOrPathSegment.startsWith(dataRootUrl.toString() + "/"))
 			{
-				path = urlString.substring(dataRootString.length() + 1);
+				urlOrPathSegment = urlOrPathSegment.substring(dataRootUrl.toString().length() + 1);
 			}
 			else
 			{
-				path = url.getFile();
+				// Extract the path portion of the URL.
+				urlOrPathSegment = url.getFile();
 			}
 		}
 		catch (@SuppressWarnings("unused") MalformedURLException e)
@@ -354,14 +354,13 @@ public final class FileCache
 			try
 			{
 				url = new URL(dataRootUrl + toUrlSegment(urlOrPathSegment));
-				path = urlOrPathSegment;
 			}
 			catch (MalformedURLException e1)
 			{
 				throw new IllegalArgumentException(e1);
 			}
 		}
-		return getFileInfoFromServer(url, path);
+		return getFileInfoFromServer(url, urlOrPathSegment);
 	}
 
 	/**
@@ -369,23 +368,42 @@ public final class FileCache
 	 * URL object, and located in the cache using the provided path segment.
 	 *
 	 * @param url the complete URL used without modification
-	 * @param path the path relative to the data cache top for the local object
+	 * @param pathSegment the path relative to the data cache top for the local
+	 *            object
 	 * @return the file information object
 	 */
-	public static FileInfo getFileInfoFromServer(final URL url, String path)
+	public static FileInfo getFileInfoFromServer(final URL url, String pathSegment)
 	{
 		Preconditions.checkNotNull(url);
-		Preconditions.checkNotNull(path);
+		Preconditions.checkNotNull(pathSegment);
 
 		if (!Configuration.useFileCache())
 		{
 			throw new UnsupportedOperationException("This method is not currently supported if the file cache is disabled.");
 		}
 
-		final String ungzippedPath = path.toLowerCase().endsWith(".gz") ? path.substring(0, path.length() - 3) : path;
+		final String ungzippedPath = pathSegment.toLowerCase().endsWith(".gz") ? pathSegment.substring(0, pathSegment.length() - 3) : pathSegment;
+
+		String urlString = url.toString();
+
 		if (offlineMode)
 		{
 			return new FileInfo(url, new File(SafePaths.getString(offlineModeRootFolder, ungzippedPath)), YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0);
+		}
+
+		if (ungzippedPath.equals(pathSegment) && url.getProtocol().equalsIgnoreCase("file"))
+		{
+			// File "on the server" is not gzipped, and is allegedly on local file system,
+			// so just try to use it directly.
+			File file = SafePaths.get(url.getFile()).toFile();
+
+			FileInfo info = INFO_MAP.get(file);
+			if (info == null)
+			{
+				info = new FileInfo(url, file, YesOrNo.YES, file.exists() ? YesOrNo.YES : YesOrNo.NO, file.lastModified());
+				INFO_MAP.put(file, info);
+			}
+			return info;
 		}
 
 		// Local file must be gunzipped, so need the full FileInfo no matter where the URL points.
@@ -726,8 +744,7 @@ public final class FileCache
 	public static void main(String[] args) throws MalformedURLException
 	{
 		Debug.setEnabled(true);
-		//		System.err.println(getFileInfoFromServer("file:///Users/peachjm1/jhuapl/dev/sbmt/bennu/bennu-simulated-v4/coloring/Elevation0.fits.gz"));
-		File file = getFileFromServer("file:///Users/peachjm1/jhuapl/dev/sbmt/bennu/bennu-simulated-v4/coloring/Elevation0.fits.gz");
+		File file = getFileFromServer("file://Users/peachjm1/jhuapl/dev/sbmt/bennu/bennu-simulated-v4/coloring/Elevation0.fits.gz");
 		System.err.println("File " + file + " exists? " + file.exists());
 	}
 }
