@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
+<stringAttribute key="bad_container_name" value="/saavtk/run"/>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+<listEntry value="/saavtk/src/edu/jhuapl/saavtk/util/file/FileDiscovery.java"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+<listEntry value="1"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.ui.favoriteGroups">
+<listEntry value="org.eclipse.debug.ui.launchGroup.debug"/>
+<listEntry value="org.eclipse.debug.ui.launchGroup.run"/>
+</listAttribute>
+<booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_START_ON_FIRST_THREAD" value="true"/>
+<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="edu.jhuapl.saavtk.util.file.FileDiscovery"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="Bennu   c:/Users/smithgl2/.sbmt/cache/2     c:/Users/smithgl2/.sbmt/cache/2/bennu/bennu-simulated-v4/coloring&#13;&#10;c:/Users/smithgl2/Desktop/coloringlist.txt"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="saavtk"/>
+<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Xmx9g"/>
+</launchConfiguration>

@@ -244,7 +244,15 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			try
 			{
 				jTabbedPane = MetadataDisplay.summary(file);
-				add(jTabbedPane);
+				if (jTabbedPane.getTabCount() > 0)
+				{
+					add(jTabbedPane);
+				}
+				else
+				{
+					// Don't bother displaying empty metadata.
+					jTabbedPane = null;
+				}
 			}
 			catch (IOException e)
 			{

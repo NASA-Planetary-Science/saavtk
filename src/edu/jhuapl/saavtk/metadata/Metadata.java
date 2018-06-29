@@ -8,6 +8,8 @@ public interface Metadata
 
 	ImmutableList<Key<?>> getKeys();
 
+	boolean hasKey(Key<?> key);
+
 	<V> V get(Key<V> key);
 
 	Metadata copy();
