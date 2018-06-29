@@ -60,6 +60,12 @@ public class GsonSerializer implements Serializer
 	}
 
 	@Override
+	public void deregister(Key<? extends Metadata> key)
+	{
+		managerCollection.remove(key);
+	}
+
+	@Override
 	public void load(File file) throws IOException
 	{
 		Preconditions.checkNotNull(file);
@@ -81,7 +87,8 @@ public class GsonSerializer implements Serializer
 		}
 		if (SwingUtilities.isEventDispatchThread())
 		{
-			retrieveInSwingContext(source);
+			//			retrieveInSwingContext(source);
+			retrieveInSingleThreadContext(source);
 		}
 		else
 		{

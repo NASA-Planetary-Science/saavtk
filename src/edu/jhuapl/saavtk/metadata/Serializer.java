@@ -25,6 +25,8 @@ public interface Serializer
 	 */
 	void register(Key<? extends Metadata> key, MetadataManager manager);
 
+	void deregister(Key<? extends Metadata> key);
+
 	void load(File file) throws IOException;
 
 	void save(File file) throws IOException;
