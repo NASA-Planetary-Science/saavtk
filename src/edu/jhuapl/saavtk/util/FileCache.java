@@ -384,8 +384,6 @@ public final class FileCache
 
 		final String ungzippedPath = pathSegment.toLowerCase().endsWith(".gz") ? pathSegment.substring(0, pathSegment.length() - 3) : pathSegment;
 
-		String urlString = url.toString();
-
 		if (offlineMode)
 		{
 			return new FileInfo(url, new File(SafePaths.getString(offlineModeRootFolder, ungzippedPath)), YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0);
