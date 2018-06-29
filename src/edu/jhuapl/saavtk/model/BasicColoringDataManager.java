@@ -213,4 +213,21 @@ public class BasicColoringDataManager implements ColoringDataManager
 		};
 	}
 
+	@Override
+	public String toString()
+	{
+		StringBuilder builder = new StringBuilder(getId());
+		builder.append(" colorings: ");
+		String delimiter = "";
+		for (Integer numberElements : getResolutions())
+		{
+			builder.append(delimiter);
+			delimiter = ", ";
+			builder.append(numberElements);
+			builder.append(" facets: ");
+			builder.append(get(numberElements));
+		}
+		return builder.toString();
+	}
+
 }
