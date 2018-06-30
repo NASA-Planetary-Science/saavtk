@@ -1,18 +1,11 @@
 package edu.jhuapl.saavtk2.table;
 
 
-import java.awt.BorderLayout;
 import java.util.List;
-
-import javax.swing.JFrame;
-import javax.swing.JScrollPane;
-import javax.swing.SwingUtilities;
 
 import com.google.common.collect.Lists;
 
-import edu.jhuapl.saavtk2.event.Event;
-import edu.jhuapl.saavtk2.event.EventListener;
-import edu.jhuapl.saavtk2.gui.BasicFrame;
+import edu.jhuapl.saavtk2.event.EventSource;
 
 public class MapAndShowTable extends BasicTable {
 
@@ -51,7 +44,7 @@ public class MapAndShowTable extends BasicTable {
 	public void setItemMapped(int r, boolean map)
 	{
 		rowData.get(r)[getColumnNumber(Columns.Map)]=map;
-		//fire(new TableItemMappedEvent(this, r, map));
+		fire(new ItemMappedEvent(this, r, map));
 	}
 	
 	public void showItem(int r, boolean show)
@@ -59,7 +52,7 @@ public class MapAndShowTable extends BasicTable {
 		if (itemIsMapped(r))
 		{
 			rowData.get(r)[getColumnNumber(Columns.Show)]=show;
-			//fire(new TableItemShownEvent(this, r, show));
+			fire(new ItemShownEvent(this, r, show));
 		}
 	}
 	
@@ -73,7 +66,28 @@ public class MapAndShowTable extends BasicTable {
 		return (Boolean)rowData.get(r)[getColumnNumber(Columns.Show)];
 	}
 	
-	public static TableSwingWrapper createSwingWrapper(MapAndShowTable table) 
+	public static class ItemMappedEvent extends TableRowEvent<Boolean>
+	{
+
+        public ItemMappedEvent(EventSource source, int row, Boolean value)
+        {
+            super(source, row, value);
+        }
+	    
+	}
+	
+	public static class ItemShownEvent extends TableRowEvent<Boolean>
+	{
+
+        public ItemShownEvent(EventSource source, int row, Boolean value)
+        {
+            super(source, row, value);
+        }
+	    
+	}
+	
+	
+/*	public static TableSwingWrapper createSwingWrapper(MapAndShowTable table) 
 	{
 		TableSwingWrapper swingTable=new TableSwingWrapper(table);
 		swingTable.setColumnEditable(Columns.Show, false);
@@ -126,6 +140,6 @@ public class MapAndShowTable extends BasicTable {
 				
 			}
 		});
-	}
+	}*/
 		
 }
