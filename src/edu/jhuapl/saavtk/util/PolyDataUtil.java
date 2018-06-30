@@ -15,8 +15,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
@@ -646,10 +650,24 @@ public class PolyDataUtil
 
 		double[] normal = getPolyDataNormalAtPoint(center, polyData, pointLocator);
 
+/*		vtkIdList pids=new vtkIdList();
+		pointLocator.FindClosestNPoints(256, center, pids);
+		Set<Integer> cellIds=Sets.newHashSet();
+		for (int i=0; i<pids.GetNumberOfIds(); i++)
+		{
+		      vtkIdList cids=new vtkIdList();
+
+		    polyData.GetPointCells(i, cids);
+		    for (int j=0; j<cids.GetNumberOfIds(); j++)
+		        cellIds.add(cids.GetId(j));
+		    
+		}*/
+		
+		
 		// If the number of points are too small, then vtkExtractPolyDataGeometry
 		// as used here might fail, so skip this part (which is just an optimization
 		// not really needed when the points are few) in this case.
-		if (polyData.GetNumberOfPoints() >= 20000)
+	/*	if (polyData.GetNumberOfPoints() >= 20000)
 		{
 			// Reduce the size of the polydata we need to process by only
 			// considering cells within 1.2 times the radius. We make sure,
@@ -661,7 +679,9 @@ public class PolyDataUtil
 
 			BoundingBox boundingBox = new BoundingBox(polyData.GetBounds());
 			double minRadius = boundingBox.getDiagonalLength() / 193.30280166816735;
-
+			
+			
+			
 			vtkSphere sphere = new vtkSphere();
 			d.add(sphere);
 			sphere.SetCenter(center);
@@ -676,7 +696,10 @@ public class PolyDataUtil
 			extract.Update();
 			polyData = extract.GetOutput();
 			d.add(polyData);
-		}
+			
+			
+			System.out.println(Arrays.toString(center)+" "+polyData.GetNumberOfCells());
+		}*/
 
 		vtkRegularPolygonSource polygonSource = new vtkRegularPolygonSource();
 		d.add(polygonSource);
