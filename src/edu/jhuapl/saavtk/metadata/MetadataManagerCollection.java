@@ -44,6 +44,14 @@ public class MetadataManagerCollection
 		managers.put(key, manager);
 	}
 
+	public void remove(Key<? extends Metadata> key)
+	{
+		Preconditions.checkNotNull(key);
+
+		keysInOrder.remove(key);
+		managers.remove(key);
+	}
+
 	public ImmutableList<Key<? extends Metadata>> getKeys()
 	{
 		return ImmutableList.copyOf(keysInOrder);
