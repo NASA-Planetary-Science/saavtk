@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.colormap.Colormaps;
 import edu.jhuapl.saavtk.config.ViewConfig;
+import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.Serializers;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
@@ -34,6 +35,8 @@ import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
 import edu.jhuapl.saavtk.util.SafePaths;
 import edu.jhuapl.saavtk.util.SmallBodyCubes;
+import edu.jhuapl.saavtk.util.file.IndexableTuple;
+import edu.jhuapl.saavtk.util.file.Tuple;
 import vtk.vtkActor;
 import vtk.vtkActor2D;
 import vtk.vtkCell;
@@ -2696,10 +2699,14 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				ImmutableList<ColoringData> allColoringData = getAllColoringDataForThisResolution();
 				for (ColoringData data : allColoringData)
 				{
-					out.write("," + data.getName());
-					String units = data.getUnits();
-					if (units != null && !units.isEmpty())
-						out.write(" (" + units + ")");
+					for (String name: data.getElementNames())
+					{
+						out.write("," + name);
+						String units = data.getUnits();
+						if (units != null && !units.isEmpty())
+							out.write(" (" + units + ")");
+					}
+					
 				}
 				out.write(lineSeparator);
 
@@ -2734,21 +2741,47 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					out.write((llr.lat * 180.0 / Math.PI) + ",");
 					out.write((llr.lon * 180.0 / Math.PI) + ",");
 					out.write(String.valueOf(llr.rad));
+					
 
 					for (ColoringData data : allColoringData)
 					{
-						out.write("," + data.getData().GetTuple1(i));
+						vtkFloatArray array = data.getData();
+						int number = data.getElementNames().size();
+						if (number == 1) {
+							out.write("," + array.GetTuple1(i));
+						}
+						else if (number != 1) {
+							double[] dArray = null;
+							if(number == 2) {
+								dArray = array.GetTuple2(i);
+							} else if (number == 3) {
+								dArray = array.GetTuple3(i);
+							} else if (number == 4) {
+								dArray = array.GetTuple4(i);
+							} else if (number == 6) {
+								dArray = array.GetTuple6(i);
+							} else if (number == 9) {
+								dArray = array.GetTuple9(i);
+							} else {
+								throw new AssertionError();
+							}
+							for (double d: dArray) {
+								out.write("," + d);
+							}
+						} 	
+						
 					}
-
 					out.write(lineSeparator);
 				}
-
+				
 				triangle.Delete();
 				idList.Delete();
-
+					
 			}
+
 		}
 	}
+	
 
 	/**
 	 * Given a polydata that is coincident with part of the shape model, save out
