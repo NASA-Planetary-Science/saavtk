@@ -246,11 +246,14 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				{
 					BasicColoringDataManager builtInColoring = BasicColoringDataManager.of(coloringDataManager.getId());
 					Serializers.deserialize(metadataFile, COLORING_METADATA_ID, builtInColoring.getMetadataManager());
-					for (int builtInNumberElements : builtInColoring.getResolutions())
+					for (String builtInName : builtInColoring.getNames())
 					{
-						for (ColoringData coloring : builtInColoring.get(builtInNumberElements))
+						for (int builtInNumberElements : builtInColoring.getResolutions())
 						{
-							coloringDataManager.addBuiltIn(coloring);
+							if (builtInColoring.has(builtInName, builtInNumberElements))
+							{
+								coloringDataManager.addBuiltIn(builtInColoring.get(builtInName, builtInNumberElements));
+							}
 						}
 					}
 				}
