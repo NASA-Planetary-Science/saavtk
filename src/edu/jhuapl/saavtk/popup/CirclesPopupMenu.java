@@ -9,6 +9,6 @@ public class CirclesPopupMenu extends StructuresPopupMenu
 {
     public CirclesPopupMenu(ModelManager modelManager, Renderer renderer)
     {
-        super((CircleModel)modelManager.getModel(ModelNames.CIRCLE_STRUCTURES), modelManager.getPolyhedralModel(), renderer, false, true, false);
+        super((CircleModel)modelManager.getModel(ModelNames.CIRCLE_STRUCTURES), modelManager.getPolyhedralModel(), renderer, true, true, false);
     }
 }
