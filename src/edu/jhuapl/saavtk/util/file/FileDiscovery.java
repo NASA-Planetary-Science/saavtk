@@ -40,46 +40,45 @@ public class FileDiscovery
 
 		File coloringDirectory = new File(args[2]);
 		Preconditions.checkArgument(coloringDirectory.isDirectory(), "Not a directory " + coloringDirectory);
-		
+
 		File txtFile = new File(args[3]);
 		Preconditions.checkArgument(txtFile.isFile(), "Not a file " + txtFile);
-		
+
 		this.topDirectory = topDirectory;
 		this.coloringDirectory = coloringDirectory;
 		this.coloringDataManager = BasicColoringDataManager.of(dataId);
 		this.txtFile = txtFile;
 	}
-	
+
 	public void run() throws IOException
-	{ 
+	{
 		FileReader fileReader = new FileReader(txtFile);
 		BufferedReader bufferedReader = new BufferedReader(fileReader);
 		String line;
-		
-			
-		while ((line = bufferedReader.readLine()) != null) 
+
+		while ((line = bufferedReader.readLine()) != null)
 		{
 			File colorFile = new File(coloringDirectory + "//" + line);
-		
+
 			if (colorFile.isFile())
-					{
-						try
-						{
-							DataFileInfo fileInfo = DataFileReader.of().readFileInfo(colorFile);
-							System.out.println(fileInfo);
-							System.out.flush();
-							extractColorings(fileInfo);
-						}
-						catch (Exception e)
-						{
-							reportThrowable(e);
-							System.err.println("Skipping file " + colorFile);
-						}
-					}
+			{
+				try
+				{
+					DataFileInfo fileInfo = DataFileReader.of().readFileInfo(colorFile);
+					System.out.println(fileInfo);
+					System.out.flush();
+					extractColorings(fileInfo);
+				}
+				catch (Exception e)
+				{
+					reportThrowable(e);
+					System.err.println("Skipping file " + colorFile);
+				}
+			}
 		}
-		
+
 		bufferedReader.close();
-			
+
 		Serializers.serialize("Coloring Metadata", coloringDataManager.getMetadataManager(), SafePaths.get(coloringDirectory.getPath(), "coloring.smd").toFile());
 	}
 
@@ -112,6 +111,7 @@ public class FileDiscovery
 				else if (numberColumns == 3)
 				{
 					// One vector coloring, presumably from text file.
+					throw new UnsupportedOperationException("Code up this case");
 				}
 				else if (numberColumns == 6)
 				{
