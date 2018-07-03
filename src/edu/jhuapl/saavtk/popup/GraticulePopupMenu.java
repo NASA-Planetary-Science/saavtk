@@ -160,20 +160,22 @@ public class GraticulePopupMenu extends PopupMenu
     {
     	if (input>=1) 
     	{
+			tooSmall = false;
 			int size = factors.length;
 			for (int i = 0; i < size; i++) {
 				if (factors[i] > input) {
 					bounds[1] = factors[i];
 					bounds[0] = factors[i - 1];
-					System.out.println(bounds[0] + "   " + bounds[1]);
+//					System.out.println(bounds[0] + "   " + bounds[1]);
 					break;
 				}
 			} 
 		}
     	else if (input>=.1)
 		{
+    		tooSmall = false;
 			input=Math.round(input * 100.0) / 100.0;
-			System.out.println(input);
+//			System.out.println(input);
 			bounds[0] = input;
 			bounds[1] = input;
 			
@@ -181,14 +183,14 @@ public class GraticulePopupMenu extends PopupMenu
 			{
 				bounds[0]-=.01;
 				bounds[0]=Math.round(bounds[0] * 100.0) / 100.0;
-				System.out.println("Lower: " + bounds[0]);
+//				System.out.println("Lower: " + bounds[0]);
 			}
 			
 			while((180.0 / bounds[1]) % 2 != 0)
 			{
 				bounds[1]+=.01;
 				bounds[1]=Math.round(bounds[1] * 100.0) / 100.0;
-				System.out.println("Upper: " + bounds[1]);
+//				System.out.println("Upper: " + bounds[1]);
 			}
 		}
     	else
