@@ -86,8 +86,10 @@ public class Configuration
 		boolean userPasswordAccepted = false;
 		final int maximumNumberTries = 1;
 
+		URL restrictedAccessUrl = FileCache.createURL(restrictedAccessRoot.toString(), restrictedFileName);
+
 		// First confirm queries for information at least work. If not, don't try to update credentials.
-		FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
+		FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessUrl, restrictedFileName);
 		if (!info.isURLAccessAuthorized().equals(YesOrNo.NO))
 		{
 			return;
@@ -112,7 +114,7 @@ public class Configuration
 							{
 								foundCredentials = true;
 								setupPasswordAuthentication(userName, password, maximumNumberTries);
-								info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
+								info = FileCache.getFileInfoFromServer(restrictedAccessUrl, restrictedFileName);
 								if (info.isURLAccessAuthorized().equals(YesOrNo.YES))
 								{
 									userPasswordAccepted = true;
@@ -135,7 +137,7 @@ public class Configuration
 
 		if (!userPasswordAccepted && !foundEmptyPasswordFile)
 		{
-			userPasswordAccepted = promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next(), false);
+			userPasswordAccepted = promptUserForPassword(restrictedAccessUrl, restrictedFileName, passwordFilesToTry.iterator().next(), false);
 		}
 		if (!userPasswordAccepted)
 		{
@@ -144,7 +146,7 @@ public class Configuration
 		Configuration.userPasswordAccepted = userPasswordAccepted;
 	}
 
-	private static boolean promptUserForPassword(final URL restrictedAccessRoot, final String restrictedFileName, final Path passwordFile, final boolean updateMode) throws IOException
+	private static boolean promptUserForPassword(final URL restrictedAccessUrl, final String restrictedFileName, final Path passwordFile, final boolean updateMode) throws IOException
 	{
 		JPanel mainPanel = new JPanel();
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
@@ -194,7 +196,7 @@ public class Configuration
 				{
 					// Attempt authentication.
 					setupPasswordAuthentication(name, password, maximumNumberTries);
-					FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessRoot, restrictedFileName);
+					FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessUrl, restrictedFileName);
 					if (!info.isURLAccessAuthorized().equals(YesOrNo.YES))
 					{
 						// Try again.
