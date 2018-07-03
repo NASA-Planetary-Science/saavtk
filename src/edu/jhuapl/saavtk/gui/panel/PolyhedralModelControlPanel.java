@@ -279,7 +279,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
 		ActionListener coloringButtonGroupListener = (e) -> {
 			updateColoringControls();
-			setColoring();
+			setColoring(e.getSource());
 		};
 		noColoringButton.addActionListener(coloringButtonGroupListener);
 		standardColoringButton.addActionListener(coloringButtonGroupListener);
@@ -355,7 +355,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			panel.add(colormapController);
 
 			ItemListener listener = (e) -> {
-				setColoring();
+				if (e.getStateChange() != ItemEvent.DESELECTED)
+				{
+					setColoring(e.getSource());
+				}
 			};
 			coloringComboBox.addItemListener(listener);
 			customColorRedComboBox.addItemListener(listener);
@@ -541,7 +544,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		customColorBlueLabel.setEnabled(selected);
 	}
 
-	protected void setColoring()
+	protected void setColoring(Object source)
 	{
 		PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
 
@@ -580,9 +583,24 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 				smallBodyModel.setColoringIndex(-1);
 			}
 		}
-		catch (IOException e1)
+		catch (IOException e)
 		{
-			e1.printStackTrace();
+			e.printStackTrace();
+			String message = e.getMessage();
+			JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
+			JComboBox<?> box = null;
+			if (source instanceof JComboBox)
+			{
+				box = (JComboBox<?>) source;
+			}
+			else if (standardColoringButton.isSelected())
+			{
+				box = coloringComboBox;
+			}
+			if (box != null)
+			{
+				box.setSelectedIndex(0);
+			}
 		}
 	}
 

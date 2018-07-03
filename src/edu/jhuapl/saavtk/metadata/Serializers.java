@@ -3,6 +3,8 @@ package edu.jhuapl.saavtk.metadata;
 import java.io.File;
 import java.io.IOException;
 
+import com.google.common.base.Preconditions;
+
 import edu.jhuapl.saavtk.metadata.gson.GsonSerializer;
 
 public class Serializers
@@ -21,6 +23,10 @@ public class Serializers
 
 	public static void serialize(String metadataId, MetadataManager manager, File file) throws IOException
 	{
+		Preconditions.checkNotNull(metadataId);
+		Preconditions.checkNotNull(manager);
+		Preconditions.checkNotNull(file);
+
 		Serializer serializer = of();
 		serializer.register(Key.of(metadataId), manager);
 		serializer.save(file);
@@ -28,6 +34,10 @@ public class Serializers
 
 	public static void serialize(String metadataId, Metadata metadata, File file) throws IOException
 	{
+		Preconditions.checkNotNull(metadataId);
+		Preconditions.checkNotNull(metadata);
+		Preconditions.checkNotNull(file);
+
 		serialize(metadataId, new MetadataManager() {
 
 			@Override
@@ -37,7 +47,7 @@ public class Serializers
 			}
 
 			@Override
-			public void retrieve(Metadata source)
+			public void retrieve(@SuppressWarnings("unused") Metadata source)
 			{
 				throw new UnsupportedOperationException();
 			}
@@ -47,13 +57,22 @@ public class Serializers
 
 	public static void deserialize(File file, String metadataId, MetadataManager manager) throws IOException
 	{
+		Preconditions.checkNotNull(file);
+		Preconditions.checkNotNull(metadataId);
+		Preconditions.checkNotNull(manager);
+
 		Serializer serializer = of();
-		serializer.register(Key.of(metadataId), manager);
+		Key<Metadata> key = Key.of(metadataId);
+		serializer.register(key, manager);
 		serializer.load(file);
+		serializer.deregister(key);
 	}
 
 	public static FixedMetadata deserialize(File file, String metadataId) throws IOException
 	{
+		Preconditions.checkNotNull(file);
+		Preconditions.checkNotNull(metadataId);
+
 		class DirectMetadataManager implements MetadataManager
 		{
 			final SettableMetadata metadata = SettableMetadata.of(Version.of(0, 1));

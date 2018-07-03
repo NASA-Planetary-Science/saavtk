@@ -6,7 +6,7 @@ import com.google.common.base.Preconditions;
  * @param <T> type of the object that may be associated with this key, used for
  *            compile-time safety only
  */
-public final class Key<T> implements Comparable<Key<?>>
+public class Key<T> implements Comparable<Key<?>>
 {
 	/**
 	 * Return a key based on the supplied identification string.
@@ -23,12 +23,11 @@ public final class Key<T> implements Comparable<Key<?>>
 
 	private final String keyId;
 
-	private Key(String keyId)
+	protected Key(String keyId)
 	{
 		Preconditions.checkNotNull(keyId);
-		Preconditions.checkArgument(!keyId.isEmpty());
-		Preconditions.checkArgument(!keyId.matches("^\\s"));
-		Preconditions.checkArgument(!keyId.matches("\\s$"));
+		Preconditions.checkArgument(keyId.matches("^\\S.*"));
+		Preconditions.checkArgument(keyId.matches(".*\\S$"));
 		this.keyId = keyId;
 	}
 
