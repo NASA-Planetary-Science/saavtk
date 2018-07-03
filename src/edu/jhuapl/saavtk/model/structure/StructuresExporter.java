@@ -116,7 +116,7 @@ public class StructuresExporter
 		}
 		for (int i = 0; i < ids.length; i++)
 		{
-			EllipsePolygon poly = model.getPolygons().get(ids[i]);
+			EllipsePolygon poly = (EllipsePolygon) model.getStructure(ids[i]);
 			int[] c = poly.getColor();
 			double w = model.getLineWidth();
 			LineStyle style = new LineStyle(new Color(c[0], c[1], c[2]), w);

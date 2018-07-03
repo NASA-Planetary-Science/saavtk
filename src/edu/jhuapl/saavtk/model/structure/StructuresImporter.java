@@ -97,20 +97,20 @@ public class StructuresImporter
 			if (label==null)
 				label="";
 			//
-			double[][] startPoints=new double[s.getNumberOfSegments()][3];
-			double[][] endPoints=new double[s.getNumberOfSegments()][3];
-			for (int i=0; i<s.getNumberOfSegments(); i++)
-			{
-				startPoints[i]=s.getSegment(i).getStart();
-				endPoints[i]=s.getSegment(i).getEnd();
-			}
+//			double[][] startPoints=new double[s.getNumberOfSegments()][3];
+//			double[][] endPoints=new double[s.getNumberOfSegments()][3];
+//			for (int i=0; i<s.getNumberOfSegments(); i++)
+//			{
+//				startPoints[i]=s.getSegment(i).getStart();
+//				endPoints[i]=s.getSegment(i).getEnd();
+//			}
 			//
 			double[] center=s.getParameters().center;
 			double majorRadius=s.getParameters().majorRadius;
 			double flattening=s.getParameters().flattening;
 			double angle=s.getParameters().angle;
 			//
-			model.addNewStructure(startPoints, endPoints, center, majorRadius, flattening, angle);
+			model.addNewStructure(center, majorRadius, flattening, angle);
 			int id=model.getNumberOfStructures()-1;
 			model.setStructureColor(id, color);
 			model.setStructureLabel(id, label);
