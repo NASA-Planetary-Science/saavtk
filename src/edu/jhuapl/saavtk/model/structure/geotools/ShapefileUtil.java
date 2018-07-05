@@ -74,7 +74,7 @@ import vtk.vtkTriangleFilter;
 
 public class ShapefileUtil
 {
-	private static void write(Collection<SimpleFeature> features, Path shapeFile) throws IOException
+	public static void write(Collection<SimpleFeature> features, Path shapeFile) throws IOException
 	{
 	
 		DefaultFeatureCollection collection = new DefaultFeatureCollection();

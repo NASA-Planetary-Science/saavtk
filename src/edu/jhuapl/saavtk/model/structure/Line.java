@@ -1,9 +1,11 @@
 package edu.jhuapl.saavtk.model.structure;
 
+import java.awt.Color;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -62,6 +64,7 @@ public class Line extends StructureModel.Structure
         this.id = id;
         color = (int[])purpleColor.clone();
     }
+    
 
     public int getId()
     {
@@ -367,5 +370,15 @@ public class Line extends StructureModel.Structure
     public void setLabelHidden(boolean b)
     {
         labelHidden=b;
+    }
+    
+    public int getNumberOfPoints()
+    {
+        return xyzPointList.size();
+    }
+    
+    public Vector3D getPoint(int i)
+    {
+        return new Vector3D(xyzPointList.get(i).xyz);
     }
 }

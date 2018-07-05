@@ -1,10 +1,23 @@
 package edu.jhuapl.saavtk.gui.panel;
 
+import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
 
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.JButton;
+import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.SwingUtilities;
 
+import org.opengis.feature.simple.SimpleFeature;
+
+import com.google.common.collect.Lists;
+
+import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.StructureModel;
@@ -23,7 +36,7 @@ public class StructuresControlPanel extends JTabbedPane
 
     public StructuresControlPanel(
             final ModelManager modelManager,
-            final PickManager pickManager)
+            final PickManager pickManager, final boolean supportsEsri)
     {
         // Delay initializing components until user explicitly makes this visible.
         // This may help in speeding up loading the view.
@@ -45,7 +58,7 @@ public class StructuresControlPanel extends JTabbedPane
                         pickManager,
                         PickManager.PickMode.LINE_DRAW,
                         (StructuresPopupMenu)popupManager.getPopup(structureModel),
-                        true) {});
+                        true, supportsEsri) {});
 
                 structureModel =
                         (StructureModel)modelManager.getModel(ModelNames.POLYGON_STRUCTURES);
@@ -55,7 +68,7 @@ public class StructuresControlPanel extends JTabbedPane
                         pickManager,
                         PickManager.PickMode.POLYGON_DRAW,
                         (StructuresPopupMenu)popupManager.getPopup(structureModel),
-                        true) {});
+                        true, supportsEsri) {});
 
                 structureModel =
                         (StructureModel)modelManager.getModel(ModelNames.CIRCLE_STRUCTURES);
@@ -65,7 +78,7 @@ public class StructuresControlPanel extends JTabbedPane
                         pickManager,
                         PickManager.PickMode.CIRCLE_DRAW,
                         (StructuresPopupMenu)popupManager.getPopup(structureModel),
-                        true) {});
+                        true, supportsEsri) {});
 
                 structureModel =
                         (StructureModel)modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES);
@@ -75,18 +88,54 @@ public class StructuresControlPanel extends JTabbedPane
                         pickManager,
                         PickManager.PickMode.ELLIPSE_DRAW,
                         (StructuresPopupMenu)popupManager.getPopup(structureModel),
-                        true) {});
+                        true, supportsEsri) {});
 
                 pointsStructuresMapperPanel = new PointsMappingControlPanel(
                         modelManager,
                         pickManager,
-                        StructuresControlPanel.this);
+                        StructuresControlPanel.this, supportsEsri);
 
                 addTab("Paths", lineStructuresMapperPanel);
                 addTab("Polygons", polygonStructuresMapperPanel);
                 addTab("Circles", circleStructuresMapperPanel);
                 addTab("Ellipses", ellipseStructuresMapperPanel);
                 addTab("Points", pointsStructuresMapperPanel);
+                
+/*                addTab("", new JPanel());
+                
+                class OpenEsriFrameAction extends AbstractAction
+                {
+                    public OpenEsriFrameAction()
+                    {
+                        super("ESRI");
+                    }
+                    
+                    @Override
+                    public void actionPerformed(ActionEvent e)
+                    {
+                        try
+                        {
+                            SwingUtilities.invokeAndWait(new Runnable()
+                            {
+                                
+                                @Override
+                                public void run()
+                                {
+                                    Collection<SimpleFeature> features=Lists.newArrayList();
+                                    new ESRIStructuresFrame(features, (GenericPolyhedralModel)modelManager.getModel(ModelNames.SMALL_BODY));
+                                }
+                            });
+                        }
+                        catch (InvocationTargetException | InterruptedException e1)
+                        {
+                            // TODO Auto-generated catch block
+                            e1.printStackTrace();
+                        }
+                    }
+                    
+                }
+                
+                setTabComponentAt(getTabCount()-1, new JButton(new OpenEsriFrameAction()));*/
 
                 initialized = true;
             }

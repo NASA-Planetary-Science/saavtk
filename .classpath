@@ -26,18 +26,66 @@
 	<classpathentry kind="lib" path="lib/geotools/commons-pool-1.5.4.jar"/>
 	<classpathentry kind="lib" path="lib/geotools/core-0.26.jar"/>
 	<classpathentry kind="lib" path="lib/geotools/GeographicLib-Java-1.44.jar"/>
-	<classpathentry kind="lib" path="lib/geotools/gt-api-15.1.jar"/>
-	<classpathentry kind="lib" path="lib/geotools/gt-coverage-15.1.jar"/>
-	<classpathentry kind="lib" path="lib/geotools/gt-cql-15.1.jar"/>
-	<classpathentry kind="lib" path="lib/geotools/gt-data-15.1.jar"/>
-	<classpathentry kind="lib" path="lib/geotools/gt-epsg-hsql-15.1.jar"/>
-	<classpathentry kind="lib" path="lib/geotools/gt-main-15.1.jar"/>
-	<classpathentry kind="lib" path="lib/geotools/gt-metadata-15.1.jar"/>
-	<classpathentry kind="lib" path="lib/geotools/gt-opengis-15.1.jar"/>
-	<classpathentry kind="lib" path="lib/geotools/gt-referencing-15.1.jar"/>
-	<classpathentry kind="lib" path="lib/geotools/gt-render-15.1.jar"/>
-	<classpathentry kind="lib" path="lib/geotools/gt-shapefile-15.1.jar"/>
-	<classpathentry kind="lib" path="lib/geotools/gt-swing-15.1.jar"/>
+	<classpathentry kind="lib" path="lib/geotools/gt-api-15.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://docs.geotools.org/latest/javadocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/geotools/gt-coverage-15.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://docs.geotools.org/latest/javadocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/geotools/gt-cql-15.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://docs.geotools.org/latest/javadocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/geotools/gt-data-15.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://docs.geotools.org/latest/javadocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/geotools/gt-epsg-hsql-15.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://docs.geotools.org/latest/javadocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/geotools/gt-main-15.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://docs.geotools.org/latest/javadocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/geotools/gt-metadata-15.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://docs.geotools.org/latest/javadocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/geotools/gt-opengis-15.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://docs.geotools.org/latest/javadocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/geotools/gt-referencing-15.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://docs.geotools.org/latest/javadocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/geotools/gt-render-15.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://docs.geotools.org/latest/javadocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/geotools/gt-shapefile-15.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://docs.geotools.org/latest/javadocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/geotools/gt-swing-15.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://docs.geotools.org/latest/javadocs/"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="lib" path="lib/geotools/hsqldb-2.3.0.jar"/>
 	<classpathentry kind="lib" path="lib/geotools/imageio-ext-geocore-1.1.15.jar"/>
 	<classpathentry kind="lib" path="lib/geotools/imageio-ext-streams-1.1.15.jar"/>

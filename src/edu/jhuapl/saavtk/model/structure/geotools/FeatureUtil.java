@@ -9,12 +9,16 @@ import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geometry.jts.JTS;
 import org.geotools.geometry.jts.JTSFactoryFinder;
+import org.geotools.metadata.iso.citation.Citations;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.crs.DefaultEngineeringCRS;
 import org.geotools.referencing.crs.DefaultGeocentricCRS;
+import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.geotools.referencing.crs.DefaultProjectedCRS;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.metadata.citation.Citation;
+import org.opengis.metadata.citation.CitationFactory;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
@@ -32,10 +36,10 @@ import edu.jhuapl.saavtk.model.structure.geotools.EllipseStructure.Parameters;
 
 public class FeatureUtil
 {
-	private final static SimpleFeatureType	pointType;
-	private final static SimpleFeatureType	lineType;
-	private final static SimpleFeatureType	ellipseType;
-	private final static SimpleFeatureType	patchType;
+	public final static SimpleFeatureType	pointType;
+	public final static SimpleFeatureType	lineType;
+	public final static SimpleFeatureType	ellipseType;
+	public final static SimpleFeatureType	patchType;
 	//	private final static SimpleFeatureType polyhedralType;
 
 	static
@@ -114,6 +118,54 @@ public class FeatureUtil
 		return pointBuilder.buildFeature(null);
 	}
 
+	public static SimpleFeature createMultiLineString(List<List<Vector3D>> lines)
+	{
+	    List<LineString> lineStrings=Lists.newArrayList();
+	    for (int m=0; m<lines.size(); m++)
+	    {
+	        List<Vector3D> linePoints=lines.get(m);
+	        
+        for (int i = 0; i < linePoints.size()-1; i++)
+        {
+            
+            Vector3D p1=linePoints.get(i).scalarMultiply(1000);
+            Vector3D p2=linePoints.get(i+1).scalarMultiply(1000);
+            Coordinate[] coords = new Coordinate[2];
+            coords[0] = new Coordinate(p1.getX(),p1.getY(),p1.getZ());
+            coords[1] = new Coordinate(p2.getX(),p2.getY(),p2.getZ());
+            // the coordinates are now in the DefaultGeocentric.CARTESIAN CRS
+            lineStrings.add(JTSFactoryFinder.getGeometryFactory().createLineString(coords));
+        }}
+        LineString[] ls=new LineString[lineStrings.size()];
+        lineStrings.toArray(ls);
+        // see createFeatureFrom(ls) with LineStructure argument
+        Geometry geom = JTSFactoryFinder.getGeometryFactory().createMultiLineString(ls);
+        lineBuilder.add(geom);
+        lineBuilder.add("no label");
+        lineBuilder.add(StructureUtil.colorToHex(new Color(100, 100, 100)));
+        lineBuilder.add(1);
+        return lineBuilder.buildFeature(null);
+	    
+	}
+	
+/*	public static SimpleFeature createPointFeatureFrom(List<Vector3D> points)
+	{
+	    for (int i=0; i<points.size(); i++)
+	    {
+	        double[] location = points.get(i).toArray();
+	        Geometry geom = JTSFactoryFinder.getGeometryFactory().
+                .createPoint(new Coordinate(location[0], location[1], location[2]));
+	    }
+        // the coordinates are now in the DefaultGeocentric.CARTESIAN CRS
+        pointBuilder.reset();
+        pointBuilder.add(geom);
+        pointBuilder.add("fcuk");
+        pointBuilder.add(StructureUtil.colorToHex(Color.LIGHT_GRAY));
+        pointBuilder.add(1);
+        return pointBuilder.buildFeature(null);
+	    
+	}*/
+	
 	public static SimpleFeature createFeatureFrom(LineStructure ls)
 	{
 		LineString[] lines = new LineString[ls.getNumberOfSegments()];

@@ -341,7 +341,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
         lineActor.Modified();
 
     }
-
+    
     public List<vtkProp> getProps()
     {
         return actors;

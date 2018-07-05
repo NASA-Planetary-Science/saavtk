@@ -27,14 +27,14 @@ public class PointsMappingControlPanel extends
     public PointsMappingControlPanel(
             ModelManager modelManager,
             PickManager pickManager,
-            Component parent)
+            Component parent, boolean supportsEsri)
     {
         super(modelManager,
                 (StructureModel)modelManager.getModel(ModelNames.POINT_STRUCTURES),
                 pickManager,
                 PickManager.PickMode.POINT_DRAW,
                 (StructuresPopupMenu)pickManager.getPopupManager().getPopup((StructureModel)modelManager.getModel(ModelNames.POINT_STRUCTURES)),
-                false);
+                false, supportsEsri);
 
         pointModel = (PointModel)modelManager.getModel(ModelNames.POINT_STRUCTURES);
 

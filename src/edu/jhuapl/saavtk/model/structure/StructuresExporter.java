@@ -106,46 +106,7 @@ public class StructuresExporter
 
 	public static void exportToShapefile(AbstractEllipsePolygonModel model, Path shapeFile) throws IOException
 	{
-		List<EllipseStructure> structuresToWrite = Lists.newArrayList();
-		int[] ids = model.getSelectedStructures();
-		if (ids.length == 0)
-		{
-			ids = new int[model.getNumberOfStructures()];
-			for (int i = 0; i < ids.length; i++)
-				ids[i] = i;
-		}
-		for (int i = 0; i < ids.length; i++)
-		{
-			EllipsePolygon poly = (EllipsePolygon) model.getStructure(ids[i]);
-			int[] c = poly.getColor();
-			double w = model.getLineWidth();
-			LineStyle style = new LineStyle(new Color(c[0], c[1], c[2]), w);
-			String label = poly.getLabel();
-			//
-		
-			vtkCellArray cells=poly.getBoundaryPolyData().GetLines();
-			List<LineSegment> segments=Lists.newArrayList();
-			for (int j=0; j<cells.GetNumberOfCells(); j++)
-			{
-				vtkPoints points=poly.getBoundaryPolyData().GetCell(j).GetPoints();
-				if (points.GetNumberOfPoints()<2)
-					continue;
-				for (int k=0; k<points.GetNumberOfPoints()-1; k++)
-				{
-					double[] start=points.GetPoint(k);
-					double[] end=points.GetPoint(k+1);
-					segments.add(new LineSegment(start, end));
-				}
-			}
-			LineSegment[] segmentArr=new LineSegment[segments.size()];
-			for (int j=0; j<segments.size(); j++)
-				segmentArr[j]=segments.get(j);
-			
-			Parameters params=new Parameters(poly.center, poly.radius, poly.flattening, poly.angle);
-			structuresToWrite.add(new EllipseStructure(segmentArr, style, label, params));
-			
-		}
-		ShapefileUtil.writeEllipseStructures(structuresToWrite, shapeFile);
+		ShapefileUtil.writeEllipseStructures(EllipseStructure.fromSbmtStructure(model), shapeFile);
 	}
 
 	

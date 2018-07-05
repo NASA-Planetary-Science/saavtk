@@ -3,6 +3,8 @@ package edu.jhuapl.saavtk.gui.panel;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.MouseInfo;
+import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -18,20 +20,28 @@ import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.util.Collections;
+import java.util.List;
 
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTable;
 import javax.swing.JToggleButton;
 import javax.swing.ListSelectionModel;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
 import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 import javax.swing.border.Border;
@@ -45,27 +55,37 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
+import org.opengis.feature.simple.SimpleFeature;
+
+import com.google.common.collect.Lists;
+
 import net.miginfocom.swing.MigLayout;
 
 import edu.jhuapl.saavtk.gui.ProfilePlot;
 import edu.jhuapl.saavtk.gui.dialog.ColorChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
+import edu.jhuapl.saavtk.gui.dialog.DirectoryChooser;
 import edu.jhuapl.saavtk.gui.dialog.NormalOffsetChangerDialog;
+import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
+import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
 import edu.jhuapl.saavtk.model.structure.LineModel;
+import edu.jhuapl.saavtk.model.structure.geotools.EllipseStructure;
+import edu.jhuapl.saavtk.model.structure.geotools.FeatureUtil;
+import edu.jhuapl.saavtk.model.structure.geotools.LineStructure;
+import edu.jhuapl.saavtk.model.structure.geotools.ShapefileUtil;
+import edu.jhuapl.saavtk.model.structure.geotools.StructureUtil;
 import edu.jhuapl.saavtk.pick.PickEvent;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.pick.Picker;
 import edu.jhuapl.saavtk.popup.StructuresPopupMenu;
+
 import edu.jhuapl.saavtk.util.Properties;
 
-public abstract class AbstractStructureMappingControlPanel extends JPanel implements
-    ActionListener,
-    PropertyChangeListener,
-    TableModelListener, ListSelectionListener
+public abstract class AbstractStructureMappingControlPanel extends JPanel implements ActionListener, PropertyChangeListener, TableModelListener, ListSelectionListener
 {
     private ModelManager modelManager;
     //private PickManager pickManager;
@@ -88,20 +108,149 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
     private PickManager.PickMode pickMode;
     private JFrame profileWindow;
 
-    public AbstractStructureMappingControlPanel(
-            final ModelManager modelManager,
-            final StructureModel structureModel,
-            final PickManager pickManager,
-            final PickManager.PickMode pickMode,
-            StructuresPopupMenu structuresPopupMenu,
-            boolean supportsLineWidth)
+    final JButton newButton = new JButton("New");
+    final JButton changeLineWidthButton = new JButton("Change Line Width...");
+
+    JPopupMenu saveAsPopupMenu = new JPopupMenu();
+    PopupListener saveAsPopupListener = new PopupListener(saveAsPopupMenu);
+    boolean supportsEsri=false;
+    
+    class PopupListener extends MouseAdapter     // only if esri support is enabled
     {
+        JPopupMenu menu;
+
+        public PopupListener(JPopupMenu menu)
+        {
+            this.menu = menu;
+        }
+
+        @Override
+        public void mousePressed(MouseEvent e)
+        {
+            maybeShowPopup(e);
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent e)
+        {
+            maybeShowPopup(e);
+        }
+
+        @Override
+        public void mouseExited(MouseEvent e)
+        {
+            if (e.getSource() == menu)
+                menu.setVisible(false);
+        }
+
+        private void maybeShowPopup(MouseEvent e)
+        {
+            if (e.isPopupTrigger())
+                menu.show(e.getComponent(), e.getX(), e.getY());
+        }
+    }
+
+    class SaveAsPopupAction extends AbstractAction  // only if esri support is enabled
+    {
+        public SaveAsPopupAction()
+        {
+            super("Save as...");
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) // convert the button press into a mouse event so popup is properly shown
+        {
+            Point p = MouseInfo.getPointerInfo().getLocation();
+            SwingUtilities.convertPointFromScreen(p, (Component) e.getSource());
+            saveAsPopupListener.mousePressed(new MouseEvent(AbstractStructureMappingControlPanel.this, MouseEvent.MOUSE_PRESSED, e.getWhen(), e.getModifiers(), p.x, p.y, 1, true));
+        }
+    }
+
+    class SaveSbmtStructuresFileAction extends AbstractAction // only if esri support is enabled
+    {
+        public SaveSbmtStructuresFileAction()
+        {
+            super("SBMT Structures File...");
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e)
+        {
+            File file = structuresFile;
+            if (file != null)
+            {
+                // File already exists, use it as the default filename
+                file = CustomFileChooser.showSaveDialog(AbstractStructureMappingControlPanel.this, "Select File", file.getName());
+            }
+            else
+            {
+                // We don't have a default filename to provide
+                file = CustomFileChooser.showSaveDialog(AbstractStructureMappingControlPanel.this, "Select File");
+            }
+
+            if (file != null)
+            {
+                try
+                {
+                    structureModel.saveModel(file);
+                    structuresFileTextField.setText(file.getAbsolutePath());
+                    structuresFile = file;
+                }
+                catch (Exception ex)
+                {
+                    JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(AbstractStructureMappingControlPanel.this), "There was an error saving the file.", "Error", JOptionPane.ERROR_MESSAGE);
+
+                    ex.printStackTrace();
+                }
+            }
+
+        }
+    }
+
+    class SaveEsriShapeFileAction extends AbstractAction  // only if esri support is enabled
+    {
+        public SaveEsriShapeFileAction()
+        {
+            super("ESRI Shapefile Datastore Directory...");
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e)
+        {
+            List<SimpleFeature> features = Lists.newArrayList();
+            List<EllipseStructure> ellipses = EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES));
+            List<EllipseStructure> circles = EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) modelManager.getModel(ModelNames.CIRCLE_STRUCTURES));
+            List<EllipseStructure> points = EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel)modelManager.getModel(ModelNames.POINT_STRUCTURES));
+            List<LineStructure> polygons = LineStructure.fromSbmtStructure((LineModel) modelManager.getModel(ModelNames.POLYGON_STRUCTURES));
+            List<LineStructure> lines = LineStructure.fromSbmtStructure((LineModel)modelManager.getModel(ModelNames.LINE_STRUCTURES));
+            for (int i = 0; i < ellipses.size(); i++)
+                features.add(FeatureUtil.createFeatureFrom(ellipses.get(i)));
+            for (int i = 0; i < circles.size(); i++)
+                features.add(FeatureUtil.createFeatureFrom(circles.get(i)));
+            for (int i=0; i<points.size(); i++)
+                features.add(FeatureUtil.createFeatureFrom(points.get(i)));
+            for (int i=0; i<polygons.size(); i++)
+                features.add(FeatureUtil.createFeatureFrom(polygons.get(i)));
+            for (int i=0; i<lines.size(); i++)
+                features.add(FeatureUtil.createFeatureFrom(lines.get(i)));
+            File file=DirectoryChooser.showOpenDialog(AbstractStructureMappingControlPanel.this);
+            if (file!=null)
+                new HeterogeneousShapefileDatastoreDumper(features).write(file.toPath());
+        }
+    }
+
+    public AbstractStructureMappingControlPanel(final ModelManager modelManager, final StructureModel structureModel, final PickManager pickManager, final PickManager.PickMode pickMode, StructuresPopupMenu structuresPopupMenu, boolean supportsLineWidth, boolean supportsEsri)
+    {
+this.supportsEsri=supportsEsri;
         this.modelManager = modelManager;
         //this.pickManager = pickManager;
         this.structureModel = structureModel;
         this.pickManager = pickManager;
         this.pickMode = pickMode;
         this.structuresPopupMenu = structuresPopupMenu;
+
+        saveAsPopupMenu.add(new JMenuItem(new SaveSbmtStructuresFileAction()));
+        saveAsPopupMenu.add(new JMenuItem(new SaveEsriShapeFileAction()));
 
         structureModel.addPropertyChangeListener(this);
         this.addComponentListener(new ComponentAdapter()
@@ -114,10 +263,9 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
 
         pickManager.getDefaultPicker().addPropertyChangeListener(this);
 
-        setLayout(new MigLayout("wrap 3, insets 0"));
+        setLayout(new MigLayout("wrap 3, insets 0", "[][]", "[][22.00,fill][403.00][][][][][][]"));
 
         this.loadStructuresButton = new JButton("Load...");
-        this.loadStructuresButton.setEnabled(true);
         this.loadStructuresButton.addActionListener(this);
 
         // twupy1: Getting rid of "Save" feature at request of Carolyn since we don't have an undo button yet
@@ -125,38 +273,34 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
         //this.saveStructuresButton.setEnabled(true);
         //this.saveStructuresButton.addActionListener(this);
 
-        this.saveAsStructuresButton= new JButton("Save...");
-        this.saveAsStructuresButton.setEnabled(true);
-        this.saveAsStructuresButton.addActionListener(this);
+        if (supportsEsri)
+        {
 
-        this.structuresFileTextField = new JLabel("<no file loaded>");
-        this.structuresFileTextField.setEnabled(true);
-        this.structuresFileTextField.setPreferredSize(new java.awt.Dimension(150, 22));
+            saveAsStructuresButton = new JButton(new SaveAsPopupAction());
+            saveAsStructuresButton.addMouseListener(saveAsPopupListener);
+        }
+        else
+        {
+            saveAsStructuresButton = new JButton("Save...");
+            saveAsStructuresButton.addActionListener(this);
 
-        add(this.structuresFileTextField, "span");
+        }
 
-        add(this.loadStructuresButton, "w 100!");
+        add(this.loadStructuresButton, "flowx,cell 0 0,width 100!");
         //add(this.saveStructuresButton, "w 100!");
-        add(this.saveAsStructuresButton, "w 100!, wrap 15px");
+        add(this.saveAsStructuresButton, "flowx,cell 1 0,width 100!");
 
         JLabel structureTypeText = new JLabel(" Structures");
-        add(structureTypeText, "span");
+        add(structureTypeText, "flowx,cell 0 1");
 
         //String[] options = {LineModel.LINES, CircleModel.CIRCLES};
         //structureTypeComboBox = new JComboBox(options);
 
         //add(structureTypeComboBox, "wrap");
 
-
-        String[] columnNames = {"Id",
-                "Type",
-                "Name",
-                "Details",
-                "Color",
-                "Label"};
-                //"Hide Label",
-                //"Hide Structure"
-
+        String[] columnNames = { "Id", "Type", "Name", "Details", "Color", "Label" };
+        //"Hide Label",
+        //"Hide Structure"
 
         /*
         structuresList = new JList();
@@ -176,39 +320,43 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
         structuresTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         structuresTable.setDefaultRenderer(String.class, new StringRenderer());
         structuresTable.setDefaultRenderer(Color.class, new ColorRenderer());
-//        structuresTable.getColumnModel().getColumn(0).setPreferredWidth(30);
+        //        structuresTable.getColumnModel().getColumn(0).setPreferredWidth(30);
         structuresTable.getModel().addTableModelListener(this);
         structuresTable.getSelectionModel().addListSelectionListener(this);
         structuresTable.addMouseListener(new TableMouseHandler());
-        
-//        structuresTable.addFocusListener(new FocusListener() {
-//			
-//			@Override
-//			public void focusLost(FocusEvent e) {
-//				structuresTable.clearSelection();
-//			}
-//			
-//			@Override
-//			public void focusGained(FocusEvent e) {
-//				// TODO Auto-generated method stub
-//				
-//			}
-//		});
-//        
-        
+
+        //        structuresTable.addFocusListener(new FocusListener() {
+        //			
+        //			@Override
+        //			public void focusLost(FocusEvent e) {
+        //				structuresTable.clearSelection();
+        //			}
+        //			
+        //			@Override
+        //			public void focusGained(FocusEvent e) {
+        //				
+        //			}
+        //		});
+        //        
+
         /*structuresTable.getColumnModel().getColumn(6).setPreferredWidth(31);
         structuresTable.getColumnModel().getColumn(7).setPreferredWidth(31);
         structuresTable.getColumnModel().getColumn(6).setResizable(false);
         structuresTable.getColumnModel().getColumn(7).setResizable(false);*/
+
+        this.structuresFileTextField = new JLabel("<no file loaded>");
+        this.structuresFileTextField.setEnabled(true);
+        this.structuresFileTextField.setPreferredSize(new java.awt.Dimension(150, 22));
+
+        add(this.structuresFileTextField, "cell 1 1");
         JScrollPane tableScrollPane = new JScrollPane(structuresTable);
         tableScrollPane.setPreferredSize(new Dimension(10000, 10000));
 
-        add(tableScrollPane, "span");
-
+        add(tableScrollPane, "cell 0 2 2 1");
 
         if (structureModel.supportsActivation())
         {
-            final JButton newButton = new JButton("New");
+            newButton.setVisible(true);
             newButton.addActionListener(new ActionListener()
             {
                 public void actionPerformed(ActionEvent e)
@@ -221,32 +369,26 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
 
                     int numStructures = structuresTable.getRowCount();
                     if (numStructures > 0)
-                        structuresTable.setRowSelectionInterval(numStructures-1, numStructures-1);
+                        structuresTable.setRowSelectionInterval(numStructures - 1, numStructures - 1);
                 }
             });
-            add(newButton, "w 100!");
         }
+        else
+            newButton.setVisible(false);
 
         // Show warning info about how to draw ellipses
         // for the benefit of user as this has changed. This warning
         // is only temporarily and should be removed after several months.
         if (pickMode == PickManager.PickMode.ELLIPSE_DRAW)
         {
-            String text = "<html><center>" +
-                    "Method to create new ellipses<br>(click for details)" +
-                    "</center></html>";;
+            String text = "<html><center>" + "Method to create new ellipses<br>(click for details)" + "</center></html>";
+            ;
             JButton ellipsesWarningButton = new JButton(text);
             ellipsesWarningButton.addActionListener(new ActionListener()
             {
                 public void actionPerformed(ActionEvent e)
                 {
-                    JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(AbstractStructureMappingControlPanel.this),
-                            "To create a new ellipse, click on 3 points on the shape model in the following manner:\n" +
-                            "The first 2 points should lie on the endpoints of the major axis of the desired ellipse.\n" +
-                            "The third point should lie on one of the endpoints of the minor axis of the desired ellipse.\n" +
-                            "After clicking the third point, an ellipse is drawn that passes through the points.",
-                            "How to Create a New Ellipse",
-                            JOptionPane.PLAIN_MESSAGE);
+                    JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(AbstractStructureMappingControlPanel.this), "To create a new ellipse, click on 3 points on the shape model in the following manner:\n" + "The first 2 points should lie on the endpoints of the major axis of the desired ellipse.\n" + "The third point should lie on one of the endpoints of the minor axis of the desired ellipse.\n" + "After clicking the third point, an ellipse is drawn that passes through the points.", "How to Create a New Ellipse", JOptionPane.PLAIN_MESSAGE);
                 }
             });
             add(ellipsesWarningButton, "span 3, wrap");
@@ -270,7 +412,9 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                 hideAllLabelsButton.setEnabled(!editButton.isSelected());
             }
         });
-        add(editButton, "w 100!");
+
+        add(newButton, "flowx,cell 0 3,alignx left");
+        add(editButton, "cell 0 3,width 100!,alignx left");
 
         JButton deleteButton = new JButton("Delete");
         deleteButton.addActionListener(new ActionListener()
@@ -280,7 +424,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                 deleteStructure();
             }
         });
-        add(deleteButton, "w 100!, wrap");
+        add(deleteButton, "flowx,cell 1 3,width 100!");
 
         hideAllButton = new JButton("Hide All");
         hideAllButton.addActionListener(new ActionListener()
@@ -290,7 +434,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                 structureModel.setVisible(false);
             }
         });
-        add(hideAllButton, "w 120!");
+        add(hideAllButton, "cell 0 4,width 120!");
 
         showAllButton = new JButton("Show All");
         showAllButton.addActionListener(new ActionListener()
@@ -300,7 +444,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                 structureModel.setVisible(true);
             }
         });
-        add(showAllButton, "w 120!, wrap");
+        add(showAllButton, "cell 1 4,width 120!");
 
         hideAllLabelsButton = new JButton("Hide Labels");
         hideAllLabelsButton.addActionListener(new ActionListener()
@@ -310,7 +454,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                 structureModel.setLabelsVisible(false);
             }
         });
-        add(hideAllLabelsButton, "w 120!");
+        add(hideAllLabelsButton, "cell 0 5,width 120!");
 
         showAllLabelsButton = new JButton("Show Labels");
         showAllLabelsButton.addActionListener(new ActionListener()
@@ -320,8 +464,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                 structureModel.setLabelsVisible(true);
             }
         });
-        add(showAllLabelsButton, "w 120!, wrap");
-
+        add(showAllLabelsButton, "cell 1 5,width 120!");
 
         JButton deleteAllButton = new JButton("Delete All");
         deleteAllButton.addActionListener(new ActionListener()
@@ -331,11 +474,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                 if (structureModel.getNumberOfStructures() == 0)
                     return;
 
-                int result = JOptionPane.showConfirmDialog(
-                        JOptionPane.getFrameForComponent(AbstractStructureMappingControlPanel.this),
-                        "Are you sure you want to delete all structures?",
-                        "Confirm Delete All",
-                        JOptionPane.YES_NO_OPTION);
+                int result = JOptionPane.showConfirmDialog(JOptionPane.getFrameForComponent(AbstractStructureMappingControlPanel.this), "Are you sure you want to delete all structures?", "Confirm Delete All", JOptionPane.YES_NO_OPTION);
                 if (result == JOptionPane.NO_OPTION)
                     return;
 
@@ -346,17 +485,17 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                 structureModel.activateStructure(-1);
             }
         });
-        add(deleteAllButton, "w 120!");
-        
+        add(deleteAllButton, "cell 0 6,width 120!");
+
         JButton deselectAllButton = new JButton("Deselect All");
         deselectAllButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
             {
-               structuresTable.clearSelection();
+                structuresTable.clearSelection();
             }
         });
-        add(deselectAllButton, "w 120!, wrap");
+        add(deselectAllButton, "cell 1 6,width 120!");
 
         JButton changeOffsetButton = new JButton("Change Normal Offset...");
         changeOffsetButton.addActionListener(new ActionListener()
@@ -364,22 +503,17 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
             public void actionPerformed(ActionEvent e)
             {
                 NormalOffsetChangerDialog changeOffsetDialog = new NormalOffsetChangerDialog(structureModel);
-                changeOffsetDialog.setLocationRelativeTo(
-                        JOptionPane.getFrameForComponent(AbstractStructureMappingControlPanel.this));
+                changeOffsetDialog.setLocationRelativeTo(JOptionPane.getFrameForComponent(AbstractStructureMappingControlPanel.this));
                 changeOffsetDialog.setVisible(true);
             }
         });
-        changeOffsetButton.setToolTipText(
-                "<html>Structures displayed on a shape model need to be shifted slightly away from<br>" +
-                "the shape model in the direction normal to the plates as otherwise they will<br>" +
-                "interfere with the shape model itself and may not be visible. Click this<br>" +
-                "button to show a dialog that will allow you to explicitely set the offset<br>" +
-                "amount in meters.</html>");
-        add(changeOffsetButton, "span 2, w 200!, wrap");
+        changeOffsetButton.setToolTipText("<html>Structures displayed on a shape model need to be shifted slightly away from<br>" + "the shape model in the direction normal to the plates as otherwise they will<br>" + "interfere with the shape model itself and may not be visible. Click this<br>" + "button to show a dialog that will allow you to explicitely set the offset<br>" + "amount in meters.</html>");
+        add(changeOffsetButton, "cell 0 7 2 1,width 200!");
+        add(changeLineWidthButton, "cell 0 8,width 200!");
 
         if (supportsLineWidth)
         {
-            JButton changeLineWidthButton = new JButton("Change Line Width...");
+            changeLineWidthButton.setVisible(true);
             changeLineWidthButton.addActionListener(new ActionListener()
             {
                 public void actionPerformed(ActionEvent e)
@@ -387,22 +521,17 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                     SpinnerNumberModel sModel = new SpinnerNumberModel(structureModel.getLineWidth(), 1.0, 100.0, 1.0);
                     JSpinner spinner = new JSpinner(sModel);
 
-                    int option = JOptionPane.showOptionDialog(
-                            AbstractStructureMappingControlPanel.this,
-                            spinner,
-                            "Enter valid number",
-                            JOptionPane.OK_CANCEL_OPTION,
-                            JOptionPane.QUESTION_MESSAGE,
-                            null, null, null);
+                    int option = JOptionPane.showOptionDialog(AbstractStructureMappingControlPanel.this, spinner, "Enter valid number", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
 
                     if (option == JOptionPane.OK_OPTION)
                     {
-                        structureModel.setLineWidth((Double)spinner.getValue());
+                        structureModel.setLineWidth((Double) spinner.getValue());
                     }
                 }
             });
-            add(changeLineWidthButton, "span 2, w 200!, wrap");
         }
+        else
+            changeLineWidthButton.setVisible(false);
 
         structuresTable.addKeyListener(new KeyAdapter()
         {
@@ -417,15 +546,14 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
         if (pickMode == PickManager.PickMode.LINE_DRAW)
         {
             // Only add profile plots for line structures
-            ProfilePlot profilePlot = new ProfilePlot((LineModel)modelManager.getModel(ModelNames.LINE_STRUCTURES),
-                    (PolyhedralModel)modelManager.getModel(ModelNames.SMALL_BODY));
+            ProfilePlot profilePlot = new ProfilePlot((LineModel) modelManager.getModel(ModelNames.LINE_STRUCTURES), (PolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
 
             // Create a new frame/window with profile
             profileWindow = new JFrame();
             ImageIcon icon = new ImageIcon(getClass().getResource("/edu/jhuapl/saavtk/data/black-sphere.png"));
             profileWindow.setTitle("Profile Plot");
             profileWindow.setIconImage(icon.getImage());
-            profileWindow.add(profilePlot.getChartPanel());
+            profileWindow.getContentPane().add(profilePlot.getChartPanel());
             profileWindow.setSize(600, 400);
             profileWindow.setVisible(false);
 
@@ -469,15 +597,8 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                     boolean append = false;
                     if (structureModel.getNumberOfStructures() > 0)
                     {
-                        Object[] options = {"Append", "Replace"};
-                        int n = JOptionPane.showOptionDialog(this,
-                                "Would you like to append to or replace the existing structures?",
-                                "Append or Replace?",
-                                JOptionPane.YES_NO_OPTION,
-                                JOptionPane.QUESTION_MESSAGE,
-                                null,
-                                options,
-                                options[0]);
+                        Object[] options = { "Append", "Replace" };
+                        int n = JOptionPane.showOptionDialog(this, "Would you like to append to or replace the existing structures?", "Append or Replace?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
                         append = (n == 0 ? true : false);
                     }
 
@@ -487,51 +608,48 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                 }
                 catch (Exception e)
                 {
-                    JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this),
-                            "There was an error reading the file.",
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this), "There was an error reading the file.", "Error", JOptionPane.ERROR_MESSAGE);
 
                     e.printStackTrace();
                 }
             }
         }
-        else if (/*source == this.saveStructuresButton || */source == this.saveAsStructuresButton)
-        {
-            File file = structuresFile;
-            if (structuresFile == null || source == this.saveAsStructuresButton)
-            {
-            	if(file != null)
-            	{
-            		// File already exists, use it as the default filename
-                    file = CustomFileChooser.showSaveDialog(this, "Select File", file.getName());            		
-            	}
-            	else
-            	{
-            		// We don't have a default filename to provide
-            	    file = CustomFileChooser.showSaveDialog(this, "Select File");	
-            	}
-            }
-
-            if (file != null)
-            {
-                try
+                else if (/*source == this.saveStructuresButton || */source == this.saveAsStructuresButton && !supportsEsri)
                 {
-                    structureModel.saveModel(file);
-                    structuresFileTextField.setText(file.getAbsolutePath());
-                    structuresFile = file;
+                    File file = structuresFile;
+                    if (structuresFile == null || source == this.saveAsStructuresButton)
+                    {
+                    	if(file != null)
+                    	{
+                    		// File already exists, use it as the default filename
+                            file = CustomFileChooser.showSaveDialog(this, "Select File", file.getName());            		
+                    	}
+                    	else
+                    	{
+                    		// We don't have a default filename to provide
+                    	    file = CustomFileChooser.showSaveDialog(this, "Select File");	
+                    	}
+                    }
+        
+                    if (file != null)
+                    {
+                        try
+                        {
+                            structureModel.saveModel(file);
+                            structuresFileTextField.setText(file.getAbsolutePath());
+                            structuresFile = file;
+                        }
+                        catch (Exception e)
+                        {
+                            JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this),
+                                    "There was an error saving the file.",
+                                    "Error",
+                                    JOptionPane.ERROR_MESSAGE);
+        
+                            e.printStackTrace();
+                        }
+                    }
                 }
-                catch (Exception e)
-                {
-                    JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this),
-                            "There was an error saving the file.",
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE);
-
-                    e.printStackTrace();
-                }
-            }
-        }
     }
 
     public void propertyChange(PropertyChangeEvent evt)
@@ -567,13 +685,12 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
         else if (Properties.MODEL_PICKED.equals(evt.getPropertyName()))
         {
             // If we're editing, say, a path, return immediately.
-            if (structureModel.supportsActivation() &&
-                    editButton.isSelected())
+            if (structureModel.supportsActivation() && editButton.isSelected())
             {
                 return;
             }
 
-            PickEvent e = (PickEvent)evt.getNewValue();
+            PickEvent e = (PickEvent) evt.getNewValue();
             if (modelManager.getModel(e.getPickedProp()) == structureModel)
             {
                 int idx = structureModel.getStructureIndexFromCellId(e.getPickedCellId(), e.getPickedProp());
@@ -590,8 +707,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                 else
                 {
                     int keyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
-                    if (((e.getMouseEvent().getModifiers() & InputEvent.SHIFT_MASK) == InputEvent.SHIFT_MASK) ||
-                        ((e.getMouseEvent().getModifiers() & keyMask) == keyMask))
+                    if (((e.getMouseEvent().getModifiers() & InputEvent.SHIFT_MASK) == InputEvent.SHIFT_MASK) || ((e.getMouseEvent().getModifiers() & keyMask) == keyMask))
                         structuresTable.addRowSelectionInterval(idx, idx);
                     else
                         structuresTable.setRowSelectionInterval(idx, idx);
@@ -603,7 +719,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
             {
                 int count = structuresTable.getRowCount();
                 if (count > 0)
-                    structuresTable.removeRowSelectionInterval(0, count-1);
+                    structuresTable.removeRowSelectionInterval(0, count - 1);
             }
         }
         else if (Properties.STRUCTURE_ADDED.equals(evt.getPropertyName()))
@@ -614,17 +730,17 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
         }
         else if (Properties.STRUCTURE_REMOVED.equals(evt.getPropertyName()))
         {
-            int idx = (Integer)evt.getNewValue();
+            int idx = (Integer) evt.getNewValue();
 
             updateStructureTable();
 
             int numStructures = structuresTable.getRowCount();
             if (numStructures > 0)
             {
-                if (idx > numStructures-1)
+                if (idx > numStructures - 1)
                 {
-                    structuresTable.setRowSelectionInterval(numStructures-1, numStructures-1);
-                    structuresTable.scrollRectToVisible(structuresTable.getCellRect(numStructures-1, 0, true));
+                    structuresTable.setRowSelectionInterval(numStructures - 1, numStructures - 1);
+                    structuresTable.scrollRectToVisible(structuresTable.getCellRect(numStructures - 1, 0, true));
                 }
                 else
                 {
@@ -633,8 +749,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                 }
             }
         }
-        else if (Properties.ALL_STRUCTURES_REMOVED.equals(evt.getPropertyName()) ||
-                 Properties.COLOR_CHANGED.equals(evt.getPropertyName()))
+        else if (Properties.ALL_STRUCTURES_REMOVED.equals(evt.getPropertyName()) || Properties.COLOR_CHANGED.equals(evt.getPropertyName()))
         {
             updateStructureTable();
         }
@@ -644,8 +759,8 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
     {
         int numStructures = structureModel.getNumberOfStructures();
 
-        ((DefaultTableModel)structuresTable.getModel()).setRowCount(numStructures);
-        for (int i=0; i<numStructures; ++i)
+        ((DefaultTableModel) structuresTable.getModel()).setRowCount(numStructures);
+        for (int i = 0; i < numStructures; ++i)
         {
             StructureModel.Structure structure = structureModel.getStructure(i);
             int[] c = structure.getColor();
@@ -667,26 +782,26 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
             int row = e.getFirstRow();
             int col = e.getColumn();
             StructureModel.Structure structure = structureModel.getStructure(row);
-            String name = (String)structuresTable.getValueAt(row, col);
+            String name = (String) structuresTable.getValueAt(row, col);
             if (name != null && !name.equals(structure.getName()))
             {
                 structure.setName(name);
             }
         }
-        if(e.getColumn()==5)
+        if (e.getColumn() == 5)
         {
             int row = e.getFirstRow();
             int col = e.getColumn();
             StructureModel.Structure structure = structureModel.getStructure(row);
-            String label = (String)structuresTable.getValueAt(row, col);
+            String label = (String) structuresTable.getValueAt(row, col);
             if (label != null && !label.equals(structure.getLabel()))
             {
                 structure.setLabel(label);
                 boolean empty = structuresPopupMenu.updateLabel(label, row);
-                if(!empty)
+                if (!empty)
                 {
-                    label="";
-                    structuresTable.setValueAt("",row, col);
+                    label = "";
+                    structuresTable.setValueAt("", row, col);
                 }
             }
         }
@@ -720,7 +835,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
     {
         if (e.getValueIsAdjusting() == false)
         {
-//        		if (structuresTable.getSelectedRows().length == 0) structuresTable.clearSelection();
+            //        		if (structuresTable.getSelectedRows().length == 0) structuresTable.clearSelection();
             structureModel.selectStructures(structuresTable.getSelectedRows());
         }
     }
@@ -803,16 +918,14 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
     class StringRenderer extends DefaultTableCellRenderer
     {
         private Color selectionForeground;
+
         public StringRenderer()
         {
             UIDefaults defaults = UIManager.getDefaults();
             selectionForeground = defaults.getColor("Table.selectionForeground");
         }
 
-        public Component getTableCellRendererComponent(
-                JTable table, Object value,
-                boolean isSelected, boolean hasFocus,
-                int row, int column)
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
         {
             Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
@@ -842,20 +955,16 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
             setOpaque(true); //MUST do this for background to show up.
         }
 
-        public Component getTableCellRendererComponent(
-                JTable table, Object color,
-                boolean isSelected, boolean hasFocus,
-                int row, int column)
+        public Component getTableCellRendererComponent(JTable table, Object color, boolean isSelected, boolean hasFocus, int row, int column)
         {
-            Color newColor = (Color)color;
+            Color newColor = (Color) color;
             setBackground(newColor);
 
             if (isSelected)
             {
                 if (selectedBorder == null)
                 {
-                    selectedBorder = BorderFactory.createMatteBorder(2,5,2,5,
-                                              table.getSelectionBackground());
+                    selectedBorder = BorderFactory.createMatteBorder(2, 5, 2, 5, table.getSelectionBackground());
                 }
                 setBorder(selectedBorder);
             }
@@ -863,15 +972,12 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
             {
                 if (unselectedBorder == null)
                 {
-                    unselectedBorder = BorderFactory.createMatteBorder(2,5,2,5,
-                                              table.getBackground());
+                    unselectedBorder = BorderFactory.createMatteBorder(2, 5, 2, 5, table.getBackground());
                 }
                 setBorder(unselectedBorder);
             }
 
-            setToolTipText("RGB value: " + newColor.getRed() + ", "
-                    + newColor.getGreen() + ", "
-                    + newColor.getBlue());
+            setToolTipText("RGB value: " + newColor.getRed() + ", " + newColor.getGreen() + ", " + newColor.getBlue());
 
             return this;
         }
@@ -886,7 +992,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
 
         public boolean isCellEditable(int row, int column)
         {
-            if (column == 2 || column ==5) //|| column ==6 || column ==7)
+            if (column == 2 || column == 5) //|| column ==6 || column ==7)
                 return true;
             else
                 return false;
@@ -897,7 +1003,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
             if (columnIndex == 4)
                 return Color.class;
             //else if(columnIndex == 6||columnIndex == 7)
-             //   return Boolean.class;
+            //   return Boolean.class;
             else
                 return String.class;
         }
@@ -913,9 +1019,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
 
             if (e.getClickCount() == 2 && row >= 0 && col == 4)
             {
-                Color color = ColorChooser.showColorChooser(
-                        JOptionPane.getFrameForComponent(structuresTable),
-                        structureModel.getStructure(row).getColor());
+                Color color = ColorChooser.showColorChooser(JOptionPane.getFrameForComponent(structuresTable), structureModel.getStructure(row).getColor());
 
                 if (color == null)
                     return;
