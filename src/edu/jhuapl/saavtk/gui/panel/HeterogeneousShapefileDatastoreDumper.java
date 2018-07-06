@@ -24,6 +24,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.geotools.coverage.grid.io.AbstractGridFormat;
 import org.geotools.coverage.grid.io.GridCoverage2DReader;
@@ -191,7 +192,7 @@ public class HeterogeneousShapefileDatastoreDumper
         }*/
     }
 
-    public void write(Path shapeFileDirectory)
+    public void write(Path shapeFile)
     {
         if (features.size() == 0)
             return;
@@ -268,7 +269,13 @@ public class HeterogeneousShapefileDatastoreDumper
             
             try
             {
-                new ShapefileDumper(shapeFileDirectory.toFile()).dump(collection);
+                new ShapefileDumper(shapeFile.getParent().toFile())
+                {
+                    protected String getShapeName(SimpleFeatureType schema, String geometryType) {
+                        System.out.println(FilenameUtils.getBaseName(shapeFile.getFileName().toString()));
+                        return FilenameUtils.getBaseName(shapeFile.getFileName().toString());
+                    };
+                }.dump(collection);
             }
             catch (IOException e)
             {

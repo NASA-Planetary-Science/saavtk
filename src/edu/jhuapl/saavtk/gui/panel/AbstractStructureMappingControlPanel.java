@@ -211,7 +211,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
     {
         public SaveEsriShapeFileAction()
         {
-            super("ESRI Shapefile Datastore Directory...");
+            super("ESRI Shapefile Datastore...");
         }
 
         @Override
@@ -233,7 +233,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                 features.add(FeatureUtil.createFeatureFrom(polygons.get(i)));
             for (int i=0; i<lines.size(); i++)
                 features.add(FeatureUtil.createFeatureFrom(lines.get(i)));
-            File file=DirectoryChooser.showOpenDialog(AbstractStructureMappingControlPanel.this);
+            File file=CustomFileChooser.showSaveDialog(AbstractStructureMappingControlPanel.this, "Datastore filename", "myDataStore.shp", "shp");
             if (file!=null)
                 new HeterogeneousShapefileDatastoreDumper(features).write(file.toPath());
         }
