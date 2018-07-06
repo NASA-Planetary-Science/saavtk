@@ -232,7 +232,7 @@ public final class FileCache
 			builder.append(isURLAccessAuthorized());
 			builder.append(", exists = ");
 			builder.append(isExistsOnServer());
-			builder.append(") ->");
+			builder.append(") -> ");
 			builder.append(getFile());
 			builder.append(" (exists = ");
 			builder.append(isExistsLocally());
@@ -243,7 +243,7 @@ public final class FileCache
 		}
 	}
 
-	public static final String FILE_PREFIX = "file:/";
+	public static final String FILE_PREFIX = "file://";
 
 	private static final ConcurrentHashMap<File, FileInfo> INFO_MAP = new ConcurrentHashMap<>();
 	private static boolean showDotsForFiles = false;
@@ -327,54 +327,75 @@ public final class FileCache
 	 */
 	public static FileInfo getFileInfoFromServer(String urlOrPathSegment)
 	{
+		Preconditions.checkNotNull(urlOrPathSegment);
+
 		URL url = null;
+		URL dataRootUrl = Configuration.getDataRootURL();
 		try
 		{
+			// First parse the whole thing to see if it can be done without
+			// throwing an exception.
 			url = new URL(urlOrPathSegment);
-			urlOrPathSegment = "";
+
+			// Handle case where this URL starts at the top
+			// of the server path.
+			if (urlOrPathSegment.startsWith(dataRootUrl.toString() + "/"))
+			{
+				urlOrPathSegment = urlOrPathSegment.substring(dataRootUrl.toString().length() + 1);
+			}
+			else
+			{
+				// Extract the path portion of the URL.
+				urlOrPathSegment = url.getFile();
+			}
 		}
 		catch (@SuppressWarnings("unused") MalformedURLException e)
 		{
-			url = Configuration.getDataRootURL();
+			// Assume the argument is a path segment and use it to
+			// construct the URL relative to the data root.
+			try
+			{
+				url = new URL(dataRootUrl + toUrlSegment(urlOrPathSegment));
+			}
+			catch (MalformedURLException e1)
+			{
+				throw new IllegalArgumentException(e1);
+			}
 		}
 		return getFileInfoFromServer(url, urlOrPathSegment);
 	}
 
 	/**
-	 * Get information about the file on the server identified by the provided URL
-	 * object supplemented with the provieded path segment. See the other overload
-	 * of this method for more details about how the arguments are processed.
+	 * Get information about the cached file, which is identified by the provided
+	 * URL object, and located in the cache using the provided path segment.
 	 *
-	 * @param rootUrl the root URL, used without modification
-	 * @param pathSegment the path relative to the URL for the remote object
+	 * @param url the complete URL used without modification
+	 * @param pathSegment the path relative to the data cache top for the local
+	 *            object
 	 * @return the file information object
 	 */
-	public static FileInfo getFileInfoFromServer(URL rootUrl, String pathSegment)
+	public static FileInfo getFileInfoFromServer(final URL url, String pathSegment)
 	{
-		Preconditions.checkNotNull(rootUrl);
+		Preconditions.checkNotNull(url);
 		Preconditions.checkNotNull(pathSegment);
 
 		if (!Configuration.useFileCache())
 		{
-			throw new UnsupportedOperationException("This method cannot be used if the file cache is disabled.");
+			throw new UnsupportedOperationException("This method is not currently supported if the file cache is disabled.");
 		}
 
-		String urlPathSegment = toUrlSegment(pathSegment);
 		final String ungzippedPath = pathSegment.toLowerCase().endsWith(".gz") ? pathSegment.substring(0, pathSegment.length() - 3) : pathSegment;
-
-		URL url = createURL(rootUrl + urlPathSegment);
-		String urlString = url.toString();
 
 		if (offlineMode)
 		{
 			return new FileInfo(url, new File(SafePaths.getString(offlineModeRootFolder, ungzippedPath)), YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0);
 		}
 
-		if (ungzippedPath.equals(pathSegment) && urlString.toLowerCase().startsWith(FILE_PREFIX))
+		if (ungzippedPath.equals(pathSegment) && url.getProtocol().equalsIgnoreCase("file"))
 		{
 			// File "on the server" is not gzipped, and is allegedly on local file system,
 			// so just try to use it directly.
-			File file = SafePaths.get(urlString.substring(FILE_PREFIX.length())).toFile();
+			File file = SafePaths.get(url.getFile()).toFile();
 
 			FileInfo info = INFO_MAP.get(file);
 			if (info == null)
@@ -401,6 +422,7 @@ public final class FileCache
 			//                  HttpURLConnection.setFollowRedirects(false);
 			YesOrNo authorized = YesOrNo.UNKNOWN;
 			YesOrNo urlExists = YesOrNo.UNKNOWN;
+			long lastModified = 0;
 			try
 			{
 				final URLConnection connection = url.openConnection();
@@ -435,9 +457,8 @@ public final class FileCache
 						authorized = YesOrNo.YES;
 						urlExists = YesOrNo.NO;
 					}
-					info = new FileInfo(url, file, authorized, urlExists, connection.getLastModified());
 				}
-
+				lastModified = connection.getLastModified();
 			}
 			catch (Exception e)
 			{
@@ -447,8 +468,9 @@ public final class FileCache
 					e.printStackTrace();
 					authorized = YesOrNo.NO;
 				}
-				info = new FileInfo(url, file, authorized, urlExists, 0);
 			}
+
+			info = new FileInfo(url, file, authorized, urlExists, lastModified);
 			INFO_MAP.put(file, info);
 		}
 
@@ -676,39 +698,28 @@ public final class FileCache
 
 		private WrappedInputStream(FileInfo fileInfo) throws IOException
 		{
-			try
+			URL url = fileInfo.getURL();
+			final boolean gunzip = url.getPath().toLowerCase().endsWith(".gz");
+
+			URLConnection connection = url.openConnection();
+			Debug.out().println("Opened connection for download to " + url);
+			if (!Debug.isEnabled() && showDotsForFiles)
 			{
-				URL url = fileInfo.getURL();
-				final boolean gunzip = url.getPath().toLowerCase().endsWith(".gz");
-
-				URLConnection connection = url.openConnection();
-				Debug.out().println("Opened connection for download to " + url);
-				if (!Debug.isEnabled() && showDotsForFiles)
-				{
-					System.out.print('.');
-				}
-
-				// These two properties seem to be still necessary as of 2017-12-19.
-				connection.setRequestProperty("User-Agent", "Mozilla/4.0");
-				connection.setRequestProperty("Accept", "*/*");
-
-				this.totalByteCount = connection.getContentLengthLong();
-				this.lastModifiedTime = connection.getLastModified();
-				this.inputStream = connection.getInputStream();
-				this.countingInputStream = new CountingInputStream(this.inputStream);
-				this.inputStream = this.countingInputStream;
-				if (gunzip)
-				{
-					this.inputStream = new GZIPInputStream(this.inputStream);
-				}
+				System.out.print('.');
 			}
-			catch (Exception e)
+
+			// These two properties seem to be still necessary as of 2017-12-19.
+			connection.setRequestProperty("User-Agent", "Mozilla/4.0");
+			connection.setRequestProperty("Accept", "*/*");
+
+			this.totalByteCount = connection.getContentLengthLong();
+			this.lastModifiedTime = connection.getLastModified();
+			this.inputStream = connection.getInputStream();
+			this.countingInputStream = new CountingInputStream(this.inputStream);
+			this.inputStream = this.countingInputStream;
+			if (gunzip)
 			{
-				if (e instanceof IOException)
-				{
-					throw e;
-				}
-				throw new IOException(e);
+				this.inputStream = new GZIPInputStream(this.inputStream);
 			}
 		}
 
@@ -744,9 +755,8 @@ public final class FileCache
 
 	public static void main(String[] args) throws MalformedURLException
 	{
-		URL url = new URL(FILE_PREFIX + "\\");
-		System.err.println(url);
-		String path = SafePaths.getString("/", "spud", "charmed///");
-		System.err.println(path);
+		Debug.setEnabled(true);
+		File file = getFileFromServer("file://Users/peachjm1/jhuapl/dev/sbmt/bennu/bennu-simulated-v4/coloring/Elevation0.fits.gz");
+		System.err.println("File " + file + " exists? " + file.exists());
 	}
 }

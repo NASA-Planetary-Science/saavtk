@@ -19,6 +19,8 @@ import com.google.common.collect.ImmutableList;
 import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.colormap.Colormaps;
 import edu.jhuapl.saavtk.config.ViewConfig;
+import edu.jhuapl.saavtk.metadata.Metadata;
+import edu.jhuapl.saavtk.metadata.Serializers;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.ConvertResourceToFile;
@@ -31,7 +33,10 @@ import edu.jhuapl.saavtk.util.PolyDataUtil;
 import edu.jhuapl.saavtk.util.Preferences;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
+import edu.jhuapl.saavtk.util.SafePaths;
 import edu.jhuapl.saavtk.util.SmallBodyCubes;
+import edu.jhuapl.saavtk.util.file.IndexableTuple;
+import edu.jhuapl.saavtk.util.file.Tuple;
 import vtk.vtkActor;
 import vtk.vtkActor2D;
 import vtk.vtkCell;
@@ -214,12 +219,15 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	}
 
+	private static final String COLORING_METADATA_ID = "Coloring Metadata";
+
 	private static void initializeColoringDataManager(CustomizableColoringDataManager coloringDataManager, ImmutableList<Integer> numberElements, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls)
 	{
 		Preconditions.checkNotNull(coloringDataManager);
 		if (coloringNames == null)
 			return;
 		Preconditions.checkNotNull(coloringFiles);
+		Preconditions.checkArgument(coloringFiles.length > 0);
 		Preconditions.checkArgument(coloringFiles.length == coloringNames.length);
 
 		Preconditions.checkNotNull(numberElements);
@@ -230,6 +238,36 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			coloringUnits = new String[] {};
 		if (coloringHasNulls == null)
 			coloringHasNulls = new boolean[] {};
+
+		String metadataFileName = SafePaths.getString(SafePaths.get(coloringFiles[0]).toFile().getParent(), "coloring.smd");
+		if (FileCache.isFileGettable(metadataFileName))
+		{
+			File metadataFile = FileCache.getFileFromServer(metadataFileName);
+			if (metadataFile.exists())
+			{
+				try
+				{
+					BasicColoringDataManager builtInColoring = BasicColoringDataManager.of(coloringDataManager.getId());
+					Serializers.deserialize(metadataFile, COLORING_METADATA_ID, builtInColoring.getMetadataManager());
+					for (String builtInName : builtInColoring.getNames())
+					{
+						for (int builtInNumberElements : builtInColoring.getResolutions())
+						{
+							if (builtInColoring.has(builtInName, builtInNumberElements))
+							{
+								coloringDataManager.addBuiltIn(builtInColoring.get(builtInName, builtInNumberElements));
+							}
+						}
+					}
+				}
+				catch (IOException e)
+				{
+					System.err.println("Exception when trying to load plate coloring metadata file");
+					e.printStackTrace();
+				}
+				return;
+			}
+		}
 
 		boolean sbmt2style = false;
 		for (int index = 0; index < coloringFiles.length; ++index)
@@ -251,6 +289,17 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				}
 			}
 		}
+
+		//		metadataFileName = SafePaths.getString(Configuration.getCacheDir(), metadataFileName);
+		//		try
+		//		{
+		//			Serializers.serialize(COLORING_METADATA_ID, coloringDataManager.getMetadataManager(false).store(), new File(metadataFileName));
+		//		}
+		//		catch (IOException e)
+		//		{
+		//			System.err.println("Exception when trying to save plate coloring metadata file");
+		//			e.printStackTrace();
+		//		}
 	}
 
 	private static Format guessFormat(String baseFileName)
@@ -2507,27 +2556,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	}
 
 	/**
-	 * Return the index of the elevation coloring. Return -1 if no elevation is
-	 * available.
-	 *
-	 * @return
-	 */
-	public int getElevationDataColoringIndex()
-	{
-		int numberOfColoringTypes = getNumberOfColors();
-		for (int i = 0; i < numberOfColoringTypes; ++i)
-		{
-			String name = getColoringName(i);
-			if (GenericPolyhedralModel.ElevStr.toLowerCase().equals(name.toLowerCase()))
-			{
-				return i;
-			}
-		}
-
-		return -1;
-	}
-
-	/**
 	 * Subclass should override this if it needs it. Currently only shape models
 	 * with lidar data need this. Return density of shape model in g/cm^3.
 	 * 
@@ -2658,70 +2686,105 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	{
 		loadAllColoringData();
 
-		FileWriter fstream = new FileWriter(file);
-		BufferedWriter out = new BufferedWriter(fstream);
-
-		final String lineSeparator = System.getProperty("line.separator");
-
-		out.write("Area (km^2)");
-		out.write(",Center X (km)");
-		out.write(",Center Y (km)");
-		out.write(",Center Z (km)");
-		out.write(",Center Latitude (deg)");
-		out.write(",Center Longitude (deg)");
-		out.write(",Center Radius (km)");
-		int numColors = getNumberOfColors();
-		for (int i = 0; i < numColors; ++i)
+		try (FileWriter fstream = new FileWriter(file))
 		{
-			out.write("," + getColoringName(i));
-			String units = getColoringUnits(i);
-			if (units != null && !units.isEmpty())
-				out.write(" (" + units + ")");
+			try (BufferedWriter out = new BufferedWriter(fstream))
+			{
+				final String lineSeparator = System.getProperty("line.separator");
+
+				out.write("Area (km^2)");
+				out.write(",Center X (km)");
+				out.write(",Center Y (km)");
+				out.write(",Center Z (km)");
+				out.write(",Center Latitude (deg)");
+				out.write(",Center Longitude (deg)");
+				out.write(",Center Radius (km)");
+				ImmutableList<ColoringData> allColoringData = getAllColoringDataForThisResolution();
+				for (ColoringData data : allColoringData)
+				{
+					for (String name: data.getElementNames())
+					{
+						out.write("," + name);
+						String units = data.getUnits();
+						if (units != null && !units.isEmpty())
+							out.write(" (" + units + ")");
+					}
+					
+				}
+				out.write(lineSeparator);
+
+				vtkTriangle triangle = new vtkTriangle();
+
+				vtkPoints points = smallBodyPolyData.GetPoints();
+				int numberCells = smallBodyPolyData.GetNumberOfCells();
+				smallBodyPolyData.BuildCells();
+				vtkIdList idList = new vtkIdList();
+				double[] pt0 = new double[3];
+				double[] pt1 = new double[3];
+				double[] pt2 = new double[3];
+				double[] center = new double[3];
+				for (int i = 0; i < numberCells; ++i)
+				{
+					smallBodyPolyData.GetCellPoints(i, idList);
+					int id0 = idList.GetId(0);
+					int id1 = idList.GetId(1);
+					int id2 = idList.GetId(2);
+					points.GetPoint(id0, pt0);
+					points.GetPoint(id1, pt1);
+					points.GetPoint(id2, pt2);
+
+					double area = triangle.TriangleArea(pt0, pt1, pt2);
+					triangle.TriangleCenter(pt0, pt1, pt2, center);
+					LatLon llr = MathUtil.reclat(center);
+
+					out.write(area + ",");
+					out.write(center[0] + ",");
+					out.write(center[1] + ",");
+					out.write(center[2] + ",");
+					out.write((llr.lat * 180.0 / Math.PI) + ",");
+					out.write((llr.lon * 180.0 / Math.PI) + ",");
+					out.write(String.valueOf(llr.rad));
+					
+
+					for (ColoringData data : allColoringData)
+					{
+						vtkFloatArray array = data.getData();
+						int number = data.getElementNames().size();
+						if (number == 1) {
+							out.write("," + array.GetTuple1(i));
+						}
+						else if (number != 1) {
+							double[] dArray = null;
+							if(number == 2) {
+								dArray = array.GetTuple2(i);
+							} else if (number == 3) {
+								dArray = array.GetTuple3(i);
+							} else if (number == 4) {
+								dArray = array.GetTuple4(i);
+							} else if (number == 6) {
+								dArray = array.GetTuple6(i);
+							} else if (number == 9) {
+								dArray = array.GetTuple9(i);
+							} else {
+								throw new AssertionError();
+							}
+							for (double d: dArray) {
+								out.write("," + d);
+							}
+						} 	
+						
+					}
+					out.write(lineSeparator);
+				}
+				
+				triangle.Delete();
+				idList.Delete();
+					
+			}
+
 		}
-		out.write(lineSeparator);
-
-		vtkTriangle triangle = new vtkTriangle();
-
-		vtkPoints points = smallBodyPolyData.GetPoints();
-		int numberCells = smallBodyPolyData.GetNumberOfCells();
-		smallBodyPolyData.BuildCells();
-		vtkIdList idList = new vtkIdList();
-		double[] pt0 = new double[3];
-		double[] pt1 = new double[3];
-		double[] pt2 = new double[3];
-		double[] center = new double[3];
-		for (int i = 0; i < numberCells; ++i)
-		{
-			smallBodyPolyData.GetCellPoints(i, idList);
-			int id0 = idList.GetId(0);
-			int id1 = idList.GetId(1);
-			int id2 = idList.GetId(2);
-			points.GetPoint(id0, pt0);
-			points.GetPoint(id1, pt1);
-			points.GetPoint(id2, pt2);
-
-			double area = triangle.TriangleArea(pt0, pt1, pt2);
-			triangle.TriangleCenter(pt0, pt1, pt2, center);
-			LatLon llr = MathUtil.reclat(center);
-
-			out.write(area + ",");
-			out.write(center[0] + ",");
-			out.write(center[1] + ",");
-			out.write(center[2] + ",");
-			out.write((llr.lat * 180.0 / Math.PI) + ",");
-			out.write((llr.lon * 180.0 / Math.PI) + ",");
-			out.write(String.valueOf(llr.rad));
-
-			for (int j = 0; j < numColors; ++j)
-				out.write("," + getColoringData(j).getData().GetTuple1(i));
-
-			out.write(lineSeparator);
-		}
-
-		triangle.Delete();
-		idList.Delete();
-		out.close();
 	}
+	
 
 	/**
 	 * Given a polydata that is coincident with part of the shape model, save out
@@ -2772,10 +2835,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		String nl = System.getProperty("line.separator");
 
 		out.write("Plate Id\tLatitude\tLongitude\t");
-		int numColoringData = getNumberOfColors();
+		ImmutableList<ColoringData> coloringData = getAllColoringDataForThisResolution();
+		int numColoringData = coloringData.size();
 		for (int j = 0; j < numColoringData; ++j)
 		{
-			out.write(getColoringName(j));
+			out.write(coloringData.get(j).getName());
 			if (j < numColoringData - 1)
 				out.write("\t");
 		}

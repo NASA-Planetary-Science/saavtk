@@ -119,7 +119,7 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 		update();
 	}
 
-	MetadataManager getMetadataManager()
+	MetadataManager getMetadataManager(boolean includeCustom)
 	{
 		return new MetadataManager() {
 
@@ -128,17 +128,24 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 			{
 				SettableMetadata result = SettableMetadata.of(METADATA_VERSION);
 				result.put(Key.of(builtIn.getId()), builtIn.getMetadataManager().store());
-				result.put(Key.of(custom.getId()), custom.getMetadataManager().store());
+				if (includeCustom)
+				{
+					result.put(Key.of(custom.getId()), custom.getMetadataManager().store());
+				}
 				return result;
 			}
 
 			@Override
 			public void retrieve(Metadata source)
 			{
-				all.clear();
 				builtIn.clear();
-				custom.clear();
-				// TODO finish writing this.
+				builtIn.getMetadataManager().retrieve(source.get(Key.of(builtIn.getId())));
+				if (includeCustom)
+				{
+					custom.clear();
+					custom.getMetadataManager().retrieve(source.get(Key.of(custom.getId())));
+				}
+				update();
 			}
 
 		};

@@ -20,6 +20,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 
 import edu.jhuapl.saavtk.gui.JTextFieldDoubleVerifier;
 import edu.jhuapl.saavtk.gui.render.Renderer;
+import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.gui.render.Renderer.ProjectionType;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -44,6 +45,7 @@ public class CameraDialog extends JDialog implements ActionListener
     private boolean nadirFocalPoint;
     private static final double JupiterScale = 75000;
     private double cameraRadius = 0.0, viewRadius = 0.0;
+    private double[] origin = {0, 0, 0};
 
 
     private void printCameraOrientation()
@@ -277,8 +279,9 @@ public class CameraDialog extends JDialog implements ActionListener
         else if (e.getSource() == resetButton)
         {
             renderer.resetToDefaultCameraViewAngle();
-// REMOVED because it causes Renderer to freeze. -turnerj1
-//            fovField.setText(String.valueOf(renderer.getCameraViewAngle()));
+            renderer.resetCamera();
+            renderer.setCameraOrientationInDirectionOfAxis(AxisType.NEGATIVE_Z, true);
+        	setVisible(true);
         }
 
         if (e.getSource() == okayButton || e.getSource() == cancelButton)
@@ -307,7 +310,7 @@ public class CameraDialog extends JDialog implements ActionListener
       
       calculateViewRadius();
       if(nadirFocalPoint){
-          System.out.println("11");
+//          System.out.println("11");
           boresightLatitiudeField.setText("");
           boresightLongitudeField.setText("");
           lat = String.valueOf(cameraLatLon.lat);

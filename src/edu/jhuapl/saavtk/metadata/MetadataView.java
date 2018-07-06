@@ -1,12 +1,11 @@
 package edu.jhuapl.saavtk.metadata;
 
-import java.util.Map;
-
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-public final class MetadataView extends BasicMetadata
+public final class MetadataView implements Metadata
 {
-	public static MetadataView of(BasicMetadata metadata)
+	public static MetadataView of(Metadata metadata)
 	{
 		if (metadata instanceof MetadataView)
 		{
@@ -15,12 +14,24 @@ public final class MetadataView extends BasicMetadata
 		return new MetadataView(metadata);
 	}
 
-	private final BasicMetadata metadata;
+	private final Metadata metadata;
 
-	private MetadataView(BasicMetadata metadata)
+	private MetadataView(Metadata metadata)
 	{
-		super(metadata.getVersion());
+		Preconditions.checkNotNull(metadata);
 		this.metadata = metadata;
+	}
+
+	@Override
+	public Version getVersion()
+	{
+		return metadata.getVersion();
+	}
+
+	@Override
+	public boolean hasKey(Key<?> key)
+	{
+		return metadata.hasKey(key);
 	}
 
 	@Override
@@ -30,15 +41,34 @@ public final class MetadataView extends BasicMetadata
 	}
 
 	@Override
+	public <V> V get(Key<V> key)
+	{
+		return metadata.get(key);
+	}
+
+	@Override
 	public MetadataView copy()
 	{
 		return this;
 	}
 
 	@Override
-	protected Map<Key<?>, Object> getMap()
+	public int hashCode()
 	{
-		return metadata.getMap();
+		return metadata.hashCode();
 	}
 
+	@Override
+	public boolean equals(Object object)
+	{
+		if (object == this)
+		{
+			return true;
+		}
+		if (object instanceof Metadata)
+		{
+			return metadata.equals(object);
+		}
+		return false;
+	}
 }
