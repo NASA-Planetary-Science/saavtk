@@ -12,6 +12,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -27,6 +28,30 @@ import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
 
 public final class FileCache
 {
+	// TODO this should extend Exception and thus be checked.
+	public static class NoInternetAccessException extends RuntimeException
+	{
+		private static final long serialVersionUID = -1250977612922624246L;
+		private final URL url;
+
+		private NoInternetAccessException(String cause, URL url)
+		{
+			super(cause);
+			this.url = url;
+		}
+
+		private NoInternetAccessException(Exception cause, URL url)
+		{
+			super(cause);
+			this.url = url;
+		}
+
+		public URL getURL()
+		{
+			return url;
+		}
+	}
+
 	// TODO this should extend Exception and thus be checked.
 	public static class UnauthorizedAccessException extends RuntimeException
 	{
@@ -460,6 +485,10 @@ public final class FileCache
 				}
 				lastModified = connection.getLastModified();
 			}
+			catch (UnknownHostException e)
+			{
+				throw new NoInternetAccessException(e, url);
+			}
 			catch (Exception e)
 			{
 				String message = e.getMessage();
@@ -486,11 +515,11 @@ public final class FileCache
 	 * 
 	 * @param urlOrPathSegment the input URL string or path segment
 	 * @return true if it appears the file could be successfully downloaded/used
-	 * @throws UnauthorizedAccessException if a 401/403 (Unauthorized/Forbidden)
-	 *             error is encountered when attempting to access the server for the
+	 * @throws NoInternetAccessException if a 401/403 (Unauthorized/Forbidden) error
+	 *             is encountered when attempting to access the server for the
 	 *             remote file
 	 */
-	public static boolean isFileGettable(String urlOrPathSegment) throws UnauthorizedAccessException
+	public static boolean isFileGettable(String urlOrPathSegment) throws NoInternetAccessException
 	{
 		FileInfo fileInfo = getFileInfoFromServer(urlOrPathSegment);
 		if (fileInfo.isExistsLocally() || fileInfo.isExistsOnServer() == YesOrNo.YES)
@@ -500,7 +529,7 @@ public final class FileCache
 		else if (fileInfo.isURLAccessAuthorized() == YesOrNo.NO)
 		{
 			URL url = fileInfo.getURL();
-			throw new UnauthorizedAccessException("Cannot access information about restricted URL: " + url, url);
+			throw new NoInternetAccessException("Cannot access information about restricted URL: " + url, url);
 		}
 		return false;
 	}
@@ -517,18 +546,18 @@ public final class FileCache
 	 * 
 	 * @param urlOrPathSegment the URL
 	 * @return the local file object; however, the file on disk may not exist
-	 * @throws UnauthorizedAccessException if a 401 (Unauthorized) error is
+	 * @throws NoInternetAccessException if a 401 (Unauthorized) error is
 	 *             encountered when attempting to access the server for the remote
 	 *             file.
 	 */
-	public static File getFileFromServer(String urlOrPathSegment) throws UnauthorizedAccessException
+	public static File getFileFromServer(String urlOrPathSegment) throws NoInternetAccessException
 	{
 		FileInfo fileInfo = getFileInfoFromServer(urlOrPathSegment);
 
 		if (fileInfo.isURLAccessAuthorized() == YesOrNo.NO)
 		{
 			URL url = fileInfo.getURL();
-			throw new UnauthorizedAccessException("Cannot get file: access is restricted to URL: " + url, url);
+			throw new NoInternetAccessException("Cannot get file: access is restricted to URL: " + url, url);
 		}
 
 		if (fileInfo.isNeedToDownload())
