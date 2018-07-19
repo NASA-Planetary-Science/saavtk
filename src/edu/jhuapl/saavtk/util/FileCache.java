@@ -413,7 +413,17 @@ public final class FileCache
 
 		if (offlineMode)
 		{
-			return new FileInfo(url, new File(SafePaths.getString(offlineModeRootFolder, ungzippedPath)), YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0);
+			// It's possible there is information about this file already from a previous query
+			// when offlineMode was disabled.
+			File file = SafePaths.get(offlineModeRootFolder, ungzippedPath).toFile();
+			FileInfo info = INFO_MAP.get(file);
+			if (info == null)
+			{
+				// Didn't already have info about this file, so return file info with
+				// partial information.
+				info = new FileInfo(url, new File(SafePaths.getString(offlineModeRootFolder, ungzippedPath)), YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0);
+			}
+			return info;
 		}
 
 		if (ungzippedPath.equals(pathSegment) && url.getProtocol().equalsIgnoreCase("file"))
@@ -522,7 +532,7 @@ public final class FileCache
 	public static boolean isFileGettable(String urlOrPathSegment) throws NoInternetAccessException
 	{
 		FileInfo fileInfo = getFileInfoFromServer(urlOrPathSegment);
-		if (fileInfo.isExistsLocally() || fileInfo.isExistsOnServer() == YesOrNo.YES)
+		if (fileInfo.isExistsLocally() || (!offlineMode && fileInfo.isExistsOnServer() == YesOrNo.YES))
 		{
 			return true;
 		}
@@ -553,19 +563,23 @@ public final class FileCache
 	public static File getFileFromServer(String urlOrPathSegment) throws NoInternetAccessException
 	{
 		FileInfo fileInfo = getFileInfoFromServer(urlOrPathSegment);
+		URL url = fileInfo.getURL();
 
 		if (fileInfo.isURLAccessAuthorized() == YesOrNo.NO)
 		{
-			URL url = fileInfo.getURL();
-			throw new NoInternetAccessException("Cannot get file: access is restricted to URL: " + url, url);
+			throw new UnauthorizedAccessException("Cannot get file: access is restricted to URL: " + url, url);
 		}
 
 		if (fileInfo.isNeedToDownload())
 		{
 			if (fileInfo.isExistsOnServer() == YesOrNo.NO)
 			{
-				URL url = fileInfo.getURL();
 				throw new NonexistentRemoteFile("File pointed to does not exist: " + url, url);
+			}
+
+			if (offlineMode)
+			{
+				throw new NoInternetAccessException("Offline mode; unable to retrieve " + url, url);
 			}
 
 			try
@@ -674,12 +688,14 @@ public final class FileCache
 		return offlineMode;
 	}
 
+	public static void setOfflineMode(boolean offlineMode)
+	{
+		setOfflineMode(offlineMode, offlineModeRootFolder != null ? offlineModeRootFolder : Configuration.getCacheDir());
+	}
+
 	/**
 	 * In "offline" mode, instead of querying a server, the image of the server is
-	 * expected to reside in a directory in the local file system.
-	 * 
-	 * NOTE: THIS HAS NOT BEEN TESTED RECENTLY AND IS LIKELY BROKEN FOLLOWING A
-	 * REFACTORING OF THIS CLASS.
+	 * expected to reside in a directory in the local file system. *
 	 * 
 	 * @param offlineMode if true, use the local directory as the "top" of the
 	 *            server.
