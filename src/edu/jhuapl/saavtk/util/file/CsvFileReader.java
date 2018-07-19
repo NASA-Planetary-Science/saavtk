@@ -105,7 +105,7 @@ public class CsvFileReader extends DataFileReader
 
 		if (file.toString().toLowerCase().endsWith(".gz"))
 		{
-			return null;
+			return readTuplesGzipped(file, numberColumns, columnNumbers);
 		}
 		else
 		{
