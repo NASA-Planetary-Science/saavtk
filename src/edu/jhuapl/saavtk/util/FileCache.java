@@ -669,6 +669,11 @@ public final class FileCache
 		return lines;
 	}
 
+	public static boolean getOfflineMode()
+	{
+		return offlineMode;
+	}
+
 	/**
 	 * In "offline" mode, instead of querying a server, the image of the server is
 	 * expected to reside in a directory in the local file system.
