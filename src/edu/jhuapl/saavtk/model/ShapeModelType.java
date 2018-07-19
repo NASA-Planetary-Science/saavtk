@@ -22,6 +22,7 @@ public enum ShapeModelType
 	BLENDER("Zimmerman"),
 	JAXA_001("JAXA-001"),
 	NASA_001("NASA-001"),
+	NASA_002("NASA-001"),
 	OREX("OSIRIS-REx"),
 	TRUTH("Truth");
 
