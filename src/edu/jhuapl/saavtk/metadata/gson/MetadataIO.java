@@ -8,7 +8,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
@@ -26,24 +25,20 @@ final class MetadataIO implements JsonSerializer<Metadata>, JsonDeserializer<Met
 	public JsonElement serialize(Metadata src, Type typeOfSrc, JsonSerializationContext context)
 	{
 		Preconditions.checkNotNull(src);
-		Preconditions.checkArgument(ValueTypeInfo.METADATA.getType().equals(typeOfSrc));
+		Preconditions.checkArgument(DataTypeInfo.METADATA.getType().equals(typeOfSrc));
 		Preconditions.checkNotNull(context);
 
 		JsonArray array = new JsonArray();
-		array.add(context.serialize(src.getVersion(), ValueTypeInfo.VERSION.getType()));
+		array.add(context.serialize(src.getVersion(), DataTypeInfo.VERSION.getType()));
 
 		JsonArray valueArray = new JsonArray();
 		for (Key<?> key : src.getKeys())
 		{
 			Object value = src.get(key);
-			valueArray.add(context.serialize(GsonElement.of(key, value), ValueTypeInfo.ELEMENT.getType()));
+			valueArray.add(context.serialize(GsonElement.of(key, value), DataTypeInfo.ELEMENT.getType()));
 		}
 
-		JsonObject jsonObject = null;
-
-		jsonObject = new JsonObject();
-		jsonObject.add(STORED_AS_ELEMENTS_KEY, valueArray);
-		array.add(jsonObject);
+		array.add(valueArray);
 
 		return array;
 	}
@@ -53,7 +48,7 @@ final class MetadataIO implements JsonSerializer<Metadata>, JsonDeserializer<Met
 	{
 		Preconditions.checkNotNull(jsonSrc);
 		Preconditions.checkArgument(jsonSrc.isJsonArray());
-		Preconditions.checkArgument(ValueTypeInfo.METADATA.getType().equals(typeOfT));
+		Preconditions.checkArgument(DataTypeInfo.METADATA.getType().equals(typeOfT));
 		Preconditions.checkNotNull(context);
 
 		JsonArray jsonArray = jsonSrc.getAsJsonArray();
@@ -66,7 +61,7 @@ final class MetadataIO implements JsonSerializer<Metadata>, JsonDeserializer<Met
 		}
 		jsonElement = iterator.next();
 
-		Version version = context.deserialize(jsonElement, ValueTypeInfo.VERSION.getType());
+		Version version = context.deserialize(jsonElement, DataTypeInfo.VERSION.getType());
 
 		final SettableMetadata metadata = SettableMetadata.of(version);
 		if (!iterator.hasNext())
@@ -74,11 +69,10 @@ final class MetadataIO implements JsonSerializer<Metadata>, JsonDeserializer<Met
 			throw new IllegalArgumentException();
 		}
 		jsonElement = iterator.next();
-		JsonObject jsonObject = jsonElement.getAsJsonObject();
-		jsonArray = jsonObject.get(STORED_AS_ELEMENTS_KEY).getAsJsonArray();
+		jsonArray = jsonElement.getAsJsonArray();
 		for (JsonElement arrayElement : jsonArray)
 		{
-			GsonElement element = context.deserialize(arrayElement, ValueTypeInfo.ELEMENT.getType());
+			GsonElement element = context.deserialize(arrayElement, DataTypeInfo.ELEMENT.getType());
 			metadata.put(element.getKey(), element.getValue());
 		}
 		return metadata;

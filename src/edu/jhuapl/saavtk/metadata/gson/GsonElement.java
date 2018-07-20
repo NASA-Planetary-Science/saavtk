@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import com.google.common.base.Preconditions;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -24,14 +23,14 @@ final class GsonElement
 		@Override
 		public GsonElement deserialize(JsonElement jsonElement, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
 		{
-			Preconditions.checkArgument(ValueTypeInfo.ELEMENT.getType().equals(typeOfT));
+			Preconditions.checkArgument(DataTypeInfo.ELEMENT.getType().equals(typeOfT));
 			return GsonElement.of(jsonElement, context);
 		}
 
 		@Override
 		public JsonElement serialize(GsonElement src, Type typeOfSrc, JsonSerializationContext context)
 		{
-			Preconditions.checkArgument(ValueTypeInfo.ELEMENT.getType().equals(typeOfSrc));
+			Preconditions.checkArgument(DataTypeInfo.ELEMENT.getType().equals(typeOfSrc));
 			return src.toElement(context);
 		}
 
@@ -44,7 +43,7 @@ final class GsonElement
 
 	public static GsonElement of(Key<?> key, Object object)
 	{
-		return new GsonElement(key, object, ValueTypeInfo.forObject(object));
+		return new GsonElement(key, object, DataTypeInfo.forObject(object));
 	}
 
 	private static GsonElement of(JsonElement element, JsonDeserializationContext context)
@@ -57,23 +56,15 @@ final class GsonElement
 		Preconditions.checkState(entryList.size() == 1);
 
 		Entry<String, JsonElement> entry = entryList.get(0);
-		ValueTypeInfo objectInfo = ValueTypeInfo.of(entry.getKey());
-		if (objectInfo != ValueTypeInfo.ELEMENT)
-		{
-			throw new IllegalStateException();
-		}
 
-		JsonArray array = entry.getValue().getAsJsonArray();
-		Preconditions.checkState(array.size() == 2);
-
-		Key<?> key = context.deserialize(array.get(0), ValueTypeInfo.METADATA_KEY.getType());
-		JsonObject valueObject = array.get(1).getAsJsonObject();
+		Key<?> key = Key.of(entry.getKey());
+		JsonObject valueObject = entry.getValue().getAsJsonObject();
 
 		entryList = new ArrayList<>(valueObject.entrySet());
 		Preconditions.checkState(entryList.size() == 1);
 
 		entry = entryList.get(0);
-		objectInfo = ValueTypeInfo.of(entry.getKey());
+		DataTypeInfo objectInfo = DataTypeInfo.of(entry.getKey());
 
 		Object object = context.deserialize(entry.getValue(), objectInfo.getType());
 
@@ -82,9 +73,9 @@ final class GsonElement
 
 	private final Key<?> key;
 	private final Object object;
-	private final ValueTypeInfo objectInfo;
+	private final DataTypeInfo objectInfo;
 
-	private GsonElement(Key<?> key, Object object, ValueTypeInfo objectInfo)
+	private GsonElement(Key<?> key, Object object, DataTypeInfo objectInfo)
 	{
 		Preconditions.checkNotNull(key);
 		Preconditions.checkNotNull(objectInfo);
@@ -95,15 +86,12 @@ final class GsonElement
 
 	public JsonElement toElement(JsonSerializationContext context)
 	{
-		JsonArray keyValuePair = new JsonArray();
-		keyValuePair.add(context.serialize(key, ValueTypeInfo.METADATA_KEY.getType()));
+		JsonObject result = new JsonObject();
 
 		JsonObject valueObject = new JsonObject();
 		valueObject.add(objectInfo.getTypeId(), context.serialize(object, objectInfo.getType()));
-		keyValuePair.add(valueObject);
 
-		JsonObject result = new JsonObject();
-		result.add(ValueTypeInfo.ELEMENT.getTypeId(), keyValuePair);
+		result.add(key.getId(), valueObject);
 		return result;
 	}
 
@@ -119,7 +107,7 @@ final class GsonElement
 		return object;
 	}
 
-	public ValueTypeInfo getInfo()
+	public DataTypeInfo getInfo()
 	{
 		return objectInfo;
 	}

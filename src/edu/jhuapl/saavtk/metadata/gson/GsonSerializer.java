@@ -33,8 +33,10 @@ import edu.jhuapl.saavtk.metadata.gson.GsonElement.ElementIO;
 public class GsonSerializer implements Serializer
 {
 	private static final Version GSON_VERSION = Version.of(1, 0);
-	private static final IterableIO ITERABLE_IO = new IterableIO();
+	private static final ListIO LIST_IO = new ListIO();
 	private static final MapIO MAP_IO = new MapIO();
+	private static final SetIO SET_IO = new SetIO();
+	private static final SortedSetIO SORTED_SET_IO = new SortedSetIO();
 	private static final GsonKeyIO KEY_IO = new GsonKeyIO();
 	private static final MetadataIO METADATA_IO = new MetadataIO();
 	private static final GsonVersionIO VERSION_IO = new GsonVersionIO();
@@ -76,7 +78,7 @@ public class GsonSerializer implements Serializer
 			reader.beginArray();
 			while (reader.hasNext())
 			{
-				GsonElement element = GSON.fromJson(reader, ValueTypeInfo.ELEMENT.getType());
+				GsonElement element = GSON.fromJson(reader, DataTypeInfo.ELEMENT.getType());
 				source.put(element.getKey(), element.getValue());
 			}
 			reader.endArray();
@@ -110,7 +112,7 @@ public class GsonSerializer implements Serializer
 					MetadataManager manager = managerCollection.getManager(key);
 					Metadata metadata = manager.store();
 					GsonElement element = GsonElement.of(key, metadata);
-					GSON.toJson(element, ValueTypeInfo.ELEMENT.getType(), jsonWriter);
+					GSON.toJson(element, DataTypeInfo.ELEMENT.getType(), jsonWriter);
 				}
 				jsonWriter.endArray();
 				jsonWriter.flush();
@@ -169,15 +171,14 @@ public class GsonSerializer implements Serializer
 		builder.serializeNulls();
 		builder.setPrettyPrinting();
 		builder.serializeSpecialFloatingPointValues();
-		builder.registerTypeAdapter(ValueTypeInfo.SORTED_SET.getType(), ITERABLE_IO);
-		builder.registerTypeAdapter(ValueTypeInfo.SET.getType(), ITERABLE_IO);
-		builder.registerTypeAdapter(ValueTypeInfo.LIST.getType(), ITERABLE_IO);
-		builder.registerTypeAdapter(ValueTypeInfo.SORTED_MAP.getType(), MAP_IO);
-		builder.registerTypeAdapter(ValueTypeInfo.MAP.getType(), MAP_IO);
-		builder.registerTypeAdapter(ValueTypeInfo.METADATA_KEY.getType(), KEY_IO);
-		builder.registerTypeAdapter(ValueTypeInfo.METADATA.getType(), METADATA_IO);
-		builder.registerTypeAdapter(ValueTypeInfo.VERSION.getType(), VERSION_IO);
-		builder.registerTypeAdapter(ValueTypeInfo.ELEMENT.getType(), ELEMENT_IO);
+		builder.registerTypeAdapter(DataTypeInfo.SORTED_SET.getType(), SORTED_SET_IO);
+		builder.registerTypeAdapter(DataTypeInfo.SET.getType(), SET_IO);
+		builder.registerTypeAdapter(DataTypeInfo.LIST.getType(), LIST_IO);
+		builder.registerTypeAdapter(DataTypeInfo.MAP.getType(), MAP_IO);
+		builder.registerTypeAdapter(DataTypeInfo.METADATA_KEY.getType(), KEY_IO);
+		builder.registerTypeAdapter(DataTypeInfo.METADATA.getType(), METADATA_IO);
+		builder.registerTypeAdapter(DataTypeInfo.VERSION.getType(), VERSION_IO);
+		builder.registerTypeAdapter(DataTypeInfo.ELEMENT.getType(), ELEMENT_IO);
 		return builder.create();
 	}
 

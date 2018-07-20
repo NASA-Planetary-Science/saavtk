@@ -14,7 +14,7 @@ import edu.jhuapl.saavtk.metadata.Version;
 
 final class GsonVersionIO implements JsonSerializer<Version>, JsonDeserializer<Version>
 {
-	private static final String KEY_ID = ValueTypeInfo.VERSION.getTypeId();
+	private static final String KEY_ID = DataTypeInfo.VERSION.getTypeId();
 
 	@Override
 	public JsonElement serialize(Version src, Type typeOfSrc, JsonSerializationContext context)

@@ -36,19 +36,19 @@ final class MapIO implements JsonSerializer<Map<?, ?>>, JsonDeserializer<Map<?, 
 		JsonObject result = new JsonObject();
 
 		// First pass: if any entries are found, determine types of key and value.
-		ValueTypeInfo keyInfo = ValueTypeInfo.NULL;
-		ValueTypeInfo valueInfo = ValueTypeInfo.NULL;
+		DataTypeInfo keyInfo = DataTypeInfo.NULL;
+		DataTypeInfo valueInfo = DataTypeInfo.NULL;
 		for (Entry<?, ?> entry : src.entrySet())
 		{
-			if (keyInfo == ValueTypeInfo.NULL)
+			if (keyInfo == DataTypeInfo.NULL)
 			{
-				keyInfo = ValueTypeInfo.forObject(entry.getKey());
+				keyInfo = DataTypeInfo.forObject(entry.getKey());
 			}
-			if (valueInfo == ValueTypeInfo.NULL)
+			if (valueInfo == DataTypeInfo.NULL)
 			{
-				valueInfo = ValueTypeInfo.forObject(entry.getValue());
+				valueInfo = DataTypeInfo.forObject(entry.getValue());
 			}
-			if (keyInfo != ValueTypeInfo.NULL && valueInfo != ValueTypeInfo.NULL)
+			if (keyInfo != DataTypeInfo.NULL && valueInfo != DataTypeInfo.NULL)
 			{
 				break;
 			}
@@ -75,7 +75,7 @@ final class MapIO implements JsonSerializer<Map<?, ?>>, JsonDeserializer<Map<?, 
 
 		// Put type information about key and value, along with the map entries
 		// into the resultant object.
-		result.add(MAP_TYPE, context.serialize(ValueTypeInfo.forObject(src).getTypeId()));
+		result.add(MAP_TYPE, context.serialize(DataTypeInfo.forObject(src).getTypeId()));
 		result.add(MAP_KEY_TYPE, context.serialize(keyInfo.getTypeId()));
 		result.add(MAP_VALUE_TYPE, context.serialize(valueInfo.getTypeId()));
 		result.add(MAP_VALUE, destArray);
@@ -112,17 +112,17 @@ final class MapIO implements JsonSerializer<Map<?, ?>>, JsonDeserializer<Map<?, 
 			throw new IllegalArgumentException("Field \"" + MAP_VALUE_TYPE + "\" is missing or has wrong type in Json object");
 		}
 
-		ValueTypeInfo dataInfo = ValueTypeInfo.of(mapTypeElement.getAsString());
-		ValueTypeInfo keyInfo = ValueTypeInfo.of(keyTypeElement.getAsString());
-		ValueTypeInfo valueInfo = ValueTypeInfo.of(valueTypeElement.getAsString());
+		DataTypeInfo dataInfo = DataTypeInfo.of(mapTypeElement.getAsString());
+		DataTypeInfo keyInfo = DataTypeInfo.of(keyTypeElement.getAsString());
+		DataTypeInfo valueInfo = DataTypeInfo.of(valueTypeElement.getAsString());
 
 		// Create output data object.
 		Map<?, ?> map = null;
-		if (dataInfo == ValueTypeInfo.SORTED_MAP)
+		if (dataInfo == DataTypeInfo.SORTED_MAP)
 		{
 			map = new TreeMap<>();
 		}
-		else if (dataInfo == ValueTypeInfo.MAP)
+		else if (dataInfo == DataTypeInfo.MAP)
 		{
 			map = new HashMap<>();
 		}
@@ -171,14 +171,14 @@ final class MapIO implements JsonSerializer<Map<?, ?>>, JsonDeserializer<Map<?, 
 		createdMap.put("Map one", map1);
 		createdMap.put("Map two", map2);
 
-		Gson GSON = new GsonBuilder().serializeNulls().registerTypeAdapter(ValueTypeInfo.of(SortedMap.class).getType(), new MapIO()).registerTypeAdapter(ValueTypeInfo.of(Map.class).getType(), new MapIO()).setPrettyPrinting().create();
+		Gson GSON = new GsonBuilder().serializeNulls().registerTypeAdapter(DataTypeInfo.of(SortedMap.class).getType(), new MapIO()).registerTypeAdapter(DataTypeInfo.of(Map.class).getType(), new MapIO()).setPrettyPrinting().create();
 
 		String file = "/Users/peachjm1/Downloads/test-map.json";
 		try (FileWriter fileWriter = new FileWriter(file))
 		{
 			try (JsonWriter jsonWriter = GSON.newJsonWriter(fileWriter))
 			{
-				GSON.toJson(createdMap, ValueTypeInfo.forObject(createdMap).getType(), jsonWriter);
+				GSON.toJson(createdMap, DataTypeInfo.forObject(createdMap).getType(), jsonWriter);
 				fileWriter.write('\n');
 			}
 		}
@@ -189,7 +189,7 @@ final class MapIO implements JsonSerializer<Map<?, ?>>, JsonDeserializer<Map<?, 
 
 		try (JsonReader jsonReader = GSON.newJsonReader(new FileReader(file)))
 		{
-			Map<?, ?> readMap = GSON.fromJson(jsonReader, ValueTypeInfo.of(Map.class).getType());
+			Map<?, ?> readMap = GSON.fromJson(jsonReader, DataTypeInfo.of(Map.class).getType());
 			if (!readMap.equals(createdMap))
 			{
 				System.err.println("OUTPUT IS NOT EQUAL TO INPUT!!");
