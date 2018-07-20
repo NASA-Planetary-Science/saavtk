@@ -12,12 +12,13 @@ import java.util.TreeMap;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.stream.JsonReader;
@@ -54,23 +55,16 @@ final class MapIO implements JsonSerializer<Map<?, ?>>, JsonDeserializer<Map<?, 
 			}
 		}
 
-		// Second pass: write the map entries to a JsonArray.
-		JsonArray destArray = new JsonArray();
+		// Second pass: write the map entries to a JsonObject.
+		JsonObject dest = new JsonObject();
 		Type keyType = keyInfo.getType();
 		Type valueType = valueInfo.getType();
 
 		for (Entry<?, ?> entry : src.entrySet())
 		{
-			// Each entry is itself a two-element JsonArray.
-			JsonArray entryArray = new JsonArray();
-
 			Object key = entry.getKey();
-			entryArray.add(context.serialize(key, keyType));
-
 			Object value = entry.getValue();
-			entryArray.add(context.serialize(value, valueType));
-
-			destArray.add(entryArray);
+			dest.add(key != null ? key.toString() : JsonNull.INSTANCE.toString(), context.serialize(value, valueType));
 		}
 
 		// Put type information about key and value, along with the map entries
@@ -78,7 +72,7 @@ final class MapIO implements JsonSerializer<Map<?, ?>>, JsonDeserializer<Map<?, 
 		result.add(MAP_TYPE, context.serialize(DataTypeInfo.forObject(src).getTypeId()));
 		result.add(MAP_KEY_TYPE, context.serialize(keyInfo.getTypeId()));
 		result.add(MAP_VALUE_TYPE, context.serialize(valueInfo.getTypeId()));
-		result.add(MAP_VALUE, destArray);
+		result.add(MAP_VALUE, dest);
 
 		return result;
 	}
@@ -133,24 +127,18 @@ final class MapIO implements JsonSerializer<Map<?, ?>>, JsonDeserializer<Map<?, 
 
 		// Unpack data.
 		JsonElement dataElement = object.get(MAP_VALUE);
-		if (dataElement == null || !dataElement.isJsonArray())
+		if (dataElement == null || !dataElement.isJsonObject())
 		{
 			throw new IllegalArgumentException("Field \"" + MAP_VALUE + "\" is missing or has wrong type in Json object");
 		}
 
 		Type keyType = keyInfo.getType();
 		Type valueType = valueInfo.getType();
-		for (JsonElement entryElement : dataElement.getAsJsonArray())
+		for (Entry<String, JsonElement> entry : dataElement.getAsJsonObject().entrySet())
 		{
-			if (!entryElement.isJsonArray())
-			{
-				throw new IllegalArgumentException("Map entry has invalid type");
-			}
-
-			JsonArray entryArray = entryElement.getAsJsonArray();
-
-			JsonElement keyElement = entryArray.get(0);
-			JsonElement valueElement = entryArray.get(1);
+			String keyString = entry.getKey();
+			JsonElement keyElement = keyString.equals("null") ? JsonNull.INSTANCE : new JsonPrimitive(keyString);
+			JsonElement valueElement = entry.getValue();
 
 			map.put(context.deserialize(keyElement, keyType), context.deserialize(valueElement, valueType));
 		}
