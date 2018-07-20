@@ -37,7 +37,6 @@ public class GsonSerializer implements Serializer
 	private static final MapIO MAP_IO = new MapIO();
 	private static final SetIO SET_IO = new SetIO();
 	private static final SortedSetIO SORTED_SET_IO = new SortedSetIO();
-	private static final GsonKeyIO KEY_IO = new GsonKeyIO();
 	private static final MetadataIO METADATA_IO = new MetadataIO();
 	private static final GsonVersionIO VERSION_IO = new GsonVersionIO();
 	private static final ElementIO ELEMENT_IO = new ElementIO();
@@ -175,7 +174,6 @@ public class GsonSerializer implements Serializer
 		builder.registerTypeAdapter(DataTypeInfo.SET.getType(), SET_IO);
 		builder.registerTypeAdapter(DataTypeInfo.LIST.getType(), LIST_IO);
 		builder.registerTypeAdapter(DataTypeInfo.MAP.getType(), MAP_IO);
-		builder.registerTypeAdapter(DataTypeInfo.METADATA_KEY.getType(), KEY_IO);
 		builder.registerTypeAdapter(DataTypeInfo.METADATA.getType(), METADATA_IO);
 		builder.registerTypeAdapter(DataTypeInfo.VERSION.getType(), VERSION_IO);
 		builder.registerTypeAdapter(DataTypeInfo.ELEMENT.getType(), ELEMENT_IO);
@@ -273,6 +271,7 @@ public class GsonSerializer implements Serializer
 		state.put(Key.of("Current View2"), v3);
 		state.put(listListStringKey, listListString);
 		state.put(Key.of("stringSet"), ImmutableSortedSet.of("liver", "spleen", "aardvark"));
+		state.put(Key.of("Metadata"), "a string that happens to have the key \"Metadata\"");
 
 		Map<Byte, Short> byteShortMap = new HashMap<>();
 		byteShortMap.put((byte) 1, null);
