@@ -415,13 +415,13 @@ public final class FileCache
 		{
 			// It's possible there is information about this file already from a previous query
 			// when offlineMode was disabled.
-			File file = SafePaths.get(offlineModeRootFolder, ungzippedPath).toFile();
+			File file = url.getProtocol().equalsIgnoreCase("file") ? SafePaths.get(url.getFile()).toFile() : SafePaths.get(offlineModeRootFolder, ungzippedPath).toFile();
 			FileInfo info = INFO_MAP.get(file);
 			if (info == null)
 			{
 				// Didn't already have info about this file, so return file info with
 				// partial information.
-				info = new FileInfo(url, new File(SafePaths.getString(offlineModeRootFolder, ungzippedPath)), YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0);
+				info = new FileInfo(url, file, YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0);
 			}
 			return info;
 		}
