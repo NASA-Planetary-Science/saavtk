@@ -22,11 +22,6 @@ import com.google.gson.stream.JsonWriter;
 
 abstract class IterableIO implements JsonSerializer<Iterable<?>>
 {
-	protected IterableIO()
-	{
-
-	}
-
 	/**
 	 * Internal utility class; just here so the unpack method can return all the
 	 * distinct pieces of information contained in the input JsonElement.
@@ -41,6 +36,11 @@ abstract class IterableIO implements JsonSerializer<Iterable<?>>
 			this.dataTypeInfo = dataTypeInfo;
 			this.jsonArray = jsonArray;
 		}
+	}
+
+	protected IterableIO()
+	{
+
 	}
 
 	private static final String ITERABLE_VALUE_TYPE = "valueType";
