@@ -13,7 +13,7 @@ import com.google.gson.JsonParseException;
 final class SortedSetIO extends IterableIO implements JsonDeserializer<SortedSet<?>>
 {
 	@Override
-	public SortedSet<?> deserialize(JsonElement jsonElement, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
+	public SortedSet<?> deserialize(JsonElement jsonElement, @SuppressWarnings("unused") Type typeOfT, JsonDeserializationContext context) throws JsonParseException
 	{
 		DeserializedJsonArray array = unpack(jsonElement);
 		DataTypeInfo dataInfo = array.dataTypeInfo;

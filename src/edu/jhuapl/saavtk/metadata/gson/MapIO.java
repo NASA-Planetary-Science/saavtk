@@ -32,7 +32,7 @@ final class MapIO implements JsonSerializer<Map<?, ?>>, JsonDeserializer<Map<?, 
 	private static final String MAP_VALUE = "value";
 
 	@Override
-	public JsonElement serialize(Map<?, ?> src, Type typeOfSrc, JsonSerializationContext context)
+	public JsonElement serialize(Map<?, ?> src, @SuppressWarnings("unused") Type typeOfSrc, JsonSerializationContext context)
 	{
 		JsonObject result = new JsonObject();
 
@@ -57,7 +57,6 @@ final class MapIO implements JsonSerializer<Map<?, ?>>, JsonDeserializer<Map<?, 
 
 		// Second pass: write the map entries to a JsonObject.
 		JsonObject dest = new JsonObject();
-		Type keyType = keyInfo.getType();
 		Type valueType = valueInfo.getType();
 
 		for (Entry<?, ?> entry : src.entrySet())
@@ -78,7 +77,7 @@ final class MapIO implements JsonSerializer<Map<?, ?>>, JsonDeserializer<Map<?, 
 	}
 
 	@Override
-	public Map<?, ?> deserialize(JsonElement jsonElement, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
+	public Map<?, ?> deserialize(JsonElement jsonElement, @SuppressWarnings("unused") Type typeOfT, JsonDeserializationContext context) throws JsonParseException
 	{
 		if (!jsonElement.isJsonObject())
 		{

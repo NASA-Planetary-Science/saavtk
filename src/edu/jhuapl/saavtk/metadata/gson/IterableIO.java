@@ -47,7 +47,7 @@ abstract class IterableIO implements JsonSerializer<Iterable<?>>
 	private static final String ITERABLE_VALUE = "value";
 
 	@Override
-	public JsonElement serialize(Iterable<?> src, Type typeOfSrc, JsonSerializationContext context)
+	public JsonElement serialize(Iterable<?> src, @SuppressWarnings("unused") Type typeOfSrc, JsonSerializationContext context)
 	{
 		JsonObject result = new JsonObject();
 

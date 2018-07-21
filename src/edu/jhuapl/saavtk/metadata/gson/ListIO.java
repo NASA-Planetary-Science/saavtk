@@ -13,7 +13,7 @@ import com.google.gson.JsonParseException;
 final class ListIO extends IterableIO implements JsonDeserializer<List<?>>
 {
 	@Override
-	public List<?> deserialize(JsonElement jsonElement, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
+	public List<?> deserialize(JsonElement jsonElement, @SuppressWarnings("unused") Type typeOfT, JsonDeserializationContext context) throws JsonParseException
 	{
 		DeserializedJsonArray array = unpack(jsonElement);
 		DataTypeInfo dataInfo = array.dataTypeInfo;

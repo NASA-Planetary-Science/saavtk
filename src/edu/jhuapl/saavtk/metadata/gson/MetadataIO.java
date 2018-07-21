@@ -19,8 +19,6 @@ import edu.jhuapl.saavtk.metadata.Version;
 
 final class MetadataIO implements JsonSerializer<Metadata>, JsonDeserializer<Metadata>
 {
-	private static final String STORED_AS_ELEMENTS_KEY = "Elements";
-
 	@Override
 	public JsonElement serialize(Metadata src, Type typeOfSrc, JsonSerializationContext context)
 	{
