@@ -1,9 +1,9 @@
 package edu.jhuapl.saavtk.metadata.gson;
 
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -12,12 +12,12 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 
-final class MapIO extends MapBaseIO implements JsonDeserializer<Map<?, ?>>
+final class SortedMapIO extends MapBaseIO implements JsonDeserializer<SortedMap<?, ?>>
 {
 	@Override
-	public Map<?, ?> deserialize(JsonElement jsonElement, @SuppressWarnings("unused") Type typeOfT, JsonDeserializationContext context) throws JsonParseException
+	public SortedMap<?, ?> deserialize(JsonElement jsonElement, @SuppressWarnings("unused") Type typeOfT, JsonDeserializationContext context) throws JsonParseException
 	{
-		Map<?, ?> result = new HashMap<>();
+		SortedMap<?, ?> result = new TreeMap<>();
 
 		DeserializedJsonObject object = unpack(jsonElement);
 		Type keyType = object.keyTypeInfo.getType();

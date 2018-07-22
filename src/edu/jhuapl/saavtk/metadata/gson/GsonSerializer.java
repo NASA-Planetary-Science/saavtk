@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -34,6 +36,7 @@ public class GsonSerializer implements Serializer
 {
 	private static final Version GSON_VERSION = Version.of(1, 0);
 	private static final ListIO LIST_IO = new ListIO();
+	private static final SortedMapIO SORTED_MAP_IO = new SortedMapIO();
 	private static final MapIO MAP_IO = new MapIO();
 	private static final SetIO SET_IO = new SetIO();
 	private static final SortedSetIO SORTED_SET_IO = new SortedSetIO();
@@ -173,6 +176,7 @@ public class GsonSerializer implements Serializer
 		builder.registerTypeAdapter(DataTypeInfo.SORTED_SET.getType(), SORTED_SET_IO);
 		builder.registerTypeAdapter(DataTypeInfo.SET.getType(), SET_IO);
 		builder.registerTypeAdapter(DataTypeInfo.LIST.getType(), LIST_IO);
+		builder.registerTypeAdapter(DataTypeInfo.SORTED_MAP.getType(), SORTED_MAP_IO);
 		builder.registerTypeAdapter(DataTypeInfo.MAP.getType(), MAP_IO);
 		builder.registerTypeAdapter(DataTypeInfo.METADATA.getType(), METADATA_IO);
 		builder.registerTypeAdapter(DataTypeInfo.VERSION.getType(), VERSION_IO);
@@ -280,6 +284,13 @@ public class GsonSerializer implements Serializer
 		byteShortMap.put((byte) 10, (short) 17);
 		Key<Map<Byte, Short>> byteShortMapKey = Key.of("byteShortMap");
 		state.put(byteShortMapKey, byteShortMap);
+
+		SortedMap<Byte, Short> byteSortedMap = new TreeMap<>();
+		byteSortedMap.put((byte) 1, null);
+		byteSortedMap.put((byte) 11, (short) 23);
+		byteSortedMap.put((byte) 10, (short) 17);
+		Key<SortedMap<Byte, Short>> byteSortedMapKey = Key.of("byteSortedMap");
+		state.put(byteSortedMapKey, byteSortedMap);
 
 		File file = new File("/Users/peachjm1/Downloads/MyState.sbmt");
 		serializer.register(testStateKey, manager);
