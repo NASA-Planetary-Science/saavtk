@@ -80,8 +80,10 @@ public class GsonSerializer implements Serializer
 			reader.beginArray();
 			while (reader.hasNext())
 			{
+				Key<Metadata> key = Key.of(GSON.fromJson(reader, DataTypeInfo.STRING.getType()));
 				GsonElement element = GSON.fromJson(reader, DataTypeInfo.ELEMENT.getType());
-				source.put(element.getKey(), element.getValue());
+				Object metadata = element.getValue();
+				source.put(key, (Metadata) metadata);
 			}
 			reader.endArray();
 		}
@@ -113,12 +115,13 @@ public class GsonSerializer implements Serializer
 				{
 					MetadataManager manager = managerCollection.getManager(key);
 					Metadata metadata = manager.store();
-					GsonElement element = GsonElement.of(key, metadata);
+					GsonElement element = GsonElement.of(metadata);
+
+					GSON.toJson(key.getId(), DataTypeInfo.STRING.getType(), jsonWriter);
 					GSON.toJson(element, DataTypeInfo.ELEMENT.getType(), jsonWriter);
 				}
 				jsonWriter.endArray();
 				jsonWriter.flush();
-				fileWriter.write("\n");
 			}
 		}
 	}
@@ -269,7 +272,6 @@ public class GsonSerializer implements Serializer
 		MetadataManager manager = new TestManager(state);
 
 		Key<List<List<String>>> listListStringKey = Key.of("listListString");
-		state.put(Key.of("Bennu / V3"), v3State);
 		state.put(Key.of("Current View"), v3);
 		state.put(Key.of("Tab Number"), new Integer(3));
 		state.put(Key.of("Current View2"), v3);
@@ -291,6 +293,8 @@ public class GsonSerializer implements Serializer
 		byteSortedMap.put((byte) 10, (short) 17);
 		Key<SortedMap<Byte, Short>> byteSortedMapKey = Key.of("byteSortedMap");
 		state.put(byteSortedMapKey, byteSortedMap);
+
+		state.put(Key.of("Bennu / V3"), v3State);
 
 		File file = new File("/Users/peachjm1/Downloads/MyState.sbmt");
 		serializer.register(testStateKey, manager);

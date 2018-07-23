@@ -1,9 +1,8 @@
 package edu.jhuapl.saavtk.metadata.gson;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.gson.JsonDeserializationContext;
@@ -13,8 +12,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-
-import edu.jhuapl.saavtk.metadata.Key;
 
 final class GsonElement
 {
@@ -41,9 +38,9 @@ final class GsonElement
 		return new ElementIO();
 	}
 
-	public static GsonElement of(Key<?> key, Object object)
+	public static GsonElement of(Object object)
 	{
-		return new GsonElement(key, object, DataTypeInfo.forObject(object));
+		return new GsonElement(object, DataTypeInfo.forObject(object));
 	}
 
 	private static GsonElement of(JsonElement element, JsonDeserializationContext context)
@@ -52,34 +49,25 @@ final class GsonElement
 		Preconditions.checkNotNull(context);
 		Preconditions.checkArgument(element.isJsonObject());
 
-		List<Entry<String, JsonElement>> entryList = new ArrayList<>(element.getAsJsonObject().entrySet());
+		JsonObject valueObject = element.getAsJsonObject();
+
+		Set<Entry<String, JsonElement>> entryList = valueObject.entrySet();
 		Preconditions.checkState(entryList.size() == 1);
 
-		Entry<String, JsonElement> entry = entryList.get(0);
-
-		Key<?> key = Key.of(entry.getKey());
-		JsonObject valueObject = entry.getValue().getAsJsonObject();
-
-		entryList = new ArrayList<>(valueObject.entrySet());
-		Preconditions.checkState(entryList.size() == 1);
-
-		entry = entryList.get(0);
+		Entry<String, JsonElement> entry = entryList.iterator().next();
 		DataTypeInfo objectInfo = DataTypeInfo.of(entry.getKey());
 
 		Object object = context.deserialize(entry.getValue(), objectInfo.getType());
 
-		return new GsonElement(key, object, objectInfo);
+		return new GsonElement(object, objectInfo);
 	}
 
-	private final Key<?> key;
 	private final Object object;
 	private final DataTypeInfo objectInfo;
 
-	private GsonElement(Key<?> key, Object object, DataTypeInfo objectInfo)
+	private GsonElement(Object object, DataTypeInfo objectInfo)
 	{
-		Preconditions.checkNotNull(key);
 		Preconditions.checkNotNull(objectInfo);
-		this.key = key;
 		this.object = object;
 		this.objectInfo = objectInfo;
 	}
@@ -87,28 +75,17 @@ final class GsonElement
 	public JsonElement toElement(JsonSerializationContext context)
 	{
 		JsonObject result = new JsonObject();
-
-		JsonObject valueObject = new JsonObject();
-		valueObject.add(objectInfo.getTypeId(), context.serialize(object, objectInfo.getType()));
-
-		result.add(key.getId(), valueObject);
+		result.add(objectInfo.getTypeId(), context.serialize(object, objectInfo.getType()));
 		return result;
-	}
-
-	public <T> Key<T> getKey()
-	{
-		@SuppressWarnings("unchecked")
-		Key<T> result = (Key<T>) key;
-		return result;
-	}
-
-	public Object getValue()
-	{
-		return object;
 	}
 
 	public DataTypeInfo getInfo()
 	{
 		return objectInfo;
+	}
+
+	public Object getValue()
+	{
+		return object;
 	}
 }

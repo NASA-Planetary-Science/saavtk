@@ -2,12 +2,14 @@ package edu.jhuapl.saavtk.metadata.gson;
 
 import java.lang.reflect.Type;
 import java.util.Iterator;
+import java.util.Map.Entry;
 
 import com.google.common.base.Preconditions;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
@@ -29,14 +31,14 @@ final class MetadataIO implements JsonSerializer<Metadata>, JsonDeserializer<Met
 		JsonArray array = new JsonArray();
 		array.add(context.serialize(src.getVersion(), DataTypeInfo.VERSION.getType()));
 
-		JsonArray valueArray = new JsonArray();
+		JsonObject jsonMetadata = new JsonObject();
 		for (Key<?> key : src.getKeys())
 		{
 			Object value = src.get(key);
-			valueArray.add(context.serialize(GsonElement.of(key, value), DataTypeInfo.ELEMENT.getType()));
+			jsonMetadata.add(key.getId(), context.serialize(GsonElement.of(value), DataTypeInfo.ELEMENT.getType()));
 		}
 
-		array.add(valueArray);
+		array.add(jsonMetadata);
 
 		return array;
 	}
@@ -67,11 +69,12 @@ final class MetadataIO implements JsonSerializer<Metadata>, JsonDeserializer<Met
 			throw new IllegalArgumentException();
 		}
 		jsonElement = iterator.next();
-		jsonArray = jsonElement.getAsJsonArray();
-		for (JsonElement arrayElement : jsonArray)
+		JsonObject jsonMetadata = jsonElement.getAsJsonObject();
+		for (Entry<String, JsonElement> entry : jsonMetadata.entrySet())
 		{
-			GsonElement element = context.deserialize(arrayElement, DataTypeInfo.ELEMENT.getType());
-			metadata.put(element.getKey(), element.getValue());
+			Key<Object> key = Key.of(entry.getKey());
+			GsonElement element = context.deserialize(entry.getValue(), DataTypeInfo.ELEMENT.getType());
+			metadata.put(key, element.getValue());
 		}
 		return metadata;
 	}
