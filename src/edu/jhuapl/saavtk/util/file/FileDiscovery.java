@@ -16,7 +16,7 @@ import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.ColoringDataManager;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.util.SafePaths;
-import edu.jhuapl.saavtk.util.file.DataObjectInfo.InfoElements;
+import edu.jhuapl.saavtk.util.file.DataObjectInfo.InfoRow;
 import edu.jhuapl.saavtk.util.file.TableInfo.ColumnInfo;
 
 public class FileDiscovery
@@ -136,7 +136,7 @@ public class FileDiscovery
 
 	protected String getMapName(DataObjectInfo objectInfo)
 	{
-		for (InfoElements info : objectInfo.getDescription().get())
+		for (InfoRow info : objectInfo.getDescription().get())
 		{
 			List<String> stringList = info.get();
 			if (MAP_NAME.equalsIgnoreCase(stringList.get(0)))

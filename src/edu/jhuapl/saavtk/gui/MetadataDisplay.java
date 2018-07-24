@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.util.file.DataFileInfo;
 import edu.jhuapl.saavtk.util.file.DataFileReader;
-import edu.jhuapl.saavtk.util.file.DataFileReader.IncorrectFileFormatException;
+import edu.jhuapl.saavtk.util.file.DataFileReader.FileFormatException;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo.Description;
 
@@ -24,7 +24,7 @@ public class MetadataDisplay
 			for (DataObjectInfo dataObjectInfo : fileInfo.getDataObjectInfo())
 			{
 				Description description = dataObjectInfo.getDescription();
-				ImmutableList<String> fields = description.getFields();
+				ImmutableList<String> fields = description.getColumnTitles();
 
 				// To pass to MetadataDisplayPanel, need to separate the first field,
 				// which is the name of the "key" of the metadata.
@@ -40,7 +40,7 @@ public class MetadataDisplay
 			}
 			return jTabbedPane;
 		}
-		catch (IncorrectFileFormatException e)
+		catch (FileFormatException e)
 		{
 			throw new IOException(e);
 		}
