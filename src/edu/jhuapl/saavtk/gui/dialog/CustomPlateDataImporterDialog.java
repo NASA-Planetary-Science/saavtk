@@ -18,13 +18,23 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
 
 import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
+import com.google.common.collect.Iterables;
 
 import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.util.file.DataFileReader;
+import edu.jhuapl.saavtk.util.file.DataObjectInfo;
+import edu.jhuapl.saavtk.util.file.DataObjectInfo.Description;
+import edu.jhuapl.saavtk.util.file.DataFileReader.IncorrectFileFormatException;
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
 import nom.tam.fits.FitsException;
@@ -38,6 +48,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 	private boolean isEditMode;
 	private static final String LEAVE_UNMODIFIED = "<leave unmodified or empty to use existing plate data>";
 	private String origColoringFile; // used in Edit mode only to store original filename
+	private ImmutableList<DataObjectInfo> dataObjectInfo;
 
 	/** Creates new form ShapeModelImporterDialog */
 	public CustomPlateDataImporterDialog(java.awt.Window parent, boolean isEditMode, int numCells)
@@ -103,16 +114,24 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			if (cellDataPath.contains(","))
 				return "Plate data path may not contain commas.";
 
-			if (cellDataPath.toLowerCase().endsWith(".fit") || cellDataPath.toLowerCase().endsWith(".fits"))
-				result = validateFitsFile(cellDataPath);
-			else
-				result = validateTxtFile(cellDataPath);
+			//if (cellDataPath.toLowerCase().endsWith(".fit") || cellDataPath.toLowerCase().endsWith(".fits"))
+			//	result = validateFitsFile(cellDataPath);
+			//else
+			//	result = validateTxtFile(cellDataPath);
 
 			// TODO redmine 1339. Start here: add a call here to a new method:
-			//
-			// private ImmutableList<String> getColumnTitlesCsv(String cellDataPath).
-			//
 			// Store result from that method in the JComboBox (see note in initComponents).
+			
+			 try
+			{
+				ImmutableList<String> columnTitles = getColumnTitlesCsv(cellDataPath);
+				System.out.println(columnTitles);
+			}
+			catch (IncorrectFileFormatException | IOException e)
+			{
+				return e.getMessage();
+			}
+			
 			if (result != null)
 				return result;
 		}
@@ -136,9 +155,23 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		return null;
 	}
 
+	private ImmutableList<String> getColumnTitlesCsv(String cellDataPath) throws IncorrectFileFormatException, IOException{
+		//ImmutableList.Builder<String> builder = ImmutableList.builder();
+		File file = new File(cellDataPath);
+
+		ImmutableList<String> dataObjectInfo = DataFileReader.of().readFileInfo(file).getDataObjectInfo().get(0).getDescription().getFields();
+		//for (int i = 0; i<dataObjectInfo.size(); i++) {
+		//	builder.add(dataObjectInfo.get(i));
+		//}
+		return dataObjectInfo;
+		
+		//return builder.build();
+		
+	}
+	
 	// TODO redmine 1339: eventually this method should be superseded by a method that returns the
 	// information from within the text file (e.g. "getColumnTitlesCsv").
-	private String validateTxtFile(String cellDataPath)
+	private String validateTxtFile(String cellDataPath) 
 	{
 		InputStream fs;
 		try
@@ -152,11 +185,11 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 		InputStreamReader isr = new InputStreamReader(fs);
 		BufferedReader in = new BufferedReader(isr);
-
+		
 		String line;
 		int lineCount = 0;
 		try
-		{
+		{	
 			while ((line = in.readLine()) != null)
 			{
 				// This check would need to be generalized to handle
@@ -231,7 +264,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 	 * Editor.
 	 */
 	// <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
-	private final void initComponents()
+	private final void initComponents() 
 	{
 		java.awt.GridBagConstraints gridBagConstraints;
 
@@ -246,6 +279,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		nameTextField = new javax.swing.JTextField();
 		unitsTextField = new javax.swing.JTextField();
 		hasNullsCheckBox = new javax.swing.JCheckBox();
+		
 
 		setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 		setMinimumSize(new java.awt.Dimension(600, 167));
@@ -301,7 +335,30 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		jPanel1.setLayout(new java.awt.GridBagLayout());
 
 		// TODO redmine 1339: add a JComboBox field that has the drop-down names of the columns.
-
+		
+		JLabel coloringLabel = new javax.swing.JLabel();
+		coloringLabel.setText("Plate Colorings");
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridwidth = 3;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+		getContentPane().add(coloringLabel, gridBagConstraints);
+		
+		String[] columnTitles = {"Slope", "Elevation", "Gravitational Accleration", "Gravitational Potential"};
+		JComboBox<String> comboBox = new JComboBox<>(columnTitles);
+		comboBox.setSelectedIndex(0);
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 1;
+		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridwidth = 3;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+		getContentPane().add(comboBox, gridBagConstraints);
+		
+		//JScrollPane scrollPane = new JScrollPane();
+		
 		cancelButton.setText("Cancel");
 		cancelButton.addActionListener(new java.awt.event.ActionListener() {
 			@Override
@@ -356,7 +413,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		hasNullsCheckBox.setToolTipText("If checked, then the smallest value in the file is assumed to represent invalid data and is not displayed on the shape model.");
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 0;
-		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridy = 4;
 		gridBagConstraints.gridwidth = 3;
 		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
 		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
@@ -407,5 +464,6 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 	private javax.swing.JLabel pathLabel2;
 	private javax.swing.JLabel unitsLabel;
 	private javax.swing.JTextField unitsTextField;
+	private javax.swing.JComboBox comboBox;
 	// End of variables declaration//GEN-END:variables
 }
