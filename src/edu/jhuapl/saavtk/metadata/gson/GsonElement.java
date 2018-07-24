@@ -33,11 +33,6 @@ final class GsonElement
 
 	}
 
-	public static ElementIO elementIO()
-	{
-		return new ElementIO();
-	}
-
 	public static GsonElement of(Object object)
 	{
 		return new GsonElement(object, DataTypeInfo.forObject(object));
