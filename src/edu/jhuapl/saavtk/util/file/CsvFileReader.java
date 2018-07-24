@@ -147,7 +147,7 @@ public class CsvFileReader extends DataFileReader
 			{
 				Double.parseDouble(columnName);
 			}
-			catch (NumberFormatException e)
+			catch (@SuppressWarnings("unused") NumberFormatException e)
 			{
 				firstLineAllNumbers = false;
 			}
