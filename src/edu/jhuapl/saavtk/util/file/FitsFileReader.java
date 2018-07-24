@@ -12,7 +12,7 @@ import com.google.common.collect.ImmutableList;
 import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.util.file.DataFileInfo.FileFormat;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo.Description;
-import edu.jhuapl.saavtk.util.file.DataObjectInfo.InfoElements;
+import edu.jhuapl.saavtk.util.file.DataObjectInfo.InfoRow;
 import edu.jhuapl.saavtk.util.file.TableInfo.ColumnInfo;
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
@@ -24,6 +24,14 @@ import nom.tam.util.Cursor;
 
 public final class FitsFileReader extends DataFileReader
 {
+	public static final FileFormat FITS_FORMAT = new FileFormat() {
+		@Override
+		public String toString()
+		{
+			return "FITS";
+		}
+	};
+
 	public static final Version VERSION = Version.of(0, 1);
 
 	// These are the fields from a FITS keyword other than the name of the keyword.
@@ -150,7 +158,7 @@ public final class FitsFileReader extends DataFileReader
 			DataObjectInfo hduInfo = readInfo(hdus[hduNum], hduNum);
 			builder.add(hduInfo);
 		}
-		return DataFileInfo.of(file, FileFormat.FITS, builder.build());
+		return DataFileInfo.of(file, FITS_FORMAT, builder.build());
 	}
 
 	private interface GettableAsDouble
@@ -246,6 +254,12 @@ public final class FitsFileReader extends DataFileReader
 					}
 
 					@Override
+					public String getAsString(int cellIndex)
+					{
+						return Double.toString(get(cellIndex));
+					}
+
+					@Override
 					public double get(int cellIndex)
 					{
 						return columns.get(cellIndex).get(index);
@@ -267,7 +281,7 @@ public final class FitsFileReader extends DataFileReader
 
 		// Put all the keywords in the data object info.
 		Cursor<String, HeaderCard> iterator = header.iterator();
-		ImmutableList.Builder<InfoElements> infoElementsBuilder = ImmutableList.builder();
+		ImmutableList.Builder<InfoRow> infoElementsBuilder = ImmutableList.builder();
 		while (iterator.hasNext())
 		{
 			HeaderCard card = iterator.next();
@@ -275,7 +289,7 @@ public final class FitsFileReader extends DataFileReader
 			keywordInfo.add(card.getKey());
 			keywordInfo.add(card.getValue());
 			keywordInfo.add(card.getComment());
-			infoElementsBuilder.add(InfoElements.of(keywordInfo));
+			infoElementsBuilder.add(InfoRow.of(keywordInfo));
 		}
 		Description description = Description.of(FITS_KEYWORD_FIELDS, infoElementsBuilder.build());
 

@@ -4,5 +4,7 @@ public interface Tuple
 {
 	int size();
 
-	double get(int cellIndex);
+	String getAsString(int cellIndex);
+
+	double get(int cellIndex) throws NumberFormatException;
 }

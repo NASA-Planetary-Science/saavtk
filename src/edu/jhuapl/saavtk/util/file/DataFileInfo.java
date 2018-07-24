@@ -6,13 +6,16 @@ import java.util.List;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+/**
+ * Class representing information about a data file as a collection of data
+ * information objects (images and/or tables).
+ */
 public class DataFileInfo
 {
-	public enum FileFormat
+	public interface FileFormat
 	{
-		CSV,
-		FITS,
-		;
+		@Override
+		public abstract String toString();
 	}
 
 	public static DataFileInfo of(File file, FileFormat format, List<? extends DataObjectInfo> dataObjectInfo)
@@ -39,6 +42,12 @@ public class DataFileInfo
 		return file;
 	}
 
+	/**
+	 * Get the list of data object information objects that describe the content of
+	 * this data file.
+	 * 
+	 * @return
+	 */
 	public ImmutableList<DataObjectInfo> getDataObjectInfo()
 	{
 		return dataObjectInfo;
