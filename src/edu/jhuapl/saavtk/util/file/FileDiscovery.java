@@ -24,62 +24,67 @@ public class FileDiscovery
 	private static final String MAP_NAME = "map_name";
 
 	private final File topDirectory;
-	private final File coloringDirectory;
-	private final File txtFile;
+	private final String coloringDirectory;
 	private final BasicColoringDataManager coloringDataManager;
+	private final File txtFile;
+	private final File metadataFile;
 
 	protected FileDiscovery(String[] args)
 	{
 		Preconditions.checkNotNull(args);
-		Preconditions.checkArgument(args.length > 3, "Too few arguments");
+		Preconditions.checkArgument(args.length > 2, "Too few arguments");
 
-		String dataId = args[0];
-
-		File topDirectory = new File(args[1]);
+		File topDirectory = new File(args[0]);
 		Preconditions.checkArgument(topDirectory.isDirectory(), "Not a directory " + topDirectory);
 
-		File coloringDirectory = new File(args[2]);
-		Preconditions.checkArgument(coloringDirectory.isDirectory(), "Not a directory " + coloringDirectory);
+		String coloringDirectory = SafePaths.getString(args[1]).replace("\\", "/");
 
-		File txtFile = new File(args[3]);
+		String dataId = args[2];
+
+		File txtFile = SafePaths.get(topDirectory.getPath(), args.length > 3 ? args[3] : "coloringlist.txt").toFile();
 		Preconditions.checkArgument(txtFile.isFile(), "Not a file " + txtFile);
+
+		File metadataFile = SafePaths.get(topDirectory.getPath(), args.length > 4 ? args[4] : "coloring.smd").toFile();
 
 		this.topDirectory = topDirectory;
 		this.coloringDirectory = coloringDirectory;
 		this.coloringDataManager = BasicColoringDataManager.of(dataId);
 		this.txtFile = txtFile;
+		this.metadataFile = metadataFile;
 	}
 
 	public void run() throws IOException
 	{
-		FileReader fileReader = new FileReader(txtFile);
-		BufferedReader bufferedReader = new BufferedReader(fileReader);
-		String line;
-
-		while ((line = bufferedReader.readLine()) != null)
+		try (BufferedReader bufferedReader = new BufferedReader(new FileReader(txtFile)))
 		{
-			File colorFile = new File(coloringDirectory + "//" + line);
+			int numberColoringFiles = 0;
+			String line;
 
-			if (colorFile.isFile())
+			while ((line = bufferedReader.readLine()) != null)
 			{
-				try
+				File colorFile = SafePaths.get(topDirectory.getAbsolutePath(), line).toFile();
+
+				if (colorFile.isFile())
 				{
-					DataFileInfo fileInfo = DataFileReader.of().readFileInfo(colorFile);
-					System.out.println(fileInfo);
-					System.out.flush();
-					extractColorings(fileInfo);
-				}
-				catch (Exception e)
-				{
-					reportThrowable(e);
-					System.err.println("Skipping file " + colorFile);
+					try
+					{
+						DataFileInfo fileInfo = DataFileReader.of().readFileInfo(colorFile);
+						System.out.println(fileInfo);
+						System.out.flush();
+						extractColorings(fileInfo);
+						++numberColoringFiles;
+					}
+					catch (Exception e)
+					{
+						reportThrowable(e);
+						System.err.println("Skipping file " + colorFile);
+					}
 				}
 			}
+
+			Serializers.serialize("Coloring Metadata", coloringDataManager.getMetadataManager(), metadataFile);
+			System.out.println("Wrote metadata for " + numberColoringFiles + " file(s) to the coloring metadata file " + metadataFile);
 		}
-
-		bufferedReader.close();
-
-		Serializers.serialize("Coloring Metadata", coloringDataManager.getMetadataManager(), SafePaths.get(coloringDirectory.getPath(), "coloring.smd").toFile());
 	}
 
 	public ColoringDataManager getColoringDataManager()
@@ -160,7 +165,7 @@ public class FileDiscovery
 
 			String units = getUnits(name, tableInfo, columnNumber);
 
-			file = new File(file.getAbsolutePath().replace(topDirectory.getAbsolutePath(), ""));
+			file = new File(file.getAbsolutePath().replace(topDirectory.getAbsolutePath(), coloringDirectory));
 			coloringDataManager.add(ColoringData.of(name, file.toString(), ImmutableList.of(name), units, tableInfo.getNumberRows(), false));
 		}
 		catch (Exception e)
@@ -195,7 +200,7 @@ public class FileDiscovery
 			{
 				units = "";
 			}
-			file = new File(file.getAbsolutePath().replace(topDirectory.getAbsolutePath() + File.separator, ""));
+			file = new File(file.getAbsolutePath().replace(topDirectory.getAbsolutePath(), coloringDirectory));
 			coloringDataManager.add(ColoringData.of(name, file.toString(), ImmutableList.of(name + " X", name + " Y", name + " Z"), units, tableInfo.getNumberRows(), false));
 		}
 		catch (Exception e)
@@ -345,7 +350,7 @@ public class FileDiscovery
 
 	private static void usage()
 	{
-		System.err.println("Usage:\tdiscovery unique-model-id model-top-directory-name coloring-file-directory-name");
+		System.err.println("Usage:\tdiscovery full-path-to-coloring-directory hierarchical-coloring-path unique-model-id [ coloring-list-file-name ] [ coloring-metadata-file-name ]");
 	}
 
 	public static void main(String[] args)
