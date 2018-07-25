@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
@@ -77,15 +78,11 @@ public class GsonSerializer implements Serializer
 		SettableMetadata source = SettableMetadata.of(Version.of(0, 0));
 		try (JsonReader reader = GSON.newJsonReader(new FileReader(file)))
 		{
-			reader.beginArray();
-			while (reader.hasNext())
+			Map<String, Metadata> metadataMap = GSON.fromJson(reader, DataTypeInfo.MAP.getType());
+			for (Entry<String, Metadata> entry : metadataMap.entrySet())
 			{
-				Key<Metadata> key = Key.of(GSON.fromJson(reader, DataTypeInfo.STRING.getType()));
-				GsonElement element = GSON.fromJson(reader, DataTypeInfo.ELEMENT.getType());
-				Object metadata = element.getValue();
-				source.put(key, (Metadata) metadata);
+				source.put(Key.of(entry.getKey()), entry.getValue());
 			}
-			reader.endArray();
 		}
 		catch (Exception e)
 		{
@@ -110,18 +107,14 @@ public class GsonSerializer implements Serializer
 		{
 			try (JsonWriter jsonWriter = GSON.newJsonWriter(fileWriter))
 			{
-				jsonWriter.beginArray();
+				Map<String, Metadata> metadataMap = new HashMap<>();
 				for (Key<? extends Metadata> key : managerCollection.getKeys())
 				{
 					MetadataManager manager = managerCollection.getManager(key);
 					Metadata metadata = manager.store();
-					GsonElement element = GsonElement.of(metadata);
-
-					GSON.toJson(key.getId(), DataTypeInfo.STRING.getType(), jsonWriter);
-					GSON.toJson(element, DataTypeInfo.ELEMENT.getType(), jsonWriter);
+					metadataMap.put(key.getId(), metadata);
 				}
-				jsonWriter.endArray();
-				jsonWriter.flush();
+				GSON.toJson(metadataMap, DataTypeInfo.MAP.getType(), jsonWriter);
 			}
 		}
 	}
@@ -229,7 +222,8 @@ public class GsonSerializer implements Serializer
 	{
 		GsonSerializer serializer = new GsonSerializer();
 
-		String v3 = "Bennu / V3";
+		final String v3 = "Bennu / V3";
+		final Key<SettableMetadata> testV3StateKey = Key.of(v3);
 		SettableMetadata v3State = SettableMetadata.of(Version.of(3, 1));
 
 		v3State.put(Key.of("tab"), "1");
@@ -270,6 +264,7 @@ public class GsonSerializer implements Serializer
 		final Key<SettableMetadata> testStateKey = Key.of("testState");
 		final SettableMetadata state = SettableMetadata.of(GSON_VERSION);
 		MetadataManager manager = new TestManager(state);
+		MetadataManager manager2 = new TestManager(v3State.copy());
 
 		Key<List<List<String>>> listListStringKey = Key.of("listListString");
 		state.put(Key.of("Current View"), v3);
@@ -294,28 +289,33 @@ public class GsonSerializer implements Serializer
 		Key<SortedMap<Byte, Short>> byteSortedMapKey = Key.of("byteSortedMap");
 		state.put(byteSortedMapKey, byteSortedMap);
 
-		state.put(Key.of("Bennu / V3"), v3State);
+		state.put(testV3StateKey, v3State);
 
 		File file = new File("/Users/peachjm1/Downloads/MyState.sbmt");
 		serializer.register(testStateKey, manager);
+		serializer.register(testV3StateKey, manager2);
 		serializer.save(file);
 		System.out.println("Original state is: " + state);
 
 		SettableMetadata state2 = SettableMetadata.of(GSON_VERSION);
+		SettableMetadata v3State2 = SettableMetadata.of(GSON_VERSION);
+
 		serializer = GsonSerializer.of();
 		manager = new TestManager(state2);
+		manager2 = new TestManager(v3State2);
+		// Register in reverse order -- should not matter.
+		serializer.register(testV3StateKey, manager2);
 		serializer.register(testStateKey, manager);
 		serializer.load(file);
+
 		System.out.println("Reloaded state is: " + state2);
-		if (state.equals(state2))
-		{
-			System.out.println("States were found equal");
-		}
-		else
-		{
-			System.err.println("States were not found equal");
-		}
-		SettableMetadata v3State2 = state2.get(Key.of("Bennu / V3"));
+		System.out.println("States were" + (state.equals(state2) ? " " : " not ") + "found equal");
+
+		System.out.println("Reloaded v3State is: " + v3State2);
+		System.out.println("States were" + (v3State.equals(v3State2) ? " " : " not ") + "found equal");
+
+		// Test some further unpacking.
+		v3State2 = state2.get(testV3StateKey);
 		Long longNull = v3State2.get(Key.of("longNull"));
 		System.out.println("longNull is " + longNull);
 
