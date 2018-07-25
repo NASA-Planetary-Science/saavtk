@@ -2142,7 +2142,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		{
 			ImmutableList<String> names = coloringDataManager.getNames();
 			ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
-			if (names.size() > coloringIndex && !resolutions.isEmpty())
+			if (names.size() > coloringIndex && resolutions.size() > resolutionLevel)
 			{
 				String name = names.get(coloringIndex);
 				int numberElements = resolutions.get(resolutionLevel);
@@ -2154,6 +2154,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	private ColoringData getColoringData(int coloringIndex)
 	{
+		if (!isColoringAvailable(coloringIndex))
+		{
+			throw new RuntimeException("Coloring number " + coloringIndex + " is not available for resolution level " + resolutionLevel);
+		}
 		String name = coloringDataManager.getNames().get(coloringIndex);
 		int numberElements = coloringDataManager.getResolutions().get(resolutionLevel);
 		return coloringDataManager.get(name, numberElements);
@@ -2162,7 +2166,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	private ImmutableList<ColoringData> getAllColoringDataForThisResolution()
 	{
 		ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
-		return resolutions.isEmpty() ? ImmutableList.of() : coloringDataManager.get(resolutions.get(resolutionLevel));
+		return resolutions.size() > resolutionLevel ? coloringDataManager.get(resolutions.get(resolutionLevel)) : ImmutableList.of();
 	}
 
 	private void paintBody() throws IOException
@@ -2592,6 +2596,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	{
 		try
 		{
+			ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
+			if (resolutions.size() <= resolutionLevel)
+			{
+				throw new RuntimeException("No colorings available at resolution level " + resolutionLevel);
+			}
 			ColoringData gravColoring = coloringDataManager.get(GravPotStr, coloringDataManager.getResolutions().get(resolutionLevel));
 			gravColoring.load();
 			vtkFloatArray floatArray = gravColoring.getData();
