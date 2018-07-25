@@ -68,7 +68,7 @@ public class Configuration
 	//            rootURL = rootURLProperty;
 	//    }
 
-	public static void setupPasswordAuthentication(final URL restrictedAccessRoot, final String restrictedFileName, final Iterable<Path> passwordFilesToTry) throws IOException
+	public static void setupPasswordAuthentication(final URL restrictedAccessRoot, final String restrictedFileName, final Iterable<Path> passwordFilesToTry)
 	{
 		if (restrictedAccessRoot == null || restrictedFileName == null || passwordFilesToTry == null)
 		{
@@ -147,7 +147,7 @@ public class Configuration
 		Configuration.userPasswordAccepted = userPasswordAccepted;
 	}
 
-	private static boolean promptUserForPassword(final URL restrictedAccessUrl, final String restrictedFileName, final Path passwordFile, final boolean updateMode) throws IOException
+	private static boolean promptUserForPassword(final URL restrictedAccessUrl, final String restrictedFileName, final Path passwordFile, final boolean updateMode)
 	{
 		JPanel mainPanel = new JPanel();
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
@@ -207,17 +207,25 @@ public class Configuration
 					}
 					validPasswordEntered = true;
 				}
-				if (rememberPassword)
+				try
 				{
-					writePasswordFile(passwordFile, name, password);
+					if (rememberPassword)
+					{
+						writePasswordFile(passwordFile, name, password);
+					}
+					else
+					{
+						deleteFile(passwordFile);
+					}
+					if (updateMode)
+					{
+						JOptionPane.showMessageDialog(null, "You must restart the tool for this change to take effect.", "Password changes saved", JOptionPane.INFORMATION_MESSAGE);
+					}
 				}
-				else
+				catch (IOException e)
 				{
-					deleteFile(passwordFile);
-				}
-				if (updateMode)
-				{
-					JOptionPane.showMessageDialog(null, "You must restart the tool for this change to take effect.", "Password changes saved", JOptionPane.INFORMATION_MESSAGE);
+					e.printStackTrace();
+					JOptionPane.showMessageDialog(null, "Unable to update password. See console for more details.", "Failed to save password", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		}
