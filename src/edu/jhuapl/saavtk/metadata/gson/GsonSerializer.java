@@ -35,7 +35,7 @@ import edu.jhuapl.saavtk.metadata.gson.GsonElement.ElementIO;
 
 public class GsonSerializer implements Serializer
 {
-	private static final Version GSON_VERSION = Version.of(1, 0);
+	private static final Version SERIALIZER_VERSION = Version.of(1, 0);
 	private static final ListIO LIST_IO = new ListIO();
 	private static final SortedMapIO SORTED_MAP_IO = new SortedMapIO();
 	private static final MapIO MAP_IO = new MapIO();
@@ -59,6 +59,12 @@ public class GsonSerializer implements Serializer
 	}
 
 	@Override
+	public Version getVersion()
+	{
+		return SERIALIZER_VERSION;
+	}
+
+	@Override
 	public void register(Key<? extends Metadata> key, MetadataManager manager)
 	{
 		managerCollection.add(key, manager);
@@ -78,6 +84,19 @@ public class GsonSerializer implements Serializer
 		SettableMetadata source = SettableMetadata.of(Version.of(0, 0));
 		try (JsonReader reader = GSON.newJsonReader(new FileReader(file)))
 		{
+			Version fileVersion = null;
+			try
+			{
+				fileVersion = GSON.fromJson(reader, DataTypeInfo.VERSION.getType());
+			}
+			catch (Exception e)
+			{
+				throw new IOException("Metadata reader version " + SERIALIZER_VERSION + " cannot read this metadata format", e);
+			}
+			if (!SERIALIZER_VERSION.equals(fileVersion))
+			{
+				throw new IOException("Metadata reader version " + SERIALIZER_VERSION + " cannot read metadata format version " + fileVersion);
+			}
 			Map<String, Metadata> metadataMap = GSON.fromJson(reader, DataTypeInfo.MAP.getType());
 			for (Entry<String, Metadata> entry : metadataMap.entrySet())
 			{
@@ -114,7 +133,12 @@ public class GsonSerializer implements Serializer
 					Metadata metadata = manager.store();
 					metadataMap.put(key.getId(), metadata);
 				}
+				GSON.toJson(SERIALIZER_VERSION, DataTypeInfo.VERSION.getType(), jsonWriter);
+				jsonWriter.flush();
+				fileWriter.write('\n');
 				GSON.toJson(metadataMap, DataTypeInfo.MAP.getType(), jsonWriter);
+				jsonWriter.flush();
+				fileWriter.write('\n');
 			}
 		}
 	}
@@ -221,6 +245,7 @@ public class GsonSerializer implements Serializer
 	public static void main(String[] args) throws IOException
 	{
 		GsonSerializer serializer = new GsonSerializer();
+		final Version testMetadataVersion = Version.of(1, 0);
 
 		final String v3 = "Bennu / V3";
 		final Key<SettableMetadata> testV3StateKey = Key.of(v3);
@@ -262,7 +287,7 @@ public class GsonSerializer implements Serializer
 		listListString.add(stringList);
 
 		final Key<SettableMetadata> testStateKey = Key.of("testState");
-		final SettableMetadata state = SettableMetadata.of(GSON_VERSION);
+		final SettableMetadata state = SettableMetadata.of(testMetadataVersion);
 		MetadataManager manager = new TestManager(state);
 		MetadataManager manager2 = new TestManager(v3State.copy());
 
@@ -297,8 +322,8 @@ public class GsonSerializer implements Serializer
 		serializer.save(file);
 		System.out.println("Original state is: " + state);
 
-		SettableMetadata state2 = SettableMetadata.of(GSON_VERSION);
-		SettableMetadata v3State2 = SettableMetadata.of(GSON_VERSION);
+		SettableMetadata state2 = SettableMetadata.of(testMetadataVersion);
+		SettableMetadata v3State2 = SettableMetadata.of(testMetadataVersion);
 
 		serializer = GsonSerializer.of();
 		manager = new TestManager(state2);

@@ -6,6 +6,13 @@ import java.io.IOException;
 public interface Serializer
 {
 	/**
+	 * Return the version of the serializer/stored file format itself.
+	 * 
+	 * @return the version.
+	 */
+	Version getVersion();
+
+	/**
 	 * Register the provided manager to manage Metadata objects associated with the
 	 * provided key.
 	 * 

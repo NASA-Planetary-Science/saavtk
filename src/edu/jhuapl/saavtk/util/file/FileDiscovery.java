@@ -79,7 +79,8 @@ public class FileDiscovery
 
 		bufferedReader.close();
 
-		Serializers.serialize("Coloring Metadata", coloringDataManager.getMetadataManager(), SafePaths.get(coloringDirectory.getPath(), "coloring.smd").toFile());
+		String metadataFileName = BasicColoringDataManager.getMetadataFileName(Serializers.of().getVersion());
+		Serializers.serialize("Coloring Metadata", coloringDataManager.getMetadataManager(), SafePaths.get(coloringDirectory.getPath(), metadataFileName).toFile());
 	}
 
 	public ColoringDataManager getColoringDataManager()
