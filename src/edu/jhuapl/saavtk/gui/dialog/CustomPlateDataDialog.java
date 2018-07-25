@@ -68,11 +68,11 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 	private final void initializeList(DefaultListModel<ColoringData> model)
 	{
+		int resolution = modelManager.getPolyhedralModel().getModelResolution();
 		ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
-		if (!resolutions.isEmpty())
+		if (resolutions.size() > resolution)
 		{
-			int resolution = modelManager.getPolyhedralModel().getModelResolution();
-			int numberElements = coloringDataManager.getResolutions().get(resolution);
+			int numberElements = resolutions.get(resolution);
 			for (ColoringData data : coloringDataManager.get(numberElements))
 			{
 				model.addElement(data);
@@ -103,7 +103,8 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 		// We need to make sure to save out data from other resolutions without modification.
 		int resolutionLevel = modelManager.getPolyhedralModel().getModelResolution();
-		if (configMap.containsKey(PolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(PolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(PolyhedralModel.CELL_DATA_UNITS) && configMap.containsKey(PolyhedralModel.CELL_DATA_HAS_NULLS) && configMap.containsKey(PolyhedralModel.CELL_DATA_RESOLUTION_LEVEL))
+		if (configMap.containsKey(PolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(PolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(PolyhedralModel.CELL_DATA_UNITS) && configMap.containsKey(PolyhedralModel.CELL_DATA_HAS_NULLS)
+				&& configMap.containsKey(PolyhedralModel.CELL_DATA_RESOLUTION_LEVEL))
 		{
 			String[] cellDataFilenamesArr = configMap.get(PolyhedralModel.CELL_DATA_FILENAMES).split(",", -1);
 			String[] cellDataNamesArr = configMap.get(PolyhedralModel.CELL_DATA_NAMES).split(",", -1);

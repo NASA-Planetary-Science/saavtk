@@ -628,11 +628,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
 		ColoringDataManager coloringDataManager = smallBodyModel.getColoringDataManager();
 		ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
-		if (resolutions.isEmpty())
-		{
-			return;
-		}
-		int numberElements = resolutions.get(newResolutionLevel);
+
+		int numberElements = resolutions.size() > newResolutionLevel ? resolutions.get(newResolutionLevel) : -1;
 
 		updateColoringComboBox(coloringComboBox, coloringDataManager, numberElements);
 		updateColoringComboBox(customColorRedComboBox, coloringDataManager, numberElements);
@@ -650,7 +647,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		for (String name : coloringDataManager.getNames())
 		{
 			box.addItem(name);
-			if (coloringDataManager.has(name, numberElements))
+			if (numberElements > 0 && coloringDataManager.has(name, numberElements))
 			{
 				if (name.equals(previousSelection))
 				{
@@ -673,7 +670,13 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
 		// We add a superscripted space at end of first 2 lines and last 6 lines so that spacing between all lines is the same.
 		String text =
-				"<html>Statistics:<br>" + "&nbsp;&nbsp;&nbsp;Number of Plates: " + smallBodyModel.getSmallBodyPolyData().GetNumberOfCells() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Number of Vertices: " + smallBodyModel.getSmallBodyPolyData().GetNumberOfPoints() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Surface Area: " + String.format("%.7g", smallBodyModel.getSurfaceArea()) + " km<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Volume: " + String.format("%.7g", smallBodyModel.getVolume()) + " km<sup>3</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Average: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMeanCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Minimum: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMinCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Maximum: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMaxCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Extent:<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;X: [" + String.format("%.7g, %.7g", bb.xmin, bb.xmax) + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Y: [" + String.format("%.7g, %.7g", bb.ymin, bb.ymax) + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Z: [" + String.format("%.7g, %.7g", bb.zmin, bb.zmax) + "] km<sup>&nbsp;</sup><br>";
+				"<html>Statistics:<br>" + "&nbsp;&nbsp;&nbsp;Number of Plates: " + smallBodyModel.getSmallBodyPolyData().GetNumberOfCells() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Number of Vertices: "
+						+ smallBodyModel.getSmallBodyPolyData().GetNumberOfPoints() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Surface Area: " + String.format("%.7g", smallBodyModel.getSurfaceArea()) + " km<sup>2</sup><br>"
+						+ "&nbsp;&nbsp;&nbsp;Volume: " + String.format("%.7g", smallBodyModel.getVolume()) + " km<sup>3</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Average: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMeanCellArea())
+						+ " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Minimum: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMinCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Maximum: "
+						+ String.format("%.7g", 1.0e6 * smallBodyModel.getMaxCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Extent:<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;X: [" + String.format("%.7g, %.7g", bb.xmin, bb.xmax)
+						+ "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Y: [" + String.format("%.7g, %.7g", bb.ymin, bb.ymax) + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Z: ["
+						+ String.format("%.7g, %.7g", bb.zmin, bb.zmax) + "] km<sup>&nbsp;</sup><br>";
 
 		// There's some weird thing going one where changing the text of the label causes
 		// the scoll bar of the panel to scroll all the way down. Therefore, reset it to

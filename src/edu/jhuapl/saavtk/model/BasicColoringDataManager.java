@@ -30,6 +30,19 @@ public class BasicColoringDataManager implements ColoringDataManager
 		return new BasicColoringDataManager(dataId, coloringData);
 	}
 
+	/**
+	 * Return the default coloring metadata file name for the provided version of
+	 * the serializer.
+	 * 
+	 * @param serializerVersion the version of the serializer that will be used to
+	 *            write and read the coloring metadata.
+	 * @return the file name
+	 */
+	public static String getMetadataFileName(Version serializerVersion)
+	{
+		return "coloring-" + serializerVersion + ".smd";
+	}
+
 	private final String dataId;
 	private final List<String> names;
 	private final SortedSet<Integer> resolutions;
