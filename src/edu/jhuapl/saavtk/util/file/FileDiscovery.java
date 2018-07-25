@@ -44,7 +44,8 @@ public class FileDiscovery
 		File txtFile = SafePaths.get(topDirectory.getPath(), args.length > 3 ? args[3] : "coloringlist.txt").toFile();
 		Preconditions.checkArgument(txtFile.isFile(), "Not a file " + txtFile);
 
-		File metadataFile = SafePaths.get(topDirectory.getPath(), args.length > 4 ? args[4] : "coloring.smd").toFile();
+		String defaultColoringMetadataFileName = BasicColoringDataManager.getMetadataFileName(Serializers.of().getVersion());
+		File metadataFile = SafePaths.get(topDirectory.getPath(), args.length > 4 ? args[4] : defaultColoringMetadataFileName).toFile();
 
 		this.topDirectory = topDirectory;
 		this.coloringDirectory = coloringDirectory;
