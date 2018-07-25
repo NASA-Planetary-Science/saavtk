@@ -19,7 +19,7 @@ import edu.jhuapl.saavtk.util.SafePaths;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo.InfoElements;
 import edu.jhuapl.saavtk.util.file.TableInfo.ColumnInfo;
 
-public class FileDiscovery
+public class DiscoverPlateColorings
 {
 	private static final String MAP_NAME = "map_name";
 
@@ -29,7 +29,7 @@ public class FileDiscovery
 	private final File txtFile;
 	private final File metadataFile;
 
-	protected FileDiscovery(String[] args)
+	protected DiscoverPlateColorings(String[] args)
 	{
 		Preconditions.checkNotNull(args);
 		Preconditions.checkArgument(args.length > 2, "Too few arguments");
@@ -358,7 +358,7 @@ public class FileDiscovery
 	{
 		try
 		{
-			FileDiscovery discovery = new FileDiscovery(args);
+			DiscoverPlateColorings discovery = new DiscoverPlateColorings(args);
 			discovery.run();
 			System.out.println("Done");
 		}
