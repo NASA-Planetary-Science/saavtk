@@ -47,6 +47,7 @@ public class Configuration
 	static private String cacheVersion = "";
 	static private boolean useFileCache = true;
 	static private String mapMaperDir = null;
+	static private String databaseSuffix = "";
 
 	// Flag indicating if this version of the tool is APL in-house only ("private")
 	static private boolean APLVersion = false;
@@ -416,6 +417,16 @@ public class Configuration
 	static public boolean isWindows()
 	{
 		return System.getProperty("os.name").toLowerCase().startsWith("windows");
+	}
+	
+	static public void setDatabaseSuffix(String suffix)
+	{
+	    databaseSuffix = suffix;
+	}
+	
+	static public String getDatabaseSuffix()
+	{
+	    return databaseSuffix;
 	}
 
 	/**
