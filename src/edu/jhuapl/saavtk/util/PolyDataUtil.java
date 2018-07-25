@@ -15,12 +15,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
@@ -57,7 +53,6 @@ import vtk.vtkPolyDataWriter;
 import vtk.vtkRegularPolygonSource;
 import vtk.vtkSTLReader;
 import vtk.vtkSTLWriter;
-import vtk.vtkSphere;
 import vtk.vtkTransform;
 import vtk.vtkTransformPolyDataFilter;
 import vtk.vtkTriangle;
@@ -650,56 +645,47 @@ public class PolyDataUtil
 
 		double[] normal = getPolyDataNormalAtPoint(center, polyData, pointLocator);
 
-/*		vtkIdList pids=new vtkIdList();
-		pointLocator.FindClosestNPoints(256, center, pids);
-		Set<Integer> cellIds=Sets.newHashSet();
-		for (int i=0; i<pids.GetNumberOfIds(); i++)
-		{
-		      vtkIdList cids=new vtkIdList();
+		/*
+		 * vtkIdList pids=new vtkIdList(); pointLocator.FindClosestNPoints(256, center,
+		 * pids); Set<Integer> cellIds=Sets.newHashSet(); for (int i=0;
+		 * i<pids.GetNumberOfIds(); i++) { vtkIdList cids=new vtkIdList();
+		 * 
+		 * polyData.GetPointCells(i, cids); for (int j=0; j<cids.GetNumberOfIds(); j++)
+		 * cellIds.add(cids.GetId(j));
+		 * 
+		 * }
+		 */
 
-		    polyData.GetPointCells(i, cids);
-		    for (int j=0; j<cids.GetNumberOfIds(); j++)
-		        cellIds.add(cids.GetId(j));
-		    
-		}*/
-		
-		
 		// If the number of points are too small, then vtkExtractPolyDataGeometry
 		// as used here might fail, so skip this part (which is just an optimization
 		// not really needed when the points are few) in this case.
-	/*	if (polyData.GetNumberOfPoints() >= 20000)
-		{
-			// Reduce the size of the polydata we need to process by only
-			// considering cells within 1.2 times the radius. We make sure,
-			// however, that if the radius is below a threshold to not
-			// go below it. The threshold is chosen to be 0.2 for Eros,
-			// which is equal to the bounding box diagonal length divided
-			// by about 193. For other bodies it will be different, depending on
-			// the diagonal length.
-
-			BoundingBox boundingBox = new BoundingBox(polyData.GetBounds());
-			double minRadius = boundingBox.getDiagonalLength() / 193.30280166816735;
-			
-			
-			
-			vtkSphere sphere = new vtkSphere();
-			d.add(sphere);
-			sphere.SetCenter(center);
-			sphere.SetRadius(semiMajorAxis >= minRadius ? 1.2 * semiMajorAxis : 1.2 * minRadius);
-
-			vtkExtractPolyDataGeometry extract = new vtkExtractPolyDataGeometry();
-			d.add(extract);
-			extract.SetImplicitFunction(sphere);
-			extract.SetExtractInside(1);
-			extract.SetExtractBoundaryCells(1);
-			extract.SetInputData(polyData);
-			extract.Update();
-			polyData = extract.GetOutput();
-			d.add(polyData);
-			
-			
-			System.out.println(Arrays.toString(center)+" "+polyData.GetNumberOfCells());
-		}*/
+		/*
+		 * if (polyData.GetNumberOfPoints() >= 20000) { // Reduce the size of the
+		 * polydata we need to process by only // considering cells within 1.2 times the
+		 * radius. We make sure, // however, that if the radius is below a threshold to
+		 * not // go below it. The threshold is chosen to be 0.2 for Eros, // which is
+		 * equal to the bounding box diagonal length divided // by about 193. For other
+		 * bodies it will be different, depending on // the diagonal length.
+		 * 
+		 * BoundingBox boundingBox = new BoundingBox(polyData.GetBounds()); double
+		 * minRadius = boundingBox.getDiagonalLength() / 193.30280166816735;
+		 * 
+		 * 
+		 * 
+		 * vtkSphere sphere = new vtkSphere(); d.add(sphere); sphere.SetCenter(center);
+		 * sphere.SetRadius(semiMajorAxis >= minRadius ? 1.2 * semiMajorAxis : 1.2 *
+		 * minRadius);
+		 * 
+		 * vtkExtractPolyDataGeometry extract = new vtkExtractPolyDataGeometry();
+		 * d.add(extract); extract.SetImplicitFunction(sphere);
+		 * extract.SetExtractInside(1); extract.SetExtractBoundaryCells(1);
+		 * extract.SetInputData(polyData); extract.Update(); polyData =
+		 * extract.GetOutput(); d.add(polyData);
+		 * 
+		 * 
+		 * System.out.println(Arrays.toString(center)+" "+polyData.GetNumberOfCells());
+		 * }
+		 */
 
 		vtkRegularPolygonSource polygonSource = new vtkRegularPolygonSource();
 		d.add(polygonSource);
@@ -3295,8 +3281,7 @@ public class PolyDataUtil
 		}
 		else
 		{
-			System.out.println("Error: Unrecognized extension in file name " + filename);
-			return null;
+			throw new RuntimeException("Error: Unrecognized extension in file name " + filename);
 		}
 
 		addPointNormalsToShapeModel(shapeModel);
