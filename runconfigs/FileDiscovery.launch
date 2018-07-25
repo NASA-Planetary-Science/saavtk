@@ -13,7 +13,7 @@
 </listAttribute>
 <booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_START_ON_FIRST_THREAD" value="true"/>
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="edu.jhuapl.saavtk.util.file.FileDiscovery"/>
-<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="OREX\ Simulated\ (V4)/101955\ Bennu   /Users/peachjm1/jhuapl/dev/sbmt/redmine-1310  /Users/peachjm1/jhuapl/dev/sbmt/redmine-1310/ryugu/jaxa-001/coloring /Users/peachjm1/jhuapl/dev/sbmt/redmine-1310/ryugu/jaxa-001/coloring/coloringlist.txt"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="/Users/peachjm1/jhuapl/dev/sbmt/redmine-1354/ryugu/nasa-002/coloring    ryugu/nasa-002/coloring    NASA-002/162173\ Ryugu"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="saavtk"/>
 <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Xmx9g"/>
 </launchConfiguration>
