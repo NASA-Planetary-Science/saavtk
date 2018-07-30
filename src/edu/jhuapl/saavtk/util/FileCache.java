@@ -12,6 +12,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -27,6 +28,30 @@ import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
 
 public final class FileCache
 {
+	// TODO this should extend Exception and thus be checked.
+	public static class NoInternetAccessException extends RuntimeException
+	{
+		private static final long serialVersionUID = -1250977612922624246L;
+		private final URL url;
+
+		private NoInternetAccessException(String cause, URL url)
+		{
+			super(cause);
+			this.url = url;
+		}
+
+		private NoInternetAccessException(Exception cause, URL url)
+		{
+			super(cause);
+			this.url = url;
+		}
+
+		public URL getURL()
+		{
+			return url;
+		}
+	}
+
 	// TODO this should extend Exception and thus be checked.
 	public static class UnauthorizedAccessException extends RuntimeException
 	{
@@ -388,7 +413,17 @@ public final class FileCache
 
 		if (offlineMode)
 		{
-			return new FileInfo(url, new File(SafePaths.getString(offlineModeRootFolder, ungzippedPath)), YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0);
+			// It's possible there is information about this file already from a previous query
+			// when offlineMode was disabled.
+			File file = url.getProtocol().equalsIgnoreCase("file") ? SafePaths.get(url.getFile()).toFile() : SafePaths.get(offlineModeRootFolder, ungzippedPath).toFile();
+			FileInfo info = INFO_MAP.get(file);
+			if (info == null)
+			{
+				// Didn't already have info about this file, so return file info with
+				// partial information.
+				info = new FileInfo(url, file, YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0);
+			}
+			return info;
 		}
 
 		if (ungzippedPath.equals(pathSegment) && url.getProtocol().equalsIgnoreCase("file"))
@@ -460,6 +495,10 @@ public final class FileCache
 				}
 				lastModified = connection.getLastModified();
 			}
+			catch (UnknownHostException e)
+			{
+				throw new NoInternetAccessException(e, url);
+			}
 			catch (Exception e)
 			{
 				String message = e.getMessage();
@@ -486,21 +525,21 @@ public final class FileCache
 	 * 
 	 * @param urlOrPathSegment the input URL string or path segment
 	 * @return true if it appears the file could be successfully downloaded/used
-	 * @throws UnauthorizedAccessException if a 401/403 (Unauthorized/Forbidden)
-	 *             error is encountered when attempting to access the server for the
+	 * @throws NoInternetAccessException if a 401/403 (Unauthorized/Forbidden) error
+	 *             is encountered when attempting to access the server for the
 	 *             remote file
 	 */
-	public static boolean isFileGettable(String urlOrPathSegment) throws UnauthorizedAccessException
+	public static boolean isFileGettable(String urlOrPathSegment) throws NoInternetAccessException
 	{
 		FileInfo fileInfo = getFileInfoFromServer(urlOrPathSegment);
-		if (fileInfo.isExistsLocally() || fileInfo.isExistsOnServer() == YesOrNo.YES)
+		if (fileInfo.isExistsLocally() || (!offlineMode && fileInfo.isExistsOnServer() == YesOrNo.YES))
 		{
 			return true;
 		}
 		else if (fileInfo.isURLAccessAuthorized() == YesOrNo.NO)
 		{
 			URL url = fileInfo.getURL();
-			throw new UnauthorizedAccessException("Cannot access information about restricted URL: " + url, url);
+			throw new NoInternetAccessException("Cannot access information about restricted URL: " + url, url);
 		}
 		return false;
 	}
@@ -517,17 +556,17 @@ public final class FileCache
 	 * 
 	 * @param urlOrPathSegment the URL
 	 * @return the local file object; however, the file on disk may not exist
-	 * @throws UnauthorizedAccessException if a 401 (Unauthorized) error is
+	 * @throws NoInternetAccessException if a 401 (Unauthorized) error is
 	 *             encountered when attempting to access the server for the remote
 	 *             file.
 	 */
-	public static File getFileFromServer(String urlOrPathSegment) throws UnauthorizedAccessException
+	public static File getFileFromServer(String urlOrPathSegment) throws NoInternetAccessException
 	{
 		FileInfo fileInfo = getFileInfoFromServer(urlOrPathSegment);
+		URL url = fileInfo.getURL();
 
 		if (fileInfo.isURLAccessAuthorized() == YesOrNo.NO)
 		{
-			URL url = fileInfo.getURL();
 			throw new UnauthorizedAccessException("Cannot get file: access is restricted to URL: " + url, url);
 		}
 
@@ -535,8 +574,12 @@ public final class FileCache
 		{
 			if (fileInfo.isExistsOnServer() == YesOrNo.NO)
 			{
-				URL url = fileInfo.getURL();
 				throw new NonexistentRemoteFile("File pointed to does not exist: " + url, url);
+			}
+
+			if (offlineMode)
+			{
+				throw new NoInternetAccessException("Offline mode; unable to retrieve " + url, url);
 			}
 
 			try
@@ -640,12 +683,19 @@ public final class FileCache
 		return lines;
 	}
 
+	public static boolean getOfflineMode()
+	{
+		return offlineMode;
+	}
+
+	public static void setOfflineMode(boolean offlineMode)
+	{
+		setOfflineMode(offlineMode, offlineModeRootFolder != null ? offlineModeRootFolder : Configuration.getCacheDir());
+	}
+
 	/**
 	 * In "offline" mode, instead of querying a server, the image of the server is
-	 * expected to reside in a directory in the local file system.
-	 * 
-	 * NOTE: THIS HAS NOT BEEN TESTED RECENTLY AND IS LIKELY BROKEN FOLLOWING A
-	 * REFACTORING OF THIS CLASS.
+	 * expected to reside in a directory in the local file system. *
 	 * 
 	 * @param offlineMode if true, use the local directory as the "top" of the
 	 *            server.
