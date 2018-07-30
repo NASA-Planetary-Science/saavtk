@@ -16,7 +16,7 @@ public final class FixedMetadata extends BasicMetadata
 		}
 
 		Version version = metadata.getVersion();
-		ImmutableList<Key<?>> keys = metadata.getKeys();
+		ImmutableList<Key<?>> keys = ImmutableList.copyOf(metadata.getKeys());
 
 		ImmutableMap.Builder<Key<?>, Object> builder = ImmutableMap.builder();
 		for (Key<?> key : keys)
