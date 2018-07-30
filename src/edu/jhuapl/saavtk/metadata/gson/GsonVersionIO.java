@@ -14,10 +14,10 @@ import edu.jhuapl.saavtk.metadata.Version;
 
 final class GsonVersionIO implements JsonSerializer<Version>, JsonDeserializer<Version>
 {
-	private static final String KEY_ID = ValueTypeInfo.VERSION.getTypeId();
+	private static final String KEY_ID = DataTypeInfo.VERSION.getTypeId();
 
 	@Override
-	public JsonElement serialize(Version src, Type typeOfSrc, JsonSerializationContext context)
+	public JsonElement serialize(Version src, @SuppressWarnings("unused") Type typeOfSrc, @SuppressWarnings("unused") JsonSerializationContext context)
 	{
 		JsonObject result = new JsonObject();
 		result.addProperty(KEY_ID, src.toString());
@@ -25,7 +25,7 @@ final class GsonVersionIO implements JsonSerializer<Version>, JsonDeserializer<V
 	}
 
 	@Override
-	public Version deserialize(JsonElement jsonElement, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
+	public Version deserialize(JsonElement jsonElement, @SuppressWarnings("unused") Type typeOfT, @SuppressWarnings("unused") JsonDeserializationContext context) throws JsonParseException
 	{
 		if (!jsonElement.isJsonObject())
 		{

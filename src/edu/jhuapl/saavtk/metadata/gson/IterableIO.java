@@ -9,41 +9,57 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeSet;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
-final class IterableIO implements JsonSerializer<Iterable<?>>, JsonDeserializer<Iterable<?>>
+abstract class IterableIO implements JsonSerializer<Iterable<?>>
 {
-	private static final String ITERABLE_TYPE = "collectionType";
+	/**
+	 * Internal utility class; just here so the unpack method can return all the
+	 * distinct pieces of information contained in the input JsonElement.
+	 */
+	protected static class DeserializedJsonArray
+	{
+		protected final DataTypeInfo dataTypeInfo;
+		protected final JsonArray jsonArray;
+
+		protected DeserializedJsonArray(DataTypeInfo dataTypeInfo, JsonArray jsonArray)
+		{
+			this.dataTypeInfo = dataTypeInfo;
+			this.jsonArray = jsonArray;
+		}
+	}
+
+	protected IterableIO()
+	{
+
+	}
+
 	private static final String ITERABLE_VALUE_TYPE = "valueType";
 	private static final String ITERABLE_VALUE = "value";
 
 	@Override
-	public JsonElement serialize(Iterable<?> src, Type typeOfSrc, JsonSerializationContext context)
+	public JsonElement serialize(Iterable<?> src, @SuppressWarnings("unused") Type typeOfSrc, JsonSerializationContext context)
 	{
 		JsonObject result = new JsonObject();
 
 		// First pass: if any entries are found, determine types of key and value.
-		ValueTypeInfo valueInfo = ValueTypeInfo.NULL;
+		DataTypeInfo valueInfo = DataTypeInfo.NULL;
 		for (Object value : src)
 		{
-			if (valueInfo == ValueTypeInfo.NULL)
+			if (valueInfo == DataTypeInfo.NULL)
 			{
-				valueInfo = ValueTypeInfo.forObject(value);
+				valueInfo = DataTypeInfo.forObject(value);
 			}
-			if (valueInfo != ValueTypeInfo.NULL)
+			if (valueInfo != DataTypeInfo.NULL)
 			{
 				break;
 			}
@@ -59,15 +75,13 @@ final class IterableIO implements JsonSerializer<Iterable<?>>, JsonDeserializer<
 		}
 
 		// Put iterable metadata and data into the resultant object.
-		result.add(ITERABLE_TYPE, context.serialize(ValueTypeInfo.forObject(src).getTypeId()));
 		result.add(ITERABLE_VALUE_TYPE, context.serialize(valueInfo.getTypeId()));
 		result.add(ITERABLE_VALUE, destArray);
 
 		return result;
 	}
 
-	@Override
-	public Iterable<?> deserialize(JsonElement jsonElement, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
+	protected DeserializedJsonArray unpack(JsonElement jsonElement)
 	{
 		if (!jsonElement.isJsonObject())
 		{
@@ -77,40 +91,13 @@ final class IterableIO implements JsonSerializer<Iterable<?>>, JsonDeserializer<
 		JsonObject object = jsonElement.getAsJsonObject();
 
 		// Unpack metadata.
-		JsonElement iterableTypeElement = object.get(ITERABLE_TYPE);
-		if (iterableTypeElement == null || !iterableTypeElement.isJsonPrimitive())
-		{
-			throw new IllegalArgumentException("Field \"" + ITERABLE_TYPE + "\" is missing or has wrong type in Json object");
-		}
-
-		JsonElement valueTypeElement = object.get(ITERABLE_VALUE_TYPE);
-		if (valueTypeElement == null || !valueTypeElement.isJsonPrimitive())
+		JsonElement dataTypeElement = object.get(ITERABLE_VALUE_TYPE);
+		if (dataTypeElement == null || !dataTypeElement.isJsonPrimitive())
 		{
 			throw new IllegalArgumentException("Field \"" + ITERABLE_VALUE_TYPE + "\" is missing or has wrong type in Json object");
 		}
 
-		ValueTypeInfo dataInfo = ValueTypeInfo.of(iterableTypeElement.getAsString());
-		ValueTypeInfo valueInfo = ValueTypeInfo.of(valueTypeElement.getAsString());
-
-		// Create output data object.
-		Set<?> set = null;
-		List<?> list = null;
-		if (dataInfo == ValueTypeInfo.SORTED_SET)
-		{
-			set = new TreeSet<>();
-		}
-		else if (dataInfo == ValueTypeInfo.SET)
-		{
-			set = new HashSet<>();
-		}
-		else if (dataInfo == ValueTypeInfo.LIST)
-		{
-			list = new ArrayList<>();
-		}
-		else
-		{
-			throw new IllegalArgumentException("Do not know how to deserialize an iterable of type " + dataInfo);
-		}
+		DataTypeInfo dataTypeInfo = DataTypeInfo.of(dataTypeElement.getAsString());
 
 		// Unpack data.
 		JsonElement dataElement = object.get(ITERABLE_VALUE);
@@ -119,23 +106,7 @@ final class IterableIO implements JsonSerializer<Iterable<?>>, JsonDeserializer<
 			throw new IllegalArgumentException("Field \"" + ITERABLE_VALUE + "\" is missing or has wrong type in Json object");
 		}
 
-		Type valueType = valueInfo.getType();
-		for (JsonElement entryElement : dataElement.getAsJsonArray())
-		{
-			if (set != null)
-			{
-				set.add(context.deserialize(entryElement, valueType));
-			}
-			else if (list != null)
-			{
-				list.add(context.deserialize(entryElement, valueType));
-			}
-			else
-			{
-				throw new AssertionError();
-			}
-		}
-		return set != null ? set : list;
+		return new DeserializedJsonArray(dataTypeInfo, dataElement.getAsJsonArray());
 	}
 
 	public static void main(String[] args)
@@ -153,14 +124,14 @@ final class IterableIO implements JsonSerializer<Iterable<?>>, JsonDeserializer<
 		createdList.add(set2);
 
 		Gson GSON =
-				new GsonBuilder().serializeNulls().registerTypeAdapter(ValueTypeInfo.of(SortedSet.class).getType(), new IterableIO()).registerTypeAdapter(ValueTypeInfo.of(Set.class).getType(), new IterableIO()).registerTypeAdapter(ValueTypeInfo.of(List.class).getType(), new IterableIO()).setPrettyPrinting().create();
+				new GsonBuilder().serializeNulls().registerTypeAdapter(DataTypeInfo.of(SortedSet.class).getType(), new SortedSetIO()).registerTypeAdapter(DataTypeInfo.of(Set.class).getType(), new SetIO()).registerTypeAdapter(DataTypeInfo.of(List.class).getType(), new ListIO()).setPrettyPrinting().create();
 
 		String file = "/Users/peachjm1/Downloads/test-iterables.json";
 		try (FileWriter fileWriter = new FileWriter(file))
 		{
 			try (JsonWriter jsonWriter = GSON.newJsonWriter(fileWriter))
 			{
-				GSON.toJson(createdList, ValueTypeInfo.forObject(createdList).getType(), jsonWriter);
+				GSON.toJson(createdList, DataTypeInfo.forObject(createdList).getType(), jsonWriter);
 				fileWriter.write('\n');
 			}
 		}
@@ -171,7 +142,7 @@ final class IterableIO implements JsonSerializer<Iterable<?>>, JsonDeserializer<
 
 		try (JsonReader jsonReader = GSON.newJsonReader(new FileReader(file)))
 		{
-			Iterable<?> readList = GSON.fromJson(jsonReader, ValueTypeInfo.of(List.class).getType());
+			Iterable<?> readList = GSON.fromJson(jsonReader, DataTypeInfo.of(List.class).getType());
 			if (!readList.equals(createdList))
 			{
 				System.err.println("OUTPUT IS NOT EQUAL TO INPUT!!");

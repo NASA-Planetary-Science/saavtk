@@ -15,21 +15,6 @@ public final class SettableMetadata extends BasicMetadata
 		return new SettableMetadata(version, new ArrayList<>(), new HashMap<>());
 	}
 
-	public static SettableMetadata of(Version version, Iterable<Key<?>> keys, Map<Key<?>, Object> map)
-	{
-		Preconditions.checkNotNull(keys);
-		Preconditions.checkNotNull(map);
-		SettableMetadata result = SettableMetadata.of(version);
-		for (Key<?> key : keys)
-		{
-			Preconditions.checkArgument(map.containsKey(key));
-			@SuppressWarnings("unchecked")
-			Key<Object> objectKey = (Key<Object>) key;
-			result.put(objectKey, map.get(key));
-		}
-		return result;
-	}
-
 	public static SettableMetadata of(Metadata metadata)
 	{
 		Preconditions.checkNotNull(metadata);

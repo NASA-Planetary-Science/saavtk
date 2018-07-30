@@ -13,7 +13,7 @@ import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.Version;
 
-enum ValueTypeInfo
+enum DataTypeInfo
 {
 	STRING("String", new TypeToken<String>() {}.getType(), String.class),
 	BOOLEAN("Boolean", new TypeToken<Boolean>() {}.getType(), Boolean.class),
@@ -40,9 +40,9 @@ enum ValueTypeInfo
 	NULL("Null", new TypeToken<Object>() {}.getType(), Object.class),
 	;
 
-	public static ValueTypeInfo of(String typeId)
+	public static DataTypeInfo of(String typeId)
 	{
-		for (ValueTypeInfo info : values())
+		for (DataTypeInfo info : values())
 		{
 			if (info.typeId.equals(typeId))
 			{
@@ -52,9 +52,9 @@ enum ValueTypeInfo
 		throw new IllegalArgumentException();
 	}
 
-	public static ValueTypeInfo of(Type type)
+	public static DataTypeInfo of(Type type)
 	{
-		for (ValueTypeInfo info : values())
+		for (DataTypeInfo info : values())
 		{
 			if (info.type.equals(type))
 			{
@@ -64,9 +64,9 @@ enum ValueTypeInfo
 		throw new IllegalArgumentException();
 	}
 
-	public static ValueTypeInfo of(Class<?> valueClass)
+	public static DataTypeInfo of(Class<?> valueClass)
 	{
-		for (ValueTypeInfo info : values())
+		for (DataTypeInfo info : values())
 		{
 			if (info.valueClass.isAssignableFrom(valueClass))
 			{
@@ -76,7 +76,7 @@ enum ValueTypeInfo
 		throw new IllegalArgumentException();
 	}
 
-	public static ValueTypeInfo forObject(Object object)
+	public static DataTypeInfo forObject(Object object)
 	{
 		if (object == null)
 		{
@@ -89,7 +89,7 @@ enum ValueTypeInfo
 	private final Type type;
 	private final Class<?> valueClass;
 
-	private ValueTypeInfo(String typeId, Type type, Class<?> clazz)
+	private DataTypeInfo(String typeId, Type type, Class<?> clazz)
 	{
 		this.typeId = typeId;
 		this.type = type;
