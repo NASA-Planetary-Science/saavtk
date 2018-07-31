@@ -37,7 +37,7 @@ public final class MetadataView implements Metadata
 	@Override
 	public ImmutableList<Key<?>> getKeys()
 	{
-		return metadata.getKeys();
+		return ImmutableList.copyOf(metadata.getKeys());
 	}
 
 	@Override
