@@ -127,7 +127,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			 try
 			{
 				 ImmutableList<String> columnTitles = getColumnTitlesCsv(cellDataPath);			
-		}
+			}
 			catch (IncorrectFileFormatException | IOException e)
 			{
 				return e.getMessage();
@@ -366,15 +366,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
 		getContentPane().add(coloringLabel, gridBagConstraints);
 		
-		comboBox = new JComboBox<>();
-//		comboBox.addActionListener(new java.awt.event.ActionListener() {
-//			@Override
-//			public void actionPerformed(java.awt.event.ActionEvent evt)
-//			{
-//				comboBoxActionPerformed(evt);
-//			}
-//		});
-		
+		comboBox = new JComboBox<>();		
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 1;
 		gridBagConstraints.gridy = 3;
@@ -483,13 +475,6 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			
 		
 	}//GEN-LAST:event_browsePlateDataButtonActionPerformed
-	
-//	private void comboBoxActionPerformed(java.awt.event.ActionEvent evt)
-//	{
-//		 String selected = comboBox.getSelectedItem().toString();
-//		 System.out.println(selected);
-//		 //return selected;
-//	}
 
 	private void cancelButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_cancelButtonActionPerformed
 	{//GEN-HEADEREND:event_cancelButtonActionPerformed
@@ -506,10 +491,6 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		}
 
 		okayPressed = true;
-		String selected = comboBox.getSelectedItem().toString();
-		if (selected.contentEquals("Slope")) {
-			System.out.println(selected);
-		}
 		setVisible(false);
 	}//GEN-LAST:event_okButtonActionPerformed
 
