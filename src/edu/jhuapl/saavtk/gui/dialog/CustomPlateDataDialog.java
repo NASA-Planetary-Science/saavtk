@@ -441,7 +441,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 	protected CustomPlateDataImporterDialog getPlateImporterDialog()
 	{
-		return new CustomPlateDataImporterDialog(JOptionPane.getFrameForComponent(this), false, modelManager.getPolyhedralModel().getSmallBodyPolyData().GetNumberOfCells());
+		return new CustomPlateDataImporterDialog(JOptionPane.getFrameForComponent(this), coloringDataManager, false, modelManager.getPolyhedralModel().getSmallBodyPolyData().GetNumberOfCells());
 	}
 
 	private void newButtonActionPerformed(java.awt.event.ActionEvent evt)
@@ -478,7 +478,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			DefaultListModel<ColoringData> cellDataListModel = (DefaultListModel<ColoringData>) cellDataList.getModel();
 			ColoringData oldColoringData = cellDataListModel.get(selectedItem);
 
-			CustomPlateDataImporterDialog dialog = new CustomPlateDataImporterDialog(JOptionPane.getFrameForComponent(this), true, modelManager.getPolyhedralModel().getSmallBodyPolyData().GetNumberOfCells());
+			CustomPlateDataImporterDialog dialog = new CustomPlateDataImporterDialog(JOptionPane.getFrameForComponent(this), coloringDataManager, true, modelManager.getPolyhedralModel().getSmallBodyPolyData().GetNumberOfCells());
 			dialog.setColoringData(oldColoringData);
 			dialog.setLocationRelativeTo(this);
 			dialog.setVisible(true);
