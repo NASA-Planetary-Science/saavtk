@@ -31,10 +31,13 @@ import com.google.common.collect.Iterables;
 
 import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.util.file.DataFileInfo;
 import edu.jhuapl.saavtk.util.file.DataFileReader;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo.Description;
+import edu.jhuapl.saavtk.util.file.TableInfo;
 import edu.jhuapl.saavtk.util.file.DataFileReader.IncorrectFileFormatException;
+import edu.jhuapl.saavtk.util.file.DataFileReader.InvalidFileFormatException;
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
 import nom.tam.fits.FitsException;
@@ -48,7 +51,6 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 	private boolean isEditMode;
 	private static final String LEAVE_UNMODIFIED = "<leave unmodified or empty to use existing plate data>";
 	private String origColoringFile; // used in Edit mode only to store original filename
-	private ImmutableList<DataObjectInfo> dataObjectInfo;
 
 	/** Creates new form ShapeModelImporterDialog */
 	public CustomPlateDataImporterDialog(java.awt.Window parent, boolean isEditMode, int numCells)
@@ -90,8 +92,8 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 		if (isEditMode && (LEAVE_UNMODIFIED.equals(fileName) || fileName == null || fileName.isEmpty()))
 			fileName = origColoringFile;
-
-		return ColoringData.of(nameTextField.getText(), fileName, ImmutableList.of(), unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
+		String selected = comboBox.getSelectedItem().toString();
+		return ColoringData.of(nameTextField.getText(), fileName, ImmutableList.of(selected), unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
 	}
 
 	private String validateInput()
@@ -114,19 +116,18 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			if (cellDataPath.contains(","))
 				return "Plate data path may not contain commas.";
 
-			//if (cellDataPath.toLowerCase().endsWith(".fit") || cellDataPath.toLowerCase().endsWith(".fits"))
-			//	result = validateFitsFile(cellDataPath);
-			//else
-			//	result = validateTxtFile(cellDataPath);
+//			if (cellDataPath.toLowerCase().endsWith(".fit") || cellDataPath.toLowerCase().endsWith(".fits"))
+//				result = validateFitsFile(cellDataPath);
+//			else
+//				result = validateTxtFile(cellDataPath);
 
-			// TODO redmine 1339. Start here: add a call here to a new method:
-			// Store result from that method in the JComboBox (see note in initComponents).
+			 //TODO redmine 1339. Start here: add a call here to a new method:
+			 //Store result from that method in the JComboBox (see note in initComponents).
 			
 			 try
 			{
-				ImmutableList<String> columnTitles = getColumnTitlesCsv(cellDataPath);
-				System.out.println(columnTitles);
-			}
+				 ImmutableList<String> columnTitles = getColumnTitlesCsv(cellDataPath);			
+		}
 			catch (IncorrectFileFormatException | IOException e)
 			{
 				return e.getMessage();
@@ -155,18 +156,36 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		return null;
 	}
 
-	private ImmutableList<String> getColumnTitlesCsv(String cellDataPath) throws IncorrectFileFormatException, IOException{
-		//ImmutableList.Builder<String> builder = ImmutableList.builder();
-		File file = new File(cellDataPath);
 
-		ImmutableList<String> dataObjectInfo = DataFileReader.of().readFileInfo(file).getDataObjectInfo().get(0).getDescription().getFields();
-		//for (int i = 0; i<dataObjectInfo.size(); i++) {
-		//	builder.add(dataObjectInfo.get(i));
-		//}
-		return dataObjectInfo;
+	private ImmutableList<String> getColumnTitlesCsv(String cellDataPath) throws IncorrectFileFormatException, IOException {
+        ImmutableList.Builder<String> builder = ImmutableList.builder();
+        File file = new File(cellDataPath);
+        ImmutableList<DataObjectInfo> dataInfoList;
+		try
+		{
+			dataInfoList = DataFileReader.of().readFileInfo(file).getDataObjectInfo();
+			for (DataObjectInfo dataObjectInfo : dataInfoList) {                  
+	               if (dataObjectInfo instanceof TableInfo)
+	               {
+	                     TableInfo tableInfo = (TableInfo) dataObjectInfo;
+	                     for (int i = 0; i < tableInfo.getNumberColumns(); i++)
+	                     {
+	                            String title = tableInfo.getColumnInfo(i).getName();
+	                            builder.add(title);
+	                     }
+	               }
+	        }
+	       
+		}
+		catch (InvalidFileFormatException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        
+		 return builder.build();
 		
-		//return builder.build();
-		
+	
 	}
 	
 	// TODO redmine 1339: eventually this method should be superseded by a method that returns the
@@ -237,7 +256,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 				TableHDU<?> athdu = (TableHDU<?>) hdus[1];
 				int ncols = athdu.getNCols();
 				if (ncols <= PolyhedralModel.FITS_SCALAR_COLUMN_INDEX)
-					return "FITS ancillary table has too few olumns";
+					return "FITS ancillary table has too few columns";
 			}
 			else
 			{
@@ -262,6 +281,8 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 	 * This method is called from within the constructor to initialize the form.
 	 * Note: the content of this method was originally regenerated by the Form
 	 * Editor.
+	 * @throws IOException 
+	 * @throws IncorrectFileFormatException 
 	 */
 	// <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
 	private final void initComponents() 
@@ -279,7 +300,6 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		nameTextField = new javax.swing.JTextField();
 		unitsTextField = new javax.swing.JTextField();
 		hasNullsCheckBox = new javax.swing.JCheckBox();
-		
 
 		setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 		setMinimumSize(new java.awt.Dimension(600, 167));
@@ -346,9 +366,15 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
 		getContentPane().add(coloringLabel, gridBagConstraints);
 		
-		String[] columnTitles = {"Slope", "Elevation", "Gravitational Accleration", "Gravitational Potential"};
-		JComboBox<String> comboBox = new JComboBox<>(columnTitles);
-		comboBox.setSelectedIndex(0);
+		comboBox = new JComboBox<>();
+//		comboBox.addActionListener(new java.awt.event.ActionListener() {
+//			@Override
+//			public void actionPerformed(java.awt.event.ActionEvent evt)
+//			{
+//				comboBoxActionPerformed(evt);
+//			}
+//		});
+		
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 1;
 		gridBagConstraints.gridy = 3;
@@ -432,7 +458,38 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 		String filename = file.getAbsolutePath();
 		cellDataPathTextField.setText(filename);
+		ImmutableList<String> columnTitles;
+			try
+			{
+				columnTitles = getColumnTitlesCsv(filename);
+				comboBox.removeAllItems();
+				for (String item  : columnTitles)
+				{
+					comboBox.addItem(item);
+				}	
+				comboBox.setSelectedIndex(0);
+				
+			}
+			catch (IncorrectFileFormatException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			catch (IOException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		
 	}//GEN-LAST:event_browsePlateDataButtonActionPerformed
+	
+//	private void comboBoxActionPerformed(java.awt.event.ActionEvent evt)
+//	{
+//		 String selected = comboBox.getSelectedItem().toString();
+//		 System.out.println(selected);
+//		 //return selected;
+//	}
 
 	private void cancelButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_cancelButtonActionPerformed
 	{//GEN-HEADEREND:event_cancelButtonActionPerformed
@@ -449,6 +506,10 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		}
 
 		okayPressed = true;
+		String selected = comboBox.getSelectedItem().toString();
+		if (selected.contentEquals("Slope")) {
+			System.out.println(selected);
+		}
 		setVisible(false);
 	}//GEN-LAST:event_okButtonActionPerformed
 
