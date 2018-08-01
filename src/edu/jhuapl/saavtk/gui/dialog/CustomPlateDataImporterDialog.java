@@ -118,9 +118,9 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			//			else
 			//				result = validateTxtFile(cellDataPath);
 
-			//TODO redmine 1339. Start here: add a call here to a new method:
-			//Store result from that method in the JComboBox (see note in initComponents).
-
+			// TODO redmine 1339: see if you can figure out how to eliminate this warning:
+			// local variable columnTitles is never used, but we do want to get the column titles here
+			// as part of the check.
 			try
 			{
 				ImmutableList<String> columnTitles = getColumnTitlesCsv(cellDataPath);
@@ -130,6 +130,10 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 				return e.getMessage();
 			}
 
+			// TODO redmine 1339: see if you can figure out how to eliminate this warning:
+			// Warning: "dead code", meaning that this code will never execute, in other words
+			// result is alwyas null here, so you never ever return result. Is it safe just to
+			// delete these last couple lines?
 			if (result != null)
 				return result;
 		}
@@ -156,6 +160,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		return null;
 	}
 
+	// TODO redmine 1339: get rid of "Csv" suffix -- this works for either FITS or CSV files.
 	private ImmutableList<String> getColumnTitlesCsv(String cellDataPath) throws IncorrectFileFormatException, IOException
 	{
 		ImmutableList.Builder<String> builder = ImmutableList.builder();
@@ -178,6 +183,9 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			}
 
 		}
+		// TODO redmine 1339: This exception should not be caught -- take out the try-catch and
+		// add this exception type to the "throws" part of the method declaration. Note that you then
+		// may need to change the code elsewhere to handle the InvalidFileFormatException.
 		catch (InvalidFileFormatException e)
 		{
 			// TODO Auto-generated catch block
@@ -462,10 +470,12 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			comboBox.setSelectedIndex(0);
 
 		}
+		// TODO redmine 1339: catch all exceptions in one catch (Exception e).
 		catch (IncorrectFileFormatException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			// TODO redmine 1339: Create an error popup message that uses the e.getMessage() message as the text of the error.
+			// The popup message should also tell the user to look at the console/log for more information.
 		}
 		catch (IOException e)
 		{
