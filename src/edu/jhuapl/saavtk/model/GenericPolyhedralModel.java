@@ -600,46 +600,55 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		coloringDataManager.clearCustom();
 		clearCustomColoringInfo();
 
-		String configFilename = getConfigFilename();
-
-		if (!(new File(configFilename).exists()))
-			return;
-
-		MapUtil configMap = new MapUtil(configFilename);
-
-		convertOldConfigFormatToNewVersion(configMap);
-
-		if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_UNITS)
-				&& configMap.containsKey(GenericPolyhedralModel.CELL_DATA_HAS_NULLS))
+		try
 		{
-			String[] cellDataFilenames = configMap.get(GenericPolyhedralModel.CELL_DATA_FILENAMES).split(",", -1);
-			String[] cellDataNames = configMap.get(GenericPolyhedralModel.CELL_DATA_NAMES).split(",", -1);
-			String[] cellDataUnits = configMap.get(GenericPolyhedralModel.CELL_DATA_UNITS).split(",", -1);
-			String[] cellDataHasNulls = configMap.get(GenericPolyhedralModel.CELL_DATA_HAS_NULLS).split(",", -1);
-			String[] cellDataResolutionLevels = null;
-			if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_RESOLUTION_LEVEL))
-				cellDataResolutionLevels = configMap.get(GenericPolyhedralModel.CELL_DATA_RESOLUTION_LEVEL).split(",", -1);
+			coloringDataManager.loadCustomMetadata(getCustomDataFolder());
+		}
+		catch (@SuppressWarnings("unused") Exception e)
+		{
+			// Assume this just means metadata have not been saved before now.
+			// Fall through to the old way of loading metadata.
+			String configFilename = getConfigFilename();
 
-			for (int i = 0; i < cellDataFilenames.length; ++i)
+			if (!(new File(configFilename).exists()))
+				return;
+
+			MapUtil configMap = new MapUtil(configFilename);
+
+			convertOldConfigFormatToNewVersion(configMap);
+
+			if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_UNITS)
+					&& configMap.containsKey(GenericPolyhedralModel.CELL_DATA_HAS_NULLS))
 			{
-				String coloringFile = cellDataFilenames[i];
-				if (!coloringFile.trim().isEmpty())
+				String[] cellDataFilenames = configMap.get(GenericPolyhedralModel.CELL_DATA_FILENAMES).split(",", -1);
+				String[] cellDataNames = configMap.get(GenericPolyhedralModel.CELL_DATA_NAMES).split(",", -1);
+				String[] cellDataUnits = configMap.get(GenericPolyhedralModel.CELL_DATA_UNITS).split(",", -1);
+				String[] cellDataHasNulls = configMap.get(GenericPolyhedralModel.CELL_DATA_HAS_NULLS).split(",", -1);
+				String[] cellDataResolutionLevels = null;
+				if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_RESOLUTION_LEVEL))
+					cellDataResolutionLevels = configMap.get(GenericPolyhedralModel.CELL_DATA_RESOLUTION_LEVEL).split(",", -1);
+
+				for (int i = 0; i < cellDataFilenames.length; ++i)
 				{
-					coloringFile = FileCache.FILE_PREFIX + getCustomDataFolder() + "/" + coloringFile;
-					String coloringName = cellDataNames[i];
-					String coloringUnits = cellDataUnits[i];
-					boolean coloringHasNulls = Boolean.parseBoolean(cellDataHasNulls[i]);
-					int resolutionLevel;
-					if (cellDataResolutionLevels != null)
+					String coloringFile = cellDataFilenames[i];
+					if (!coloringFile.trim().isEmpty())
 					{
-						resolutionLevel = Integer.parseInt(cellDataResolutionLevels[i]);
+						coloringFile = FileCache.FILE_PREFIX + getCustomDataFolder() + "/" + coloringFile;
+						String coloringName = cellDataNames[i];
+						String coloringUnits = cellDataUnits[i];
+						boolean coloringHasNulls = Boolean.parseBoolean(cellDataHasNulls[i]);
+						int resolutionLevel;
+						if (cellDataResolutionLevels != null)
+						{
+							resolutionLevel = Integer.parseInt(cellDataResolutionLevels[i]);
+						}
+						else
+						{
+							resolutionLevel = 0;
+						}
+						int customNumberElements = config.getResolutionNumberElements().get(resolutionLevel);
+						coloringDataManager.addCustom(ColoringData.of(coloringName, coloringFile, ImmutableList.of(coloringName), coloringUnits, customNumberElements, coloringHasNulls));
 					}
-					else
-					{
-						resolutionLevel = 0;
-					}
-					int customNumberElements = config.getResolutionNumberElements().get(resolutionLevel);
-					coloringDataManager.addCustom(ColoringData.of(coloringName, coloringFile, ImmutableList.of(coloringName), coloringUnits, customNumberElements, coloringHasNulls));
 				}
 			}
 		}
