@@ -1,17 +1,18 @@
 package edu.jhuapl.saavtk.model;
 
+import java.io.IOException;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.metadata.Key;
-import edu.jhuapl.saavtk.metadata.Metadata;
-import edu.jhuapl.saavtk.metadata.MetadataManager;
-import edu.jhuapl.saavtk.metadata.SettableMetadata;
+import edu.jhuapl.saavtk.metadata.Serializers;
 import edu.jhuapl.saavtk.metadata.Version;
+import edu.jhuapl.saavtk.util.SafePaths;
 
 public final class CustomizableColoringDataManager implements ColoringDataManager
 {
-	private static final Version METADATA_VERSION = Version.of(1, 0);
+	private static final Version METADATA_VERSION = Version.of(1, 1);
+	private static final String CUSTOM_METADATA_FILE_NAME = "custom-coloring-" + METADATA_VERSION + ".smd";
 
 	public static CustomizableColoringDataManager of(String dataId)
 	{
@@ -119,36 +120,16 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 		update();
 	}
 
-	MetadataManager getMetadataManager(boolean includeCustom)
+	public void loadCustomMetadata(String folder) throws IOException
 	{
-		return new MetadataManager() {
+		custom.clear();
+		Serializers.deserialize(SafePaths.get(folder, CUSTOM_METADATA_FILE_NAME).toFile(), "Custom Coloring", custom.getMetadataManager());
+		update();
+	}
 
-			@Override
-			public Metadata store()
-			{
-				SettableMetadata result = SettableMetadata.of(METADATA_VERSION);
-				result.put(Key.of(builtIn.getId()), builtIn.getMetadataManager().store());
-				if (includeCustom)
-				{
-					result.put(Key.of(custom.getId()), custom.getMetadataManager().store());
-				}
-				return result;
-			}
-
-			@Override
-			public void retrieve(Metadata source)
-			{
-				builtIn.clear();
-				builtIn.getMetadataManager().retrieve(source.get(Key.of(builtIn.getId())));
-				if (includeCustom)
-				{
-					custom.clear();
-					custom.getMetadataManager().retrieve(source.get(Key.of(custom.getId())));
-				}
-				update();
-			}
-
-		};
+	public void saveCustomMetadata(String folder) throws IOException
+	{
+		Serializers.serialize("Custom Coloring", custom.getMetadataManager(), SafePaths.get(folder, CUSTOM_METADATA_FILE_NAME).toFile());
 	}
 
 	private final void update()
