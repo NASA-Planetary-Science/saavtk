@@ -201,17 +201,20 @@ public abstract class View extends JPanel
 
 		if (!initializedPanelSizing)
 		{
+			int splitLocation = Integer.parseInt(Preferences.getInstance().get(Preferences.CONTROL_PANEL_WIDTH));
+			int rendererWidth = splitPane.getWidth() - splitLocation;
+			
 			int width = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_WIDTH, 800L);
 			int height = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_HEIGHT, 800L);
 
 			renderer.setMinimumSize(new Dimension(100, 100));
-			renderer.setPreferredSize(new Dimension(width, height));
+			renderer.setPreferredSize(new Dimension(rendererWidth, height));
 
 			width = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
 			height = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_HEIGHT, 800L);
 
 			controlPanel.setMinimumSize(new Dimension(320, 100));
-			controlPanel.setPreferredSize(new Dimension(width, height));
+			controlPanel.setPreferredSize(new Dimension(splitLocation, height));
 
 			// Save out the size of the control panel and renderer when the tool exits
 			Runtime.getRuntime().addShutdownHook(new Thread() {
