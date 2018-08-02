@@ -89,8 +89,10 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 		if (isEditMode && (LEAVE_UNMODIFIED.equals(fileName) || fileName == null || fileName.isEmpty()))
 			fileName = origColoringFile;
-		String selected = comboBox.getSelectedItem().toString();
-		return ColoringData.of(nameTextField.getText(), fileName, ImmutableList.of(selected), unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
+		String selected = (String) comboBox.getSelectedItem();
+		ImmutableList<String> elementNames = selected != null ? ImmutableList.of(selected) : ImmutableList.of();
+		ImmutableList<Integer> columnIdentifiers = selected != null ? ImmutableList.of(comboBox.getSelectedIndex()) : null;
+		return ColoringData.of(nameTextField.getText(), fileName, elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
 	}
 
 	private String validateInput()
@@ -146,7 +148,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		if (name.isEmpty())
 			return "Please enter a name for the plate data.";
 
-		if (coloringDataManager.has(name, numCells))
+		if (!isEditMode && coloringDataManager.has(name, numCells))
 			return "Duplicated coloring name: " + name + " already exists";
 
 		String units = unitsTextField.getText();
@@ -467,7 +469,10 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			{
 				comboBox.addItem(item);
 			}
-			comboBox.setSelectedIndex(0);
+			if (!columnTitles.isEmpty())
+			{
+				comboBox.setSelectedIndex(0);
+			}
 
 		}
 		// TODO redmine 1339: catch all exceptions in one catch (Exception e).
