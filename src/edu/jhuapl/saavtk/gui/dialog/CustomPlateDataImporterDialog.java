@@ -365,15 +365,15 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
 		getContentPane().add(scalarLabel, gridBagConstraints);
 		
-		JLabel xLabel = new javax.swing.JLabel();
-		xLabel.setText("Choose X column");
-		gridBagConstraints = new java.awt.GridBagConstraints();
-		gridBagConstraints.gridx = 0;
-		gridBagConstraints.gridy = 3;
-		gridBagConstraints.gridwidth = 3;
-		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
-		getContentPane().add(xLabel, gridBagConstraints);
+//		JLabel xLabel = new javax.swing.JLabel();
+//		xLabel.setText("Choose X column");
+//		gridBagConstraints = new java.awt.GridBagConstraints();
+//		gridBagConstraints.gridx = 0;
+//		gridBagConstraints.gridy = 3;
+//		gridBagConstraints.gridwidth = 3;
+//		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+//		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+//		getContentPane().add(xLabel, gridBagConstraints);
 		
 		JLabel yLabel = new javax.swing.JLabel();
 		yLabel.setText("Choose Y column");
@@ -393,14 +393,14 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
 		getContentPane().add(comboBox, gridBagConstraints);
 		
-		xComboBox = new JComboBox<>();
-		gridBagConstraints = new java.awt.GridBagConstraints();
-		gridBagConstraints.gridx = 0;
-		gridBagConstraints.gridy = 4;
-		gridBagConstraints.gridwidth = 2;
-		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
-		getContentPane().add(xComboBox, gridBagConstraints);
+//		xComboBox = new JComboBox<>();
+//		gridBagConstraints = new java.awt.GridBagConstraints();
+//		gridBagConstraints.gridx = 0;
+//		gridBagConstraints.gridy = 4;
+//		gridBagConstraints.gridwidth = 2;
+//		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+//		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+//		getContentPane().add(xComboBox, gridBagConstraints);
 
 
 		cancelButton.setText("Cancel");
