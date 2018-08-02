@@ -95,7 +95,6 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 	private String validateInput()
 	{
-		String result = null;
 
 		String cellDataPath = cellDataPathTextField.getText();
 		if (cellDataPath == null)
@@ -123,9 +122,11 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			// as part of the check.
 			try
 			{
-				ImmutableList<String> columnTitles = getColumnTitlesCsv(cellDataPath);
+				@SuppressWarnings("unused")
+				ImmutableList<String> columnTitles = getColumnTitles(cellDataPath);
+				
 			}
-			catch (IncorrectFileFormatException | IOException e)
+			catch (IncorrectFileFormatException | InvalidFileFormatException | IOException e)
 			{
 				return e.getMessage();
 			}
@@ -134,8 +135,6 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			// Warning: "dead code", meaning that this code will never execute, in other words
 			// result is alwyas null here, so you never ever return result. Is it safe just to
 			// delete these last couple lines?
-			if (result != null)
-				return result;
 		}
 
 		String name = nameTextField.getText();
@@ -161,14 +160,12 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 	}
 
 	// TODO redmine 1339: get rid of "Csv" suffix -- this works for either FITS or CSV files.
-	private ImmutableList<String> getColumnTitlesCsv(String cellDataPath) throws IncorrectFileFormatException, IOException
+	private ImmutableList<String> getColumnTitles(String cellDataPath) throws IncorrectFileFormatException, IOException, InvalidFileFormatException
 	{
 		ImmutableList.Builder<String> builder = ImmutableList.builder();
 		File file = new File(cellDataPath);
 		ImmutableList<DataObjectInfo> dataInfoList;
-		try
-		{
-			dataInfoList = DataFileReader.of().readFileInfo(file).getDataObjectInfo();
+		dataInfoList = DataFileReader.of().readFileInfo(file).getDataObjectInfo();
 			for (DataObjectInfo dataObjectInfo : dataInfoList)
 			{
 				if (dataObjectInfo instanceof TableInfo)
@@ -182,15 +179,9 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 				}
 			}
 
-		}
 		// TODO redmine 1339: This exception should not be caught -- take out the try-catch and
 		// add this exception type to the "throws" part of the method declaration. Note that you then
 		// may need to change the code elsewhere to handle the InvalidFileFormatException.
-		catch (InvalidFileFormatException e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 
 		return builder.build();
 
@@ -335,7 +326,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			@Override
 			public void actionPerformed(java.awt.event.ActionEvent evt)
 			{
-				browsePlateDataButtonActionPerformed(evt);
+					browsePlateDataButtonActionPerformed(evt);
 			}
 		});
 		gridBagConstraints = new java.awt.GridBagConstraints();
@@ -363,27 +354,54 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 		jPanel1.setLayout(new java.awt.GridBagLayout());
 
-		// TODO redmine 1339: add a JComboBox field that has the drop-down names of the columns.
 
-		JLabel coloringLabel = new javax.swing.JLabel();
-		coloringLabel.setText("Plate Colorings");
+		JLabel scalarLabel = new javax.swing.JLabel();
+		scalarLabel.setText("Choose column");
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 0;
 		gridBagConstraints.gridy = 3;
 		gridBagConstraints.gridwidth = 3;
 		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
 		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
-		getContentPane().add(coloringLabel, gridBagConstraints);
-		comboBox = new JComboBox<>();
+		getContentPane().add(scalarLabel, gridBagConstraints);
+		
+		JLabel xLabel = new javax.swing.JLabel();
+		xLabel.setText("Choose X column");
 		gridBagConstraints = new java.awt.GridBagConstraints();
-		gridBagConstraints.gridx = 1;
+		gridBagConstraints.gridx = 0;
 		gridBagConstraints.gridy = 3;
 		gridBagConstraints.gridwidth = 3;
 		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
 		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+		getContentPane().add(xLabel, gridBagConstraints);
+		
+		JLabel yLabel = new javax.swing.JLabel();
+		yLabel.setText("Choose Y column");
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridwidth = 3;
+		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+		getContentPane().add(yLabel, gridBagConstraints);
+		
+		comboBox = new JComboBox<>();
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 4;
+		gridBagConstraints.gridwidth = 2;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
 		getContentPane().add(comboBox, gridBagConstraints);
+		
+		xComboBox = new JComboBox<>();
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 4;
+		gridBagConstraints.gridwidth = 2;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+		getContentPane().add(xComboBox, gridBagConstraints);
 
-		//JScrollPane scrollPane = new JScrollPane();
 
 		cancelButton.setText("Cancel");
 		cancelButton.addActionListener(new java.awt.event.ActionListener() {
@@ -405,7 +423,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			@Override
 			public void actionPerformed(java.awt.event.ActionEvent evt)
 			{
-				okButtonActionPerformed(evt);
+					okButtonActionPerformed(evt);
 			}
 		});
 		gridBagConstraints = new java.awt.GridBagConstraints();
@@ -439,7 +457,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		hasNullsCheckBox.setToolTipText("If checked, then the smallest value in the file is assumed to represent invalid data and is not displayed on the shape model.");
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 0;
-		gridBagConstraints.gridy = 4;
+		gridBagConstraints.gridy = 5;
 		gridBagConstraints.gridwidth = 3;
 		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
 		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
@@ -448,7 +466,8 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		pack();
 	}// </editor-fold>//GEN-END:initComponents
 
-	private void browsePlateDataButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_browsePlateDataButtonActionPerformed
+	private void browsePlateDataButtonActionPerformed(java.awt.event.ActionEvent evt) //GEN-FIRST:event_browsePlateDataButtonActionPerformed
+
 	{//GEN-HEADEREND:event_browsePlateDataButtonActionPerformed
 		File file = CustomFileChooser.showOpenDialog(this, "Select Plate Data");
 		if (file == null)
@@ -461,36 +480,37 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		ImmutableList<String> columnTitles;
 		try
 		{
-			columnTitles = getColumnTitlesCsv(filename);
+			columnTitles = getColumnTitles(filename);
+			//"Browse": If first column title is blank put in numbers 
 			comboBox.removeAllItems();
 			for (String item : columnTitles)
 			{
 				comboBox.addItem(item);
 			}
 			comboBox.setSelectedIndex(0);
+//			throw new IOException();
 
 		}
 		// TODO redmine 1339: catch all exceptions in one catch (Exception e).
-		catch (IncorrectFileFormatException e)
+		catch (Exception e)
 		{
-			e.printStackTrace();
 			// TODO redmine 1339: Create an error popup message that uses the e.getMessage() message as the text of the error.
 			// The popup message should also tell the user to look at the console/log for more information.
-		}
-		catch (IOException e)
-		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this), e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+			
 		}
 
 	}//GEN-LAST:event_browsePlateDataButtonActionPerformed
+	
+	//Radio Button Action
 
 	private void cancelButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_cancelButtonActionPerformed
 	{//GEN-HEADEREND:event_cancelButtonActionPerformed
 		setVisible(false);
 	}//GEN-LAST:event_cancelButtonActionPerformed
 
-	private void okButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_okButtonActionPerformed
+	private void okButtonActionPerformed(java.awt.event.ActionEvent evt) //GEN-FIRST:event_okButtonActionPerformed
 	{//GEN-HEADEREND:event_okButtonActionPerformed
 		String errorString = validateInput();
 		if (errorString != null)
@@ -516,5 +536,6 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 	private javax.swing.JLabel unitsLabel;
 	private javax.swing.JTextField unitsTextField;
 	private javax.swing.JComboBox<String> comboBox;
+	private javax.swing.JComboBox<String> xComboBox;
 	// End of variables declaration//GEN-END:variables
 }
