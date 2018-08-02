@@ -81,7 +81,7 @@ public class GsonSerializer implements Serializer
 	{
 		Preconditions.checkNotNull(file);
 
-		SettableMetadata source = SettableMetadata.of(Version.of(0, 0));
+		SettableMetadata source = SettableMetadata.of(SERIALIZER_VERSION);
 		try (JsonReader reader = GSON.newJsonReader(new FileReader(file)))
 		{
 			Version fileVersion = null;
@@ -103,10 +103,7 @@ public class GsonSerializer implements Serializer
 				source.put(Key.of(entry.getKey()), entry.getValue());
 			}
 		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+
 		if (SwingUtilities.isEventDispatchThread())
 		{
 			//			retrieveInSwingContext(source);
