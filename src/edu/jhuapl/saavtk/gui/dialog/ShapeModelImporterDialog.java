@@ -102,6 +102,19 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
         resolutionLabel.setEnabled(enabled);
         resolutionFormattedTextField.setEnabled(enabled);
     }
+    
+    public void populateCustomDEMImport(String demVtkFilename)
+    {
+    	shapeModelSourceButtonGroup.setSelected(customShapeModelRadioButton.getModel(), true);
+    	customShapeModelRadioButton.setEnabled(true);
+    	customShapeModelRadioButton.setSelected(true);
+    	
+    	System.out.println("ShapeModelImporterDialog: populateCustomDEMImport: selected custom radio button");
+    	ellipsoidRadioButton.setSelected(false);
+    	ellipsoidRadioButton.setEnabled(false);
+    	shapeModelPathTextField.setText(demVtkFilename);
+    	shapeModelFormatComboBox.setSelectedIndex(2);
+    }
 
     /** This method is called from within the constructor to
      * initialize the form.
