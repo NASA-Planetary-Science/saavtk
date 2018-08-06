@@ -78,11 +78,18 @@ enum DataTypeInfo
 
 	public static DataTypeInfo forObject(Object object)
 	{
-		if (object == null)
+		DataTypeInfo result = NULL;
+		if (object != null)
 		{
-			return NULL;
+			result = of(object.getClass());
+			if (result == NULL)
+			{
+				throw new IllegalArgumentException("Cannot serialize object of type "
+						+ object.getClass().getSimpleName()
+						+ ". Serialize its fields instead, or for enumerations serialize the result of name() and deserialize using valueOf().");
+			}
 		}
-		return of(object.getClass());
+		return result;
 	}
 
 	private final String typeId;
