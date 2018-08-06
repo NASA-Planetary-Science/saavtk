@@ -51,7 +51,7 @@ abstract class IterableIO implements JsonSerializer<Iterable<?>>
 	{
 		JsonObject result = new JsonObject();
 
-		// First pass: if any entries are found, determine types of key and value.
+		// First pass: if any entries are found, determine types of key and value based on the type of the first non-null element.
 		DataTypeInfo valueInfo = DataTypeInfo.NULL;
 		for (Object value : src)
 		{
