@@ -35,6 +35,25 @@ import edu.jhuapl.saavtk.metadata.gson.GsonElement.ElementIO;
 
 public class GsonSerializer implements Serializer
 {
+	private enum TestEnum
+	{
+		OPTION0("Option 0"),
+		OPTION1("Option 1");
+
+		private final String text;
+
+		TestEnum(String text)
+		{
+			this.text = text;
+		}
+
+		@Override
+		public String toString()
+		{
+			return text;
+		}
+	}
+
 	private static final Version SERIALIZER_VERSION = Version.of(1, 0);
 	private static final ListIO LIST_IO = new ListIO();
 	private static final SortedMapIO SORTED_MAP_IO = new SortedMapIO();
@@ -250,6 +269,7 @@ public class GsonSerializer implements Serializer
 		final String v3 = "Bennu / V3";
 		final Key<SettableMetadata> testV3StateKey = Key.of(v3);
 		SettableMetadata v3State = SettableMetadata.of(Version.of(3, 1));
+		TestEnum testEnumBefore = TestEnum.OPTION1;
 
 		v3State.put(Key.of("tab"), "1");
 		v3State.put(Key.of("facets"), 2000000001L);
@@ -266,6 +286,7 @@ public class GsonSerializer implements Serializer
 		v3State.put(Key.of("string"), "a string");
 		v3State.put(Key.of("stringNull"), null);
 		v3State.put(Key.of("longNull"), null);
+		v3State.put(Key.of("Test Enum"), testEnumBefore.name());
 
 		List<String> stringList = new ArrayList<>();
 		stringList.add("String0");
@@ -343,6 +364,9 @@ public class GsonSerializer implements Serializer
 		v3State2 = state2.get(testV3StateKey);
 		Long longNull = v3State2.get(Key.of("longNull"));
 		System.out.println("longNull is " + longNull);
+
+		TestEnum testEnumAfter = TestEnum.valueOf(v3State2.get(Key.of("Test Enum")));
+		System.out.println("testEnum is " + testEnumAfter);
 
 		System.out.println("stringSet is " + state2.get(Key.of("stringSet")));
 
