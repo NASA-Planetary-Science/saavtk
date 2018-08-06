@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-public final class FixedMetadata extends BasicMetadata
+public class FixedMetadata extends BasicMetadata
 {
 	public static FixedMetadata of(Metadata metadata)
 	{
@@ -35,7 +35,7 @@ public final class FixedMetadata extends BasicMetadata
 	private final ImmutableList<Key<?>> keys;
 	private final ImmutableMap<Key<?>, Object> map;
 
-	private FixedMetadata(Version version, ImmutableList<Key<?>> keys, ImmutableMap<Key<?>, Object> map)
+	protected FixedMetadata(Version version, ImmutableList<Key<?>> keys, ImmutableMap<Key<?>, Object> map)
 	{
 		super(version);
 		this.keys = keys;

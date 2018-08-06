@@ -8,7 +8,7 @@ import java.util.Map;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-public final class SettableMetadata extends BasicMetadata
+public class SettableMetadata extends BasicMetadata
 {
 	public static SettableMetadata of(Version version)
 	{
@@ -31,7 +31,7 @@ public final class SettableMetadata extends BasicMetadata
 	private final List<Key<?>> keys;
 	private final Map<Key<?>, Object> map;
 
-	private SettableMetadata(Version version, List<Key<?>> keys, Map<Key<?>, Object> map)
+	protected SettableMetadata(Version version, List<Key<?>> keys, Map<Key<?>, Object> map)
 	{
 		super(version);
 		Preconditions.checkNotNull(keys);
