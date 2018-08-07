@@ -287,6 +287,7 @@ public class GsonSerializer implements Serializer
 		v3State.put(Key.of("stringNull"), null);
 		v3State.put(Key.of("longNull"), null);
 		v3State.put(Key.of("Test Enum"), testEnumBefore.name());
+		//		v3State.put(Key.of("List<TestEnum>"), ImmutableList.of(TestEnum.OPTION1, TestEnum.OPTION0));
 
 		List<String> stringList = new ArrayList<>();
 		stringList.add("String0");
@@ -335,6 +336,12 @@ public class GsonSerializer implements Serializer
 		Key<SortedMap<Byte, Short>> byteSortedMapKey = Key.of("byteSortedMap");
 		state.put(byteSortedMapKey, byteSortedMap);
 
+		state.put(Key.of("double array"), new double[] { 3., 4., 5. });
+		state.put(Key.of("int array"), new int[] { 6, 7, 8 });
+		state.put(Key.of("Double array"), new Double[] { 9., 10., 11. });
+		state.put(Key.of("Integer array"), new Integer[] { 12, 13, 14 });
+		state.put(Key.of("String array"), new String[] { "a", "b", "c" });
+
 		state.put(testV3StateKey, v3State);
 
 		File file = new File("/Users/peachjm1/Downloads/MyState.sbmt");
@@ -361,6 +368,17 @@ public class GsonSerializer implements Serializer
 		System.out.println("States were" + (v3State.equals(v3State2) ? " " : " not ") + "found equal");
 
 		// Test some further unpacking.
+		double[] doubleArray = state.get(Key.of("double array"));
+		System.out.println("double array is [ " + doubleArray[0] + ", " + doubleArray[1] + ", " + doubleArray[2] + " ]");
+		int[] intArray = state.get(Key.of("int array"));
+		System.out.println("int array is [ " + intArray[0] + ", " + intArray[1] + ", " + intArray[2] + " ]");
+		Double[] doubleObjectArray = state.get(Key.of("Double array"));
+		System.out.println("Double array is [ " + doubleObjectArray[0] + ", " + doubleObjectArray[1] + ", " + doubleObjectArray[2] + " ]");
+		Integer[] integerObjectArray = state.get(Key.of("Integer array"));
+		System.out.println("int array is [ " + integerObjectArray[0] + ", " + integerObjectArray[1] + ", " + integerObjectArray[2] + " ]");
+		String[] stringArray = state.get(Key.of("String array"));
+		System.out.println("String array is [ " + stringArray[0] + ", " + stringArray[1] + ", " + stringArray[2] + " ]");
+
 		v3State2 = state2.get(testV3StateKey);
 		Long longNull = v3State2.get(Key.of("longNull"));
 		System.out.println("longNull is " + longNull);

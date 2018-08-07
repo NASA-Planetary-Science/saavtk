@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -53,10 +55,17 @@ public class SettableMetadata extends BasicMetadata
 		return new SettableMetadata(getVersion(), new ArrayList<>(keys), new HashMap<>(map));
 	}
 
-	public <V> SettableMetadata put(Key<V> key, V value)
+	@Override
+	public ImmutableMap<Key<?>, Object> getMap()
+	{
+		return ImmutableMap.copyOf(map);
+	}
+
+	public final <V> SettableMetadata put(Key<V> key, V value)
 	{
 		Preconditions.checkNotNull(key);
-		if (!map.containsKey(key))
+		validate(value);
+		if (!hasKey(key))
 		{
 			keys.add(key);
 		}
@@ -77,10 +86,101 @@ public class SettableMetadata extends BasicMetadata
 		map.clear();
 	}
 
-	@Override
-	public ImmutableMap<Key<?>, Object> getMap()
+	protected void validate(Object object)
 	{
-		return ImmutableMap.copyOf(map);
+		if (object == null)
+			return;
+		if (object instanceof Key)
+			return;
+		if (object instanceof Metadata)
+			return;
+		if (object instanceof Version)
+			return;
+		if (object instanceof List)
+		{
+			validateIterable((Iterable<?>) object);
+			return;
+		}
+		if (object instanceof Map)
+		{
+			validateMap((Map<?, ?>) object);
+			return;
+		}
+		if (object instanceof Set)
+		{
+			validateIterable((Iterable<?>) object);
+			return;
+		}
+		if (object instanceof String)
+			return;
+		if (object instanceof Character)
+			return;
+		if (object instanceof Boolean)
+			return;
+		if (object instanceof Double)
+			return;
+		if (object instanceof Float)
+			return;
+		if (object instanceof Integer)
+			return;
+		if (object instanceof Long)
+			return;
+		if (object instanceof Short)
+			return;
+		if (object instanceof Byte)
+			return;
+		if (object instanceof String[])
+			return;
+		if (object instanceof Character[])
+			return;
+		if (object instanceof Boolean[])
+			return;
+		if (object instanceof Double[])
+			return;
+		if (object instanceof Float[])
+			return;
+		if (object instanceof Integer[])
+			return;
+		if (object instanceof Long[])
+			return;
+		if (object instanceof Short[])
+			return;
+		if (object instanceof Byte[])
+			return;
+		if (object instanceof char[])
+			return;
+		if (object instanceof boolean[])
+			return;
+		if (object instanceof double[])
+			return;
+		if (object instanceof float[])
+			return;
+		if (object instanceof int[])
+			return;
+		if (object instanceof long[])
+			return;
+		if (object instanceof short[])
+			return;
+		if (object instanceof byte[])
+			return;
+		throw new IllegalArgumentException("Cannot serialize objects of type " + object.getClass().getSimpleName() + ". Serialize fields instead, or for enums serialize/deserialize with name()/valueOf().");
+	}
+
+	protected void validateIterable(Iterable<?> iterable)
+	{
+		for (Object item : iterable)
+		{
+			validate(item);
+		}
+	}
+
+	protected void validateMap(Map<?, ?> map)
+	{
+		for (Entry<?, ?> entry : map.entrySet())
+		{
+			validate(entry.getKey());
+			validate(entry.getValue());
+		}
 	}
 
 }

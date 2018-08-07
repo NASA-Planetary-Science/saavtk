@@ -13,31 +13,81 @@ import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.Version;
 
+/**
+ * Enumerations representing different forms of type information associated with
+ * particular classes. These enumerations are used via reflection to serialize
+ * objects, so it is important not to remove any of these enumerations, or the
+ * associated types of objects will not be serializable. This is true even if
+ * the particular enumerated items are not explicitly referenced.
+ * 
+ * This enumeration must be kept consistent with the object types supported by
+ * the metadata package.
+ */
 enum DataTypeInfo
 {
-	STRING("String", new TypeToken<String>() {}.getType(), String.class),
-	BOOLEAN("Boolean", new TypeToken<Boolean>() {}.getType(), Boolean.class),
-	DOUBLE("Double", new TypeToken<Double>() {}.getType(), Double.class),
-	VERSION("Version", new TypeToken<Version>() {}.getType(), Version.class),
+	////////////////////////////////////////////////////////////////
+	// Metadata-specific types.
+	METADATA_KEY("Key", Key.class, new TypeToken<Key<?>>() {}.getType()),
+	METADATA("Metadata", Metadata.class, new TypeToken<Metadata>() {}.getType()),
+	VERSION("Version", Version.class, new TypeToken<Version>() {}.getType()),
+	ELEMENT("Element", GsonElement.class, new TypeToken<GsonElement>() {}.getType()),
+	////////////////////////////////////////////////////////////////
 
-	METADATA_KEY("Key", new TypeToken<Key<?>>() {}.getType(), Key.class),
-	METADATA("Metadata", new TypeToken<Metadata>() {}.getType(), Metadata.class),
-	ELEMENT("Element", new TypeToken<GsonElement>() {}.getType(), GsonElement.class),
-	//	NUMBER("Number", new TypeToken<Number>() {}.getType(), Number.class),
-	INTEGER("Integer", new TypeToken<Integer>() {}.getType(), Integer.class),
-	LONG("Long", new TypeToken<Long>() {}.getType(), Long.class),
-	SHORT("Short", new TypeToken<Short>() {}.getType(), Short.class),
-	BYTE("Byte", new TypeToken<Byte>() {}.getType(), Byte.class),
-	FLOAT("Float", new TypeToken<Float>() {}.getType(), Float.class),
-	CHARACTER("Character", new TypeToken<Character>() {}.getType(), Character.class),
-	DOUBLE_ARRAY("double[]", new TypeToken<double[]>() {}.getType(), double[].class),
+	////////////////////////////////////////////////////////////////
+	// Collection types.
+	LIST("List", List.class, new TypeToken<List<?>>() {}.getType()),
+	SORTED_MAP("SortedMap", SortedMap.class, new TypeToken<SortedMap<?, ?>>() {}.getType()),
+	MAP("Map", Map.class, new TypeToken<Map<?, ?>>() {}.getType()),
+	SORTED_SET("SortedSet", SortedSet.class, new TypeToken<SortedSet<?>>() {}.getType()),
+	SET("Set", Set.class, new TypeToken<Set<?>>() {}.getType()),
+	////////////////////////////////////////////////////////////////
 
-	SORTED_MAP("SortedMap", new TypeToken<SortedMap<?, ?>>() {}.getType(), SortedMap.class),
-	MAP("Map", new TypeToken<Map<?, ?>>() {}.getType(), Map.class),
-	LIST("List", new TypeToken<List<?>>() {}.getType(), List.class),
-	SORTED_SET("SortedSet", new TypeToken<SortedSet<?>>() {}.getType(), SortedSet.class),
-	SET("Set", new TypeToken<Set<?>>() {}.getType(), Set.class),
-	NULL("Null", new TypeToken<Object>() {}.getType(), Object.class),
+	////////////////////////////////////////////////////////////////
+	// Built-in object types.
+	STRING("String", String.class, new TypeToken<String>() {}.getType()),
+	CHARACTER_OBJECT("Character", Character.class, new TypeToken<Character>() {}.getType()),
+	BOOLEAN_OBJECT("Boolean", Boolean.class, new TypeToken<Boolean>() {}.getType()),
+	// Floating-point types.
+	DOUBLE_OBJECT("Double", Double.class, new TypeToken<Double>() {}.getType()),
+	FLOAT_OBJECT("Float", Float.class, new TypeToken<Float>() {}.getType()),
+	// Integer types.
+	INTEGER_OBJECT("Integer", Integer.class, new TypeToken<Integer>() {}.getType()),
+	LONG_OBJECT("Long", Long.class, new TypeToken<Long>() {}.getType()),
+	SHORT_OBJECT("Short", Short.class, new TypeToken<Short>() {}.getType()),
+	BYTE_OBJECT("Byte", Byte.class, new TypeToken<Byte>() {}.getType()),
+	////////////////////////////////////////////////////////////////
+
+	////////////////////////////////////////////////////////////////
+	// Arrays of built-in object types.
+	STRING_ARRAY("String Array", String[].class, new TypeToken<String[]>() {}.getType()),
+	CHARACTER_OBJECT_ARRAY("Character Array", Character[].class, new TypeToken<Character[]>() {}.getType()),
+	BOOLEAN_OBJECT_ARRAY("Boolean Array", Boolean[].class, new TypeToken<Boolean[]>() {}.getType()),
+	// Floating-point types.
+	DOUBLE_OBJECT_ARRAY("Double Array", Double[].class, new TypeToken<Double[]>() {}.getType()),
+	FLOAT_OBJECT_ARRAY("Float Array", Float[].class, new TypeToken<Float[]>() {}.getType()),
+	// Integer types.
+	INTEGER_OBJECT_ARRAY("Integer Array", Integer[].class, new TypeToken<Integer[]>() {}.getType()),
+	LONG_OBJECT_ARRAY("Long Array", Long[].class, new TypeToken<Long[]>() {}.getType()),
+	SHORT_OBJECT_ARRAY("Short Array", Short[].class, new TypeToken<Short[]>() {}.getType()),
+	BYTE_OBJECT_ARRAY("Byte Array", Byte[].class, new TypeToken<Byte[]>() {}.getType()),
+	////////////////////////////////////////////////////////////////
+
+	////////////////////////////////////////////////////////////////
+	// Arrays of primitive types.
+	CHARACTER_ARRAY("char Array", char[].class, new TypeToken<char[]>() {}.getType()),
+	BOOLEAN_ARRAY("boolean Array", boolean[].class, new TypeToken<boolean[]>() {}.getType()),
+	// Floating-point types.
+	DOUBLE_ARRAY("double Array", double[].class, new TypeToken<double[]>() {}.getType()),
+	FLOAT_ARRAY("float Array", float[].class, new TypeToken<float[]>() {}.getType()),
+	// Integer types.
+	INTEGER_ARRAY("int Array", int[].class, new TypeToken<int[]>() {}.getType()),
+	LONG_ARRAY("long Array", long[].class, new TypeToken<long[]>() {}.getType()),
+	SHORT_ARRAY("short Array", short[].class, new TypeToken<short[]>() {}.getType()),
+	BYTE_ARRAY("byte Array", byte[].class, new TypeToken<byte[]>() {}.getType()),
+	////////////////////////////////////////////////////////////////
+
+	// Catch-all case used both to handle nulls and to detect objects that cannot be serialized.
+	NULL("Null", Object.class, new TypeToken<Object>() {}.getType()),
 	;
 
 	public static DataTypeInfo of(String typeId)
@@ -52,11 +102,11 @@ enum DataTypeInfo
 		throw new IllegalArgumentException();
 	}
 
-	public static DataTypeInfo of(Type type)
+	public static DataTypeInfo of(Class<?> valueClass)
 	{
 		for (DataTypeInfo info : values())
 		{
-			if (info.type.equals(type))
+			if (info.valueClass.isAssignableFrom(valueClass))
 			{
 				return info;
 			}
@@ -64,11 +114,11 @@ enum DataTypeInfo
 		throw new IllegalArgumentException();
 	}
 
-	public static DataTypeInfo of(Class<?> valueClass)
+	public static DataTypeInfo of(Type type)
 	{
 		for (DataTypeInfo info : values())
 		{
-			if (info.valueClass.isAssignableFrom(valueClass))
+			if (info.type.equals(type))
 			{
 				return info;
 			}
@@ -93,14 +143,14 @@ enum DataTypeInfo
 	}
 
 	private final String typeId;
-	private final Type type;
 	private final Class<?> valueClass;
+	private final Type type;
 
-	private DataTypeInfo(String typeId, Type type, Class<?> clazz)
+	private DataTypeInfo(String typeId, Class<?> valueClass, Type type)
 	{
 		this.typeId = typeId;
+		this.valueClass = valueClass;
 		this.type = type;
-		this.valueClass = clazz;
 	}
 
 	public String getTypeId()
@@ -108,14 +158,14 @@ enum DataTypeInfo
 		return typeId;
 	}
 
-	public Type getType()
-	{
-		return type;
-	}
-
 	public Class<?> getTypeClass()
 	{
 		return valueClass;
+	}
+
+	public Type getType()
+	{
+		return type;
 	}
 
 	@Override
