@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 public class SettableMetadata extends BasicMetadata
 {
@@ -77,9 +78,9 @@ public class SettableMetadata extends BasicMetadata
 	}
 
 	@Override
-	protected Map<Key<?>, Object> getMap()
+	public ImmutableMap<Key<?>, Object> getMap()
 	{
-		return map;
+		return ImmutableMap.copyOf(map);
 	}
 
 }
