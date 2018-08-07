@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.metadata.gson;
+package edu.jhuapl.saavtk.metadata.serialization.gson;
 
 import java.io.FileReader;
 import java.io.FileWriter;

@@ -1,8 +1,8 @@
-package edu.jhuapl.saavtk.metadata.gson;
+package edu.jhuapl.saavtk.metadata.serialization.gson;
 
 import java.lang.reflect.Type;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
@@ -10,17 +10,17 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 
-final class SetIO extends IterableIO implements JsonDeserializer<Set<?>>
+final class SortedSetIO extends IterableIO implements JsonDeserializer<SortedSet<?>>
 {
 	@Override
-	public Set<?> deserialize(JsonElement jsonElement, @SuppressWarnings("unused") Type typeOfT, JsonDeserializationContext context) throws JsonParseException
+	public SortedSet<?> deserialize(JsonElement jsonElement, @SuppressWarnings("unused") Type typeOfT, JsonDeserializationContext context) throws JsonParseException
 	{
 		DeserializedJsonArray array = unpack(jsonElement);
 		DataTypeInfo dataInfo = array.dataTypeInfo;
 		JsonArray jsonArray = array.jsonArray;
 
 		// Create output data object.
-		Set<?> result = new HashSet<>();
+		SortedSet<?> result = new TreeSet<>();
 
 		Type valueType = dataInfo.getType();
 		for (JsonElement entryElement : jsonArray)

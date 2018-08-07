@@ -1,9 +1,14 @@
-package edu.jhuapl.saavtk.metadata;
+package edu.jhuapl.saavtk.metadata.serialization;
 
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import com.google.common.base.Preconditions;
+
+import edu.jhuapl.saavtk.metadata.Key;
+import edu.jhuapl.saavtk.metadata.Metadata;
+import edu.jhuapl.saavtk.metadata.MetadataManager;
+import edu.jhuapl.saavtk.metadata.Serializer;
 
 /**
  * This is a helper implementation designed to wrap another implementation of
