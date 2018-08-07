@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JRadioButton;
 
 import com.google.common.collect.ImmutableList;
 
@@ -341,39 +342,111 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		getContentPane().add(unitsLabel, gridBagConstraints);
 
 		jPanel1.setLayout(new java.awt.GridBagLayout());
+		
+		JLabel importLabel = new javax.swing.JLabel();
+		importLabel.setText("Import data as:");
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridwidth = 3;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+		getContentPane().add(importLabel, gridBagConstraints);
+		
+		JRadioButton scalarRadioButton = new javax.swing.JRadioButton();
+//		scalarRadioButton.addActionListener(new java.awt.event.ActionListener() {
+//			@Override
+//			public void actionPerformed(java.awt.event.ActionEvent evt)
+//			{
+//				scalarRadioButtonActionPerformed(evt);
+//			}
+//		});
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 1;
+		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridwidth = 1;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+		scalarRadioButton.setSelected(true);
+		getContentPane().add(scalarRadioButton, gridBagConstraints);
+		
+		JLabel scalarRadioLabel = new javax.swing.JLabel();
+		scalarRadioLabel.setText("Scalar");
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 2;
+		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridwidth = 3;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+		getContentPane().add(scalarRadioLabel, gridBagConstraints);
+		scalarRadioLabel.setVisible(false);
+		
+		JRadioButton vectorRadioButton = new javax.swing.JRadioButton();
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 3;
+		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridwidth = 1;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+		scalarRadioButton.setSelected(true);
+		getContentPane().add(vectorRadioButton, gridBagConstraints);
+		vectorRadioButton.setVisible(false);
+		
+		JLabel vectorRadioLabel = new javax.swing.JLabel();
+		scalarRadioLabel.setText("Vector");
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 4;
+		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridwidth = 3;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+		getContentPane().add(vectorRadioLabel, gridBagConstraints);
+		vectorRadioLabel.setVisible(false);
+		
 
 		JLabel scalarLabel = new javax.swing.JLabel();
 		scalarLabel.setText("Choose column");
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 0;
-		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridy = 4;
 		gridBagConstraints.gridwidth = 3;
 		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
 		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
 		getContentPane().add(scalarLabel, gridBagConstraints);
 
 		JLabel xLabel = new javax.swing.JLabel();
-		xLabel.setText("Choose X column");
+		xLabel.setText("Choose 'X' column");
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 0;
-		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridy = 4;
 		gridBagConstraints.gridwidth = 3;
 		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
 		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
 		getContentPane().add(xLabel, gridBagConstraints);
 
 		JLabel yLabel = new javax.swing.JLabel();
-		yLabel.setText("Choose Y column");
+		yLabel.setText("Choose 'Y' column");
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 0;
-		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridy = 5;
 		gridBagConstraints.gridwidth = 3;
-		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(5, 25, 0, 0);
 		getContentPane().add(yLabel, gridBagConstraints);
+		
+		JLabel zLabel = new javax.swing.JLabel();
+		zLabel.setText("Choose 'Z' column");
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 6;
+		gridBagConstraints.gridwidth = 3;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(5, 25, 0, 0);
+		getContentPane().add(zLabel, gridBagConstraints);
 
 		comboBox = new JComboBox<>();
 		gridBagConstraints = new java.awt.GridBagConstraints();
-		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridx = 1;
 		gridBagConstraints.gridy = 4;
 		gridBagConstraints.gridwidth = 2;
 		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
@@ -382,12 +455,30 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 		xComboBox = new JComboBox<>();
 		gridBagConstraints = new java.awt.GridBagConstraints();
-		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridx = 1;
 		gridBagConstraints.gridy = 4;
 		gridBagConstraints.gridwidth = 2;
 		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
 		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
 		getContentPane().add(xComboBox, gridBagConstraints);
+		
+		yComboBox = new JComboBox<>();
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 1;
+		gridBagConstraints.gridy = 5;
+		gridBagConstraints.gridwidth = 2;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(5, 25, 0, 0);
+		getContentPane().add(yComboBox, gridBagConstraints);
+		
+		zComboBox = new JComboBox<>();
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 1;
+		gridBagConstraints.gridy = 6;
+		gridBagConstraints.gridwidth = 2;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(5, 25, 0, 0);
+		getContentPane().add(zComboBox, gridBagConstraints);
 
 		cancelButton.setText("Cancel");
 		cancelButton.addActionListener(new java.awt.event.ActionListener() {
@@ -420,11 +511,11 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 1;
-		gridBagConstraints.gridy = 4;
+		gridBagConstraints.gridy = 8;
 		gridBagConstraints.gridwidth = 2;
 		gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_END;
 		gridBagConstraints.weighty = 1.0;
-		gridBagConstraints.insets = new java.awt.Insets(10, 0, 5, 0);
+		gridBagConstraints.insets = new java.awt.Insets(10, 25, 5, 0);
 		getContentPane().add(jPanel1, gridBagConstraints);
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 1;
@@ -443,7 +534,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		hasNullsCheckBox.setToolTipText("If checked, then the smallest value in the file is assumed to represent invalid data and is not displayed on the shape model.");
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 0;
-		gridBagConstraints.gridy = 5;
+		gridBagConstraints.gridy = 8;
 		gridBagConstraints.gridwidth = 3;
 		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
 		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
@@ -467,7 +558,32 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		try
 		{
 			columnTitles = getColumnTitles(filename);
+//			if (columnTitles.size() < 3) {
+//				vectorRadioButton.setVisible(false);
+//				importLabel.setVisible(false);
+//				scalarRadioButton.setVisible(false);
+//				scalarRadioLabel.setVisible(false);
+//				vectorRadioButton.setVisible(false);
+//				vectorRadioLabel.setVisible(false);
+//				xLabel.setVisible(false);
+//				yLabel.setVisible(false);
+//				zLabel.setVisible(false);
+//			}
 			//"Browse": If first column title is blank put in numbers 
+//			String firstTitle = columnTitles.get(0);
+//			if (firstTitle.isEmpty())
+//			{
+//
+//				System.out.println("blank title");
+//				int titleSize = columnTitles.size();
+//				columnTitles.clear();
+//				for (int i = 0; i < titleSize; i++) 
+//				{
+//					String iString = Integer.toString(i);
+//					columnTitles.add(iString);	
+//				}
+//				System.out.println(columnTitles);
+//			}	
 			comboBox.removeAllItems();
 			for (String item : columnTitles)
 			{
@@ -487,6 +603,14 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 	}//GEN-LAST:event_browsePlateDataButtonActionPerformed
 
 	//Radio Button Action
+//	PRIVATE VOID SCALARRADIOBUTTONACTIONPERFORMED (JAVA.AWT.EVENT.ACTIONEVENT EVT) {
+//		IF (SCALARRADIOBUTTON.ISSELECTED()) {
+//	        // YOUR SELECTED CODE HERE.
+//	    }
+//	    ELSE   {
+//	        // YOUR DESELECTED CODE HERE.
+//	    }
+//	}
 
 	private void cancelButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_cancelButtonActionPerformed
 	{//GEN-HEADEREND:event_cancelButtonActionPerformed
@@ -518,7 +642,17 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 	private javax.swing.JLabel pathLabel2;
 	private javax.swing.JLabel unitsLabel;
 	private javax.swing.JTextField unitsTextField;
+	private javax.swing.JLabel importLabel;
+	private javax.swing.JRadioButton scalarRadioButton;
+	private javax.swing.JLabel scalarRadioLabel;
+	private javax.swing.JRadioButton vectorRadioButton;
+	private javax.swing.JLabel vectorRadioLabel;
+	private javax.swing.JLabel xLabel;
+	private javax.swing.JLabel yLabel;
+	private javax.swing.JLabel zLabel;
 	private javax.swing.JComboBox<String> comboBox;
 	private javax.swing.JComboBox<String> xComboBox;
+	private javax.swing.JComboBox<String> yComboBox;
+	private javax.swing.JComboBox<String> zComboBox;
 	// End of variables declaration//GEN-END:variables
 }
