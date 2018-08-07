@@ -26,6 +26,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import edu.jhuapl.saavtk.config.ViewConfig;
+import edu.jhuapl.saavtk.gui.dialog.ShapeModelImporterDialog;
 import edu.jhuapl.saavtk.gui.dialog.ShapeModelImporterManagerDialog;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
@@ -69,9 +70,10 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 	public ViewMenu(String title, ViewManager rootPanel, RecentlyViewed viewed)
 	{
 		super(title);
-
 		this.rootPanel = rootPanel;
 		this.viewed = viewed;
+
+		ShapeModelImporterDialog.pcl = ViewMenu.this;
 
 		initialize();
 
@@ -195,6 +197,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 
 	public void addCustomMenuItem(View view)
 	{
+		System.out.println("ViewMenu: addCustomMenuItem: adding custom menu item");
 		if (getRootPanel().getNumberOfCustomViews() == 1)
 			this.addSeparator();
 
@@ -249,8 +252,10 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 	@Override
 	public void propertyChange(PropertyChangeEvent evt)
 	{
+		System.out.println("ViewMenu: propertyChange: property " + evt.getPropertyName());
 		if (Properties.CUSTOM_MODEL_ADDED.equals(evt.getPropertyName()))
 		{
+			System.out.println("ViewMenu: propertyChange: adding custom model, property firing");
 			String name = (String) evt.getNewValue();
 			View view = getRootPanel().addCustomView(name);
 			addCustomMenuItem(view);

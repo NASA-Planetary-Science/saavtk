@@ -192,6 +192,17 @@ public class ShapeModelImporter
         writer.SetFileTypeToBinary();
         writer.Write();
 
+        System.out.println("ShapeModelImporter: importShapeModel: model path is " + modelPath);
+        File jsonFile = new File(modelPath.substring(0, modelPath.length()-3) + "json");
+        File jsonFileDestination = new File(newModelDir.getAbsolutePath() + File.separator + "model.json");
+        
+        try {
+			FileUtil.copyFile(jsonFile, jsonFileDestination);
+		} catch (IOException e) {
+            errorMessage[0] = "The was an error copying " + jsonFile + " to " + jsonFileDestination;
+            e.printStackTrace();
+            return false;
+		}    
 
         // Copy any files as needed
         for(String key : copyMap.keySet())

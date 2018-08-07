@@ -294,7 +294,14 @@ public abstract class ViewManager extends JPanel
 			{
 				if (new File(dir, "model.vtk").isFile())
 				{
-					addCustomView(createCustomView(statusBar, dir.getName(), false));
+					if (new File(dir, "model.json").isFile())
+					{
+						addCustomView(createCustomView(statusBar, dir.getName(), false, new File(dir, "model.json")));
+					}
+					else
+					{
+						addCustomView(createCustomView(statusBar, dir.getName(), false));
+					}
 				}
 			}
 		}
@@ -424,6 +431,8 @@ public abstract class ViewManager extends JPanel
 	}
 
 	protected abstract View createCustomView(StatusBar statusBar, String name, boolean temporary);
+	
+	protected abstract View createCustomView(StatusBar statusBar, String name, boolean temporary, File metadata);
 
 	protected abstract void initializeStateManager();
 
