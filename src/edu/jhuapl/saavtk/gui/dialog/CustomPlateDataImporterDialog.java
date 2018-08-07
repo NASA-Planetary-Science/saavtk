@@ -603,14 +603,6 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 	}//GEN-LAST:event_browsePlateDataButtonActionPerformed
 
 	//Radio Button Action
-//	PRIVATE VOID SCALARRADIOBUTTONACTIONPERFORMED (JAVA.AWT.EVENT.ACTIONEVENT EVT) {
-//		IF (SCALARRADIOBUTTON.ISSELECTED()) {
-//	        // YOUR SELECTED CODE HERE.
-//	    }
-//	    ELSE   {
-//	        // YOUR DESELECTED CODE HERE.
-//	    }
-//	}
 
 	private void cancelButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_cancelButtonActionPerformed
 	{//GEN-HEADEREND:event_cancelButtonActionPerformed
