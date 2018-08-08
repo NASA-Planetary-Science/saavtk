@@ -1,8 +1,7 @@
 package edu.jhuapl.saavtk.metadata;
 
-import java.util.Map;
-
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Base implementation that assumes/requires all metadata keys to be stored in a
@@ -37,13 +36,13 @@ public abstract class BasicMetadata implements Metadata
 	}
 
 	/**
-	 * Provide the map of keys to values. Subclasses are free to provide any
-	 * {@link java.util.Map} implementation, regardless of that implementation's
-	 * null policy and whether it is mutable or immutable.
+	 * Provide an immutable copy of the map of keys to values. Because the returned
+	 * map does not support nulls for keys or values, implementations must use the
+	 * object returned by getNullObject to represent all null values.
 	 * 
 	 * @return the map of keys to values
 	 */
-	protected abstract Map<Key<?>, Object> getMap();
+	public abstract ImmutableMap<Key<?>, Object> getMap();
 
 	@Override
 	public final Version getVersion()
@@ -67,7 +66,7 @@ public abstract class BasicMetadata implements Metadata
 		{
 			throw new IllegalArgumentException("FixedMetadata does not contain key " + key);
 		}
-		if (NULL_OBJECT == object)
+		if (getNullObject() == object)
 		{
 			return null;
 		}

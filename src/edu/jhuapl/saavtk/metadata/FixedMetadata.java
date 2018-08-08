@@ -55,7 +55,7 @@ public class FixedMetadata extends BasicMetadata
 	}
 
 	@Override
-	protected ImmutableMap<Key<?>, Object> getMap()
+	public ImmutableMap<Key<?>, Object> getMap()
 	{
 		return map;
 	}

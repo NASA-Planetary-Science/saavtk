@@ -18,7 +18,7 @@ import edu.jhuapl.saavtk.gui.dialog.CameraDialog;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
 import edu.jhuapl.saavtk.metadata.Serializer;
-import edu.jhuapl.saavtk.metadata.Serializers;
+import edu.jhuapl.saavtk.metadata.serialization.Serializers;
 import edu.jhuapl.saavtk.util.Configuration;
 
 public class FileMenu extends JMenu
