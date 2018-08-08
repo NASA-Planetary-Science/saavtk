@@ -5,7 +5,6 @@ import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.io.IOException;
 
 import javax.swing.AbstractAction;
 import javax.swing.JCheckBoxMenuItem;
@@ -337,7 +336,7 @@ abstract public class StructuresPopupMenu extends PopupMenu
 					if (selectedStructures.length == 1)
 						model.savePlateDataInsideStructure(selectedStructures[0], file);
 				}
-				catch (IOException e1)
+				catch (Exception e1)
 				{
 					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(getInvoker()), "Unable to save file to " + file.getAbsolutePath(), "Error Saving File", JOptionPane.ERROR_MESSAGE);
 					e1.printStackTrace();
