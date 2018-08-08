@@ -35,6 +35,7 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
     private boolean okayPressed = false;
     
     public Runnable beforeOKRunner = null;
+    public String displayName = "";
 
     /** Creates new form ShapeModelImporterDialog */
     public ShapeModelImporterDialog(java.awt.Window parent)
@@ -121,6 +122,11 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
     	ellipsoidRadioButton.setEnabled(false);
     	shapeModelPathTextField.setText(demVtkFilename);
     	shapeModelFormatComboBox.setSelectedIndex(2);
+    }
+    
+    public void setDisplayName(String displayName)
+    {
+    	this.displayName = displayName;
     }
 
     /** This method is called from within the constructor to
@@ -454,7 +460,8 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
             return;
         }
         System.out.println("ShapeModelImporterDialog: okButtonActionPerformed: pcl is " + pcl);
-        this.firePropertyChange(Properties.CUSTOM_MODEL_ADDED, "", getNameOfImportedShapeModel());
+        String displayString = (displayName == "") ? getNameOfImportedShapeModel() : displayName;
+        this.firePropertyChange(Properties.CUSTOM_MODEL_ADDED, "", displayString);
 
 
         okayPressed = true;

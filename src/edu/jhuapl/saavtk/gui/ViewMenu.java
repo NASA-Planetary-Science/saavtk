@@ -106,6 +106,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 		{
 			View view = rootPanel.getCustomView(i);
 			mi = new JMenuItem(new ShowBodyAction(view));
+			System.out.println("ViewMenu: initialize: view model name " + view.getModelDisplayName());
 			mi.setText(view.getModelDisplayName());
 			if (i == 0)
 				mi.setSelected(true);
@@ -156,6 +157,28 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 	{
 		add(mi);
 	}
+	
+	private void reloadCustomMenuItems()
+	{
+		customImageMenu.removeAll();
+		
+		JMenuItem mi = new JMenuItem(new ImportShapeModelsAction());
+		customImageMenu.add(mi);
+
+		if (rootPanel.getNumberOfCustomViews() > 0)
+			customImageMenu.addSeparator();
+
+		for (int i = 0; i < rootPanel.getNumberOfCustomViews(); ++i)
+		{
+			View view = rootPanel.getCustomView(i);
+			mi = new JMenuItem(new ShowBodyAction(view));
+			System.out.println("ViewMenu: initialize: view model name " + view.getModelDisplayName());
+			mi.setText(view.getModelDisplayName());
+			if (i == 0)
+				mi.setSelected(true);
+			customImageMenu.add(mi);
+		}
+	}
 
 	private void sortCustomMenuItems()
 	{
@@ -197,7 +220,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 
 	public void addCustomMenuItem(View view)
 	{
-		System.out.println("ViewMenu: addCustomMenuItem: adding custom menu item");
+		System.out.println("ViewMenu: addCustomMenuItem: adding custom menu item " + view.getModelDisplayName());
 		if (getRootPanel().getNumberOfCustomViews() == 1)
 			this.addSeparator();
 
@@ -259,6 +282,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 			String name = (String) evt.getNewValue();
 			View view = getRootPanel().addCustomView(name);
 			addCustomMenuItem(view);
+			reloadCustomMenuItems();
 		}
 		else if (Properties.CUSTOM_MODEL_DELETED.equals(evt.getPropertyName()))
 		{
