@@ -296,7 +296,7 @@ public abstract class ViewManager extends JPanel
 				{
 					if (new File(dir, "model.json").isFile())
 					{
-						addCustomView(createCustomView(statusBar, dir.getName(), false, new File(dir, "model.json")));
+						addCustomView(createCustomView(dir.getName(), false, new File(dir, "model.json")));
 					}
 					else
 					{
@@ -414,6 +414,14 @@ public abstract class ViewManager extends JPanel
 		add(view, view.getUniqueName());
 		return view;
 	}
+	
+	public View addMetadataBackedCustomView(View view)
+	{
+		addCustomView(view);
+		add(view, view.getUniqueName());
+		return view;
+	}
+	
 
 	public View removeCustomView(String name)
 	{
@@ -432,7 +440,7 @@ public abstract class ViewManager extends JPanel
 
 	protected abstract View createCustomView(StatusBar statusBar, String name, boolean temporary);
 	
-	protected abstract View createCustomView(StatusBar statusBar, String name, boolean temporary, File metadata);
+	public abstract View createCustomView(String name, boolean temporary, File metadata);
 
 	protected abstract void initializeStateManager();
 
@@ -463,7 +471,7 @@ public abstract class ViewManager extends JPanel
 	 * @param uniqueName name of the view
 	 * @return the view with the name, or null if it's not found, or not accessible
 	 */
-	View getCustomView(String uniqueName)
+	public View getCustomView(String uniqueName)
 	{
 		for (View view : getCustomViews())
 		{

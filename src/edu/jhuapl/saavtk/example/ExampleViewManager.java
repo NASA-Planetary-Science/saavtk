@@ -39,7 +39,7 @@ public final class ExampleViewManager extends ViewManager
 	}
 	
 	@Override
-	protected View createCustomView(StatusBar statusBar, String name, boolean temporary, File metadata) {
+	public View createCustomView(String name, boolean temporary, File metadata) {
 		// TODO Auto-generated method stub
 		return createCustomView(statusBar, name, temporary);
 	}

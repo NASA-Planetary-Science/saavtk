@@ -73,7 +73,6 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 		this.rootPanel = rootPanel;
 		this.viewed = viewed;
 
-		ShapeModelImporterDialog.pcl = ViewMenu.this;
 
 		initialize();
 
@@ -157,7 +156,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 		add(mi);
 	}
 	
-	private void reloadCustomMenuItems()
+	protected void reloadCustomMenuItems()
 	{
 		customImageMenu.removeAll();
 		
