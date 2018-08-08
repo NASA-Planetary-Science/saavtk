@@ -30,6 +30,7 @@ public enum ShapeModelType
 	JAXA_SPC_v20180731("JAXA-SPC-v20180731"),
 	NASA_001("NASA-001"),
 	NASA_002("NASA-002"),
+	NASA_003("NASA-003"),
 	OREX("OSIRIS-REx"),
 	TRUTH("Truth");
 
