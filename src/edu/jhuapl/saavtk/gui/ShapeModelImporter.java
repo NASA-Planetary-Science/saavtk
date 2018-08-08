@@ -189,7 +189,6 @@ public class ShapeModelImporter
         writer.SetFileTypeToBinary();
         writer.Write();
 
-        System.out.println("ShapeModelImporter: importShapeModel: model path is " + modelPath);
         File jsonFile = new File(modelPath.substring(0, modelPath.length()-3) + "json");
         if (jsonFile.exists())
         {

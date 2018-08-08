@@ -106,7 +106,6 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 		{
 			View view = rootPanel.getCustomView(i);
 			mi = new JMenuItem(new ShowBodyAction(view));
-			System.out.println("ViewMenu: initialize: view model name " + view.getModelDisplayName());
 			mi.setText(view.getModelDisplayName());
 			if (i == 0)
 				mi.setSelected(true);
@@ -172,7 +171,6 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 		{
 			View view = rootPanel.getCustomView(i);
 			mi = new JMenuItem(new ShowBodyAction(view));
-			System.out.println("ViewMenu: initialize: view model name " + view.getModelDisplayName());
 			mi.setText(view.getModelDisplayName());
 			if (i == 0)
 				mi.setSelected(true);
@@ -220,7 +218,6 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 
 	public void addCustomMenuItem(View view)
 	{
-		System.out.println("ViewMenu: addCustomMenuItem: adding custom menu item " + view.getModelDisplayName());
 		if (getRootPanel().getNumberOfCustomViews() == 1)
 			this.addSeparator();
 
@@ -275,10 +272,8 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 	@Override
 	public void propertyChange(PropertyChangeEvent evt)
 	{
-		System.out.println("ViewMenu: propertyChange: property " + evt.getPropertyName());
 		if (Properties.CUSTOM_MODEL_ADDED.equals(evt.getPropertyName()))
 		{
-			System.out.println("ViewMenu: propertyChange: adding custom model, property firing");
 			String name = (String) evt.getNewValue();
 			View view = getRootPanel().addCustomView(name);
 			addCustomMenuItem(view);

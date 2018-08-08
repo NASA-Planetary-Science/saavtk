@@ -11,7 +11,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 
@@ -295,7 +294,6 @@ public abstract class ViewManager extends JPanel
 			{
 				if (new File(dir, "model.vtk").isFile())
 				{
-					System.out.println("ViewManager: loadCustomViews: checking for " + new File(dir, "model.json"));
 					if (new File(dir, "model.json").isFile())
 					{
 						addCustomView(createCustomView(statusBar, dir.getName(), false, new File(dir, "model.json")));
@@ -311,7 +309,6 @@ public abstract class ViewManager extends JPanel
 
 	protected View addCustomView(StatusBar statusBar, String shapeModelPath)
 	{
-		System.out.println("ViewManager: addCustomView: adding custom view 1");
 		View customView = createCustomView(statusBar, shapeModelPath, true);
 		addCustomView(customView);
 		return customView;
@@ -412,13 +409,9 @@ public abstract class ViewManager extends JPanel
 
 	public View addCustomView(String name)
 	{
-		System.out.println("ViewManager: addCustomView: adding custom view 2");
 		View view = createCustomView(statusBar, name, false);
 		addCustomView(view);
 		add(view, view.getUniqueName());
-//		customViews.clear();
-//		removeAll();
-//		loadCustomViews(statusBar);
 		return view;
 	}
 

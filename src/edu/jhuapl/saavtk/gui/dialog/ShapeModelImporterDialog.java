@@ -117,7 +117,6 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
     	customShapeModelRadioButton.setEnabled(true);
     	customShapeModelRadioButton.setSelected(true);
     	
-    	System.out.println("ShapeModelImporterDialog: populateCustomDEMImport: selected custom radio button");
     	ellipsoidRadioButton.setSelected(false);
     	ellipsoidRadioButton.setEnabled(false);
     	shapeModelPathTextField.setText(demVtkFilename);
@@ -459,7 +458,6 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
                     JOptionPane.ERROR_MESSAGE);
             return;
         }
-        System.out.println("ShapeModelImporterDialog: okButtonActionPerformed: pcl is " + pcl);
         String displayString = (displayName == "") ? getNameOfImportedShapeModel() : displayName;
         this.firePropertyChange(Properties.CUSTOM_MODEL_ADDED, "", displayString);
 
