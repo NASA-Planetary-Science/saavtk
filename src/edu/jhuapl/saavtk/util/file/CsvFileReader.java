@@ -182,15 +182,13 @@ public class CsvFileReader extends DataFileReader
 
 		// Create column information.
 		ImmutableList.Builder<ColumnInfo> builder = ImmutableList.builder();
-		if (columnNames != null)
-		{
-			for (int index = 0; index < columnNames.size(); ++index)
+		
+			for (int index = 0; index < numberColumns; ++index)
 			{
-				String name = columnNames.get(index);
+				String name = columnNames != null ? columnNames.get(index) : "";
 				String units = columnUnits != null ? columnUnits.get(index) : "";
 				builder.add(ColumnInfo.of(name, units));
 			}
-		}
 		ImmutableList<ColumnInfo> columnInfo = builder.build();
 
 		return DataFileInfo.of(file, CSV_FORMAT, ImmutableList.of(TableInfo.of(file.getName(), BLANK_DESCRIPTION, numberRows, columnInfo)));
