@@ -1227,7 +1227,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
-	private double[] getColoringValuesAtPolygon(EllipsePolygon pol)
+	private double[] getColoringValuesAtPolygon(EllipsePolygon pol) throws IOException
 	{
 		if (!smallBodyModel.isColoringDataAvailable())
 			return null;
