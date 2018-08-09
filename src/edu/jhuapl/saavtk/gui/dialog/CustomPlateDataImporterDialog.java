@@ -672,6 +672,13 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			xComboBox.removeAllItems();
 			yComboBox.removeAllItems();
 			zComboBox.removeAllItems();
+			
+			if (columnTitles.size() == 1) {
+				xComboBox.addItem(null);
+				yComboBox.addItem(null);
+				zComboBox.addItem(null);
+			}
+			
 			for (String item : columnTitles)
 			{
 				comboBox.addItem(item);
