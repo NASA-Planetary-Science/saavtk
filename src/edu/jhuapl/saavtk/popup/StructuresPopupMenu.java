@@ -327,7 +327,7 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			File file = CustomFileChooser.showSaveDialog(getInvoker(), "Save Plate Data", "platedata.txt");
+			File file = CustomFileChooser.showSaveDialog(getInvoker(), "Save Plate Data", "platedata.csv");
 			if (file != null)
 			{
 				try
