@@ -2034,14 +2034,14 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 	}
 
-	private interface Indexable
+	private interface Indexable<T>
 	{
 		int size();
 
-		double get(int index);
+		T get(int index);
 	}
 
-	private Indexable getIndexable(final int coloringIndex, final int missingTuple) throws IOException
+	private Indexable<Double> getIndexable(final int coloringIndex, final int missingTuple) throws IOException
 	{
 		if (isColoringAvailable(coloringIndex))
 		{
@@ -2057,7 +2057,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				throw new IllegalStateException();
 			}
 
-			return new Indexable() {
+			return new Indexable<Double>() {
 				final double scale = 255.;
 
 				@Override
@@ -2067,14 +2067,14 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				}
 
 				@Override
-				public double get(int index)
+				public Double get(int index)
 				{
 					return scale * (floatArray.GetTuple1(index) - range[0]) / extent;
 				}
 
 			};
 		}
-		return new Indexable() {
+		return new Indexable<Double>() {
 			final double colorMissing = 0.;
 
 			@Override
@@ -2084,7 +2084,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			}
 
 			@Override
-			public double get(@SuppressWarnings("unused") int index)
+			public Double get(@SuppressWarnings("unused") int index)
 			{
 				return colorMissing;
 			}
@@ -2100,9 +2100,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	private void updateFalseColorArray() throws IOException
 	{
 		final int missingTuple = -1;
-		Indexable red = getIndexable(redFalseColor, missingTuple);
-		Indexable green = getIndexable(greenFalseColor, missingTuple);
-		Indexable blue = getIndexable(blueFalseColor, missingTuple);
+		Indexable<Double> red = getIndexable(redFalseColor, missingTuple);
+		Indexable<Double> green = getIndexable(greenFalseColor, missingTuple);
+		Indexable<Double> blue = getIndexable(blueFalseColor, missingTuple);
 
 		int numberTuples = Math.max(red.size(), Math.max(green.size(), blue.size()));
 		if (numberTuples <= 0)
@@ -2684,118 +2684,21 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	@Override
 	public void savePlateData(File file) throws IOException
 	{
-		loadAllColoringData();
+		savePlateData(new Indexable<Integer>() {
 
-		try (FileWriter fstream = new FileWriter(file))
-		{
-			try (BufferedWriter out = new BufferedWriter(fstream))
+			@Override
+			public int size()
 			{
-				final String lineSeparator = System.getProperty("line.separator");
-
-				out.write("Area (km^2)");
-				out.write(",Center X (km)");
-				out.write(",Center Y (km)");
-				out.write(",Center Z (km)");
-				out.write(",Center Latitude (deg)");
-				out.write(",Center Longitude (deg)");
-				out.write(",Center Radius (km)");
-				ImmutableList<ColoringData> allColoringData = getAllColoringDataForThisResolution();
-				for (ColoringData data : allColoringData)
-				{
-					for (String name : data.getElementNames())
-					{
-						out.write("," + name);
-						String units = data.getUnits();
-						if (units != null && !units.isEmpty())
-							out.write(" (" + units + ")");
-					}
-
-				}
-				out.write(lineSeparator);
-
-				vtkTriangle triangle = new vtkTriangle();
-
-				vtkPoints points = smallBodyPolyData.GetPoints();
-				int numberCells = smallBodyPolyData.GetNumberOfCells();
-				smallBodyPolyData.BuildCells();
-				vtkIdList idList = new vtkIdList();
-				double[] pt0 = new double[3];
-				double[] pt1 = new double[3];
-				double[] pt2 = new double[3];
-				double[] center = new double[3];
-				for (int i = 0; i < numberCells; ++i)
-				{
-					smallBodyPolyData.GetCellPoints(i, idList);
-					int id0 = idList.GetId(0);
-					int id1 = idList.GetId(1);
-					int id2 = idList.GetId(2);
-					points.GetPoint(id0, pt0);
-					points.GetPoint(id1, pt1);
-					points.GetPoint(id2, pt2);
-
-					double area = triangle.TriangleArea(pt0, pt1, pt2);
-					triangle.TriangleCenter(pt0, pt1, pt2, center);
-					LatLon llr = MathUtil.reclat(center);
-
-					out.write(area + ",");
-					out.write(center[0] + ",");
-					out.write(center[1] + ",");
-					out.write(center[2] + ",");
-					out.write((llr.lat * 180.0 / Math.PI) + ",");
-					out.write((llr.lon * 180.0 / Math.PI) + ",");
-					out.write(String.valueOf(llr.rad));
-
-					for (ColoringData data : allColoringData)
-					{
-						vtkFloatArray array = data.getData();
-						int number = data.getElementNames().size();
-						if (number == 1)
-						{
-							out.write("," + array.GetTuple1(i));
-						}
-						else if (number != 1)
-						{
-							double[] dArray = null;
-							if (number == 2)
-							{
-								dArray = array.GetTuple2(i);
-							}
-							else if (number == 3)
-							{
-								dArray = array.GetTuple3(i);
-							}
-							else if (number == 4)
-							{
-								dArray = array.GetTuple4(i);
-							}
-							else if (number == 6)
-							{
-								dArray = array.GetTuple6(i);
-							}
-							else if (number == 9)
-							{
-								dArray = array.GetTuple9(i);
-							}
-							else
-							{
-								throw new AssertionError();
-							}
-							for (double d : dArray)
-							{
-								out.write("," + d);
-							}
-						}
-
-					}
-					out.write(lineSeparator);
-				}
-
-				triangle.Delete();
-				idList.Delete();
-
+				return smallBodyPolyData.GetNumberOfCells();
 			}
 
-		}
+			@Override
+			public Integer get(int index)
+			{
+				return index;
+			}
+
+		}, file);
 	}
 
 	/**
@@ -2815,7 +2718,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		// First put the cells into an ordered set, so we don't save out the
 		// same cell twice.
 
-		TreeSet<Integer> cellIds = new TreeSet<Integer>();
+		TreeSet<Integer> cellIds = new TreeSet<>();
 
 		int numCells = polydata.GetNumberOfCells();
 
@@ -2842,56 +2745,22 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			cell.Delete();
 		}
 
-		FileWriter fstream = new FileWriter(file);
-		BufferedWriter out = new BufferedWriter(fstream);
-		String nl = System.getProperty("line.separator");
+		ImmutableList<Integer> cellIdList = ImmutableList.copyOf(cellIds);
+		savePlateData(new Indexable<Integer>() {
 
-		out.write("Plate Id\tLatitude\tLongitude\t");
-		ImmutableList<ColoringData> coloringData = getAllColoringDataForThisResolution();
-		int numColoringData = coloringData.size();
-		for (int j = 0; j < numColoringData; ++j)
-		{
-			out.write(coloringData.get(j).getName());
-			if (j < numColoringData - 1)
-				out.write("\t");
-		}
-		out.write(nl);
-
-		numCells = cellIds.size();
-		for (int cellId : cellIds)
-		{
-			vtkTriangle cell = (vtkTriangle) smallBodyPolyData.GetCell(cellId);
-			vtkPoints points = cell.GetPoints();
-			points.GetPoint(0, pt0);
-			points.GetPoint(1, pt1);
-			points.GetPoint(2, pt2);
-			cell.TriangleCenter(pt0, pt1, pt2, center);
-
-			LatLon llr = MathUtil.reclat(center);
-			double lat = llr.lat * 180.0 / Math.PI;
-			double lon = llr.lon * 180.0 / Math.PI;
-			if (lon < 0.0)
-				lon += 360.0;
-
-			String str = cellId + "\t" + lat + "\t" + lon + "\t";
-
-			double[] values = getAllColoringValues(center);
-			for (int j = 0; j < values.length; ++j)
+			@Override
+			public int size()
 			{
-				str += values[j];
-				if (j < values.length - 1)
-					str += "\t";
+				return cellIdList.size();
 			}
 
-			str += nl;
+			@Override
+			public Integer get(int index)
+			{
+				return cellIdList.get(index);
+			}
 
-			out.write(str);
-
-			points.Delete();
-			cell.Delete();
-		}
-
-		out.close();
+		}, file);
 	}
 
 	@Override
@@ -2940,4 +2809,126 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return lidarDatasourceInfo;
 	}
 
+	private void savePlateData(Indexable<Integer> indexable, File file) throws IOException
+	{
+		loadAllColoringData();
+
+		try (FileWriter fstream = new FileWriter(file))
+		{
+			try (BufferedWriter out = new BufferedWriter(fstream))
+			{
+				final String lineSeparator = System.getProperty("line.separator");
+
+				out.write("Plate Id");
+				out.write(",Area (km^2)");
+				out.write(",Center X (km)");
+				out.write(",Center Y (km)");
+				out.write(",Center Z (km)");
+				out.write(",Center Latitude (deg)");
+				out.write(",Center Longitude (deg)");
+				out.write(",Center Radius (km)");
+				ImmutableList<ColoringData> allColoringData = getAllColoringDataForThisResolution();
+				for (ColoringData data : allColoringData)
+				{
+					for (String name : data.getElementNames())
+					{
+						out.write("," + name);
+						String units = data.getUnits();
+						if (units != null && !units.isEmpty())
+							out.write(" (" + units + ")");
+					}
+
+				}
+				out.write(lineSeparator);
+
+				vtkTriangle triangle = new vtkTriangle();
+
+				vtkPoints points = smallBodyPolyData.GetPoints();
+				int numberCells = smallBodyPolyData.GetNumberOfCells();
+				smallBodyPolyData.BuildCells();
+				vtkIdList idList = new vtkIdList();
+				double[] pt0 = new double[3];
+				double[] pt1 = new double[3];
+				double[] pt2 = new double[3];
+				double[] center = new double[3];
+				for (int index = 0; index < indexable.size(); ++index)
+				{
+					int cellId = indexable.get(index);
+					if (cellId < 0 || cellId > numberCells)
+					{
+						throw new IllegalArgumentException();
+					}
+					smallBodyPolyData.GetCellPoints(cellId, idList);
+					int id0 = idList.GetId(0);
+					int id1 = idList.GetId(1);
+					int id2 = idList.GetId(2);
+					points.GetPoint(id0, pt0);
+					points.GetPoint(id1, pt1);
+					points.GetPoint(id2, pt2);
+
+					double area = triangle.TriangleArea(pt0, pt1, pt2);
+					triangle.TriangleCenter(pt0, pt1, pt2, center);
+					LatLon llr = MathUtil.reclat(center);
+
+					out.write(cellId + ",");
+					out.write(area + ",");
+					out.write(center[0] + ",");
+					out.write(center[1] + ",");
+					out.write(center[2] + ",");
+					out.write((llr.lat * 180.0 / Math.PI) + ",");
+					out.write((llr.lon * 180.0 / Math.PI) + ",");
+					out.write(String.valueOf(llr.rad));
+
+					for (ColoringData data : allColoringData)
+					{
+						vtkFloatArray array = data.getData();
+						int number = data.getElementNames().size();
+						if (number == 1)
+						{
+							out.write("," + array.GetTuple1(cellId));
+						}
+						else if (number != 1)
+						{
+							double[] dArray = null;
+							if (number == 2)
+							{
+								dArray = array.GetTuple2(cellId);
+							}
+							else if (number == 3)
+							{
+								dArray = array.GetTuple3(cellId);
+							}
+							else if (number == 4)
+							{
+								dArray = array.GetTuple4(cellId);
+							}
+							else if (number == 6)
+							{
+								dArray = array.GetTuple6(cellId);
+							}
+							else if (number == 9)
+							{
+								dArray = array.GetTuple9(cellId);
+							}
+							else
+							{
+								throw new AssertionError();
+							}
+							for (double d : dArray)
+							{
+								out.write("," + d);
+							}
+						}
+
+					}
+					out.write(lineSeparator);
+				}
+
+				triangle.Delete();
+				idList.Delete();
+
+			}
+
+		}
+	}
 }
