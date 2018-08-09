@@ -1890,17 +1890,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	}
 
 	@Override
-	public double[] getAllColoringValues(double[] pt)
+	public double[] getAllColoringValues(double[] pt) throws IOException
 	{
-		try
-		{
-			loadAllColoringData();
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-			return null;
-		}
+		loadAllColoringData();
 
 		double[] closestPoint = new double[3];
 		int cellId = findClosestCell(pt, closestPoint);
