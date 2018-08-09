@@ -163,6 +163,8 @@ public class SettableMetadata extends BasicMetadata
 			return;
 		if (object instanceof byte[])
 			return;
+		if (object instanceof Metadata[])
+			return;
 		throw new IllegalArgumentException("Cannot serialize objects of type " + object.getClass().getSimpleName() + ". Serialize fields instead, or for enums serialize/deserialize with name()/valueOf().");
 	}
 

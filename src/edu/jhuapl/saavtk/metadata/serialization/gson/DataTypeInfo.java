@@ -84,6 +84,7 @@ enum DataTypeInfo
 	LONG_ARRAY("long Array", long[].class, new TypeToken<long[]>() {}.getType()),
 	SHORT_ARRAY("short Array", short[].class, new TypeToken<short[]>() {}.getType()),
 	BYTE_ARRAY("byte Array", byte[].class, new TypeToken<byte[]>() {}.getType()),
+	METADATA_ARRAY("metadata Array", Metadata[].class, new TypeToken<Metadata[]>() {}.getType()),
 	////////////////////////////////////////////////////////////////
 
 	// Catch-all case used both to handle nulls and to detect objects that cannot be serialized.
