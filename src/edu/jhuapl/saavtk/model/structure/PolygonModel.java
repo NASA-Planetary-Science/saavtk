@@ -313,8 +313,21 @@ public class PolygonModel extends LineModel
 	@Override
 	public void savePlateDataInsideStructure(int idx, File file) throws IOException
 	{
-		vtkPolyData polydata = getPolygon(idx).interiorPolyData;
-		smallBodyModel.savePlateDataInsidePolydata(polydata, file);
+		Polygon pol = getPolygon(idx);
+		if (pol.isShowInterior())
+		{
+			vtkPolyData polydata = getPolygon(idx).interiorPolyData;
+			smallBodyModel.savePlateDataInsidePolydata(polydata, file);
+		}
+		else
+		{
+			pol.setShowInterior(true);
+
+			vtkPolyData polydata = getPolygon(idx).interiorPolyData;
+			smallBodyModel.savePlateDataInsidePolydata(polydata, file);
+
+			pol.setShowInterior(false);
+		}
 	}
 
 	@Override
