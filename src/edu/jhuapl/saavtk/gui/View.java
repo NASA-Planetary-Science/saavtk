@@ -201,7 +201,7 @@ public abstract class View extends JPanel
 
 		if (!initializedPanelSizing)
 		{
-			int splitLocation = Integer.parseInt(Preferences.getInstance().get(Preferences.CONTROL_PANEL_WIDTH));
+			int splitLocation = (int)Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
 			int rendererWidth = splitPane.getWidth() - splitLocation;
 			
 			int width = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_WIDTH, 800L);
