@@ -24,10 +24,12 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
+import edu.jhuapl.saavtk.metadata.InstanceGetter;
 import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.MetadataManager;
 import edu.jhuapl.saavtk.metadata.MetadataManagerCollection;
+import edu.jhuapl.saavtk.metadata.ObjectToMetadata;
 import edu.jhuapl.saavtk.metadata.Serializer;
 import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
@@ -35,10 +37,22 @@ import edu.jhuapl.saavtk.metadata.serialization.gson.GsonElement.ElementIO;
 
 public class GsonSerializer implements Serializer
 {
-	private enum TestEnum
+
+	private enum TestEnum implements ObjectToMetadata<TestEnum>
 	{
 		OPTION0("Option 0"),
 		OPTION1("Option 1");
+
+		public static void register(InstanceGetter instanceGetter)
+		{
+			instanceGetter.register(PROXY_KEY, (metadata) -> {
+				return valueOf(metadata.get(NAME));
+			});
+		}
+
+		private static final Key<String> NAME = Key.of("Name");
+		private static final Key<TestEnum> PROXY_KEY = Key.of("TestEnum");
+		private static final Version VERSION = Version.of(1, 0);
 
 		private final String text;
 
@@ -52,6 +66,18 @@ public class GsonSerializer implements Serializer
 		{
 			return text;
 		}
+
+		@Override
+		public Key<TestEnum> getProxyKey()
+		{
+			return PROXY_KEY;
+		}
+
+		@Override
+		public Metadata to()
+		{
+			return SettableMetadata.of(VERSION).put(NAME, name());
+		}
 	}
 
 	private static final Version SERIALIZER_VERSION = Version.of(1, 0);
@@ -61,6 +87,7 @@ public class GsonSerializer implements Serializer
 	private static final SetIO SET_IO = new SetIO();
 	private static final SortedSetIO SORTED_SET_IO = new SortedSetIO();
 	private static final MetadataIO METADATA_IO = new MetadataIO();
+	private static final ProxyIO<?> METADATA_PROXY_IO = new ProxyIO<>();
 	private static final GsonVersionIO VERSION_IO = new GsonVersionIO();
 	private static final ElementIO ELEMENT_IO = new ElementIO();
 	private static final Gson GSON = configureGson();
@@ -220,6 +247,7 @@ public class GsonSerializer implements Serializer
 		builder.registerTypeAdapter(DataTypeInfo.METADATA.getType(), METADATA_IO);
 		builder.registerTypeAdapter(DataTypeInfo.VERSION.getType(), VERSION_IO);
 		builder.registerTypeAdapter(DataTypeInfo.ELEMENT.getType(), ELEMENT_IO);
+		builder.registerTypeAdapter(DataTypeInfo.PROXIED_OBJECT.getType(), METADATA_PROXY_IO);
 		return builder.create();
 	}
 
@@ -266,6 +294,8 @@ public class GsonSerializer implements Serializer
 		GsonSerializer serializer = new GsonSerializer();
 		final Version testMetadataVersion = Version.of(1, 0);
 
+		TestEnum.register(InstanceGetter.defaultInstanceGetter());
+
 		final String v3 = "Bennu / V3";
 		final Key<SettableMetadata> testV3StateKey = Key.of(v3);
 		SettableMetadata v3State = SettableMetadata.of(Version.of(3, 1));
@@ -286,7 +316,7 @@ public class GsonSerializer implements Serializer
 		v3State.put(Key.of("string"), "a string");
 		v3State.put(Key.of("stringNull"), null);
 		v3State.put(Key.of("longNull"), null);
-		v3State.put(Key.of("Test Enum"), testEnumBefore.name());
+		v3State.put(Key.of("testEnum"), testEnumBefore);
 		//		v3State.put(Key.of("List<TestEnum>"), ImmutableList.of(TestEnum.OPTION1, TestEnum.OPTION0));
 
 		List<String> stringList = new ArrayList<>();
@@ -383,7 +413,7 @@ public class GsonSerializer implements Serializer
 		Long longNull = v3State2.get(Key.of("longNull"));
 		System.out.println("longNull is " + longNull);
 
-		TestEnum testEnumAfter = TestEnum.valueOf(v3State2.get(Key.of("Test Enum")));
+		TestEnum testEnumAfter = v3State2.get(Key.of("testEnum"));
 		System.out.println("testEnum is " + testEnumAfter);
 
 		System.out.println("stringSet is " + state2.get(Key.of("stringSet")));

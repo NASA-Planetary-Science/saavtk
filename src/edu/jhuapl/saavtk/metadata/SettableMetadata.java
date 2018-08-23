@@ -94,6 +94,8 @@ public class SettableMetadata extends BasicMetadata
 			return;
 		if (object instanceof Metadata)
 			return;
+		if (object instanceof ObjectToMetadata)
+			return;
 		if (object instanceof Version)
 			return;
 		if (object instanceof List)

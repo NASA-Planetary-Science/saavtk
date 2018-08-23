@@ -11,6 +11,7 @@ import com.google.gson.reflect.TypeToken;
 
 import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
+import edu.jhuapl.saavtk.metadata.ObjectToMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
 
 /**
@@ -31,6 +32,7 @@ enum DataTypeInfo
 	METADATA("Metadata", Metadata.class, new TypeToken<Metadata>() {}.getType()),
 	VERSION("Version", Version.class, new TypeToken<Version>() {}.getType()),
 	ELEMENT("Element", GsonElement.class, new TypeToken<GsonElement>() {}.getType()),
+	PROXIED_OBJECT("ProxiedObject", ObjectToMetadata.class, new TypeToken<ObjectToMetadata<?>>() {}.getType()),
 	////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////
