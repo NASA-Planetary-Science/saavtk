@@ -290,16 +290,21 @@ public class FileMenu extends JMenu
 	private class ShowCameraOrientationAction extends AbstractAction
 	{
 		private static final long serialVersionUID = 1L;
+		
+		private final CameraDialog refCameraDialog;
 
 		public ShowCameraOrientationAction()
 		{
 			super("Camera...");
+			
+			refCameraDialog = new CameraDialog();
 		}
 
 		@Override
 		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
 		{
-			new CameraDialog(rootPanel.getCurrentView().getRenderer()).setVisible(true);
+			refCameraDialog.setRenderer(rootPanel.getCurrentView().getRenderer());
+			refCameraDialog.setVisible(true);
 		}
 	}
 
