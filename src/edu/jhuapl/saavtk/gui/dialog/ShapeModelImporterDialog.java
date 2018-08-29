@@ -419,7 +419,8 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
     private void okButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_okButtonActionPerformed
     {//GEN-HEADEREND:event_okButtonActionPerformed
 
-    	beforeOKRunner.run();
+    	if (beforeOKRunner != null)
+    		beforeOKRunner.run();
         ShapeModelImporter importer = new ShapeModelImporter();
 
         ShapeModelType shapeModelType = ellipsoidRadioButton.isSelected() ? ShapeModelType.ELLIPSOID : ShapeModelType.FILE;
@@ -459,7 +460,10 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
             return;
         }
         String displayString = (displayName == "") ? getNameOfImportedShapeModel() : displayName;
-        this.firePropertyChange(Properties.CUSTOM_MODEL_ADDED, "", displayString);
+        if (beforeOKRunner != null)
+        {
+        	this.firePropertyChange(Properties.CUSTOM_MODEL_ADDED, "", displayString);
+        }
 
 
         okayPressed = true;

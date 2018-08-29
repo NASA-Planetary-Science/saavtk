@@ -189,30 +189,33 @@ public class ShapeModelImporter
         writer.SetFileTypeToBinary();
         writer.Write();
 
-        File jsonFile = new File(modelPath.substring(0, modelPath.length()-3) + "json");
-        if (jsonFile.exists())
+        if (modelPath != null)
         {
-	        File jsonFileDestination = new File(newModelDir.getAbsolutePath() + File.separator + "model.json");
-	        
-	        try {
-				FileUtil.copyFile(jsonFile, jsonFileDestination);
-			} catch (IOException e) {
-	            errorMessage[0] = "The was an error copying " + jsonFile + " to " + jsonFileDestination;
-	            e.printStackTrace();
-	            return false;
-			}    
-        }
-
-        // Copy any files as needed
-        for(String key : copyMap.keySet())
-        {   
-            // Copy the file to the model directory
-            try {
-				FileUtil.copyFile(key, copyMap.get(key));
-			} catch (IOException e) {
-                errorMessage[0] = "The was an error copying " + modelPath + " to " + copyMap.get(key);
-                return false;
-			}            
+	        File jsonFile = new File(modelPath.substring(0, modelPath.length()-3) + "json");
+	        if (jsonFile.exists())
+	        {
+		        File jsonFileDestination = new File(newModelDir.getAbsolutePath() + File.separator + "model.json");
+		        
+		        try {
+					FileUtil.copyFile(jsonFile, jsonFileDestination);
+				} catch (IOException e) {
+		            errorMessage[0] = "The was an error copying " + jsonFile + " to " + jsonFileDestination;
+		            e.printStackTrace();
+		            return false;
+				}    
+	        }
+	
+	        // Copy any files as needed
+	        for(String key : copyMap.keySet())
+	        {   
+	            // Copy the file to the model directory
+	            try {
+					FileUtil.copyFile(key, copyMap.get(key));
+				} catch (IOException e) {
+	                errorMessage[0] = "The was an error copying " + modelPath + " to " + copyMap.get(key);
+	                return false;
+				}            
+	        }
         }
         
         // Save out all information about this shape model to the config.txt file
