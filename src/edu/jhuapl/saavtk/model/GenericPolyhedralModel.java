@@ -165,7 +165,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public GenericPolyhedralModel(String uniqueModelId, vtkPolyData polyData)
 	{
 		this(uniqueModelId);
-		System.out.println("GenericPolyhedralModel: GenericPolyhedralModel: second level constructor");
 		vtkFloatArray[] coloringValues = {};
 		String[] coloringNames = {};
 		String[] coloringUnits = {};
@@ -185,7 +184,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		this.coloringDataManager = CustomizableColoringDataManager.of(config.getUniqueName());
 		initializeColoringDataManager(coloringDataManager, config.getResolutionNumberElements(), coloringFiles, coloringNames, coloringUnits, coloringHasNulls);
 		this.modelNames = modelNames;
-		System.out.println("GenericPolyhedralModel: GenericPolyhedralModel: model names " + modelNames.length);
 		this.modelFiles = modelFiles;
 		setDefaultModelFileName(this.modelFiles[0]);
 		this.imageMapNames = imageMapNames;
@@ -322,7 +320,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public GenericPolyhedralModel(ViewConfig config)
 	{
 		super(config);
-		System.out.println("GenericPolyhedralModel: GenericPolyhedralModel: simple constructor");
 		this.coloringDataManager = CustomizableColoringDataManager.of(config.getUniqueName());
 	}
 
