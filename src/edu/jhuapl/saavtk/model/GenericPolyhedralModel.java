@@ -2004,7 +2004,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	@Override
 	public double[] getCurrentColoringRange(int coloringIndex)
 	{
-		return getColoringData(coloringIndex).getData().GetRange();
+		// Delegate to default color range
+		if (colormap == null)
+			return getDefaultColoringRange(coloringIndex);
+
+		return new double[] {colormap.getRangeMin(), colormap.getRangeMax()};
 	}
 
 	@Override
