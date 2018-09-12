@@ -3,8 +3,8 @@ package edu.jhuapl.saavtk.metadata;
 /**
  * Functional interface whose method uses supplied {@link Metadata} to provide
  * an object instance of a particular type. This allows an object that was
- * previously stored as {@link Metadata} to be restored, i.e., from a serialized
- * form or from a previous object state.
+ * previously stored as {@link Metadata} to be recreated in the state in which
+ * it was stored, i.e., from a serialized form or from a previous object state.
  * 
  * @param <T> the object type that can be provided from suitable Metadata
  * @see {@link StorableAsMetadata}
