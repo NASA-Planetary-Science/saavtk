@@ -1,21 +1,19 @@
 package edu.jhuapl.saavtk.metadata;
 
 /**
- * Abstraction that is capable of representing (storing) instances of the
- * supplied type parameter as {@link Metadata}.
+ * Abstraction that is capable of representing (storing) the content or state of
+ * one or more objects as {@link Metadata}.
  * 
  * Implementations may provide representations for themselves, or on behalf of
- * objects of another type.
- * 
- * @param <T> the object type that can be represented as Metadata
+ * other objects.
  */
-public interface RepresentableAsMetadata<T>
+public interface RepresentableAsMetadata
 {
 	/**
-	 * Return a set of {@link Metadata} that encapsulates the complete state of the
-	 * object represented.
+	 * Return a set of {@link Metadata} that represents the content or state of one
+	 * or more objects.
 	 * 
-	 * @return the metadata representing the object of the parameterized type.
+	 * @return the metadata representing the object of the parameterized type
 	 */
 	Metadata store();
 
