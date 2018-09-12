@@ -9,12 +9,13 @@ import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.MetadataManager;
 import edu.jhuapl.saavtk.metadata.Serializer;
+import edu.jhuapl.saavtk.metadata.StorableAsMetadata;
 
 /**
  * This is a helper implementation designed to wrap another implementation of
  * the {@link MetadataManager} interface.
  */
-public final class TrackedMetadataManager implements MetadataManager
+public final class TrackedMetadataManager implements MetadataManager, StorableAsMetadata<Metadata>
 {
 	public static TrackedMetadataManager of(String metadataId)
 	{
@@ -77,11 +78,18 @@ public final class TrackedMetadataManager implements MetadataManager
 		return manager != null;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
 	public Key<Metadata> getKey()
 	{
 		return metadataKey;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public final Metadata store()
 	{
@@ -89,6 +97,9 @@ public final class TrackedMetadataManager implements MetadataManager
 		return manager.store();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public final void retrieve(Metadata sourceMetadata)
 	{
