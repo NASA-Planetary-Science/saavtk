@@ -5,7 +5,7 @@ package edu.jhuapl.saavtk.metadata;
  * 
  * @param <T> the object type that can be converted to Metadata
  */
-public interface ObjectToMetadata<T>
+public interface StorableAsMetadata<T>
 {
 	/**
 	 * Return a key that uniquely identifies the type of object being stored. This
@@ -13,17 +13,17 @@ public interface ObjectToMetadata<T>
 	 * saving the {@link Metadata}.
 	 * 
 	 * @return the key
-	 * @see {@link MetadataToObject}
+	 * @see {@link ProvidableFromMetadata}
 	 */
-	Key<T> getProxyKey();
+	Key<T> getKey();
 
 	/**
 	 * Return a set of {@link Metadata} that encapsulates the complete state of the
 	 * object, sufficient for subsequent restoration using a matched
-	 * {@link MetadataToObject} instance.
+	 * {@link ProvidableFromMetadata} instance.
 	 * 
 	 * @return the metadata
 	 */
-	Metadata to();
+	Metadata store();
 
 }

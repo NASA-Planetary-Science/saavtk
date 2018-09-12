@@ -29,7 +29,7 @@ import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.MetadataManager;
 import edu.jhuapl.saavtk.metadata.MetadataManagerCollection;
-import edu.jhuapl.saavtk.metadata.ObjectToMetadata;
+import edu.jhuapl.saavtk.metadata.StorableAsMetadata;
 import edu.jhuapl.saavtk.metadata.Serializer;
 import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
@@ -38,7 +38,7 @@ import edu.jhuapl.saavtk.metadata.serialization.gson.GsonElement.ElementIO;
 public class GsonSerializer implements Serializer
 {
 
-	private enum TestEnum implements ObjectToMetadata<TestEnum>
+	private enum TestEnum implements StorableAsMetadata<TestEnum>
 	{
 		OPTION0("Option 0"),
 		OPTION1("Option 1");
@@ -68,13 +68,13 @@ public class GsonSerializer implements Serializer
 		}
 
 		@Override
-		public Key<TestEnum> getProxyKey()
+		public Key<TestEnum> getKey()
 		{
 			return PROXY_KEY;
 		}
 
 		@Override
-		public Metadata to()
+		public Metadata store()
 		{
 			return SettableMetadata.of(VERSION).put(NAME, name());
 		}
