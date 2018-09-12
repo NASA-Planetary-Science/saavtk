@@ -1,11 +1,16 @@
 package edu.jhuapl.saavtk.metadata;
 
 /**
- * Abstraction that may be converted to (stored as) {@link Metadata}.
+ * A {@link RepresentableAsMetadata} that includes a {@link Key} providing a
+ * unique identifier of the type of object that may be converted to
+ * {@link Metadata}.
+ * 
+ * The existence of the Key identifier makes implementations suitable for
+ * serialization.
  * 
  * @param <T> the object type that can be converted to Metadata
  */
-public interface StorableAsMetadata<T>
+public interface StorableAsMetadata<T> extends RepresentableAsMetadata<T>
 {
 	/**
 	 * Return a key that uniquely identifies the type of object being stored. This
@@ -16,14 +21,5 @@ public interface StorableAsMetadata<T>
 	 * @see {@link ProvidableFromMetadata}
 	 */
 	Key<T> getKey();
-
-	/**
-	 * Return a set of {@link Metadata} that encapsulates the complete state of the
-	 * object, sufficient for subsequent restoration using a matched
-	 * {@link ProvidableFromMetadata} instance.
-	 * 
-	 * @return the metadata
-	 */
-	Metadata store();
 
 }
