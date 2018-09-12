@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.metadata.serialization.gson;
 
 import java.lang.reflect.Type;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,7 +46,7 @@ enum DataTypeInfo
 	////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////
-	// Built-in object types.
+	// Common object types.
 	STRING("String", String.class, new TypeToken<String>() {}.getType()),
 	CHARACTER_OBJECT("Character", Character.class, new TypeToken<Character>() {}.getType()),
 	BOOLEAN_OBJECT("Boolean", Boolean.class, new TypeToken<Boolean>() {}.getType()),
@@ -57,10 +58,11 @@ enum DataTypeInfo
 	LONG_OBJECT("Long", Long.class, new TypeToken<Long>() {}.getType()),
 	SHORT_OBJECT("Short", Short.class, new TypeToken<Short>() {}.getType()),
 	BYTE_OBJECT("Byte", Byte.class, new TypeToken<Byte>() {}.getType()),
+	DATE_OBJECT("Date", Date.class, new TypeToken<Date>() {}.getType()),
 	////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////
-	// Arrays of built-in object types.
+	// Arrays of common object types.
 	STRING_ARRAY("String Array", String[].class, new TypeToken<String[]>() {}.getType()),
 	CHARACTER_OBJECT_ARRAY("Character Array", Character[].class, new TypeToken<Character[]>() {}.getType()),
 	BOOLEAN_OBJECT_ARRAY("Boolean Array", Boolean[].class, new TypeToken<Boolean[]>() {}.getType()),
@@ -72,6 +74,8 @@ enum DataTypeInfo
 	LONG_OBJECT_ARRAY("Long Array", Long[].class, new TypeToken<Long[]>() {}.getType()),
 	SHORT_OBJECT_ARRAY("Short Array", Short[].class, new TypeToken<Short[]>() {}.getType()),
 	BYTE_OBJECT_ARRAY("Byte Array", Byte[].class, new TypeToken<Byte[]>() {}.getType()),
+	DATE_ARRAY("Date Array", Date[].class, new TypeToken<Date[]>() {}.getType()),
+	METADATA_ARRAY("metadata Array", Metadata[].class, new TypeToken<Metadata[]>() {}.getType()),
 	////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////
@@ -86,7 +90,6 @@ enum DataTypeInfo
 	LONG_ARRAY("long Array", long[].class, new TypeToken<long[]>() {}.getType()),
 	SHORT_ARRAY("short Array", short[].class, new TypeToken<short[]>() {}.getType()),
 	BYTE_ARRAY("byte Array", byte[].class, new TypeToken<byte[]>() {}.getType()),
-	METADATA_ARRAY("metadata Array", Metadata[].class, new TypeToken<Metadata[]>() {}.getType()),
 	////////////////////////////////////////////////////////////////
 
 	// Catch-all case used both to handle nulls and to detect objects that cannot be serialized.
@@ -137,9 +140,7 @@ enum DataTypeInfo
 			result = of(object.getClass());
 			if (result == NULL)
 			{
-				throw new IllegalArgumentException("Cannot serialize object of type "
-						+ object.getClass().getSimpleName()
-						+ ". Serialize its fields instead, or for enumerations serialize the result of name() and deserialize using valueOf().");
+				throw new IllegalArgumentException("Cannot serialize object of type " + object.getClass().getSimpleName() + " to JSON format");
 			}
 		}
 		return result;
