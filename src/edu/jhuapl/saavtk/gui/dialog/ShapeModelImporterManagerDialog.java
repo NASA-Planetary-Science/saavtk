@@ -10,6 +10,7 @@
  */
 package edu.jhuapl.saavtk.gui.dialog;
 
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -52,6 +53,12 @@ public class ShapeModelImporterManagerDialog extends javax.swing.JDialog
 				}
 			}
 		}
+	}
+	
+	@Override
+	public void addPropertyChangeListener(PropertyChangeListener listener) {
+		// TODO Auto-generated method stub
+		super.addPropertyChangeListener(listener);
 	}
 
 	/**

@@ -19,7 +19,7 @@ import com.google.common.collect.ImmutableList;
 import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.colormap.Colormaps;
 import edu.jhuapl.saavtk.config.ViewConfig;
-import edu.jhuapl.saavtk.metadata.Serializers;
+import edu.jhuapl.saavtk.metadata.serialization.Serializers;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.ConvertResourceToFile;
@@ -165,7 +165,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public GenericPolyhedralModel(String uniqueModelId, vtkPolyData polyData)
 	{
 		this(uniqueModelId);
-
 		vtkFloatArray[] coloringValues = {};
 		String[] coloringNames = {};
 		String[] coloringUnits = {};
@@ -1565,6 +1564,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	@Override
 	public String getModelName()
 	{
+		if (modelNames == null) return null;
 		if (resolutionLevel >= 0 && resolutionLevel < modelNames.length)
 			return modelNames[resolutionLevel];
 		else

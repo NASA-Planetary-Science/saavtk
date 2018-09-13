@@ -173,7 +173,8 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
     public Element toXmlDomElement(Document dom)
     {
         Element rootEle = dom.createElement(getType());
-        rootEle.setAttribute(SHAPE_MODEL_NAME, smallBodyModel.getModelName());
+        if (smallBodyModel.getModelName() != null)
+        	rootEle.setAttribute(SHAPE_MODEL_NAME, smallBodyModel.getModelName());
 
         for (Line lin : this.lines)
         {

@@ -1,11 +1,18 @@
-package edu.jhuapl.saavtk.metadata;
+package edu.jhuapl.saavtk.metadata.serialization;
 
 import java.io.File;
 import java.io.IOException;
 
 import com.google.common.base.Preconditions;
 
-import edu.jhuapl.saavtk.metadata.gson.GsonSerializer;
+import edu.jhuapl.saavtk.metadata.FixedMetadata;
+import edu.jhuapl.saavtk.metadata.Key;
+import edu.jhuapl.saavtk.metadata.Metadata;
+import edu.jhuapl.saavtk.metadata.MetadataManager;
+import edu.jhuapl.saavtk.metadata.Serializer;
+import edu.jhuapl.saavtk.metadata.SettableMetadata;
+import edu.jhuapl.saavtk.metadata.Version;
+import edu.jhuapl.saavtk.metadata.serialization.gson.GsonSerializer;
 
 public class Serializers
 {

@@ -3,22 +3,19 @@ package edu.jhuapl.saavtk.gui;
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
 
-import vtk.vtkPolyData;
-import vtk.vtkPolyDataWriter;
-import vtk.vtkSphereSource;
-import vtk.vtkTransform;
-import vtk.vtkTransformPolyDataFilter;
-import edu.jhuapl.saavtk.model.Graticule;
 import edu.jhuapl.saavtk.model.ShapeModel;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.FileUtil;
 import edu.jhuapl.saavtk.util.MapUtil;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
+import vtk.vtkPolyData;
+import vtk.vtkPolyDataWriter;
+import vtk.vtkSphereSource;
+import vtk.vtkTransform;
+import vtk.vtkTransformPolyDataFilter;
 
 public class ShapeModelImporter
 {
@@ -192,17 +189,33 @@ public class ShapeModelImporter
         writer.SetFileTypeToBinary();
         writer.Write();
 
-
-        // Copy any files as needed
-        for(String key : copyMap.keySet())
-        {   
-            // Copy the file to the model directory
-            try {
-				FileUtil.copyFile(key, copyMap.get(key));
-			} catch (IOException e) {
-                errorMessage[0] = "The was an error copying " + modelPath + " to " + copyMap.get(key);
-                return false;
-			}            
+        if (modelPath != null)
+        {
+	        File jsonFile = new File(modelPath.substring(0, modelPath.length()-3) + "json");
+	        if (jsonFile.exists())
+	        {
+		        File jsonFileDestination = new File(newModelDir.getAbsolutePath() + File.separator + "model.json");
+		        
+		        try {
+					FileUtil.copyFile(jsonFile, jsonFileDestination);
+				} catch (IOException e) {
+		            errorMessage[0] = "The was an error copying " + jsonFile + " to " + jsonFileDestination;
+		            e.printStackTrace();
+		            return false;
+				}    
+	        }
+	
+	        // Copy any files as needed
+	        for(String key : copyMap.keySet())
+	        {   
+	            // Copy the file to the model directory
+	            try {
+					FileUtil.copyFile(key, copyMap.get(key));
+				} catch (IOException e) {
+	                errorMessage[0] = "The was an error copying " + modelPath + " to " + copyMap.get(key);
+	                return false;
+				}            
+	        }
         }
         
         // Save out all information about this shape model to the config.txt file
