@@ -691,9 +691,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	public void changeRadiusOfPolygon(int polygonId, double[] newPointOnPerimeter)
 	{
 		EllipsePolygon pol = polygons.get(polygonId);
-		double newRadius = Math.sqrt((pol.center[0] - newPointOnPerimeter[0]) * (pol.center[0] - newPointOnPerimeter[0]) +
-				(pol.center[1] - newPointOnPerimeter[1]) * (pol.center[1] - newPointOnPerimeter[1]) +
-				(pol.center[2] - newPointOnPerimeter[2]) * (pol.center[2] - newPointOnPerimeter[2]));
+		double newRadius =
+				Math.sqrt((pol.center[0] - newPointOnPerimeter[0]) * (pol.center[0] - newPointOnPerimeter[0]) + (pol.center[1] - newPointOnPerimeter[1]) * (pol.center[1] - newPointOnPerimeter[1]) + (pol.center[2] - newPointOnPerimeter[2]) * (pol.center[2] - newPointOnPerimeter[2]));
 		if (newRadius > maxRadius)
 			newRadius = maxRadius;
 
@@ -1093,14 +1092,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 				lon += 360.0;
 
 			String str =
-					pol.id + "\t" +
-							name + "\t" +
-							pol.center[0] + "\t" +
-							pol.center[1] + "\t" +
-							pol.center[2] + "\t" +
-							lat + "\t" +
-							lon + "\t" +
-							llr.rad;
+					pol.id + "\t" + name + "\t" + pol.center[0] + "\t" + pol.center[1] + "\t" + pol.center[2] + "\t" + lat + "\t" + lon + "\t" + llr.rad;
 
 			str += "\t";
 			double[] values = getColoringValuesAtPolygon(pol);
@@ -1307,10 +1299,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		double[] center = transform.TransformDoublePoint(pol.center);
 
 		// project gravity into xy plane
-		double[] gravityPoint = {
-				center[0] + gravityVector[0],
-				center[1] + gravityVector[1],
-				center[2] + gravityVector[2],
+		double[] gravityPoint = { center[0] + gravityVector[0], center[1] + gravityVector[1], center[2] + gravityVector[2],
 		};
 		double[] projGravityPoint = new double[3];
 		MathUtil.vprjp(gravityPoint, zaxis, center, projGravityPoint);
