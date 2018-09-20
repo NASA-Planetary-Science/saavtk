@@ -1511,7 +1511,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public void reloadShapeModel() throws IOException
 	{
 		smallBodyCubes = null;
-		for (ColoringData data : getAllColoringDataForThisResolution())
+		for (ColoringData data : getAllColoringData())
 		{
 			data.clear();
 		}
@@ -1690,7 +1690,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	 */
 	protected void loadAllColoringData() throws IOException
 	{
-		for (ColoringData data : getAllColoringDataForThisResolution())
+		for (ColoringData data : getAllColoringData())
 		{
 			data.load();
 		}
@@ -1806,7 +1806,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	@Override
 	public boolean isColoringDataAvailable()
 	{
-		return !getAllColoringDataForThisResolution().isEmpty();
+		return !getAllColoringData().isEmpty();
 	}
 
 	@Override
@@ -1839,18 +1839,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return getColoringData(i).getUnits();
 	}
 
-	private double getColoringValue(double[] pt, vtkFloatArray pointOrCellData)
+	private double getScalarValue(double[] pt, vtkFloatArray pointOrCellData)
 	{
 		double[] closestPoint = new double[3];
 		int cellId = findClosestCell(pt, closestPoint);
-		if (coloringValueType == ColoringValueType.POINT_DATA)
-		{
-			return PolyDataUtil.interpolateWithinCell(smallBodyPolyData, pointOrCellData, cellId, closestPoint, idList);
-		}
-		else
-		{
-			return pointOrCellData.GetTuple1(cellId);
-		}
+		return getScalarValue(closestPoint, pointOrCellData, cellId);
 	}
 
 	/**
@@ -1861,7 +1854,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	 * @param cellId
 	 * @return
 	 */
-	private double getColoringValue(double[] pt, vtkFloatArray pointOrCellData, int cellId)
+	private double getScalarValue(double[] pt, vtkFloatArray pointOrCellData, int cellId)
 	{
 		if (coloringValueType == ColoringValueType.POINT_DATA)
 		{
@@ -1871,6 +1864,42 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		{
 			return pointOrCellData.GetTuple1(cellId);
 		}
+	}
+
+	private double[] getVectorValue(double[] pt, vtkFloatArray pointOrCellData, int numberAxes)
+	{
+		double[] closestPoint = new double[3];
+		int cellId = findClosestCell(pt, closestPoint);
+		return getVectorValue(closestPoint, pointOrCellData, cellId);
+	}
+
+	private double[] getVectorValue(double[] pt, vtkFloatArray pointOrCellData, int cellId, int numberAxes)
+	{
+		double[] result = null;
+		if (coloringValueType == ColoringValueType.POINT_DATA)
+		{
+			result = PolyDataUtil.interpolateWithinCell(smallBodyPolyData, pointOrCellData, cellId, pt, idList, numberAxes);
+		}
+		else
+		{
+			if (numberAxes == 1)
+			{
+				result = new double[] { pointOrCellData.GetTuple1(cellId) };
+			}
+			else if (numberAxes == 2)
+			{
+				result = pointOrCellData.GetTuple2(cellId);
+			}
+			else if (numberAxes == 3)
+			{
+				result = pointOrCellData.GetTuple3(cellId);
+			}
+			else
+			{
+				throw new IllegalArgumentException("Cannot get a vector with " + numberAxes + " axes");
+			}
+		}
+		return result;
 	}
 
 	@Override
@@ -1886,7 +1915,14 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			throw new RuntimeException(e);
 		}
 
-		return getColoringValue(pt, coloringData.getData());
+		return getScalarValue(pt, coloringData.getData());
+	}
+
+	@Override
+	public ImmutableList<ColoringData> getAllColoringData()
+	{
+		ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
+		return resolutions.size() > resolutionLevel ? coloringDataManager.get(resolutions.get(resolutionLevel)) : ImmutableList.of();
 	}
 
 	@Override
@@ -1897,15 +1933,25 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		double[] closestPoint = new double[3];
 		int cellId = findClosestCell(pt, closestPoint);
 
-		ImmutableList<ColoringData> coloringData = getAllColoringDataForThisResolution();
-		int numColors = coloringData.size();
-		double[] values = new double[numColors];
-		for (int index = 0; index < numColors; ++index)
+		ImmutableList<ColoringData> coloringData = getAllColoringData();
+		int numColorColumns = 0;
+		for (ColoringData data : coloringData)
 		{
-			values[index] = getColoringValue(closestPoint, coloringData.get(index).getData(), cellId);
+			numColorColumns += data.getElementNames().size();
 		}
 
-		return values;
+		double[] result = new double[numColorColumns];
+		int valueIndex = 0;
+		for (ColoringData data : coloringData)
+		{
+			double[] coloringVector = getVectorValue(closestPoint, data.getData(), cellId, data.getElementNames().size());
+			for (int index = 0; index < coloringVector.length; ++index, ++valueIndex)
+			{
+				result[valueIndex] = coloringVector[index];
+			}
+		}
+
+		return result;
 	}
 
 	/**
@@ -2153,12 +2199,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		String name = coloringDataManager.getNames().get(coloringIndex);
 		int numberElements = coloringDataManager.getResolutions().get(resolutionLevel);
 		return coloringDataManager.get(name, numberElements);
-	}
-
-	private ImmutableList<ColoringData> getAllColoringDataForThisResolution()
-	{
-		ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
-		return resolutions.size() > resolutionLevel ? coloringDataManager.get(resolutions.get(resolutionLevel)) : ImmutableList.of();
 	}
 
 	private void paintBody() throws IOException
@@ -2827,13 +2867,13 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				out.write(",Center Latitude (deg)");
 				out.write(",Center Longitude (deg)");
 				out.write(",Center Radius (km)");
-				ImmutableList<ColoringData> allColoringData = getAllColoringDataForThisResolution();
+				ImmutableList<ColoringData> allColoringData = getAllColoringData();
 				for (ColoringData data : allColoringData)
 				{
+					String units = data.getUnits();
 					for (String name : data.getElementNames())
 					{
 						out.write("," + name);
-						String units = data.getUnits();
 						if (units != null && !units.isEmpty())
 							out.write(" (" + units + ")");
 					}

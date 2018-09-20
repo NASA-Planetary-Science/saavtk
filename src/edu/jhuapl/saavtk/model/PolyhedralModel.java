@@ -251,6 +251,8 @@ public abstract class PolyhedralModel extends AbstractModel
 
 	public abstract boolean isColoringDataAvailable();
 
+	public abstract List<ColoringData> getAllColoringData();
+
 	public abstract double[] getAllColoringValues(double[] pt) throws IOException;
 
 	public abstract double[] getGravityVector(double[] pt);

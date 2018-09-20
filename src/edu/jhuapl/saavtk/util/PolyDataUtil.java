@@ -2183,17 +2183,48 @@ public class PolyDataUtil
 	 * @param pt
 	 * @param idList this parameter is needed only to avoid repeated memory
 	 *            allocation when this function is called within a loop.
-	 * @return
+	 * @return interpolated scalar value (from a vtk 1-tuple).
 	 */
 	public static double interpolateWithinCell(vtkPolyData polydata, vtkDataArray pointdata, int cellId, double[] pt, vtkIdList idList)
+	{
+		return interpolateWithinCell(polydata, pointdata, cellId, pt, idList, 1)[0];
+	}
+
+	/**
+	 *
+	 * @param polydata
+	 * @param pointdata
+	 * @param cellId
+	 * @param pt
+	 * @param idList this parameter is needed only to avoid repeated memory
+	 *            allocation when this function is called within a loop.
+	 * @return interpolated 3-vector value (from a vtk 3-tuple).
+	 */
+	public static double[] interpolate3VectorWithinCell(vtkPolyData polydata, vtkDataArray pointdata, int cellId, double[] pt, vtkIdList idList)
+	{
+		return interpolateWithinCell(polydata, pointdata, cellId, pt, idList, 3);
+	}
+
+	/**
+	 *
+	 * @param polydata
+	 * @param pointdata
+	 * @param cellId
+	 * @param pt
+	 * @param idList this parameter is needed only to avoid repeated memory
+	 *            allocation when this function is called within a loop.
+	 * @param tupleDegree the degree of tuple returned (size of output array). Must
+	 *            be 1, 2, or 3.
+	 * @return interpolated vector value from a vtk N-tuple (N = 1, 2, or 3)
+	 */
+	public static double[] interpolateWithinCell(vtkPolyData polydata, vtkDataArray pointdata, int cellId, double[] pt, vtkIdList idList, int tupleDegree)
 	{
 		polydata.GetCellPoints(cellId, idList);
 
 		int numberOfCells = idList.GetNumberOfIds();
 		if (numberOfCells != 3)
 		{
-			System.err.println("Error: Cells must have exactly 3 vertices!");
-			return 0.0;
+			throw new AssertionError("Error: Cells must have exactly 3 vertices!");
 		}
 
 		double[] p1 = new double[3];
@@ -2202,11 +2233,42 @@ public class PolyDataUtil
 		polydata.GetPoint(idList.GetId(0), p1);
 		polydata.GetPoint(idList.GetId(1), p2);
 		polydata.GetPoint(idList.GetId(2), p3);
-		double v1 = pointdata.GetTuple1(idList.GetId(0));
-		double v2 = pointdata.GetTuple1(idList.GetId(1));
-		double v3 = pointdata.GetTuple1(idList.GetId(2));
 
-		return MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1, v2, v3);
+		if (tupleDegree == 1)
+		{
+			double v1 = pointdata.GetTuple1(idList.GetId(0));
+			double v2 = pointdata.GetTuple1(idList.GetId(1));
+			double v3 = pointdata.GetTuple1(idList.GetId(2));
+
+			double result0 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1, v2, v3);
+
+			return new double[] { result0 };
+		}
+		else if (tupleDegree == 2)
+		{
+			double[] v1 = pointdata.GetTuple2(idList.GetId(0));
+			double[] v2 = pointdata.GetTuple2(idList.GetId(1));
+			double[] v3 = pointdata.GetTuple2(idList.GetId(2));
+
+			double result0 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[0], v2[0], v3[0]);
+			double result1 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[1], v2[1], v3[1]);
+
+			return new double[] { result0, result1 };
+		}
+		else if (tupleDegree == 3)
+		{
+			double[] v1 = pointdata.GetTuple3(idList.GetId(0));
+			double[] v2 = pointdata.GetTuple3(idList.GetId(1));
+			double[] v3 = pointdata.GetTuple3(idList.GetId(2));
+
+			double result0 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[0], v2[0], v3[0]);
+			double result1 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[1], v2[1], v3[1]);
+			double result2 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[2], v2[2], v3[2]);
+
+			return new double[] { result0, result1, result2 };
+		}
+
+		throw new IllegalArgumentException("Cannot interpolate a tuple of degree " + tupleDegree);
 	}
 
 	/**

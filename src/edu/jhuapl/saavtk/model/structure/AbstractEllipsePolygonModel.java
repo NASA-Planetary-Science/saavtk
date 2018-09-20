@@ -15,6 +15,7 @@ import javax.swing.JOptionPane;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.CommonData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
@@ -1095,19 +1096,13 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 					pol.id + "\t" + name + "\t" + pol.center[0] + "\t" + pol.center[1] + "\t" + pol.center[2] + "\t" + lat + "\t" + lon + "\t" + llr.rad;
 
 			str += "\t";
-			double[] values = getColoringValuesAtPolygon(pol);
-			if (values == null || values.length != 4)
+
+			double[] values = getStandardColoringValuesAtPolygon(pol);
+			for (int i = 0; i < values.length; ++i)
 			{
-				str += "NA\tNA\tNA\tNA";
-			}
-			else
-			{
-				for (int i = 0; i < values.length; ++i)
-				{
-					str += values[i];
-					if (i < values.length - 1)
-						str += "\t";
-				}
+				str += Double.isNaN(values[i]) ? "NA" : values[i];
+				if (i < values.length - 1)
+					str += "\t";
 			}
 
 			str += "\t" + 2.0 * pol.radius; // save out as diameter, not radius
@@ -1219,60 +1214,113 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
-	private double[] getColoringValuesAtPolygon(EllipsePolygon pol) throws IOException
+	private double[] getStandardColoringValuesAtPolygon(EllipsePolygon pol) throws IOException
 	{
+		// Output array of 4 standard colorings (Slope, Elevation, GravAccel, GravPotential).
+		// Assume at the outset that none of the standard colorings are available.
+		final double[] standardValues = new double[] { Double.NaN, Double.NaN, Double.NaN, Double.NaN };
+
 		if (!smallBodyModel.isColoringDataAvailable())
-			return null;
+			return standardValues;
 
-		if (mode == Mode.POINT_MODE)
+		int slopeIndex = -1;
+		int elevationIndex = -1;
+		int accelerationIndex = -1;
+		int potentialIndex = -1;
+
+		// Locate any of the 4 standard plate colorings in the list of all colorings available for this resolution.
+		// Usually the standard colorings are first in the list, so the loop could terminate after all
+		// 4 are >= 0, but omitting this check for brevity and readability.
+		List<ColoringData> coloringDataList = smallBodyModel.getAllColoringData();
+		for (int index = 0; index < coloringDataList.size(); ++index)
 		{
-			return smallBodyModel.getAllColoringValues(pol.center);
-		}
-		else
-		{
-			// For circles compute the slope and elevation averaged over the rim of the circle.
-			// For acceleration and potential simply compute at the center.
-			double[] values = smallBodyModel.getAllColoringValues(pol.center);
-			if (values == null || values.length != 4)
-				return null;
-
-			values[0] = 0.0;
-			values[1] = 0.0;
-
-			vtkCellArray lines = pol.boundaryPolyData.GetLines();
-			vtkPoints points = pol.boundaryPolyData.GetPoints();
-
-			vtkIdTypeArray idArray = lines.GetData();
-			int size = idArray.GetNumberOfTuples();
-
-			double totalLength = 0.0;
-			double[] midpoint = new double[3];
-			for (int i = 0; i < size; i += 3)
+			String name = coloringDataList.get(index).getName();
+			if (name.equalsIgnoreCase(PolyhedralModel.SlopeStr))
 			{
-				if (idArray.GetValue(i) != 2)
+				slopeIndex = index;
+			}
+			else if (name.equalsIgnoreCase(PolyhedralModel.ElevStr))
+			{
+				elevationIndex = index;
+			}
+			else if (name.equalsIgnoreCase(PolyhedralModel.GravAccStr))
+			{
+				accelerationIndex = index;
+			}
+			// This is a hack -- unfortunately, in at least OREx's case, this vector is given a different name.
+			else if (name.equalsIgnoreCase("Gravitational Magnitude"))
+			{
+				accelerationIndex = index;
+			}
+			else if (name.equalsIgnoreCase(PolyhedralModel.GravPotStr))
+			{
+				potentialIndex = index;
+			}
+		}
+
+		// Get all the coloring values interpolated at the center of the polygon.
+		double[] allValues = smallBodyModel.getAllColoringValues(pol.center);
+		if (mode != Mode.POINT_MODE)
+		{
+			// Replace slope and/or elevation central values with the average over the rim of the circle.
+			if (slopeIndex != -1 || elevationIndex != -1)
+			{
+				if (slopeIndex != -1)
+					allValues[slopeIndex] = 0.; // Accumulate weighted sum in situ.
+				if (elevationIndex != -1)
+					allValues[elevationIndex] = 0.; // Accumulate weighted sum in situ.
+
+				vtkCellArray lines = pol.boundaryPolyData.GetLines();
+				vtkPoints points = pol.boundaryPolyData.GetPoints();
+
+				vtkIdTypeArray idArray = lines.GetData();
+				int size = idArray.GetNumberOfTuples();
+
+				double totalLength = 0.0;
+				double[] midpoint = new double[3];
+				for (int i = 0; i < size; i += 3)
 				{
-					System.out.println("Big problem: polydata corrupted");
-					return null;
+					if (idArray.GetValue(i) != 2)
+					{
+						System.out.println("Big problem: polydata corrupted");
+						return standardValues;
+					}
+
+					double[] pt1 = points.GetPoint(idArray.GetValue(i + 1));
+					double[] pt2 = points.GetPoint(idArray.GetValue(i + 2));
+
+					MathUtil.midpointBetween(pt1, pt2, midpoint);
+					double dist = MathUtil.distanceBetween(pt1, pt2);
+					totalLength += dist;
+
+					double[] valuesAtMidpoint = smallBodyModel.getAllColoringValues(midpoint);
+
+					// Accumulate sums weighted by the length of this polygon segment.
+					if (slopeIndex != -1)
+						allValues[slopeIndex] += valuesAtMidpoint[slopeIndex] * dist;
+					if (elevationIndex != -1)
+						allValues[elevationIndex] += valuesAtMidpoint[elevationIndex] * dist;
 				}
 
-				double[] pt1 = points.GetPoint(idArray.GetValue(i + 1));
-				double[] pt2 = points.GetPoint(idArray.GetValue(i + 2));
-
-				MathUtil.midpointBetween(pt1, pt2, midpoint);
-				double dist = MathUtil.distanceBetween(pt1, pt2);
-				totalLength += dist;
-
-				double[] valuesAtMidpoint = smallBodyModel.getAllColoringValues(midpoint);
-
-				values[0] += valuesAtMidpoint[0] * dist;
-				values[1] += valuesAtMidpoint[1] * dist;
+				// Normalize by the total (perimeter).
+				if (slopeIndex != -1)
+					allValues[slopeIndex] /= totalLength;
+				if (elevationIndex != -1)
+					allValues[elevationIndex] /= totalLength;
 			}
-
-			values[0] /= totalLength;
-			values[1] /= totalLength;
-
-			return values;
 		}
+
+		// Use whichever standard coloring values are present to populate the output array.
+		if (slopeIndex != -1)
+			standardValues[0] = allValues[slopeIndex];
+		if (elevationIndex != -1)
+			standardValues[1] = allValues[elevationIndex];
+		if (accelerationIndex != -1)
+			standardValues[2] = allValues[accelerationIndex];
+		if (potentialIndex != -1)
+			standardValues[3] = allValues[potentialIndex];
+
+		return standardValues;
 	}
 
 	private Double getEllipseAngleRelativeToGravityVector(EllipsePolygon pol)

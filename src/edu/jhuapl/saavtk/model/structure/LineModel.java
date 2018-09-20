@@ -29,6 +29,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -1162,13 +1163,16 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		out.write(",Longitude (deg)");
 		out.write(",Radius (m)");
 
-		int numColors = smallBodyModel.getNumberOfColors();
-		for (int i = 0; i < numColors; ++i)
+		List<ColoringData> colorings = smallBodyModel.getAllColoringData();
+		for (ColoringData coloring : colorings)
 		{
-			out.write("," + smallBodyModel.getColoringName(i));
-			String units = smallBodyModel.getColoringUnits(i);
-			if (units != null && !units.isEmpty())
-				out.write(" (" + units + ")");
+			String units = coloring.getUnits();
+			for (String element : coloring.getElementNames())
+			{
+				out.write("," + element);
+				if (!units.isEmpty())
+					out.write(" (" + units + ")");
+			}
 		}
 		out.write(lineSeparator);
 
