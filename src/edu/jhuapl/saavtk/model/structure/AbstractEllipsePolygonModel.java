@@ -317,7 +317,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		private static final Key<Integer> LABEL_ID_KEY = Key.of("labelId");
 		private static final Key<double[]> LABEL_COLOR_KEY = Key.of("labelColor");
 
-		static
+		public static void initializeSerializationProxy()
 		{
 			InstanceGetter.defaultInstanceGetter().register(ELLIPSE_POLYGON_KEY, (source) -> {
 				int numberSides = source.get(NUMBER_SIDES_KEY);
