@@ -88,6 +88,12 @@ public abstract class StructureModel extends AbstractModel
     {
         // do nothing by default. Only structures that have an inside need to implement this.
     }
+    
+    public FacetColoringData[] getPlateDataInsideStructure(int idx)
+    {
+        // do nothing by default. Only structures that have an inside need to implement this.
+    	return null;
+    }
 
     // For polygons which take a long time to draw, implement this function
     // to only show interior when explicitly told. If not reimplemented, then interiod

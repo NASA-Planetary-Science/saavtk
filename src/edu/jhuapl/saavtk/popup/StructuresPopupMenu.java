@@ -16,6 +16,7 @@ import edu.jhuapl.saavtk.gui.dialog.ChangeLatLonDialog;
 import edu.jhuapl.saavtk.gui.dialog.ColorChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.render.Renderer;
+import edu.jhuapl.saavtk.model.FacetColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.util.MathUtil;
@@ -30,6 +31,7 @@ abstract public class StructuresPopupMenu extends PopupMenu
 	private Renderer renderer;
 	private JMenuItem changeLatLonAction;
 	private JMenuItem exportPlateDataAction;
+	private JMenuItem plateStatisticsAction;
 	private JMenuItem editAction;
 	private JMenuItem centerStructureMenuItem;
 	private JMenuItem centerStructurePreserveDistanceMenuItem;
@@ -115,6 +117,10 @@ abstract public class StructuresPopupMenu extends PopupMenu
 			exportPlateDataAction = new JMenuItem(new ExportPlateDataInsidePolygon());
 			exportPlateDataAction.setText("Save plate data inside polygon...");
 			this.add(exportPlateDataAction);
+			
+			plateStatisticsAction =new JMenuItem(new ShowPlateStatisticsInfo());
+			plateStatisticsAction.setText("Show plate data statistics info...");
+			this.add(plateStatisticsAction);
 		}
 
 		if (showDisplayInterior)
@@ -343,6 +349,21 @@ abstract public class StructuresPopupMenu extends PopupMenu
 				}
 			}
 		}
+	}
+	
+	protected class ShowPlateStatisticsInfo extends AbstractAction
+	{
+
+		@Override
+		public void actionPerformed(ActionEvent e) 
+		{
+			int[] selectedStructures = model.getSelectedStructures();
+			if (selectedStructures.length == 1)
+			{
+				FacetColoringData[] data = model.getPlateDataInsideStructure(selectedStructures[0]);
+			}
+		}
+		
 	}
 
 	public boolean updateLabel(String label, int row)
