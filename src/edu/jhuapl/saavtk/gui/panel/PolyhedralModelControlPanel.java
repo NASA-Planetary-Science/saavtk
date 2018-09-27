@@ -53,6 +53,7 @@ import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.pick.Picker;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
+import edu.jhuapl.saavtk.util.Properties;
 import net.miginfocom.swing.MigLayout;
 
 public class PolyhedralModelControlPanel extends JPanel implements ItemListener, ChangeListener
@@ -198,6 +199,20 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			}
 		}
 		resolutionLevels = builder.build();
+		smallBodyModel.addPropertyChangeListener((evt) -> {
+			if (Properties.MODEL_RESOLUTION_CHANGED.equals(evt.getPropertyName()))
+			{
+				int resolutionLevel = smallBodyModel.getModelResolution();
+				if (resolutionLevel >= 0 && resolutionLevel < resModelButtons.size())
+				{
+					JRadioButton button = resModelButtons.get(resolutionLevel);
+					if (!button.isSelected())
+					{
+						resModelButtons.get(resolutionLevel).setSelected(true);
+					}
+				}
+			}
+		});
 
 		// The following snippet was taken from https://explodingpixels.wordpress.com/2008/10/28/make-jeditorpane-use-the-system-font/
 		// which shows how to make a JEditorPane behave look like a JLabel but still be selectable.
