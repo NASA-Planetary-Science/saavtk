@@ -24,14 +24,15 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
+import edu.jhuapl.saavtk.metadata.EmptyMetadata;
 import edu.jhuapl.saavtk.metadata.InstanceGetter;
 import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.MetadataManager;
 import edu.jhuapl.saavtk.metadata.MetadataManagerCollection;
-import edu.jhuapl.saavtk.metadata.StorableAsMetadata;
 import edu.jhuapl.saavtk.metadata.Serializer;
 import edu.jhuapl.saavtk.metadata.SettableMetadata;
+import edu.jhuapl.saavtk.metadata.StorableAsMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.metadata.serialization.gson.GsonElement.ElementIO;
 
@@ -177,7 +178,10 @@ public class GsonSerializer implements Serializer
 				{
 					MetadataManager manager = managerCollection.getManager(key);
 					Metadata metadata = manager.store();
-					metadataMap.put(key.getId(), metadata);
+					if (!EmptyMetadata.instance().equals(metadata))
+					{
+						metadataMap.put(key.getId(), metadata);
+					}
 				}
 				GSON.toJson(SERIALIZER_VERSION, DataTypeInfo.VERSION.getType(), jsonWriter);
 				jsonWriter.flush();
@@ -197,12 +201,15 @@ public class GsonSerializer implements Serializer
 			{
 				try
 				{
-					Metadata element = source.get(key);
-					if (element != null)
+					if (source.hasKey(key))
 					{
-						SwingUtilities.invokeAndWait(() -> {
-							managerCollection.getManager(key).retrieve(element);
-						});
+						Metadata element = source.get(key);
+						if (element != null)
+						{
+							SwingUtilities.invokeAndWait(() -> {
+								managerCollection.getManager(key).retrieve(element);
+							});
+						}
 					}
 				}
 				catch (Exception e)
@@ -220,10 +227,13 @@ public class GsonSerializer implements Serializer
 		{
 			for (Key<? extends Metadata> key : managerCollection.getKeys())
 			{
-				Metadata element = source.get(key);
-				if (element != null)
+				if (source.hasKey(key))
 				{
-					managerCollection.getManager(key).retrieve(element);
+					Metadata element = source.get(key);
+					if (element != null)
+					{
+						managerCollection.getManager(key).retrieve(element);
+					}
 				}
 			}
 		}
