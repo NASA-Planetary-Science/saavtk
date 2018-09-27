@@ -578,7 +578,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		{
 			if (standardColoringButton.isSelected())
 			{
-				setCursor(Cursor.getDefaultCursor());
 				setCursor(new Cursor(Cursor.WAIT_CURSOR));
 				int selectedIndex = coloringComboBox.getSelectedIndex() - 1;
 				if (selectedIndex < 0)
