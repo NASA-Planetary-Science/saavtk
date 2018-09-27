@@ -103,8 +103,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 		// We need to make sure to save out data from other resolutions without modification.
 		int resolutionLevel = modelManager.getPolyhedralModel().getModelResolution();
-		if (configMap.containsKey(PolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(PolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(PolyhedralModel.CELL_DATA_UNITS) && configMap.containsKey(PolyhedralModel.CELL_DATA_HAS_NULLS)
-				&& configMap.containsKey(PolyhedralModel.CELL_DATA_RESOLUTION_LEVEL))
+		if (configMap.containsKey(PolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(PolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(PolyhedralModel.CELL_DATA_UNITS) && configMap.containsKey(PolyhedralModel.CELL_DATA_HAS_NULLS) && configMap.containsKey(PolyhedralModel.CELL_DATA_RESOLUTION_LEVEL))
 		{
 			String[] cellDataFilenamesArr = configMap.get(PolyhedralModel.CELL_DATA_FILENAMES).split(",", -1);
 			String[] cellDataNamesArr = configMap.get(PolyhedralModel.CELL_DATA_NAMES).split(",", -1);
