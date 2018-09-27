@@ -64,7 +64,6 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		initializeList(model);
 
 		pack();
-		setModal(false);
 	}
 
 	private final void initializeList(DefaultListModel<ColoringData> model)
