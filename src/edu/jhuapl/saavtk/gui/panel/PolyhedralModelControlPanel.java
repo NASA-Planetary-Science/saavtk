@@ -576,9 +576,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
 		try
 		{
+			setCursor(new Cursor(Cursor.WAIT_CURSOR));
 			if (standardColoringButton.isSelected())
 			{
-				setCursor(new Cursor(Cursor.WAIT_CURSOR));
 				int selectedIndex = coloringComboBox.getSelectedIndex() - 1;
 				if (selectedIndex < 0)
 				{
@@ -590,7 +590,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 				smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
 				smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
 				colormapController.refresh();
-				setCursor(Cursor.getDefaultCursor());
 			}
 			else if (rgbColoringButton.isSelected())
 			{
@@ -629,6 +628,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			{
 				box.setSelectedIndex(0);
 			}
+		}
+		finally
+		{
+			setCursor(Cursor.getDefaultCursor());
 		}
 	}
 
