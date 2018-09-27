@@ -101,7 +101,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	private JScrollPane scrollPane;
 	private JButton additionalStatisticsButton;
 	private final ImmutableMap<String, Integer> resolutionLevels;
-	private CustomPlateDataDialog customPlateDialog;
 
 	public ModelManager getModelManager()
 	{
@@ -738,16 +737,12 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	}
 
 	@Override
-	public void stateChanged(ChangeEvent e)
+	public void stateChanged(@SuppressWarnings("unused") ChangeEvent e)
 	{}
 
-	protected CustomPlateDataDialog getPlateDataDialog(ModelManager modelManager)
+	protected CustomPlateDataDialog getPlateDataDialog(@SuppressWarnings("unused") ModelManager modelManager)
 	{
-		if (customPlateDialog == null)
-		{
-			customPlateDialog = new CustomPlateDataDialog(this);
-		}
-		return customPlateDialog;
+		return new CustomPlateDataDialog(this);
 	}
 
 	private static JSpinner createOpacitySpinner()
@@ -779,7 +774,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	private class CustomizePlateDataAction extends AbstractAction
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
 		{
 			CustomPlateDataDialog dialog = getPlateDataDialog(modelManager);
 			dialog.setLocationRelativeTo(JOptionPane.getFrameForComponent(PolyhedralModelControlPanel.this));
@@ -790,7 +785,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	private class SavePlateDataAction extends AbstractAction
 	{
 		@Override
-		public void actionPerformed(ActionEvent actionEvent)
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
 			Frame invoker = JOptionPane.getFrameForComponent(PolyhedralModelControlPanel.this);
