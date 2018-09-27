@@ -42,6 +42,7 @@ import edu.jhuapl.saavtk.util.SafePaths;
 
 public class CustomPlateDataDialog extends javax.swing.JDialog
 {
+	private static final long serialVersionUID = 1L;
 	private final PolyhedralModelControlPanel controlPanel;
 	private final ModelManager modelManager;
 	private final CustomizableColoringDataManager coloringDataManager;
@@ -443,7 +444,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		return new CustomPlateDataImporterDialog(JOptionPane.getFrameForComponent(this), false, modelManager.getPolyhedralModel().getSmallBodyPolyData().GetNumberOfCells());
 	}
 
-	private void newButtonActionPerformed(java.awt.event.ActionEvent evt)
+	private void newButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)
 	{//GEN-FIRST:event_newButtonActionPerformed
 		CustomPlateDataImporterDialog dialog = getPlateImporterDialog();
 		dialog.setLocationRelativeTo(this);
@@ -459,7 +460,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		controlPanel.updateColoringOptions();
 	}//GEN-LAST:event_newButtonActionPerformed
 
-	private void deleteButtonActionPerformed(java.awt.event.ActionEvent evt)
+	private void deleteButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)
 	{//GEN-FIRST:event_deleteButtonActionPerformed
 		int selectedItem = cellDataList.getSelectedIndex();
 		if (selectedItem >= 0)
@@ -469,7 +470,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		}
 	}//GEN-LAST:event_deleteButtonActionPerformed
 
-	private void editButtonActionPerformed(java.awt.event.ActionEvent evt)
+	private void editButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)
 	{//GEN-FIRST:event_editButtonActionPerformed
 		int selectedItem = cellDataList.getSelectedIndex();
 		if (selectedItem >= 0)
@@ -503,12 +504,12 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		}
 	}//GEN-LAST:event_editButtonActionPerformed
 
-	private void closeButtonActionPerformed(java.awt.event.ActionEvent evt)
+	private void closeButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)
 	{//GEN-FIRST:event_closeButtonActionPerformed
 		setVisible(false);
 	}//GEN-LAST:event_closeButtonActionPerformed
 
-	private void cellDataListValueChanged(javax.swing.event.ListSelectionEvent evt)
+	private void cellDataListValueChanged(@SuppressWarnings("unused") javax.swing.event.ListSelectionEvent evt)
 	{//GEN-FIRST:event_cellDataListValueChanged
 		int selectedItem = cellDataList.getSelectedIndex();
 		if (selectedItem >= 0)
