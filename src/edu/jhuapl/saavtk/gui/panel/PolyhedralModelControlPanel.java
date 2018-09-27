@@ -231,16 +231,21 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 				smallBodyModel.setColormap(colormapController.getColormap());
 				smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
 				smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
-				if (evt.getPropertyName().equals(ColormapController.colormapChanged)) {
+				if (evt.getPropertyName().equals(ColormapController.colormapChanged))
+				{
 					double[] range = smallBodyModel.getCurrentColoringRange(smallBodyModel.getColoringIndex());
 					colormapController.setMinMax(range[0], range[1]);
 					range = smallBodyModel.getDefaultColoringRange(smallBodyModel.getColoringIndex());
 					colormapController.setDefaultRange(range[0], range[1]);
-				} else if (evt.getPropertyName().equals(ColormapController.colormapRangeChanged)) {
-					try {
-						smallBodyModel.setCurrentColoringRange(smallBodyModel.getColoringIndex(),
-								colormapController.getMinMax());
-					} catch (IOException e) {
+				}
+				else if (evt.getPropertyName().equals(ColormapController.colormapRangeChanged))
+				{
+					try
+					{
+						smallBodyModel.setCurrentColoringRange(smallBodyModel.getColoringIndex(), colormapController.getMinMax());
+					}
+					catch (IOException e)
+					{
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
@@ -503,11 +508,13 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
 			if (graticule != null)
 			{
-				if (e.getStateChange() == ItemEvent.SELECTED) {
+				if (e.getStateChange() == ItemEvent.SELECTED)
+				{
 					setCursor(new Cursor(Cursor.WAIT_CURSOR));
 					graticule.setShowCaptions(true);
 					setCursor(Cursor.getDefaultCursor());
-				} else
+				}
+				else
 					graticule.setShowCaptions(false);
 			}
 		}
@@ -575,7 +582,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 				setCursor(Cursor.getDefaultCursor());
 				setCursor(new Cursor(Cursor.WAIT_CURSOR));
 				int selectedIndex = coloringComboBox.getSelectedIndex() - 1;
-				if (selectedIndex < 0) {
+				if (selectedIndex < 0)
+				{
 					smallBodyModel.setColoringIndex(-1);
 					return;
 				}
@@ -692,13 +700,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
 		// We add a superscripted space at end of first 2 lines and last 6 lines so that spacing between all lines is the same.
 		String text =
-				"<html>Statistics:<br>" + "&nbsp;&nbsp;&nbsp;Number of Plates: " + smallBodyModel.getSmallBodyPolyData().GetNumberOfCells() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Number of Vertices: "
-						+ smallBodyModel.getSmallBodyPolyData().GetNumberOfPoints() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Surface Area: " + String.format("%.7g", smallBodyModel.getSurfaceArea()) + " km<sup>2</sup><br>"
-						+ "&nbsp;&nbsp;&nbsp;Volume: " + String.format("%.7g", smallBodyModel.getVolume()) + " km<sup>3</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Average: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMeanCellArea())
-						+ " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Minimum: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMinCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Maximum: "
-						+ String.format("%.7g", 1.0e6 * smallBodyModel.getMaxCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Extent:<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;X: [" + String.format("%.7g, %.7g", bb.xmin, bb.xmax)
-						+ "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Y: [" + String.format("%.7g, %.7g", bb.ymin, bb.ymax) + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Z: ["
-						+ String.format("%.7g, %.7g", bb.zmin, bb.zmax) + "] km<sup>&nbsp;</sup><br>";
+				"<html>Statistics:<br>" + "&nbsp;&nbsp;&nbsp;Number of Plates: " + smallBodyModel.getSmallBodyPolyData().GetNumberOfCells() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Number of Vertices: " + smallBodyModel.getSmallBodyPolyData().GetNumberOfPoints() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Surface Area: " + String.format("%.7g", smallBodyModel.getSurfaceArea()) + " km<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Volume: " + String.format("%.7g", smallBodyModel.getVolume()) + " km<sup>3</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Average: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMeanCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Minimum: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMinCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Maximum: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMaxCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Extent:<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;X: [" + String.format("%.7g, %.7g", bb.xmin, bb.xmax) + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Y: [" + String.format("%.7g, %.7g", bb.ymin, bb.ymax) + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Z: [" + String.format("%.7g, %.7g", bb.zmin, bb.zmax) + "] km<sup>&nbsp;</sup><br>";
 
 		// There's some weird thing going one where changing the text of the label causes
 		// the scoll bar of the panel to scroll all the way down. Therefore, reset it to
