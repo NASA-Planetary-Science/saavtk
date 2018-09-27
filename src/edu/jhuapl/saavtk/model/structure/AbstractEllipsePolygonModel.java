@@ -16,6 +16,7 @@ import javax.swing.JOptionPane;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.model.CommonData;
+import edu.jhuapl.saavtk.model.FacetColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.util.FileUtil;
@@ -1452,6 +1453,13 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	{
 		vtkPolyData polydata = polygons.get(idx).interiorPolyData;
 		smallBodyModel.savePlateDataInsidePolydata(polydata, file);
+	}
+	
+	@Override
+	public FacetColoringData[] getPlateDataInsideStructure(int idx)
+	{
+		vtkPolyData polydata = polygons.get(idx).interiorPolyData;
+		return smallBodyModel.getPlateDataInsidePolydata(polydata);
 	}
 
 	@Override

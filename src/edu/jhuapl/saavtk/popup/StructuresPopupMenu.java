@@ -5,6 +5,7 @@ import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.IOException;
 
 import javax.swing.AbstractAction;
 import javax.swing.JCheckBoxMenuItem;
@@ -12,6 +13,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 
+import edu.jhuapl.saavtk.gui.coloringData.ColoringInfoWindow;
 import edu.jhuapl.saavtk.gui.dialog.ChangeLatLonDialog;
 import edu.jhuapl.saavtk.gui.dialog.ColorChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
@@ -361,6 +363,15 @@ abstract public class StructuresPopupMenu extends PopupMenu
 			if (selectedStructures.length == 1)
 			{
 				FacetColoringData[] data = model.getPlateDataInsideStructure(selectedStructures[0]);
+				try 
+				{
+					ColoringInfoWindow window = new ColoringInfoWindow(data);
+				} 
+				catch (IOException e1) 
+				{
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 			}
 		}
 		

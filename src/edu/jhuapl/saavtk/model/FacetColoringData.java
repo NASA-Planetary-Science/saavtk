@@ -39,7 +39,19 @@ public class FacetColoringData
 		return names;
 	}
 	
-	public double[] getColoringValuesFor(String coloringName)
+	public String[] getAvailableColoringNameUnits()
+	{
+		String[] names = new String[allColoringData.size()];
+		int i=0;
+		for (ColoringData data : allColoringData)
+		{
+			names[i++] = data.getUnits();
+		}
+		
+		return names;
+	}
+	
+	public double[] getColoringValuesFor(String coloringName) throws IOException
 	{
 		ColoringData data = null;
 		for (ColoringData coloring : allColoringData)
@@ -48,6 +60,7 @@ public class FacetColoringData
 				data = coloring;
 		}
 		if (data == null) return null;	//really should throw an exception here
+		data.load();
 		vtkFloatArray array = data.getData();
 		int number = data.getElementNames().size();
 		double[] vals = new double[number];
@@ -105,65 +118,12 @@ public class FacetColoringData
 		triangle.TriangleCenter(pt0, pt1, pt2, center);
 		llr = MathUtil.reclat(center);
 
-//		out.write(cellId + ",");
-//		out.write(area + ",");
-//		out.write(center[0] + ",");
-//		out.write(center[1] + ",");
-//		out.write(center[2] + ",");
-//		out.write((llr.lat * 180.0 / Math.PI) + ",");
-//		out.write((llr.lon * 180.0 / Math.PI) + ",");
-//		out.write(String.valueOf(llr.rad));
-
-//		for (ColoringData data : allColoringData)
-//		{
-//			vtkFloatArray array = data.getData();
-//			int number = data.getElementNames().size();
-//			if (number == 1)
-//			{
-//				out.write("," + array.GetTuple1(cellId));
-//			}
-//			else if (number != 1)
-//			{
-//				double[] dArray = null;
-//				if (number == 2)
-//				{
-//					dArray = array.GetTuple2(cellId);
-//				}
-//				else if (number == 3)
-//				{
-//					dArray = array.GetTuple3(cellId);
-//				}
-//				else if (number == 4)
-//				{
-//					dArray = array.GetTuple4(cellId);
-//				}
-//				else if (number == 6)
-//				{
-//					dArray = array.GetTuple6(cellId);
-//				}
-//				else if (number == 9)
-//				{
-//					dArray = array.GetTuple9(cellId);
-//				}
-//				else
-//				{
-//					throw new AssertionError();
-//				}
-//				for (double d : dArray)
-//				{
-//					out.write("," + d);
-//				}
-//			}
-//
-//		}
-//		out.write(lineSeparator);
 		triangle.Delete();
 		idList.Delete();
 	}
 	
 	public void writeTo(BufferedWriter out) throws IOException
 	{
-//		final String lineSeparator = System.getProperty("line.separator");
 		out.write(cellId + ",");
 		out.write(area + ",");
 		out.write(center[0] + ",");
@@ -180,7 +140,6 @@ public class FacetColoringData
 				out.write("," + d);
 			}
 		}
-//		out.write(lineSeparator);
 	}
 
 }
