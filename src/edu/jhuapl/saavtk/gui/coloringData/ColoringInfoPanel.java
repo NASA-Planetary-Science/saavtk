@@ -47,7 +47,7 @@ public class ColoringInfoPanel extends JPanel
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		
 		JComboBox<String> comboBox = new JComboBox<String>();
-		DefaultComboBoxModel<String> sourceComboBoxModel = new DefaultComboBoxModel<String>(data[0].getAvailableColoringNames());
+		DefaultComboBoxModel<String> sourceComboBoxModel = new DefaultComboBoxModel<String>(data[0].getAvailable1DColoringNames());
 		comboBox.setModel(sourceComboBoxModel);
 		
 		comboBox.addItemListener(new ItemListener() {
@@ -58,8 +58,8 @@ public class ColoringInfoPanel extends JPanel
             	try 
             	{
             		remove(histogramPane);
-            		String coloringName = data[0].getAvailableColoringNames()[index];
-					histogramPane = setupHistogramPanel(coloringName, data[0].getAvailableColoringNameUnits()[index], coloringName, "Count");
+            		String coloringName = data[0].getAvailable1DColoringNames()[index];
+					histogramPane = setupHistogramPanel(coloringName, data[0].getAvailable1DColoringNameUnits()[index], coloringName, "Count");
 					add(histogramPane);
             		
             		revalidate();
@@ -75,8 +75,8 @@ public class ColoringInfoPanel extends JPanel
 		add(comboBox);
 		histogramPane = new JPanel();
 		
-		String datasetName = data[0].getAvailableColoringNames()[0] ;
-		String datasetNameUnits = data[0].getAvailableColoringNameUnits()[0];
+		String datasetName = data[0].getAvailable1DColoringNames()[0] ;
+		String datasetNameUnits = data[0].getAvailable1DColoringNameUnits()[0];
 		histogramPane = setupHistogramPanel(datasetName, datasetNameUnits, datasetName, "Count");
 		
 		add(histogramPane);

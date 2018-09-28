@@ -14,7 +14,7 @@ public class ColoringInfoWindow extends JFrame //implements PropertyChangeListen
     public ColoringInfoWindow(FacetColoringData[] coloringData) throws IOException
     {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setTitle("Plate Coloring Statistics");
+        setTitle("1D Plate Coloring Statistics");
         this.coloringData = coloringData;
 
         ColoringInfoPanel panel = new ColoringInfoPanel(coloringData);

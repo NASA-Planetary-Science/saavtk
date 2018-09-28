@@ -117,11 +117,11 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		if (showExportPlateDataInsidePolygon)
 		{
 			exportPlateDataAction = new JMenuItem(new ExportPlateDataInsidePolygon());
-			exportPlateDataAction.setText("Save plate data inside polygon...");
+			exportPlateDataAction.setText("Save plate data inside structure...");
 			this.add(exportPlateDataAction);
 			
 			plateStatisticsAction =new JMenuItem(new ShowPlateStatisticsInfo());
-			plateStatisticsAction.setText("Show plate data statistics info...");
+			plateStatisticsAction.setText("Show plate data statistics inside structure...");
 			this.add(plateStatisticsAction);
 		}
 

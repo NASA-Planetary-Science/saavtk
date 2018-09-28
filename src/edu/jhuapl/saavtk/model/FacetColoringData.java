@@ -2,6 +2,7 @@ package edu.jhuapl.saavtk.model;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.util.Vector;
 
 import com.google.common.collect.ImmutableList;
 
@@ -49,6 +50,40 @@ public class FacetColoringData
 		}
 		
 		return names;
+	}
+	
+	public String[] getAvailable1DColoringNames()
+	{
+		String[] names = new String[get1DColorings().size()];
+		int i=0;
+		for (ColoringData data : get1DColorings())
+		{
+			names[i++] = data.getName();
+		}
+		
+		return names;
+	}
+	
+	public String[] getAvailable1DColoringNameUnits()
+	{
+		String[] names = new String[get1DColorings().size()];
+		int i=0;
+		for (ColoringData data : get1DColorings())
+		{
+			names[i++] = data.getUnits();
+		}
+		return names;
+	}
+	
+	private Vector<ColoringData> get1DColorings()
+	{
+		Vector<ColoringData> oneDColorings = new Vector<ColoringData>();
+		for (ColoringData data : allColoringData)
+		{
+			if(data.getElementNames().size() == 1)
+				oneDColorings.add(data);		
+		}
+		return oneDColorings;
 	}
 	
 	public double[] getColoringValuesFor(String coloringName) throws IOException
