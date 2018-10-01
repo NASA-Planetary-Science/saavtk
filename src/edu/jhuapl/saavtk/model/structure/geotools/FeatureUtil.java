@@ -39,14 +39,14 @@ public class FeatureUtil
 	public final static SimpleFeatureType	pointType;
 	public final static SimpleFeatureType	lineType;
 	public final static SimpleFeatureType	ellipseType;
-	public final static SimpleFeatureType	patchType;
+//	public final static SimpleFeatureType	patchType;
 	//	private final static SimpleFeatureType polyhedralType;
 
 	static
 	{
 		SimpleFeatureTypeBuilder pointTypeBuilder = new SimpleFeatureTypeBuilder();
 		pointTypeBuilder.setName("POINT");
-		pointTypeBuilder.setCRS(DefaultGeocentricCRS.CARTESIAN);
+		pointTypeBuilder.setCRS(DefaultGeographicCRS.WGS84_3D);
 		pointTypeBuilder.add("the_geom", com.vividsolutions.jts.geom.Point.class);
 		pointTypeBuilder.add("label", String.class);
 		pointTypeBuilder.add("color", String.class);
@@ -55,7 +55,7 @@ public class FeatureUtil
 		//
 		SimpleFeatureTypeBuilder lineTypeBuilder = new SimpleFeatureTypeBuilder();
 		lineTypeBuilder.setName("LINE");
-		lineTypeBuilder.setCRS(DefaultGeocentricCRS.CARTESIAN);
+		lineTypeBuilder.setCRS(DefaultGeographicCRS.WGS84_3D);
 		lineTypeBuilder.add("the_geom", MultiLineString.class);
 		lineTypeBuilder.add("label", String.class);
 		lineTypeBuilder.add("linecolor", String.class);
@@ -64,7 +64,7 @@ public class FeatureUtil
 		//
 		SimpleFeatureTypeBuilder ellipseTypeBuilder = new SimpleFeatureTypeBuilder();
 		ellipseTypeBuilder.setName("ELLIPSE");
-		ellipseTypeBuilder.setCRS(DefaultGeocentricCRS.CARTESIAN);
+		ellipseTypeBuilder.setCRS(DefaultGeographicCRS.WGS84_3D);
 		ellipseTypeBuilder.add("the_geom", MultiLineString.class);
 		ellipseTypeBuilder.add("label", String.class);
 		ellipseTypeBuilder.add("linecolor", String.class);
@@ -77,16 +77,16 @@ public class FeatureUtil
 		ellipseTypeBuilder.add("angle", Double.class);
 		ellipseType = ellipseTypeBuilder.buildFeatureType();
 		//
-		SimpleFeatureTypeBuilder patchTypeBuilder = new SimpleFeatureTypeBuilder();
-		patchTypeBuilder.setName("PATCH");
-		patchTypeBuilder.setCRS(DefaultGeocentricCRS.CARTESIAN);
-		patchTypeBuilder.add("the_geom", Polygon.class);
-		patchTypeBuilder.add("label", String.class);
-		patchTypeBuilder.add("linecolor", String.class);
-		patchTypeBuilder.add("linewidth", Double.class);
-		patchTypeBuilder.add("fillcolor", String.class);
-		patchType = patchTypeBuilder.buildFeatureType();
-		//
+//		SimpleFeatureTypeBuilder patchTypeBuilder = new SimpleFeatureTypeBuilder();
+//		patchTypeBuilder.setName("PATCH");
+//		patchTypeBuilder.setCRS(DefaultGeographicCRS.WGS84);
+//		patchTypeBuilder.add("the_geom", Polygon.class);
+//		patchTypeBuilder.add("label", String.class);
+//		patchTypeBuilder.add("linecolor", String.class);
+//		patchTypeBuilder.add("linewidth", Double.class);
+//		patchTypeBuilder.add("fillcolor", String.class);
+//		patchType = patchTypeBuilder.buildFeatureType();
+//		//
 		/*		SimpleFeatureTypeBuilder polyhedralTypeBuilder = new SimpleFeatureTypeBuilder();
 				polyhedralTypeBuilder.setName("PATCH");
 				polyhedralTypeBuilder.setCRS(DefaultEngineeringCRS.CARTESIAN_3D);
@@ -101,7 +101,7 @@ public class FeatureUtil
 	private static SimpleFeatureBuilder	pointBuilder	= new SimpleFeatureBuilder(pointType);
 	private static SimpleFeatureBuilder	lineBuilder		= new SimpleFeatureBuilder(lineType);
 	private static SimpleFeatureBuilder	ellipseBuilder	= new SimpleFeatureBuilder(ellipseType);
-	private static SimpleFeatureBuilder	patchBuilder	= new SimpleFeatureBuilder(patchType);
+//	private static SimpleFeatureBuilder	patchBuilder	= new SimpleFeatureBuilder(patchType);
 	//	private static SimpleFeatureBuilder polyhedralBuilder=new SimpleFeatureBuilder(polyhedralType);
 
 	public static SimpleFeature createFeatureFrom(PointStructure ps)
@@ -309,7 +309,7 @@ public class FeatureUtil
 		//
 	}
 
-	public static LineStructure createLineStructureFrom(SimpleFeature feature)
+	public static LineStructure createLineStructureFrom(SimpleFeature feature) 
 	{
 		String label = defaultLabel;
 		double lineWidth = defaultLineWidth;

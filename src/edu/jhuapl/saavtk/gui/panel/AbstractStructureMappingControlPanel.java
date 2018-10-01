@@ -20,6 +20,9 @@ import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -55,9 +58,21 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.geotools.feature.DefaultFeatureCollection;
+import org.geotools.feature.FeatureCollection;
+import org.geotools.feature.FeatureIterator;
+import org.opengis.feature.Feature;
+import org.opengis.feature.GeometryAttribute;
 import org.opengis.feature.simple.SimpleFeature;
 
 import com.google.common.collect.Lists;
+import com.jidesoft.utils.StringUtils;
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.MultiLineString;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -72,18 +87,28 @@ import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
+import edu.jhuapl.saavtk.model.structure.CircleModel;
+import edu.jhuapl.saavtk.model.structure.EllipseModel;
+import edu.jhuapl.saavtk.model.structure.Line;
 import edu.jhuapl.saavtk.model.structure.LineModel;
+import edu.jhuapl.saavtk.model.structure.PointModel;
+import edu.jhuapl.saavtk.model.structure.Polygon;
+import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.model.structure.geotools.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.geotools.FeatureUtil;
+import edu.jhuapl.saavtk.model.structure.geotools.LineSegment;
 import edu.jhuapl.saavtk.model.structure.geotools.LineStructure;
+import edu.jhuapl.saavtk.model.structure.geotools.PointStructure;
 import edu.jhuapl.saavtk.model.structure.geotools.ShapefileUtil;
 import edu.jhuapl.saavtk.model.structure.geotools.StructureUtil;
 import edu.jhuapl.saavtk.pick.PickEvent;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.pick.Picker;
 import edu.jhuapl.saavtk.popup.StructuresPopupMenu;
-
+import edu.jhuapl.saavtk.util.LatLon;
+import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Properties;
+import edu.jhuapl.saavtk.util.SmallBodyCubes;
 
 public abstract class AbstractStructureMappingControlPanel extends JPanel implements ActionListener, PropertyChangeListener, TableModelListener, ListSelectionListener
 {
@@ -92,7 +117,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
     private JButton loadStructuresButton;
     private JLabel structuresFileTextField;
     //private JButton saveStructuresButton;
-    private JButton saveAsStructuresButton;
+    private JButton saveStructuresButton;
     //private JList structuresList;
     private JTable structuresTable;
     private File structuresFile;
@@ -113,9 +138,11 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
 
     JPopupMenu saveAsPopupMenu = new JPopupMenu();
     PopupListener saveAsPopupListener = new PopupListener(saveAsPopupMenu);
-    boolean supportsEsri=false;
-    
-    class PopupListener extends MouseAdapter     // only if esri support is enabled
+    JPopupMenu loadPopupMenu = new JPopupMenu();
+    PopupListener loadPopupListener = new PopupListener(loadPopupMenu);
+    boolean supportsEsri = false;
+
+    class PopupListener extends MouseAdapter // only if esri support is enabled
     {
         JPopupMenu menu;
 
@@ -150,7 +177,23 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
         }
     }
 
-    class SaveAsPopupAction extends AbstractAction  // only if esri support is enabled
+    class LoadPopupAction extends AbstractAction // only if esri support is enabled
+    {
+        public LoadPopupAction()
+        {
+            super("Load...");
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) // convert the button press into a mouse event so popup is properly shown
+        {
+            Point p = MouseInfo.getPointerInfo().getLocation();
+            SwingUtilities.convertPointFromScreen(p, (Component) e.getSource());
+            loadPopupListener.mousePressed(new MouseEvent(AbstractStructureMappingControlPanel.this, MouseEvent.MOUSE_PRESSED, e.getWhen(), e.getModifiers(), p.x, p.y, 1, true));
+        }
+    }
+
+    class SaveAsPopupAction extends AbstractAction // only if esri support is enabled
     {
         public SaveAsPopupAction()
         {
@@ -163,6 +206,46 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
             Point p = MouseInfo.getPointerInfo().getLocation();
             SwingUtilities.convertPointFromScreen(p, (Component) e.getSource());
             saveAsPopupListener.mousePressed(new MouseEvent(AbstractStructureMappingControlPanel.this, MouseEvent.MOUSE_PRESSED, e.getWhen(), e.getModifiers(), p.x, p.y, 1, true));
+        }
+    }
+
+    class LoadSbmtStructuresFileAction extends AbstractAction // only if esri support is enabled
+    {
+        public LoadSbmtStructuresFileAction()
+        {
+            super("SBMT Structures File");
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e)
+        {
+            File file = CustomFileChooser.showOpenDialog(AbstractStructureMappingControlPanel.this, "Select File");
+
+            if (file != null)
+            {
+                try
+                {
+                    // If there are already structures, ask user if they want to
+                    // append or overwrite them
+                    boolean append = false;
+                    if (structureModel.getNumberOfStructures() > 0)
+                    {
+                        Object[] options = { "Append", "Replace" };
+                        int n = JOptionPane.showOptionDialog(AbstractStructureMappingControlPanel.this, "Would you like to append to or replace the existing structures?", "Append or Replace?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+                        append = (n == 0 ? true : false);
+                    }
+
+                    structureModel.loadModel(file, append);
+                    structuresFileTextField.setText(file.getAbsolutePath());
+                    structuresFile = file;
+                }
+                catch (Exception ex)
+                {
+                    JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(AbstractStructureMappingControlPanel.this), "There was an error reading the file.", "Error", JOptionPane.ERROR_MESSAGE);
+
+                    ex.printStackTrace();
+                }
+            }
         }
     }
 
@@ -207,7 +290,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
         }
     }
 
-    class SaveEsriShapeFileAction extends AbstractAction  // only if esri support is enabled
+    class SaveEsriShapeFileAction extends AbstractAction // only if esri support is enabled
     {
         public SaveEsriShapeFileAction()
         {
@@ -217,37 +300,265 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
         @Override
         public void actionPerformed(ActionEvent e)
         {
-            List<SimpleFeature> features = Lists.newArrayList();
-            List<EllipseStructure> ellipses = EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES));
-            List<EllipseStructure> circles = EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) modelManager.getModel(ModelNames.CIRCLE_STRUCTURES));
-            List<EllipseStructure> points = EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel)modelManager.getModel(ModelNames.POINT_STRUCTURES));
-            List<LineStructure> polygons = LineStructure.fromSbmtStructure((LineModel) modelManager.getModel(ModelNames.POLYGON_STRUCTURES));
-            List<LineStructure> lines = LineStructure.fromSbmtStructure((LineModel)modelManager.getModel(ModelNames.LINE_STRUCTURES));
-            for (int i = 0; i < ellipses.size(); i++)
-                features.add(FeatureUtil.createFeatureFrom(ellipses.get(i)));
-            for (int i = 0; i < circles.size(); i++)
-                features.add(FeatureUtil.createFeatureFrom(circles.get(i)));
-            for (int i=0; i<points.size(); i++)
-                features.add(FeatureUtil.createFeatureFrom(points.get(i)));
+            File file = CustomFileChooser.showSaveDialog(AbstractStructureMappingControlPanel.this, "Datastore filename", "myDataStore", "shp");
+            if (file == null)
+                return;
+            String prefix = FilenameUtils.removeExtension(FilenameUtils.getFullPath(file.toString()) + FilenameUtils.getBaseName(file.toString()));
+
+            if (structureModel == modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES))
+            {
+                List<EllipseStructure> ellipses = EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES));
+                DefaultFeatureCollection ellipseFeatures = new DefaultFeatureCollection();
+                for (int i = 0; i < ellipses.size(); i++)
+                    ellipseFeatures.add(FeatureUtil.createFeatureFrom(ellipses.get(i)));
+                BennuStructuresEsriIO.write(Paths.get(prefix + ".ellipses.shp"), ellipseFeatures, FeatureUtil.ellipseType);
+            }
+            else if (structureModel == modelManager.getModel(ModelNames.CIRCLE_STRUCTURES))
+            {
+                List<EllipseStructure> circles = EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) modelManager.getModel(ModelNames.CIRCLE_STRUCTURES));
+                DefaultFeatureCollection circleFeatures = new DefaultFeatureCollection();
+                for (int i = 0; i < circles.size(); i++)
+                    circleFeatures.add(FeatureUtil.createFeatureFrom(circles.get(i)));
+                BennuStructuresEsriIO.write(Paths.get(prefix + ".circles.shp"), circleFeatures, FeatureUtil.ellipseType);
+            }
+            else if (structureModel == modelManager.getModel(ModelNames.POINT_STRUCTURES))
+            {
+                List<EllipseStructure> ellipseRepresentations = EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) modelManager.getModel(ModelNames.POINT_STRUCTURES));
+                DefaultFeatureCollection pointFeatures = new DefaultFeatureCollection();
+                for (int i = 0; i < ellipseRepresentations.size(); i++)
+                {
+                    pointFeatures.add(FeatureUtil.createFeatureFrom(new PointStructure(ellipseRepresentations.get(i).getCentroid())));
+                    //System.out.println(ellipseRepresentations.get(i).getCentroid());
+                }
+                BennuStructuresEsriIO.write(Paths.get(prefix + ".points.shp"), pointFeatures, FeatureUtil.pointType);
+
+            }
+            else if (structureModel == modelManager.getModel(ModelNames.LINE_STRUCTURES))
+            {
+                List<LineStructure> lines = LineStructure.fromSbmtStructure((LineModel) modelManager.getModel(ModelNames.LINE_STRUCTURES));
+
+                DefaultFeatureCollection lineFeatures = new DefaultFeatureCollection();
+                for (int i = 0; i < lines.size(); i++)
+                    lineFeatures.add(FeatureUtil.createFeatureFrom(lines.get(i)));
+                BennuStructuresEsriIO.write(Paths.get(prefix + ".paths.shp"), lineFeatures, FeatureUtil.lineType);
+
+                DefaultFeatureCollection controlPointLineFeatures = new DefaultFeatureCollection();
+                for (int i = 0; i < lines.size(); i++)
+                {
+                    List<LineSegment> segments = Lists.newArrayList();
+                    for (int j = 0; j < lines.get(i).getNumberOfControlPoints() - 1; j++)
+                    {
+                        double[] p1 = lines.get(i).getControlPoint(j).toArray();
+                        double[] p2 = lines.get(i).getControlPoint(j + 1).toArray();
+                        segments.add(new LineSegment(p1, p2));
+                    }
+                    controlPointLineFeatures.add(FeatureUtil.createFeatureFrom(new LineStructure(segments)));
+                }
+                BennuStructuresEsriIO.write(Paths.get(prefix + ".paths-ctrlpts.shp"), controlPointLineFeatures, FeatureUtil.lineType);
+
+            }
+            else if (structureModel == modelManager.getModel(ModelNames.POLYGON_STRUCTURES))
+            {
+                List<LineStructure> lines = LineStructure.fromSbmtStructure((PolygonModel) modelManager.getModel(ModelNames.POLYGON_STRUCTURES));
+
+                DefaultFeatureCollection lineFeatures = new DefaultFeatureCollection();
+                for (int i = 0; i < lines.size(); i++)
+                    lineFeatures.add(FeatureUtil.createFeatureFrom(lines.get(i)));
+                BennuStructuresEsriIO.write(Paths.get(prefix + ".polygons.shp"), lineFeatures, FeatureUtil.lineType);
+
+                DefaultFeatureCollection controlPointLineFeatures = new DefaultFeatureCollection();
+                for (int i = 0; i < lines.size(); i++)
+                {
+                    List<LineSegment> segments = Lists.newArrayList();
+                    for (int j = 0; j < lines.get(i).getNumberOfControlPoints(); j++)
+                    {
+                        if (j < lines.get(i).getNumberOfControlPoints() - 1)
+                        {
+                            double[] p1 = lines.get(i).getControlPoint(j).toArray();
+                            double[] p2 = lines.get(i).getControlPoint(j + 1).toArray();
+                            segments.add(new LineSegment(p1, p2));
+                        }
+                        else
+                        {
+                            double[] p1 = lines.get(i).getControlPoint(j).toArray();
+                            double[] p2 = lines.get(i).getControlPoint(0).toArray();
+                            segments.add(new LineSegment(p1, p2));
+
+                        }
+                    }
+                    controlPointLineFeatures.add(FeatureUtil.createFeatureFrom(new LineStructure(segments)));
+                }
+                BennuStructuresEsriIO.write(Paths.get(prefix + ".polygons-ctrlpts.shp"), controlPointLineFeatures, FeatureUtil.lineType);
+
+            }
+
+            /*            List<LineStructure> polygons = LineStructure.fromSbmtStructure((LineModel) modelManager.getModel(ModelNames.POLYGON_STRUCTURES));
+            DefaultFeatureCollection polygonFeatures=new DefaultFeatureCollection();
             for (int i=0; i<polygons.size(); i++)
-                features.add(FeatureUtil.createFeatureFrom(polygons.get(i)));
-            for (int i=0; i<lines.size(); i++)
-                features.add(FeatureUtil.createFeatureFrom(lines.get(i)));
-            File file=CustomFileChooser.showSaveDialog(AbstractStructureMappingControlPanel.this, "Datastore filename", "myDataStore.shp", "shp");
-            if (file!=null)
-                new HeterogeneousShapefileDatastoreDumper(features).write(file.toPath());
+                polygonFeatures.add(FeatureUtil.createFeatureFrom(polygons.get(i)));
+            BennuStructuresEsriIO.write(Paths.get(prefix+".polygons.shp"), polygonFeatures, FeatureUtil.lineType);
+              */
+
+        }
+    }
+
+    class LoadEsriShapeFileAction extends AbstractAction // only if esri support is enabled
+    {
+        public LoadEsriShapeFileAction()
+        {
+            super("ESRI Shapefile Datastore..");
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e)
+        {
+            File file = CustomFileChooser.showOpenDialog(AbstractStructureMappingControlPanel.this, "Datastore filename", Lists.newArrayList("shp"));
+            if (file == null)
+                return;
+            //String prefix = FilenameUtils.getFullPath(file.toString()) + FilenameUtils.getBaseName(file.toString());
+            String prefix = FilenameUtils.getFullPath(file.toString()) + FilenameUtils.getName(file.toString());
+            //System.out.println(prefix);
+            int idx1 = prefix.lastIndexOf('.');
+            prefix = prefix.substring(0, idx1);
+            int idx2 = prefix.lastIndexOf('.');
+            prefix = prefix.substring(0, idx2);
+            //System.out.println("prefix=" +prefix);
+
+            if (structureModel == modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES))
+            {
+                Path filePath = Paths.get(prefix + ".ellipses.shp");
+                if (filePath.toFile().exists())
+                {
+                    FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.ellipseType);
+                    FeatureIterator<Feature> it = features.features();
+                    while (it.hasNext())
+                    {
+                        Feature f = it.next();
+                        EllipseStructure es = FeatureUtil.createEllipseStructureFrom((SimpleFeature) f);
+                        EllipseModel model = (EllipseModel) modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES);
+                        model.addNewStructure(es.getCentroid(), es.getParameters().majorRadius, es.getParameters().flattening, es.getParameters().angle);
+                    }
+
+                }
+            }
+            else if (structureModel == modelManager.getModel(ModelNames.CIRCLE_STRUCTURES))
+            {
+                Path filePath = Paths.get(prefix + ".circles.shp");
+                if (filePath.toFile().exists())
+                {
+
+                    FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.ellipseType);
+                    FeatureIterator<Feature> it = features.features();
+                    while (it.hasNext())
+                    {
+                        Feature f = it.next();
+                        EllipseStructure es = FeatureUtil.createEllipseStructureFrom((SimpleFeature) f);
+                        CircleModel model = (CircleModel) modelManager.getModel(ModelNames.CIRCLE_STRUCTURES);
+                        model.addNewStructure(es.getCentroid(), es.getParameters().majorRadius, es.getParameters().flattening, es.getParameters().angle);
+                    }
+                }
+            }
+            else if (structureModel == modelManager.getModel(ModelNames.POINT_STRUCTURES))
+            {
+                Path filePath = Paths.get(prefix + ".points.shp");
+                if (filePath.toFile().exists())
+                {
+                    FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.pointType);
+                    FeatureIterator<Feature> it = features.features();
+                    while (it.hasNext())
+                    {
+                        Feature f = it.next();
+                        PointStructure ps = FeatureUtil.createPointStructureFrom((SimpleFeature) f);
+                        PointModel model = (PointModel) modelManager.getModel(ModelNames.POINT_STRUCTURES);
+                        model.addNewStructure(ps.getCentroid());
+                    }
+
+                }
+            }
+            else if (structureModel == modelManager.getModel(ModelNames.LINE_STRUCTURES))
+            {
+                Path filePath = Paths.get(prefix + ".paths-ctrlpts.shp");
+                if (filePath.toFile().exists())
+                {
+                    FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.lineType);
+                    FeatureIterator<Feature> it = features.features();
+                    while (it.hasNext())
+                    {
+                        Feature f = it.next();
+                        //       System.out.println("reading line structure: "+f);
+                        LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f);
+                        LineModel model = (LineModel) modelManager.getModel(ModelNames.LINE_STRUCTURES);
+                        model.addNewStructure();
+                        model.activateStructure(model.getNumberOfStructures() - 1);
+                        for (int i = 0; i <= ls.getNumberOfSegments(); i++)
+                        {
+                            double[] pt;
+                            if (i == ls.getNumberOfSegments())
+                                pt = ls.getSegment(i - 1).getEnd();
+                            else
+                                pt = ls.getSegment(i).getStart();
+                            LatLon latlon = MathUtil.reclat(pt);
+                            System.out.println(latlon.lat+" "+latlon.lon);
+                            GenericPolyhedralModel body = (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY);
+                            double[] intersectPoint = new double[3];
+                            body.getPointAndCellIdFromLatLon(latlon.lat, latlon.lon, intersectPoint);
+                            model.insertVertexIntoActivatedStructure(intersectPoint);
+                        }
+
+                    }
+
+                }
+            }
+            else if (structureModel == modelManager.getModel(ModelNames.POLYGON_STRUCTURES))
+            {
+                Path filePath = Paths.get(prefix + ".polygons-ctrlpts.shp");
+                if (filePath.toFile().exists())
+                {
+                    FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.lineType);
+                    FeatureIterator<Feature> it = features.features();
+                    while (it.hasNext())
+                    {
+                        Feature f = it.next();
+                        //       System.out.println("reading polygon structure: "+f);
+                        LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f);
+                        PolygonModel model = (PolygonModel) modelManager.getModel(ModelNames.POLYGON_STRUCTURES);
+                        model.addNewStructure();
+                        model.activateStructure(model.getNumberOfStructures() - 1);
+                        for (int i = 0; i < ls.getNumberOfSegments(); i++)
+                        {
+                            Vector3D pt;
+                            if (i == ls.getNumberOfSegments())
+                                pt = new Vector3D(ls.getSegment(i - 1).getEnd());
+                            else
+                                pt = new Vector3D(ls.getSegment(i).getStart());
+                            LatLon latlon = MathUtil.reclat(pt.toArray());
+                            System.out.println(latlon.lat+" "+latlon.lon);
+                            GenericPolyhedralModel body = (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY);
+                            double[] intersectPoint = new double[3];
+                            body.getPointAndCellIdFromLatLon(latlon.lat, latlon.lon, intersectPoint);
+                            model.insertVertexIntoActivatedStructure(intersectPoint);
+                        }
+
+                    }
+
+                }
+            }
+
         }
     }
 
     public AbstractStructureMappingControlPanel(final ModelManager modelManager, final StructureModel structureModel, final PickManager pickManager, final PickManager.PickMode pickMode, StructuresPopupMenu structuresPopupMenu, boolean supportsLineWidth, boolean supportsEsri)
     {
-this.supportsEsri=supportsEsri;
+        this.supportsEsri = supportsEsri;
         this.modelManager = modelManager;
         //this.pickManager = pickManager;
         this.structureModel = structureModel;
         this.pickManager = pickManager;
         this.pickMode = pickMode;
         this.structuresPopupMenu = structuresPopupMenu;
+
+        loadPopupMenu.add(new JMenuItem(new LoadSbmtStructuresFileAction()));
+        loadPopupMenu.add(new JMenuItem(new LoadEsriShapeFileAction()));
 
         saveAsPopupMenu.add(new JMenuItem(new SaveSbmtStructuresFileAction()));
         saveAsPopupMenu.add(new JMenuItem(new SaveEsriShapeFileAction()));
@@ -265,8 +576,16 @@ this.supportsEsri=supportsEsri;
 
         setLayout(new MigLayout("wrap 3, insets 0", "[][]", "[][22.00,fill][403.00][][][][][][]"));
 
-        this.loadStructuresButton = new JButton("Load...");
-        this.loadStructuresButton.addActionListener(this);
+        if (supportsEsri)
+        {
+            loadStructuresButton = new JButton(new LoadPopupAction());
+            loadStructuresButton.addMouseListener(loadPopupListener);
+        }
+        else
+        {
+            loadStructuresButton = new JButton("Load...");
+            loadStructuresButton.addActionListener(this);
+        }
 
         // twupy1: Getting rid of "Save" feature at request of Carolyn since we don't have an undo button yet
         //this.saveStructuresButton= new JButton("Save");
@@ -276,19 +595,19 @@ this.supportsEsri=supportsEsri;
         if (supportsEsri)
         {
 
-            saveAsStructuresButton = new JButton(new SaveAsPopupAction());
-            saveAsStructuresButton.addMouseListener(saveAsPopupListener);
+            saveStructuresButton = new JButton(new SaveAsPopupAction());
+            saveStructuresButton.addMouseListener(saveAsPopupListener);
         }
         else
         {
-            saveAsStructuresButton = new JButton("Save...");
-            saveAsStructuresButton.addActionListener(this);
+            saveStructuresButton = new JButton("Save...");
+            saveStructuresButton.addActionListener(this);
 
         }
 
         add(this.loadStructuresButton, "flowx,cell 0 0,width 100!");
         //add(this.saveStructuresButton, "w 100!");
-        add(this.saveAsStructuresButton, "flowx,cell 1 0,width 100!");
+        add(this.saveStructuresButton, "flowx,cell 1 0,width 100!");
 
         JLabel structureTypeText = new JLabel(" Structures");
         add(structureTypeText, "flowx,cell 0 1");
@@ -584,7 +903,7 @@ this.supportsEsri=supportsEsri;
     {
         Object source = actionEvent.getSource();
 
-        if (source == this.loadStructuresButton)
+        if (source == this.loadStructuresButton && !supportsEsri)
         {
             File file = CustomFileChooser.showOpenDialog(this, "Select File");
 
@@ -614,42 +933,39 @@ this.supportsEsri=supportsEsri;
                 }
             }
         }
-                else if (/*source == this.saveStructuresButton || */source == this.saveAsStructuresButton && !supportsEsri)
+        else if (/*source == this.saveStructuresButton || */source == this.saveStructuresButton && !supportsEsri)
+        {
+            File file = structuresFile;
+            if (structuresFile == null || source == this.saveStructuresButton)
+            {
+                if (file != null)
                 {
-                    File file = structuresFile;
-                    if (structuresFile == null || source == this.saveAsStructuresButton)
-                    {
-                    	if(file != null)
-                    	{
-                    		// File already exists, use it as the default filename
-                            file = CustomFileChooser.showSaveDialog(this, "Select File", file.getName());            		
-                    	}
-                    	else
-                    	{
-                    		// We don't have a default filename to provide
-                    	    file = CustomFileChooser.showSaveDialog(this, "Select File");	
-                    	}
-                    }
-        
-                    if (file != null)
-                    {
-                        try
-                        {
-                            structureModel.saveModel(file);
-                            structuresFileTextField.setText(file.getAbsolutePath());
-                            structuresFile = file;
-                        }
-                        catch (Exception e)
-                        {
-                            JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this),
-                                    "There was an error saving the file.",
-                                    "Error",
-                                    JOptionPane.ERROR_MESSAGE);
-        
-                            e.printStackTrace();
-                        }
-                    }
+                    // File already exists, use it as the default filename
+                    file = CustomFileChooser.showSaveDialog(this, "Select File", file.getName());
                 }
+                else
+                {
+                    // We don't have a default filename to provide
+                    file = CustomFileChooser.showSaveDialog(this, "Select File");
+                }
+            }
+
+            if (file != null)
+            {
+                try
+                {
+                    structureModel.saveModel(file);
+                    structuresFileTextField.setText(file.getAbsolutePath());
+                    structuresFile = file;
+                }
+                catch (Exception e)
+                {
+                    JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this), "There was an error saving the file.", "Error", JOptionPane.ERROR_MESSAGE);
+
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     public void propertyChange(PropertyChangeEvent evt)

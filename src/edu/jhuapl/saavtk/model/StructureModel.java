@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import edu.jhuapl.saavtk.model.structure.Line;
 import vtk.vtkProp;
 
 
@@ -32,7 +33,7 @@ public abstract class StructureModel extends AbstractModel
 
     public abstract List<vtkProp> getProps();
 
-    public abstract void addNewStructure();
+    public abstract Structure addNewStructure();
 
     public abstract boolean supportsActivation();
 

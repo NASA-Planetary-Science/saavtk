@@ -411,12 +411,13 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
         return numberOfPoints;
     }
 
-    public void addNewStructure()
+    public Line addNewStructure()
     {
         Line lin = (Line)createStructure(smallBodyModel);
         lines.add(lin);
         activateStructure(lines.size()-1);
         this.pcs.firePropertyChange(Properties.STRUCTURE_ADDED, null, null);
+        return lin;
     }
 
     public void updateActivatedStructureVertex(int vertexId, double[] newPoint)

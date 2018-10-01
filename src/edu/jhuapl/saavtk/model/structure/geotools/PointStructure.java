@@ -1,6 +1,5 @@
 package edu.jhuapl.saavtk.model.structure.geotools;
 
-import java.util.Arrays;
 
 public class PointStructure implements Structure
 {
@@ -47,5 +46,7 @@ public class PointStructure implements Structure
 	{
 		return getClass().getSimpleName()+"{centroid="+StructureUtil.toString(location)+",label="+label+",style="+style+"}";
 	}
+	
+	
 	
 }

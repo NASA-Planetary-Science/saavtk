@@ -42,16 +42,9 @@ public class EllipseStructure extends LineStructure
 	public static List<EllipseStructure> fromSbmtStructure(AbstractEllipsePolygonModel crappySbmtStructureModel)
 	{
         List<EllipseStructure> structures = Lists.newArrayList();
-        int[] ids = crappySbmtStructureModel.getSelectedStructures();
-        if (ids.length == 0)
+        for (int i = 0; i < crappySbmtStructureModel.getNumberOfStructures(); i++)
         {
-            ids = new int[crappySbmtStructureModel.getNumberOfStructures()];
-            for (int i = 0; i < ids.length; i++)
-                ids[i] = i;
-        }
-        for (int i = 0; i < ids.length; i++)
-        {
-            EllipsePolygon poly = (EllipsePolygon) crappySbmtStructureModel.getStructure(ids[i]);
+            EllipsePolygon poly = (EllipsePolygon) crappySbmtStructureModel.getStructure(i);
             int[] c = poly.getColor();
             double w = crappySbmtStructureModel.getLineWidth();
             LineStyle style = new LineStyle(new Color(c[0], c[1], c[2]), w);
