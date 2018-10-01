@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 
+import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.model.structure.geotools.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.geotools.LineSegment;
@@ -19,7 +20,7 @@ import vtk.vtkPolyDataWriter;
 public class StructuresImporter
 {
 	
-	public static void importFromShapefile(StructureModel model, Path shapeFile) throws IOException
+	public static void importFromShapefile(StructureModel model, Path shapeFile, GenericPolyhedralModel body) throws IOException
 	{
 		if (model instanceof PointModel)
 		{
@@ -33,7 +34,7 @@ public class StructuresImporter
 		}
 		if (model instanceof AbstractEllipsePolygonModel)
 		{
-			importFromShapeFile((AbstractEllipsePolygonModel)model, shapeFile);
+			importFromShapeFile((AbstractEllipsePolygonModel)model, shapeFile, body);
 			return;
 		}
 	}
@@ -85,9 +86,9 @@ public class StructuresImporter
 		}
 	}
 	
-	public static void importFromShapeFile(AbstractEllipsePolygonModel model, Path shapeFile) throws IOException
+	public static void importFromShapeFile(AbstractEllipsePolygonModel model, Path shapeFile, GenericPolyhedralModel body) throws IOException
 	{
-		Collection<EllipseStructure> sc=ShapefileUtil.readEllipseStructures(shapeFile);
+		Collection<EllipseStructure> sc=ShapefileUtil.readEllipseStructures(shapeFile, body);
 		for (EllipseStructure s : sc)
 		{
 			Color c=s.getStyle().getLineColor();

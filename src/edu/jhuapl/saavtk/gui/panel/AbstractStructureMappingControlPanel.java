@@ -392,13 +392,6 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
 
             }
 
-            /*            List<LineStructure> polygons = LineStructure.fromSbmtStructure((LineModel) modelManager.getModel(ModelNames.POLYGON_STRUCTURES));
-            DefaultFeatureCollection polygonFeatures=new DefaultFeatureCollection();
-            for (int i=0; i<polygons.size(); i++)
-                polygonFeatures.add(FeatureUtil.createFeatureFrom(polygons.get(i)));
-            BennuStructuresEsriIO.write(Paths.get(prefix+".polygons.shp"), polygonFeatures, FeatureUtil.lineType);
-              */
-
         }
     }
 
@@ -421,6 +414,8 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
             int idx1 = prefix.lastIndexOf('.');
             prefix = prefix.substring(0, idx1);
             int idx2 = prefix.lastIndexOf('.');
+            if (idx2<0)
+                ;
             prefix = prefix.substring(0, idx2);
             //System.out.println("prefix=" +prefix);
 
@@ -434,11 +429,11 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                     while (it.hasNext())
                     {
                         Feature f = it.next();
-                        EllipseStructure es = FeatureUtil.createEllipseStructureFrom((SimpleFeature) f);
+                        EllipseStructure es = FeatureUtil.createEllipseStructureFrom((SimpleFeature) f, (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
                         EllipseModel model = (EllipseModel) modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES);
                         model.addNewStructure(es.getCentroid(), es.getParameters().majorRadius, es.getParameters().flattening, es.getParameters().angle);
                     }
-
+                    it.close();
                 }
             }
             else if (structureModel == modelManager.getModel(ModelNames.CIRCLE_STRUCTURES))
@@ -452,10 +447,11 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                     while (it.hasNext())
                     {
                         Feature f = it.next();
-                        EllipseStructure es = FeatureUtil.createEllipseStructureFrom((SimpleFeature) f);
+                        EllipseStructure es = FeatureUtil.createEllipseStructureFrom((SimpleFeature) f, (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
                         CircleModel model = (CircleModel) modelManager.getModel(ModelNames.CIRCLE_STRUCTURES);
                         model.addNewStructure(es.getCentroid(), es.getParameters().majorRadius, es.getParameters().flattening, es.getParameters().angle);
                     }
+                    it.close();
                 }
             }
             else if (structureModel == modelManager.getModel(ModelNames.POINT_STRUCTURES))
@@ -468,11 +464,11 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                     while (it.hasNext())
                     {
                         Feature f = it.next();
-                        PointStructure ps = FeatureUtil.createPointStructureFrom((SimpleFeature) f);
+                        PointStructure ps = FeatureUtil.createPointStructureFrom((SimpleFeature) f, (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
                         PointModel model = (PointModel) modelManager.getModel(ModelNames.POINT_STRUCTURES);
                         model.addNewStructure(ps.getCentroid());
                     }
-
+                    it.close();
                 }
             }
             else if (structureModel == modelManager.getModel(ModelNames.LINE_STRUCTURES))
@@ -486,7 +482,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                     {
                         Feature f = it.next();
                         //       System.out.println("reading line structure: "+f);
-                        LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f);
+                        LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f, (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
                         LineModel model = (LineModel) modelManager.getModel(ModelNames.LINE_STRUCTURES);
                         model.addNewStructure();
                         model.activateStructure(model.getNumberOfStructures() - 1);
@@ -498,7 +494,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                             else
                                 pt = ls.getSegment(i).getStart();
                             LatLon latlon = MathUtil.reclat(pt);
-                            System.out.println(latlon.lat+" "+latlon.lon);
+                            System.out.println(latlon.lat + " " + latlon.lon);
                             GenericPolyhedralModel body = (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY);
                             double[] intersectPoint = new double[3];
                             body.getPointAndCellIdFromLatLon(latlon.lat, latlon.lon, intersectPoint);
@@ -506,6 +502,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                         }
 
                     }
+                    it.close();
 
                 }
             }
@@ -520,7 +517,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                     {
                         Feature f = it.next();
                         //       System.out.println("reading polygon structure: "+f);
-                        LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f);
+                        LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f, (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
                         PolygonModel model = (PolygonModel) modelManager.getModel(ModelNames.POLYGON_STRUCTURES);
                         model.addNewStructure();
                         model.activateStructure(model.getNumberOfStructures() - 1);
@@ -532,7 +529,6 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                             else
                                 pt = new Vector3D(ls.getSegment(i).getStart());
                             LatLon latlon = MathUtil.reclat(pt.toArray());
-                            System.out.println(latlon.lat+" "+latlon.lon);
                             GenericPolyhedralModel body = (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY);
                             double[] intersectPoint = new double[3];
                             body.getPointAndCellIdFromLatLon(latlon.lat, latlon.lon, intersectPoint);
@@ -540,6 +536,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                         }
 
                     }
+                    it.close();
 
                 }
             }

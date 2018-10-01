@@ -61,6 +61,7 @@ import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequenceFactory;
 import com.vividsolutions.jts.math.Vector3D;
 
+import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import vtk.vtkCellArray;
 import vtk.vtkExtractEdges;
 import vtk.vtkFeatureEdges;
@@ -139,8 +140,8 @@ public class ShapefileUtil
 	{
 		Collection<SimpleFeature> sfc = read(shapeFile);
 		Set<PointStructure> ps = Sets.newHashSet();
-		for (SimpleFeature sf : sfc)
-			ps.add(FeatureUtil.createPointStructureFrom(sf));
+//		for (SimpleFeature sf : sfc)
+//			ps.add(FeatureUtil.createPointStructureFrom(sf, body));
 		return ps;
 	}
 
@@ -150,18 +151,18 @@ public class ShapefileUtil
 		Set<LineStructure> ls = Sets.newHashSet();
 		for (SimpleFeature sf : sfc)
 		{
-			LineStructure s=FeatureUtil.createLineStructureFrom(sf);
-			ls.add(s);
+//			LineStructure s=FeatureUtil.createLineStructureFrom(sf);
+//			ls.add(s);
 		}
 		return ls;
 	}
 
-	public static Collection<EllipseStructure> readEllipseStructures(Path shapeFile) throws IOException
+	public static Collection<EllipseStructure> readEllipseStructures(Path shapeFile, GenericPolyhedralModel body) throws IOException
 	{
 		Collection<SimpleFeature> sfc = read(shapeFile);
 		Set<EllipseStructure> ls = Sets.newHashSet();
 		for (SimpleFeature sf : sfc)
-			ls.add(FeatureUtil.createEllipseStructureFrom(sf));
+			ls.add(FeatureUtil.createEllipseStructureFrom(sf, body));
 		return ls;
 	}
 
