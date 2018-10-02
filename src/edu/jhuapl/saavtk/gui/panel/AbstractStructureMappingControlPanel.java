@@ -69,11 +69,6 @@ import org.opengis.feature.GeometryAttribute;
 import org.opengis.feature.simple.SimpleFeature;
 
 import com.google.common.collect.Lists;
-import com.jidesoft.utils.StringUtils;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.MultiLineString;
 
 import net.miginfocom.swing.MigLayout;
 
