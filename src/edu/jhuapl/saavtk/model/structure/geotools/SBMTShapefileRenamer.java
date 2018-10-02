@@ -21,7 +21,7 @@ import javax.swing.event.DocumentListener;
 
 import org.apache.commons.io.FilenameUtils;
 
-public class SBMTShapefileRenamer extends JFrame implements ActionListener, DocumentListener
+public class SBMTShapefileRenamer extends JPanel implements ActionListener, DocumentListener
 {
 
     String filename;
@@ -31,11 +31,11 @@ public class SBMTShapefileRenamer extends JFrame implements ActionListener, Docu
     JLabel origlabel;
     JTextField prefixField;
     JComboBox<String> shapetypes = new JComboBox<>(new String[] { "Points", "Paths", "Polygons", "Circles", "Ellipses" });
-    String[] filetypestr=new String[]{"points","paths-ctrlpts","polygons-ctrlpts","circles","ellipses"};
+    String[] filetypestr = new String[] { "points", "paths-ctrlpts", "polygons-ctrlpts", "circles", "ellipses" };
     JLabel newlabel;
 
-    JButton renameButton=new JButton("Rename");
-    JButton cancelButton=new JButton("Cancel");
+    //   JButton renameButton=new JButton("Rename");
+    //  JButton cancelButton=new JButton("Cancel");
 
     public SBMTShapefileRenamer(String filename)
     {
@@ -65,20 +65,20 @@ public class SBMTShapefileRenamer extends JFrame implements ActionListener, Docu
         JPanel shapePanel = new JPanel();
         shapePanel.add(new JLabel("Shapefile content"));
         shapePanel.add(shapetypes);
-        JPanel buttonPanel=new JPanel();
-        buttonPanel.add(renameButton);
-        buttonPanel.add(cancelButton);
+        JPanel buttonPanel = new JPanel();
+        //       buttonPanel.add(renameButton);
+        //       buttonPanel.add(cancelButton);
         ctrPanel.add(prefixPanel, BorderLayout.NORTH);
         ctrPanel.add(shapePanel, BorderLayout.CENTER);
-        ctrPanel.add(buttonPanel,BorderLayout.SOUTH);
+        ctrPanel.add(buttonPanel, BorderLayout.SOUTH);
         add(ctrPanel, BorderLayout.CENTER);
         add(newlabel, BorderLayout.EAST);
         //
         prefixField.addActionListener(this);
         prefixField.getDocument().addDocumentListener(this);
         shapetypes.addActionListener(this);
-        renameButton.addActionListener(this);
-        cancelButton.addActionListener(this);
+        //     renameButton.addActionListener(this);
+        //     cancelButton.addActionListener(this);
     }
 
     protected String createOrigString()
@@ -92,9 +92,9 @@ public class SBMTShapefileRenamer extends JFrame implements ActionListener, Docu
 
     protected String getNewFilename(File file)
     {
-        return file.getParent()+ "/"+prefixField.getText() + "." + filetypestr[shapetypes.getSelectedIndex()] + "." + FilenameUtils.getExtension(file.getName());
+        return file.getParent() + "/" + prefixField.getText() + "." + filetypestr[shapetypes.getSelectedIndex()] + "." + FilenameUtils.getExtension(file.getName());
     }
-    
+
     protected String createNewString()
     {
         String newstr = "<html>";
@@ -103,48 +103,59 @@ public class SBMTShapefileRenamer extends JFrame implements ActionListener, Docu
         newstr += "<html>";
         return newstr;
     }
-    
-    protected void rename() throws IOException
+
+    public String rename()
     {
-        for (int i=0; i<files.length; i++)
+        String result=null;
+        try
         {
-            File newFile=new File(getNewFilename(files[i]));
-            System.out.println("renamed "+files[i].getAbsolutePath()+" to "+newFile.getAbsolutePath());
-            boolean ok=files[i].renameTo(newFile);
-            if (!ok)
-                throw new IOException("File rename failed for "+files[i].toString());
+            for (int i = 0; i < files.length; i++)
+            {
+                File newFile = new File(getNewFilename(files[i]));
+                System.out.println("renamed " + files[i].getAbsolutePath() + " to " + newFile.getAbsolutePath());
+                boolean ok = files[i].renameTo(newFile);
+                if (newFile.getAbsolutePath().endsWith("shp"))
+                    result=newFile.getAbsolutePath();
+                if (!ok)
+                    throw new IOException("File rename failed for " + files[i].toString());
+            }
         }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        return result;
     }
 
     @Override
     public void actionPerformed(ActionEvent e)
     {
-        if (e.getSource().equals(renameButton))
-            try
-            {
-                rename();
-            }
-            catch (IOException e1)
-            {
-                // TODO Auto-generated catch block
-                e1.printStackTrace();
-            }
-        else if (e.getSource().equals(cancelButton))
-            dispose();
-        else
-            newlabel.setText(createNewString());
+        //        if (e.getSource().equals(renameButton))
+        //            try
+        //            {
+        //                rename();
+        //            }
+        //            catch (IOException e1)
+        //            {
+        //                // TODO Auto-generated catch block
+        //                e1.printStackTrace();
+        //            }
+        //        else if (e.getSource().equals(cancelButton))
+        //            dispose();
+        //        else
+        newlabel.setText(createNewString());
     }
 
     @Override
     public void insertUpdate(DocumentEvent e)
     {
-        newlabel.setText(createNewString());        
+        newlabel.setText(createNewString());
     }
 
     @Override
     public void removeUpdate(DocumentEvent e)
     {
-        newlabel.setText(createNewString());        
+        newlabel.setText(createNewString());
     }
 
     @Override

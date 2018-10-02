@@ -30,6 +30,7 @@ import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -99,6 +100,7 @@ import edu.jhuapl.saavtk.model.structure.geotools.FeatureUtil;
 import edu.jhuapl.saavtk.model.structure.geotools.LineSegment;
 import edu.jhuapl.saavtk.model.structure.geotools.LineStructure;
 import edu.jhuapl.saavtk.model.structure.geotools.PointStructure;
+import edu.jhuapl.saavtk.model.structure.geotools.SBMTShapefileRenamer;
 import edu.jhuapl.saavtk.model.structure.geotools.ShapefileUtil;
 import edu.jhuapl.saavtk.model.structure.geotools.StructureUtil;
 import edu.jhuapl.saavtk.pick.PickEvent;
@@ -415,7 +417,26 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
             prefix = prefix.substring(0, idx1);
             int idx2 = prefix.lastIndexOf('.');
             if (idx2<0)
-                ;
+                {
+                     int result=JOptionPane.showConfirmDialog(null, "The file \""+file.toString()+"\" does not conform to the SBMT shapefile naming convention.\nOpen file-renaming tool?");
+                     if (result==JOptionPane.YES_OPTION)
+                     {
+                         SBMTShapefileRenamer renamingPanel=new SBMTShapefileRenamer(file.getAbsolutePath());
+                         result=JOptionPane.showConfirmDialog(null, renamingPanel, "Non-conforming shapefile name", JOptionPane.OK_CANCEL_OPTION);
+                         if (result==JOptionPane.OK_OPTION)
+                         {
+                             prefix=renamingPanel.rename();
+                             System.out.println(prefix);
+                             idx1 = prefix.lastIndexOf('.');
+                             prefix = prefix.substring(0, idx1);
+                             idx2 = prefix.lastIndexOf('.');
+                         }
+                         else
+                             return;
+                     }
+                     else
+                         return;
+                };
             prefix = prefix.substring(0, idx2);
             //System.out.println("prefix=" +prefix);
 
@@ -486,6 +507,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                         LineModel model = (LineModel) modelManager.getModel(ModelNames.LINE_STRUCTURES);
                         model.addNewStructure();
                         model.activateStructure(model.getNumberOfStructures() - 1);
+                        System.out.println(ls.getNumberOfSegments());
                         for (int i = 0; i <= ls.getNumberOfSegments(); i++)
                         {
                             double[] pt;
@@ -494,7 +516,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                             else
                                 pt = ls.getSegment(i).getStart();
                             LatLon latlon = MathUtil.reclat(pt);
-                            System.out.println(latlon.lat + " " + latlon.lon);
+                            //System.out.println(latlon.lat + " " + latlon.lon);
                             GenericPolyhedralModel body = (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY);
                             double[] intersectPoint = new double[3];
                             body.getPointAndCellIdFromLatLon(latlon.lat, latlon.lon, intersectPoint);
