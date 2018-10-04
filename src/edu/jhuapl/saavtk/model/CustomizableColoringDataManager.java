@@ -107,9 +107,9 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 		update();
 	}
 
-	public void replaceCustom(ColoringData data)
+	public void replaceCustom(String oldName, ColoringData newData)
 	{
-		custom.replace(data);
+		custom.replace(oldName, newData);
 		update();
 	}
 
@@ -117,6 +117,51 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 	{
 		custom.clear();
 		update();
+	}
+
+	@Override
+	public String toString()
+	{
+		StringBuilder builder = new StringBuilder(getId());
+		builder.append(" colorings: ");
+		boolean startingLoop = true;
+		boolean noBuiltInHasName = false;
+		for (String name : all.getNames())
+		{
+			// Special flagging for custom colorings.
+			if (!builtIn.getNames().contains(name))
+				noBuiltInHasName = true;
+
+			if (!startingLoop)
+				builder.append(", ");
+
+			builder.append(name);
+
+			if (noBuiltInHasName)
+				builder.append(" (custom)");
+
+			builder.append(" [");
+			startingLoop = true;
+			ImmutableList<Integer> resolutions = ImmutableList.copyOf(all.getResolutions());
+			for (int index = 0; index < resolutions.size(); ++index)
+			{
+				if (!startingLoop)
+					builder.append(", ");
+				Integer numberElements = resolutions.get(index);
+				if (has(name, numberElements))
+				{
+					builder.append(index);
+					if (!noBuiltInHasName && custom.has(name, numberElements))
+					{
+						builder.append(" (custom)");
+					}
+				}
+				startingLoop = false;
+			}
+			builder.append("]");
+			startingLoop = false;
+		}
+		return builder.toString();
 	}
 
 	MetadataManager getMetadataManager(boolean includeCustom)
