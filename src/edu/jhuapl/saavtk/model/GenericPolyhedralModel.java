@@ -608,8 +608,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		convertOldConfigFormatToNewVersion(configMap);
 
-		if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_UNITS)
-				&& configMap.containsKey(GenericPolyhedralModel.CELL_DATA_HAS_NULLS))
+		if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_UNITS) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_HAS_NULLS))
 		{
 			String[] cellDataFilenames = configMap.get(GenericPolyhedralModel.CELL_DATA_FILENAMES).split(",", -1);
 			String[] cellDataNames = configMap.get(GenericPolyhedralModel.CELL_DATA_NAMES).split(",", -1);
@@ -1564,7 +1563,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	@Override
 	public String getModelName()
 	{
-		if (modelNames == null) return null;
+		if (modelNames == null)
+			return null;
 		if (resolutionLevel >= 0 && resolutionLevel < modelNames.length)
 			return modelNames[resolutionLevel];
 		else
