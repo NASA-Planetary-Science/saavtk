@@ -431,10 +431,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		// needs to be updated in this case.
 		try
 		{
-			updateColoringOptions(newResolutionLevel);
 			smallBodyModel.setModelResolution(newResolutionLevel);
 			setStatisticsLabel();
 			additionalStatisticsButton.setVisible(true);
+			updateColoringOptions(newResolutionLevel);
 		}
 		catch (IOException e)
 		{
@@ -670,27 +670,36 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
 	protected void updateColoringComboBox(JComboBoxWithItemState<String> box, ColoringDataManager coloringDataManager, int numberElements)
 	{
-		String newSelection = "";
-		String previousSelection = (String) box.getSelectedItem();
+		// Store the current selection and number of items in the combo box.
+		int previousSelection = box.getSelectedIndex();
+		int previousNumberColorings = box.getItemCount();
+
+		// Clear the current content.
 		box.setSelectedIndex(-1);
 		box.removeAllItems();
+
+		// Add one item for blank (no coloring).
 		box.addItem("");
 		for (String name : coloringDataManager.getNames())
 		{
+			// Re-add the current colorings.
 			box.addItem(name);
-			if (numberElements > 0 && coloringDataManager.has(name, numberElements))
+			if (!coloringDataManager.has(name, numberElements))
 			{
-				if (name.equals(previousSelection))
-				{
-					newSelection = previousSelection;
-				}
-			}
-			else
-			{
+				// This coloring is not available at this resolution. List it but grey it out.
 				box.setEnabled(name, false);
 			}
 		}
-		box.setSelectedItem(newSelection);
+
+		int numberColorings = box.getItemCount();
+		int selection = 0;
+		if (numberColorings >= previousNumberColorings)
+		{
+			// A coloring was replaced/edited. Re-select the current selection.
+			selection = previousSelection;
+		}
+
+		box.setSelectedIndex(selection);
 	}
 
 	protected void setStatisticsLabel()
