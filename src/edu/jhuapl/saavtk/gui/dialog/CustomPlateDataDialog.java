@@ -101,60 +101,30 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		String cellDataHasNulls = "";
 		String cellDataResolutionLevels = "";
 
-		// We need to make sure to save out data from other resolutions without modification.
-		int resolutionLevel = modelManager.getPolyhedralModel().getModelResolution();
-		if (configMap.containsKey(PolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(PolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(PolyhedralModel.CELL_DATA_UNITS) && configMap.containsKey(PolyhedralModel.CELL_DATA_HAS_NULLS) && configMap.containsKey(PolyhedralModel.CELL_DATA_RESOLUTION_LEVEL))
+		ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
+		for (int index = 0; index < resolutions.size(); ++index)
 		{
-			String[] cellDataFilenamesArr = configMap.get(PolyhedralModel.CELL_DATA_FILENAMES).split(",", -1);
-			String[] cellDataNamesArr = configMap.get(PolyhedralModel.CELL_DATA_NAMES).split(",", -1);
-			String[] cellDataUnitsArr = configMap.get(PolyhedralModel.CELL_DATA_UNITS).split(",", -1);
-			String[] cellDataHasNullsArr = configMap.get(PolyhedralModel.CELL_DATA_HAS_NULLS).split(",", -1);
-			String[] cellDataResolutionLevelsArr = configMap.get(PolyhedralModel.CELL_DATA_RESOLUTION_LEVEL).split(",", -1);
-
-			for (int i = 0; i < cellDataFilenamesArr.length; ++i)
+			for (ColoringData coloringData : coloringDataManager.get(resolutions.get(index)))
 			{
-				if (!cellDataResolutionLevelsArr[i].trim().isEmpty() && Integer.parseInt(cellDataResolutionLevelsArr[i]) != resolutionLevel)
+				if (!coloringDataManager.isCustom(coloringData))
 				{
-					if (!cellDataFilenames.isEmpty())
-					{
-						cellDataFilenames += PolyhedralModel.LIST_SEPARATOR;
-						cellDataNames += PolyhedralModel.LIST_SEPARATOR;
-						cellDataUnits += PolyhedralModel.LIST_SEPARATOR;
-						cellDataHasNulls += PolyhedralModel.LIST_SEPARATOR;
-						cellDataResolutionLevels += PolyhedralModel.LIST_SEPARATOR;
-					}
-					cellDataFilenames += cellDataFilenamesArr[i];
-					cellDataNames += cellDataNamesArr[i];
-					cellDataUnits += cellDataUnitsArr[i];
-					cellDataHasNulls += cellDataHasNullsArr[i];
-					cellDataResolutionLevels += cellDataResolutionLevelsArr[i];
+					continue;
 				}
-			}
-		}
+				if (!cellDataFilenames.isEmpty())
+				{
+					cellDataFilenames += PolyhedralModel.LIST_SEPARATOR;
+					cellDataNames += PolyhedralModel.LIST_SEPARATOR;
+					cellDataUnits += PolyhedralModel.LIST_SEPARATOR;
+					cellDataHasNulls += PolyhedralModel.LIST_SEPARATOR;
+					cellDataResolutionLevels += PolyhedralModel.LIST_SEPARATOR;
+				}
 
-		DefaultListModel<ColoringData> cellDataListModel = (DefaultListModel<ColoringData>) cellDataList.getModel();
-		for (int i = 0; i < cellDataListModel.size(); ++i)
-		{
-			ColoringData coloringData = cellDataListModel.getElementAt(i);
-			if (!coloringDataManager.isCustom(coloringData))
-			{
-				continue;
+				cellDataFilenames += coloringData.getFileName().replaceFirst(".*/", "");
+				cellDataNames += coloringData.getName();
+				cellDataUnits += coloringData.getUnits();
+				cellDataHasNulls += new Boolean(coloringData.hasNulls()).toString();
+				cellDataResolutionLevels += new Integer(index).toString();
 			}
-
-			if (!cellDataFilenames.isEmpty())
-			{
-				cellDataFilenames += PolyhedralModel.LIST_SEPARATOR;
-				cellDataNames += PolyhedralModel.LIST_SEPARATOR;
-				cellDataUnits += PolyhedralModel.LIST_SEPARATOR;
-				cellDataHasNulls += PolyhedralModel.LIST_SEPARATOR;
-				cellDataResolutionLevels += PolyhedralModel.LIST_SEPARATOR;
-			}
-
-			cellDataFilenames += coloringData.getFileName().replaceFirst(".*/", "");
-			cellDataNames += coloringData.getName();
-			cellDataUnits += coloringData.getUnits();
-			cellDataHasNulls += new Boolean(coloringData.hasNulls()).toString();
-			cellDataResolutionLevels += new Integer(resolutionLevel).toString();
 		}
 
 		Map<String, String> newMap = new LinkedHashMap<>();
@@ -493,8 +463,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 				if (!oldColoringData.equals(newColoringData))
 				{
-					coloringDataManager.removeCustom(oldColoringData);
-					coloringDataManager.addCustom(newColoringData);
+					coloringDataManager.replaceCustom(oldColoringData.getName(), newColoringData);
 					updateConfigFile();
 				}
 				cellDataListModel.set(selectedItem, newColoringData);
