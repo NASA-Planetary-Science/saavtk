@@ -28,7 +28,7 @@ import edu.jhuapl.saavtk.gui.render.Renderer.LightingType;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.pick.PickManager;
-import edu.jhuapl.saavtk.util.ColorUtil;
+import edu.jhuapl.saavtk.util.ColorIcon;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.Preferences;
 
@@ -206,7 +206,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
     {
         int[] c = color;
         label.setText("["+c[0]+","+c[1]+","+c[2]+"]");
-        label.setIcon(new ColorUtil.ColorIcon(new Color(c[0], c[1], c[2])));
+        label.setIcon(new ColorIcon(new Color(c[0], c[1], c[2])));
     }
     
     private void updateColorLabel(Color color, JLabel label)
@@ -234,7 +234,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
     private int[] getColorFromLabel(JLabel label)
     {
-        Color color = ((ColorUtil.ColorIcon)label.getIcon()).getColor();
+        Color color = ((ColorIcon)label.getIcon()).getColor();
         int[] c = new int[3];
         c[0] = color.getRed();
         c[1] = color.getGreen();
@@ -244,7 +244,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
     private Color getColorInstanceFromLabel(JLabel label)
     {
-        return ((ColorUtil.ColorIcon)label.getIcon()).getColor();
+        return ((ColorIcon)label.getIcon()).getColor();
     }
 
     /** This method is called from within the constructor to

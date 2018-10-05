@@ -260,6 +260,8 @@ public abstract class PolyhedralModel extends AbstractModel
 	public abstract double getMinShiftAmount();
 
 	public abstract void savePlateDataInsidePolydata(vtkPolyData polydata, File file) throws IOException;
+	
+	public abstract FacetColoringData[] getPlateDataInsidePolydata(vtkPolyData polydata);
 
 	public abstract String getModelName();
 
