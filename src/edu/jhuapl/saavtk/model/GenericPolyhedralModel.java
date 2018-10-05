@@ -608,7 +608,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		convertOldConfigFormatToNewVersion(configMap);
 
-		if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_UNITS) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_HAS_NULLS))
+		if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_UNITS)
+				&& configMap.containsKey(GenericPolyhedralModel.CELL_DATA_HAS_NULLS))
 		{
 			String[] cellDataFilenames = configMap.get(GenericPolyhedralModel.CELL_DATA_FILENAMES).split(",", -1);
 			String[] cellDataNames = configMap.get(GenericPolyhedralModel.CELL_DATA_NAMES).split(",", -1);
@@ -2054,7 +2055,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		if (colormap == null)
 			return getDefaultColoringRange(coloringIndex);
 
-		return new double[] {colormap.getRangeMin(), colormap.getRangeMax()};
+		return new double[] { colormap.getRangeMin(), colormap.getRangeMax() };
 	}
 
 	@Override
@@ -2774,7 +2775,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		}, file);
 	}
-	
+
 	/**
 	 * Given a polydata that is coincident with part of the shape model, save out
 	 * the plate data for all cells of the shape model that touch the polydata (even
@@ -2804,9 +2805,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		});
 		return coloringData;
-		
+
 	}
-	
+
 	private ImmutableList<Integer> getClosestCellList(vtkPolyData polydata)
 	{
 		// Go through every cell inside the polydata and find the closest cell to it
@@ -2930,12 +2931,12 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				}
 			}
 		}
-	}	
-	
+	}
+
 	private FacetColoringData[] getColoringDataFor(Indexable<Integer> indexable)
 	{
 		FacetColoringData[] data = new FacetColoringData[indexable.size()];
-		ImmutableList<ColoringData> allColoringData = getAllColoringDataForThisResolution();
+		ImmutableList<ColoringData> allColoringData = getAllColoringData();
 		for (int index = 0; index < indexable.size(); ++index)
 		{
 			int cellId = indexable.get(index);
@@ -2945,6 +2946,5 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 		return data;
 	}
-	
-	
+
 }
