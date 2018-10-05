@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.model.structure;
 
+import java.awt.Color;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedWriter;
@@ -10,8 +11,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import javax.swing.JOptionPane;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
@@ -99,7 +98,6 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		public String name = "default";
 		public int id;
 		public String label = "";
-		public int label_id = -1;
 		public vtkCaptionActor2D caption;
 
 		public double[] center;
@@ -116,9 +114,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		public int numberOfSides;
 		public String type;
 		public int[] color;
-		public double[] labelcolor = { 1, 1, 1 };
 		private Mode mode;
-		private boolean editingLabel = false;
 
 		private static DecimalFormat df = new DecimalFormat("#.#####");
 
@@ -182,16 +178,6 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		public void setColor(int[] color)
 		{
 			this.color = color.clone();
-		}
-
-		public int getLabelID()
-		{
-			return label_id;
-		}
-
-		public void setLabelID(int label_id)
-		{
-			this.label_id = label_id;
 		}
 
 		public vtkPolyData getBoundaryPolyData()
@@ -427,7 +413,10 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 			{
 				EllipsePolygon lin = polygons.get(j);
 				if (lin.label != null && !lin.labelHidden && !lin.hidden && lin.caption != null)
+				{
+					lin.caption.SetAttachmentPoint(lin.center);
 					actors.add(lin.caption);
+				}
 			}
 
 			boundaryAppendFilter.Update();
@@ -537,13 +526,14 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		if (prop == boundaryActor || prop == interiorActor)
 		{
 			int polygonId = this.getPolygonIdFromCellId(cellId, prop == interiorActor);
+			if (polygonId == -1)
+				return "";
+
 			EllipsePolygon pol = polygons.get(polygonId);
 			return pol.getClickStatusBarText();
 		}
-		else
-		{
-			return "";
-		}
+
+		return "";
 	}
 
 	@Override
@@ -605,7 +595,6 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	{
 		if (polygons.get(polygonId).caption != null)
 			polygons.get(polygonId).caption.VisibilityOff();
-		polygons.get(polygonId).setLabelID(-1);
 		polygons.get(polygonId).caption = null;
 		polygons.remove(polygonId);
 
@@ -626,7 +615,6 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		{
 			if (polygons.get(polygonIds[i]).caption != null)
 				polygons.get(polygonIds[i]).caption.VisibilityOff();
-			polygons.get(polygonIds[i]).setLabelID(-1);
 			polygons.get(polygonIds[i]).caption = null;
 			polygons.remove(polygonIds[i]);
 			this.pcs.firePropertyChange(Properties.STRUCTURE_REMOVED, null, polygonIds[i]);
@@ -644,7 +632,6 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		{
 			if (polygons.get(i).caption != null)
 				polygons.get(i).caption.VisibilityOff();
-			polygons.get(i).setLabelID(-1);
 			polygons.get(i).caption = null;
 
 		}
@@ -1430,22 +1417,64 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 		}
 	}
+	
+	@Override
+	public boolean isLabelVisible(int aIdx)
+	{
+		return !polygons.get(aIdx).labelHidden;
+	}
 
 	@Override
-	public void setLabelsVisible(boolean b)
+	public void setLabelVisible(int[] aIdxArr, boolean aIsVisible)
 	{
-		for (EllipsePolygon pol : polygons)
+		for (int aIdx : aIdxArr)
 		{
-			pol.labelHidden = !b;
-			if (pol.caption != null && !pol.getHidden())
-			{
-				pol.caption.SetVisibility(b ? 1 : 0);
-			}
+			EllipsePolygon tmpStruct = polygons.get(aIdx);
+			tmpStruct.labelHidden = !aIsVisible;
+			if (tmpStruct.caption != null)
+				tmpStruct.caption.SetVisibility(aIsVisible ? 1 : 0);
+		}
+
+		updatePolyData();
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+	}
+
+	@Override
+	public Color getStructureColor(int aIdx)
+	{
+		int[] rgbArr = polygons.get(aIdx).getColor();
+		return new Color(rgbArr[0], rgbArr[1], rgbArr[2]);
+	}
+
+	@Override
+	public void setStructureColor(int[] aIdxArr, Color aColor)
+	{
+		int[] rgbArr = { aColor.getRed(), aColor.getGreen(), aColor.getBlue() };
+		for (int aIdx : aIdxArr)
+			polygons.get(aIdx).setColor(rgbArr);
+
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+	}
+
+	@Override
+	public boolean isStructureVisible(int aIdx)
+	{
+		return !polygons.get(aIdx).hidden;
+	}
+
+	@Override
+	public void setStructureVisible(int[] aIdxArr, boolean aIsVisible)
+	{
+		for (int aIdx : aIdxArr)
+		{
+			EllipsePolygon tmpStruct = polygons.get(aIdx);
+			tmpStruct.hidden = !aIsVisible;
+
+			tmpStruct.updatePolygon(smallBodyModel, tmpStruct.center, tmpStruct.radius, tmpStruct.flattening, tmpStruct.angle);
 		}
 
 		updatePolyData();
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-
 	}
 
 	@Override
@@ -1460,45 +1489,6 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	{
 		vtkPolyData polydata = polygons.get(idx).interiorPolyData;
 		return smallBodyModel.getPlateDataInsidePolydata(polydata);
-	}
-
-	@Override
-	public void setStructuresHidden(int[] polygonIds, boolean hidden, boolean labelHidden)
-	{
-		for (int i = 0; i < polygonIds.length; ++i)
-		{
-			EllipsePolygon pol = polygons.get(polygonIds[i]);
-			if (pol.hidden != hidden && pol != null)
-			{
-				if (pol.caption != null)
-				{
-					if (!hidden && !labelHidden)
-						pol.caption.VisibilityOn();
-					else
-					{
-						pol.caption.VisibilityOff();
-					}
-				}
-				pol.hidden = hidden;
-				pol.updatePolygon(smallBodyModel, pol.center, pol.radius, pol.flattening, pol.angle);
-			}
-		}
-
-		updatePolyData();
-
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-	}
-
-	@Override
-	public boolean isStructureHidden(int id)
-	{
-		return polygons.get(id).hidden;
-	}
-
-	@Override
-	public boolean isLabelHidden(int id)
-	{
-		return polygons.get(id).labelHidden;
 	}
 
 	@Override
@@ -1521,78 +1511,37 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	}
 
 	@Override
-	public boolean setStructureLabel(int idx, String label)
+	public void setStructureLabel(int aIdx, String aLabel)
 	{
-		polygons.get(idx).setLabel(label);
-		int numLetters = label.length();
-		if (polygons.get(idx).editingLabel)
+		EllipsePolygon tmpStruct = polygons.get(aIdx);
+		tmpStruct.setLabel(aLabel);
+
+		// Clear the caption if the string is empty or null
+		if (aLabel == null || aLabel.equals(""))
 		{
-			if (label == null || label.equals(""))
-			{
-				polygons.get(idx).caption.VisibilityOff();
-				for (int i = 0; i < actors.size(); i++)
-				{
-					if (polygons.get(idx).caption == actors.get(i))
-					{
-						actors.remove(i);
-						i--;
-					}
-				}
-				polygons.get(idx).editingLabel = false;
-				polygons.get(idx).setLabelID(-1);
-				polygons.get(idx).caption = null;
-			}
-			else
-			{
-				polygons.get(idx).caption.SetCaption(label);
-				polygons.get(idx).caption.SetPosition2(numLetters * 0.0025 + 0.03, numLetters * 0.001 + 0.02);
-				polygons.get(idx).caption.GetCaptionTextProperty().Modified();
-			}
+			if (tmpStruct.caption == null)
+				return;
+
+			tmpStruct.caption.VisibilityOff();
+			tmpStruct.caption = null;
+			
+			updatePolyData();
+			pcs.firePropertyChange(Properties.MODEL_CHANGED, null, aIdx);
+			return;
 		}
-		else
+
+		// Create a caption if necessary
+		if (tmpStruct.caption == null)
 		{
-			if (label == null || label.equals(""))
-			{
-				return true;
-			}
-
-			vtkCaptionActor2D v = new OccludingCaptionActor(polygons.get(idx).center, polygons.get(idx).name, smallBodyModel);
-			v.GetCaptionTextProperty().SetColor(1.0, 1.0, 1.0);
-			v.GetCaptionTextProperty().SetJustificationToCentered();
-			v.GetCaptionTextProperty().BoldOn();
-			v.GetCaptionTextProperty().SetJustificationToLeft();
-			v.VisibilityOn();
-			v.BorderOff();
-			v.ThreeDimensionalLeaderOn();
-			v.SetAttachmentPoint(polygons.get(idx).center);
-			v.SetPosition(0, 0);
-			v.SetPosition2(numLetters * 0.0025 + 0.03, numLetters * 0.001 + 0.02);
-			v.SetCaption(polygons.get(idx).getLabel());
-
-			polygons.get(idx).setLabelID(actors.size() - 1);
-			polygons.get(idx).caption = v;
-			actors.add(polygons.get(idx).caption);
-			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, idx);
-
-			polygons.get(idx).editingLabel = true;
+			vtkCaptionActor2D tmpCaption = formCaption(smallBodyModel, tmpStruct.center, tmpStruct.name, aLabel);
+			tmpCaption.GetCaptionTextProperty().SetJustificationToLeft();
+			tmpStruct.caption = tmpCaption;
 		}
+
+		// Update the caption and send out notification
+		tmpStruct.caption.SetCaption(aLabel);
 		updatePolyData();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, idx);
-		return true;
-	}
-
-	@Override
-	public void showLabel(int index, boolean shown)
-	{
-		if (polygons.get(index).caption == null || polygons.get(index).caption.GetCaption().equals(""))
-		{
-			setStructureLabel(index, " ");
-		}
-
-		polygons.get(index).labelHidden = !shown;
-		polygons.get(index).caption.SetVisibility(shown ? 1 : 0);
-
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, index);
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, aIdx);
 	}
 
 	@Override
@@ -1607,49 +1556,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	}
 
 	@Override
-	public void colorLabel(int[] colors)
+	protected vtkCaptionActor2D getCaption(int aIndex)
 	{
-		for (int index : selectedStructures)
-		{
-			vtkCaptionActor2D v = polygons.get(index).caption;
-			v.GetCaptionTextProperty().SetColor(colors[0] / 256.0, colors[1] / 256.0, colors[2] / 256.0);
-			double color[] = { colors[0] / 256.0, colors[1] / 256.0, colors[2] / 256.0 };
-			polygons.get(index).labelcolor = color;
-			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-		}
-	}
-
-	private void colorLabel(int loc, double[] colors)
-	{
-		vtkCaptionActor2D v = polygons.get(loc).caption;
-		if (v == null)
-			return;
-		v.GetCaptionTextProperty().SetColor(colors);
-	}
-
-	@Override
-	public void changeFont(int font_size, int structure)
-	{
-		int len = (polygons.get(structure).caption.GetCaption().length());
-		polygons.get(structure).caption.SetPosition2((len * 0.0025 + 0.03) * (font_size / 12.0), (len * 0.001 + 0.02) * (font_size / 12.0));
-		polygons.get(structure).caption.GetCaptionTextProperty().Modified();
-		polygons.get(structure).caption.Modified();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-	}
-
-	@Override
-	public void changeFontType(int structure)
-	{
-		vtkCaptionActor2D v = polygons.get(structure).caption;
-		Object[] options = { "Times", "Arial", "Courier" };
-		int option = JOptionPane.showOptionDialog(null, "Pick the font you wish to use", "Choose", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-		if (option == 0)
-			v.GetCaptionTextProperty().SetFontFamilyToTimes();
-		else if (option == 1)
-			v.GetCaptionTextProperty().SetFontFamilyToArial();
-		else
-			v.GetCaptionTextProperty().SetFontFamilyToCourier();
-		v.GetCaptionTextProperty().Modified();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		return polygons.get(aIndex).caption;
 	}
 }

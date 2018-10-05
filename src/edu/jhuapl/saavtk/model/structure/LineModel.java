@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.model.structure;
 
+import java.awt.Color;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedWriter;
@@ -12,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.swing.JOptionPane;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
@@ -207,7 +207,6 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
                 this.lines.add(lin);
                 setStructureLabel(lines.size()-1, lines.get(lines.size()-1).label);
-                colorLabel(lines.size()-1,lines.get(lines.size()-1).labelcolor);
             }
         }
 
@@ -334,7 +333,10 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
         {
             Line lin = this.lines.get(j);
             if (lin.label!=null && !lin.labelHidden && !lin.hidden && lin.caption!=null)
+            {
+            	lin.caption.SetAttachmentPoint(lin.getCentroid());
             	actors.add(lin.caption);
+            }
         }
 
         lineActor.SetMapper(lineMapper);
@@ -648,7 +650,6 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
     public void removeStructure(int cellId)
     {
         if(lines.get(cellId).caption!=null) lines.get(cellId).caption.VisibilityOff();
-        lines.get(cellId).labelId=(-1);
         lines.get(cellId).caption=null;
 
         lines.remove(cellId);
@@ -675,7 +676,6 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
         for (int i=indices.length-1; i>=0; --i)
         {
             if(lines.get(indices[i]).caption!=null) lines.get(indices[i]).caption.VisibilityOff();
-            lines.get(indices[i]).labelId=(-1);
             lines.get(indices[i]).caption=null;
             lines.remove(indices[i]);
             this.pcs.firePropertyChange(Properties.STRUCTURE_REMOVED, null, indices[i]);
@@ -697,7 +697,6 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
         for(int i =0;i<lines.size();i++)
         {
             if(lines.get(i).caption!=null) lines.get(i).caption.VisibilityOff();
-            lines.get(i).labelId=(-1);
             lines.get(i).caption=null;
         }
         lines.clear();
@@ -1236,62 +1235,63 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
             this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
         }
     }
+    
+	@Override
+	public boolean isLabelVisible(int aIdx)
+	{
+		return !lines.get(aIdx).labelHidden;
+	}
 
-    public void setLabelsVisible(boolean b)
-    {
-        for (Line lin : lines)
-        {
-            lin.labelHidden=!b;
-            if(lin.caption!=null&&!lin.getHidden())
-            {
-                lin.caption.SetVisibility(b ? 1 : 0);
-            }
-        }
+ 	@Override
+ 	public void setLabelVisible(int[] aIdxArr, boolean aIsVisible)
+ 	{
+ 		for (int aIdx : aIdxArr)
+ 		{
+ 			Line tmpStruct = lines.get(aIdx);
+ 			tmpStruct.labelHidden = !aIsVisible;
+ 			if (tmpStruct.caption != null)
+ 				tmpStruct.caption.SetVisibility(aIsVisible ? 1 : 0);
+ 		}
 
-        updatePolyData();
-        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-    }
+ 		updatePolyData();
+ 		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+ 	}
+ 	
+	@Override
+	public Color getStructureColor(int aIdx)
+	{
+		int[] rgbArr = lines.get(aIdx).getColor();
+		return new Color(rgbArr[0], rgbArr[1], rgbArr[2]);
+	}
 
-    @Override
-    public void setStructuresHidden(int[] lineIds, boolean hidden, boolean labelHidden)
-    {
-        for (int i=0; i<lineIds.length; ++i)
-        {
-            Line line = lines.get(lineIds[i]);
-            if (line.hidden != hidden&&line!=null)
-            {
-                if(line.caption!=null)
-                {
-                    if(!hidden&&!labelHidden)
-                        line.caption.VisibilityOn();
-                    else
-                    {
-                        line.caption.VisibilityOff();
-                    }
-                }
-                line.hidden = hidden;
-            }
-            /*Line line = lines.get(lineIds[i]);
-            line.hidden = hidden;
-            if(line.caption!=null)
-            {
-                if(!hidden&&!labelHidden)
-                    line.caption.VisibilityOn();
-                else
-                    line.caption.VisibilityOff();
-            }*/
+	@Override
+	public void setStructureColor(int[] aIdxArr, Color aColor)
+	{
+		int[] rgbArr = { aColor.getRed(), aColor.getGreen(), aColor.getBlue() };
+		for (int aIdx : aIdxArr)
+			lines.get(aIdx).setColor(rgbArr);
 
-        }
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+	}
 
-        updatePolyData();
-        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-    }
+	@Override
+	public boolean isStructureVisible(int aIdx)
+	{
+		return !lines.get(aIdx).hidden;
+	}
 
-    @Override
-    public boolean isStructureHidden(int id)
-    {
-        return lines.get(id).hidden;
-    }
+ 	@Override
+ 	public void setStructureVisible(int[] aIdxArr, boolean aIsVisible)
+ 	{
+ 		for (int aIdx : aIdxArr)
+ 		{
+ 			Line tmpStruct = lines.get(aIdx);
+ 			tmpStruct.hidden = !aIsVisible;
+ 		}
+
+ 		updatePolyData();
+ 		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+ 	}
 
     @Override
     public double[] getStructureCenter(int id)
@@ -1317,106 +1317,35 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
         return new Line(smallBodyModel, false, ++maxPolygonId);
     }
 
-    @Override
-    public boolean setStructureLabel(int idx, String label)
-    {
-    	if (actors.contains(lines.get(idx).caption))
-    		actors.remove(lines.get(idx).caption);
-        lines.get(idx).setLabel(label);
-        if(lines.get(idx).editingLabel)
-        {
-            if(label==null||label.equals(""))
-            {
-                lines.get(idx).caption.VisibilityOff();
-                for(int i=0; i<actors.size();i++)
-                {
-                    if(lines.get(idx).caption==actors.get(i))
-                    {
-                        actors.remove(i);
-                        i--;
-                    }
-                }
-                lines.get(idx).editingLabel=false;
-                lines.get(idx).labelId=(-1);
-                lines.get(idx).caption=null;
-            }
-            else
-            {
-                int numLetters = label.length();
-                lines.get(idx).caption.SetCaption(label);
-                lines.get(idx).caption.SetPosition2(numLetters*0.0025+0.03, numLetters*0.001+0.02);
-                lines.get(idx).caption.GetCaptionTextProperty().Modified();
-            }
-        }
-        else
-        {
-            if(label==null||label.equals(""))
-            {
-                return true;
-            }
-            int numLetters = label.length();
-            
-            vtkCaptionActor2D v = new OccludingCaptionActor(lines.get(idx).getCentroid(), lines.get(idx).name, smallBodyModel);
-            v.GetCaptionTextProperty().SetColor(1.0, 1.0, 1.0);
-            v.GetCaptionTextProperty().SetJustificationToCentered();
-            v.GetCaptionTextProperty().BoldOn();
+	@Override
+	public void setStructureLabel(int aIdx, String aLabel)
+	{
+		Line tmpStruct = lines.get(aIdx);
+		tmpStruct.setLabel(aLabel);
+		
+		// Clear the caption if the string is empty or null
+		if (aLabel == null || aLabel.equals(""))
+		{
+			if (tmpStruct.caption == null)
+				return;
 
-            v.VisibilityOn();
-            v.BorderOff();
-            v.ThreeDimensionalLeaderOn();
-            v.SetAttachmentPoint(lines.get(idx).getCentroid());
-            v.SetPosition(0, 0);
-            v.SetPosition2(numLetters*0.0025+0.03, numLetters*0.001+0.02);
-            v.SetCaption(lines.get(idx).getLabel());
-            lines.get(idx).labelId=(actors.size()-1);
-            lines.get(idx).caption=v;
-            actors.add(lines.get(idx).caption);
-            this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, idx);
+			tmpStruct.caption.VisibilityOff();
+			tmpStruct.caption = null;
+			
+			updatePolyData();
+			pcs.firePropertyChange(Properties.MODEL_CHANGED, null, aIdx);
+			return;
+		}
 
-            lines.get(idx).editingLabel=true;
-        }
-        updatePolyData();
-        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, idx);
-        return true;
-    }
+		// Create a caption if necessary
+		if (tmpStruct.caption == null)
+			tmpStruct.caption = formCaption(smallBodyModel, tmpStruct.getCentroid(), tmpStruct.name, aLabel);
 
-    public void showLabel(int index, boolean shown)
-    {
-        if(lines.get(index).caption==null||lines.get(index).caption.GetCaption().equals(""))
-        {
-            setStructureLabel(index, " ");
-        }
-        
-        lines.get(index).labelHidden=!shown;
-        lines.get(index).caption.SetVisibility(shown?1:0);
-        
-        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, index);
-    }
-    
-    public boolean isLabelHidden(int id)
-    {
-        return lines.get(id).labelHidden;
-    }
-
-    public void colorLabel(int[] colors)
-    {
-        for (int index : selectedStructures)
-        {
-            vtkCaptionActor2D v =lines.get(index).caption;
-            v.GetCaptionTextProperty().SetColor(colors[0]/256.0, colors[1]/256.0, colors[2]/256.0);
-            double color[] = {colors[0]/256.0, colors[1]/256.0, colors[2]/256.0};
-            lines.get(index).labelcolor=color;
-        }
-        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-    }
-
-    private void colorLabel(int loc, double[]colors)
-    {
-        vtkCaptionActor2D v =lines.get(loc).caption;
-        if(v==null)
-            return;
-        v.GetCaptionTextProperty().SetColor(colors);
-    }
+		// Update the caption and send out notification
+		tmpStruct.caption.SetCaption(aLabel);
+		updatePolyData();
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, aIdx);
+	}
 
     public void showBorders()
     {
@@ -1428,26 +1357,10 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
     }
 
-    public void changeFont(int font_size, int structure)
-    {
-        int len = (lines.get(structure).caption.GetCaption().length());
-        lines.get(structure).caption.SetPosition2((len*0.0025+0.03)*(font_size/12.0), (len*0.001+0.02)*(font_size/12.0));
-        lines.get(structure).caption.GetCaptionTextProperty().Modified();
-        lines.get(structure).caption.Modified();
-        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-    }
-    public void changeFontType(int structure)
-    {
-        vtkCaptionActor2D v =lines.get(structure).caption;
-        Object[] options = { "Times", "Arial", "Courier" };
-        int option = JOptionPane.showOptionDialog(null, "Pick the font you wish to use", "Choose", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-        if(option==0)
-            v.GetCaptionTextProperty().SetFontFamilyToTimes();
-        else if(option==1)
-            v.GetCaptionTextProperty().SetFontFamilyToArial();
-        else
-            v.GetCaptionTextProperty().SetFontFamilyToCourier();
-        v.GetCaptionTextProperty().Modified();
-        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-    }
+	@Override
+	protected vtkCaptionActor2D getCaption(int aIndex)
+	{
+		return lines.get(aIndex).caption;
+	}
+
 }
