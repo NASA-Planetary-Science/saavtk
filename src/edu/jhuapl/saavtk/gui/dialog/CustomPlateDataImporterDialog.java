@@ -195,7 +195,6 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			if (dataObjectInfo instanceof TableInfo)
 			{
 				TableInfo tableInfo = (TableInfo) dataObjectInfo;
-				int numberColumns = tableInfo.getNumberColumns();
 				for (int i = 0; i < tableInfo.getNumberColumns(); i++)
 				{
 					String title = tableInfo.getColumnInfo(i).getName();
