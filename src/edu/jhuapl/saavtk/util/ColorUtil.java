@@ -1,6 +1,11 @@
 package edu.jhuapl.saavtk.util;
 
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+
+import javax.swing.Icon;
 
 public class ColorUtil
 {
@@ -207,5 +212,49 @@ public class ColorUtil
         hsl[1] = saturation;
         hsl[2] = lightness;
         return hsl;
+    }
+
+    /**
+     * Purpose: this icon simply draws a square with its border in black and
+     * its inside in the specified color (passed into the constructor).
+     * It is used for showing the current color of something.
+     */
+    public static class ColorIcon implements Icon
+    {
+
+        private int width = 12;
+        private int height = 12;
+        private Color color;
+
+        public ColorIcon(Color color)
+        {
+            this.color = color;
+        }
+
+        public void paintIcon(Component c, Graphics g, int x, int y)
+        {
+            Graphics2D g2d = (Graphics2D) g.create();
+
+            g2d.setColor(color);
+            g2d.fillRect(x +1 ,y + 1,width -2 ,height -2);
+
+            g2d.setColor(Color.BLACK);
+            g2d.drawRect(x +1 ,y + 1,width -2 ,height -2);
+
+            g2d.dispose();
+        }
+
+        public int getIconWidth() {
+            return width;
+        }
+
+        public int getIconHeight() {
+            return height;
+        }
+
+        public Color getColor()
+        {
+            return color;
+        }
     }
 }

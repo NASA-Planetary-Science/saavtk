@@ -1,233 +1,145 @@
 package edu.jhuapl.saavtk.gui.dialog;
 
-import java.awt.Window;
+import java.awt.BorderLayout;
+import java.awt.Dialog;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.text.NumberFormat;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
-
-import com.google.common.base.Preconditions;
-
-import edu.jhuapl.saavtk.gui.GNumberField;
-import edu.jhuapl.saavtk.model.PolyhedralModel;
+import javax.swing.JPanel;
 
 import net.miginfocom.swing.MigLayout;
+import edu.jhuapl.saavtk.model.PolyhedralModel;
 
-/**
- * UI panel that allows the user to configure the coloring range associated with
- * the primary model (priModel). The secondary model (secModel) will be updated
- * to reflect the coloring range of the priModel only if the boolean syncModels
- * is set to true.
- * <P>
- * It is the responsibility of any developer of this dialog ensure that the
- * method {@link #setModelConfiguration} is called with the appropriate
- * arguments. Failure to do so will result in NPEs.
- */
 public class ScaleDataRangeDialog extends JDialog implements ActionListener
 {
-    // Constants
-    private static final long serialVersionUID = 1L;
+    PolyhedralModel smallBodyModel;
+    private JButton applyButton;
+    private JButton resetButton;
+    private JButton okayButton;
+    private JButton cancelButton;
+    private JFormattedTextField minTextField;
+    private JFormattedTextField maxTextField;
 
-    // State vars
-    private PolyhedralModel priModel;
-    private PolyhedralModel secModel;
-    private boolean syncModels;
-
-    // GUI vars
-    private GNumberField minValueNF;
-    private GNumberField maxValueNF;
-    private JButton applyB;
-    private JButton resetB;
-    private JButton okayB;
-    private JButton cancelB;
-
-    /**
-     * Standard Constructor
-     *
-     * @param aParent
-     *            The parent window of this Dialog.
-     */
-    public ScaleDataRangeDialog(Window aParent)
+    public ScaleDataRangeDialog(PolyhedralModel smallBodyModel)
     {
-        super(aParent);
+        this.smallBodyModel = smallBodyModel;
 
-        priModel = null;
-        secModel = null;
-        syncModels = false;
+        JPanel panel = new JPanel();
+        panel.setLayout(new MigLayout());
 
-        buildGui();
+        NumberFormat nf = NumberFormat.getNumberInstance();
+        nf.setGroupingUsed(false);
+        nf.setMaximumFractionDigits(6);
+
+        JLabel minLabel = new JLabel("Minimum");
+        minTextField = new JFormattedTextField(nf);
+        minTextField.setPreferredSize(new Dimension(125, 23));
+        JLabel maxLabel = new JLabel("Maximum");
+        maxTextField = new JFormattedTextField(nf);
+        maxTextField.setPreferredSize(new Dimension(125, 23));
+
+        JPanel buttonPanel = new JPanel(new MigLayout());
+        applyButton = new JButton("Apply");
+        applyButton.addActionListener(this);
+        resetButton = new JButton("Reset");
+        resetButton.addActionListener(this);
+        okayButton = new JButton("OK");
+        okayButton.addActionListener(this);
+        cancelButton = new JButton("Cancel");
+        cancelButton.addActionListener(this);
+        buttonPanel.add(applyButton);
+        buttonPanel.add(resetButton);
+        buttonPanel.add(okayButton);
+        buttonPanel.add(cancelButton);
+
+        panel.add(minLabel);
+        panel.add(minTextField);
+        panel.add(maxLabel);
+        panel.add(maxTextField, "wrap");
+
+        panel.add(buttonPanel, "span, align right");
+
+        setModalityType(Dialog.ModalityType.APPLICATION_MODAL);
+
+        add(panel, BorderLayout.CENTER);
         pack();
-
-        setLocationRelativeTo(aParent);
-        setModalityType(JDialog.ModalityType.DOCUMENT_MODAL);
     }
 
-    /**
-     * Sets in the models associated with this dialog.
-     *
-     * @param aPriModel
-     *            The primary model that this dialog controls.
-     * @param aSecModel
-     *            The secondary model that this dialog controls (only if
-     *            aSyncModels == true).
-     * @param aSyncModels
-     *            Boolean that defines whether the body aSecModel should be
-     *            updated also.
-     */
-    public void setModelConfiguration(PolyhedralModel aPriModel, PolyhedralModel aSecModel, boolean aSyncModels)
+    public void actionPerformed(ActionEvent e)
     {
-        Preconditions.checkNotNull(aPriModel);
-        Preconditions.checkNotNull(aSecModel);
-
-        priModel = aPriModel;
-        secModel = aSecModel;
-        syncModels = aSyncModels;
-    }
-
-    /**
-     * Sets in the model associated with this dialog. The secondary model is not
-     * used when configured via this method.
-     *
-     * @param aPriModel
-     *            The primary model that this dialog controls.
-     */
-    public void setModelConfiguration(PolyhedralModel aPriModel)
-    {
-        Preconditions.checkNotNull(aPriModel);
-
-        priModel = aPriModel;
-        secModel = null;
-        syncModels = false;
-    }
-
-    @Override
-    public void actionPerformed(ActionEvent aEvent)
-    {
-        Object source = aEvent.getSource();
-        if (source == minValueNF || source == maxValueNF)
-            updateControlArea();
-
-        if (source == applyB || source == okayB)
-            syncModelToGui();
-
-        if (source == resetB)
-            doResetAction();
-
-        if (source == okayB || source == cancelB)
-            setVisible(false);
-    }
-
-    @Override
-    public void setVisible(boolean aBool)
-    {
-        if (aBool == true)
-            syncGuiToModel();
-
-        super.setVisible(aBool);
-    }
-
-    /**
-     * Helper method which layouts the panel.
-     */
-    private void buildGui()
-    {
-        setLayout(new MigLayout());
-
-        // Set up the action area
-        JLabel minValueL = new JLabel("Minimum");
-        JLabel maxValueL = new JLabel("Maximum");
-        minValueNF = new GNumberField(this);
-        minValueNF.setColumns(8);
-        maxValueNF = new GNumberField(this);
-        maxValueNF.setColumns(8);
-        add(minValueL);
-        add(minValueNF, "");
-        add(maxValueL);
-        add(maxValueNF, "wrap");
-
-        // Set up the control area
-        applyB = new JButton("Apply");
-        applyB.addActionListener(this);
-        resetB = new JButton("Reset");
-        resetB.addActionListener(this);
-        okayB = new JButton("OK");
-        okayB.addActionListener(this);
-        cancelB = new JButton("Cancel");
-        cancelB.addActionListener(this);
-        add(applyB, "align right,span,split");
-        add(resetB, "");
-        add(okayB, "");
-        add(cancelB, "");
-    }
-
-    /**
-     * Helper method that will perform the "reset" action
-     */
-    private void doResetAction()
-    {
-        // Reset the minValue, maxValue UI elements
-        int index = priModel.getColoringIndex();
-        double[] defaultArr = priModel.getDefaultColoringRange(index);
-        minValueNF.setValue(defaultArr[0]);
-        maxValueNF.setValue(defaultArr[1]);
-
-        // Delegate the updating of the model
-        syncModelToGui();
-    }
-
-    /**
-     * Helper method to synchronize the GUI to match the model.
-     */
-    private void syncGuiToModel()
-    {
-        int index = priModel.getColoringIndex();
-        setTitle("Rescale Range of " + priModel.getColoringName(index));
-
-        double[] tmpArr = priModel.getCurrentColoringRange(index);
-        minValueNF.setValue(tmpArr[0]);
-        maxValueNF.setValue(tmpArr[1]);
-    }
-
-    /**
-     * Helper method to synchronize the model to match the GUI.
-     */
-    private void syncModelToGui()
-    {
-        double[] tmpArr = { minValueNF.getValue(), maxValueNF.getValue() };
-
-        int index = priModel.getColoringIndex();
-        try
+        if (e.getSource() == applyButton || e.getSource() == okayButton)
         {
-            priModel.setCurrentColoringRange(index, tmpArr);
-            if (syncModels == true && secModel != null)
-                secModel.setCurrentColoringRange(index, tmpArr);
+            try
+            {
+                double[] newRange = {
+                        Double.parseDouble(minTextField.getText()),
+                        Double.parseDouble(maxTextField.getText())
+                };
+
+                int index = smallBodyModel.getColoringIndex();
+                if (newRange[1] > newRange[0])
+                {
+                    smallBodyModel.setCurrentColoringRange(index, newRange);
+                }
+
+                // Reset the text fields in case the requested range scale change was not
+                // fully fulfilled (e.g. the max was too high or the min was too low)
+                double[] range = smallBodyModel.getCurrentColoringRange(index);
+                minTextField.setValue(range[0]);
+                maxTextField.setValue(range[1]);
+            }
+            catch (NumberFormatException ex)
+            {
+                return;
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace();
+            }
         }
-        catch (IOException aExp)
+        else if (e.getSource() == resetButton)
         {
-            // Dump to console
-            aExp.printStackTrace();
+            try
+            {
+                int index = smallBodyModel.getColoringIndex();
+                double[] defaultRange = smallBodyModel.getDefaultColoringRange(index);
+                if (defaultRange[1] > defaultRange[0])
+                {
+                    smallBodyModel.setCurrentColoringRange(index, defaultRange);
+                }
+
+                double[] range = smallBodyModel.getCurrentColoringRange(index);
+                minTextField.setValue(range[0]);
+                maxTextField.setValue(range[1]);
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace();
+            }
         }
 
-        // Reset the NumberFields in case the requested range scale change was not
-        // fully fulfilled (e.g. the max was too high or the min was too low)
-        tmpArr = priModel.getCurrentColoringRange(index);
-        minValueNF.setValue(tmpArr[0]);
-        maxValueNF.setValue(tmpArr[1]);
+        if (e.getSource() == okayButton || e.getSource() == cancelButton)
+        {
+            super.setVisible(false);
+        }
     }
 
-    /**
-     * Helper method to keep the control area properly synchronized to reflect user input.
-     */
-    private void updateControlArea()
+    public void setVisible(boolean b)
     {
-        boolean isEnabled = true;
-        isEnabled &= minValueNF.isValidInput();
-        isEnabled &= maxValueNF.isValidInput();
-        isEnabled &= minValueNF.getValue() < maxValueNF.getValue();
-        applyB.setEnabled(isEnabled);
-        okayB.setEnabled(isEnabled);
+        int index = smallBodyModel.getColoringIndex();
+        setTitle("Rescale Range of " + smallBodyModel.getColoringName(index));
+
+        double[] range = smallBodyModel.getCurrentColoringRange(index);
+        minTextField.setValue(range[0]);
+        maxTextField.setValue(range[1]);
+
+        super.setVisible(b);
     }
 }

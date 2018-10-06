@@ -5,7 +5,6 @@ import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.io.IOException;
 
 import javax.swing.AbstractAction;
 import javax.swing.JCheckBoxMenuItem;
@@ -13,12 +12,10 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 
-import edu.jhuapl.saavtk.gui.coloringData.ColoringInfoWindow;
 import edu.jhuapl.saavtk.gui.dialog.ChangeLatLonDialog;
 import edu.jhuapl.saavtk.gui.dialog.ColorChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.render.Renderer;
-import edu.jhuapl.saavtk.model.FacetColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.util.MathUtil;
@@ -33,7 +30,6 @@ abstract public class StructuresPopupMenu extends PopupMenu
 	private Renderer renderer;
 	private JMenuItem changeLatLonAction;
 	private JMenuItem exportPlateDataAction;
-	private JMenuItem plateStatisticsAction;
 	private JMenuItem editAction;
 	private JMenuItem centerStructureMenuItem;
 	private JMenuItem centerStructurePreserveDistanceMenuItem;
@@ -117,12 +113,8 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		if (showExportPlateDataInsidePolygon)
 		{
 			exportPlateDataAction = new JMenuItem(new ExportPlateDataInsidePolygon());
-			exportPlateDataAction.setText("Save plate data inside structure...");
+			exportPlateDataAction.setText("Save plate data inside polygon...");
 			this.add(exportPlateDataAction);
-			
-			plateStatisticsAction =new JMenuItem(new ShowPlateStatisticsInfo());
-			plateStatisticsAction.setText("Show plate data statistics inside structure...");
-			this.add(plateStatisticsAction);
 		}
 
 		if (showDisplayInterior)
@@ -154,13 +146,13 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		if (centerStructurePreserveDistanceMenuItem != null)
 			centerStructurePreserveDistanceMenuItem.setEnabled(exactlyOne);
 
-		// If any of the selected structures are visible then show
+		// If any of the selected structures are not hidden then show
 		// the hide menu item as unchecked. Otherwise show it checked.
 		hideMenuItem.setSelected(true);
 		int[] selectedStructures = model.getSelectedStructures();
 		for (int i = 0; i < selectedStructures.length; ++i)
 		{
-			if (model.isStructureVisible(selectedStructures[i]) == true)
+			if (!model.isStructureHidden(selectedStructures[i]))
 			{
 				hideMenuItem.setSelected(false);
 				break;
@@ -241,8 +233,7 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		public void actionPerformed(ActionEvent e)
 		{
 			int[] selectedStructures = model.getSelectedStructures();
-			boolean isVisible = !hideMenuItem.isSelected();
-			model.setStructureVisible(selectedStructures, isVisible);
+			model.setStructuresHidden(selectedStructures, hideMenuItem.isSelected(), hideMenuItem.isSelected());//hideLabelButton.isSelected());
 		}
 	}
 
@@ -353,29 +344,10 @@ abstract public class StructuresPopupMenu extends PopupMenu
 			}
 		}
 	}
-	
-	protected class ShowPlateStatisticsInfo extends AbstractAction
-	{
 
-		@Override
-		public void actionPerformed(ActionEvent e) 
-		{
-			int[] selectedStructures = model.getSelectedStructures();
-			if (selectedStructures.length == 1)
-			{
-				FacetColoringData[] data = model.getPlateDataInsideStructure(selectedStructures[0]);
-				try 
-				{
-					ColoringInfoWindow window = new ColoringInfoWindow(data);
-				} 
-				catch (IOException e1) 
-				{
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-			}
-		}
-		
+	public boolean updateLabel(String label, int row)
+	{
+		return model.setStructureLabel(row, label);
 	}
 
 	protected class SetLabelAction extends AbstractAction
@@ -391,15 +363,10 @@ abstract public class StructuresPopupMenu extends PopupMenu
 			int[] selectedStructures = model.getSelectedStructures();
 			if (selectedStructures[0] == -1)
 				return;
-
-			String infoMsg = "Enter structure label text. Leave blank to remove label.";
-			String oldVal = model.getStructure(selectedStructures[0]).getLabel();
-			String newVal = JOptionPane.showInputDialog(infoMsg, oldVal);
-			if (newVal == null)
-				return;
-
+			String option = JOptionPane.showInputDialog("Enter structure label text. Leave blank to remove label.");
 			for (int idx : selectedStructures)
-				model.setStructureLabel(idx, newVal);
+				model.setStructureLabel(idx, option);
+
 		}
 	}
 
@@ -414,8 +381,8 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		public void actionPerformed(ActionEvent e)
 		{
 			int[] selectedStructures = model.getSelectedStructures();
-			boolean isVisible = hideLabelButton.isSelected() == false;
-			model.setLabelVisible(selectedStructures, isVisible);
+			for (int idx : selectedStructures)
+				model.showLabel(idx, !hideLabelButton.isSelected());
 		}
 	}
 
@@ -433,9 +400,10 @@ abstract public class StructuresPopupMenu extends PopupMenu
 			int op = Integer.parseInt(option);
 			int[] selectedStructures = model.getSelectedStructures();
 			if (selectedStructures.length == 0)
+			{
 				return;
-
-			model.setLabelFontSize(selectedStructures, op);
+			}
+			model.changeFont(op, selectedStructures[0]);
 		}
 	}
 
@@ -451,16 +419,10 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		{
 			int[] selectedStructures = model.getSelectedStructures();
 			if (selectedStructures.length == 0)
+			{
 				return;
-			
-			// Prompt the user for a choice
-			String[] options = { "Times", "Arial", "Courier" };
-			int optIdx = JOptionPane.showOptionDialog(null, "Pick the font you wish to use", "Choose",
-					JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-			if (optIdx == -1)
-				return;
-			
-			model.setLabelFontType(selectedStructures, options[optIdx]);
+			}
+			model.changeFontType(selectedStructures[0]);
 		}
 	}
 
@@ -480,10 +442,17 @@ abstract public class StructuresPopupMenu extends PopupMenu
 
 			// Use the color of the first item as the default to show
 			Color color = ColorChooser.showColorChooser(getInvoker(), model.getStructure(selectedStructures[0]).getColor());
+
 			if (color == null)
 				return;
-			
-			model.setLabelColor(selectedStructures, color);
+
+			int[] c = new int[4];
+			c[0] = color.getRed();
+			c[1] = color.getGreen();
+			c[2] = color.getBlue();
+			c[3] = color.getAlpha();
+			model.colorLabel(c);
+			model.setStructureColor(selectedStructures[0], c);
 		}
 	}
 

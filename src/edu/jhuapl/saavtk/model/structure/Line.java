@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.model.structure;
 
+import java.awt.Color;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +33,10 @@ public class Line extends StructureModel.Structure
     public List<Point3D> xyzPointList = new ArrayList<Point3D>();
     public List<Integer> controlPointIds = new ArrayList<Integer>();
     public int[] color;
+    public double[] labelcolor={1,1,1};
     public boolean hidden = false;
+    public int labelId=-1;
+    public boolean editingLabel=false;
     public boolean labelHidden=false;
 
     private PolyhedralModel smallBodyModel;

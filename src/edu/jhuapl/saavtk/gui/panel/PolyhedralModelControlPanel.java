@@ -9,6 +9,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,8 +41,8 @@ import javax.swing.text.html.HTMLEditorKit;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import edu.jhuapl.saavtk.colormap.StandardPlatePanel;
-import edu.jhuapl.saavtk.colormap.ContourPanel;
+import edu.jhuapl.saavtk.colormap.ColormapController;
+import edu.jhuapl.saavtk.colormap.ColormapControllerWithContouring;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomPlateDataDialog;
 import edu.jhuapl.saavtk.model.ColoringDataManager;
@@ -86,8 +88,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	private JLabel opacityLabel;
 	private JSpinner imageMapOpacitySpinner;
 
-	private ContourPanel contourPanel = new ContourPanel();
-	private StandardPlatePanel colormapController = new StandardPlatePanel(contourPanel);
+	ColormapControllerWithContouring colormapController = new ColormapControllerWithContouring();
 
 	public void setSaveColoringButton(JButton saveColoringButton)
 	{
@@ -221,36 +222,38 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		standardColoringButton = new JRadioButton(STANDARD_COLORING);
 
 		smallBodyModel.setColormap(colormapController.getColormap());
-		
-		colormapController.addPropertyChangeListener((aEvent) -> {
-			setCursor(new Cursor(Cursor.WAIT_CURSOR));
-			String evtName = aEvent.getPropertyName();
-			if (evtName != null && evtName.equals(StandardPlatePanel.EVT_ColormapChanged))
+		colormapController.addPropertyChangeListener(new PropertyChangeListener() {
+
+			@Override
+			public void propertyChange(PropertyChangeEvent evt)
 			{
+				setCursor(new Cursor(Cursor.WAIT_CURSOR));
 				smallBodyModel.setColormap(colormapController.getColormap());
-				try
+				smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
+				smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
+				if (evt.getPropertyName().equals(ColormapController.colormapChanged))
 				{
-					smallBodyModel.setCurrentColoringRange(smallBodyModel.getColoringIndex(),
-							colormapController.getCurrentMinMax());
-				} catch (IOException e)
-				{
-					e.printStackTrace();
+					double[] range = smallBodyModel.getCurrentColoringRange(smallBodyModel.getColoringIndex());
+					colormapController.setMinMax(range[0], range[1]);
+					range = smallBodyModel.getDefaultColoringRange(smallBodyModel.getColoringIndex());
+					colormapController.setDefaultRange(range[0], range[1]);
 				}
+				else if (evt.getPropertyName().equals(ColormapController.colormapRangeChanged))
+				{
+					try
+					{
+						smallBodyModel.setCurrentColoringRange(smallBodyModel.getColoringIndex(), colormapController.getMinMax());
+					}
+					catch (IOException e)
+					{
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+				setCursor(Cursor.getDefaultCursor());
 			}
-			setCursor(Cursor.getDefaultCursor());
 		});
-		
-		contourPanel.addPropertyChangeListener((aEvent) -> {
-			setCursor(new Cursor(Cursor.WAIT_CURSOR));
-			String evtName = aEvent.getPropertyName();
-			if (evtName != null && evtName.equals(ContourPanel.EVT_ContourChanged))
-			{
-				smallBodyModel.setContourLineWidth(contourPanel.getLineWidth());
-				smallBodyModel.showScalarsAsContours(contourPanel.getContourLinesRequested());
-			}
-			setCursor(Cursor.getDefaultCursor());
-		});		
-		
+
 		rgbColoringButton = new JRadioButton(RGB_COLORING);
 
 		customColorRedLabel = new JLabel("Red: ");
@@ -505,11 +508,13 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
 			if (graticule != null)
 			{
-				if (e.getStateChange() == ItemEvent.SELECTED) {
+				if (e.getStateChange() == ItemEvent.SELECTED)
+				{
 					setCursor(new Cursor(Cursor.WAIT_CURSOR));
 					graticule.setShowCaptions(true);
 					setCursor(Cursor.getDefaultCursor());
-				} else
+				}
+				else
 					graticule.setShowCaptions(false);
 			}
 		}
@@ -577,17 +582,16 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 				setCursor(Cursor.getDefaultCursor());
 				setCursor(new Cursor(Cursor.WAIT_CURSOR));
 				int selectedIndex = coloringComboBox.getSelectedIndex() - 1;
-				if (selectedIndex < 0) {
+				if (selectedIndex < 0)
+				{
 					smallBodyModel.setColoringIndex(-1);
 					return;
 				}
 				smallBodyModel.setColoringIndex(selectedIndex);
 				smallBodyModel.setColormap(colormapController.getColormap());
-				smallBodyModel.setContourLineWidth(contourPanel.getLineWidth());
-				smallBodyModel.showScalarsAsContours(contourPanel.getContourLinesRequested());
-				double defaultArr[] = smallBodyModel.getDefaultColoringRange(selectedIndex);
-				colormapController.setDefaultRange(defaultArr[0], defaultArr[1]);
-				colormapController.setCurrentMinMax(defaultArr[0], defaultArr[1]);
+				smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
+				smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
+				colormapController.refresh();
 				setCursor(Cursor.getDefaultCursor());
 			}
 			else if (rgbColoringButton.isSelected())
@@ -601,6 +605,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 					smallBodyModel.setColoringIndex(-1);
 					return;
 				}
+				colormapController.refresh();
 				smallBodyModel.setFalseColoring(redIndex, greenIndex, blueIndex);
 			}
 			else
