@@ -39,8 +39,8 @@ import javax.swing.text.html.HTMLEditorKit;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import edu.jhuapl.saavtk.colormap.StandardPlatePanel;
 import edu.jhuapl.saavtk.colormap.ContourPanel;
+import edu.jhuapl.saavtk.colormap.StandardPlatePanel;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomPlateDataDialog;
 import edu.jhuapl.saavtk.model.ColoringDataManager;
@@ -220,7 +220,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		standardColoringButton = new JRadioButton(STANDARD_COLORING);
 
 		smallBodyModel.setColormap(colormapController.getColormap());
-		
+
 		colormapController.addPropertyChangeListener((aEvent) -> {
 			setCursor(new Cursor(Cursor.WAIT_CURSOR));
 			String evtName = aEvent.getPropertyName();
@@ -229,16 +229,16 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 				smallBodyModel.setColormap(colormapController.getColormap());
 				try
 				{
-					smallBodyModel.setCurrentColoringRange(smallBodyModel.getColoringIndex(),
-							colormapController.getCurrentMinMax());
-				} catch (IOException e)
+					smallBodyModel.setCurrentColoringRange(smallBodyModel.getColoringIndex(), colormapController.getCurrentMinMax());
+				}
+				catch (IOException e)
 				{
 					e.printStackTrace();
 				}
 			}
 			setCursor(Cursor.getDefaultCursor());
 		});
-		
+
 		contourPanel.addPropertyChangeListener((aEvent) -> {
 			setCursor(new Cursor(Cursor.WAIT_CURSOR));
 			String evtName = aEvent.getPropertyName();
@@ -248,8 +248,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 				smallBodyModel.showScalarsAsContours(contourPanel.getContourLinesRequested());
 			}
 			setCursor(Cursor.getDefaultCursor());
-		});		
-		
+		});
+
 		rgbColoringButton = new JRadioButton(RGB_COLORING);
 
 		customColorRedLabel = new JLabel("Red: ");
@@ -674,7 +674,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
 		int numberColorings = box.getItemCount();
 		int selection = 0;
-		if (numberColorings >= previousNumberColorings)
+		if (previousSelection < numberColorings)
 		{
 			// A coloring was replaced/edited. Re-select the current selection.
 			selection = previousSelection;
