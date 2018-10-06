@@ -245,7 +245,6 @@ public class ColoringData
 				}
 			}
 			double[] defaultRange = computeDefaultColoringRange(data);
-
 			this.data = data;
 			this.defaultRange = defaultRange;
 			loadFailed = false;

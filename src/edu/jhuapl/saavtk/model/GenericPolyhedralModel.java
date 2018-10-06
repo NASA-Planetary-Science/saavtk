@@ -1511,7 +1511,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public void reloadShapeModel() throws IOException
 	{
 		smallBodyCubes = null;
-		for (ColoringData data : getAllColoringDataForThisResolution())
+		for (ColoringData data : getAllColoringData())
 		{
 			data.clear();
 		}
@@ -1690,7 +1690,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	 */
 	protected void loadAllColoringData() throws IOException
 	{
-		for (ColoringData data : getAllColoringDataForThisResolution())
+		for (ColoringData data : getAllColoringData())
 		{
 			data.load();
 		}
@@ -1806,7 +1806,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	@Override
 	public boolean isColoringDataAvailable()
 	{
-		return !getAllColoringDataForThisResolution().isEmpty();
+		return !getAllColoringData().isEmpty();
 	}
 
 	@Override
@@ -1839,18 +1839,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return getColoringData(i).getUnits();
 	}
 
-	private double getColoringValue(double[] pt, vtkFloatArray pointOrCellData)
+	private double getScalarValue(double[] pt, vtkFloatArray pointOrCellData)
 	{
 		double[] closestPoint = new double[3];
 		int cellId = findClosestCell(pt, closestPoint);
-		if (coloringValueType == ColoringValueType.POINT_DATA)
-		{
-			return PolyDataUtil.interpolateWithinCell(smallBodyPolyData, pointOrCellData, cellId, closestPoint, idList);
-		}
-		else
-		{
-			return pointOrCellData.GetTuple1(cellId);
-		}
+		return getScalarValue(closestPoint, pointOrCellData, cellId);
 	}
 
 	/**
@@ -1861,7 +1854,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	 * @param cellId
 	 * @return
 	 */
-	private double getColoringValue(double[] pt, vtkFloatArray pointOrCellData, int cellId)
+	private double getScalarValue(double[] pt, vtkFloatArray pointOrCellData, int cellId)
 	{
 		if (coloringValueType == ColoringValueType.POINT_DATA)
 		{
@@ -1871,6 +1864,42 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		{
 			return pointOrCellData.GetTuple1(cellId);
 		}
+	}
+
+	private double[] getVectorValue(double[] pt, vtkFloatArray pointOrCellData, int numberAxes)
+	{
+		double[] closestPoint = new double[3];
+		int cellId = findClosestCell(pt, closestPoint);
+		return getVectorValue(closestPoint, pointOrCellData, cellId);
+	}
+
+	private double[] getVectorValue(double[] pt, vtkFloatArray pointOrCellData, int cellId, int numberAxes)
+	{
+		double[] result = null;
+		if (coloringValueType == ColoringValueType.POINT_DATA)
+		{
+			result = PolyDataUtil.interpolateWithinCell(smallBodyPolyData, pointOrCellData, cellId, pt, idList, numberAxes);
+		}
+		else
+		{
+			if (numberAxes == 1)
+			{
+				result = new double[] { pointOrCellData.GetTuple1(cellId) };
+			}
+			else if (numberAxes == 2)
+			{
+				result = pointOrCellData.GetTuple2(cellId);
+			}
+			else if (numberAxes == 3)
+			{
+				result = pointOrCellData.GetTuple3(cellId);
+			}
+			else
+			{
+				throw new IllegalArgumentException("Cannot get a vector with " + numberAxes + " axes");
+			}
+		}
+		return result;
 	}
 
 	@Override
@@ -1886,7 +1915,14 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			throw new RuntimeException(e);
 		}
 
-		return getColoringValue(pt, coloringData.getData());
+		return getScalarValue(pt, coloringData.getData());
+	}
+
+	@Override
+	public ImmutableList<ColoringData> getAllColoringData()
+	{
+		ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
+		return resolutions.size() > resolutionLevel ? coloringDataManager.get(resolutions.get(resolutionLevel)) : ImmutableList.of();
 	}
 
 	@Override
@@ -1897,15 +1933,25 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		double[] closestPoint = new double[3];
 		int cellId = findClosestCell(pt, closestPoint);
 
-		ImmutableList<ColoringData> coloringData = getAllColoringDataForThisResolution();
-		int numColors = coloringData.size();
-		double[] values = new double[numColors];
-		for (int index = 0; index < numColors; ++index)
+		ImmutableList<ColoringData> coloringData = getAllColoringData();
+		int numColorColumns = 0;
+		for (ColoringData data : coloringData)
 		{
-			values[index] = getColoringValue(closestPoint, coloringData.get(index).getData(), cellId);
+			numColorColumns += data.getElementNames().size();
 		}
 
-		return values;
+		double[] result = new double[numColorColumns];
+		int valueIndex = 0;
+		for (ColoringData data : coloringData)
+		{
+			double[] coloringVector = getVectorValue(closestPoint, data.getData(), cellId, data.getElementNames().size());
+			for (int index = 0; index < coloringVector.length; ++index, ++valueIndex)
+			{
+				result[valueIndex] = coloringVector[index];
+			}
+		}
+
+		return result;
 	}
 
 	/**
@@ -2004,7 +2050,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	@Override
 	public double[] getCurrentColoringRange(int coloringIndex)
 	{
-		return getColoringData(coloringIndex).getData().GetRange();
+		// Delegate to default color range
+		if (colormap == null)
+			return getDefaultColoringRange(coloringIndex);
+
+		return new double[] { colormap.getRangeMin(), colormap.getRangeMax() };
 	}
 
 	@Override
@@ -2153,12 +2203,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		String name = coloringDataManager.getNames().get(coloringIndex);
 		int numberElements = coloringDataManager.getResolutions().get(resolutionLevel);
 		return coloringDataManager.get(name, numberElements);
-	}
-
-	private ImmutableList<ColoringData> getAllColoringDataForThisResolution()
-	{
-		ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
-		return resolutions.size() > resolutionLevel ? coloringDataManager.get(resolutions.get(resolutionLevel)) : ImmutableList.of();
 	}
 
 	private void paintBody() throws IOException
@@ -2713,11 +2757,62 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	@Override
 	public void savePlateDataInsidePolydata(vtkPolyData polydata, File file) throws IOException
 	{
+		ImmutableList<Integer> cellIdList = getClosestCellList(polydata);
+		savePlateData(new Indexable<Integer>() {
+
+			@Override
+			public int size()
+			{
+				return cellIdList.size();
+			}
+
+			@Override
+			public Integer get(int index)
+			{
+				return cellIdList.get(index);
+			}
+
+		}, file);
+	}
+
+	/**
+	 * Given a polydata that is coincident with part of the shape model, save out
+	 * the plate data for all cells of the shape model that touch the polydata (even
+	 * a little bit).
+	 *
+	 * @param polydata
+	 * @param file
+	 * @throws IOException
+	 */
+	@Override
+	public FacetColoringData[] getPlateDataInsidePolydata(vtkPolyData polydata)
+	{
+		ImmutableList<Integer> cellIdList = getClosestCellList(polydata);
+		FacetColoringData[] coloringData = getColoringDataFor(new Indexable<Integer>() {
+
+			@Override
+			public int size()
+			{
+				return cellIdList.size();
+			}
+
+			@Override
+			public Integer get(int index)
+			{
+				return cellIdList.get(index);
+			}
+
+		});
+		return coloringData;
+
+	}
+
+	private ImmutableList<Integer> getClosestCellList(vtkPolyData polydata)
+	{
 		// Go through every cell inside the polydata and find the closest cell to it
 		// in the shape model and get the plate data for that cell.
 		// First put the cells into an ordered set, so we don't save out the
 		// same cell twice.
-
 		TreeSet<Integer> cellIds = new TreeSet<>();
 
 		int numCells = polydata.GetNumberOfCells();
@@ -2744,23 +2839,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			points.Delete();
 			cell.Delete();
 		}
-
-		ImmutableList<Integer> cellIdList = ImmutableList.copyOf(cellIds);
-		savePlateData(new Indexable<Integer>() {
-
-			@Override
-			public int size()
-			{
-				return cellIdList.size();
-			}
-
-			@Override
-			public Integer get(int index)
-			{
-				return cellIdList.get(index);
-			}
-
-		}, file);
+		return ImmutableList.copyOf(cellIds);
 	}
 
 	@Override
@@ -2827,13 +2906,13 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				out.write(",Center Latitude (deg)");
 				out.write(",Center Longitude (deg)");
 				out.write(",Center Radius (km)");
-				ImmutableList<ColoringData> allColoringData = getAllColoringDataForThisResolution();
+				ImmutableList<ColoringData> allColoringData = getAllColoringData();
 				for (ColoringData data : allColoringData)
 				{
+					String units = data.getUnits();
 					for (String name : data.getElementNames())
 					{
 						out.write("," + name);
-						String units = data.getUnits();
 						if (units != null && !units.isEmpty())
 							out.write(" (" + units + ")");
 					}
@@ -2841,94 +2920,30 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				}
 				out.write(lineSeparator);
 
-				vtkTriangle triangle = new vtkTriangle();
-
-				vtkPoints points = smallBodyPolyData.GetPoints();
-				int numberCells = smallBodyPolyData.GetNumberOfCells();
-				smallBodyPolyData.BuildCells();
-				vtkIdList idList = new vtkIdList();
-				double[] pt0 = new double[3];
-				double[] pt1 = new double[3];
-				double[] pt2 = new double[3];
-				double[] center = new double[3];
 				for (int index = 0; index < indexable.size(); ++index)
 				{
 					int cellId = indexable.get(index);
-					if (cellId < 0 || cellId > numberCells)
-					{
-						throw new IllegalArgumentException();
-					}
-					smallBodyPolyData.GetCellPoints(cellId, idList);
-					int id0 = idList.GetId(0);
-					int id1 = idList.GetId(1);
-					int id2 = idList.GetId(2);
-					points.GetPoint(id0, pt0);
-					points.GetPoint(id1, pt1);
-					points.GetPoint(id2, pt2);
-
-					double area = triangle.TriangleArea(pt0, pt1, pt2);
-					triangle.TriangleCenter(pt0, pt1, pt2, center);
-					LatLon llr = MathUtil.reclat(center);
-
-					out.write(cellId + ",");
-					out.write(area + ",");
-					out.write(center[0] + ",");
-					out.write(center[1] + ",");
-					out.write(center[2] + ",");
-					out.write((llr.lat * 180.0 / Math.PI) + ",");
-					out.write((llr.lon * 180.0 / Math.PI) + ",");
-					out.write(String.valueOf(llr.rad));
-
-					for (ColoringData data : allColoringData)
-					{
-						vtkFloatArray array = data.getData();
-						int number = data.getElementNames().size();
-						if (number == 1)
-						{
-							out.write("," + array.GetTuple1(cellId));
-						}
-						else if (number != 1)
-						{
-							double[] dArray = null;
-							if (number == 2)
-							{
-								dArray = array.GetTuple2(cellId);
-							}
-							else if (number == 3)
-							{
-								dArray = array.GetTuple3(cellId);
-							}
-							else if (number == 4)
-							{
-								dArray = array.GetTuple4(cellId);
-							}
-							else if (number == 6)
-							{
-								dArray = array.GetTuple6(cellId);
-							}
-							else if (number == 9)
-							{
-								dArray = array.GetTuple9(cellId);
-							}
-							else
-							{
-								throw new AssertionError();
-							}
-							for (double d : dArray)
-							{
-								out.write("," + d);
-							}
-						}
-
-					}
+					FacetColoringData facetData = new FacetColoringData(cellId, allColoringData);
+					facetData.generateDataFromPolydata(smallBodyPolyData);
+					facetData.writeTo(out);
 					out.write(lineSeparator);
 				}
-
-				triangle.Delete();
-				idList.Delete();
-
 			}
-
 		}
 	}
+
+	private FacetColoringData[] getColoringDataFor(Indexable<Integer> indexable)
+	{
+		FacetColoringData[] data = new FacetColoringData[indexable.size()];
+		ImmutableList<ColoringData> allColoringData = getAllColoringData();
+		for (int index = 0; index < indexable.size(); ++index)
+		{
+			int cellId = indexable.get(index);
+			FacetColoringData facetData = new FacetColoringData(cellId, allColoringData);
+			facetData.generateDataFromPolydata(smallBodyPolyData);
+			data[index] = facetData;
+		}
+		return data;
+	}
+
 }
