@@ -322,7 +322,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		hasNullsCheckBox = new javax.swing.JCheckBox();
 
 		setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-		setMinimumSize(new java.awt.Dimension(600, 167));
+		setMinimumSize(new java.awt.Dimension(600, 300));
 		setModalityType(java.awt.Dialog.ModalityType.APPLICATION_MODAL);
 		getContentPane().setLayout(new java.awt.GridBagLayout());
 
