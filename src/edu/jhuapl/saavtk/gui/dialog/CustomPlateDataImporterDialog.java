@@ -98,24 +98,25 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			elementNames = selected != null ? ImmutableList.of(selected) : ImmutableList.of();
 			columnIdentifiers = selected != null ? ImmutableList.of(comboBox.getSelectedIndex()) : null;
 		}
-		else {
+		else
+		{
 			String xSelected = (String) xComboBox.getSelectedItem();
 			String ySelected = (String) yComboBox.getSelectedItem();
 			String zSelected = (String) zComboBox.getSelectedItem();
 			ImmutableList.Builder<String> nameBuilder = ImmutableList.builder();
 			ImmutableList.Builder<Integer> columnBuilder = ImmutableList.builder();
 			if (xSelected != null)
-			{  
+			{
 				nameBuilder.add(xSelected);
 				columnBuilder.add(xComboBox.getSelectedIndex());
 			}
 			if (ySelected != null)
-			{  
+			{
 				nameBuilder.add(ySelected);
 				columnBuilder.add(yComboBox.getSelectedIndex());
 			}
 			if (zSelected != null)
-			{  
+			{
 				nameBuilder.add(zSelected);
 				columnBuilder.add(zComboBox.getSelectedIndex());
 			}
@@ -372,7 +373,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		getContentPane().add(unitsLabel, gridBagConstraints);
 
 		jPanel1.setLayout(new java.awt.GridBagLayout());
-		
+
 		importLabel = new javax.swing.JLabel();
 		importLabel.setText("Import Data As:");
 		gridBagConstraints = new java.awt.GridBagConstraints();
@@ -383,7 +384,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
 		getContentPane().add(importLabel, gridBagConstraints);
 		importLabel.setVisible(false);
-		
+
 		scalarRadioButton = new javax.swing.JRadioButton();
 		scalarRadioButton.addActionListener(new java.awt.event.ActionListener() {
 			@Override
@@ -400,7 +401,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		gridBagConstraints.insets = new java.awt.Insets(0, 20, 0, 0);
 		getContentPane().add(scalarRadioButton, gridBagConstraints);
 		scalarRadioButton.setVisible(false);
-		
+
 		scalarRadioLabel = new javax.swing.JLabel();
 		scalarRadioLabel.setText("Scalar");
 		gridBagConstraints = new java.awt.GridBagConstraints();
@@ -411,7 +412,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		gridBagConstraints.insets = new java.awt.Insets(0, 40, 0, 0);
 		getContentPane().add(scalarRadioLabel, gridBagConstraints);
 		scalarRadioLabel.setVisible(false);
-		
+
 		vectorRadioButton = new javax.swing.JRadioButton();
 		vectorRadioButton.addActionListener(new java.awt.event.ActionListener() {
 			@Override
@@ -428,7 +429,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		gridBagConstraints.insets = new java.awt.Insets(0, 100, 0, 0);
 		getContentPane().add(vectorRadioButton, gridBagConstraints);
 		vectorRadioButton.setVisible(false);
-		
+
 		vectorRadioLabel = new javax.swing.JLabel();
 		vectorRadioLabel.setText("Vector");
 		gridBagConstraints = new java.awt.GridBagConstraints();
@@ -436,10 +437,10 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		gridBagConstraints.gridy = 3;
 		gridBagConstraints.gridwidth = 1;
 		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-		gridBagConstraints.insets = new java.awt.Insets(0,120, 0, 0);
+		gridBagConstraints.insets = new java.awt.Insets(0, 120, 0, 0);
 		getContentPane().add(vectorRadioLabel, gridBagConstraints);
 		vectorRadioLabel.setVisible(false);
-		
+
 		buttonGroup = new javax.swing.ButtonGroup();
 		buttonGroup.add(scalarRadioButton);
 		buttonGroup.add(vectorRadioButton);
@@ -477,7 +478,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		gridBagConstraints.insets = new java.awt.Insets(5, 25, 0, 0);
 		getContentPane().add(yLabel, gridBagConstraints);
 		yLabel.setVisible(false);
-		
+
 		zLabel = new javax.swing.JLabel();
 		zLabel.setText("Choose 'Z' Column");
 		gridBagConstraints = new java.awt.GridBagConstraints();
@@ -508,7 +509,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
 		getContentPane().add(xComboBox, gridBagConstraints);
 		xComboBox.setVisible(false);
-		
+
 		yComboBox = new JComboBox<>();
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 1;
@@ -518,7 +519,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		gridBagConstraints.insets = new java.awt.Insets(5, 25, 0, 0);
 		getContentPane().add(yComboBox, gridBagConstraints);
 		yComboBox.setVisible(false);
-		
+
 		zComboBox = new JComboBox<>();
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 1;
@@ -588,14 +589,14 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
 		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
 		getContentPane().add(hasNullsCheckBox, gridBagConstraints);
-		
+
 		pack();
 	}// </editor-fold>//GEN-END:initComponents
 
 	private void browsePlateDataButtonActionPerformed(java.awt.event.ActionEvent evt) //GEN-FIRST:event_browsePlateDataButtonActionPerformed
 
 	{//GEN-HEADEREND:event_browsePlateDataButtonActionPerformed
-		
+
 		File file = CustomFileChooser.showOpenDialog(this, "Select Plate Data");
 		if (file == null)
 		{
@@ -604,7 +605,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 		String filename = file.getAbsolutePath();
 		cellDataPathTextField.setText(filename);
-		
+
 		List<String> columnTitles;
 		try
 		{
@@ -613,15 +614,15 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			{
 				int titleSize = columnTitles.size();
 				columnTitles.clear();
-				for (int i = 0; i < titleSize; i++) 
+				for (int i = 0; i < titleSize; i++)
 				{
 					String iString = Integer.toString(i);
-					columnTitles.add(iString);	
+					columnTitles.add(iString);
 				}
-			}	
-			
+			}
+
 			buttonGroup.clearSelection();
-			
+
 			if (columnTitles.size() >= 3)
 			{
 				importLabel.setVisible(true);
@@ -638,7 +639,8 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 				yComboBox.setVisible(false);
 				zComboBox.setVisible(false);
 			}
-			else if (columnTitles.size() == 2) {
+			else if (columnTitles.size() == 2)
+			{
 				importLabel.setVisible(false);
 				scalarRadioButton.setVisible(false);
 				scalarRadioLabel.setVisible(false);
@@ -653,7 +655,8 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 				yComboBox.setVisible(false);
 				zComboBox.setVisible(false);
 			}
-			else {
+			else
+			{
 				importLabel.setVisible(false);
 				scalarRadioButton.setVisible(false);
 				scalarRadioLabel.setVisible(false);
@@ -672,13 +675,14 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			xComboBox.removeAllItems();
 			yComboBox.removeAllItems();
 			zComboBox.removeAllItems();
-			
-			if (columnTitles.size() == 1) {
+
+			if (columnTitles.size() == 1)
+			{
 				xComboBox.addItem(null);
 				yComboBox.addItem(null);
 				zComboBox.addItem(null);
 			}
-			
+
 			for (String item : columnTitles)
 			{
 				comboBox.addItem(item);
@@ -699,21 +703,25 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 	}//GEN-LAST:event_browsePlateDataButtonActionPerformed
 
-	private void scalarRadioButtonActionPerformed (java.awt.event.ActionEvent evt) {
-		if (scalarRadioButton.isSelected()) {
-	       scalarLabel.setVisible(true);
-	       comboBox.setVisible(true);
+	private void scalarRadioButtonActionPerformed(java.awt.event.ActionEvent evt)
+	{
+		if (scalarRadioButton.isSelected())
+		{
+			scalarLabel.setVisible(true);
+			comboBox.setVisible(true);
 			xLabel.setVisible(false);
 			yLabel.setVisible(false);
 			zLabel.setVisible(false);
 			xComboBox.setVisible(false);
 			yComboBox.setVisible(false);
 			zComboBox.setVisible(false);
-	    }
+		}
 	}
-	
-	private void vectorRadioButtonActionPerformed (java.awt.event.ActionEvent evt) {
-		if (vectorRadioButton.isSelected()) {
+
+	private void vectorRadioButtonActionPerformed(java.awt.event.ActionEvent evt)
+	{
+		if (vectorRadioButton.isSelected())
+		{
 			scalarLabel.setVisible(false);
 			comboBox.setVisible(false);
 			xLabel.setVisible(true);
@@ -722,7 +730,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			xComboBox.setVisible(true);
 			yComboBox.setVisible(true);
 			zComboBox.setVisible(true);
-	    }
+		}
 	}
 
 	private void cancelButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_cancelButtonActionPerformed
