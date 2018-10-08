@@ -10,7 +10,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 
 import com.google.common.base.Preconditions;
@@ -143,6 +145,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	private double contourLineWidth = 1;
 	private vtkPolyDataMapper linesMapper;
 	private vtkActor linesActor;
+
+	// Heuristic to avoid computationally expensive paint operations when possible. 
+	private Map<String, Object> paintingAttributes = null;
 
 	/**
 	 * Default constructor. Must be followed by a call to setSmallBodyPolyData.
@@ -360,25 +365,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	{
 		if (this.colormap != null)
 			this.colormap.removePropertyChangeListener(this);
-		initializeActorsAndMappers();
+
 		this.colormap = colormap;
-		if (coloringIndex != -1)
-		{
-			double[] range = getColoringData(coloringIndex).getData().GetRange();
-			colormap.setRangeMin(range[0]);
-			colormap.setRangeMax(range[1]);
-		}
+
 		this.colormap.addPropertyChangeListener(this);
-		smallBodyActor.GetMapper().SetLookupTable(colormap.getLookupTable());
-		try
-		{
-			paintBody();
-		}
-		catch (IOException e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 
 	@Override
@@ -415,7 +405,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 	}
 
 	@Override
@@ -428,6 +417,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public void propertyChange(PropertyChangeEvent evt)
 	{
 		if (evt.getSource().equals(colormap))
+		{
 			try
 			{
 				paintBody();
@@ -437,7 +427,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-
+		}
 	}
 
 	@Override
@@ -1530,10 +1520,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		this.initialize(smallBodyFile);
 
-		// Repaint the asteroid if we're currently showing any type of coloring
-		if (coloringIndex >= 0 || useFalseColoring)
-			paintBody();
-
 		this.pcs.firePropertyChange(Properties.MODEL_RESOLUTION_CHANGED, null, null);
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
@@ -1754,11 +1740,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					useFalseColoring = currentFalseColoring;
 					throw t;
 				}
-				double[] range = getCurrentColoringRange(coloringIndex);
-				if (colormap == null)
-					initColormap();
-				colormap.setRangeMin(range[0]);
-				colormap.setRangeMax(range[1]);
+
+				smallBodyActor.GetMapper().SetLookupTable(colormap.getLookupTable());
+
+				double[] range = getColoringData(coloringIndex).getData().GetRange();
+				setCurrentColoringRange(coloringIndex, range);
 			}
 
 			paintBody();
@@ -2050,11 +2036,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	@Override
 	public double[] getCurrentColoringRange(int coloringIndex)
 	{
-		// Delegate to default color range
-		if (colormap == null)
-			return getDefaultColoringRange(coloringIndex);
-
-		return new double[] { colormap.getRangeMin(), colormap.getRangeMax() };
+		return getColoringData(coloringIndex).getCurrentRange();
 	}
 
 	@Override
@@ -2077,11 +2059,13 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 		if (doSet)
 		{
+			colormap.removePropertyChangeListener(this);
 			colormap.setRangeMin(range[0]);
 			colormap.setRangeMax(range[1]);
-
-			paintBody();
+			colormap.addPropertyChangeListener(this);
 		}
+
+		paintBody();
 	}
 
 	private interface Indexable<T>
@@ -2207,8 +2191,12 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	private void paintBody() throws IOException
 	{
-
 		initializeActorsAndMappers();
+
+		Map<String, Object> newPaintingAttributes = new HashMap<>();
+
+		boolean doPaint = false;
+		doPaint |= checkAndSave("coloringIndex", coloringIndex, newPaintingAttributes);
 
 		if (coloringIndex >= 0 && isColoringAvailable(coloringIndex))
 		{
@@ -2222,120 +2210,184 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			{
 				title += " (" + units + ")";
 			}
+			doPaint |= checkAndSave("title", title, newPaintingAttributes);
 			scalarBarActor.SetTitle(title);
 
 			vtkFloatArray floatArray = coloringData.getData();
+			doPaint |= checkAndSave("floatArray", floatArray, newPaintingAttributes);
 
 			initColormap();
+
+			doPaint |= checkAndSave("showColorsAsContourLines", showColorsAsContourLines, newPaintingAttributes);
+
+			doPaint |= checkAndSave("rangeMin", colormap.getRangeMin(), newPaintingAttributes);
+			doPaint |= checkAndSave("rangeMax", colormap.getRangeMax(), newPaintingAttributes);
+			doPaint |= checkAndSave("numberOfLevels", colormap.getNumberOfLevels(), newPaintingAttributes);
+			doPaint |= checkAndSave("numberOfLabels", colormap.getNumberOfLabels(), newPaintingAttributes);
+			doPaint |= checkAndSave("isLogScale", colormap.isLogScale(), newPaintingAttributes);
+
 			if (!showColorsAsContourLines)
 			{
-				if (smallBodyActors.contains(linesActor))
-					smallBodyActors.remove(linesActor);
 
-				vtkUnsignedCharArray rgbColorData = new vtkUnsignedCharArray();
-				rgbColorData.SetNumberOfComponents(3);
-				for (int index = 0; index < floatArray.GetNumberOfTuples(); ++index)
+				vtkLookupTable lookupTable = colormap.getLookupTable();
+				doPaint |= checkAndSave("lookupTable", lookupTable, newPaintingAttributes);
+				if (doPaint)
 				{
-					double value = floatArray.GetValue(index);
-					Color c = colormap.getColor(value);
-					rgbColorData.InsertNextTuple3(c.getRed(), c.getGreen(), c.getBlue());
+					System.err.println("actually painting standard");
+
+					if (smallBodyActors.contains(linesActor))
+						smallBodyActors.remove(linesActor);
+
+					vtkUnsignedCharArray rgbColorData = new vtkUnsignedCharArray();
+					rgbColorData.SetNumberOfComponents(3);
+					for (int index = 0; index < floatArray.GetNumberOfTuples(); ++index)
+					{
+						double value = floatArray.GetValue(index);
+						Color c = colormap.getColor(value);
+						rgbColorData.InsertNextTuple3(c.getRed(), c.getGreen(), c.getBlue());
+					}
+
+					smallBodyMapper.SetLookupTable(colormap.getLookupTable());
+
+					vtkPolyDataMapper decimatedMapper =
+							((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+					decimatedMapper.SetLookupTable(colormap.getLookupTable());
+					decimatedMapper.UseLookupTableScalarRangeOn();
+
+					if (coloringValueType == ColoringValueType.POINT_DATA)
+						this.smallBodyPolyData.GetPointData().SetScalars(rgbColorData);
+					else
+						this.smallBodyPolyData.GetCellData().SetScalars(rgbColorData);
+
+					smallBodyMapper.ScalarVisibilityOn();
 				}
-
-				smallBodyMapper.SetLookupTable(colormap.getLookupTable());
-
-				vtkPolyDataMapper decimatedMapper =
-						((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
-				decimatedMapper.SetLookupTable(colormap.getLookupTable());
-				decimatedMapper.UseLookupTableScalarRangeOn();
-
-				if (coloringValueType == ColoringValueType.POINT_DATA)
-					this.smallBodyPolyData.GetPointData().SetScalars(rgbColorData);
-				else
-					this.smallBodyPolyData.GetCellData().SetScalars(rgbColorData);
-
-				smallBodyMapper.ScalarVisibilityOn();
 
 			}
 			else
 			{
-				vtkPolyDataMapper decimatedMapper =
-						((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
-				decimatedMapper.ScalarVisibilityOff();
-				smallBodyMapper.ScalarVisibilityOff();
-
-				vtkPolyData polyData;
-				if (coloringValueType == ColoringValueType.POINT_DATA)
+				doPaint |= checkAndSave("contourLineWidth", contourLineWidth, newPaintingAttributes);
+				if (doPaint)
 				{
-					smallBodyPolyData.GetPointData().SetScalars(floatArray);
-					polyData = smallBodyPolyData;
+					System.err.println("actually painting contour");
+
+					vtkPolyDataMapper decimatedMapper =
+							((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+					decimatedMapper.ScalarVisibilityOff();
+					smallBodyMapper.ScalarVisibilityOff();
+
+					vtkPolyData polyData;
+					if (coloringValueType == ColoringValueType.POINT_DATA)
+					{
+						smallBodyPolyData.GetPointData().SetScalars(floatArray);
+						polyData = smallBodyPolyData;
+					}
+					else
+					{
+						smallBodyPolyData.GetCellData().SetScalars(floatArray);
+						vtkCellDataToPointData converter = new vtkCellDataToPointData();
+						converter.SetInputData(smallBodyPolyData);
+						converter.PassCellDataOff();
+						converter.Update();
+						polyData = converter.GetPolyDataOutput(); // contour filter requires point data with one component
+					}
+
+					vtkContourFilter contourFilter = new vtkContourFilter();
+					contourFilter.SetInputData(polyData);
+					contourFilter.GenerateValues(colormap.getNumberOfLevels(), colormap.getRangeMin(), colormap.getRangeMax());
+					contourFilter.Update();
+
+					linesMapper =
+							((SaavtkLODActor) linesActor).setQuadricDecimatedLODMapper(contourFilter.GetOutput());
+
+					linesMapper.SetInputData(contourFilter.GetOutput());
+					linesMapper.ScalarVisibilityOn();
+					linesMapper.SetScalarModeToDefault();
+					linesMapper.SetLookupTable(colormap.getLookupTable());
+					linesMapper.UseLookupTableScalarRangeOn();
+
+					linesActor.VisibilityOn();
+					linesActor.SetMapper(linesMapper);
+					linesActor.GetProperty().SetLineWidth(contourLineWidth);
+
+					if (!smallBodyActors.contains(linesActor))
+						smallBodyActors.add(linesActor);
 				}
-				else
-				{
-					smallBodyPolyData.GetCellData().SetScalars(floatArray);
-					vtkCellDataToPointData converter = new vtkCellDataToPointData();
-					converter.SetInputData(smallBodyPolyData);
-					converter.PassCellDataOff();
-					converter.Update();
-					polyData = converter.GetPolyDataOutput(); // contour filter requires point data with one component
-				}
-
-				vtkContourFilter contourFilter = new vtkContourFilter();
-				contourFilter.SetInputData(polyData);
-				contourFilter.GenerateValues(colormap.getNumberOfLevels(), colormap.getRangeMin(), colormap.getRangeMax());
-				contourFilter.Update();
-
-				linesMapper =
-						((SaavtkLODActor) linesActor).setQuadricDecimatedLODMapper(contourFilter.GetOutput());
-
-				linesMapper.SetInputData(contourFilter.GetOutput());
-				linesMapper.ScalarVisibilityOn();
-				linesMapper.SetScalarModeToDefault();
-				linesMapper.SetLookupTable(colormap.getLookupTable());
-				linesMapper.UseLookupTableScalarRangeOn();
-
-				linesActor.VisibilityOn();
-				linesActor.SetMapper(linesMapper);
-				linesActor.GetProperty().SetLineWidth(contourLineWidth);
-
-				if (!smallBodyActors.contains(linesActor))
-					smallBodyActors.add(linesActor);
 			}
 		}
 		else
 		{
-			if (smallBodyActors.contains(scalarBarActor))
-				smallBodyActors.remove(scalarBarActor);
-			if (smallBodyActors.contains(linesActor))
-				smallBodyActors.remove(linesActor);
+			doPaint |= checkAndSave("useFalseColoring", useFalseColoring, newPaintingAttributes);
 
-			if (useFalseColoring)
+			if (doPaint)
 			{
-				if (isColoringAvailable(redFalseColor) || isColoringAvailable(greenFalseColor) || isColoringAvailable(blueFalseColor))
-				{
 
-					updateFalseColorArray();
-					if (coloringValueType == ColoringValueType.POINT_DATA)
-						this.smallBodyPolyData.GetPointData().SetScalars(falseColorArray);
-					else
-						this.smallBodyPolyData.GetCellData().SetScalars(falseColorArray);
-					smallBodyMapper.ScalarVisibilityOn();
+				if (smallBodyActors.contains(scalarBarActor))
+					smallBodyActors.remove(scalarBarActor);
+				if (smallBodyActors.contains(linesActor))
+					smallBodyActors.remove(linesActor);
+
+				if (useFalseColoring)
+				{
+					System.err.println("actually painting false color");
+					if (isColoringAvailable(redFalseColor) || isColoringAvailable(greenFalseColor) || isColoringAvailable(blueFalseColor))
+					{
+
+						updateFalseColorArray();
+						if (coloringValueType == ColoringValueType.POINT_DATA)
+							this.smallBodyPolyData.GetPointData().SetScalars(falseColorArray);
+						else
+							this.smallBodyPolyData.GetCellData().SetScalars(falseColorArray);
+						smallBodyMapper.ScalarVisibilityOn();
+						vtkPolyDataMapper decimatedMapper =
+								((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+
+					}
+				}
+				else
+				{
+					System.err.println("actually unpainting");
 					vtkPolyDataMapper decimatedMapper =
 							((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
-
+					decimatedMapper.ScalarVisibilityOff();
+					smallBodyMapper.ScalarVisibilityOff();
 				}
-			}
-			else
-			{
-				vtkPolyDataMapper decimatedMapper =
-						((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
-				decimatedMapper.ScalarVisibilityOff();
-				smallBodyMapper.ScalarVisibilityOff();
 			}
 		}
 
-		this.smallBodyPolyData.Modified();
+		if (!doPaint)
+		{
+			System.err.println("Skipped painting");
+		}
 
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		if (doPaint)
+		{
+			paintingAttributes = newPaintingAttributes;
+
+			this.smallBodyPolyData.Modified();
+
+			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		}
+	}
+
+	private <T> boolean checkAndSave(String attribute, T value, Map<String, Object> newPaintingAttributes)
+	{
+		newPaintingAttributes.put(attribute, value);
+		boolean changed = true;
+
+		if (paintingAttributes != null)
+		{
+			Object storedObject = paintingAttributes.get(attribute);
+
+			if (storedObject == value)
+				changed = false;
+			else if (storedObject != null)
+				changed = !storedObject.equals(value);
+		}
+
+		//		if (changed)
+		//			System.err.println("attribute " + attribute + " changed to " + value.toString().replaceFirst("\n.*", ""));
+
+		return changed;
 	}
 
 	@Override
