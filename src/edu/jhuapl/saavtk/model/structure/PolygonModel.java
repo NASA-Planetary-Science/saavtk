@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import edu.jhuapl.saavtk.model.FacetColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.util.IdPair;
@@ -327,6 +328,26 @@ public class PolygonModel extends LineModel
 			smallBodyModel.savePlateDataInsidePolydata(polydata, file);
 
 			pol.setShowInterior(false);
+		}
+	}
+	
+	@Override
+	public FacetColoringData[] getPlateDataInsideStructure(int idx)
+	{
+		Polygon pol = getPolygon(idx);
+		if (pol.isShowInterior())
+		{
+			vtkPolyData polydata = getPolygon(idx).interiorPolyData;
+			return smallBodyModel.getPlateDataInsidePolydata(polydata);
+		}
+		else
+		{
+			pol.setShowInterior(true);
+
+			vtkPolyData polydata = getPolygon(idx).interiorPolyData;
+			FacetColoringData[] data =  smallBodyModel.getPlateDataInsidePolydata(polydata);
+			pol.setShowInterior(false);
+			return data;
 		}
 	}
 
