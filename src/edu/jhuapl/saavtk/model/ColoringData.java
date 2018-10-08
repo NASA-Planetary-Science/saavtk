@@ -273,6 +273,12 @@ public class ColoringData
 		return data;
 	}
 
+	public double[] getCurrentRange()
+	{
+		Preconditions.checkState(data != null);
+		return data.GetRange();
+	}
+
 	public double[] getDefaultRange()
 	{
 		Preconditions.checkState(defaultRange != null);
