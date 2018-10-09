@@ -91,7 +91,7 @@ public abstract class DataFileReader
 			public DataFileInfo readFileInfo(File file) throws IOException, IncorrectFileFormatException, InvalidFileFormatException
 			{
 				Preconditions.checkNotNull(file);
-				Preconditions.checkArgument(file.exists());
+				Preconditions.checkArgument(file.exists(), "File not found: " + file.getPath());
 
 				try
 				{
