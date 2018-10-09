@@ -62,6 +62,38 @@ public class ColoringData
 		return of(name, null, elementNames, columnIdentifiers, units, numberElements, hasNulls, data);
 	}
 
+	public static ColoringData rename(ColoringData source, String newColoringName)
+	{
+		ColoringData result;
+		if (source.getName().equals(newColoringName))
+		{
+			result = source;
+		}
+		else
+		{
+			result = of(newColoringName, source.getFileName(), source.getElementNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls(), source.getData());
+		}
+
+		return result;
+	}
+
+	public static ColoringData renameFile(ColoringData source, String newFileName)
+	{		
+		String sourceFileName = source.getFileName();
+
+		ColoringData result;
+		if (sourceFileName == newFileName || (sourceFileName != null && sourceFileName.equals(newFileName)))
+		{
+			result = source;
+		}
+		else
+		{
+			result = of(source.getName(), newFileName, source.getElementNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls(), source.getData());
+		}
+
+		return result;
+	}
+
 	static ColoringData of(String name, File file)
 	{
 		FixedMetadata metadata = loadMetadata(name, file);
