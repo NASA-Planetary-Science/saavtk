@@ -572,11 +572,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		return getCustomDataFolder() + File.separator + "demConfig.txt";
 	}
 
-	private void clearCustomColoringInfo()
-	{
-		coloringDataManager.clearCustom();
-	}
-
 	public void loadCustomColoringInfo() throws IOException
 	{
 		ViewConfig config = getConfig();
@@ -597,7 +592,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 
 		coloringDataManager.clearCustom();
-		clearCustomColoringInfo();
 
 		try
 		{
