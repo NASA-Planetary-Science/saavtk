@@ -14,6 +14,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -169,7 +170,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		}
 
 		// After copying the file, convert the file path to a URL format.
-		destFilePath = FileCache.FILE_PREFIX + getCustomDataFolder() + "/" + destFileName;
+		destFilePath = FileCache.createFileURL(getCustomDataFolder(), destFileName).toString();
 		ColoringData newColoringData = ColoringData.of(source.getName(), destFilePath, source.getElementNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls());
 
 		DefaultListModel<ColoringData> model = (DefaultListModel<ColoringData>) cellDataList.getModel();
@@ -208,6 +209,21 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			e.printStackTrace();
 		}
 		controlPanel.updateColoringOptions();
+	}
+
+	private ColoringData urlToFileColoringData(ColoringData source)
+	{
+		String fileName = source.getFileName();
+		try
+		{
+			URL url = FileCache.createURL(fileName);
+			fileName = url.getPath();
+		}
+		catch (@SuppressWarnings("unused") AssertionError e)
+		{
+			// That's OK, just use the file name as is.
+		}
+		return ColoringData.renameFile(source, fileName);
 	}
 
 	@SuppressWarnings("serial")
@@ -455,7 +471,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		if (selectedItem >= 0)
 		{
 			DefaultListModel<ColoringData> cellDataListModel = (DefaultListModel<ColoringData>) cellDataList.getModel();
-			ColoringData oldColoringData = cellDataListModel.get(selectedItem);
+			ColoringData oldColoringData = urlToFileColoringData(cellDataListModel.get(selectedItem));
 
 			CustomPlateDataImporterDialog dialog = new CustomPlateDataImporterDialog(JOptionPane.getFrameForComponent(this), coloringDataManager, true, modelManager.getPolyhedralModel().getSmallBodyPolyData().GetNumberOfCells());
 			dialog.setColoringData(oldColoringData);
@@ -466,17 +482,12 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			if (dialog.getOkayPressed())
 			{
 				ColoringData newColoringData = dialog.getColoringData();
-				if (!oldColoringData.getFileName().equals(newColoringData.getFileName()))
-				{
-					newColoringData = copyCellData(selectedItem, newColoringData);
-				}
-
 				if (!oldColoringData.equals(newColoringData))
 				{
+					cellDataListModel.set(selectedItem, newColoringData);
 					coloringDataManager.replaceCustom(oldColoringData.getName(), newColoringData);
 					updateConfigFile();
 				}
-				cellDataListModel.set(selectedItem, newColoringData);
 				controlPanel.updateColoringOptions();
 			}
 		}

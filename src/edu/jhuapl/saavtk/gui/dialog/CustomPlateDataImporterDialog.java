@@ -18,8 +18,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
@@ -47,7 +45,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 	private final int numCells;
 	private boolean isEditMode;
 	private static final String LEAVE_UNMODIFIED = "<leave unmodified or empty to use existing plate data>";
-	private String origColoringFile; // used in Edit mode only to store original filename
+	private ColoringData origData; // Used in edit mode.
 
 	/** Creates new form ShapeModelImporterDialog */
 	public CustomPlateDataImporterDialog(java.awt.Window parent, ColoringDataManager coloringDataManager, boolean isEditMode, int numCells)
@@ -67,7 +65,8 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		if (isEditMode)
 		{
 			cellDataPathTextField.setText(LEAVE_UNMODIFIED);
-			origColoringFile = data.getFileName();
+			origData = data;
+			updateImportOptions(origData.getFileName());
 		}
 
 		nameTextField.setText(data.getName());
@@ -89,7 +88,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		String fileName = cellDataPathTextField.getText();
 
 		if (isEditMode && (LEAVE_UNMODIFIED.equals(fileName) || fileName == null || fileName.isEmpty()))
-			fileName = origColoringFile;
+			fileName = origData != null ? origData.getFileName() : null;
 		ImmutableList<String> elementNames;
 		ImmutableList<Integer> columnIdentifiers;
 		if (scalarRadioButton.isSelected())
@@ -123,7 +122,10 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			elementNames = nameBuilder.build();
 			columnIdentifiers = columnBuilder.build();
 		}
-		return ColoringData.of(nameTextField.getText(), fileName, elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
+
+		// Preserve any loaded vtk data by constructing the new coloring data in two steps.
+		ColoringData withoutFileName = ColoringData.of(nameTextField.getText(), elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected(), origData.getData());
+		return ColoringData.renameFile(withoutFileName, fileName);
 	}
 
 	private String validateInput()
@@ -197,7 +199,14 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 				for (int i = 0; i < tableInfo.getNumberColumns(); i++)
 				{
 					String title = tableInfo.getColumnInfo(i).getName();
-					builder.add(title);
+					if (title.matches(".*\\S.*"))
+					{
+						builder.add(title);
+					}
+					else
+					{
+						builder.add("Column " + Integer.toString(i));
+					}
 				}
 			}
 		}
@@ -603,102 +612,99 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		String filename = file.getAbsolutePath();
 		cellDataPathTextField.setText(filename);
 
-		List<String> columnTitles;
+		updateImportOptions(filename);
+
+	}//GEN-LAST:event_browsePlateDataButtonActionPerformed
+
+	private void updateImportOptions(String filename)
+	{
+		ImmutableList<String> columnTitles;
 		try
 		{
-			columnTitles = new ArrayList<>(getColumnTitles(filename));
-			if (columnTitles.get(0).isEmpty())
-			{
-				int titleSize = columnTitles.size();
-				columnTitles.clear();
-				for (int i = 0; i < titleSize; i++)
-				{
-					String iString = Integer.toString(i);
-					columnTitles.add(iString);
-				}
-			}
-
-			buttonGroup.clearSelection();
-
-			if (columnTitles.size() >= 3)
-			{
-				importLabel.setVisible(true);
-				scalarRadioButton.setVisible(true);
-				scalarRadioLabel.setVisible(true);
-				vectorRadioButton.setVisible(true);
-				vectorRadioLabel.setVisible(true);
-				scalarLabel.setVisible(false);
-				xLabel.setVisible(false);
-				yLabel.setVisible(false);
-				zLabel.setVisible(false);
-				comboBox.setVisible(false);
-				xComboBox.setVisible(false);
-				yComboBox.setVisible(false);
-				zComboBox.setVisible(false);
-			}
-			else if (columnTitles.size() == 2)
-			{
-				importLabel.setVisible(false);
-				scalarRadioButton.setVisible(false);
-				scalarRadioLabel.setVisible(false);
-				vectorRadioButton.setVisible(false);
-				vectorRadioLabel.setVisible(false);
-				scalarLabel.setVisible(true);
-				xLabel.setVisible(false);
-				yLabel.setVisible(false);
-				zLabel.setVisible(false);
-				comboBox.setVisible(true);
-				xComboBox.setVisible(false);
-				yComboBox.setVisible(false);
-				zComboBox.setVisible(false);
-			}
-			else
-			{
-				importLabel.setVisible(false);
-				scalarRadioButton.setVisible(false);
-				scalarRadioLabel.setVisible(false);
-				vectorRadioButton.setVisible(false);
-				vectorRadioLabel.setVisible(false);
-				scalarLabel.setVisible(false);
-				xLabel.setVisible(false);
-				yLabel.setVisible(false);
-				zLabel.setVisible(false);
-				comboBox.setVisible(false);
-				xComboBox.setVisible(false);
-				yComboBox.setVisible(false);
-				zComboBox.setVisible(false);
-			}
-			comboBox.removeAllItems();
-			xComboBox.removeAllItems();
-			yComboBox.removeAllItems();
-			zComboBox.removeAllItems();
-
-			if (columnTitles.size() == 1)
-			{
-				xComboBox.addItem(null);
-				yComboBox.addItem(null);
-				zComboBox.addItem(null);
-			}
-
-			for (String item : columnTitles)
-			{
-				comboBox.addItem(item);
-				xComboBox.addItem(item);
-				yComboBox.addItem(item);
-				zComboBox.addItem(item);
-			}
-			if (!columnTitles.isEmpty())
-			{
-				comboBox.setSelectedIndex(0);
-			}
+			columnTitles = getColumnTitles(filename);
 		}
 		catch (Exception e)
 		{
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this), e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+			return;
 		}
 
-	}//GEN-LAST:event_browsePlateDataButtonActionPerformed
+		buttonGroup.clearSelection();
+
+		if (columnTitles.size() >= 3)
+		{
+			importLabel.setVisible(true);
+			scalarRadioButton.setVisible(true);
+			scalarRadioLabel.setVisible(true);
+			vectorRadioButton.setVisible(true);
+			vectorRadioLabel.setVisible(true);
+			scalarLabel.setVisible(false);
+			xLabel.setVisible(false);
+			yLabel.setVisible(false);
+			zLabel.setVisible(false);
+			comboBox.setVisible(false);
+			xComboBox.setVisible(false);
+			yComboBox.setVisible(false);
+			zComboBox.setVisible(false);
+		}
+		else if (columnTitles.size() == 2)
+		{
+			importLabel.setVisible(false);
+			scalarRadioButton.setVisible(false);
+			scalarRadioLabel.setVisible(false);
+			vectorRadioButton.setVisible(false);
+			vectorRadioLabel.setVisible(false);
+			scalarLabel.setVisible(true);
+			xLabel.setVisible(false);
+			yLabel.setVisible(false);
+			zLabel.setVisible(false);
+			comboBox.setVisible(true);
+			xComboBox.setVisible(false);
+			yComboBox.setVisible(false);
+			zComboBox.setVisible(false);
+		}
+		else
+		{
+			importLabel.setVisible(false);
+			scalarRadioButton.setVisible(false);
+			scalarRadioLabel.setVisible(false);
+			vectorRadioButton.setVisible(false);
+			vectorRadioLabel.setVisible(false);
+			scalarLabel.setVisible(false);
+			xLabel.setVisible(false);
+			yLabel.setVisible(false);
+			zLabel.setVisible(false);
+			comboBox.setVisible(false);
+			xComboBox.setVisible(false);
+			yComboBox.setVisible(false);
+			zComboBox.setVisible(false);
+		}
+		comboBox.removeAllItems();
+		xComboBox.removeAllItems();
+		yComboBox.removeAllItems();
+		zComboBox.removeAllItems();
+
+		if (columnTitles.size() == 1)
+		{
+			xComboBox.addItem(null);
+			yComboBox.addItem(null);
+			zComboBox.addItem(null);
+		}
+
+		for (String item : columnTitles)
+		{
+			comboBox.addItem(item);
+			xComboBox.addItem(item);
+			yComboBox.addItem(item);
+			zComboBox.addItem(item);
+		}
+		if (!columnTitles.isEmpty())
+		{
+			comboBox.setSelectedIndex(0);
+		}
+
+	}
 
 	private void scalarRadioButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)
 	{
