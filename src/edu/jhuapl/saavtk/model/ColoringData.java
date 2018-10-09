@@ -71,14 +71,15 @@ public class ColoringData
 		}
 		else
 		{
-			result = of(newColoringName, source.getFileName(), source.getElementNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls(), source.getData());
+			// Don't call getData for the last argument -- it throws if data are not loaded, but that is not a problem in this case.
+			result = of(newColoringName, source.getFileName(), source.getElementNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls(), source.data);
 		}
 
 		return result;
 	}
 
 	public static ColoringData renameFile(ColoringData source, String newFileName)
-	{		
+	{
 		String sourceFileName = source.getFileName();
 
 		ColoringData result;
@@ -88,7 +89,8 @@ public class ColoringData
 		}
 		else
 		{
-			result = of(source.getName(), newFileName, source.getElementNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls(), source.getData());
+			// Don't call getData for the last argument -- it throws if data are not loaded, but that is not a problem in this case.
+			result = of(source.getName(), newFileName, source.getElementNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls(), source.data);
 		}
 
 		return result;
