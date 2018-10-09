@@ -2317,6 +2317,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		else
 		{
 			doPaint |= checkAndSave("useFalseColoring", useFalseColoring, newPaintingAttributes);
+			doPaint |= checkAndSave("redFalseColor", redFalseColor, newPaintingAttributes);
+			doPaint |= checkAndSave("greenFalseColor", greenFalseColor, newPaintingAttributes);
+			doPaint |= checkAndSave("blueFalseColor", blueFalseColor, newPaintingAttributes);
 
 			if (doPaint)
 			{
