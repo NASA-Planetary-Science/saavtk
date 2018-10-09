@@ -2221,8 +2221,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				doPaint |= checkAndSave("lookupTable", lookupTable, newPaintingAttributes);
 				if (doPaint)
 				{
-					System.err.println("actually painting standard");
-
 					if (smallBodyActors.contains(linesActor))
 						smallBodyActors.remove(linesActor);
 
@@ -2256,8 +2254,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				doPaint |= checkAndSave("contourLineWidth", contourLineWidth, newPaintingAttributes);
 				if (doPaint)
 				{
-					System.err.println("actually painting contour");
-
 					vtkPolyDataMapper decimatedMapper =
 							((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
 					decimatedMapper.ScalarVisibilityOff();
@@ -2319,10 +2315,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 				if (useFalseColoring)
 				{
-					System.err.println("actually painting false color");
 					if (isColoringAvailable(redFalseColor) || isColoringAvailable(greenFalseColor) || isColoringAvailable(blueFalseColor))
 					{
-
 						updateFalseColorArray();
 						if (coloringValueType == ColoringValueType.POINT_DATA)
 							this.smallBodyPolyData.GetPointData().SetScalars(falseColorArray);
@@ -2330,23 +2324,16 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 							this.smallBodyPolyData.GetCellData().SetScalars(falseColorArray);
 						smallBodyMapper.ScalarVisibilityOn();
 						((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
-
 					}
 				}
 				else
 				{
-					System.err.println("actually unpainting");
 					vtkPolyDataMapper decimatedMapper =
 							((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
 					decimatedMapper.ScalarVisibilityOff();
 					smallBodyMapper.ScalarVisibilityOff();
 				}
 			}
-		}
-
-		if (!doPaint)
-		{
-			System.err.println("Skipped painting");
 		}
 
 		if (doPaint)
@@ -2373,9 +2360,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			else if (storedObject != null)
 				changed = !storedObject.equals(value);
 		}
-
-		//		if (changed)
-		//			System.err.println("attribute " + attribute + " changed to " + value.toString().replaceFirst("\n.*", ""));
 
 		return changed;
 	}
