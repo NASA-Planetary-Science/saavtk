@@ -317,9 +317,13 @@ public class ColoringData
 	{
 		StringBuilder builder = new StringBuilder(getName());
 		append(builder, getUnits());
-		String fileFormat = getFileName().replaceFirst(".*[/\\\\]", "").replaceFirst("[^\\.]*\\.", "");
-		fileFormat = fileFormat.replaceFirst("\\.gz$", "").toUpperCase();
-		append(builder, fileFormat);
+		String fileName = getFileName();
+		if (fileName != null && fileName.matches(".*\\.[^/\\\\]*"))
+		{
+			String fileFormat = fileName.replaceFirst(".*[/\\\\]", "").replaceFirst("[^\\.]*\\.", "");
+			fileFormat = fileFormat.replaceFirst("\\.gz$", "").toUpperCase();
+			append(builder, fileFormat);
+		}
 		return builder.toString();
 	}
 
@@ -450,5 +454,4 @@ public class ColoringData
 		}
 
 	}
-
 }
