@@ -3,7 +3,7 @@ package edu.jhuapl.saavtk.metadata;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-public final class MetadataView implements Metadata
+public class MetadataView implements Metadata
 {
 	public static MetadataView of(Metadata metadata)
 	{
@@ -16,7 +16,7 @@ public final class MetadataView implements Metadata
 
 	private final Metadata metadata;
 
-	private MetadataView(Metadata metadata)
+	protected MetadataView(Metadata metadata)
 	{
 		Preconditions.checkNotNull(metadata);
 		this.metadata = metadata;
@@ -53,13 +53,13 @@ public final class MetadataView implements Metadata
 	}
 
 	@Override
-	public int hashCode()
+	public final int hashCode()
 	{
 		return metadata.hashCode();
 	}
 
 	@Override
-	public boolean equals(Object object)
+	public final boolean equals(Object object)
 	{
 		if (object == this)
 		{

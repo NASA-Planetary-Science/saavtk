@@ -11,6 +11,7 @@
 package edu.jhuapl.saavtk.gui.dialog;
 
 import java.awt.Dialog;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 
@@ -21,19 +22,26 @@ import edu.jhuapl.saavtk.gui.ShapeModelImporter.FormatType;
 import edu.jhuapl.saavtk.gui.ShapeModelImporter.ShapeModelType;
 import edu.jhuapl.saavtk.model.ShapeModel;
 import edu.jhuapl.saavtk.util.MapUtil;
+import edu.jhuapl.saavtk.util.Properties;
 
 
 public class ShapeModelImporterDialog extends javax.swing.JDialog
 {
+	public static PropertyChangeListener pcl = null;
+	
     // True if we're editing an existing model rather than creating a new one.
     private boolean editMode = false;
 
     private boolean okayPressed = false;
+    
+    public Runnable beforeOKRunner = null;
+    public String displayName = "";
 
     /** Creates new form ShapeModelImporterDialog */
     public ShapeModelImporterDialog(java.awt.Window parent)
     {
         super(parent, "Import New Shape Model", Dialog.ModalityType.DOCUMENT_MODAL);
+        addPropertyChangeListener(pcl);
         initComponents();
     }
 
@@ -101,6 +109,23 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
         polarRadiusFormattedTextField1.setEnabled(enabled);
         resolutionLabel.setEnabled(enabled);
         resolutionFormattedTextField.setEnabled(enabled);
+    }
+    
+    public void populateCustomDEMImport(String demVtkFilename)
+    {
+    	shapeModelSourceButtonGroup.setSelected(customShapeModelRadioButton.getModel(), true);
+    	customShapeModelRadioButton.setEnabled(true);
+    	customShapeModelRadioButton.setSelected(true);
+    	
+    	ellipsoidRadioButton.setSelected(false);
+    	ellipsoidRadioButton.setEnabled(false);
+    	shapeModelPathTextField.setText(demVtkFilename);
+    	shapeModelFormatComboBox.setSelectedIndex(2);
+    }
+    
+    public void setDisplayName(String displayName)
+    {
+    	this.displayName = displayName;
     }
 
     /** This method is called from within the constructor to
@@ -390,9 +415,12 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
         setVisible(false);
     }//GEN-LAST:event_cancelButtonActionPerformed
 
+    
     private void okButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_okButtonActionPerformed
     {//GEN-HEADEREND:event_okButtonActionPerformed
 
+    	if (beforeOKRunner != null)
+    		beforeOKRunner.run();
         ShapeModelImporter importer = new ShapeModelImporter();
 
         ShapeModelType shapeModelType = ellipsoidRadioButton.isSelected() ? ShapeModelType.ELLIPSOID : ShapeModelType.FILE;
@@ -431,6 +459,12 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
                     JOptionPane.ERROR_MESSAGE);
             return;
         }
+        String displayString = (displayName == "") ? getNameOfImportedShapeModel() : displayName;
+        if (beforeOKRunner != null)
+        {
+        	this.firePropertyChange(Properties.CUSTOM_MODEL_ADDED, "", displayString);
+        }
+
 
         okayPressed = true;
         setVisible(false);

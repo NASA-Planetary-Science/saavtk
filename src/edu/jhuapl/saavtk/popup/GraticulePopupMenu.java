@@ -2,6 +2,7 @@ package edu.jhuapl.saavtk.popup;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
@@ -14,6 +15,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
+
+import com.jogamp.graph.curve.opengl.Renderer;
 
 import vtk.vtkProp;
 

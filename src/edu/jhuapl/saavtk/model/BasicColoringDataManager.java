@@ -156,30 +156,52 @@ public class BasicColoringDataManager implements ColoringDataManager
 
 	public final void remove(ColoringData data)
 	{
-		String name = data.getName();
-		Integer numberElements = data.getNumberElements();
-		dataTable.remove(name, numberElements);
-
-		if (!dataTable.rowKeySet().contains(name))
-		{
-			names.remove(name);
-		}
-
-		if (!dataTable.columnKeySet().contains(numberElements))
-		{
-			resolutions.remove(numberElements);
-		}
+		remove(data.getName(), data.getNumberElements());
 	}
 
-	public final void replace(ColoringData data)
+	/**
+	 * Replaces a coloring data object with another of the same resolution. The
+	 * object to be replaced is explicitly identified only by its name (and
+	 * implicitly by the resolution of the new data object supplied).
+	 * <p>
+	 * Other than the resolution, all other attributes of the new data object,
+	 * including the name, may be different from the corresponding attributes of the
+	 * object being replaced.
+	 * 
+	 * @param oldName the name of the old coloring to replace
+	 * @param newData the new coloring data object
+	 * @throws IllegalArgumentException if there is no coloring with the given name
+	 *             and the same resolution as the supplied new coloring object
+	 * @throws NullPointerException if either argument is null
+	 */
+	public final void replace(String oldName, ColoringData newData)
 	{
-		String name = data.getName();
-		Integer numberElements = data.getNumberElements();
-		if (!dataTable.contains(name, numberElements))
+		int index = names.indexOf(oldName);
+		Preconditions.checkArgument(index >= 0);
+
+		Integer resolution = newData.getNumberElements();
+		Preconditions.checkArgument(dataTable.contains(oldName, resolution));
+
+		// Remove the old data.
+		remove(oldName, resolution);
+
+		String newName = newData.getName();
+
+		// If the new name is already present (i.e., if there are other colorings with
+		// the same name but different resolutions), need not do anything to the
+		// names list.
+		if (!names.contains(newName))
 		{
-			throw new IllegalArgumentException("Cannot replace coloring " + name + " (" + numberElements + " elements)");
+			// Add the new name at the same index where the old name
+			// was removed.
+			names.add(index, newName);
 		}
-		dataTable.put(name, numberElements, data);
+
+		// Resolutions is a set, so just make sure this resolution is still present
+		// in the set. Don't need to worry about the order.
+		resolutions.add(resolution);
+
+		dataTable.put(newName, resolution, newData);
 	}
 
 	public void clear()
@@ -231,16 +253,61 @@ public class BasicColoringDataManager implements ColoringDataManager
 	{
 		StringBuilder builder = new StringBuilder(getId());
 		builder.append(" colorings: ");
-		String delimiter = "";
-		for (Integer numberElements : getResolutions())
+		boolean startingLoop = true;
+		for (String name : names)
 		{
-			builder.append(delimiter);
-			delimiter = ", ";
-			builder.append(numberElements);
-			builder.append(" facets: ");
-			builder.append(get(numberElements));
+			if (!startingLoop)
+				builder.append(", ");
+			builder.append(name);
+
+			builder.append(" [");
+			startingLoop = true;
+			ImmutableList<Integer> resolutions = ImmutableList.copyOf(this.resolutions);
+			for (int index = 0; index < resolutions.size(); ++index)
+			{
+				if (!startingLoop)
+					builder.append(", ");
+				Integer numberElements = resolutions.get(index);
+				if (has(name, numberElements))
+				{
+					builder.append(index);
+				}
+				startingLoop = false;
+			}
+			builder.append("]");
+			startingLoop = false;
 		}
 		return builder.toString();
+	}
+
+	private void remove(String name, Integer resolution)
+	{
+		dataTable.remove(name, resolution);
+
+		boolean moreWithSameName = false;
+		boolean moreWithSameRes = false;
+		for (String eachName : dataTable.rowKeySet())
+		{
+			for (Integer eachRes : dataTable.columnKeySet())
+			{
+				if (name.equals(eachName))
+				{
+					moreWithSameName = true;
+				}
+				if (resolution.equals(eachRes))
+				{
+					moreWithSameRes = true;
+				}
+			}
+		}
+		if (!moreWithSameName)
+		{
+			names.remove(name);
+		}
+		if (!moreWithSameRes)
+		{
+			resolutions.remove(resolution);
+		}
 	}
 
 }

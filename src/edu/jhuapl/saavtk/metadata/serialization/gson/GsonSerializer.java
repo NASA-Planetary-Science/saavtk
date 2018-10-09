@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.metadata.gson;
+package edu.jhuapl.saavtk.metadata.serialization.gson;
 
 import java.io.File;
 import java.io.FileReader;
@@ -24,17 +24,62 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
+import edu.jhuapl.saavtk.metadata.InstanceGetter;
 import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.MetadataManager;
 import edu.jhuapl.saavtk.metadata.MetadataManagerCollection;
+import edu.jhuapl.saavtk.metadata.ObjectToMetadata;
 import edu.jhuapl.saavtk.metadata.Serializer;
 import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
-import edu.jhuapl.saavtk.metadata.gson.GsonElement.ElementIO;
+import edu.jhuapl.saavtk.metadata.serialization.gson.GsonElement.ElementIO;
 
 public class GsonSerializer implements Serializer
 {
+
+	private enum TestEnum implements ObjectToMetadata<TestEnum>
+	{
+		OPTION0("Option 0"),
+		OPTION1("Option 1");
+
+		public static void register(InstanceGetter instanceGetter)
+		{
+			instanceGetter.register(PROXY_KEY, (metadata) -> {
+				return valueOf(metadata.get(NAME));
+			});
+		}
+
+		private static final Key<String> NAME = Key.of("Name");
+		private static final Key<TestEnum> PROXY_KEY = Key.of("TestEnum");
+		private static final Version VERSION = Version.of(1, 0);
+
+		private final String text;
+
+		TestEnum(String text)
+		{
+			this.text = text;
+		}
+
+		@Override
+		public String toString()
+		{
+			return text;
+		}
+
+		@Override
+		public Key<TestEnum> getProxyKey()
+		{
+			return PROXY_KEY;
+		}
+
+		@Override
+		public Metadata to()
+		{
+			return SettableMetadata.of(VERSION).put(NAME, name());
+		}
+	}
+
 	private static final Version SERIALIZER_VERSION = Version.of(1, 0);
 	private static final ListIO LIST_IO = new ListIO();
 	private static final SortedMapIO SORTED_MAP_IO = new SortedMapIO();
@@ -42,6 +87,7 @@ public class GsonSerializer implements Serializer
 	private static final SetIO SET_IO = new SetIO();
 	private static final SortedSetIO SORTED_SET_IO = new SortedSetIO();
 	private static final MetadataIO METADATA_IO = new MetadataIO();
+	private static final ProxyIO<?> METADATA_PROXY_IO = new ProxyIO<>();
 	private static final GsonVersionIO VERSION_IO = new GsonVersionIO();
 	private static final ElementIO ELEMENT_IO = new ElementIO();
 	private static final Gson GSON = configureGson();
@@ -81,7 +127,7 @@ public class GsonSerializer implements Serializer
 	{
 		Preconditions.checkNotNull(file);
 
-		SettableMetadata source = SettableMetadata.of(SERIALIZER_VERSION);
+		SettableMetadata source = SettableMetadata.of(Version.of(0, 0));
 		try (JsonReader reader = GSON.newJsonReader(new FileReader(file)))
 		{
 			Version fileVersion = null;
@@ -103,7 +149,10 @@ public class GsonSerializer implements Serializer
 				source.put(Key.of(entry.getKey()), entry.getValue());
 			}
 		}
-
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
 		if (SwingUtilities.isEventDispatchThread())
 		{
 			//			retrieveInSwingContext(source);
@@ -198,6 +247,7 @@ public class GsonSerializer implements Serializer
 		builder.registerTypeAdapter(DataTypeInfo.METADATA.getType(), METADATA_IO);
 		builder.registerTypeAdapter(DataTypeInfo.VERSION.getType(), VERSION_IO);
 		builder.registerTypeAdapter(DataTypeInfo.ELEMENT.getType(), ELEMENT_IO);
+		builder.registerTypeAdapter(DataTypeInfo.PROXIED_OBJECT.getType(), METADATA_PROXY_IO);
 		return builder.create();
 	}
 
@@ -244,9 +294,12 @@ public class GsonSerializer implements Serializer
 		GsonSerializer serializer = new GsonSerializer();
 		final Version testMetadataVersion = Version.of(1, 0);
 
+		TestEnum.register(InstanceGetter.defaultInstanceGetter());
+
 		final String v3 = "Bennu / V3";
 		final Key<SettableMetadata> testV3StateKey = Key.of(v3);
 		SettableMetadata v3State = SettableMetadata.of(Version.of(3, 1));
+		TestEnum testEnumBefore = TestEnum.OPTION1;
 
 		v3State.put(Key.of("tab"), "1");
 		v3State.put(Key.of("facets"), 2000000001L);
@@ -263,6 +316,8 @@ public class GsonSerializer implements Serializer
 		v3State.put(Key.of("string"), "a string");
 		v3State.put(Key.of("stringNull"), null);
 		v3State.put(Key.of("longNull"), null);
+		v3State.put(Key.of("testEnum"), testEnumBefore);
+		//		v3State.put(Key.of("List<TestEnum>"), ImmutableList.of(TestEnum.OPTION1, TestEnum.OPTION0));
 
 		List<String> stringList = new ArrayList<>();
 		stringList.add("String0");
@@ -311,6 +366,12 @@ public class GsonSerializer implements Serializer
 		Key<SortedMap<Byte, Short>> byteSortedMapKey = Key.of("byteSortedMap");
 		state.put(byteSortedMapKey, byteSortedMap);
 
+		state.put(Key.of("double array"), new double[] { 3., 4., 5. });
+		state.put(Key.of("int array"), new int[] { 6, 7, 8 });
+		state.put(Key.of("Double array"), new Double[] { 9., 10., 11. });
+		state.put(Key.of("Integer array"), new Integer[] { 12, 13, 14 });
+		state.put(Key.of("String array"), new String[] { "a", "b", "c" });
+
 		state.put(testV3StateKey, v3State);
 
 		File file = new File("/Users/peachjm1/Downloads/MyState.sbmt");
@@ -337,9 +398,23 @@ public class GsonSerializer implements Serializer
 		System.out.println("States were" + (v3State.equals(v3State2) ? " " : " not ") + "found equal");
 
 		// Test some further unpacking.
+		double[] doubleArray = state.get(Key.of("double array"));
+		System.out.println("double array is [ " + doubleArray[0] + ", " + doubleArray[1] + ", " + doubleArray[2] + " ]");
+		int[] intArray = state.get(Key.of("int array"));
+		System.out.println("int array is [ " + intArray[0] + ", " + intArray[1] + ", " + intArray[2] + " ]");
+		Double[] doubleObjectArray = state.get(Key.of("Double array"));
+		System.out.println("Double array is [ " + doubleObjectArray[0] + ", " + doubleObjectArray[1] + ", " + doubleObjectArray[2] + " ]");
+		Integer[] integerObjectArray = state.get(Key.of("Integer array"));
+		System.out.println("int array is [ " + integerObjectArray[0] + ", " + integerObjectArray[1] + ", " + integerObjectArray[2] + " ]");
+		String[] stringArray = state.get(Key.of("String array"));
+		System.out.println("String array is [ " + stringArray[0] + ", " + stringArray[1] + ", " + stringArray[2] + " ]");
+
 		v3State2 = state2.get(testV3StateKey);
 		Long longNull = v3State2.get(Key.of("longNull"));
 		System.out.println("longNull is " + longNull);
+
+		TestEnum testEnumAfter = v3State2.get(Key.of("testEnum"));
+		System.out.println("testEnum is " + testEnumAfter);
 
 		System.out.println("stringSet is " + state2.get(Key.of("stringSet")));
 

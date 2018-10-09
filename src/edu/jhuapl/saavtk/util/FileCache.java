@@ -525,7 +525,7 @@ public final class FileCache
 	 * 
 	 * @param urlOrPathSegment the input URL string or path segment
 	 * @return true if it appears the file could be successfully downloaded/used
-	 * @throws NoInternetAccessException if a 401/403 (Unauthorized/Forbidden) error
+	 * @throws UnauthorizedAccessException if a 401/403 (Unauthorized/Forbidden) error
 	 *             is encountered when attempting to access the server for the
 	 *             remote file
 	 */
@@ -539,7 +539,7 @@ public final class FileCache
 		else if (fileInfo.isURLAccessAuthorized() == YesOrNo.NO)
 		{
 			URL url = fileInfo.getURL();
-			throw new NoInternetAccessException("Cannot access information about restricted URL: " + url, url);
+			throw new UnauthorizedAccessException("Cannot access information about restricted URL: " + url, url);
 		}
 		return false;
 	}

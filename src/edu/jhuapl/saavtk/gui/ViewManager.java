@@ -36,7 +36,7 @@ public abstract class ViewManager extends JPanel
 	private List<View> builtInViews = new ArrayList<>();
 	private List<View> customViews = new ArrayList<>();
 	private View currentView;
-	private final StatusBar statusBar;
+	protected final StatusBar statusBar;
 	private final Frame frame;
 	private String tempCustomShapeModelPath;
 
@@ -294,7 +294,14 @@ public abstract class ViewManager extends JPanel
 			{
 				if (new File(dir, "model.vtk").isFile())
 				{
-					addCustomView(createCustomView(statusBar, dir.getName(), false));
+					if (new File(dir, "model.json").isFile())
+					{
+						addCustomView(createCustomView(dir.getName(), false, new File(dir, "model.json")));
+					}
+					else
+					{
+						addCustomView(createCustomView(statusBar, dir.getName(), false));
+					}
 				}
 			}
 		}
@@ -407,6 +414,14 @@ public abstract class ViewManager extends JPanel
 		add(view, view.getUniqueName());
 		return view;
 	}
+	
+	public View addMetadataBackedCustomView(View view)
+	{
+		addCustomView(view);
+		add(view, view.getUniqueName());
+		return view;
+	}
+	
 
 	public View removeCustomView(String name)
 	{
@@ -424,6 +439,8 @@ public abstract class ViewManager extends JPanel
 	}
 
 	protected abstract View createCustomView(StatusBar statusBar, String name, boolean temporary);
+	
+	public abstract View createCustomView(String name, boolean temporary, File metadata);
 
 	protected abstract void initializeStateManager();
 
@@ -454,7 +471,7 @@ public abstract class ViewManager extends JPanel
 	 * @param uniqueName name of the view
 	 * @return the view with the name, or null if it's not found, or not accessible
 	 */
-	View getCustomView(String uniqueName)
+	public View getCustomView(String uniqueName)
 	{
 		for (View view : getCustomViews())
 		{

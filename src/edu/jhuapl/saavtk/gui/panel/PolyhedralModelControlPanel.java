@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.gui.panel;
 
 import java.awt.BorderLayout;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Frame;
@@ -8,8 +9,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,8 +39,8 @@ import javax.swing.text.html.HTMLEditorKit;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import edu.jhuapl.saavtk.colormap.ColormapController;
-import edu.jhuapl.saavtk.colormap.ColormapControllerWithContouring;
+import edu.jhuapl.saavtk.colormap.ContourPanel;
+import edu.jhuapl.saavtk.colormap.StandardPlatePanel;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomPlateDataDialog;
 import edu.jhuapl.saavtk.model.ColoringDataManager;
@@ -87,7 +86,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	private JLabel opacityLabel;
 	private JSpinner imageMapOpacitySpinner;
 
-	ColormapControllerWithContouring colormapController = new ColormapControllerWithContouring();
+	private ContourPanel contourPanel = new ContourPanel();
+	private StandardPlatePanel colormapController = new StandardPlatePanel(contourPanel);
 
 	public void setSaveColoringButton(JButton saveColoringButton)
 	{
@@ -100,7 +100,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	private JScrollPane scrollPane;
 	private JButton additionalStatisticsButton;
 	private final ImmutableMap<String, Integer> resolutionLevels;
-	private CustomPlateDataDialog customPlateDialog;
 
 	public ModelManager getModelManager()
 	{
@@ -175,7 +174,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		{
 			resolutionButtonGroup = new ButtonGroup();
 			ActionListener listener = (e) -> {
+				setCursor(new Cursor(Cursor.WAIT_CURSOR));
 				updateModelResolution(e.getActionCommand());
+				setCursor(Cursor.getDefaultCursor());
 			};
 			ImmutableList<String> levels = smallBodyModel.getConfig().getResolutionLabels();
 			for (int i = 0; i < numberResolutionLevels; ++i)
@@ -219,34 +220,34 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		standardColoringButton = new JRadioButton(STANDARD_COLORING);
 
 		smallBodyModel.setColormap(colormapController.getColormap());
-		colormapController.addPropertyChangeListener(new PropertyChangeListener() {
 
-			@Override
-			public void propertyChange(PropertyChangeEvent evt)
+		colormapController.addPropertyChangeListener((aEvent) -> {
+			setCursor(new Cursor(Cursor.WAIT_CURSOR));
+			String evtName = aEvent.getPropertyName();
+			if (evtName != null && evtName.equals(StandardPlatePanel.EVT_ColormapChanged))
 			{
 				smallBodyModel.setColormap(colormapController.getColormap());
-				smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
-				smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
-				if (evt.getPropertyName().equals(ColormapController.colormapChanged))
+				try
 				{
-					double[] range = smallBodyModel.getCurrentColoringRange(smallBodyModel.getColoringIndex());
-					colormapController.setMinMax(range[0], range[1]);
-					range = smallBodyModel.getDefaultColoringRange(smallBodyModel.getColoringIndex());
-					colormapController.setDefaultRange(range[0], range[1]);
+					smallBodyModel.setCurrentColoringRange(smallBodyModel.getColoringIndex(), colormapController.getCurrentMinMax());
 				}
-				else if (evt.getPropertyName().equals(ColormapController.colormapRangeChanged))
+				catch (IOException e)
 				{
-					try
-					{
-						smallBodyModel.setCurrentColoringRange(smallBodyModel.getColoringIndex(), colormapController.getMinMax());
-					}
-					catch (IOException e)
-					{
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+					e.printStackTrace();
 				}
 			}
+			setCursor(Cursor.getDefaultCursor());
+		});
+
+		contourPanel.addPropertyChangeListener((aEvent) -> {
+			setCursor(new Cursor(Cursor.WAIT_CURSOR));
+			String evtName = aEvent.getPropertyName();
+			if (evtName != null && evtName.equals(ContourPanel.EVT_ContourChanged))
+			{
+				smallBodyModel.setContourLineWidth(contourPanel.getLineWidth());
+				smallBodyModel.showScalarsAsContours(contourPanel.getContourLinesRequested());
+			}
+			setCursor(Cursor.getDefaultCursor());
 		});
 
 		rgbColoringButton = new JRadioButton(RGB_COLORING);
@@ -278,8 +279,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		coloringButtonGroup.add(rgbColoringButton);
 
 		ActionListener coloringButtonGroupListener = (e) -> {
+			setCursor(new Cursor(Cursor.WAIT_CURSOR));
 			updateColoringControls();
 			setColoring(e.getSource());
+			setCursor(Cursor.getDefaultCursor());
 		};
 		noColoringButton.addActionListener(coloringButtonGroupListener);
 		standardColoringButton.addActionListener(coloringButtonGroupListener);
@@ -425,10 +428,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		// needs to be updated in this case.
 		try
 		{
-			updateColoringOptions(newResolutionLevel);
 			smallBodyModel.setModelResolution(newResolutionLevel);
 			setStatisticsLabel();
 			additionalStatisticsButton.setVisible(true);
+			updateColoringOptions(newResolutionLevel);
 		}
 		catch (IOException e)
 		{
@@ -455,19 +458,25 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 				smallBodyModel.setShowSmallBody(true);
 				if (graticule != null && gridCheckBox.isSelected())
 				{
+					setCursor(new Cursor(Cursor.WAIT_CURSOR));
 					graticule.setShowGraticule(true);
 					gridLabelCheckBox.setEnabled(true);
+					setCursor(Cursor.getDefaultCursor());
 				}
 				else
 					gridLabelCheckBox.setEnabled(false);
 			}
 			else
 			{
+				setCursor(new Cursor(Cursor.WAIT_CURSOR));
 				smallBodyModel.setShowSmallBody(false);
 				if (graticule != null && gridCheckBox.isSelected())
 					graticule.setShowGraticule(false);
+				setCursor(Cursor.getDefaultCursor());
 			}
+			setCursor(new Cursor(Cursor.WAIT_CURSOR));
 			showImageMap(isImageMapEnabled());
+			setCursor(Cursor.getDefaultCursor());
 		}
 		else if (e.getItemSelectable() == this.gridCheckBox)
 		{
@@ -476,13 +485,17 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			{
 				if (e.getStateChange() == ItemEvent.SELECTED)
 				{
+					setCursor(new Cursor(Cursor.WAIT_CURSOR));
 					graticule.setShowGraticule(true);
 					gridLabelCheckBox.setEnabled(true);
+					setCursor(Cursor.getDefaultCursor());
 				}
 				else
 				{
+					setCursor(new Cursor(Cursor.WAIT_CURSOR));
 					graticule.setShowGraticule(false);
 					gridLabelCheckBox.setEnabled(false);
+					setCursor(Cursor.getDefaultCursor());
 				}
 			}
 		}
@@ -492,7 +505,11 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			if (graticule != null)
 			{
 				if (e.getStateChange() == ItemEvent.SELECTED)
+				{
+					setCursor(new Cursor(Cursor.WAIT_CURSOR));
 					graticule.setShowCaptions(true);
+					setCursor(Cursor.getDefaultCursor());
+				}
 				else
 					graticule.setShowCaptions(false);
 			}
@@ -501,23 +518,29 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		{
 			if (e.getStateChange() == ItemEvent.SELECTED)
 			{
+				setCursor(new Cursor(Cursor.WAIT_CURSOR));
 				showImageMap(true);
 				opacityLabel.setEnabled(true);
 				imageMapOpacitySpinner.setEnabled(true);
+				setCursor(Cursor.getDefaultCursor());
 			}
 			else
 			{
+				setCursor(new Cursor(Cursor.WAIT_CURSOR));
 				showImageMap(false);
 				opacityLabel.setEnabled(false);
 				imageMapOpacitySpinner.setEnabled(false);
+				setCursor(Cursor.getDefaultCursor());
 			}
 		}
 		else if (e.getItemSelectable() == this.imageMapComboBox)
 		{
 			boolean show = this.imageMapComboBox.getSelectedIndex() != 0;
+			setCursor(new Cursor(Cursor.WAIT_CURSOR));
 			showImageMap(show);
 			opacityLabel.setEnabled(show);
 			imageMapOpacitySpinner.setEnabled(show);
+			setCursor(Cursor.getDefaultCursor());
 		}
 
 		Picker.setPickingEnabled(true);
@@ -550,6 +573,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
 		try
 		{
+			setCursor(new Cursor(Cursor.WAIT_CURSOR));
 			if (standardColoringButton.isSelected())
 			{
 				int selectedIndex = coloringComboBox.getSelectedIndex() - 1;
@@ -560,9 +584,12 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 				}
 				smallBodyModel.setColoringIndex(selectedIndex);
 				smallBodyModel.setColormap(colormapController.getColormap());
-				smallBodyModel.setContourLineWidth(colormapController.getLineWidth());
-				smallBodyModel.showScalarsAsContours(colormapController.getContourLinesRequested());
-				colormapController.refresh();
+				smallBodyModel.setContourLineWidth(contourPanel.getLineWidth());
+				smallBodyModel.showScalarsAsContours(contourPanel.getContourLinesRequested());
+				double defaultArr[] = smallBodyModel.getDefaultColoringRange(selectedIndex);
+				colormapController.setDefaultRange(defaultArr[0], defaultArr[1]);
+				colormapController.setCurrentMinMax(defaultArr[0], defaultArr[1]);
+				setCursor(Cursor.getDefaultCursor());
 			}
 			else if (rgbColoringButton.isSelected())
 			{
@@ -575,7 +602,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 					smallBodyModel.setColoringIndex(-1);
 					return;
 				}
-				colormapController.refresh();
 				smallBodyModel.setFalseColoring(redIndex, greenIndex, blueIndex);
 			}
 			else
@@ -602,24 +628,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 				box.setSelectedIndex(0);
 			}
 		}
-	}
-
-	protected void setColoring(int idx) throws IOException
-	{
-		PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
-		//		if (idx < 0 || idx >= smallBodyModel.getColoringInfoList().size())
-		//		{
-		//			return;
-		//		}
-		smallBodyModel.setColoringIndex(idx);
-		if (idx < 0)
+		finally
 		{
-			return;
+			setCursor(Cursor.getDefaultCursor());
 		}
-		double[] range = smallBodyModel.getCurrentColoringRange(idx);
-		colormapController.setMinMax(range[0], range[1]);
-		range = smallBodyModel.getDefaultColoringRange(idx);
-		colormapController.setDefaultRange(range[0], range[1]);
 	}
 
 	protected void updateColoringOptions(int newResolutionLevel)
@@ -639,27 +651,36 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
 	protected void updateColoringComboBox(JComboBoxWithItemState<String> box, ColoringDataManager coloringDataManager, int numberElements)
 	{
-		String newSelection = "";
-		String previousSelection = (String) box.getSelectedItem();
+		// Store the current selection and number of items in the combo box.
+		int previousSelection = box.getSelectedIndex();
+		int previousNumberColorings = box.getItemCount();
+
+		// Clear the current content.
 		box.setSelectedIndex(-1);
 		box.removeAllItems();
+
+		// Add one item for blank (no coloring).
 		box.addItem("");
 		for (String name : coloringDataManager.getNames())
 		{
+			// Re-add the current colorings.
 			box.addItem(name);
-			if (numberElements > 0 && coloringDataManager.has(name, numberElements))
+			if (!coloringDataManager.has(name, numberElements))
 			{
-				if (name.equals(previousSelection))
-				{
-					newSelection = previousSelection;
-				}
-			}
-			else
-			{
+				// This coloring is not available at this resolution. List it but grey it out.
 				box.setEnabled(name, false);
 			}
 		}
-		box.setSelectedItem(newSelection);
+
+		int numberColorings = box.getItemCount();
+		int selection = 0;
+		if (previousSelection < numberColorings)
+		{
+			// A coloring was replaced/edited. Re-select the current selection.
+			selection = previousSelection;
+		}
+
+		box.setSelectedIndex(selection);
 	}
 
 	protected void setStatisticsLabel()
@@ -670,13 +691,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
 		// We add a superscripted space at end of first 2 lines and last 6 lines so that spacing between all lines is the same.
 		String text =
-				"<html>Statistics:<br>" + "&nbsp;&nbsp;&nbsp;Number of Plates: " + smallBodyModel.getSmallBodyPolyData().GetNumberOfCells() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Number of Vertices: "
-						+ smallBodyModel.getSmallBodyPolyData().GetNumberOfPoints() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Surface Area: " + String.format("%.7g", smallBodyModel.getSurfaceArea()) + " km<sup>2</sup><br>"
-						+ "&nbsp;&nbsp;&nbsp;Volume: " + String.format("%.7g", smallBodyModel.getVolume()) + " km<sup>3</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Average: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMeanCellArea())
-						+ " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Minimum: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMinCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Maximum: "
-						+ String.format("%.7g", 1.0e6 * smallBodyModel.getMaxCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Extent:<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;X: [" + String.format("%.7g, %.7g", bb.xmin, bb.xmax)
-						+ "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Y: [" + String.format("%.7g, %.7g", bb.ymin, bb.ymax) + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Z: ["
-						+ String.format("%.7g, %.7g", bb.zmin, bb.zmax) + "] km<sup>&nbsp;</sup><br>";
+				"<html>Statistics:<br>" + "&nbsp;&nbsp;&nbsp;Number of Plates: " + smallBodyModel.getSmallBodyPolyData().GetNumberOfCells() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Number of Vertices: " + smallBodyModel.getSmallBodyPolyData().GetNumberOfPoints() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Surface Area: " + String.format("%.7g", smallBodyModel.getSurfaceArea()) + " km<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Volume: " + String.format("%.7g", smallBodyModel.getVolume()) + " km<sup>3</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Average: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMeanCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Minimum: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMinCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Maximum: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMaxCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Extent:<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;X: [" + String.format("%.7g, %.7g", bb.xmin, bb.xmax) + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Y: [" + String.format("%.7g, %.7g", bb.ymin, bb.ymax) + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Z: [" + String.format("%.7g, %.7g", bb.zmin, bb.zmax) + "] km<sup>&nbsp;</sup><br>";
 
 		// There's some weird thing going one where changing the text of the label causes
 		// the scoll bar of the panel to scroll all the way down. Therefore, reset it to
@@ -714,16 +729,12 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	}
 
 	@Override
-	public void stateChanged(ChangeEvent e)
+	public void stateChanged(@SuppressWarnings("unused") ChangeEvent e)
 	{}
 
-	protected CustomPlateDataDialog getPlateDataDialog(ModelManager modelManager)
+	protected CustomPlateDataDialog getPlateDataDialog(@SuppressWarnings("unused") ModelManager modelManager)
 	{
-		if (customPlateDialog == null)
-		{
-			customPlateDialog = new CustomPlateDataDialog(this);
-		}
-		return customPlateDialog;
+		return new CustomPlateDataDialog(this);
 	}
 
 	private static JSpinner createOpacitySpinner()
@@ -755,7 +766,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	private class CustomizePlateDataAction extends AbstractAction
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
 		{
 			CustomPlateDataDialog dialog = getPlateDataDialog(modelManager);
 			dialog.setLocationRelativeTo(JOptionPane.getFrameForComponent(PolyhedralModelControlPanel.this));
@@ -766,7 +777,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	private class SavePlateDataAction extends AbstractAction
 	{
 		@Override
-		public void actionPerformed(ActionEvent actionEvent)
+		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
 			Frame invoker = JOptionPane.getFrameForComponent(PolyhedralModelControlPanel.this);

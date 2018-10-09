@@ -10,8 +10,9 @@ import edu.jhuapl.saavtk.util.FileUtil;
 
 public class FileDownloadSwingWorker extends ProgressBarSwingWorker
 {
-	private String filename;
-	private DecimalFormat df = new DecimalFormat("0.00");
+	private static final DecimalFormat DF = new DecimalFormat("0.00");
+	private static final DecimalFormat PF = new DecimalFormat("0%");
+	private final String filename;
 
 	public FileDownloadSwingWorker(Component c, String title, String filename)
 	{
@@ -84,7 +85,7 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
 				double unzipProgress = FileUtil.getUnzipProgress();
 				if (downloadProgress < fileInfo.getTotalByteCount() && needToDownload)
 				{
-					setLabelText("<html>Downloading " + name + "<br>" + df.format(percentDownloaded) + "% completed " + "  (" + df.format(downloadedSoFarInMB) + " of " + df.format(totalSizeInMB) + " MB)</html>");
+					setLabelText("<html>Downloading " + name + "<br>" + PF.format(percentDownloaded) + " completed " + "  (" + DF.format(downloadedSoFarInMB) + " of " + DF.format(totalSizeInMB) + " MB)</html>");
 
 					// Call firePropertyChange rather than setProgess since the latter will
 					// only cause a property change if the percent downloaded (cast to an int)
@@ -93,7 +94,7 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
 				}
 				else if (unzipProgress < 100.0 && needToUnzip)
 				{
-					setLabelText("<html>Unzipping " + name + "<br>" + df.format(unzipProgress) + "% completed</html>");
+					setLabelText("<html>Unzipping " + name + "<br>" + DF.format(unzipProgress) + "% completed</html>");
 
 					// See comment in previous if block
 					firePropertyChange("progress", null, Math.min((int) unzipProgress, 99));

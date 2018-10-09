@@ -128,7 +128,6 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 	private String validateInput()
 	{
-
 		String cellDataPath = cellDataPathTextField.getText();
 		if (cellDataPath == null)
 			cellDataPath = "";
@@ -215,7 +214,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		{
 			fs = new FileInputStream(cellDataPath);
 		}
-		catch (FileNotFoundException e)
+		catch (@SuppressWarnings("unused") FileNotFoundException e)
 		{
 			return "The file '" + cellDataPath + "' does not exist or is not readable.";
 		}
@@ -223,11 +222,10 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		InputStreamReader isr = new InputStreamReader(fs);
 		BufferedReader in = new BufferedReader(isr);
 
-		String line;
 		int lineCount = 0;
 		try
 		{
-			while ((line = in.readLine()) != null)
+			while (in.readLine() != null)
 			{
 				// This check would need to be generalized to handle
 				// the case of multiple CSV separated values. Not bothering
@@ -238,11 +236,11 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 			in.close();
 		}
-		catch (NumberFormatException e)
+		catch (@SuppressWarnings("unused") NumberFormatException e)
 		{
 			return "Numbers in file '" + cellDataPath + "' are malformatted.";
 		}
-		catch (IOException e)
+		catch (@SuppressWarnings("unused") IOException e)
 		{
 			return "An error occurred reading the file '" + cellDataPath + "'.";
 		}
@@ -592,7 +590,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		pack();
 	}// </editor-fold>//GEN-END:initComponents
 
-	private void browsePlateDataButtonActionPerformed(java.awt.event.ActionEvent evt) //GEN-FIRST:event_browsePlateDataButtonActionPerformed
+	private void browsePlateDataButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt) //GEN-FIRST:event_browsePlateDataButtonActionPerformed
 
 	{//GEN-HEADEREND:event_browsePlateDataButtonActionPerformed
 
@@ -702,7 +700,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 	}//GEN-LAST:event_browsePlateDataButtonActionPerformed
 
-	private void scalarRadioButtonActionPerformed(java.awt.event.ActionEvent evt)
+	private void scalarRadioButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)
 	{
 		if (scalarRadioButton.isSelected())
 		{
@@ -717,7 +715,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		}
 	}
 
-	private void vectorRadioButtonActionPerformed(java.awt.event.ActionEvent evt)
+	private void vectorRadioButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)
 	{
 		if (vectorRadioButton.isSelected())
 		{
@@ -732,12 +730,12 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		}
 	}
 
-	private void cancelButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_cancelButtonActionPerformed
+	private void cancelButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)//GEN-FIRST:event_cancelButtonActionPerformed
 	{//GEN-HEADEREND:event_cancelButtonActionPerformed
 		setVisible(false);
 	}//GEN-LAST:event_cancelButtonActionPerformed
 
-	private void okButtonActionPerformed(java.awt.event.ActionEvent evt) //GEN-FIRST:event_okButtonActionPerformed
+	private void okButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt) //GEN-FIRST:event_okButtonActionPerformed
 	{//GEN-HEADEREND:event_okButtonActionPerformed
 		String errorString = validateInput();
 		if (errorString != null)
