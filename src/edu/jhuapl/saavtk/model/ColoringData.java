@@ -114,6 +114,7 @@ public class ColoringData
 
 	protected ColoringData(Metadata metadata, vtkFloatArray data)
 	{
+		Preconditions.checkArgument(metadata.hasKey(FILE_NAME) || data != null);
 		this.metadata = FixedMetadata.of(metadata);
 		this.data = data;
 		this.defaultRange = this.data != null ? defaultRange = this.data.GetRange() : null;
