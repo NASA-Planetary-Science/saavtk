@@ -305,7 +305,7 @@ public abstract class StructureModel extends AbstractModel
 
 		retCaption.VisibilityOn();
 		retCaption.BorderOff();
-		retCaption.ThreeDimensionalLeaderOn();
+		retCaption.LeaderOff();
 		retCaption.SetAttachmentPoint(aCenterPoint);
 		retCaption.SetCaption(aLabel);
 
