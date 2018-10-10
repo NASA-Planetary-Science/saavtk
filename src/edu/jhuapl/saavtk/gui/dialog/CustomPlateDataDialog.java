@@ -484,6 +484,10 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 				ColoringData newColoringData = dialog.getColoringData();
 				if (!oldColoringData.equals(newColoringData))
 				{
+					// Need to convert this file name back into a URL.
+					URL url = FileCache.createFileURL(newColoringData.getFileName());
+					newColoringData = ColoringData.renameFile(newColoringData, url.toString());
+
 					cellDataListModel.set(selectedItem, newColoringData);
 					coloringDataManager.replaceCustom(oldColoringData.getName(), newColoringData);
 					updateConfigFile();
