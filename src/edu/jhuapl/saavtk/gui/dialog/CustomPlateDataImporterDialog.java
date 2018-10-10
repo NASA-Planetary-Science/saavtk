@@ -18,6 +18,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
 
 import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
@@ -62,21 +63,46 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 	 */
 	public void setColoringData(ColoringData data)
 	{
+		nameTextField.setText(data.getName());
+		unitsTextField.setText(data.getUnits());
+		hasNullsCheckBox.setSelected(data.hasNulls());
+
 		if (isEditMode)
 		{
 			cellDataPathTextField.setText(LEAVE_UNMODIFIED);
 			origData = data;
+
+			List<String> elementNames = origData.getElementNames();
+			int numberColumns = elementNames.size();
+			if (numberColumns == 1)
+			{
+				scalarRadioButton.setSelected(true);
+				select(xComboBox, elementNames.get(0));
+			}
+			else if (numberColumns == 3)
+			{
+				vectorRadioButton.setSelected(true);
+				select(xComboBox, elementNames.get(0));
+				select(yComboBox, elementNames.get(1));
+				select(xComboBox, elementNames.get(2));
+			}
+
 			updateImportOptions(origData.getFileName());
 		}
-
-		nameTextField.setText(data.getName());
-		unitsTextField.setText(data.getUnits());
-		hasNullsCheckBox.setSelected(data.hasNulls());
 	}
 
-	/**
-	 * @return
-	 */
+	private void select(JComboBox<String> comboBox, String string)
+	{
+		for (int index = 0; index < comboBox.getItemCount(); ++index)
+		{
+			if (comboBox.getItemAt(index).toString().equals(string))
+			{
+				comboBox.setSelectedIndex(index);
+				break;
+			}
+		}
+	}
+
 	public ColoringData getColoringData()
 	{
 		String errorString = validateInput();
@@ -630,7 +656,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			return;
 		}
 
-		buttonGroup.clearSelection();
+		//		buttonGroup.clearSelection();
 
 		if (columnTitles.size() >= 3)
 		{
