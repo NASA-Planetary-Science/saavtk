@@ -217,6 +217,11 @@ public class ColoringData
 		return getMetadata().get(HAS_NULLS);
 	}
 
+	public boolean isLoaded()
+	{
+		return (data != null && defaultRange != null);
+	}
+
 	public void load() throws IOException
 	{
 		if (loadFailed)
@@ -242,7 +247,7 @@ public class ColoringData
 			}
 
 			// If we get this far, the file was successfully downloaded.
-			IndexableTuple indexable = null;
+			IndexableTuple indexable;
 
 			String coloringName = getName();
 			List<?> columnIdentifiers = getColumnIdentifiers();
@@ -282,8 +287,13 @@ public class ColoringData
 				}
 				else
 				{
-					throw new IOException();
+					indexable = null;
 				}
+			}
+
+			if (indexable == null)
+			{
+				throw new IOException("Unable to load coloring data from file " + file);
 			}
 
 			vtkFloatArray data = new vtkFloatArray();
@@ -445,11 +455,6 @@ public class ColoringData
 			result[0] = minimum;
 		}
 		return result;
-	}
-
-	private boolean isLoaded()
-	{
-		return (data != null && defaultRange != null);
 	}
 
 	private IndexableTuple tryLoadFitsTuplesOnly(File file, Iterable<Integer> columnNumbers) throws IOException
