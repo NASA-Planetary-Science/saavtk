@@ -110,12 +110,14 @@ public class CustomFileChooser extends FileChooserBase
 			if (multiSelectionEnabled)
 			{
 				return fc.getFiles();
-			} else
+			}
+			else
 			{
 				File file = new File(fc.getDirectory(), fc.getFile());
 				return new File[] { file };
 			}
-		} else
+		}
+		else
 		{
 			return null;
 		}
@@ -168,7 +170,8 @@ public class CustomFileChooser extends FileChooserBase
 			// }
 
 			return file;
-		} else
+		}
+		else
 		{
 			return null;
 		}
