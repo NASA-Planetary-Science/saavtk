@@ -114,6 +114,7 @@ public class ColoringData
 
 	protected ColoringData(Metadata metadata, vtkFloatArray data)
 	{
+		Preconditions.checkArgument(metadata.hasKey(FILE_NAME) || data != null);
 		this.metadata = FixedMetadata.of(metadata);
 		this.data = data;
 		this.defaultRange = this.data != null ? defaultRange = this.data.GetRange() : null;
@@ -323,9 +324,13 @@ public class ColoringData
 	{
 		StringBuilder builder = new StringBuilder(getName());
 		append(builder, getUnits());
-		String fileFormat = getFileName().replaceFirst(".*[/\\\\]", "").replaceFirst("[^\\.]*\\.", "");
-		fileFormat = fileFormat.replaceFirst("\\.gz$", "").toUpperCase();
-		append(builder, fileFormat);
+		String fileName = getFileName();
+		if (fileName != null && fileName.matches(".*\\.[^/\\\\]*"))
+		{
+			String fileFormat = fileName.replaceFirst(".*[/\\\\]", "").replaceFirst("[^\\.]*\\.", "");
+			fileFormat = fileFormat.replaceFirst("\\.gz$", "").toUpperCase();
+			append(builder, fileFormat);
+		}
 		return builder.toString();
 	}
 
@@ -456,5 +461,4 @@ public class ColoringData
 		}
 
 	}
-
 }
