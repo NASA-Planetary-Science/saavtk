@@ -18,6 +18,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.List;
 
 import javax.swing.JComboBox;
@@ -28,6 +29,7 @@ import com.google.common.collect.ImmutableList;
 import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.ColoringDataManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.file.DataFileReader;
 import edu.jhuapl.saavtk.util.file.DataFileReader.IncorrectFileFormatException;
 import edu.jhuapl.saavtk.util.file.DataFileReader.InvalidFileFormatException;
@@ -41,26 +43,33 @@ import nom.tam.fits.TableHDU;
 @SuppressWarnings("serial")
 public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 {
-	private boolean okayPressed = false;
+	private static final String LEAVE_UNMODIFIED = "<leave unmodified or empty to use existing plate data>";
+
 	private final ColoringDataManager coloringDataManager;
 	private final int numCells;
-	private boolean isEditMode;
-	private static final String LEAVE_UNMODIFIED = "<leave unmodified or empty to use existing plate data>";
+	private final boolean isEditMode;
+	private boolean okayPressed;
 	private ColoringData origData; // Used in edit mode.
+	private ColoringData currentData;
 
 	/** Creates new form ShapeModelImporterDialog */
 	public CustomPlateDataImporterDialog(java.awt.Window parent, ColoringDataManager coloringDataManager, boolean isEditMode, int numCells)
 	{
 		super(parent, "Import Plate Data", Dialog.ModalityType.DOCUMENT_MODAL);
 		this.coloringDataManager = coloringDataManager;
-		initComponents();
-		this.isEditMode = isEditMode;
 		this.numCells = numCells;
+		this.isEditMode = isEditMode;
+		this.okayPressed = false;
+		this.origData = null;
+		this.currentData = null;
+		initComponents();
 	}
 
-	/**
-	 * Set the cell data info
-	 */
+	public ColoringData getColoringData()
+	{
+		return currentData;
+	}
+
 	public void setColoringData(ColoringData data)
 	{
 		nameTextField.setText(data.getName());
@@ -87,7 +96,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 				select(xComboBox, elementNames.get(2));
 			}
 
-			updateImportOptions(origData.getFileName());
+			updateImportOptions(urlToFileName(origData.getFileName()));
 		}
 	}
 
@@ -101,57 +110,6 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 				break;
 			}
 		}
-	}
-
-	public ColoringData getColoringData()
-	{
-		String errorString = validateInput();
-		if (errorString != null)
-		{
-			throw new RuntimeException(errorString);
-		}
-
-		String fileName = cellDataPathTextField.getText();
-
-		if (isEditMode && (LEAVE_UNMODIFIED.equals(fileName) || fileName == null || fileName.isEmpty()))
-			fileName = origData != null ? origData.getFileName() : null;
-		ImmutableList<String> elementNames;
-		ImmutableList<Integer> columnIdentifiers;
-		if (scalarRadioButton.isSelected())
-		{
-			String selected = (String) comboBox.getSelectedItem();
-			elementNames = selected != null ? ImmutableList.of(selected) : ImmutableList.of();
-			columnIdentifiers = selected != null ? ImmutableList.of(comboBox.getSelectedIndex()) : null;
-		}
-		else
-		{
-			String xSelected = (String) xComboBox.getSelectedItem();
-			String ySelected = (String) yComboBox.getSelectedItem();
-			String zSelected = (String) zComboBox.getSelectedItem();
-			ImmutableList.Builder<String> nameBuilder = ImmutableList.builder();
-			ImmutableList.Builder<Integer> columnBuilder = ImmutableList.builder();
-			if (xSelected != null)
-			{
-				nameBuilder.add(xSelected);
-				columnBuilder.add(xComboBox.getSelectedIndex());
-			}
-			if (ySelected != null)
-			{
-				nameBuilder.add(ySelected);
-				columnBuilder.add(yComboBox.getSelectedIndex());
-			}
-			if (zSelected != null)
-			{
-				nameBuilder.add(zSelected);
-				columnBuilder.add(zComboBox.getSelectedIndex());
-			}
-			elementNames = nameBuilder.build();
-			columnIdentifiers = columnBuilder.build();
-		}
-
-		// Preserve any loaded vtk data by constructing the new coloring data in two steps.
-		ColoringData withoutFileName = ColoringData.of(nameTextField.getText(), elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected(), origData.getData());
-		return ColoringData.renameFile(withoutFileName, fileName);
 	}
 
 	private String validateInput()
@@ -290,7 +248,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 	// TODO redmine 1339: eventually this method should be superseded by a method that returns the
 	// information from within the Fits file (e.g. "getColumnTitlesFits").
-	protected String validateFitsFile(String filename)
+	private String validateFitsFile(String filename)
 	{
 		String result = null;
 
@@ -326,6 +284,25 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 	public boolean getOkayPressed()
 	{
 		return okayPressed;
+	}
+
+	private String urlToFileName(String urlString)
+	{
+		String fileName = null;
+		if (urlString != null)
+		{
+			try
+			{
+				URL url = FileCache.createURL(urlString);
+				fileName = url.getPath();
+			}
+			catch (@SuppressWarnings("unused") AssertionError e)
+			{
+				// Hope that perhaps the url was just a file name in the first place.
+				fileName = urlString;
+			}
+		}
+		return fileName;
 	}
 
 	/**
@@ -775,6 +752,87 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this), errorString, "Error", JOptionPane.ERROR_MESSAGE);
 			return;
 		}
+
+		String fileName = cellDataPathTextField.getText();
+
+		if (isEditMode && (LEAVE_UNMODIFIED.equals(fileName) || fileName == null || fileName.isEmpty()))
+			fileName = origData != null ? urlToFileName(origData.getFileName()) : null;
+		if (fileName == null)
+			throw new AssertionError();
+
+		ImmutableList<String> elementNames;
+		ImmutableList<Integer> columnIdentifiers;
+		if (scalarRadioButton.isSelected())
+		{
+			String selected = (String) comboBox.getSelectedItem();
+			elementNames = selected != null ? ImmutableList.of(selected) : ImmutableList.of();
+			columnIdentifiers = selected != null ? ImmutableList.of(comboBox.getSelectedIndex()) : null;
+		}
+		else
+		{
+			String xSelected = (String) xComboBox.getSelectedItem();
+			String ySelected = (String) yComboBox.getSelectedItem();
+			String zSelected = (String) zComboBox.getSelectedItem();
+			ImmutableList.Builder<String> nameBuilder = ImmutableList.builder();
+			ImmutableList.Builder<Integer> columnBuilder = ImmutableList.builder();
+			if (xSelected != null)
+			{
+				nameBuilder.add(xSelected);
+				columnBuilder.add(xComboBox.getSelectedIndex());
+			}
+			if (ySelected != null)
+			{
+				nameBuilder.add(ySelected);
+				columnBuilder.add(yComboBox.getSelectedIndex());
+			}
+			if (zSelected != null)
+			{
+				nameBuilder.add(zSelected);
+				columnBuilder.add(zComboBox.getSelectedIndex());
+			}
+			elementNames = nameBuilder.build();
+			columnIdentifiers = columnBuilder.build();
+		}
+
+		// The commented out code below avoids reloading plate data if the data are already loaded, and
+		// if it appears the reload would result in the same data being (unnecessarily) reloaded. Not clear
+		// what the risks are of doing this, so leaving it commented out. But if users should become impatient
+		// with the unneeded reloads, this could be used.
+		//		// If the original coloring (being edited) was already loaded,
+		//		vtkFloatArray origVtkArray = null;
+		//		if (origData != null && origData.isLoaded())
+		//		{
+		//			// If the same file and same columns are identified, save the already-loaded data.
+		//			String origFileName = origData.getFileName();
+		//			List<?> origColumnIds = origData.getColumnIdentifiers();
+		//			if (fileName == origFileName || (fileName != null && fileName.equals(origFileName))
+		//					&& (columnIdentifiers == origColumnIds || (columnIdentifiers != null && columnIdentifiers.equals(origColumnIds))))
+		//			{
+		//				origVtkArray = origData.getData();
+		//			}
+		//		}
+		//
+		//		if (origVtkArray == null)
+		//		{
+		currentData = ColoringData.of(nameTextField.getText(), FileCache.createFileURL(fileName).toString(), elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
+		try
+		{
+			currentData.load();
+		}
+		catch (IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this), e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		//		}
+		//		else
+		//		{
+		//			// Preserve any loaded vtk data by constructing the new coloring data in two steps.
+		//			ColoringData withoutFileName = ColoringData.of(nameTextField.getText(), elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected(), origVtkArray);
+		//			currentData = ColoringData.renameFile(withoutFileName, fileName);
+		//		}
 
 		okayPressed = true;
 		setVisible(false);
