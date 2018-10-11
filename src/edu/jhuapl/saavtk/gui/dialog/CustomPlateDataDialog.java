@@ -160,7 +160,8 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		// Copy the cell data file to the model directory
 		try
 		{
-			FileUtil.copyFile(sourceFilePath, destFilePath);
+			File fileCache = FileCache.getFileFromServer(sourceFilePath);
+			FileUtil.copyFile(fileCache.getAbsolutePath(), destFilePath);
 		}
 		catch (IOException e)
 		{
