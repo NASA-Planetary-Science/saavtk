@@ -51,9 +51,14 @@ public final class ShapeModelType
 	public static final ShapeModelType JAXA_SPC_v20180717 = create("JAXA-SPC-v20180717");
 	public static final ShapeModelType JAXA_SPC_v20180719_2 = create("JAXA-SPC-v20180719-2");
 	public static final ShapeModelType JAXA_SPC_v20180731 = create("JAXA-SPC-v20180731");
+	public static final ShapeModelType JAXA_SPC_v20180810 = create("JAXA-SPC-v20180810");
+	public static final ShapeModelType JAXA_SPC_v20180816 = create("JAXA-SPC-v20180816");
+	public static final ShapeModelType JAXA_SPC_v20180829 = create("JAXA-SPC-v20180829");
 	public static final ShapeModelType NASA_001 = create("NASA-001");
 	public static final ShapeModelType NASA_002 = create("NASA-002");
 	public static final ShapeModelType NASA_003 = create("NASA-003");
+	public static final ShapeModelType NASA_004 = create("NASA-004");
+	public static final ShapeModelType NASA_005 = create("NASA-005");
 	public static final ShapeModelType OREX = create("OSIRIS-REx");
 	public static final ShapeModelType TRUTH = create("Truth");
 
