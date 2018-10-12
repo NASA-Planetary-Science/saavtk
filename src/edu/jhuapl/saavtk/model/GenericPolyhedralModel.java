@@ -10,7 +10,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 
 import com.google.common.base.Preconditions;
@@ -82,10 +84,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	private int redFalseColor = -1; // red channel for false coloring
 	private int greenFalseColor = -1; // green channel for false coloring
 	private int blueFalseColor = -1; // blue channel for false coloring
-	private vtkUnsignedCharArray colorData;
 	private vtkUnsignedCharArray falseColorArray;
 
-	private List<LidarDatasourceInfo> lidarDatasourceInfo = new ArrayList<LidarDatasourceInfo>();
+	private List<LidarDatasourceInfo> lidarDatasourceInfo = new ArrayList<>();
 	private int lidarDatasourceIndex = -1;
 
 	private vtkPolyData smallBodyPolyData;
@@ -93,7 +94,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	private vtkActor smallBodyActor;
 	private vtkPolyDataMapper smallBodyMapper;
 
-	private List<vtkProp> smallBodyActors = new ArrayList<vtkProp>();
+	private List<vtkProp> smallBodyActors = new ArrayList<>();
 
 	public List<vtkProp> getSmallBodyActors()
 	{
@@ -105,7 +106,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	private vtkPointLocator lowResPointLocator;
 	private vtkScalarBarActor scalarBarActor;
 	private SmallBodyCubes smallBodyCubes;
-	private String defaultModelFileName;
 	private File defaultModelFile;
 	private int resolutionLevel = 0;
 	private vtkGenericCell genericCell;
@@ -143,6 +143,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	private double contourLineWidth = 1;
 	private vtkPolyDataMapper linesMapper;
 	private vtkActor linesActor;
+
+	// Heuristic to avoid computationally expensive paint operations when possible. 
+	private Map<String, Object> paintingAttributes = null;
 
 	/**
 	 * Default constructor. Must be followed by a call to setSmallBodyPolyData.
@@ -189,7 +192,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		this.imageMapNames = imageMapNames;
 		this.coloringValueType = coloringValueType;
 
-		colorData = new vtkUnsignedCharArray();
+		new vtkUnsignedCharArray();
 		smallBodyPolyData = new vtkPolyData();
 		genericCell = new vtkGenericCell();
 		idList = new vtkIdList();
@@ -331,7 +334,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		this.coloringValueType = coloringValueType;
 		initializeColoringDataManager(coloringDataManager, getConfig().getResolutionNumberElements(), coloringFiles, coloringNames, coloringUnits, coloringHasNulls);
 
-		colorData = new vtkUnsignedCharArray();
+		new vtkUnsignedCharArray();
 		smallBodyPolyData = new vtkPolyData();
 		genericCell = new vtkGenericCell();
 		idList = new vtkIdList();
@@ -360,25 +363,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	{
 		if (this.colormap != null)
 			this.colormap.removePropertyChangeListener(this);
-		initializeActorsAndMappers();
+
 		this.colormap = colormap;
-		if (coloringIndex != -1)
-		{
-			double[] range = getColoringData(coloringIndex).getData().GetRange();
-			colormap.setRangeMin(range[0]);
-			colormap.setRangeMax(range[1]);
-		}
+
 		this.colormap.addPropertyChangeListener(this);
-		smallBodyActor.GetMapper().SetLookupTable(colormap.getLookupTable());
-		try
-		{
-			paintBody();
-		}
-		catch (IOException e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 
 	@Override
@@ -415,7 +403,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 	}
 
 	@Override
@@ -428,6 +415,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public void propertyChange(PropertyChangeEvent evt)
 	{
 		if (evt.getSource().equals(colormap))
+		{
 			try
 			{
 				paintBody();
@@ -437,7 +425,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-
+		}
 	}
 
 	@Override
@@ -448,7 +436,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	public void setDefaultModelFileName(String defaultModelFileName)
 	{
-		this.defaultModelFileName = defaultModelFileName;
 		defaultModelFile = new File(defaultModelFileName);
 	}
 
@@ -668,13 +655,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public void loadCustomLidarDatasourceInfo()
 	{
 		String prevLidarDatasourceName = null;
-		String prevLidarDatasourcePath = null;
-		lidarDatasourceInfo = new ArrayList<LidarDatasourceInfo>();
+		lidarDatasourceInfo = new ArrayList<>();
 
 		if (lidarDatasourceIndex >= 0 && lidarDatasourceIndex < lidarDatasourceInfo.size())
 		{
 			prevLidarDatasourceName = lidarDatasourceInfo.get(lidarDatasourceIndex).name;
-			prevLidarDatasourcePath = lidarDatasourceInfo.get(lidarDatasourceIndex).path;
 		}
 
 		clearCustomLidarDatasourceInfo();
@@ -1312,7 +1297,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	}
 
 	@Override
-	public String getClickStatusBarText(vtkProp prop, int cellId, double[] pickPosition)
+	public String getClickStatusBarText(@SuppressWarnings("unused") vtkProp prop, @SuppressWarnings("unused") int cellId, double[] pickPosition)
 	{
 		if (coloringIndex >= 0)
 		{
@@ -1530,10 +1515,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		this.initialize(smallBodyFile);
 
-		// Repaint the asteroid if we're currently showing any type of coloring
-		if (coloringIndex >= 0 || useFalseColoring)
-			paintBody();
-
 		this.pcs.firePropertyChange(Properties.MODEL_RESOLUTION_CHANGED, null, null);
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
@@ -1696,41 +1677,41 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 	}
 
-	private void invertLookupTableCharArray(vtkUnsignedCharArray table)
-	{
-		int numberOfValues = table.GetNumberOfTuples();
-		for (int i = 0; i < numberOfValues / 2; ++i)
-		{
-			double[] v1 = table.GetTuple4(i);
-			double[] v2 = table.GetTuple4(numberOfValues - i - 1);
-			table.SetTuple4(i, v2[0], v2[1], v2[2], v2[3]);
-			table.SetTuple4(numberOfValues - i - 1, v1[0], v1[1], v1[2], v1[3]);
-		}
-	}
-
-	/**
-	 * Invert the lookup table so that red is high values and blue is low values
-	 * (rather than the reverse).
-	 */
-	private void invertLookupTable()
-	{
-		vtkLookupTable lookupTable = (vtkLookupTable) smallBodyMapper.GetLookupTable();
-		vtkUnsignedCharArray table = lookupTable.GetTable();
-
-		invertLookupTableCharArray(table);
-		//        int numberOfValues = table.GetNumberOfTuples();
-		//        for (int i=0; i<numberOfValues/2; ++i)
-		//        {
-		//            double[] v1 = table.GetTuple4(i);
-		//            double[] v2 = table.GetTuple4(numberOfValues-i-1);
-		//            table.SetTuple4(i, v2[0], v2[1], v2[2], v2[3]);
-		//            table.SetTuple4(numberOfValues-i-1, v1[0], v1[1], v1[2], v1[3]);
-		//        }
-
-		lookupTable.SetTable(table);
-		smallBodyMapper.Modified();
-	}
-
+	//	private void invertLookupTableCharArray(vtkUnsignedCharArray table)
+	//	{
+	//		int numberOfValues = table.GetNumberOfTuples();
+	//		for (int i = 0; i < numberOfValues / 2; ++i)
+	//		{
+	//			double[] v1 = table.GetTuple4(i);
+	//			double[] v2 = table.GetTuple4(numberOfValues - i - 1);
+	//			table.SetTuple4(i, v2[0], v2[1], v2[2], v2[3]);
+	//			table.SetTuple4(numberOfValues - i - 1, v1[0], v1[1], v1[2], v1[3]);
+	//		}
+	//	}
+	//
+	//	/**
+	//	 * Invert the lookup table so that red is high values and blue is low values
+	//	 * (rather than the reverse).
+	//	 */
+	//	private void invertLookupTable()
+	//	{
+	//		vtkLookupTable lookupTable = (vtkLookupTable) smallBodyMapper.GetLookupTable();
+	//		vtkUnsignedCharArray table = lookupTable.GetTable();
+	//
+	//		invertLookupTableCharArray(table);
+	//		//        int numberOfValues = table.GetNumberOfTuples();
+	//		//        for (int i=0; i<numberOfValues/2; ++i)
+	//		//        {
+	//		//            double[] v1 = table.GetTuple4(i);
+	//		//            double[] v2 = table.GetTuple4(numberOfValues-i-1);
+	//		//            table.SetTuple4(i, v2[0], v2[1], v2[2], v2[3]);
+	//		//            table.SetTuple4(numberOfValues-i-1, v1[0], v1[1], v1[2], v1[3]);
+	//		//        }
+	//
+	//		lookupTable.SetTable(table);
+	//		smallBodyMapper.Modified();
+	//	}
+	//
 	@Override
 	public void setColoringIndex(int index) throws IOException
 	{
@@ -1754,11 +1735,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					useFalseColoring = currentFalseColoring;
 					throw t;
 				}
-				double[] range = getCurrentColoringRange(coloringIndex);
-				if (colormap == null)
-					initColormap();
-				colormap.setRangeMin(range[0]);
-				colormap.setRangeMax(range[1]);
+
+				smallBodyActor.GetMapper().SetLookupTable(colormap.getLookupTable());
+
+				double[] range = getColoringData(coloringIndex).getData().GetRange();
+				setCurrentColoringRange(coloringIndex, range);
 			}
 
 			paintBody();
@@ -1864,13 +1845,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		{
 			return pointOrCellData.GetTuple1(cellId);
 		}
-	}
-
-	private double[] getVectorValue(double[] pt, vtkFloatArray pointOrCellData, int numberAxes)
-	{
-		double[] closestPoint = new double[3];
-		int cellId = findClosestCell(pt, closestPoint);
-		return getVectorValue(closestPoint, pointOrCellData, cellId);
 	}
 
 	private double[] getVectorValue(double[] pt, vtkFloatArray pointOrCellData, int cellId, int numberAxes)
@@ -2050,15 +2024,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	@Override
 	public double[] getCurrentColoringRange(int coloringIndex)
 	{
-		// Delegate to default color range
-		if (colormap == null)
-			return getDefaultColoringRange(coloringIndex);
-
-		return new double[] { colormap.getRangeMin(), colormap.getRangeMax() };
+		return getColoringData(coloringIndex).getCurrentRange();
 	}
 
 	@Override
-	public void setCurrentColoringRange(int coloringIndex, double[] range) throws IOException
+	public void setCurrentColoringRange(@SuppressWarnings("unused") int coloringIndex, double[] range) throws IOException
 	{
 		boolean doSet = false;
 		if (colormap == null)
@@ -2077,11 +2047,13 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 		if (doSet)
 		{
+			colormap.removePropertyChangeListener(this);
 			colormap.setRangeMin(range[0]);
 			colormap.setRangeMax(range[1]);
-
-			paintBody();
+			colormap.addPropertyChangeListener(this);
 		}
+
+		paintBody();
 	}
 
 	private interface Indexable<T>
@@ -2207,8 +2179,12 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 	private void paintBody() throws IOException
 	{
-
 		initializeActorsAndMappers();
+
+		Map<String, Object> newPaintingAttributes = new HashMap<>();
+
+		boolean doPaint = false;
+		doPaint |= checkAndSave("coloringIndex", coloringIndex, newPaintingAttributes);
 
 		if (coloringIndex >= 0 && isColoringAvailable(coloringIndex))
 		{
@@ -2222,120 +2198,170 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			{
 				title += " (" + units + ")";
 			}
+			doPaint |= checkAndSave("title", title, newPaintingAttributes);
 			scalarBarActor.SetTitle(title);
 
 			vtkFloatArray floatArray = coloringData.getData();
+			doPaint |= checkAndSave("floatArray", floatArray, newPaintingAttributes);
 
 			initColormap();
+
+			doPaint |= checkAndSave("showColorsAsContourLines", showColorsAsContourLines, newPaintingAttributes);
+
+			doPaint |= checkAndSave("rangeMin", colormap.getRangeMin(), newPaintingAttributes);
+			doPaint |= checkAndSave("rangeMax", colormap.getRangeMax(), newPaintingAttributes);
+			doPaint |= checkAndSave("numberOfLevels", colormap.getNumberOfLevels(), newPaintingAttributes);
+			doPaint |= checkAndSave("numberOfLabels", colormap.getNumberOfLabels(), newPaintingAttributes);
+			doPaint |= checkAndSave("isLogScale", colormap.isLogScale(), newPaintingAttributes);
+
 			if (!showColorsAsContourLines)
 			{
-				if (smallBodyActors.contains(linesActor))
-					smallBodyActors.remove(linesActor);
 
-				vtkUnsignedCharArray rgbColorData = new vtkUnsignedCharArray();
-				rgbColorData.SetNumberOfComponents(3);
-				for (int index = 0; index < floatArray.GetNumberOfTuples(); ++index)
+				vtkLookupTable lookupTable = colormap.getLookupTable();
+				doPaint |= checkAndSave("lookupTable", lookupTable, newPaintingAttributes);
+				if (doPaint)
 				{
-					double value = floatArray.GetValue(index);
-					Color c = colormap.getColor(value);
-					rgbColorData.InsertNextTuple3(c.getRed(), c.getGreen(), c.getBlue());
+					if (smallBodyActors.contains(linesActor))
+						smallBodyActors.remove(linesActor);
+
+					vtkUnsignedCharArray rgbColorData = new vtkUnsignedCharArray();
+					rgbColorData.SetNumberOfComponents(3);
+					for (int index = 0; index < floatArray.GetNumberOfTuples(); ++index)
+					{
+						double value = floatArray.GetValue(index);
+						Color c = colormap.getColor(value);
+						rgbColorData.InsertNextTuple3(c.getRed(), c.getGreen(), c.getBlue());
+					}
+
+					smallBodyMapper.SetLookupTable(colormap.getLookupTable());
+
+					vtkPolyDataMapper decimatedMapper =
+							((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+					decimatedMapper.SetLookupTable(colormap.getLookupTable());
+					decimatedMapper.UseLookupTableScalarRangeOn();
+
+					if (coloringValueType == ColoringValueType.POINT_DATA)
+						this.smallBodyPolyData.GetPointData().SetScalars(rgbColorData);
+					else
+						this.smallBodyPolyData.GetCellData().SetScalars(rgbColorData);
+
+					smallBodyMapper.ScalarVisibilityOn();
 				}
-
-				smallBodyMapper.SetLookupTable(colormap.getLookupTable());
-
-				vtkPolyDataMapper decimatedMapper =
-						((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
-				decimatedMapper.SetLookupTable(colormap.getLookupTable());
-				decimatedMapper.UseLookupTableScalarRangeOn();
-
-				if (coloringValueType == ColoringValueType.POINT_DATA)
-					this.smallBodyPolyData.GetPointData().SetScalars(rgbColorData);
-				else
-					this.smallBodyPolyData.GetCellData().SetScalars(rgbColorData);
-
-				smallBodyMapper.ScalarVisibilityOn();
 
 			}
 			else
 			{
-				vtkPolyDataMapper decimatedMapper =
-						((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
-				decimatedMapper.ScalarVisibilityOff();
-				smallBodyMapper.ScalarVisibilityOff();
-
-				vtkPolyData polyData;
-				if (coloringValueType == ColoringValueType.POINT_DATA)
+				doPaint |= checkAndSave("contourLineWidth", contourLineWidth, newPaintingAttributes);
+				if (doPaint)
 				{
-					smallBodyPolyData.GetPointData().SetScalars(floatArray);
-					polyData = smallBodyPolyData;
+					vtkPolyDataMapper decimatedMapper =
+							((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+					decimatedMapper.ScalarVisibilityOff();
+					smallBodyMapper.ScalarVisibilityOff();
+
+					vtkPolyData polyData;
+					if (coloringValueType == ColoringValueType.POINT_DATA)
+					{
+						smallBodyPolyData.GetPointData().SetScalars(floatArray);
+						polyData = smallBodyPolyData;
+					}
+					else
+					{
+						smallBodyPolyData.GetCellData().SetScalars(floatArray);
+						vtkCellDataToPointData converter = new vtkCellDataToPointData();
+						converter.SetInputData(smallBodyPolyData);
+						converter.PassCellDataOff();
+						converter.Update();
+						polyData = converter.GetPolyDataOutput(); // contour filter requires point data with one component
+					}
+
+					vtkContourFilter contourFilter = new vtkContourFilter();
+					contourFilter.SetInputData(polyData);
+					contourFilter.GenerateValues(colormap.getNumberOfLevels(), colormap.getRangeMin(), colormap.getRangeMax());
+					contourFilter.Update();
+
+					linesMapper =
+							((SaavtkLODActor) linesActor).setQuadricDecimatedLODMapper(contourFilter.GetOutput());
+
+					linesMapper.SetInputData(contourFilter.GetOutput());
+					linesMapper.ScalarVisibilityOn();
+					linesMapper.SetScalarModeToDefault();
+					linesMapper.SetLookupTable(colormap.getLookupTable());
+					linesMapper.UseLookupTableScalarRangeOn();
+
+					linesActor.VisibilityOn();
+					linesActor.SetMapper(linesMapper);
+					linesActor.GetProperty().SetLineWidth(contourLineWidth);
+
+					if (!smallBodyActors.contains(linesActor))
+						smallBodyActors.add(linesActor);
 				}
-				else
-				{
-					smallBodyPolyData.GetCellData().SetScalars(floatArray);
-					vtkCellDataToPointData converter = new vtkCellDataToPointData();
-					converter.SetInputData(smallBodyPolyData);
-					converter.PassCellDataOff();
-					converter.Update();
-					polyData = converter.GetPolyDataOutput(); // contour filter requires point data with one component
-				}
-
-				vtkContourFilter contourFilter = new vtkContourFilter();
-				contourFilter.SetInputData(polyData);
-				contourFilter.GenerateValues(colormap.getNumberOfLevels(), colormap.getRangeMin(), colormap.getRangeMax());
-				contourFilter.Update();
-
-				linesMapper =
-						((SaavtkLODActor) linesActor).setQuadricDecimatedLODMapper(contourFilter.GetOutput());
-
-				linesMapper.SetInputData(contourFilter.GetOutput());
-				linesMapper.ScalarVisibilityOn();
-				linesMapper.SetScalarModeToDefault();
-				linesMapper.SetLookupTable(colormap.getLookupTable());
-				linesMapper.UseLookupTableScalarRangeOn();
-
-				linesActor.VisibilityOn();
-				linesActor.SetMapper(linesMapper);
-				linesActor.GetProperty().SetLineWidth(contourLineWidth);
-
-				if (!smallBodyActors.contains(linesActor))
-					smallBodyActors.add(linesActor);
 			}
 		}
 		else
 		{
-			if (smallBodyActors.contains(scalarBarActor))
-				smallBodyActors.remove(scalarBarActor);
-			if (smallBodyActors.contains(linesActor))
-				smallBodyActors.remove(linesActor);
+			doPaint |= checkAndSave("useFalseColoring", useFalseColoring, newPaintingAttributes);
+			doPaint |= checkAndSave("redFalseColor", redFalseColor, newPaintingAttributes);
+			doPaint |= checkAndSave("greenFalseColor", greenFalseColor, newPaintingAttributes);
+			doPaint |= checkAndSave("blueFalseColor", blueFalseColor, newPaintingAttributes);
 
-			if (useFalseColoring)
+			if (doPaint)
 			{
-				if (isColoringAvailable(redFalseColor) || isColoringAvailable(greenFalseColor) || isColoringAvailable(blueFalseColor))
-				{
 
-					updateFalseColorArray();
-					if (coloringValueType == ColoringValueType.POINT_DATA)
-						this.smallBodyPolyData.GetPointData().SetScalars(falseColorArray);
-					else
-						this.smallBodyPolyData.GetCellData().SetScalars(falseColorArray);
-					smallBodyMapper.ScalarVisibilityOn();
+				if (smallBodyActors.contains(scalarBarActor))
+					smallBodyActors.remove(scalarBarActor);
+				if (smallBodyActors.contains(linesActor))
+					smallBodyActors.remove(linesActor);
+
+				if (useFalseColoring)
+				{
+					if (isColoringAvailable(redFalseColor) || isColoringAvailable(greenFalseColor) || isColoringAvailable(blueFalseColor))
+					{
+						updateFalseColorArray();
+						if (coloringValueType == ColoringValueType.POINT_DATA)
+							this.smallBodyPolyData.GetPointData().SetScalars(falseColorArray);
+						else
+							this.smallBodyPolyData.GetCellData().SetScalars(falseColorArray);
+						smallBodyMapper.ScalarVisibilityOn();
+						((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+					}
+				}
+				else
+				{
 					vtkPolyDataMapper decimatedMapper =
 							((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
-
+					decimatedMapper.ScalarVisibilityOff();
+					smallBodyMapper.ScalarVisibilityOff();
 				}
-			}
-			else
-			{
-				vtkPolyDataMapper decimatedMapper =
-						((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
-				decimatedMapper.ScalarVisibilityOff();
-				smallBodyMapper.ScalarVisibilityOff();
 			}
 		}
 
-		this.smallBodyPolyData.Modified();
+		if (doPaint)
+		{
+			paintingAttributes = newPaintingAttributes;
 
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+			this.smallBodyPolyData.Modified();
+
+			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		}
+	}
+
+	private <T> boolean checkAndSave(String attribute, T value, Map<String, Object> newPaintingAttributes)
+	{
+		newPaintingAttributes.put(attribute, value);
+		boolean changed = true;
+
+		if (paintingAttributes != null)
+		{
+			Object storedObject = paintingAttributes.get(attribute);
+
+			if (storedObject == value)
+				changed = false;
+			else if (storedObject != null)
+				changed = !storedObject.equals(value);
+		}
+
+		return changed;
 	}
 
 	@Override
@@ -2485,7 +2511,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	}
 
 	@Override
-	public void updateScaleBarPosition(int windowWidth, int windowHeight)
+	public void updateScaleBarPosition(int windowWidth, @SuppressWarnings("unused") int windowHeight)
 	{
 		vtkPoints points = scaleBarPolydata.GetPoints();
 
