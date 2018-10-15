@@ -80,23 +80,30 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		{
 			cellDataPathTextField.setText(LEAVE_UNMODIFIED);
 			origData = data;
-
-			List<String> elementNames = origData.getElementNames();
+			List<String> elementNames = data.getElementNames();
 			int numberColumns = elementNames.size();
+
 			if (numberColumns == 1)
 			{
 				scalarRadioButton.setSelected(true);
-				select(xComboBox, elementNames.get(0));
 			}
 			else if (numberColumns == 3)
 			{
 				vectorRadioButton.setSelected(true);
-				select(xComboBox, elementNames.get(0));
-				select(yComboBox, elementNames.get(1));
-				select(xComboBox, elementNames.get(2));
 			}
 
-			updateImportOptions(urlToFileName(origData.getFileName()));
+			updateImportOptions(urlToFileName(data.getFileName()));
+
+			if (numberColumns == 1)
+			{
+				select(comboBox, elementNames.get(0));
+			}
+			else if (numberColumns == 3)
+			{
+				select(xComboBox, elementNames.get(0));
+				select(yComboBox, elementNames.get(1));
+				select(zComboBox, elementNames.get(2));
+			}
 		}
 	}
 
@@ -634,6 +641,11 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		}
 
 		//		buttonGroup.clearSelection();
+		if (buttonGroup.getSelection() == null)
+		{
+			scalarRadioButton.setSelected(true);
+		}
+		boolean scalarMode = scalarRadioButton.isSelected();
 
 		if (columnTitles.size() >= 3)
 		{
@@ -642,14 +654,15 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			scalarRadioLabel.setVisible(true);
 			vectorRadioButton.setVisible(true);
 			vectorRadioLabel.setVisible(true);
-			scalarLabel.setVisible(false);
-			xLabel.setVisible(false);
-			yLabel.setVisible(false);
-			zLabel.setVisible(false);
-			comboBox.setVisible(false);
-			xComboBox.setVisible(false);
-			yComboBox.setVisible(false);
-			zComboBox.setVisible(false);
+
+			scalarLabel.setVisible(scalarMode);
+			xLabel.setVisible(!scalarMode);
+			yLabel.setVisible(!scalarMode);
+			zLabel.setVisible(!scalarMode);
+			comboBox.setVisible(scalarMode);
+			xComboBox.setVisible(!scalarMode);
+			yComboBox.setVisible(!scalarMode);
+			zComboBox.setVisible(!scalarMode);
 		}
 		else if (columnTitles.size() == 2)
 		{
@@ -658,6 +671,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			scalarRadioLabel.setVisible(false);
 			vectorRadioButton.setVisible(false);
 			vectorRadioLabel.setVisible(false);
+
 			scalarLabel.setVisible(true);
 			xLabel.setVisible(false);
 			yLabel.setVisible(false);
