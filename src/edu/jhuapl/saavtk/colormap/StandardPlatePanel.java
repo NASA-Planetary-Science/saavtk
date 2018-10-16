@@ -5,6 +5,7 @@ import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.text.DecimalFormat;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -27,14 +28,11 @@ import edu.jhuapl.saavtk.gui.GuiUtil;
 import net.miginfocom.swing.MigLayout;
 
 /**
- * Class that provides UI controls and mechanism for the standard plate coloring panel.
+ * Class that provides UI controls and mechanism for the standard plate coloring
+ * panel.
  * <P>
- *TODO: List of items to consider:
- *<UL>
- *<LI> The min,max fields should match the textual output of the ColorBar when defaults are specified
- *<LI> The following controls should probably not be linked to the 'Sync' button: logScaleCB, numTicksSpinner
- *<LI> Remove the 'Sync' button and having 'Apply' button be the primary control
- *<LI>
+ * TODO: Consider making the min,max fields match the textual output of the
+ * ColorBar when defaults are specified
  */
 public class StandardPlatePanel extends JPanel implements ActionListener, ChangeListener
 {
@@ -50,8 +48,8 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 
 	// GUI vars
 	private final JComboBox<Colormap> colormapComboBox;
-	private final GNumberField minValueNF;
-	private final GNumberField maxValueNF;
+	private final JLabel minValueL, maxValueL;
+	private final GNumberField minValueNF, maxValueNF;
 	private final GNumberField numColorLevelsNF;
 	private final JSpinner numTicksSpinner;
 	private final JCheckBox logScaleCB;
@@ -89,11 +87,15 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 		}
 		colormapComboBox.addActionListener(this);
 
+		minValueL = new JLabel("Min Value");
+		maxValueL = new JLabel("Max Value");
 		minValueNF = new GNumberField(this);
+		minValueNF.setFormat(new SigFigNumberFormat(3));
 		maxValueNF = new GNumberField(this);
+		maxValueNF.setFormat(new SigFigNumberFormat(3));
 		numColorLevelsNF = new GNumberField(this);
 		numColorLevelsNF.setValue(32);
-		numTicksSpinner = new JSpinner(new SpinnerNumberModel(4, 0, 20, 1));
+		numTicksSpinner = new JSpinner(new SpinnerNumberModel(5, 0, 20, 1));
 		numTicksSpinner.addChangeListener(this);
 
 		logScaleCB = new JCheckBox("Log scale");
@@ -153,21 +155,21 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 	public void actionPerformed(ActionEvent aEvent)
 	{
 		Object source = aEvent.getSource();
-		
+
 		// Reset the defaults
 		if (source == resetButton)
 		{
 			setCurrentMinMax(defaultMin, defaultMax);
 			updateControlArea();
-			
+
 			if (isColorMapConfigValid() == false)
 				return;
-			
+
 			syncColorMapToGui();
 			firePropertyChange(EVT_ColormapChanged, null, null);
 			return;
 		}
-		
+
 		// Apply the settings
 		else if (source == applyButton)
 		{
@@ -183,24 +185,29 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 			doAutoSync();
 		}
 
+		// LogScale UI
+		else if (source == logScaleCB)
+		{
+			cColormap.setLogScale(logScaleCB.isSelected());
+			firePropertyChange(EVT_ColormapChanged, null, null);
+		}
+
+		// ColorMap ComboBox UI
+		else if (source == colormapComboBox)
+		{
+			doAutoSync();
+		}
+
 		// Keep the Render View synchronized
 		if (syncButton.isSelected() == true)
 		{
-			if (source == minValueNF || source == maxValueNF)
-			{
-				doAutoSync();
-			}
-			else if (source == numColorLevelsNF || source == numTicksSpinner)
-			{
-				doAutoSync();
-			}
-			else if (source == colormapComboBox || source == logScaleCB)
+			if (source == minValueNF || source == maxValueNF || source == numColorLevelsNF)
 			{
 				doAutoSync();
 			}
 		}
 
-		if (source == minValueNF || source == maxValueNF || source == numColorLevelsNF || source == numTicksSpinner)
+		if (source == minValueNF || source == maxValueNF || source == numColorLevelsNF)
 			updateControlArea();
 	}
 
@@ -221,13 +228,14 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 	@Override
 	public void stateChanged(ChangeEvent aEvent)
 	{
-		// Bail if not in auto sync mode
-		if (syncButton.isSelected() == false)
-			return;
+		Object source = aEvent.getSource();
 
-		// Synchronize our cached ColorMap
-		syncColorMapToGui();
-		firePropertyChange(EVT_ColormapChanged, null, null);
+		// NumTicks UI
+		if (source == numTicksSpinner)
+		{
+			cColormap.setNumberOfLabels((Integer) numTicksSpinner.getValue());
+			firePropertyChange(EVT_ColormapChanged, null, null);
+		}
 	}
 
 	/**
@@ -241,11 +249,11 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 		add(colormapComboBox, "span,wrap");
 
 		// Range, # Color levels, and # Ticks area
-		add(new JLabel("Min Value"), "");
+		add(minValueL, "");
 		add(minValueNF, "");
 		add(resetButton, "sg g1,wrap");
 
-		add(new JLabel("Max Value"), "");
+		add(maxValueL, "");
 		add(maxValueNF, "");
 		add(syncButton, "sg g1,wrap");
 
@@ -324,11 +332,11 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 			return;
 
 		cColormap = Colormaps.getNewInstanceOfBuiltInColormap(name);
-		cColormap.setLogScale(logScaleCB.isSelected());
 		cColormap.setRangeMin(minValueNF.getValue());
 		cColormap.setRangeMax(maxValueNF.getValue());
 		cColormap.setNumberOfLevels(numColorLevelsNF.getValueAsInt(-1));
 		cColormap.setNumberOfLabels((Integer) numTicksSpinner.getValue());
+		cColormap.setLogScale(logScaleCB.isSelected());
 	}
 
 	/**
@@ -338,8 +346,25 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 	 */
 	private void updateControlArea()
 	{
-		boolean isEnabled;
+		boolean isEnabled, isSwapped;
 
+		// Update MinValue MaxValue UI elements
+		String errMsg = null;
+		Color fgColor = Color.BLACK;
+		isSwapped = minValueNF.getValue() > maxValueNF.getValue();
+		isSwapped &= minValueNF.isValidInput() == true;
+		isSwapped &= maxValueNF.isValidInput() == true;
+		if (isSwapped == true)
+		{
+			errMsg = "Min, Max values are swapped.";
+			fgColor = minValueNF.getFailColor();
+		}
+		minValueL.setForeground(fgColor);
+		maxValueL.setForeground(fgColor);
+		minValueL.setToolTipText(errMsg);
+		maxValueL.setToolTipText(errMsg);
+
+		// Update enable state of applyB
 		isEnabled = syncButton.isSelected() != true;
 		isEnabled &= isColorMapConfigValid();
 		applyButton.setEnabled(isEnabled);

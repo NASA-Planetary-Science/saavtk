@@ -136,6 +136,16 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		newMap.put(PolyhedralModel.CELL_DATA_RESOLUTION_LEVEL, cellDataResolutionLevels);
 
 		configMap.put(newMap);
+		try
+		{
+			coloringDataManager.saveCustomMetadata(modelManager.getPolyhedralModel().getCustomDataFolder());
+		}
+		catch (IOException e)
+		{
+			// This should not fail, but if it does it should not disrupt what the user is doing.
+			// Thus in this case it is appropriate to log the problem and then continue.
+			e.printStackTrace();
+		}
 	}
 
 	private ColoringData copyCellData(int index, ColoringData source)
@@ -150,7 +160,8 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		// Copy the cell data file to the model directory
 		try
 		{
-			FileUtil.copyFile(sourceFilePath, destFilePath);
+			File fileCache = FileCache.getFileFromServer(sourceFilePath);
+			FileUtil.copyFile(fileCache.getAbsolutePath(), destFilePath);
 		}
 		catch (IOException e)
 		{
@@ -159,8 +170,8 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		}
 
 		// After copying the file, convert the file path to a URL format.
-		destFilePath = FileCache.FILE_PREFIX + getCustomDataFolder() + "/" + destFileName;
-		ColoringData newColoringData = ColoringData.of(source.getName(), destFilePath, source.getElementNames(), source.getUnits(), source.getNumberElements(), source.hasNulls());
+		destFilePath = FileCache.createFileURL(getCustomDataFolder(), destFileName).toString();
+		ColoringData newColoringData = ColoringData.of(source.getName(), destFilePath, source.getElementNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls());
 
 		DefaultListModel<ColoringData> model = (DefaultListModel<ColoringData>) cellDataList.getModel();
 		if (index >= model.getSize())
@@ -410,7 +421,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 	protected CustomPlateDataImporterDialog getPlateImporterDialog()
 	{
-		return new CustomPlateDataImporterDialog(JOptionPane.getFrameForComponent(this), false, modelManager.getPolyhedralModel().getSmallBodyPolyData().GetNumberOfCells());
+		return new CustomPlateDataImporterDialog(JOptionPane.getFrameForComponent(this), coloringDataManager, false, modelManager.getPolyhedralModel().getSmallBodyPolyData().GetNumberOfCells());
 	}
 
 	private void newButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)
@@ -447,7 +458,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			DefaultListModel<ColoringData> cellDataListModel = (DefaultListModel<ColoringData>) cellDataList.getModel();
 			ColoringData oldColoringData = cellDataListModel.get(selectedItem);
 
-			CustomPlateDataImporterDialog dialog = new CustomPlateDataImporterDialog(JOptionPane.getFrameForComponent(this), true, modelManager.getPolyhedralModel().getSmallBodyPolyData().GetNumberOfCells());
+			CustomPlateDataImporterDialog dialog = new CustomPlateDataImporterDialog(JOptionPane.getFrameForComponent(this), coloringDataManager, true, modelManager.getPolyhedralModel().getSmallBodyPolyData().GetNumberOfCells());
 			dialog.setColoringData(oldColoringData);
 			dialog.setLocationRelativeTo(this);
 			dialog.setVisible(true);
@@ -456,17 +467,12 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			if (dialog.getOkayPressed())
 			{
 				ColoringData newColoringData = dialog.getColoringData();
-				if (!oldColoringData.getFileName().equals(newColoringData.getFileName()))
-				{
-					newColoringData = copyCellData(selectedItem, newColoringData);
-				}
-
 				if (!oldColoringData.equals(newColoringData))
 				{
+					cellDataListModel.set(selectedItem, newColoringData);
 					coloringDataManager.replaceCustom(oldColoringData.getName(), newColoringData);
 					updateConfigFile();
 				}
-				cellDataListModel.set(selectedItem, newColoringData);
 				controlPanel.updateColoringOptions();
 			}
 		}

@@ -11,10 +11,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import javax.swing.SwingUtilities;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -150,19 +146,7 @@ public class GsonSerializer implements Serializer
 				source.put(Key.of(entry.getKey()), entry.getValue());
 			}
 		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
-		if (SwingUtilities.isEventDispatchThread())
-		{
-			//			retrieveInSwingContext(source);
-			retrieveInSingleThreadContext(source);
-		}
-		else
-		{
-			retrieveInSingleThreadContext(source);
-		}
+		retrieveInSingleThreadContext(source);
 	}
 
 	@Override
@@ -193,39 +177,11 @@ public class GsonSerializer implements Serializer
 		}
 	}
 
-	private void retrieveInSwingContext(Metadata source)
-	{
-		ExecutorService executor = Executors.newSingleThreadExecutor();
-		executor.execute(() -> {
-			for (Key<? extends Metadata> key : managerCollection.getKeys())
-			{
-				try
-				{
-					if (source.hasKey(key))
-					{
-						Metadata element = source.get(key);
-						if (element != null)
-						{
-							SwingUtilities.invokeAndWait(() -> {
-								managerCollection.getManager(key).retrieve(element);
-							});
-						}
-					}
-				}
-				catch (Exception e)
-				{
-					e.printStackTrace();
-				}
-			}
-		});
-		executor.shutdown();
-	}
-
 	private void retrieveInSingleThreadContext(Metadata source)
 	{
-		try
+		for (Key<? extends Metadata> key : managerCollection.getKeys())
 		{
-			for (Key<? extends Metadata> key : managerCollection.getKeys())
+			if (source.hasKey(key))
 			{
 				if (source.hasKey(key))
 				{
@@ -236,10 +192,6 @@ public class GsonSerializer implements Serializer
 					}
 				}
 			}
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
 		}
 	}
 

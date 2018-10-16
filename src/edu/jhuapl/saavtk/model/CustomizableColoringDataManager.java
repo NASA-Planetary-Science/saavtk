@@ -1,5 +1,7 @@
 package edu.jhuapl.saavtk.model;
 
+import java.io.IOException;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -8,10 +10,13 @@ import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.MetadataManager;
 import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
+import edu.jhuapl.saavtk.metadata.serialization.Serializers;
+import edu.jhuapl.saavtk.util.SafePaths;
 
 public final class CustomizableColoringDataManager implements ColoringDataManager
 {
-	private static final Version METADATA_VERSION = Version.of(1, 0);
+	private static final Version METADATA_VERSION = Version.of(1, 1);
+	private static final String CUSTOM_METADATA_FILE_NAME = "custom-coloring-" + METADATA_VERSION + ".smd";
 
 	public static CustomizableColoringDataManager of(String dataId)
 	{
@@ -117,6 +122,18 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 	{
 		custom.clear();
 		update();
+	}
+
+	public void loadCustomMetadata(String folder) throws IOException
+	{
+		custom.clear();
+		Serializers.deserialize(SafePaths.get(folder, CUSTOM_METADATA_FILE_NAME).toFile(), "Custom Coloring", custom.getMetadataManager());
+		update();
+	}
+
+	public void saveCustomMetadata(String folder) throws IOException
+	{
+		Serializers.serialize("Custom Coloring", custom.getMetadataManager(), SafePaths.get(folder, CUSTOM_METADATA_FILE_NAME).toFile());
 	}
 
 	@Override

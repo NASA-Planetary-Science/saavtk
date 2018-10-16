@@ -18,13 +18,23 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.List;
 
+import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
 
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.model.ColoringData;
+import edu.jhuapl.saavtk.model.ColoringDataManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.util.FileCache;
+import edu.jhuapl.saavtk.util.file.DataFileReader;
+import edu.jhuapl.saavtk.util.file.DataFileReader.IncorrectFileFormatException;
+import edu.jhuapl.saavtk.util.file.DataFileReader.InvalidFileFormatException;
+import edu.jhuapl.saavtk.util.file.DataObjectInfo;
+import edu.jhuapl.saavtk.util.file.TableInfo;
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
 import nom.tam.fits.FitsException;
@@ -33,60 +43,84 @@ import nom.tam.fits.TableHDU;
 @SuppressWarnings("serial")
 public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 {
-	private boolean okayPressed = false;
-	private final int numCells;
-	private boolean isEditMode;
 	private static final String LEAVE_UNMODIFIED = "<leave unmodified or empty to use existing plate data>";
-	private String origColoringFile; // used in Edit mode only to store original filename
+
+	private final ColoringDataManager coloringDataManager;
+	private final int numCells;
+	private final boolean isEditMode;
+	private boolean okayPressed;
+	private ColoringData origData; // Used in edit mode.
+	private ColoringData currentData;
 
 	/** Creates new form ShapeModelImporterDialog */
-	public CustomPlateDataImporterDialog(java.awt.Window parent, boolean isEditMode, int numCells)
+	public CustomPlateDataImporterDialog(java.awt.Window parent, ColoringDataManager coloringDataManager, boolean isEditMode, int numCells)
 	{
 		super(parent, "Import Plate Data", Dialog.ModalityType.DOCUMENT_MODAL);
-		initComponents();
-		this.isEditMode = isEditMode;
+		this.coloringDataManager = coloringDataManager;
 		this.numCells = numCells;
+		this.isEditMode = isEditMode;
+		this.okayPressed = false;
+		this.origData = null;
+		this.currentData = null;
+		initComponents();
 	}
 
-	/**
-	 * Set the cell data info
-	 */
+	public ColoringData getColoringData()
+	{
+		return currentData;
+	}
+
 	public void setColoringData(ColoringData data)
 	{
-		if (isEditMode)
-		{
-			cellDataPathTextField.setText(LEAVE_UNMODIFIED);
-			origColoringFile = data.getFileName();
-		}
-
 		nameTextField.setText(data.getName());
 		unitsTextField.setText(data.getUnits());
 		hasNullsCheckBox.setSelected(data.hasNulls());
+
+		if (isEditMode)
+		{
+			cellDataPathTextField.setText(LEAVE_UNMODIFIED);
+			origData = data;
+			List<String> elementNames = data.getElementNames();
+			int numberColumns = elementNames.size();
+
+			if (numberColumns == 1)
+			{
+				scalarRadioButton.setSelected(true);
+			}
+			else if (numberColumns == 3)
+			{
+				vectorRadioButton.setSelected(true);
+			}
+
+			updateImportOptions(urlToFileName(data.getFileName()));
+
+			if (numberColumns == 1)
+			{
+				select(comboBox, elementNames.get(0));
+			}
+			else if (numberColumns == 3)
+			{
+				select(xComboBox, elementNames.get(0));
+				select(yComboBox, elementNames.get(1));
+				select(zComboBox, elementNames.get(2));
+			}
+		}
 	}
 
-	/**
-	 * @return
-	 */
-	public ColoringData getColoringData()
+	private void select(JComboBox<String> comboBox, String string)
 	{
-		String errorString = validateInput();
-		if (errorString != null)
+		for (int index = 0; index < comboBox.getItemCount(); ++index)
 		{
-			throw new RuntimeException(errorString);
+			if (comboBox.getItemAt(index).toString().equals(string))
+			{
+				comboBox.setSelectedIndex(index);
+				break;
+			}
 		}
-
-		String fileName = cellDataPathTextField.getText();
-
-		if (isEditMode && (LEAVE_UNMODIFIED.equals(fileName) || fileName == null || fileName.isEmpty()))
-			fileName = origColoringFile;
-
-		return ColoringData.of(nameTextField.getText(), fileName, ImmutableList.of(), unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
 	}
 
 	private String validateInput()
 	{
-		String result = null;
-
 		String cellDataPath = cellDataPathTextField.getText();
 		if (cellDataPath == null)
 			cellDataPath = "";
@@ -103,18 +137,21 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			if (cellDataPath.contains(","))
 				return "Plate data path may not contain commas.";
 
-			if (cellDataPath.toLowerCase().endsWith(".fit") || cellDataPath.toLowerCase().endsWith(".fits"))
-				result = validateFitsFile(cellDataPath);
-			else
-				result = validateTxtFile(cellDataPath);
+			//			if (cellDataPath.toLowerCase().endsWith(".fit") || cellDataPath.toLowerCase().endsWith(".fits"))
+			//				result = validateFitsFile(cellDataPath);
+			//			else
+			//				result = validateTxtFile(cellDataPath);
 
-			// TODO redmine 1339. Start here: add a call here to a new method:
-			//
-			// private ImmutableList<String> getColumnTitlesCsv(String cellDataPath).
-			//
-			// Store result from that method in the JComboBox (see note in initComponents).
-			if (result != null)
-				return result;
+			try
+			{
+				@SuppressWarnings("unused")
+				ImmutableList<String> columnTitles = getColumnTitles(cellDataPath);
+
+			}
+			catch (IncorrectFileFormatException | InvalidFileFormatException | IOException e)
+			{
+				return e.getMessage();
+			}
 		}
 
 		String name = nameTextField.getText();
@@ -125,6 +162,9 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		if (name.isEmpty())
 			return "Please enter a name for the plate data.";
 
+		if (!isEditMode && coloringDataManager.has(name, numCells))
+			return "Duplicated coloring name: " + name + " already exists";
+
 		String units = unitsTextField.getText();
 		if (units == null)
 			units = "";
@@ -134,6 +174,35 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			return "Fields may not contain commas.";
 
 		return null;
+	}
+
+	private ImmutableList<String> getColumnTitles(String cellDataPath) throws IncorrectFileFormatException, IOException, InvalidFileFormatException
+	{
+		ImmutableList.Builder<String> builder = ImmutableList.builder();
+		File file = new File(cellDataPath);
+		ImmutableList<DataObjectInfo> dataInfoList;
+		dataInfoList = DataFileReader.of().readFileInfo(file).getDataObjectInfo();
+		for (DataObjectInfo dataObjectInfo : dataInfoList)
+		{
+			if (dataObjectInfo instanceof TableInfo)
+			{
+				TableInfo tableInfo = (TableInfo) dataObjectInfo;
+				for (int i = 0; i < tableInfo.getNumberColumns(); i++)
+				{
+					String title = tableInfo.getColumnInfo(i).getName();
+					if (title.matches(".*\\S.*"))
+					{
+						builder.add(title);
+					}
+					else
+					{
+						builder.add("Column " + Integer.toString(i));
+					}
+				}
+			}
+		}
+
+		return builder.build();
 	}
 
 	// TODO redmine 1339: eventually this method should be superseded by a method that returns the
@@ -186,7 +255,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 	// TODO redmine 1339: eventually this method should be superseded by a method that returns the
 	// information from within the Fits file (e.g. "getColumnTitlesFits").
-	protected String validateFitsFile(String filename)
+	private String validateFitsFile(String filename)
 	{
 		String result = null;
 
@@ -203,7 +272,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 				TableHDU<?> athdu = (TableHDU<?>) hdus[1];
 				int ncols = athdu.getNCols();
 				if (ncols <= PolyhedralModel.FITS_SCALAR_COLUMN_INDEX)
-					return "FITS ancillary table has too few olumns";
+					return "FITS ancillary table has too few columns";
 			}
 			else
 			{
@@ -224,10 +293,32 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		return okayPressed;
 	}
 
+	private String urlToFileName(String urlString)
+	{
+		String fileName = null;
+		if (urlString != null)
+		{
+			try
+			{
+				URL url = FileCache.createURL(urlString);
+				fileName = url.getPath();
+			}
+			catch (@SuppressWarnings("unused") AssertionError e)
+			{
+				// Hope that perhaps the url was just a file name in the first place.
+				fileName = urlString;
+			}
+		}
+		return fileName;
+	}
+
 	/**
 	 * This method is called from within the constructor to initialize the form.
 	 * Note: the content of this method was originally regenerated by the Form
 	 * Editor.
+	 * 
+	 * @throws IOException
+	 * @throws IncorrectFileFormatException
 	 */
 	// <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
 	private final void initComponents()
@@ -247,7 +338,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		hasNullsCheckBox = new javax.swing.JCheckBox();
 
 		setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-		setMinimumSize(new java.awt.Dimension(600, 167));
+		setMinimumSize(new java.awt.Dimension(600, 300));
 		setModalityType(java.awt.Dialog.ModalityType.APPLICATION_MODAL);
 		getContentPane().setLayout(new java.awt.GridBagLayout());
 
@@ -299,7 +390,161 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 		jPanel1.setLayout(new java.awt.GridBagLayout());
 
-		// TODO redmine 1339: add a JComboBox field that has the drop-down names of the columns.
+		importLabel = new javax.swing.JLabel();
+		importLabel.setText("Import Data As:");
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridwidth = 1;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+		getContentPane().add(importLabel, gridBagConstraints);
+		importLabel.setVisible(false);
+
+		scalarRadioButton = new javax.swing.JRadioButton();
+		scalarRadioButton.addActionListener(new java.awt.event.ActionListener() {
+			@Override
+			public void actionPerformed(java.awt.event.ActionEvent evt)
+			{
+				scalarRadioButtonActionPerformed(evt);
+			}
+		});
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 1;
+		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridwidth = 1;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 20, 0, 0);
+		getContentPane().add(scalarRadioButton, gridBagConstraints);
+		scalarRadioButton.setVisible(false);
+
+		scalarRadioLabel = new javax.swing.JLabel();
+		scalarRadioLabel.setText("Scalar");
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 1;
+		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridwidth = 1;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 40, 0, 0);
+		getContentPane().add(scalarRadioLabel, gridBagConstraints);
+		scalarRadioLabel.setVisible(false);
+
+		vectorRadioButton = new javax.swing.JRadioButton();
+		vectorRadioButton.addActionListener(new java.awt.event.ActionListener() {
+			@Override
+			public void actionPerformed(java.awt.event.ActionEvent evt)
+			{
+				vectorRadioButtonActionPerformed(evt);
+			}
+		});
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 1;
+		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridwidth = 1;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 100, 0, 0);
+		getContentPane().add(vectorRadioButton, gridBagConstraints);
+		vectorRadioButton.setVisible(false);
+
+		vectorRadioLabel = new javax.swing.JLabel();
+		vectorRadioLabel.setText("Vector");
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 1;
+		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridwidth = 1;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 120, 0, 0);
+		getContentPane().add(vectorRadioLabel, gridBagConstraints);
+		vectorRadioLabel.setVisible(false);
+
+		buttonGroup = new javax.swing.ButtonGroup();
+		buttonGroup.add(scalarRadioButton);
+		buttonGroup.add(vectorRadioButton);
+		buttonGroup.clearSelection();
+
+		scalarLabel = new javax.swing.JLabel();
+		scalarLabel.setText("Choose Column");
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 4;
+		gridBagConstraints.gridwidth = 3;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+		getContentPane().add(scalarLabel, gridBagConstraints);
+		scalarLabel.setVisible(false);
+
+		xLabel = new javax.swing.JLabel();
+		xLabel.setText("Choose 'X' Column");
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 4;
+		gridBagConstraints.gridwidth = 3;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+		getContentPane().add(xLabel, gridBagConstraints);
+		xLabel.setVisible(false);
+
+		yLabel = new javax.swing.JLabel();
+		yLabel.setText("Choose 'Y' Column");
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 5;
+		gridBagConstraints.gridwidth = 3;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(5, 25, 0, 0);
+		getContentPane().add(yLabel, gridBagConstraints);
+		yLabel.setVisible(false);
+
+		zLabel = new javax.swing.JLabel();
+		zLabel.setText("Choose 'Z' Column");
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 6;
+		gridBagConstraints.gridwidth = 3;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(5, 25, 0, 0);
+		getContentPane().add(zLabel, gridBagConstraints);
+		zLabel.setVisible(false);
+
+		comboBox = new JComboBox<>();
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 1;
+		gridBagConstraints.gridy = 4;
+		gridBagConstraints.gridwidth = 2;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+		getContentPane().add(comboBox, gridBagConstraints);
+		comboBox.setVisible(false);
+
+		xComboBox = new JComboBox<>();
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 1;
+		gridBagConstraints.gridy = 4;
+		gridBagConstraints.gridwidth = 2;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
+		getContentPane().add(xComboBox, gridBagConstraints);
+		xComboBox.setVisible(false);
+
+		yComboBox = new JComboBox<>();
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 1;
+		gridBagConstraints.gridy = 5;
+		gridBagConstraints.gridwidth = 2;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(5, 25, 0, 0);
+		getContentPane().add(yComboBox, gridBagConstraints);
+		yComboBox.setVisible(false);
+
+		zComboBox = new JComboBox<>();
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 1;
+		gridBagConstraints.gridy = 6;
+		gridBagConstraints.gridwidth = 2;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+		gridBagConstraints.insets = new java.awt.Insets(5, 25, 0, 0);
+		getContentPane().add(zComboBox, gridBagConstraints);
+		zComboBox.setVisible(false);
 
 		cancelButton.setText("Cancel");
 		cancelButton.addActionListener(new java.awt.event.ActionListener() {
@@ -332,11 +577,11 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 1;
-		gridBagConstraints.gridy = 4;
+		gridBagConstraints.gridy = 8;
 		gridBagConstraints.gridwidth = 2;
 		gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_END;
 		gridBagConstraints.weighty = 1.0;
-		gridBagConstraints.insets = new java.awt.Insets(10, 0, 5, 0);
+		gridBagConstraints.insets = new java.awt.Insets(10, 25, 5, 0);
 		getContentPane().add(jPanel1, gridBagConstraints);
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 1;
@@ -355,7 +600,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		hasNullsCheckBox.setToolTipText("If checked, then the smallest value in the file is assumed to represent invalid data and is not displayed on the shape model.");
 		gridBagConstraints = new java.awt.GridBagConstraints();
 		gridBagConstraints.gridx = 0;
-		gridBagConstraints.gridy = 3;
+		gridBagConstraints.gridy = 8;
 		gridBagConstraints.gridwidth = 3;
 		gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
 		gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
@@ -364,8 +609,10 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		pack();
 	}// </editor-fold>//GEN-END:initComponents
 
-	private void browsePlateDataButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)//GEN-FIRST:event_browsePlateDataButtonActionPerformed
+	private void browsePlateDataButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt) //GEN-FIRST:event_browsePlateDataButtonActionPerformed
+
 	{//GEN-HEADEREND:event_browsePlateDataButtonActionPerformed
+
 		File file = CustomFileChooser.showOpenDialog(this, "Select Plate Data");
 		if (file == null)
 		{
@@ -374,14 +621,144 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 
 		String filename = file.getAbsolutePath();
 		cellDataPathTextField.setText(filename);
+
+		updateImportOptions(filename);
+
 	}//GEN-LAST:event_browsePlateDataButtonActionPerformed
+
+	private void updateImportOptions(String filename)
+	{
+		ImmutableList<String> columnTitles;
+		try
+		{
+			columnTitles = getColumnTitles(filename);
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this), e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+
+		//		buttonGroup.clearSelection();
+		if (buttonGroup.getSelection() == null)
+		{
+			scalarRadioButton.setSelected(true);
+		}
+		boolean scalarMode = scalarRadioButton.isSelected();
+
+		if (columnTitles.size() >= 3)
+		{
+			importLabel.setVisible(true);
+			scalarRadioButton.setVisible(true);
+			scalarRadioLabel.setVisible(true);
+			vectorRadioButton.setVisible(true);
+			vectorRadioLabel.setVisible(true);
+
+			scalarLabel.setVisible(scalarMode);
+			xLabel.setVisible(!scalarMode);
+			yLabel.setVisible(!scalarMode);
+			zLabel.setVisible(!scalarMode);
+			comboBox.setVisible(scalarMode);
+			xComboBox.setVisible(!scalarMode);
+			yComboBox.setVisible(!scalarMode);
+			zComboBox.setVisible(!scalarMode);
+		}
+		else if (columnTitles.size() == 2)
+		{
+			importLabel.setVisible(false);
+			scalarRadioButton.setVisible(false);
+			scalarRadioLabel.setVisible(false);
+			vectorRadioButton.setVisible(false);
+			vectorRadioLabel.setVisible(false);
+
+			scalarLabel.setVisible(true);
+			xLabel.setVisible(false);
+			yLabel.setVisible(false);
+			zLabel.setVisible(false);
+			comboBox.setVisible(true);
+			xComboBox.setVisible(false);
+			yComboBox.setVisible(false);
+			zComboBox.setVisible(false);
+		}
+		else
+		{
+			importLabel.setVisible(false);
+			scalarRadioButton.setVisible(false);
+			scalarRadioLabel.setVisible(false);
+			vectorRadioButton.setVisible(false);
+			vectorRadioLabel.setVisible(false);
+			scalarLabel.setVisible(false);
+			xLabel.setVisible(false);
+			yLabel.setVisible(false);
+			zLabel.setVisible(false);
+			comboBox.setVisible(false);
+			xComboBox.setVisible(false);
+			yComboBox.setVisible(false);
+			zComboBox.setVisible(false);
+		}
+		comboBox.removeAllItems();
+		xComboBox.removeAllItems();
+		yComboBox.removeAllItems();
+		zComboBox.removeAllItems();
+
+		if (columnTitles.size() == 1)
+		{
+			xComboBox.addItem(null);
+			yComboBox.addItem(null);
+			zComboBox.addItem(null);
+		}
+
+		for (String item : columnTitles)
+		{
+			comboBox.addItem(item);
+			xComboBox.addItem(item);
+			yComboBox.addItem(item);
+			zComboBox.addItem(item);
+		}
+		if (!columnTitles.isEmpty())
+		{
+			comboBox.setSelectedIndex(0);
+		}
+
+	}
+
+	private void scalarRadioButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)
+	{
+		if (scalarRadioButton.isSelected())
+		{
+			scalarLabel.setVisible(true);
+			comboBox.setVisible(true);
+			xLabel.setVisible(false);
+			yLabel.setVisible(false);
+			zLabel.setVisible(false);
+			xComboBox.setVisible(false);
+			yComboBox.setVisible(false);
+			zComboBox.setVisible(false);
+		}
+	}
+
+	private void vectorRadioButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)
+	{
+		if (vectorRadioButton.isSelected())
+		{
+			scalarLabel.setVisible(false);
+			comboBox.setVisible(false);
+			xLabel.setVisible(true);
+			yLabel.setVisible(true);
+			zLabel.setVisible(true);
+			xComboBox.setVisible(true);
+			yComboBox.setVisible(true);
+			zComboBox.setVisible(true);
+		}
+	}
 
 	private void cancelButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)//GEN-FIRST:event_cancelButtonActionPerformed
 	{//GEN-HEADEREND:event_cancelButtonActionPerformed
 		setVisible(false);
 	}//GEN-LAST:event_cancelButtonActionPerformed
 
-	private void okButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)//GEN-FIRST:event_okButtonActionPerformed
+	private void okButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt) //GEN-FIRST:event_okButtonActionPerformed
 	{//GEN-HEADEREND:event_okButtonActionPerformed
 		String errorString = validateInput();
 		if (errorString != null)
@@ -389,6 +766,87 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 			JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this), errorString, "Error", JOptionPane.ERROR_MESSAGE);
 			return;
 		}
+
+		String fileName = cellDataPathTextField.getText();
+
+		if (isEditMode && (LEAVE_UNMODIFIED.equals(fileName) || fileName == null || fileName.isEmpty()))
+			fileName = origData != null ? urlToFileName(origData.getFileName()) : null;
+		if (fileName == null)
+			throw new AssertionError();
+
+		ImmutableList<String> elementNames;
+		ImmutableList<Integer> columnIdentifiers;
+		if (scalarRadioButton.isSelected())
+		{
+			String selected = (String) comboBox.getSelectedItem();
+			elementNames = selected != null ? ImmutableList.of(selected) : ImmutableList.of();
+			columnIdentifiers = selected != null ? ImmutableList.of(comboBox.getSelectedIndex()) : null;
+		}
+		else
+		{
+			String xSelected = (String) xComboBox.getSelectedItem();
+			String ySelected = (String) yComboBox.getSelectedItem();
+			String zSelected = (String) zComboBox.getSelectedItem();
+			ImmutableList.Builder<String> nameBuilder = ImmutableList.builder();
+			ImmutableList.Builder<Integer> columnBuilder = ImmutableList.builder();
+			if (xSelected != null)
+			{
+				nameBuilder.add(xSelected);
+				columnBuilder.add(xComboBox.getSelectedIndex());
+			}
+			if (ySelected != null)
+			{
+				nameBuilder.add(ySelected);
+				columnBuilder.add(yComboBox.getSelectedIndex());
+			}
+			if (zSelected != null)
+			{
+				nameBuilder.add(zSelected);
+				columnBuilder.add(zComboBox.getSelectedIndex());
+			}
+			elementNames = nameBuilder.build();
+			columnIdentifiers = columnBuilder.build();
+		}
+
+		// The commented out code below avoids reloading plate data if the data are already loaded, and
+		// if it appears the reload would result in the same data being (unnecessarily) reloaded. Not clear
+		// what the risks are of doing this, so leaving it commented out. But if users should become impatient
+		// with the unneeded reloads, this could be used.
+		//		// If the original coloring (being edited) was already loaded,
+		//		vtkFloatArray origVtkArray = null;
+		//		if (origData != null && origData.isLoaded())
+		//		{
+		//			// If the same file and same columns are identified, save the already-loaded data.
+		//			String origFileName = origData.getFileName();
+		//			List<?> origColumnIds = origData.getColumnIdentifiers();
+		//			if (fileName == origFileName || (fileName != null && fileName.equals(origFileName))
+		//					&& (columnIdentifiers == origColumnIds || (columnIdentifiers != null && columnIdentifiers.equals(origColumnIds))))
+		//			{
+		//				origVtkArray = origData.getData();
+		//			}
+		//		}
+		//
+		//		if (origVtkArray == null)
+		//		{
+		currentData = ColoringData.of(nameTextField.getText(), FileCache.createFileURL(fileName).toString(), elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
+		try
+		{
+			currentData.load();
+		}
+		catch (IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this), e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		//		}
+		//		else
+		//		{
+		//			// Preserve any loaded vtk data by constructing the new coloring data in two steps.
+		//			ColoringData withoutFileName = ColoringData.of(nameTextField.getText(), elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected(), origVtkArray);
+		//			currentData = ColoringData.renameFile(withoutFileName, fileName);
+		//		}
 
 		okayPressed = true;
 		setVisible(false);
@@ -406,5 +864,19 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 	private javax.swing.JLabel pathLabel2;
 	private javax.swing.JLabel unitsLabel;
 	private javax.swing.JTextField unitsTextField;
+	private javax.swing.JLabel importLabel;
+	private javax.swing.JRadioButton scalarRadioButton;
+	private javax.swing.JLabel scalarRadioLabel;
+	private javax.swing.JRadioButton vectorRadioButton;
+	private javax.swing.JLabel vectorRadioLabel;
+	private javax.swing.ButtonGroup buttonGroup;
+	private javax.swing.JLabel scalarLabel;
+	private javax.swing.JLabel xLabel;
+	private javax.swing.JLabel yLabel;
+	private javax.swing.JLabel zLabel;
+	private javax.swing.JComboBox<String> comboBox;
+	private javax.swing.JComboBox<String> xComboBox;
+	private javax.swing.JComboBox<String> yComboBox;
+	private javax.swing.JComboBox<String> zComboBox;
 	// End of variables declaration//GEN-END:variables
 }

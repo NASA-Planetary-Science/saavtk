@@ -95,6 +95,15 @@ public class GNumberField extends JTextField implements DocumentListener
 	}
 
 	/**
+	 * Returns the Color used to change foreground text whenever invalid input is
+	 * entered.
+	 */
+	public Color getFailColor()
+	{
+		return failColor;
+	}
+
+	/**
 	 * Returns the currently stored model value
 	 */
 	public double getValue()

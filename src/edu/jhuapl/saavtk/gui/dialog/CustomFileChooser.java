@@ -81,12 +81,22 @@ public class CustomFileChooser extends FileChooserBase
 
 	public static File showOpenDialog(Component parent, String title)
 	{
-		return showOpenDialog(parent, title, null);
+		return showOpenDialog(parent, title, null, null);
+	}
+
+	public static File showOpenDialog(Component parent, String title, String defaultFileName)
+	{
+		return showOpenDialog(parent, title, null, defaultFileName);
 	}
 
 	public static File showOpenDialog(Component parent, String title, List<String> extensions)
 	{
-		File[] files = showOpenDialog(parent, title, extensions, false);
+		return showOpenDialog(parent, title, extensions, null);
+	}
+
+	public static File showOpenDialog(Component parent, String title, List<String> extensions, String defaultFileName)
+	{
+		File[] files = showOpenDialog(parent, title, extensions, false, defaultFileName);
 		if (files == null || files.length < 1)
 			return null;
 		else
@@ -95,6 +105,11 @@ public class CustomFileChooser extends FileChooserBase
 
 	public static File[] showOpenDialog(Component parent, String title, List<String> extensions, boolean multiSelectionEnabled)
 	{
+		return showOpenDialog(parent, title, extensions, multiSelectionEnabled, null);
+	}
+
+	public static File[] showOpenDialog(Component parent, String title, List<String> extensions, boolean multiSelectionEnabled, String defaultFileName)
+	{
 		FileDialog fc = new FileDialog(JOptionPane.getFrameForComponent(parent), title, FileDialog.LOAD);
 		// fc.setAcceptAllFileFilterUsed(true);
 		fc.setMultipleMode(multiSelectionEnabled);
@@ -102,6 +117,16 @@ public class CustomFileChooser extends FileChooserBase
 			fc.setFilenameFilter(new CustomExtensionFilter(extensions));
 		if (getLastDirectory() != null)
 			fc.setDirectory(getLastDirectory().getAbsolutePath());
+		if (defaultFileName != null)
+		{
+			File defaultFile = new File(defaultFileName);
+			File defaultDirectory = defaultFile.getParentFile();
+			if (defaultDirectory.isDirectory())
+			{
+				fc.setDirectory(defaultDirectory.getAbsolutePath());
+			}
+			fc.setFile(defaultFile.getName());
+		}
 		fc.setVisible(true);
 		String returnedFile = fc.getFile();
 		if (returnedFile != null)
@@ -110,12 +135,14 @@ public class CustomFileChooser extends FileChooserBase
 			if (multiSelectionEnabled)
 			{
 				return fc.getFiles();
-			} else
+			}
+			else
 			{
 				File file = new File(fc.getDirectory(), fc.getFile());
 				return new File[] { file };
 			}
-		} else
+		}
+		else
 		{
 			return null;
 		}
@@ -168,7 +195,8 @@ public class CustomFileChooser extends FileChooserBase
 			// }
 
 			return file;
-		} else
+		}
+		else
 		{
 			return null;
 		}

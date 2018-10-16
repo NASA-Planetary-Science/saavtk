@@ -5,8 +5,17 @@ import java.util.List;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+/**
+ * Table-specific data object information. In addition to the normal textual
+ * metadata inherited from the base class, this class has methods to get
+ * information about the table contained in the data object.
+ * 
+ */
 public class TableInfo extends DataObjectInfo
 {
+	/**
+	 * Information about a column in this table data object.
+	 */
 	public static class ColumnInfo
 	{
 		public static ColumnInfo of(String name, String units)
