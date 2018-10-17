@@ -5,7 +5,6 @@ import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.text.DecimalFormat;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -188,7 +187,7 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 		// LogScale UI
 		else if (source == logScaleCB)
 		{
-			cColormap.setLogScale(logScaleCB.isSelected());
+			syncColorMapToGui();
 			firePropertyChange(EVT_ColormapChanged, null, null);
 		}
 
