@@ -183,13 +183,10 @@ public class GsonSerializer implements Serializer
 		{
 			if (source.hasKey(key))
 			{
-				if (source.hasKey(key))
+				Metadata element = source.get(key);
+				if (element != null)
 				{
-					Metadata element = source.get(key);
-					if (element != null)
-					{
-						managerCollection.getManager(key).retrieve(element);
-					}
+					managerCollection.getManager(key).retrieve(element);
 				}
 			}
 		}
