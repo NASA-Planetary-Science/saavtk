@@ -46,6 +46,8 @@ public class TableSwingWrapper implements EventListener, TableModelListener
         initComponent();
         table.addListener(this);
         jTable.getModel().addTableModelListener(this);
+		jTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+
     }
 
     public void setColumnEditable(TableColumn spec, boolean editable)
@@ -56,6 +58,11 @@ public class TableSwingWrapper implements EventListener, TableModelListener
     public void setCellEditable(int row, TableColumn spec, boolean editable)
     {
         cellEditable.put(row, spec, editable);
+    }
+    
+    public void setColumnWidth(int columnIndex, int width)
+    {
+    	jTable.getColumnModel().getColumn(columnIndex).setPreferredWidth(width);
     }
 
     @SuppressWarnings("serial")
