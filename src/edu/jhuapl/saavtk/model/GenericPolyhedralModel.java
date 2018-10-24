@@ -2039,6 +2039,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	@Override
 	public double[] getCurrentColoringRange(int coloringIndex)
 	{
+		if (colormap != null)
+			return new double[] { colormap.getRangeMin(), colormap.getRangeMax() };
+
 		return getColoringData(coloringIndex).getCurrentRange();
 	}
 
