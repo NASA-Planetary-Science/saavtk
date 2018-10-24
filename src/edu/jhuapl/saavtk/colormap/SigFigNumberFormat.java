@@ -14,7 +14,7 @@ import java.text.ParsePosition;
  * of values with a requested number of significant digits. This class should be
  * in a different package when completed.
  */
-class SigFigNumberFormat extends NumberFormat
+public class SigFigNumberFormat extends NumberFormat
 {
 	// Constants
 	private static final long serialVersionUID = 1L;
