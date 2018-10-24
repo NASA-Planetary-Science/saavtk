@@ -296,11 +296,15 @@ public abstract class ViewManager extends JPanel
 				{
 					if (new File(dir, "model.json").isFile())
 					{
-						addCustomView(createCustomView(dir.getName(), false, new File(dir, "model.json")));
+						View view = createCustomView(dir.getName(), false, new File(dir, "model.json"));
+						if (view != null)
+							addCustomView(view);
 					}
 					else
 					{
-						addCustomView(createCustomView(statusBar, dir.getName(), false));
+						View view = createCustomView(statusBar, dir.getName(), false);
+						if (view != null)
+							addCustomView(view);
 					}
 				}
 			}

@@ -367,6 +367,17 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		this.colormap = colormap;
 
 		this.colormap.addPropertyChangeListener(this);
+		
+		try
+		{
+			paintBody();
+		}
+		catch (IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
 
 	@Override
@@ -2515,7 +2526,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	}
 
 	@Override
-	public void updateScaleBarPosition(int windowWidth, @SuppressWarnings("unused") int windowHeight)
+	public void updateScaleBarPosition(int windowWidth, int windowHeight)
 	{
 		vtkPoints points = scaleBarPolydata.GetPoints();
 
