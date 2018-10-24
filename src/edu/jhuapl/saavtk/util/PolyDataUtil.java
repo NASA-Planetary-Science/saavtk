@@ -53,7 +53,6 @@ import vtk.vtkPolyDataWriter;
 import vtk.vtkRegularPolygonSource;
 import vtk.vtkSTLReader;
 import vtk.vtkSTLWriter;
-import vtk.vtkSphere;
 import vtk.vtkTransform;
 import vtk.vtkTransformPolyDataFilter;
 import vtk.vtkTriangle;
@@ -646,37 +645,47 @@ public class PolyDataUtil
 
 		double[] normal = getPolyDataNormalAtPoint(center, polyData, pointLocator);
 
+		/*
+		 * vtkIdList pids=new vtkIdList(); pointLocator.FindClosestNPoints(256, center,
+		 * pids); Set<Integer> cellIds=Sets.newHashSet(); for (int i=0;
+		 * i<pids.GetNumberOfIds(); i++) { vtkIdList cids=new vtkIdList();
+		 * 
+		 * polyData.GetPointCells(i, cids); for (int j=0; j<cids.GetNumberOfIds(); j++)
+		 * cellIds.add(cids.GetId(j));
+		 * 
+		 * }
+		 */
+
 		// If the number of points are too small, then vtkExtractPolyDataGeometry
 		// as used here might fail, so skip this part (which is just an optimization
 		// not really needed when the points are few) in this case.
-		if (polyData.GetNumberOfPoints() >= 20000)
-		{
-			// Reduce the size of the polydata we need to process by only
-			// considering cells within 1.2 times the radius. We make sure,
-			// however, that if the radius is below a threshold to not
-			// go below it. The threshold is chosen to be 0.2 for Eros,
-			// which is equal to the bounding box diagonal length divided
-			// by about 193. For other bodies it will be different, depending on
-			// the diagonal length.
-
-			BoundingBox boundingBox = new BoundingBox(polyData.GetBounds());
-			double minRadius = boundingBox.getDiagonalLength() / 193.30280166816735;
-
-			vtkSphere sphere = new vtkSphere();
-			d.add(sphere);
-			sphere.SetCenter(center);
-			sphere.SetRadius(semiMajorAxis >= minRadius ? 1.2 * semiMajorAxis : 1.2 * minRadius);
-
-			vtkExtractPolyDataGeometry extract = new vtkExtractPolyDataGeometry();
-			d.add(extract);
-			extract.SetImplicitFunction(sphere);
-			extract.SetExtractInside(1);
-			extract.SetExtractBoundaryCells(1);
-			extract.SetInputData(polyData);
-			extract.Update();
-			polyData = extract.GetOutput();
-			d.add(polyData);
-		}
+		/*
+		 * if (polyData.GetNumberOfPoints() >= 20000) { // Reduce the size of the
+		 * polydata we need to process by only // considering cells within 1.2 times the
+		 * radius. We make sure, // however, that if the radius is below a threshold to
+		 * not // go below it. The threshold is chosen to be 0.2 for Eros, // which is
+		 * equal to the bounding box diagonal length divided // by about 193. For other
+		 * bodies it will be different, depending on // the diagonal length.
+		 * 
+		 * BoundingBox boundingBox = new BoundingBox(polyData.GetBounds()); double
+		 * minRadius = boundingBox.getDiagonalLength() / 193.30280166816735;
+		 * 
+		 * 
+		 * 
+		 * vtkSphere sphere = new vtkSphere(); d.add(sphere); sphere.SetCenter(center);
+		 * sphere.SetRadius(semiMajorAxis >= minRadius ? 1.2 * semiMajorAxis : 1.2 *
+		 * minRadius);
+		 * 
+		 * vtkExtractPolyDataGeometry extract = new vtkExtractPolyDataGeometry();
+		 * d.add(extract); extract.SetImplicitFunction(sphere);
+		 * extract.SetExtractInside(1); extract.SetExtractBoundaryCells(1);
+		 * extract.SetInputData(polyData); extract.Update(); polyData =
+		 * extract.GetOutput(); d.add(polyData);
+		 * 
+		 * 
+		 * System.out.println(Arrays.toString(center)+" "+polyData.GetNumberOfCells());
+		 * }
+		 */
 
 		vtkRegularPolygonSource polygonSource = new vtkRegularPolygonSource();
 		d.add(polygonSource);
@@ -1756,7 +1765,7 @@ public class PolyDataUtil
 	 * @param polydata
 	 * @return
 	 */
-	static public double computeSurfaceArea(vtkPolyData polydata)
+	public static double computeSurfaceArea(vtkPolyData polydata)
 	{
 		int numberOfCells = polydata.GetNumberOfCells();
 
@@ -1776,7 +1785,7 @@ public class PolyDataUtil
 	 * @param polyline
 	 * @return
 	 */
-	static public double computeLength(vtkPolyData polyline)
+	public static double computeLength(vtkPolyData polyline)
 	{
 		vtkPoints points = polyline.GetPoints();
 		vtkCellArray lines = polyline.GetLines();
@@ -2151,7 +2160,7 @@ public class PolyDataUtil
 	 */
 	/*
 	 * // The idList parameter is needed only to avoid repeated memory // allocation
-	 * when this function is called within a loop. static public double
+	 * when this function is called within a loop. public static double
 	 * getCellArea(vtkPolyData polydata, int cellId, vtkIdList idList) {
 	 * polydata.GetCellPoints(cellId, idList);
 	 * 
@@ -2174,17 +2183,48 @@ public class PolyDataUtil
 	 * @param pt
 	 * @param idList this parameter is needed only to avoid repeated memory
 	 *            allocation when this function is called within a loop.
-	 * @return
+	 * @return interpolated scalar value (from a vtk 1-tuple).
 	 */
-	static public double interpolateWithinCell(vtkPolyData polydata, vtkDataArray pointdata, int cellId, double[] pt, vtkIdList idList)
+	public static double interpolateWithinCell(vtkPolyData polydata, vtkDataArray pointdata, int cellId, double[] pt, vtkIdList idList)
+	{
+		return interpolateWithinCell(polydata, pointdata, cellId, pt, idList, 1)[0];
+	}
+
+	/**
+	 *
+	 * @param polydata
+	 * @param pointdata
+	 * @param cellId
+	 * @param pt
+	 * @param idList this parameter is needed only to avoid repeated memory
+	 *            allocation when this function is called within a loop.
+	 * @return interpolated 3-vector value (from a vtk 3-tuple).
+	 */
+	public static double[] interpolate3VectorWithinCell(vtkPolyData polydata, vtkDataArray pointdata, int cellId, double[] pt, vtkIdList idList)
+	{
+		return interpolateWithinCell(polydata, pointdata, cellId, pt, idList, 3);
+	}
+
+	/**
+	 *
+	 * @param polydata
+	 * @param pointdata
+	 * @param cellId
+	 * @param pt
+	 * @param idList this parameter is needed only to avoid repeated memory
+	 *            allocation when this function is called within a loop.
+	 * @param tupleDegree the degree of tuple returned (size of output array). Must
+	 *            be 1, 2, or 3.
+	 * @return interpolated vector value from a vtk N-tuple (N = 1, 2, or 3)
+	 */
+	public static double[] interpolateWithinCell(vtkPolyData polydata, vtkDataArray pointdata, int cellId, double[] pt, vtkIdList idList, int tupleDegree)
 	{
 		polydata.GetCellPoints(cellId, idList);
 
 		int numberOfCells = idList.GetNumberOfIds();
 		if (numberOfCells != 3)
 		{
-			System.err.println("Error: Cells must have exactly 3 vertices!");
-			return 0.0;
+			throw new AssertionError("Error: Cells must have exactly 3 vertices!");
 		}
 
 		double[] p1 = new double[3];
@@ -2193,11 +2233,42 @@ public class PolyDataUtil
 		polydata.GetPoint(idList.GetId(0), p1);
 		polydata.GetPoint(idList.GetId(1), p2);
 		polydata.GetPoint(idList.GetId(2), p3);
-		double v1 = pointdata.GetTuple1(idList.GetId(0));
-		double v2 = pointdata.GetTuple1(idList.GetId(1));
-		double v3 = pointdata.GetTuple1(idList.GetId(2));
 
-		return MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1, v2, v3);
+		if (tupleDegree == 1)
+		{
+			double v1 = pointdata.GetTuple1(idList.GetId(0));
+			double v2 = pointdata.GetTuple1(idList.GetId(1));
+			double v3 = pointdata.GetTuple1(idList.GetId(2));
+
+			double result0 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1, v2, v3);
+
+			return new double[] { result0 };
+		}
+		else if (tupleDegree == 2)
+		{
+			double[] v1 = pointdata.GetTuple2(idList.GetId(0));
+			double[] v2 = pointdata.GetTuple2(idList.GetId(1));
+			double[] v3 = pointdata.GetTuple2(idList.GetId(2));
+
+			double result0 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[0], v2[0], v3[0]);
+			double result1 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[1], v2[1], v3[1]);
+
+			return new double[] { result0, result1 };
+		}
+		else if (tupleDegree == 3)
+		{
+			double[] v1 = pointdata.GetTuple3(idList.GetId(0));
+			double[] v2 = pointdata.GetTuple3(idList.GetId(1));
+			double[] v3 = pointdata.GetTuple3(idList.GetId(2));
+
+			double result0 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[0], v2[0], v3[0]);
+			double result1 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[1], v2[1], v3[1]);
+			double result2 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[2], v2[2], v3[2]);
+
+			return new double[] { result0, result1, result2 };
+		}
+
+		throw new IllegalArgumentException("Cannot interpolate a tuple of degree " + tupleDegree);
 	}
 
 	/**
@@ -2209,7 +2280,7 @@ public class PolyDataUtil
 	 * @param cellScalars
 	 * @param pointScalars
 	 */
-	static public void generatePointScalarsFromCellScalars(vtkPolyData polydata, vtkFloatArray cellScalars, vtkFloatArray pointScalars)
+	public static void generatePointScalarsFromCellScalars(vtkPolyData polydata, vtkFloatArray cellScalars, vtkFloatArray pointScalars)
 	{
 		polydata.BuildLinks(0);
 		int numberOfPoints = polydata.GetNumberOfPoints();
@@ -2258,7 +2329,7 @@ public class PolyDataUtil
 	 * @param frustum
 	 * @param polyData
 	 */
-	static public void generateTextureCoordinates(Frustum frustum, int width, int height, vtkPolyData footprint)
+	public static void generateTextureCoordinates(Frustum frustum, int width, int height, vtkPolyData footprint)
 	{
 		int numberOfPoints = footprint.GetNumberOfPoints();
 
@@ -2348,7 +2419,7 @@ public class PolyDataUtil
 	 * @param polydata
 	 * @return
 	 */
-	static public double getSurfaceArea(vtkPolyData polydata)
+	public static double getSurfaceArea(vtkPolyData polydata)
 	{
 		double area = 0.0;
 
@@ -2370,7 +2441,7 @@ public class PolyDataUtil
 		return area;
 	}
 
-	static public void getBoundary(vtkPolyData polydata, vtkPolyData boundary)
+	public static void getBoundary(vtkPolyData polydata, vtkPolyData boundary)
 	{
 		// Compute the bounding edges of this surface
 		vtkFeatureEdges edgeExtracter = new vtkFeatureEdges();
@@ -2425,7 +2496,7 @@ public class PolyDataUtil
 	 * @return
 	 * @throws IOException
 	 */
-	static public vtkPolyData loadPDSShapeModel(String filename) throws Exception
+	public static vtkPolyData loadPDSShapeModel(String filename) throws Exception
 	{
 		vtkPolyData polydata = new vtkPolyData();
 		vtkPoints points = new vtkPoints();
@@ -2506,7 +2577,7 @@ public class PolyDataUtil
 	 * @return
 	 * @throws IOException
 	 */
-	static public vtkPolyData loadTempel1AndWild2ShapeModel(String filename, boolean inMeters) throws Exception
+	public static vtkPolyData loadTempel1AndWild2ShapeModel(String filename, boolean inMeters) throws Exception
 	{
 		vtkPolyData polydata = new vtkPolyData();
 		vtkPoints points = new vtkPoints();
@@ -2585,7 +2656,7 @@ public class PolyDataUtil
 	 * @return
 	 * @throws Exception
 	 */
-	static public vtkPolyData loadLLRShapeModel(String filename, boolean westLongitude) throws Exception
+	public static vtkPolyData loadLLRShapeModel(String filename, boolean westLongitude) throws Exception
 	{
 		// We need to load the file in 2 passes. In the first pass
 		// we figure out the latitude/longitude spacing (both assumed same),
@@ -2815,7 +2886,7 @@ public class PolyDataUtil
 	 * @return
 	 * @throws Exception
 	 */
-	static public vtkPolyData loadLLR2ShapeModel(String filename, boolean westLongitude) throws Exception
+	public static vtkPolyData loadLLR2ShapeModel(String filename, boolean westLongitude) throws Exception
 	{
 		double latLonSpacing = 1.0;
 		int latIndex = 1;
@@ -2992,7 +3063,7 @@ public class PolyDataUtil
 		return body;
 	}
 
-	static public vtkPolyData loadVTKShapeModel(String filename) throws Exception
+	public static vtkPolyData loadVTKShapeModel(String filename) throws Exception
 	{
 		vtkPolyDataReader smallBodyReader = new vtkPolyDataReader();
 		smallBodyReader.SetFileName(filename);
@@ -3010,7 +3081,7 @@ public class PolyDataUtil
 		return shapeModel;
 	}
 
-	static public vtkPolyData loadOBJShapeModel(String filename) throws Exception
+	public static vtkPolyData loadOBJShapeModel(String filename) throws Exception
 	{
 		vtkOBJReader smallBodyReader = new vtkOBJReader();
 		smallBodyReader.SetFileName(filename);
@@ -3028,7 +3099,7 @@ public class PolyDataUtil
 		return shapeModel;
 	}
 
-	static public vtkPolyData loadPLYShapeModel(String filename) throws Exception
+	public static vtkPolyData loadPLYShapeModel(String filename) throws Exception
 	{
 		vtkPLYReader smallBodyReader = new vtkPLYReader();
 		smallBodyReader.SetFileName(filename);
@@ -3046,7 +3117,7 @@ public class PolyDataUtil
 		return shapeModel;
 	}
 
-	static public vtkPolyData loadSTLShapeModel(String filename) throws Exception
+	public static vtkPolyData loadSTLShapeModel(String filename) throws Exception
 	{
 		vtkSTLReader smallBodyReader = new vtkSTLReader();
 		smallBodyReader.SetFileName(filename);
@@ -3064,7 +3135,7 @@ public class PolyDataUtil
 		return shapeModel;
 	}
 
-	static public vtkPolyData loadFITShapeModel(String filename) throws Exception
+	public static vtkPolyData loadFITShapeModel(String filename) throws Exception
 	{
 		vtkPoints points = new vtkPoints();
 		vtkCellArray polys = new vtkCellArray();
@@ -3225,7 +3296,7 @@ public class PolyDataUtil
 	 * @return
 	 * @throws Exception
 	 */
-	static public vtkPolyData loadShapeModel(String filename) throws Exception
+	public static vtkPolyData loadShapeModel(String filename) throws Exception
 	{
 		vtkPolyData shapeModel = new vtkPolyData();
 		if (filename.toLowerCase().endsWith(".vtk"))
@@ -3272,8 +3343,7 @@ public class PolyDataUtil
 		}
 		else
 		{
-			System.out.println("Error: Unrecognized extension in file name " + filename);
-			return null;
+			throw new RuntimeException("Error: Unrecognized extension in file name " + filename);
 		}
 
 		addPointNormalsToShapeModel(shapeModel);
@@ -3281,7 +3351,7 @@ public class PolyDataUtil
 		return shapeModel;
 	}
 
-	static public void addPointNormalsToShapeModel(vtkPolyData polydata)
+	public static void addPointNormalsToShapeModel(vtkPolyData polydata)
 	{
 		if (polydata.GetPointData().GetNormals() == null)
 		{
@@ -3302,7 +3372,7 @@ public class PolyDataUtil
 		}
 	}
 
-	static public void saveShapeModelAsPLT(vtkPolyData polydata, String filename) throws IOException
+	public static void saveShapeModelAsPLT(vtkPolyData polydata, String filename) throws IOException
 	{
 		// This saves it out in exactly the same format as Bob Gaskell's shape
 		// models including precision and field width. That's why there's
@@ -3339,7 +3409,7 @@ public class PolyDataUtil
 		out.close();
 	}
 
-	static public void saveShapeModelAsOBJ(vtkPolyData polydata, String filename) throws IOException
+	public static void saveShapeModelAsOBJ(vtkPolyData polydata, String filename) throws IOException
 	{
 		FileOutputStream fos = null;
 		try
@@ -3394,7 +3464,7 @@ public class PolyDataUtil
 		out.close();
 	}
 
-	static public void saveShapeModelAsVTK(vtkPolyData polydata, String filename) throws IOException
+	public static void saveShapeModelAsVTK(vtkPolyData polydata, String filename) throws IOException
 	{
 		// First make a copy of polydata and remove all cell and point data since we don't want to save that out
 		vtkPolyData newpolydata = new vtkPolyData();
@@ -3418,7 +3488,7 @@ public class PolyDataUtil
 		writer.Write();
 	}
 
-	static public void saveShapeModelAsSTL(vtkPolyData polydata, String filename) throws IOException
+	public static void saveShapeModelAsSTL(vtkPolyData polydata, String filename) throws IOException
 	{
 		// First make a copy of polydata and remove all cell and point data since we don't want to save that out
 		vtkPolyData newpolydata = new vtkPolyData();
@@ -3433,7 +3503,7 @@ public class PolyDataUtil
 		writer.Write();
 	}
 
-	static public void removeDuplicatePoints(vtkPolyData polydata) throws Exception
+	public static void removeDuplicatePoints(vtkPolyData polydata) throws Exception
 	{
 		vtkCleanPolyData cleanFilter = new vtkCleanPolyData();
 		cleanFilter.PointMergingOn();
@@ -3448,7 +3518,7 @@ public class PolyDataUtil
 		polydata.DeepCopy(cleanOutput);
 	}
 
-	static public void decimatePolyData(vtkPolyData polydata, double targetReduction)
+	public static void decimatePolyData(vtkPolyData polydata, double targetReduction)
 	{
 		vtkDecimatePro dec = new vtkDecimatePro();
 		dec.SetInputData(polydata);

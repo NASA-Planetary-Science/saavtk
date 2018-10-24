@@ -36,7 +36,7 @@ public abstract class ViewManager extends JPanel
 	private List<View> builtInViews = new ArrayList<>();
 	private List<View> customViews = new ArrayList<>();
 	private View currentView;
-	private final StatusBar statusBar;
+	protected final StatusBar statusBar;
 	private final Frame frame;
 	private String tempCustomShapeModelPath;
 
@@ -294,7 +294,18 @@ public abstract class ViewManager extends JPanel
 			{
 				if (new File(dir, "model.vtk").isFile())
 				{
-					addCustomView(createCustomView(statusBar, dir.getName(), false));
+					if (new File(dir, "model.json").isFile())
+					{
+						View view = createCustomView(dir.getName(), false, new File(dir, "model.json"));
+						if (view != null)
+							addCustomView(view);
+					}
+					else
+					{
+						View view = createCustomView(statusBar, dir.getName(), false);
+						if (view != null)
+							addCustomView(view);
+					}
 				}
 			}
 		}
@@ -341,19 +352,27 @@ public abstract class ViewManager extends JPanel
 		{
 			return;
 		}
-		if (currentView != null)
-			currentView.renderer.viewDeactivating();
 
-		CardLayout cardLayout = (CardLayout) (getLayout());
-		cardLayout.show(this, view.getUniqueName());
-
-		// defer initialization of View until we show it.
-		repaint();
-		validate();
 		try
 		{
 			view.initialize();
+
+			if (currentView != null)
+				currentView.renderer.viewDeactivating();
+
+			CardLayout cardLayout = (CardLayout) (getLayout());
+			cardLayout.show(this, view.getUniqueName());
+
+			// defer initialization of View until we show it.
+			repaint();
+			validate();
+
 			currentView = view;
+
+			currentView.renderer.viewActivating();
+
+			updateRecents();
+			frame.setTitle(view.getPathRepresentation());
 		}
 		catch (UnauthorizedAccessException e)
 		{
@@ -363,13 +382,8 @@ public abstract class ViewManager extends JPanel
 		catch (Exception e)
 		{
 			e.printStackTrace();
+			JOptionPane.showMessageDialog(null, "Unable to switch to model " + view.getUniqueName() + ". See console for more information", "Problem initializing model", JOptionPane.ERROR_MESSAGE);
 		}
-
-		if (currentView != null)
-			currentView.renderer.viewActivating();
-
-		updateRecents();
-		frame.setTitle(view.getPathRepresentation());
 	}
 
 	public View getBuiltInView(int i)
@@ -404,6 +418,14 @@ public abstract class ViewManager extends JPanel
 		add(view, view.getUniqueName());
 		return view;
 	}
+	
+	public View addMetadataBackedCustomView(View view)
+	{
+		addCustomView(view);
+		add(view, view.getUniqueName());
+		return view;
+	}
+	
 
 	public View removeCustomView(String name)
 	{
@@ -421,6 +443,8 @@ public abstract class ViewManager extends JPanel
 	}
 
 	protected abstract View createCustomView(StatusBar statusBar, String name, boolean temporary);
+	
+	public abstract View createCustomView(String name, boolean temporary, File metadata);
 
 	protected abstract void initializeStateManager();
 
@@ -451,7 +475,7 @@ public abstract class ViewManager extends JPanel
 	 * @param uniqueName name of the view
 	 * @return the view with the name, or null if it's not found, or not accessible
 	 */
-	View getCustomView(String uniqueName)
+	public View getCustomView(String uniqueName)
 	{
 		for (View view : getCustomViews())
 		{

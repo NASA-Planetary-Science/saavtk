@@ -6,6 +6,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
@@ -184,21 +186,35 @@ public abstract class View extends JPanel
 		controlPanel.setSelectedIndex(tabIndex); // load default tab (which is 0 if not specified in favorite tabs file)
 
 		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, controlPanel, renderer);
+		splitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, 
+		    new PropertyChangeListener() {
+		        @Override
+		        public void propertyChange(PropertyChangeEvent pce) 
+		        {
+		        	LinkedHashMap<String, String> map = new LinkedHashMap<>();
+		        	map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
+					map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
+					Preferences.getInstance().put(map);
+		        }
+		});
 		splitPane.setOneTouchExpandable(true);
 
 		if (!initializedPanelSizing)
 		{
+			int splitLocation = (int)Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
+			int rendererWidth = splitPane.getWidth() - splitLocation;
+			
 			int width = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_WIDTH, 800L);
 			int height = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_HEIGHT, 800L);
 
 			renderer.setMinimumSize(new Dimension(100, 100));
-			renderer.setPreferredSize(new Dimension(width, height));
+			renderer.setPreferredSize(new Dimension(rendererWidth, height));
 
 			width = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
 			height = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_HEIGHT, 800L);
 
 			controlPanel.setMinimumSize(new Dimension(320, 100));
-			controlPanel.setPreferredSize(new Dimension(width, height));
+			controlPanel.setPreferredSize(new Dimension(splitLocation, height));
 
 			// Save out the size of the control panel and renderer when the tool exits
 			Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -207,9 +223,9 @@ public abstract class View extends JPanel
 				@Override
 				public void run()
 				{
-					map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(renderer.getWidth()).toString());
+					map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
 					map.put(Preferences.RENDERER_PANEL_HEIGHT, new Long(renderer.getHeight()).toString());
-					map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(controlPanel.getWidth()).toString());
+					map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
 					map.put(Preferences.CONTROL_PANEL_HEIGHT, new Long(controlPanel.getHeight()).toString());
 					Preferences.getInstance().put(map);
 				}
@@ -219,10 +235,13 @@ public abstract class View extends JPanel
 		}
 		else
 		{
+			int splitLocation = Integer.parseInt(Preferences.getInstance().get(Preferences.CONTROL_PANEL_WIDTH));
+			int rendererWidth = splitPane.getWidth() - splitLocation;
+			
 			renderer.setMinimumSize(new Dimension(100, 100));
-			renderer.setPreferredSize(new Dimension(800, 800));
+			renderer.setPreferredSize(new Dimension(rendererWidth, 800));
 			controlPanel.setMinimumSize(new Dimension(320, 100));
-			controlPanel.setPreferredSize(new Dimension(320, 800));
+			controlPanel.setPreferredSize(new Dimension(splitLocation, 800));
 		}
 
 		this.add(splitPane, BorderLayout.CENTER);

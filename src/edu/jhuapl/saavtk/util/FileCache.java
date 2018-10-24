@@ -1,14 +1,22 @@
 package edu.jhuapl.saavtk.util;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 
@@ -20,6 +28,30 @@ import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
 
 public final class FileCache
 {
+	// TODO this should extend Exception and thus be checked.
+	public static class NoInternetAccessException extends RuntimeException
+	{
+		private static final long serialVersionUID = -1250977612922624246L;
+		private final URL url;
+
+		private NoInternetAccessException(String cause, URL url)
+		{
+			super(cause);
+			this.url = url;
+		}
+
+		private NoInternetAccessException(Exception cause, URL url)
+		{
+			super(cause);
+			this.url = url;
+		}
+
+		public URL getURL()
+		{
+			return url;
+		}
+	}
+
 	// TODO this should extend Exception and thus be checked.
 	public static class UnauthorizedAccessException extends RuntimeException
 	{
@@ -225,7 +257,7 @@ public final class FileCache
 			builder.append(isURLAccessAuthorized());
 			builder.append(", exists = ");
 			builder.append(isExistsOnServer());
-			builder.append(") ->");
+			builder.append(") -> ");
 			builder.append(getFile());
 			builder.append(" (exists = ");
 			builder.append(isExistsLocally());
@@ -236,7 +268,7 @@ public final class FileCache
 		}
 	}
 
-	public static final String FILE_PREFIX = "file:/";
+	public static final String FILE_PREFIX = "file://";
 
 	private static final ConcurrentHashMap<File, FileInfo> INFO_MAP = new ConcurrentHashMap<>();
 	private static boolean showDotsForFiles = false;
@@ -320,54 +352,85 @@ public final class FileCache
 	 */
 	public static FileInfo getFileInfoFromServer(String urlOrPathSegment)
 	{
+		Preconditions.checkNotNull(urlOrPathSegment);
+
 		URL url = null;
+		URL dataRootUrl = Configuration.getDataRootURL();
 		try
 		{
+			// First parse the whole thing to see if it can be done without
+			// throwing an exception.
 			url = new URL(urlOrPathSegment);
-			urlOrPathSegment = "";
+
+			// Handle case where this URL starts at the top
+			// of the server path.
+			if (urlOrPathSegment.startsWith(dataRootUrl.toString() + "/"))
+			{
+				urlOrPathSegment = urlOrPathSegment.substring(dataRootUrl.toString().length() + 1);
+			}
+			else
+			{
+				// Extract the path portion of the URL.
+				urlOrPathSegment = url.getFile();
+			}
 		}
 		catch (@SuppressWarnings("unused") MalformedURLException e)
 		{
-			url = Configuration.getDataRootURL();
+			// Assume the argument is a path segment and use it to
+			// construct the URL relative to the data root.
+			try
+			{
+				url = new URL(dataRootUrl + toUrlSegment(urlOrPathSegment));
+			}
+			catch (MalformedURLException e1)
+			{
+				throw new IllegalArgumentException(e1);
+			}
 		}
 		return getFileInfoFromServer(url, urlOrPathSegment);
 	}
 
 	/**
-	 * Get information about the file on the server identified by the provided URL
-	 * object supplemented with the provieded path segment. See the other overload
-	 * of this method for more details about how the arguments are processed.
+	 * Get information about the cached file, which is identified by the provided
+	 * URL object, and located in the cache using the provided path segment.
 	 *
-	 * @param rootUrl the root URL, used without modification
-	 * @param pathSegment the path relative to the URL for the remote object
+	 * @param url the complete URL used without modification
+	 * @param pathSegment the path relative to the data cache top for the local
+	 *            object
 	 * @return the file information object
 	 */
-	public static FileInfo getFileInfoFromServer(URL rootUrl, String pathSegment)
+	public static FileInfo getFileInfoFromServer(final URL url, String pathSegment)
 	{
-		Preconditions.checkNotNull(rootUrl);
+		Preconditions.checkNotNull(url);
 		Preconditions.checkNotNull(pathSegment);
 
 		if (!Configuration.useFileCache())
 		{
-			throw new UnsupportedOperationException("This method cannot be used if the file cache is disabled.");
+			throw new UnsupportedOperationException("This method is not currently supported if the file cache is disabled.");
 		}
 
-		String urlPathSegment = toUrlSegment(pathSegment);
 		final String ungzippedPath = pathSegment.toLowerCase().endsWith(".gz") ? pathSegment.substring(0, pathSegment.length() - 3) : pathSegment;
-
-		URL url = createURL(rootUrl + urlPathSegment);
-		String urlString = url.toString();
 
 		if (offlineMode)
 		{
-			return new FileInfo(url, new File(SafePaths.getString(offlineModeRootFolder, ungzippedPath)), YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0);
+			// It's possible there is information about this file already from a previous query
+			// when offlineMode was disabled.
+			File file = url.getProtocol().equalsIgnoreCase("file") ? SafePaths.get(url.getFile()).toFile() : SafePaths.get(offlineModeRootFolder, ungzippedPath).toFile();
+			FileInfo info = INFO_MAP.get(file);
+			if (info == null)
+			{
+				// Didn't already have info about this file, so return file info with
+				// partial information.
+				info = new FileInfo(url, file, YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0);
+			}
+			return info;
 		}
 
-		if (ungzippedPath.equals(pathSegment) && urlString.toLowerCase().startsWith(FILE_PREFIX))
+		if (ungzippedPath.equals(pathSegment) && url.getProtocol().equalsIgnoreCase("file"))
 		{
 			// File "on the server" is not gzipped, and is allegedly on local file system,
 			// so just try to use it directly.
-			File file = SafePaths.get(urlString.substring(FILE_PREFIX.length() - 1)).toFile();
+			File file = SafePaths.get(url.getFile()).toFile();
 
 			FileInfo info = INFO_MAP.get(file);
 			if (info == null)
@@ -394,6 +457,7 @@ public final class FileCache
 			//                  HttpURLConnection.setFollowRedirects(false);
 			YesOrNo authorized = YesOrNo.UNKNOWN;
 			YesOrNo urlExists = YesOrNo.UNKNOWN;
+			long lastModified = 0;
 			try
 			{
 				final URLConnection connection = url.openConnection();
@@ -428,9 +492,12 @@ public final class FileCache
 						authorized = YesOrNo.YES;
 						urlExists = YesOrNo.NO;
 					}
-					info = new FileInfo(url, file, authorized, urlExists, connection.getLastModified());
 				}
-
+				lastModified = connection.getLastModified();
+			}
+			catch (UnknownHostException e)
+			{
+				throw new NoInternetAccessException(e, url);
 			}
 			catch (Exception e)
 			{
@@ -440,12 +507,17 @@ public final class FileCache
 					e.printStackTrace();
 					authorized = YesOrNo.NO;
 				}
-				info = new FileInfo(url, file, authorized, urlExists, 0);
 			}
+
+			info = new FileInfo(url, file, authorized, urlExists, lastModified);
 			INFO_MAP.put(file, info);
 		}
-
 		return info;
+	}
+	
+	public static boolean isFileInCustomData(String urlOrPathSegment) 
+	{
+		return new File(urlOrPathSegment).exists();
 	}
 
 	/**
@@ -457,14 +529,14 @@ public final class FileCache
 	 * 
 	 * @param urlOrPathSegment the input URL string or path segment
 	 * @return true if it appears the file could be successfully downloaded/used
-	 * @throws UnauthorizedAccessException if a 401/403 (Unauthorized/Forbidden)
-	 *             error is encountered when attempting to access the server for the
+	 * @throws UnauthorizedAccessException if a 401/403 (Unauthorized/Forbidden) error
+	 *             is encountered when attempting to access the server for the
 	 *             remote file
 	 */
-	public static boolean isFileGettable(String urlOrPathSegment) throws UnauthorizedAccessException
+	public static boolean isFileGettable(String urlOrPathSegment) throws NoInternetAccessException
 	{
 		FileInfo fileInfo = getFileInfoFromServer(urlOrPathSegment);
-		if (fileInfo.isExistsLocally() || fileInfo.isExistsOnServer() == YesOrNo.YES)
+		if (fileInfo.isExistsLocally() || (!offlineMode && fileInfo.isExistsOnServer() == YesOrNo.YES))
 		{
 			return true;
 		}
@@ -488,89 +560,146 @@ public final class FileCache
 	 * 
 	 * @param urlOrPathSegment the URL
 	 * @return the local file object; however, the file on disk may not exist
-	 * @throws UnauthorizedAccessException if a 401 (Unauthorized) error is
+	 * @throws NoInternetAccessException if a 401 (Unauthorized) error is
 	 *             encountered when attempting to access the server for the remote
 	 *             file.
 	 */
-	public static File getFileFromServer(String urlOrPathSegment) throws UnauthorizedAccessException
+	public static File getFileFromServer(String urlOrPathSegment) throws NoInternetAccessException
 	{
 		FileInfo fileInfo = getFileInfoFromServer(urlOrPathSegment);
+		URL url = fileInfo.getURL();
 
 		if (fileInfo.isURLAccessAuthorized() == YesOrNo.NO)
 		{
-			URL url = fileInfo.getURL();
 			throw new UnauthorizedAccessException("Cannot get file: access is restricted to URL: " + url, url);
 		}
 
-		final File file = fileInfo.getFile();
 		if (fileInfo.isNeedToDownload())
 		{
 			if (fileInfo.isExistsOnServer() == YesOrNo.NO)
 			{
-				URL url = fileInfo.getURL();
 				throw new NonexistentRemoteFile("File pointed to does not exist: " + url, url);
 			}
 
-			fileInfo.startDownload();
-			File tmpFile = null;
-			try (WrappedInputStream wrappedStream = new WrappedInputStream(fileInfo))
+			if (offlineMode)
 			{
-				final long totalByteCount = wrappedStream.getTotalByteCount();
-				fileInfo.setTotalByteCount(totalByteCount);
-				tmpFile = new File(fileInfo.getFile() + FileUtil.getTemporarySuffix());
-
-				file.getParentFile().mkdirs();
-				fileInfo.maybeAbort();
-				try (FileOutputStream os = new FileOutputStream(tmpFile))
-				{
-					InputStream is = wrappedStream.getStream();
-					final int bufferSize = Math.max(is.available(), 8192);
-					byte[] buff = new byte[bufferSize];
-					int len;
-					while ((len = is.read(buff)) > 0)
-					{
-						fileInfo.setByteCount(wrappedStream.getByteCount());
-						fileInfo.maybeAbort();
-						os.write(buff, 0, len);
-					}
-					fileInfo.setByteCount(totalByteCount);
-					fileInfo.maybeAbort();
-
-					// Change the modified time of the file to that of the server.
-					final long lastModified = wrappedStream.getLastModifiedTime();
-					if (lastModified > 0)
-						tmpFile.setLastModified(lastModified);
-
-					// Okay, now rename the file to the real name.
-					file.delete();
-					tmpFile.renameTo(file);
-
-					// Change the modified time again just in case the process of
-					// renaming the file caused the modified time to change.
-					// (On Linux, changing the filename, does not change the modified
-					// time so this is not necessary, but I'm not sure about other platforms)
-					if (lastModified > 0)
-						file.setLastModified(lastModified);
-				}
+				throw new NoInternetAccessException("Offline mode; unable to retrieve " + url, url);
 			}
-			catch (Exception e)
+
+			try
 			{
-				e.printStackTrace();
-				if (tmpFile != null && !Debug.isEnabled())
+				final File file = fileInfo.getFile();
+				final Path tmpFilePath = SafePaths.get(file + FileUtil.getTemporarySuffix());
+				long lastModified = 0;
+
+				Files.deleteIfExists(tmpFilePath);
+
+				fileInfo.startDownload();
+				try (WrappedInputStream wrappedStream = new WrappedInputStream(fileInfo))
 				{
-					tmpFile.delete();
+					final long totalByteCount = wrappedStream.getTotalByteCount();
+					fileInfo.setTotalByteCount(totalByteCount);
+					File tmpFile = tmpFilePath.toFile();
+
+					file.getParentFile().mkdirs();
+					fileInfo.maybeAbort();
+					try (FileOutputStream os = new FileOutputStream(tmpFile))
+					{
+						InputStream is = wrappedStream.getStream();
+						final int bufferSize = Math.max(is.available(), 8192);
+						byte[] buff = new byte[bufferSize];
+						int len;
+						while ((len = is.read(buff)) > 0)
+						{
+							fileInfo.setByteCount(wrappedStream.getByteCount());
+							fileInfo.maybeAbort();
+							os.write(buff, 0, len);
+						}
+						fileInfo.setByteCount(totalByteCount);
+						fileInfo.maybeAbort();
+
+						// Change the modified time of the file to that of the server.
+						lastModified = wrappedStream.getLastModifiedTime();
+						if (lastModified > 0)
+							tmpFile.setLastModified(lastModified);
+					}
 				}
+				catch (Exception e)
+				{
+					if (!Debug.isEnabled())
+					{
+						Files.deleteIfExists(tmpFilePath);
+					}
+					throw e;
+				}
+
+				// Okay, now rename the file to the real name.
+				File tmpFile = tmpFilePath.toFile();
+				file.delete();
+				if (!tmpFile.renameTo(file))
+				{
+					throw new IOException("Failed to rename temporary file " + tmpFile);
+				}
+
+				// Change the modified time again just in case the process of
+				// renaming the file caused the modified time to change.
+				// (On Linux, changing the filename, does not change the modified
+				// time so this is not necessary, but I'm not sure about other platforms)
+				if (lastModified > 0)
+					file.setLastModified(lastModified);
+			}
+			catch (IOException e)
+			{
+				throw new RuntimeException(e);
 			}
 		}
+
 		return fileInfo.getFile();
 	}
 
 	/**
-	 * In "offline" mode, instead of querying a server, the image of the server is
-	 * expected to reside in a directory in the local file system.
+	 * The function loads a file from the server and returns its contents as a list
+	 * of strings, one line per string.
 	 * 
-	 * NOTE: THIS HAS NOT BEEN TESTED RECENTLY AND IS LIKELY BROKEN FOLLOWING A
-	 * REFACTORING OF THIS CLASS.
+	 * @param filename file to read
+	 * @return contents of file as list of strings
+	 * @throws IOException
+	 */
+	public static List<String> getFileLinesFromServerAsStringList(String filename) throws IOException
+	{
+		File file = getFileFromServer(filename);
+		InputStream fs = new FileInputStream(file);
+		if (filename.toLowerCase().endsWith(".gz"))
+			fs = new GZIPInputStream(fs);
+		InputStreamReader isr = new InputStreamReader(fs);
+		BufferedReader in = new BufferedReader(isr);
+
+		List<String> lines = new ArrayList<>();
+		String line;
+
+		while ((line = in.readLine()) != null)
+		{
+			lines.add(line);
+		}
+
+		in.close();
+
+		return lines;
+	}
+
+	public static boolean getOfflineMode()
+	{
+		return offlineMode;
+	}
+
+	public static void setOfflineMode(boolean offlineMode)
+	{
+		setOfflineMode(offlineMode, offlineModeRootFolder != null ? offlineModeRootFolder : Configuration.getCacheDir());
+	}
+
+	/**
+	 * In "offline" mode, instead of querying a server, the image of the server is
+	 * expected to reside in a directory in the local file system. *
 	 * 
 	 * @param offlineMode if true, use the local directory as the "top" of the
 	 *            server.
@@ -623,39 +752,28 @@ public final class FileCache
 
 		private WrappedInputStream(FileInfo fileInfo) throws IOException
 		{
-			try
+			URL url = fileInfo.getURL();
+			final boolean gunzip = url.getPath().toLowerCase().endsWith(".gz");
+
+			URLConnection connection = url.openConnection();
+			Debug.out().println("Opened connection for download to " + url);
+			if (!Debug.isEnabled() && showDotsForFiles)
 			{
-				URL url = fileInfo.getURL();
-				final boolean gunzip = url.getPath().toLowerCase().endsWith(".gz");
-
-				URLConnection connection = url.openConnection();
-				Debug.out().println("Opened connection for download to " + url);
-				if (!Debug.isEnabled() && showDotsForFiles)
-				{
-					System.out.print('.');
-				}
-
-				// These two properties seem to be still necessary as of 2017-12-19.
-				connection.setRequestProperty("User-Agent", "Mozilla/4.0");
-				connection.setRequestProperty("Accept", "*/*");
-
-				this.totalByteCount = connection.getContentLengthLong();
-				this.lastModifiedTime = connection.getLastModified();
-				this.inputStream = connection.getInputStream();
-				this.countingInputStream = new CountingInputStream(this.inputStream);
-				this.inputStream = this.countingInputStream;
-				if (gunzip)
-				{
-					this.inputStream = new GZIPInputStream(this.inputStream);
-				}
+				System.out.print('.');
 			}
-			catch (Exception e)
+
+			// These two properties seem to be still necessary as of 2017-12-19.
+			connection.setRequestProperty("User-Agent", "Mozilla/4.0");
+			connection.setRequestProperty("Accept", "*/*");
+
+			this.totalByteCount = connection.getContentLengthLong();
+			this.lastModifiedTime = connection.getLastModified();
+			this.inputStream = connection.getInputStream();
+			this.countingInputStream = new CountingInputStream(this.inputStream);
+			this.inputStream = this.countingInputStream;
+			if (gunzip)
 			{
-				if (e instanceof IOException)
-				{
-					throw e;
-				}
-				throw new IOException(e);
+				this.inputStream = new GZIPInputStream(this.inputStream);
 			}
 		}
 
@@ -691,9 +809,8 @@ public final class FileCache
 
 	public static void main(String[] args) throws MalformedURLException
 	{
-		URL url = new URL(FILE_PREFIX + "\\");
-		System.err.println(url);
-		String path = SafePaths.getString("/", "spud", "charmed///");
-		System.err.println(path);
+		Debug.setEnabled(true);
+		File file = getFileFromServer("file://Users/peachjm1/jhuapl/dev/sbmt/bennu/bennu-simulated-v4/coloring/Elevation0.fits.gz");
+		System.err.println("File " + file + " exists? " + file.exists());
 	}
 }

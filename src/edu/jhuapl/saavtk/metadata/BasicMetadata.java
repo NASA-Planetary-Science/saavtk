@@ -1,18 +1,29 @@
 package edu.jhuapl.saavtk.metadata;
 
-import java.util.Map;
-
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 
+/**
+ * Base implementation that assumes/requires all metadata keys to be stored in a
+ * standard {@link java.util.Map}. Implementations are provided for all
+ * {@link Metadata} methods except copy. An additional protected abtract method,
+ * getMap() is provided so that subclasses may provide the map used by this
+ * impementation. To ensure invariants are preserved in sublasses, all methods
+ * that rely on this implementation's contract are final.
+ */
 public abstract class BasicMetadata implements Metadata
 {
+	/**
+	 * Object used to represent null. By proxying null with this object, it is
+	 * possible to use any {@link java.util.Map} implementation for key-value pairs.
+	 */
 	private static final Object NULL_OBJECT = new Object() {
 		@Override
 		public String toString()
 		{
 			// Deliberately capitalizing this so that the astute debugger has a chance of
 			// noticing that this object is not actually a null pointer.
-			return "Null";
+			return "NULL";
 		}
 	};
 
@@ -24,7 +35,14 @@ public abstract class BasicMetadata implements Metadata
 		this.version = version;
 	}
 
-	protected abstract Map<Key<?>, Object> getMap();
+	/**
+	 * Provide an immutable copy of the map of keys to values. Because the returned
+	 * map does not support nulls for keys or values, implementations must use the
+	 * object returned by getNullObject to represent all null values.
+	 * 
+	 * @return the map of keys to values
+	 */
+	public abstract ImmutableMap<Key<?>, Object> getMap();
 
 	@Override
 	public final Version getVersion()
@@ -33,7 +51,13 @@ public abstract class BasicMetadata implements Metadata
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
+	public final boolean hasKey(Key<?> key)
+	{
+		Preconditions.checkNotNull(key);
+		return getMap().containsKey(key);
+	}
+
+	@Override
 	public final <V> V get(Key<V> key)
 	{
 		Preconditions.checkNotNull(key);
@@ -42,11 +66,13 @@ public abstract class BasicMetadata implements Metadata
 		{
 			throw new IllegalArgumentException("FixedMetadata does not contain key " + key);
 		}
-		if (NULL_OBJECT == object)
+		if (getNullObject() == object)
 		{
 			return null;
 		}
-		return (V) object;
+		@SuppressWarnings("unchecked")
+		V result = (V) object;
+		return result;
 	}
 
 	@Override
@@ -89,8 +115,9 @@ public abstract class BasicMetadata implements Metadata
 		return builder.toString();
 	}
 
-	protected static final void putNullObject(Key<?> key, Map<Key<?>, Object> map)
+	protected static Object getNullObject()
 	{
-		map.put(key, NULL_OBJECT);
+		return NULL_OBJECT;
 	}
+
 }

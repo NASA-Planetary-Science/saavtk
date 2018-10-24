@@ -26,6 +26,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import edu.jhuapl.saavtk.config.ViewConfig;
+import edu.jhuapl.saavtk.gui.dialog.ShapeModelImporterDialog;
 import edu.jhuapl.saavtk.gui.dialog.ShapeModelImporterManagerDialog;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
@@ -69,9 +70,9 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 	public ViewMenu(String title, ViewManager rootPanel, RecentlyViewed viewed)
 	{
 		super(title);
-
 		this.rootPanel = rootPanel;
 		this.viewed = viewed;
+
 
 		initialize();
 
@@ -153,6 +154,27 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 	protected void addMenuItem(JMenuItem mi, ViewConfig config)
 	{
 		add(mi);
+	}
+	
+	protected void reloadCustomMenuItems()
+	{
+		customImageMenu.removeAll();
+		
+		JMenuItem mi = new JMenuItem(new ImportShapeModelsAction());
+		customImageMenu.add(mi);
+
+		if (rootPanel.getNumberOfCustomViews() > 0)
+			customImageMenu.addSeparator();
+
+		for (int i = 0; i < rootPanel.getNumberOfCustomViews(); ++i)
+		{
+			View view = rootPanel.getCustomView(i);
+			mi = new JMenuItem(new ShowBodyAction(view));
+			mi.setText(view.getModelDisplayName());
+			if (i == 0)
+				mi.setSelected(true);
+			customImageMenu.add(mi);
+		}
 	}
 
 	private void sortCustomMenuItems()
@@ -254,6 +276,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 			String name = (String) evt.getNewValue();
 			View view = getRootPanel().addCustomView(name);
 			addCustomMenuItem(view);
+			reloadCustomMenuItems();
 		}
 		else if (Properties.CUSTOM_MODEL_DELETED.equals(evt.getPropertyName()))
 		{

@@ -2,6 +2,8 @@ package edu.jhuapl.saavtk.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -28,16 +30,29 @@ public class BasicColoringDataManager implements ColoringDataManager
 		return new BasicColoringDataManager(dataId, coloringData);
 	}
 
+	/**
+	 * Return the default coloring metadata file name for the provided version of
+	 * the serializer.
+	 * 
+	 * @param serializerVersion the version of the serializer that will be used to
+	 *            write and read the coloring metadata.
+	 * @return the file name
+	 */
+	public static String getMetadataFileName(Version serializerVersion)
+	{
+		return "coloring-" + serializerVersion + ".smd";
+	}
+
 	private final String dataId;
 	private final List<String> names;
-	private final List<Integer> resolutions;
+	private final SortedSet<Integer> resolutions;
 	private final Table<String, Integer, ColoringData> dataTable;
 
 	private BasicColoringDataManager(String dataId, Iterable<? extends ColoringData> coloringData)
 	{
 		this.dataId = dataId;
 		this.names = new ArrayList<>();
-		this.resolutions = new ArrayList<>();
+		this.resolutions = new TreeSet<>();
 		this.dataTable = TreeBasedTable.create();
 		for (ColoringData data : coloringData)
 		{
@@ -122,9 +137,8 @@ public class BasicColoringDataManager implements ColoringDataManager
 
 	public final void add(ColoringData data)
 	{
-		Metadata metadata = data.getMetadata();
-		String name = metadata.get(ColoringData.NAME);
-		Integer numberElements = metadata.get(ColoringData.NUMBER_ELEMENTS);
+		String name = data.getName();
+		Integer numberElements = data.getNumberElements();
 		if (dataTable.contains(name, numberElements))
 		{
 			throw new IllegalArgumentException("Duplicated coloring for " + name + " (" + numberElements + " elements)");
@@ -142,32 +156,52 @@ public class BasicColoringDataManager implements ColoringDataManager
 
 	public final void remove(ColoringData data)
 	{
-		Metadata metadata = data.getMetadata();
-		String name = metadata.get(ColoringData.NAME);
-		Integer numberElements = metadata.get(ColoringData.NUMBER_ELEMENTS);
-		dataTable.remove(name, numberElements);
-
-		if (!dataTable.rowKeySet().contains(name))
-		{
-			names.remove(name);
-		}
-
-		if (!dataTable.columnKeySet().contains(numberElements))
-		{
-			resolutions.remove(numberElements);
-		}
+		remove(data.getName(), data.getNumberElements());
 	}
 
-	public final void replace(ColoringData data)
+	/**
+	 * Replaces a coloring data object with another of the same resolution. The
+	 * object to be replaced is explicitly identified only by its name (and
+	 * implicitly by the resolution of the new data object supplied).
+	 * <p>
+	 * Other than the resolution, all other attributes of the new data object,
+	 * including the name, may be different from the corresponding attributes of the
+	 * object being replaced.
+	 * 
+	 * @param oldName the name of the old coloring to replace
+	 * @param newData the new coloring data object
+	 * @throws IllegalArgumentException if there is no coloring with the given name
+	 *             and the same resolution as the supplied new coloring object
+	 * @throws NullPointerException if either argument is null
+	 */
+	public final void replace(String oldName, ColoringData newData)
 	{
-		Metadata metadata = data.getMetadata();
-		String name = metadata.get(ColoringData.NAME);
-		Integer numberElements = metadata.get(ColoringData.NUMBER_ELEMENTS);
-		if (!dataTable.contains(name, numberElements))
+		int index = names.indexOf(oldName);
+		Preconditions.checkArgument(index >= 0);
+
+		Integer resolution = newData.getNumberElements();
+		Preconditions.checkArgument(dataTable.contains(oldName, resolution));
+
+		// Remove the old data.
+		remove(oldName, resolution);
+
+		String newName = newData.getName();
+
+		// If the new name is already present (i.e., if there are other colorings with
+		// the same name but different resolutions), need not do anything to the
+		// names list.
+		if (!names.contains(newName))
 		{
-			throw new IllegalArgumentException("Cannot replace coloring " + name + " (" + numberElements + " elements)");
+			// Add the new name at the same index where the old name
+			// was removed.
+			names.add(index, newName);
 		}
-		dataTable.put(name, numberElements, data);
+
+		// Resolutions is a set, so just make sure this resolution is still present
+		// in the set. Don't need to worry about the order.
+		resolutions.add(resolution);
+
+		dataTable.put(newName, resolution, newData);
 	}
 
 	public void clear()
@@ -177,7 +211,7 @@ public class BasicColoringDataManager implements ColoringDataManager
 		dataTable.clear();
 	}
 
-	MetadataManager getMetadataManager()
+	public MetadataManager getMetadataManager()
 	{
 		return new MetadataManager() {
 
@@ -204,10 +238,76 @@ public class BasicColoringDataManager implements ColoringDataManager
 			public void retrieve(Metadata source)
 			{
 				clear();
-				// TODO write the rest of this.
+				List<Metadata> metadataList = source.get(Key.of(dataId));
+				for (Metadata metadata : metadataList)
+				{
+					add(ColoringData.of(metadata));
+				}
 			}
 
 		};
+	}
+
+	@Override
+	public String toString()
+	{
+		StringBuilder builder = new StringBuilder(getId());
+		builder.append(" colorings: ");
+		boolean startingLoop = true;
+		for (String name : names)
+		{
+			if (!startingLoop)
+				builder.append(", ");
+			builder.append(name);
+
+			builder.append(" [");
+			startingLoop = true;
+			ImmutableList<Integer> resolutions = ImmutableList.copyOf(this.resolutions);
+			for (int index = 0; index < resolutions.size(); ++index)
+			{
+				if (!startingLoop)
+					builder.append(", ");
+				Integer numberElements = resolutions.get(index);
+				if (has(name, numberElements))
+				{
+					builder.append(index);
+				}
+				startingLoop = false;
+			}
+			builder.append("]");
+			startingLoop = false;
+		}
+		return builder.toString();
+	}
+
+	private void remove(String name, Integer resolution)
+	{
+		dataTable.remove(name, resolution);
+
+		boolean moreWithSameName = false;
+		boolean moreWithSameRes = false;
+		for (String eachName : dataTable.rowKeySet())
+		{
+			for (Integer eachRes : dataTable.columnKeySet())
+			{
+				if (name.equals(eachName))
+				{
+					moreWithSameName = true;
+				}
+				if (resolution.equals(eachRes))
+				{
+					moreWithSameRes = true;
+				}
+			}
+		}
+		if (!moreWithSameName)
+		{
+			names.remove(name);
+		}
+		if (!moreWithSameRes)
+		{
+			resolutions.remove(resolution);
+		}
 	}
 
 }

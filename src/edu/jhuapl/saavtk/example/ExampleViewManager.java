@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.example;
 
 import java.awt.Frame;
+import java.io.File;
 
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.gui.StatusBar;
@@ -35,6 +36,12 @@ public final class ExampleViewManager extends ViewManager
 		config.customTemporary = temporary;
 		config.author = ShapeModelType.CUSTOM;
 		return new ExampleView(statusBar, config);
+	}
+	
+	@Override
+	public View createCustomView(String name, boolean temporary, File metadata) {
+		// TODO Auto-generated method stub
+		return createCustomView(statusBar, name, temporary);
 	}
 
 	@Override

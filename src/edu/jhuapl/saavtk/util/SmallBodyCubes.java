@@ -85,7 +85,7 @@ public class SmallBodyCubes
 
     private void removeEmptyCubes(vtkPolyData smallBodyPolyData)
     {
-        System.out.println("total cubes before reduction = " + allCubes.size());
+//        System.out.println("total cubes before reduction = " + allCubes.size());
 
         // Remove from allCubes all cubes that do not intersect the asteroid
         //long t0 = System.currentTimeMillis();
@@ -100,7 +100,7 @@ public class SmallBodyCubes
 
         allCubes = tmpCubes;
 
-        System.out.println("finished initializing cubes, total = " + allCubes.size());
+//        System.out.println("finished initializing cubes, total = " + allCubes.size());
     }
 
     public BoundingBox getCube(int cubeId)
