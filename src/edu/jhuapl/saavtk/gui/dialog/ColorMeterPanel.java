@@ -34,8 +34,8 @@ import edu.jhuapl.saavtk.gui.SystemMouseListener;
 @SuppressWarnings("serial")
 class ColorMeterPanel extends JPanel implements SystemMouseListener, HierarchyListener, AWTEventListener, ChangeListener {
 
-	JLabel hoverColorLabel = new JLabel();
-	JLabel screenCaptureLabel = new JLabel()
+	JLabel hoverColorPatch = new JLabel();
+	JLabel screenCapturePatch = new JLabel()
 			{
 				@Override
 				protected void paintComponent(Graphics g) {
@@ -52,27 +52,32 @@ class ColorMeterPanel extends JPanel implements SystemMouseListener, HierarchyLi
 					g.drawRect(x-1, y-1, w+2, w+2);
 				}
 			};
-	JLabel currentColorLabel = new JLabel();
+	JLabel currentColorPatch = new JLabel();
 	JColorChooser parent;
 	Robot robot;
 	ImageIcon icon;
 	private int screenShotDim = 21;
-	private int labelDim=200;
+	private int labelDim=100;
 
 	public ColorMeterPanel(JColorChooser parent) {
-		this.add(screenCaptureLabel);
-		this.add(hoverColorLabel);
+		this.add(screenCapturePatch);
+		this.add(hoverColorPatch);
+		this.add(currentColorPatch);
+		currentColorPatch.setBackground(parent.getSelectionModel().getSelectedColor());
+		
+		this.add(new JLabel("<html>Note: hover over any pixel on the screen<br>&nbsp&nbsp&nbsp&nbsp and press 'c' to select its color</html>"));
+		
 		this.parent = parent;
 		this.addHierarchyListener(this);
-		screenCaptureLabel.setPreferredSize(new Dimension(labelDim, labelDim));
-		screenCaptureLabel.setOpaque(true);
-		screenCaptureLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-		hoverColorLabel.setPreferredSize(new Dimension(labelDim, labelDim));
-		hoverColorLabel.setOpaque(true);
-		hoverColorLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-		currentColorLabel.setPreferredSize(new Dimension(labelDim, labelDim));
-		currentColorLabel.setOpaque(true);
-		currentColorLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		screenCapturePatch.setPreferredSize(new Dimension(labelDim, labelDim));
+		screenCapturePatch.setOpaque(true);
+		screenCapturePatch.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		hoverColorPatch.setPreferredSize(new Dimension(labelDim, labelDim));
+		hoverColorPatch.setOpaque(true);
+		hoverColorPatch.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		currentColorPatch.setPreferredSize(new Dimension(labelDim, labelDim));
+		currentColorPatch.setOpaque(true);
+		currentColorPatch.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 		parent.getSelectionModel().addChangeListener(this);
 		try {
 			robot = new Robot();
@@ -83,10 +88,10 @@ class ColorMeterPanel extends JPanel implements SystemMouseListener, HierarchyLi
 
 	@Override
 	public void mousePositionChanged(Point pos) {
-			hoverColorLabel.setBackground(robot.getPixelColor(pos.x, pos.y));
+			hoverColorPatch.setBackground(robot.getPixelColor(pos.x, pos.y));
 			BufferedImage image = robot.createScreenCapture(new Rectangle(pos.x - screenShotDim / 2, pos.y - screenShotDim / 2, screenShotDim, screenShotDim));
 			icon = new ImageIcon(image.getScaledInstance(labelDim, labelDim, BufferedImage.SCALE_DEFAULT));
-			screenCaptureLabel.setIcon(icon);
+			screenCapturePatch.setIcon(icon);
 	}
 
 	@Override
@@ -114,7 +119,7 @@ class ColorMeterPanel extends JPanel implements SystemMouseListener, HierarchyLi
 
 		@Override
 		public void stateChanged(ChangeEvent e) {
-			currentColorLabel.setBackground(parent.getSelectionModel().getSelectedColor());
+			currentColorPatch.setBackground(parent.getSelectionModel().getSelectedColor());
 		}
 	
 		
