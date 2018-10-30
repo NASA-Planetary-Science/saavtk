@@ -426,9 +426,9 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		lines.add(lin);
 		activateStructure(lines.size() - 1);
 		
-//		lineActor.SetMapper(lineMapper);
-//		((SaavtkLODActor) lineActor).setLODMapper(decimatedLineMapper);
-//		lineActor.Modified();
+		lineActor.SetMapper(lineMapper);
+		((SaavtkLODActor) lineActor).setLODMapper(decimatedLineMapper);
+		lineActor.Modified();
 
 		this.pcs.firePropertyChange(Properties.STRUCTURE_ADDED, null, null);
 		return lin;
