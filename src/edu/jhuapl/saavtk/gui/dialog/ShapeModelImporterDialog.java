@@ -111,7 +111,7 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
         resolutionFormattedTextField.setEnabled(enabled);
     }
     
-    public void populateCustomDEMImport(String demVtkFilename)
+    public void populateCustomDEMImport(String demVtkFilename, String originalFileType)
     {
     	shapeModelSourceButtonGroup.setSelected(customShapeModelRadioButton.getModel(), true);
     	customShapeModelRadioButton.setEnabled(true);
@@ -120,7 +120,9 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
     	ellipsoidRadioButton.setSelected(false);
     	ellipsoidRadioButton.setEnabled(false);
     	shapeModelPathTextField.setText(demVtkFilename);
-    	shapeModelFormatComboBox.setSelectedIndex(2);
+    	FormatType fileType = FormatType.valueOf(originalFileType.toUpperCase());
+    	
+    	shapeModelFormatComboBox.setSelectedItem(fileType.toString());
     }
     
     public void setDisplayName(String displayName)
