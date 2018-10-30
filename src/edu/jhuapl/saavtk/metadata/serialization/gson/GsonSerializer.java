@@ -11,10 +11,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import javax.swing.SwingUtilities;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -24,21 +20,22 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
+import edu.jhuapl.saavtk.metadata.EmptyMetadata;
 import edu.jhuapl.saavtk.metadata.InstanceGetter;
 import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.MetadataManager;
 import edu.jhuapl.saavtk.metadata.MetadataManagerCollection;
-import edu.jhuapl.saavtk.metadata.ObjectToMetadata;
 import edu.jhuapl.saavtk.metadata.Serializer;
 import edu.jhuapl.saavtk.metadata.SettableMetadata;
+import edu.jhuapl.saavtk.metadata.StorableAsMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.metadata.serialization.gson.GsonElement.ElementIO;
 
 public class GsonSerializer implements Serializer
 {
 
-	private enum TestEnum implements ObjectToMetadata<TestEnum>
+	private enum TestEnum implements StorableAsMetadata<TestEnum>
 	{
 		OPTION0("Option 0"),
 		OPTION1("Option 1");
@@ -68,13 +65,13 @@ public class GsonSerializer implements Serializer
 		}
 
 		@Override
-		public Key<TestEnum> getProxyKey()
+		public Key<TestEnum> getKey()
 		{
 			return PROXY_KEY;
 		}
 
 		@Override
-		public Metadata to()
+		public Metadata store()
 		{
 			return SettableMetadata.of(VERSION).put(NAME, name());
 		}
@@ -149,19 +146,7 @@ public class GsonSerializer implements Serializer
 				source.put(Key.of(entry.getKey()), entry.getValue());
 			}
 		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
-		if (SwingUtilities.isEventDispatchThread())
-		{
-			//			retrieveInSwingContext(source);
-			retrieveInSingleThreadContext(source);
-		}
-		else
-		{
-			retrieveInSingleThreadContext(source);
-		}
+		retrieveInSingleThreadContext(source);
 	}
 
 	@Override
@@ -177,7 +162,10 @@ public class GsonSerializer implements Serializer
 				{
 					MetadataManager manager = managerCollection.getManager(key);
 					Metadata metadata = manager.store();
-					metadataMap.put(key.getId(), metadata);
+					if (!EmptyMetadata.instance().equals(metadata))
+					{
+						metadataMap.put(key.getId(), metadata);
+					}
 				}
 				GSON.toJson(SERIALIZER_VERSION, DataTypeInfo.VERSION.getType(), jsonWriter);
 				jsonWriter.flush();
@@ -189,36 +177,11 @@ public class GsonSerializer implements Serializer
 		}
 	}
 
-	private void retrieveInSwingContext(Metadata source)
-	{
-		ExecutorService executor = Executors.newSingleThreadExecutor();
-		executor.execute(() -> {
-			for (Key<? extends Metadata> key : managerCollection.getKeys())
-			{
-				try
-				{
-					Metadata element = source.get(key);
-					if (element != null)
-					{
-						SwingUtilities.invokeAndWait(() -> {
-							managerCollection.getManager(key).retrieve(element);
-						});
-					}
-				}
-				catch (Exception e)
-				{
-					e.printStackTrace();
-				}
-			}
-		});
-		executor.shutdown();
-	}
-
 	private void retrieveInSingleThreadContext(Metadata source)
 	{
-		try
+		for (Key<? extends Metadata> key : managerCollection.getKeys())
 		{
-			for (Key<? extends Metadata> key : managerCollection.getKeys())
+			if (source.hasKey(key))
 			{
 				Metadata element = source.get(key);
 				if (element != null)
@@ -226,10 +189,6 @@ public class GsonSerializer implements Serializer
 					managerCollection.getManager(key).retrieve(element);
 				}
 			}
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
 		}
 	}
 

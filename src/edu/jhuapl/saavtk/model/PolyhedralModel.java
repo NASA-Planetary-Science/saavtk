@@ -251,6 +251,8 @@ public abstract class PolyhedralModel extends AbstractModel
 
 	public abstract boolean isColoringDataAvailable();
 
+	public abstract List<ColoringData> getAllColoringData();
+
 	public abstract double[] getAllColoringValues(double[] pt) throws IOException;
 
 	public abstract double[] getGravityVector(double[] pt);
@@ -258,6 +260,8 @@ public abstract class PolyhedralModel extends AbstractModel
 	public abstract double getMinShiftAmount();
 
 	public abstract void savePlateDataInsidePolydata(vtkPolyData polydata, File file) throws IOException;
+	
+	public abstract FacetColoringData[] getPlateDataInsidePolydata(vtkPolyData polydata);
 
 	public abstract String getModelName();
 

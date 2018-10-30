@@ -18,7 +18,15 @@ import edu.jhuapl.saavtk.util.file.DataObjectInfo.Description;
 import edu.jhuapl.saavtk.util.file.TableInfo.ColumnInfo;
 
 /*
- * Reader for CSV files. Required format for accepted files is:
+ * Reader for CSV files. Current format for accepted files is:
+ * 
+ *          [ name-0 ], [ name-1 ], ...
+ *          [ units-0 ], [ units-1 ], ...
+ *          value-0, value-1, ...
+ * 
+ * where the "name" and "units" lines are optional.
+ * 
+ * Proposed more general format (not yet implemented) for accepted files is:
  * 
  * Header - (optional) metadata. If present, it may have any number of lines, 
  *          but it must have the form:
@@ -57,14 +65,17 @@ import edu.jhuapl.saavtk.util.file.TableInfo.ColumnInfo;
  * Any line anywhere that begins with whitespace followed by a # is a comment and is ignored.
  * Blank lines are also ignored.
  * 
- * CURRENTLY THIS READER DOES NOT SUPPORT THIS FORMAT! Instead it parses the first line of
- * the file as strings to form the "column names". If there is no top line defining column names,
- * the names will be the values of the first line of data. If the first line consists only
- * of numbers, the first line is also included in the data. Thus this works for legacy coloring
- * files, and would work for plain 3-column CSV vector coloring data.
  */
 public class CsvFileReader extends DataFileReader
 {
+	public static final FileFormat CSV_FORMAT = new FileFormat() {
+		@Override
+		public String toString()
+		{
+			return "CSV";
+		}
+	};
+
 	private static final CsvFileReader INSTANCE = new CsvFileReader();
 
 	/*
@@ -74,13 +85,19 @@ public class CsvFileReader extends DataFileReader
 	 */
 	private static final Pattern CSV_PATTERN = Pattern.compile("\"([^\"]*)\"|(?<=,|^)([^,]*)(?:,|$)");
 
+	/*
+	 * CSV files do not have metadata such as key-value pairs, so their data objects
+	 * will return blank descriptions.
+	 */
+	private static final Description BLANK_DESCRIPTION = Description.of(ImmutableList.of(), ImmutableList.of());
+
 	public static CsvFileReader of()
 	{
 		return INSTANCE;
 	}
 
 	@Override
-	public DataFileInfo readFileInfo(File file) throws IncorrectFileFormatException, IOException
+	public DataFileInfo readFileInfo(File file) throws IOException, InvalidFileFormatException
 	{
 		if (file.toString().toLowerCase().endsWith(".gz"))
 		{
@@ -113,7 +130,7 @@ public class CsvFileReader extends DataFileReader
 		}
 	}
 
-	protected DataFileInfo readFileInfoGzipped(File file) throws IOException
+	protected DataFileInfo readFileInfoGzipped(File file) throws IOException, InvalidFileFormatException
 	{
 		try (BufferedReader in = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file)))))
 		{
@@ -121,7 +138,7 @@ public class CsvFileReader extends DataFileReader
 		}
 	}
 
-	protected DataFileInfo readFileInfoUncompressed(File file) throws IOException
+	protected DataFileInfo readFileInfoUncompressed(File file) throws IOException, InvalidFileFormatException
 	{
 		try (BufferedReader in = new BufferedReader(new FileReader(file)))
 		{
@@ -129,44 +146,52 @@ public class CsvFileReader extends DataFileReader
 		}
 	}
 
-	protected DataFileInfo readFileInfo(File file, BufferedReader in) throws IOException
+	protected DataFileInfo readFileInfo(File file, BufferedReader in) throws IOException, InvalidFileFormatException
 	{
-		// Parse the first line, which is interpreted as the column titles.
-		String line = in.readLine();
-		if (line == null)
+		// Iterate over the whole file to validate and extract available metadata.
+		int numberColumns = 0;
+		int numberRows = 0;
+		String line;
+		ImmutableList<String> columnNames = null;
+		ImmutableList<String> columnUnits = null;
+		while ((line = in.readLine()) != null)
 		{
-			throw new IOException("File is empty");
-		}
-
-		ImmutableList.Builder<ColumnInfo> builder = ImmutableList.builder();
-		boolean firstLineAllNumbers = true;
-		for (String columnName : parseCSV(line))
-		{
-			builder.add(ColumnInfo.of(columnName, ""));
+			ImmutableList<String> row = parseCSV(line);
+			numberColumns = getRowSize(row, numberColumns);
 			try
 			{
-				Double.parseDouble(columnName);
+				getRowAsDoubles(row);
+				++numberRows;
 			}
 			catch (@SuppressWarnings("unused") NumberFormatException e)
 			{
-				firstLineAllNumbers = false;
+				if (columnNames == null)
+				{
+					columnNames = row;
+				}
+				else if (columnUnits == null)
+				{
+					columnUnits = row;
+				}
+				else
+				{
+					++numberRows;
+				}
 			}
 		}
-		ImmutableList<ColumnInfo> columnInfo = builder.build();
-		final int numberColumns = columnInfo.size();
 
-		int numberRows = firstLineAllNumbers ? 1 : 0;
-		while ((line = in.readLine()) != null)
-		{
-			int numberColumnsInLine = parseCSV(line).size();
-			if (numberColumnsInLine != numberColumns)
+		// Create column information.
+		ImmutableList.Builder<ColumnInfo> builder = ImmutableList.builder();
+		
+			for (int index = 0; index < numberColumns; ++index)
 			{
-				throw new IOException("Number of columns is " + numberColumnsInLine + ", not " + numberColumns + " as expected in line " + line);
+				String name = columnNames != null ? columnNames.get(index) : "";
+				String units = columnUnits != null ? columnUnits.get(index) : "";
+				builder.add(ColumnInfo.of(name, units));
 			}
-			++numberRows;
-		}
+		ImmutableList<ColumnInfo> columnInfo = builder.build();
 
-		return DataFileInfo.of(file, FileFormat.CSV, ImmutableList.of(TableInfo.of(file.getName(), Description.of(ImmutableList.of(), ImmutableList.of()), numberRows, columnInfo)));
+		return DataFileInfo.of(file, CSV_FORMAT, ImmutableList.of(TableInfo.of(file.getName(), BLANK_DESCRIPTION, numberRows, columnInfo)));
 	}
 
 	protected IndexableTuple readTuplesGzipped(File file, int numberColumns, Iterable<Integer> columnNumbers) throws FieldNotFoundException, IOException
@@ -207,13 +232,13 @@ public class CsvFileReader extends DataFileReader
 			}
 		}
 
-		final ImmutableList<String> names = getColumnValues(values, columnNumbers);
+		final ImmutableList<String> names = getRowSliceAsStrings(values, columnNumbers);
 
 		try
 		{
 			// Also try to interpret the first row as numbers, since files
 			// may actually not have titles.
-			builder.add(stringsToDoubles(values, columnNumbers));
+			builder.add(getRowSliceAsDoubles(values, columnNumbers));
 		}
 		catch (@SuppressWarnings("unused") NumberFormatException e)
 		{
@@ -229,7 +254,7 @@ public class CsvFileReader extends DataFileReader
 			}
 			try
 			{
-				builder.add(stringsToDoubles(values, columnNumbers));
+				builder.add(getRowSliceAsDoubles(values, columnNumbers));
 			}
 			catch (NumberFormatException e)
 			{
@@ -278,6 +303,12 @@ public class CsvFileReader extends DataFileReader
 					}
 
 					@Override
+					public String getAsString(int cellIndex)
+					{
+						return Double.toString(get(cellIndex));
+					}
+
+					@Override
 					public double get(int cellIndex)
 					{
 						return valuesList.get(index).get(cellIndex);
@@ -289,7 +320,33 @@ public class CsvFileReader extends DataFileReader
 
 	}
 
-	private ImmutableList<String> getColumnValues(ImmutableList<String> line, Iterable<Integer> columnNumbers)
+	private int getRowSize(ImmutableList<?> row, int rowSize) throws InvalidFileFormatException
+	{
+		if (rowSize == 0)
+		{
+			rowSize = row.size();
+		}
+		else
+		{
+			if (row.size() != rowSize)
+			{
+				throw new InvalidFileFormatException("Inconsistent number of columns in row of CSV file");
+			}
+		}
+		return rowSize;
+	}
+
+	private ImmutableList<Double> getRowAsDoubles(ImmutableList<String> line) throws NumberFormatException
+	{
+		ImmutableList.Builder<Double> builder = ImmutableList.builder();
+		for (String cell : line)
+		{
+			builder.add(Double.parseDouble(cell));
+		}
+		return builder.build();
+	}
+
+	private ImmutableList<String> getRowSliceAsStrings(ImmutableList<String> line, Iterable<Integer> columnNumbers)
 	{
 		ImmutableList.Builder<String> builder = ImmutableList.builder();
 		for (Integer column : columnNumbers)
@@ -299,7 +356,7 @@ public class CsvFileReader extends DataFileReader
 		return builder.build();
 	}
 
-	private static ImmutableList<Double> stringsToDoubles(ImmutableList<String> line, Iterable<Integer> columnNumbers) throws NumberFormatException
+	private ImmutableList<Double> getRowSliceAsDoubles(ImmutableList<String> line, Iterable<Integer> columnNumbers) throws NumberFormatException
 	{
 		ImmutableList.Builder<Double> builder = ImmutableList.builder();
 		for (Integer column : columnNumbers)

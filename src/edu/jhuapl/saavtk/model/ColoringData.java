@@ -25,7 +25,7 @@ import vtk.vtkFloatArray;
 
 public class ColoringData
 {
-	private static final Version COLORING_DATA_VERSION = Version.of(1, 0);
+	protected static final Version COLORING_DATA_VERSION = Version.of(1, 1);
 
 	// Metadata keys.
 	static final Key<String> NAME = Key.of("Coloring name"); // Slope or Gravitational Vector
@@ -37,19 +37,63 @@ public class ColoringData
 	// for calling code to know which columns are correct, since the coloring metadata is set up before the files
 	// are downloaded. If/when metadata is downloaded from the server, this key may be used.
 	static final Key<List<String>> ELEMENT_NAMES = Key.of("Element names"); // [ "Slope" ] or [ "G_x", "G_y", "G_z" ]
-
+	static final Key<List<?>> COLUMN_IDS = Key.of("Column identifiers"); // [ "Slope" ] or [ 5, 7, 9 ]
 	static final Key<String> UNITS = Key.of("Coloring units"); // deg or m/s^2
 	static final Key<Integer> NUMBER_ELEMENTS = Key.of("Number of elements"); // 49xxx
 	static final Key<Boolean> HAS_NULLS = Key.of("Coloring has nulls");
 
 	public static ColoringData of(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
 	{
-		return of(name, fileName, elementNames, units, numberElements, hasNulls, null);
+		return of(name, fileName, elementNames, null, units, numberElements, hasNulls, null);
 	}
 
 	public static ColoringData of(String name, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
 	{
-		return of(name, null, elementNames, units, numberElements, hasNulls, data);
+		return of(name, null, elementNames, null, units, numberElements, hasNulls, data);
+	}
+
+	public static ColoringData of(String name, String fileName, Iterable<String> elementNames, Iterable<?> columnIdentifiers, String units, int numberElements, boolean hasNulls)
+	{
+		return of(name, fileName, elementNames, columnIdentifiers, units, numberElements, hasNulls, null);
+	}
+
+	public static ColoringData of(String name, Iterable<String> elementNames, Iterable<?> columnIdentifiers, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
+	{
+		return of(name, null, elementNames, columnIdentifiers, units, numberElements, hasNulls, data);
+	}
+
+	public static ColoringData rename(ColoringData source, String newColoringName)
+	{
+		ColoringData result;
+		if (source.getName().equals(newColoringName))
+		{
+			result = source;
+		}
+		else
+		{
+			// Don't call getData for the last argument -- it throws if data are not loaded, but that is not a problem in this case.
+			result = of(newColoringName, source.getFileName(), source.getElementNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls(), source.data);
+		}
+
+		return result;
+	}
+
+	public static ColoringData renameFile(ColoringData source, String newFileName)
+	{
+		String sourceFileName = source.getFileName();
+
+		ColoringData result;
+		if (sourceFileName == newFileName || (sourceFileName != null && sourceFileName.equals(newFileName)))
+		{
+			result = source;
+		}
+		else
+		{
+			// Don't call getData for the last argument -- it throws if data are not loaded, but that is not a problem in this case.
+			result = of(source.getName(), newFileName, source.getElementNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls(), source.data);
+		}
+
+		return result;
 	}
 
 	static ColoringData of(String name, File file)
@@ -64,23 +108,29 @@ public class ColoringData
 		String name = metadata.get(NAME);
 		String fileName = metadata.get(FILE_NAME);
 		List<String> elementNames = metadata.get(ELEMENT_NAMES);
+		List<?> columnIdentifiers = null;
+		if (metadata.getVersion().compareTo(Version.of(1, 1)) >= 0)
+		{
+			columnIdentifiers = metadata.get(COLUMN_IDS);
+		}
 		String units = metadata.get(UNITS);
 		int numberElements = metadata.get(NUMBER_ELEMENTS);
 		boolean hasNulls = metadata.get(HAS_NULLS);
-		return of(name, fileName, elementNames, units, numberElements, hasNulls);
+		return of(name, fileName, elementNames, columnIdentifiers, units, numberElements, hasNulls);
 	}
 
-	private static ColoringData of(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
+	private static ColoringData of(String name, String fileName, Iterable<String> elementNames, Iterable<?> columnIdentifiers, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
 	{
-		FixedMetadata metadata = createMetadata(name, fileName, elementNames, units, numberElements, hasNulls);
+		FixedMetadata metadata = createMetadata(name, fileName, elementNames, columnIdentifiers, units, numberElements, hasNulls);
 		return new ColoringData(metadata, data);
 	}
 
-	private static FixedMetadata createMetadata(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
+	private static FixedMetadata createMetadata(String name, String fileName, Iterable<String> elementNames, Iterable<?> columnIdentifiers, String units, int numberElements, boolean hasNulls)
 	{
 		Preconditions.checkNotNull(name);
 		//		Preconditions.checkNotNull(fileName); // This one may be null.
 		Preconditions.checkNotNull(elementNames);
+		//		Preconditions.checkNotNull(columnIdentifiers); // This one may be null.
 		Preconditions.checkNotNull(units);
 
 		SettableMetadata metadata = SettableMetadata.of(COLORING_DATA_VERSION);
@@ -89,6 +139,7 @@ public class ColoringData
 		metadata.put(ColoringData.FILE_NAME, fileName);
 		metadata.put(ColoringData.ELEMENT_NAMES, ImmutableList.copyOf(elementNames));
 
+		metadata.put(ColoringData.COLUMN_IDS, columnIdentifiers != null ? ImmutableList.copyOf(columnIdentifiers) : null);
 		metadata.put(ColoringData.UNITS, units);
 		metadata.put(ColoringData.NUMBER_ELEMENTS, numberElements);
 		metadata.put(ColoringData.HAS_NULLS, hasNulls);
@@ -114,6 +165,7 @@ public class ColoringData
 
 	protected ColoringData(Metadata metadata, vtkFloatArray data)
 	{
+		Preconditions.checkArgument(metadata.hasKey(FILE_NAME) || data != null);
 		this.metadata = FixedMetadata.of(metadata);
 		this.data = data;
 		this.defaultRange = this.data != null ? defaultRange = this.data.GetRange() : null;
@@ -145,9 +197,29 @@ public class ColoringData
 		return ImmutableList.copyOf(getMetadata().get(ELEMENT_NAMES));
 	}
 
+	public List<?> getColumnIdentifiers()
+	{
+		FixedMetadata metadata = getMetadata();
+		if (metadata.getVersion().compareTo(Version.of(1, 1)) >= 0)
+		{
+			// Column identifiers must be present from this version on.
+			List<?> columnIdentifiers = metadata.get(COLUMN_IDS);
+			if (columnIdentifiers != null)
+			{
+				return ImmutableList.copyOf(getMetadata().get(COLUMN_IDS));
+			}
+		}
+		return null;
+	}
+
 	public Boolean hasNulls()
 	{
 		return getMetadata().get(HAS_NULLS);
+	}
+
+	public boolean isLoaded()
+	{
+		return (data != null && defaultRange != null);
 	}
 
 	public void load() throws IOException
@@ -175,30 +247,53 @@ public class ColoringData
 			}
 
 			// If we get this far, the file was successfully downloaded.
-			IndexableTuple indexable = null;
+			IndexableTuple indexable;
 
 			String coloringName = getName();
-			if (coloringName.toLowerCase().contains("error"))
+			List<?> columnIdentifiers = getColumnIdentifiers();
+			if (columnIdentifiers == null || columnIdentifiers.isEmpty())
 			{
-				// Try first for a vector.
-				indexable = tryLoadFitsTuplesOnly(file, FitsColumnId.VECTOR_ERROR.getColumnNumbers());
+				if (coloringName.toLowerCase().contains("error"))
+				{
+					// Try first for a vector.
+					indexable = tryLoadFitsTuplesOnly(file, FitsColumnId.VECTOR_ERROR.getColumnNumbers());
+					if (indexable == null)
+					{
+						indexable = tryLoadFitsTuplesOnly(file, FitsColumnId.SCALAR_ERROR.getColumnNumbers());
+					}
+				}
+				else
+				{
+					// Try first for a vector.
+					indexable = tryLoadTuples(file, FitsColumnId.VECTOR.getColumnNumbers(), CsvColumnId.VECTOR.getColumnNumbers());
+					if (indexable == null)
+					{
+						indexable = tryLoadTuples(file, FitsColumnId.SCALAR.getColumnNumbers(), CsvColumnId.SCALAR.getColumnNumbers());
+					}
+				}
 				if (indexable == null)
 				{
-					indexable = tryLoadFitsTuplesOnly(file, FitsColumnId.SCALAR_ERROR.getColumnNumbers());
+					throw new IOException("Could not find coloring " + coloringName + " as vector or scalar data in file " + file);
 				}
 			}
 			else
 			{
-				// Try first for a vector.
-				indexable = tryLoadTuples(file, FitsColumnId.VECTOR.getColumnNumbers(), CsvColumnId.VECTOR.getColumnNumbers());
-				if (indexable == null)
+				Object id0 = columnIdentifiers.get(0);
+				if (id0 instanceof Integer)
 				{
-					indexable = tryLoadTuples(file, FitsColumnId.SCALAR.getColumnNumbers(), CsvColumnId.SCALAR.getColumnNumbers());
+					@SuppressWarnings("unchecked")
+					List<Integer> columnNumbers = (List<Integer>) columnIdentifiers;
+					indexable = tryLoadTuples(file, columnNumbers, columnNumbers);
+				}
+				else
+				{
+					indexable = null;
 				}
 			}
+
 			if (indexable == null)
 			{
-				throw new IOException("Could not find coloring " + coloringName + " as vector or scalar data in file " + file);
+				throw new IOException("Unable to load coloring data from file " + file);
 			}
 
 			vtkFloatArray data = new vtkFloatArray();
@@ -245,7 +340,6 @@ public class ColoringData
 				}
 			}
 			double[] defaultRange = computeDefaultColoringRange(data);
-
 			this.data = data;
 			this.defaultRange = defaultRange;
 			loadFailed = false;
@@ -272,6 +366,12 @@ public class ColoringData
 	{
 		Preconditions.checkState(data != null);
 		return data;
+	}
+
+	public double[] getCurrentRange()
+	{
+		Preconditions.checkState(data != null);
+		return data.GetRange();
 	}
 
 	public double[] getDefaultRange()
@@ -318,9 +418,13 @@ public class ColoringData
 	{
 		StringBuilder builder = new StringBuilder(getName());
 		append(builder, getUnits());
-		String fileFormat = getFileName().replaceFirst(".*[/\\\\]", "").replaceFirst("[^\\.]*\\.", "");
-		fileFormat = fileFormat.replaceFirst("\\.gz$", "").toUpperCase();
-		append(builder, fileFormat);
+		String fileName = getFileName();
+		if (fileName != null && fileName.matches(".*\\.[^/\\\\]*"))
+		{
+			String fileFormat = fileName.replaceFirst(".*[/\\\\]", "").replaceFirst("[^\\.]*\\.", "");
+			fileFormat = fileFormat.replaceFirst("\\.gz$", "").toUpperCase();
+			append(builder, fileFormat);
+		}
 		return builder.toString();
 	}
 
@@ -357,11 +461,6 @@ public class ColoringData
 			result[0] = minimum;
 		}
 		return result;
-	}
-
-	private boolean isLoaded()
-	{
-		return (data != null && defaultRange != null);
 	}
 
 	private IndexableTuple tryLoadFitsTuplesOnly(File file, Iterable<Integer> columnNumbers) throws IOException
@@ -451,5 +550,4 @@ public class ColoringData
 		}
 
 	}
-
 }

@@ -42,6 +42,7 @@ import edu.jhuapl.saavtk.util.SafePaths;
 
 public class CustomPlateDataDialog extends javax.swing.JDialog
 {
+	private static final long serialVersionUID = 1L;
 	private final PolyhedralModelControlPanel controlPanel;
 	private final ModelManager modelManager;
 	private final CustomizableColoringDataManager coloringDataManager;
@@ -63,7 +64,6 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		initializeList(model);
 
 		pack();
-		setModal(false);
 	}
 
 	private final void initializeList(DefaultListModel<ColoringData> model)
@@ -101,61 +101,30 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		String cellDataHasNulls = "";
 		String cellDataResolutionLevels = "";
 
-		// We need to make sure to save out data from other resolutions without modification.
-		int resolutionLevel = modelManager.getPolyhedralModel().getModelResolution();
-		if (configMap.containsKey(PolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(PolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(PolyhedralModel.CELL_DATA_UNITS) && configMap.containsKey(PolyhedralModel.CELL_DATA_HAS_NULLS)
-				&& configMap.containsKey(PolyhedralModel.CELL_DATA_RESOLUTION_LEVEL))
+		ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
+		for (int index = 0; index < resolutions.size(); ++index)
 		{
-			String[] cellDataFilenamesArr = configMap.get(PolyhedralModel.CELL_DATA_FILENAMES).split(",", -1);
-			String[] cellDataNamesArr = configMap.get(PolyhedralModel.CELL_DATA_NAMES).split(",", -1);
-			String[] cellDataUnitsArr = configMap.get(PolyhedralModel.CELL_DATA_UNITS).split(",", -1);
-			String[] cellDataHasNullsArr = configMap.get(PolyhedralModel.CELL_DATA_HAS_NULLS).split(",", -1);
-			String[] cellDataResolutionLevelsArr = configMap.get(PolyhedralModel.CELL_DATA_RESOLUTION_LEVEL).split(",", -1);
-
-			for (int i = 0; i < cellDataFilenamesArr.length; ++i)
+			for (ColoringData coloringData : coloringDataManager.get(resolutions.get(index)))
 			{
-				if (!cellDataResolutionLevelsArr[i].trim().isEmpty() && Integer.parseInt(cellDataResolutionLevelsArr[i]) != resolutionLevel)
+				if (!coloringDataManager.isCustom(coloringData))
 				{
-					if (!cellDataFilenames.isEmpty())
-					{
-						cellDataFilenames += PolyhedralModel.LIST_SEPARATOR;
-						cellDataNames += PolyhedralModel.LIST_SEPARATOR;
-						cellDataUnits += PolyhedralModel.LIST_SEPARATOR;
-						cellDataHasNulls += PolyhedralModel.LIST_SEPARATOR;
-						cellDataResolutionLevels += PolyhedralModel.LIST_SEPARATOR;
-					}
-					cellDataFilenames += cellDataFilenamesArr[i];
-					cellDataNames += cellDataNamesArr[i];
-					cellDataUnits += cellDataUnitsArr[i];
-					cellDataHasNulls += cellDataHasNullsArr[i];
-					cellDataResolutionLevels += cellDataResolutionLevelsArr[i];
+					continue;
 				}
-			}
-		}
+				if (!cellDataFilenames.isEmpty())
+				{
+					cellDataFilenames += PolyhedralModel.LIST_SEPARATOR;
+					cellDataNames += PolyhedralModel.LIST_SEPARATOR;
+					cellDataUnits += PolyhedralModel.LIST_SEPARATOR;
+					cellDataHasNulls += PolyhedralModel.LIST_SEPARATOR;
+					cellDataResolutionLevels += PolyhedralModel.LIST_SEPARATOR;
+				}
 
-		DefaultListModel<ColoringData> cellDataListModel = (DefaultListModel<ColoringData>) cellDataList.getModel();
-		for (int i = 0; i < cellDataListModel.size(); ++i)
-		{
-			ColoringData coloringData = cellDataListModel.getElementAt(i);
-			if (!coloringDataManager.isCustom(coloringData))
-			{
-				continue;
+				cellDataFilenames += coloringData.getFileName().replaceFirst(".*/", "");
+				cellDataNames += coloringData.getName();
+				cellDataUnits += coloringData.getUnits();
+				cellDataHasNulls += new Boolean(coloringData.hasNulls()).toString();
+				cellDataResolutionLevels += new Integer(index).toString();
 			}
-
-			if (!cellDataFilenames.isEmpty())
-			{
-				cellDataFilenames += PolyhedralModel.LIST_SEPARATOR;
-				cellDataNames += PolyhedralModel.LIST_SEPARATOR;
-				cellDataUnits += PolyhedralModel.LIST_SEPARATOR;
-				cellDataHasNulls += PolyhedralModel.LIST_SEPARATOR;
-				cellDataResolutionLevels += PolyhedralModel.LIST_SEPARATOR;
-			}
-
-			cellDataFilenames += coloringData.getFileName().replaceFirst(".*/", "");
-			cellDataNames += coloringData.getName();
-			cellDataUnits += coloringData.getUnits();
-			cellDataHasNulls += new Boolean(coloringData.hasNulls()).toString();
-			cellDataResolutionLevels += new Integer(resolutionLevel).toString();
 		}
 
 		Map<String, String> newMap = new LinkedHashMap<>();
@@ -167,6 +136,16 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		newMap.put(PolyhedralModel.CELL_DATA_RESOLUTION_LEVEL, cellDataResolutionLevels);
 
 		configMap.put(newMap);
+		try
+		{
+			coloringDataManager.saveCustomMetadata(modelManager.getPolyhedralModel().getCustomDataFolder());
+		}
+		catch (IOException e)
+		{
+			// This should not fail, but if it does it should not disrupt what the user is doing.
+			// Thus in this case it is appropriate to log the problem and then continue.
+			e.printStackTrace();
+		}
 	}
 
 	private ColoringData copyCellData(int index, ColoringData source)
@@ -181,7 +160,8 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		// Copy the cell data file to the model directory
 		try
 		{
-			FileUtil.copyFile(sourceFilePath, destFilePath);
+			File fileCache = FileCache.getFileFromServer(sourceFilePath);
+			FileUtil.copyFile(fileCache.getAbsolutePath(), destFilePath);
 		}
 		catch (IOException e)
 		{
@@ -190,8 +170,8 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		}
 
 		// After copying the file, convert the file path to a URL format.
-		destFilePath = FileCache.FILE_PREFIX + getCustomDataFolder() + "/" + destFileName;
-		ColoringData newColoringData = ColoringData.of(source.getName(), destFilePath, source.getElementNames(), source.getUnits(), source.getNumberElements(), source.hasNulls());
+		destFilePath = FileCache.createFileURL(getCustomDataFolder(), destFileName).toString();
+		ColoringData newColoringData = ColoringData.of(source.getName(), destFilePath, source.getElementNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls());
 
 		DefaultListModel<ColoringData> model = (DefaultListModel<ColoringData>) cellDataList.getModel();
 		if (index >= model.getSize())
@@ -441,10 +421,10 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 	protected CustomPlateDataImporterDialog getPlateImporterDialog()
 	{
-		return new CustomPlateDataImporterDialog(JOptionPane.getFrameForComponent(this), false, modelManager.getPolyhedralModel().getSmallBodyPolyData().GetNumberOfCells());
+		return new CustomPlateDataImporterDialog(JOptionPane.getFrameForComponent(this), coloringDataManager, false, modelManager.getPolyhedralModel().getSmallBodyPolyData().GetNumberOfCells());
 	}
 
-	private void newButtonActionPerformed(java.awt.event.ActionEvent evt)
+	private void newButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)
 	{//GEN-FIRST:event_newButtonActionPerformed
 		CustomPlateDataImporterDialog dialog = getPlateImporterDialog();
 		dialog.setLocationRelativeTo(this);
@@ -460,7 +440,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		controlPanel.updateColoringOptions();
 	}//GEN-LAST:event_newButtonActionPerformed
 
-	private void deleteButtonActionPerformed(java.awt.event.ActionEvent evt)
+	private void deleteButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)
 	{//GEN-FIRST:event_deleteButtonActionPerformed
 		int selectedItem = cellDataList.getSelectedIndex();
 		if (selectedItem >= 0)
@@ -470,7 +450,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		}
 	}//GEN-LAST:event_deleteButtonActionPerformed
 
-	private void editButtonActionPerformed(java.awt.event.ActionEvent evt)
+	private void editButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)
 	{//GEN-FIRST:event_editButtonActionPerformed
 		int selectedItem = cellDataList.getSelectedIndex();
 		if (selectedItem >= 0)
@@ -478,7 +458,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			DefaultListModel<ColoringData> cellDataListModel = (DefaultListModel<ColoringData>) cellDataList.getModel();
 			ColoringData oldColoringData = cellDataListModel.get(selectedItem);
 
-			CustomPlateDataImporterDialog dialog = new CustomPlateDataImporterDialog(JOptionPane.getFrameForComponent(this), true, modelManager.getPolyhedralModel().getSmallBodyPolyData().GetNumberOfCells());
+			CustomPlateDataImporterDialog dialog = new CustomPlateDataImporterDialog(JOptionPane.getFrameForComponent(this), coloringDataManager, true, modelManager.getPolyhedralModel().getSmallBodyPolyData().GetNumberOfCells());
 			dialog.setColoringData(oldColoringData);
 			dialog.setLocationRelativeTo(this);
 			dialog.setVisible(true);
@@ -487,29 +467,23 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			if (dialog.getOkayPressed())
 			{
 				ColoringData newColoringData = dialog.getColoringData();
-				if (!oldColoringData.getFileName().equals(newColoringData.getFileName()))
-				{
-					newColoringData = copyCellData(selectedItem, newColoringData);
-				}
-
 				if (!oldColoringData.equals(newColoringData))
 				{
-					coloringDataManager.removeCustom(oldColoringData);
-					coloringDataManager.addCustom(newColoringData);
+					cellDataListModel.set(selectedItem, newColoringData);
+					coloringDataManager.replaceCustom(oldColoringData.getName(), newColoringData);
 					updateConfigFile();
 				}
-				cellDataListModel.set(selectedItem, newColoringData);
 				controlPanel.updateColoringOptions();
 			}
 		}
 	}//GEN-LAST:event_editButtonActionPerformed
 
-	private void closeButtonActionPerformed(java.awt.event.ActionEvent evt)
+	private void closeButtonActionPerformed(@SuppressWarnings("unused") java.awt.event.ActionEvent evt)
 	{//GEN-FIRST:event_closeButtonActionPerformed
 		setVisible(false);
 	}//GEN-LAST:event_closeButtonActionPerformed
 
-	private void cellDataListValueChanged(javax.swing.event.ListSelectionEvent evt)
+	private void cellDataListValueChanged(@SuppressWarnings("unused") javax.swing.event.ListSelectionEvent evt)
 	{//GEN-FIRST:event_cellDataListValueChanged
 		int selectedItem = cellDataList.getSelectedIndex();
 		if (selectedItem >= 0)

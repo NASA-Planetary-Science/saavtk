@@ -512,8 +512,12 @@ public final class FileCache
 			info = new FileInfo(url, file, authorized, urlExists, lastModified);
 			INFO_MAP.put(file, info);
 		}
-
 		return info;
+	}
+	
+	public static boolean isFileInCustomData(String urlOrPathSegment) 
+	{
+		return new File(urlOrPathSegment).exists();
 	}
 
 	/**
