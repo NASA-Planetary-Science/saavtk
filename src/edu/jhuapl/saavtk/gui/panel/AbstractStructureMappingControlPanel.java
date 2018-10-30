@@ -216,6 +216,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
         @Override
         public void actionPerformed(ActionEvent e)
         {
+        	
             File file = CustomFileChooser.showOpenDialog(AbstractStructureMappingControlPanel.this, "Select File");
 
             if (file != null)
@@ -297,7 +298,8 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
         @Override
         public void actionPerformed(ActionEvent e)
         {
-            File file = CustomFileChooser.showSaveDialog(AbstractStructureMappingControlPanel.this, "Datastore filename", "myDataStore", "shp");
+
+        	File file = CustomFileChooser.showSaveDialog(AbstractStructureMappingControlPanel.this, "Datastore filename", "myDataStore", "shp");
             if (file == null)
                 return;
             String prefix = FilenameUtils.removeExtension(FilenameUtils.getFullPath(file.toString()) + FilenameUtils.getBaseName(file.toString()));
@@ -402,9 +404,13 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
         @Override
         public void actionPerformed(ActionEvent e)
         {
-            File file = CustomFileChooser.showOpenDialog(AbstractStructureMappingControlPanel.this, "Datastore filename", Lists.newArrayList("shp"));
+
+        	File file = CustomFileChooser.showOpenDialog(AbstractStructureMappingControlPanel.this, "Datastore filename", Lists.newArrayList("shp"));
             if (file == null)
+            {
+            	System.out.println("No file selected, or file not found");
                 return;
+            }
             //String prefix = FilenameUtils.getFullPath(file.toString()) + FilenameUtils.getBaseName(file.toString());
             String prefix = FilenameUtils.getFullPath(file.toString()) + FilenameUtils.getName(file.toString());
             //System.out.println(prefix);
@@ -526,6 +532,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
             else if (structureModel == modelManager.getModel(ModelNames.POLYGON_STRUCTURES))
             {
                 Path filePath = Paths.get(prefix + ".polygons-ctrlpts.shp");
+//                System.out.println(filePath+" "+filePath.toFile().exists());
                 if (filePath.toFile().exists())
                 {
                     FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.lineType);
@@ -533,7 +540,7 @@ public abstract class AbstractStructureMappingControlPanel extends JPanel implem
                     while (it.hasNext())
                     {
                         Feature f = it.next();
-                        //       System.out.println("reading polygon structure: "+f);
+//                        System.out.println("reading polygon structure: "+f);
                         LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f, (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
                         PolygonModel model = (PolygonModel) modelManager.getModel(ModelNames.POLYGON_STRUCTURES);
                         model.addNewStructure();

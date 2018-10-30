@@ -83,6 +83,11 @@ public class ColorUtil
         return getHSLColor(baseHSL[0], baseHSL[1], (float)effectiveLightness);
     }
 
+    public static float[] getRGBColorComponents(Color c)
+    {
+    	return c.getColorComponents(null);
+    }
+    
     /**
      * Converts color specification in HSL to a color object.  Note that the
      * saturation in HSL are not the same as that in HSV.

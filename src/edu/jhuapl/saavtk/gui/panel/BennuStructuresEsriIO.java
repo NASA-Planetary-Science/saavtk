@@ -2,6 +2,7 @@ package edu.jhuapl.saavtk.gui.panel;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -122,35 +123,45 @@ public class BennuStructuresEsriIO
 
     }
 
-    public static FeatureCollection read(Path shapeFile, SimpleFeatureType type)
-    {
-        try
-        {
-            File file = shapeFile.toFile();
-            Map<String, Object> map = Maps.newHashMap();
-            map.put("url", file.toURI().toURL());
+	public static FeatureCollection read(Path shapeFile, SimpleFeatureType type) {
+		DataStore dataStore = null;
+		try {
 
-            DataStore dataStore = DataStoreFinder.getDataStore(map);
-            String typeName = dataStore.getTypeNames()[0];
-            
-            FeatureSource<SimpleFeatureType, SimpleFeature> source = dataStore.getFeatureSource(typeName);
-            //Filter filter = Filter.INCLUDE; // ECQL.toFilter("BBOX(THE_GEOM, 10,20,30,40)")
+			File file = shapeFile.toFile();
+			Map<String, Object> map = Maps.newHashMap();
+			try {
+				map.put("url", file.toURI().toURL());
+			} catch (MalformedURLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 
-            FeatureCollection<SimpleFeatureType, SimpleFeature> collection = source.getFeatures();//.getFeatures(filter);
-            FeatureIterator<SimpleFeature> features = collection.features();
-            while (features.hasNext())
-            {
-                SimpleFeature feature = features.next();
-          //      System.out.print("writing "+feature.getID());
-          //      System.out.print(": ");
-          //      System.out.println(feature.getDefaultGeometryProperty().getValue());
-            }
-            return collection;
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-        return null;
-    }
+			try {
+				dataStore = DataStoreFinder.getDataStore(map);
+
+				String typeName = dataStore.getTypeNames()[0];
+
+				FeatureSource<SimpleFeatureType, SimpleFeature> source = dataStore.getFeatureSource(typeName);
+				// Filter filter = Filter.INCLUDE; // ECQL.toFilter("BBOX(THE_GEOM,
+				// 10,20,30,40)")
+
+				FeatureCollection<SimpleFeatureType, SimpleFeature> collection = source.getFeatures();// .getFeatures(filter);
+				FeatureIterator<SimpleFeature> features = collection.features();
+//				while (features.hasNext()) {
+//					SimpleFeature feature = features.next();
+//					// System.out.print("writing "+feature.getID());
+//					// System.out.print(": ");
+//					// System.out.println(feature.getDefaultGeometryProperty().getValue());
+//				}
+				return collection;
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} finally {
+			if (dataStore != null)
+				dataStore.dispose();
+		}
+		return null;
+	}
 }

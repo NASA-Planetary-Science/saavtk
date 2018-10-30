@@ -18,6 +18,9 @@ import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
+import edu.jhuapl.saavtk.model.structure.LineModel;
+import edu.jhuapl.saavtk.model.structure.StructuresExporter;
+import edu.jhuapl.saavtk.model.structure.geotools.VtkFileUtil;
 import edu.jhuapl.saavtk.util.MathUtil;
 import vtk.vtkCamera;
 import vtk.vtkProp;
@@ -42,6 +45,7 @@ abstract public class StructuresPopupMenu extends PopupMenu
 	private JMenuItem changeLabelColorButton;
 	private JCheckBoxMenuItem setLabelBorder;
 	private JCheckBoxMenuItem hideMenuItem;
+	private JMenuItem saveAsPolyDataMenuItem;
 
 	public StructuresPopupMenu(StructureModel model, PolyhedralModel smallBodyModel, Renderer renderer, boolean showChangeLatLon, boolean showExportPlateDataInsidePolygon, boolean showDisplayInterior)
 	{
@@ -123,6 +127,34 @@ abstract public class StructuresPopupMenu extends PopupMenu
 			displayInteriorMenuItem.setText("Display Interior");
 			this.add(displayInteriorMenuItem);
 		}
+
+		saveAsPolyDataMenuItem=new JCheckBoxMenuItem(new ExportToVtkAction());
+		saveAsPolyDataMenuItem.setText("Save structure as VTK polydata...");
+		this.add(saveAsPolyDataMenuItem);
+	}
+	
+	
+	protected class ExportToVtkAction extends AbstractAction
+	{
+		
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			File file = CustomFileChooser.showSaveDialog(getInvoker(), "Save Structure (VTK)", "structure.vtk");
+			if (file != null)
+			{
+				try
+				{
+					StructuresExporter.exportToVtkFile((LineModel)model, file.toPath());
+				}
+				catch (Exception e1)
+				{
+					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(getInvoker()), "Unable to save file to " + file.getAbsolutePath(), "Error Saving File", JOptionPane.ERROR_MESSAGE);
+					e1.printStackTrace();
+				}
+			}
+		}
+			
+		
 	}
 
 	@Override

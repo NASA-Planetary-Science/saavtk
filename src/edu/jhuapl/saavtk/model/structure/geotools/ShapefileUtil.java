@@ -14,9 +14,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.geotools.data.DataStore;
 import org.geotools.data.DefaultTransaction;
 import org.geotools.data.FeatureReader;
+import org.geotools.data.FeatureWriter;
 import org.geotools.data.FileDataStore;
+import org.geotools.data.LockingManager;
+import org.geotools.data.Query;
+import org.geotools.data.ServiceInfo;
 import org.geotools.data.Transaction;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.shapefile.ShapefileDataStoreFactory;
@@ -41,6 +46,8 @@ import org.opengis.feature.Feature;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.FeatureType;
+import org.opengis.feature.type.Name;
+import org.opengis.filter.Filter;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.crs.GeographicCRS;
@@ -75,6 +82,7 @@ import vtk.vtkTriangleFilter;
 
 public class ShapefileUtil
 {
+	
 	public static void write(Collection<SimpleFeature> features, Path shapeFile) throws IOException
 	{
 	
@@ -133,6 +141,7 @@ public class ShapefileUtil
 		while (fit.hasNext())
 			fl.add(fit.next());
 		fit.close();
+		dataStore.dispose();
 		return fl;
 	}
 
