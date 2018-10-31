@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.panel;
+package edu.jhuapl.saavtk.gui.panel.structures;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -65,6 +65,7 @@ import edu.jhuapl.saavtk.gui.ProfilePlot;
 import edu.jhuapl.saavtk.gui.dialog.ColorChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.NormalOffsetChangerDialog;
+import edu.jhuapl.saavtk.gui.funk.PopupButton;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
@@ -76,12 +77,12 @@ import edu.jhuapl.saavtk.model.structure.EllipseModel;
 import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.model.structure.PointModel;
 import edu.jhuapl.saavtk.model.structure.PolygonModel;
-import edu.jhuapl.saavtk.model.structure.geotools.EllipseStructure;
-import edu.jhuapl.saavtk.model.structure.geotools.FeatureUtil;
-import edu.jhuapl.saavtk.model.structure.geotools.LineSegment;
-import edu.jhuapl.saavtk.model.structure.geotools.LineStructure;
-import edu.jhuapl.saavtk.model.structure.geotools.PointStructure;
-import edu.jhuapl.saavtk.model.structure.geotools.SBMTShapefileRenamer;
+import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
+import edu.jhuapl.saavtk.model.structure.esri.FeatureUtil;
+import edu.jhuapl.saavtk.model.structure.esri.LineSegment;
+import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
+import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
+import edu.jhuapl.saavtk.model.structure.esri.SBMTShapefileRenamer;
 import edu.jhuapl.saavtk.pick.PickEvent;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.pick.Picker;
@@ -107,10 +108,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	private boolean supportsEsri=false;
 
 	// GUI vars
-	private JButton loadStructuresButton;
 	private JLabel structuresFileL;
-	// private JButton saveStructuresButton;
-	private JButton saveStructuresButton;
 	private JTable structuresTable;
 	private StructuresPopupMenu structuresPopupMenu;
 	private JFrame profileWindow;
@@ -127,46 +125,15 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	private GNumberFieldSlider fontSizeNFS;
 	private GNumberFieldSlider lineWidthNFS;
 
-	private JPopupMenu saveAsPopupMenu = new JPopupMenu();
-	private PopupListener saveAsPopupListener = new PopupListener(saveAsPopupMenu);
+
+
+	private JPopupMenu savePM = new JPopupMenu();
+	private PopupButton saveB=new PopupButton(savePM, "Load...");
     
-	private JPopupMenu loadFromPopupMenu = new JPopupMenu();
-	private PopupListener loadFromPopupListener = new PopupListener(loadFromPopupMenu);
+	private JPopupMenu loadPM = new JPopupMenu();
+	private PopupButton loadB = new PopupButton(loadPM, "Save...");
 	
-	
-    class LoadPopupAction extends AbstractAction // only if esri support is enabled
-    {
-        public LoadPopupAction()
-        {
-            super("Load...");
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) // convert the button press into a mouse event so popup is properly shown
-        {
-            Point p = MouseInfo.getPointerInfo().getLocation();
-            SwingUtilities.convertPointFromScreen(p, (Component) e.getSource());
-            loadFromPopupListener.mousePressed(new MouseEvent(AbstractStructureMappingControlPanel.this, MouseEvent.MOUSE_PRESSED, e.getWhen(), e.getModifiers(), p.x, p.y, 1, true));
-        }
-    }
-
-    class SaveAsPopupAction extends AbstractAction // only if esri support is enabled
-    {
-        public SaveAsPopupAction()
-        {
-            super("Save as...");
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) // convert the button press into a mouse event so popup is properly shown
-        {
-            Point p = MouseInfo.getPointerInfo().getLocation();
-            SwingUtilities.convertPointFromScreen(p, (Component) e.getSource());
-            saveAsPopupListener.mousePressed(new MouseEvent(AbstractStructureMappingControlPanel.this, MouseEvent.MOUSE_PRESSED, e.getWhen(), e.getModifiers(), p.x, p.y, 1, true));
-        }
-    }
-
-    class LoadSbmtStructuresFileAction extends AbstractAction // only if esri support is enabled
+    class LoadSbmtStructuresFileAction extends AbstractAction 
     {
         public LoadSbmtStructuresFileAction()
         {
@@ -207,7 +174,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
         }
     }
 
-    class SaveSbmtStructuresFileAction extends AbstractAction // only if esri support is enabled
+    class SaveSbmtStructuresFileAction extends AbstractAction 
     {
         public SaveSbmtStructuresFileAction()
         {
@@ -248,7 +215,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
         }
     }
 
-    class SaveEsriShapeFileAction extends AbstractAction // only if esri support is enabled
+    class SaveEsriShapeFileAction extends AbstractAction 
     {
         public SaveEsriShapeFileAction()
         {
@@ -354,7 +321,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
         }
     }
 
-    class LoadEsriShapeFileAction extends AbstractAction // only if esri support is enabled
+    class LoadEsriShapeFileAction extends AbstractAction 
     {
         public LoadEsriShapeFileAction()
         {
@@ -538,8 +505,11 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		this.supportsEsri=true;//supportsEsri;
 
 		changeOffsetDialog = null;
-		saveAsPopupMenu.add(new JMenuItem(new SaveSbmtStructuresFileAction()));
-		saveAsPopupMenu.add(new JMenuItem(new SaveEsriShapeFileAction()));
+		
+		loadPM.add(new JMenuItem(new LoadSbmtStructuresFileAction()));
+		loadPM.add(new JMenuItem(new LoadEsriShapeFileAction()));
+		savePM.add(new JMenuItem(new SaveSbmtStructuresFileAction()));
+		savePM.add(new JMenuItem(new SaveEsriShapeFileAction()));
 
 		structureModel.addPropertyChangeListener(this);
 		this.addComponentListener(new ComponentAdapter()
@@ -554,26 +524,6 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 
 		setLayout(new MigLayout("", "", "[]"));
 
-		loadStructuresButton = new JButton("Load...");
-		loadStructuresButton.addActionListener(this);
-
-		// twupy1: Getting rid of "Save" feature at request of Carolyn since we don't
-		// have an undo button yet
-		// this.saveStructuresButton= new JButton("Save");
-		// this.saveStructuresButton.setEnabled(true);
-		// this.saveStructuresButton.addActionListener(this);
-
-//		if (supportsEsri)
-//		{
-//			saveStructuresButton = new JButton(new SaveAsPopupAction());
-//			saveStructuresButton.addMouseListener(saveAsPopupListener);
-//		}
-//		else
-//		{
-			saveStructuresButton = new JButton("Save...");
-			saveStructuresButton.addActionListener(this);
-//		}
-
 		JLabel fileNameL = new JLabel("File: ");
 		structuresFileL = new JLabel("<no file loaded>");
 		add(fileNameL, "span,split");
@@ -581,8 +531,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 
 		JLabel tableHeadL = new JLabel(" Structures");
 		add(tableHeadL, "span,split,growx,pushx");
-		add(loadStructuresButton, "sg g0");
-		add(saveStructuresButton, "sg g0,wrap");
+		add(loadB, "sg g0");
+		add(saveB, "sg g0,wrap");
 
 		String[] columnNames = { "Id", "Type", "Name", "Details", "Color", "Label" };
 		// "Hide Label",
@@ -732,74 +682,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	{
 		Object source = actionEvent.getSource();
 
-		if (source == this.loadStructuresButton)
-		{
-			File file = CustomFileChooser.showOpenDialog(this, "Select File");
-
-			if (file != null)
-			{
-				try
-				{
-					// If there are already structures, ask user if they want to
-					// append or overwrite them
-					boolean append = false;
-					if (structureModel.getNumberOfStructures() > 0)
-					{
-						Object[] options = { "Append", "Replace" };
-						int n = JOptionPane.showOptionDialog(this,
-								"Would you like to append to or replace the existing structures?", "Append or Replace?",
-								JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-						append = (n == 0 ? true : false);
-					}
-
-					structureModel.loadModel(file, append);
-					structuresFileL.setText(file.getAbsolutePath());
-					structuresFile = file;
-				} 
-				catch (Exception e)
-				{
-					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this),
-							"There was an error reading the file.", "Error", JOptionPane.ERROR_MESSAGE);
-
-					e.printStackTrace();
-				}
-			}
-		} 
-		else if (/* source == this.saveStructuresButton || */source == this.saveStructuresButton && !supportsEsri)
-		{
-			File file = structuresFile;
-			if (structuresFile == null || source == this.saveStructuresButton)
-			{
-				if (file != null)
-				{
-					// File already exists, use it as the default filename
-					file = CustomFileChooser.showSaveDialog(this, "Select File", file.getName());
-				} 
-				else
-				{
-					// We don't have a default filename to provide
-					file = CustomFileChooser.showSaveDialog(this, "Select File");
-				}
-			}
-
-			if (file != null)
-			{
-				try
-				{
-					structureModel.saveModel(file);
-					structuresFileL.setText(file.getAbsolutePath());
-					structuresFile = file;
-				} 
-				catch (Exception e)
-				{
-					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this),
-							"There was an error saving the file.", "Error", JOptionPane.ERROR_MESSAGE);
-
-					e.printStackTrace();
-				}
-			}
-		}
-		else if (source == createB)
+		if (source == createB)
 		{
 			// Ensure all structures are visible (in case any are hidden)
 			structureModel.setVisible(true);
@@ -1319,11 +1202,11 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
         }
     }
 
-    class PopupListener extends MouseAdapter     // only if esri support is enabled
+    class FileIOButtonListener extends MouseAdapter
     {
         JPopupMenu menu;
 
-        public PopupListener(JPopupMenu menu)
+        public FileIOButtonListener(JPopupMenu menu)
         {
             this.menu = menu;
         }
@@ -1349,7 +1232,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 
         private void maybeShowPopup(MouseEvent e)
         {
-            if (e.isPopupTrigger())
+         //   if (e.isPopupTrigger())
                 menu.show(e.getComponent(), e.getX(), e.getY());
         }
     }

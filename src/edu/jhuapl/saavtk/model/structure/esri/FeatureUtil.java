@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.model.structure.geotools;
+package edu.jhuapl.saavtk.model.structure.esri;
 
 import java.awt.Color;
 import java.util.Arrays;
@@ -33,7 +33,7 @@ import com.vividsolutions.jts.geom.Polygon;
 
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.Line;
-import edu.jhuapl.saavtk.model.structure.geotools.EllipseStructure.Parameters;
+import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure.Parameters;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 

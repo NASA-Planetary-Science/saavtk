@@ -23,7 +23,7 @@ import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.model.structure.StructuresExporter;
-import edu.jhuapl.saavtk.model.structure.geotools.VtkFileUtil;
+import edu.jhuapl.saavtk.model.structure.esri.VtkFileUtil;
 import edu.jhuapl.saavtk.util.MathUtil;
 import vtk.vtkCamera;
 import vtk.vtkProp;

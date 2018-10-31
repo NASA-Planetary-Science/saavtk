@@ -8,11 +8,11 @@ import java.util.Collection;
 
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
-import edu.jhuapl.saavtk.model.structure.geotools.EllipseStructure;
-import edu.jhuapl.saavtk.model.structure.geotools.LineSegment;
-import edu.jhuapl.saavtk.model.structure.geotools.LineStructure;
-import edu.jhuapl.saavtk.model.structure.geotools.PointStructure;
-import edu.jhuapl.saavtk.model.structure.geotools.ShapefileUtil;
+import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
+import edu.jhuapl.saavtk.model.structure.esri.LineSegment;
+import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
+import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
+import edu.jhuapl.saavtk.model.structure.esri.ShapefileUtil;
 import edu.jhuapl.saavtk.util.Point3D;
 import vtk.vtkAppendPolyData;
 import vtk.vtkPolyDataWriter;

@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.panel;
+package edu.jhuapl.saavtk.gui.panel.structures;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;

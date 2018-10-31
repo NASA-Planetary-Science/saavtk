@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.panel;
+package edu.jhuapl.saavtk.gui.panel.structures;
 
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;

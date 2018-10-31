@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.model.structure.geotools;
+package edu.jhuapl.saavtk.model.structure.esri;
 
 import java.util.Arrays;
 

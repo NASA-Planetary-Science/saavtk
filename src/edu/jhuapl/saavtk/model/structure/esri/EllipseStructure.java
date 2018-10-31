@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.model.structure.geotools;
+package edu.jhuapl.saavtk.model.structure.esri;
 
 import java.awt.Color;
 import java.util.List;
@@ -7,7 +7,7 @@ import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.EllipsePolygon;
-import edu.jhuapl.saavtk.model.structure.geotools.EllipseStructure.Parameters;
+import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure.Parameters;
 import vtk.vtkCellArray;
 import vtk.vtkPoints;
 
