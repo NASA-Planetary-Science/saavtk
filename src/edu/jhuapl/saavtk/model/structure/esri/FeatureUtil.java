@@ -116,8 +116,8 @@ public class FeatureUtil
         pointBuilder.reset();
         pointBuilder.add(geom);
         pointBuilder.add(ps.getLabel());
-        pointBuilder.add(StructureUtil.colorToHex(ps.getStyle().getColor()));
-        pointBuilder.add(ps.getStyle().getSize());
+        pointBuilder.add(StructureUtil.colorToHex(ps.getPointStyle().getColor()));
+        pointBuilder.add(ps.getPointStyle().getSize());
         return pointBuilder.buildFeature(null);
     }
 
@@ -238,7 +238,6 @@ public class FeatureUtil
         }
         catch (Exception e)
         {
-            e.printStackTrace();
         }
 
         try
@@ -247,7 +246,6 @@ public class FeatureUtil
         }
         catch (Exception e)
         {
-            // TODO: handle exception
         }
 
         try
@@ -256,7 +254,6 @@ public class FeatureUtil
         }
         catch (Exception e)
         {
-            // TODO: handle exception
         }
         LineStyle style = new LineStyle(lineColor, lineWidth);
         //

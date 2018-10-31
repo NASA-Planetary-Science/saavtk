@@ -13,15 +13,17 @@ import vtk.vtkPolyDataWriter;
 import vtk.vtkVertex;
 import java.util.List;
 
+import org.ietf.jgss.Oid;
+
 import edu.jhuapl.saavtk.util.ColorUtil;
 
 public final class VtkFileUtil {
 
 	public static void writeLineStructures(List<LineStructure> lss, Path vtkFile) {
-		String filename=vtkFile.toString();
+		String filename = vtkFile.toString();
 		if (!filename.endsWith(".vtk"))
-			filename+=".vtk";
-		
+			filename += ".vtk";
+
 		vtkAppendPolyData appendFilter = new vtkAppendPolyData();
 		for (int m = 0; m < lss.size(); m++) {
 			LineStructure ls = lss.get(m);
@@ -64,8 +66,8 @@ public final class VtkFileUtil {
 		writer.SetFileTypeToBinary();
 		writer.SetInputData(appendFilter.GetOutput());
 		writer.Write();
-		
-		appendFilter=new vtkAppendPolyData();
+
+		appendFilter = new vtkAppendPolyData();
 		for (int m = 0; m < lss.size(); m++) {
 			LineStructure ls = lss.get(m);
 			int structureId = m;
@@ -93,7 +95,7 @@ public final class VtkFileUtil {
 				ids.InsertNextValue(structureId);
 				colors.InsertNextTuple3(c[0], c[1], c[2]);
 			}
-			
+
 			appendFilter.AddInputData(polyData);
 		}
 
@@ -105,4 +107,43 @@ public final class VtkFileUtil {
 		writer.Write();
 
 	}
+
+	public static void writePointStructures(List<PointStructure> lss, Path vtkFile) {
+		String filename = vtkFile.toString();
+		if (!filename.endsWith(".vtk"))
+			filename += ".vtk";
+
+		vtkPoints points = new vtkPoints();
+		vtkPolyData polyData = new vtkPolyData();
+		polyData.SetPoints(points);
+		vtkFloatArray colors = new vtkFloatArray();
+		colors.SetNumberOfComponents(3);
+		colors.SetName("colors");
+		polyData.GetCellData().AddArray(colors);
+		vtkIdTypeArray ids = new vtkIdTypeArray();
+		ids.SetName("structure ids");
+		polyData.GetCellData().AddArray(ids);
+		vtkCellArray verts = new vtkCellArray();
+		polyData.SetVerts(verts);
+
+		for (int m = 0; m < lss.size(); m++) {
+			PointStructure ls = lss.get(m);
+			int structureId = m;
+			float[] c = ColorUtil.getRGBColorComponents(ls.getPointStyle().getColor());
+			int id = points.InsertNextPoint(lss.get(m).location);
+			vtkVertex vert = new vtkVertex();
+			vert.GetPointIds().SetId(0, id);
+			verts.InsertNextCell(vert);
+			ids.InsertNextValue(structureId);
+			colors.InsertNextTuple3(c[0], c[1], c[2]);
+		}
+
+		vtkPolyDataWriter writer = new vtkPolyDataWriter();
+		writer.SetFileName(filename);
+		writer.SetFileTypeToBinary();
+		writer.SetInputData(polyData);
+		writer.Write();
+
+	}
+
 }

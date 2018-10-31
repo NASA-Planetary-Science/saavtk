@@ -30,7 +30,7 @@ public class PointStructure implements Structure
 		return label;
 	}
 	
-	public PointStyle getStyle()
+	public PointStyle getPointStyle()
 	{
 		return style;
 	}

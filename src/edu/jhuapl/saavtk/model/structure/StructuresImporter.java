@@ -44,7 +44,7 @@ public class StructuresImporter
 		Collection<PointStructure> sc=ShapefileUtil.readPointStructures(shapeFile);
 		for (PointStructure s : sc)
 		{
-			Color c=s.getStyle().getColor();
+			Color c=s.getPointStyle().getColor();
 			int[] color=new int[]{c.getRed(),c.getGreen(),c.getBlue(),c.getAlpha()};
 			String label=s.getLabel();
 			if (label==null)

@@ -3,11 +3,14 @@ package edu.jhuapl.saavtk.model.structure;
 import java.awt.Color;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
@@ -120,9 +123,27 @@ public class StructuresExporter
     	return body.getModelName().replaceAll(" ", "_").replaceAll("/", "-")+"."+modelName+".shp"; 
     }
 
-    public static void exportToVtkFile(LineModel model, Path vtkFile)
+    public static void exportToVtkFile(PointModel model, Path vtkFile, boolean multipleFiles)
     {
-		List<LineStructure> structuresToWrite = Lists.newArrayList();
+    	Map<Integer, PointStructure> structuresToWrite=Maps.newHashMap();
+		int[] ids = model.getSelectedStructures();
+		if (ids.length == 0)
+		{
+			ids = new int[model.getNumberOfStructures()];
+			for (int i = 0; i < ids.length; i++)
+				ids[i] = i;
+		}
+		for (int i = 0; i < ids.length; i++)
+		{
+			double[] center=model.getStructureCenter(ids[i]);
+			Color color=model.getStructureColor(ids[i]);
+			// TODO: finish this
+		}    	
+    }
+    
+    public static void exportToVtkFile(LineModel model, Path vtkFile, boolean multipleFiles)
+    {
+		Map<Integer, LineStructure> structuresToWrite = Maps.newHashMap();
 		int[] ids = model.getSelectedStructures();
 		if (ids.length == 0)
 		{
@@ -159,10 +180,22 @@ public class StructuresExporter
 				controlPoints[j]=new Vector3D(MathUtil.latrec(line.controlPoints.get(j)));
 			}
 			
-			structuresToWrite.add(new LineStructure(segments, style, label, controlPoints));
-			
-			VtkFileUtil.writeLineStructures(structuresToWrite, vtkFile);
+			structuresToWrite.put(ids[i], new LineStructure(segments, style, label, controlPoints));
 		}
+
+		if (multipleFiles)
+		{
+			for (int id : structuresToWrite.keySet())
+			{
+				Path file=Paths.get(vtkFile.toAbsolutePath().toString().replace(".vtk", "-"+id+".vtk"));
+				VtkFileUtil.writeLineStructures(Lists.newArrayList(structuresToWrite.get(id)), file);
+			}
+		}
+		else
+		{
+			VtkFileUtil.writeLineStructures(Lists.newArrayList(structuresToWrite.values()), vtkFile);
+		}
+			
 		
     }
     
