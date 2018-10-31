@@ -54,6 +54,7 @@ public final class ShapeModelType
 	public static final ShapeModelType JAXA_SPC_v20180810 = create("JAXA-SPC-v20180810");
 	public static final ShapeModelType JAXA_SPC_v20180816 = create("JAXA-SPC-v20180816");
 	public static final ShapeModelType JAXA_SPC_v20180829 = create("JAXA-SPC-v20180829");
+	public static final ShapeModelType JAXA_SPC_v20181014 = create("JAXA-SPC-v20181014");
 	public static final ShapeModelType NASA_001 = create("NASA-001");
 	public static final ShapeModelType NASA_002 = create("NASA-002");
 	public static final ShapeModelType NASA_003 = create("NASA-003");
