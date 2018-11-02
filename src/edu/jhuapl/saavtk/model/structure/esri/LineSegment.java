@@ -1,6 +1,10 @@
 package edu.jhuapl.saavtk.model.structure.esri;
 
+import java.util.List;
+
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
+import com.google.common.collect.Lists;
 
 public class LineSegment
 {
@@ -28,9 +32,22 @@ public class LineSegment
 		return start.add(end).scalarMultiply(0.5);
 	}
 	
-	public LineSegment[] split()
+	public List<LineSegment> split()
 	{
 		Vector3D midpoint=getMidpoint();
-		return new LineSegment[] {new LineSegment(start, midpoint), new LineSegment(midpoint, end)};
+		return Lists.newArrayList(new LineSegment(start, midpoint), new LineSegment(midpoint, end));
 	}
+	
+	public double getLength()
+	{
+		return end.subtract(start).getNorm();
+	}
+
+	@Override
+	public String toString()
+	{
+		return "LineSegment [start=" + start + ", end=" + end + ", getLength()=" + getLength() + "]";
+	}
+	
+	
 }
