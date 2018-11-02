@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.math3.complex.Quaternion;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
@@ -529,15 +530,79 @@ public class FeatureUtil
             e.printStackTrace();
         }
 
+        List<LineSegment> subsegments=Lists.newArrayList();
+        for (LineSegment seg : segments)
+        	{
+        		subsegments.addAll(forceCylindricalProjection(seg, body, Math.sqrt(body.getMeanCellArea())/2.));
+        	}
+        
         LineStyle style = new LineStyle(lineColor, lineWidth);
-        LineStructure ls=new LineStructure(segments);
+        LineStructure ls=new LineStructure(subsegments);
         ls.setLineStyle(style);
         ls.setLabel(label);
         return ls;
 
     }
 
-    /*	public static SimpleFeature createFeatureFrom(PatchStructure ps)
+
+
+	public static List<LineSegment> forceCylindricalProjection(LineSegment segment, GenericPolyhedralModel body, double minLength)
+	{
+		List<LineSegment> result=Lists.newArrayList();
+		trySplit(segment, body, result, minLength);
+		return result;
+	}
+	
+	private static void trySplit(LineSegment segment, GenericPolyhedralModel body, List<LineSegment> result, double minLength)
+	{
+		if (segment.getLength()<minLength)
+		{
+			result.add(segment);
+			return;
+		}
+		//
+		//
+		Vector3D p1=segment.getStart();
+		Vector3D p2=segment.getEnd();
+		Vector3D delta=p1.subtract(p2);
+		Vector3D midptRadial=p1.add(p2).scalarMultiply(0.5);
+		Vector3D midptRadialCutPlaneNormal=delta.crossProduct(midptRadial).normalize();
+		//
+		Vector3D n1=new Vector3D(body.getNormalAtPoint(p1.toArray()));
+		Vector3D n2=new Vector3D(body.getNormalAtPoint(p2.toArray()));
+		Vector3D navg=n1.add(n2).scalarMultiply(0.5);
+		Vector3D navgCutPlaneNormal=delta.crossProduct(navg).normalize();
+		//
+		double dp=midptRadialCutPlaneNormal.dotProduct(navgCutPlaneNormal);
+		double toleranceLength=Math.sqrt(body.getMeanCellArea());
+		double circularChordLength=2*midptRadial.getNorm()*Math.sqrt(1-dp*dp);//Math.sin(Math.acos(dp));
+		//
+		int nExtraPts=(int)(circularChordLength/toleranceLength);
+		if (nExtraPts==0)
+		{
+			result.add(segment);
+			return;
+		}
+		//
+		for (int i=0; i<nExtraPts; i++)
+		{
+			double[] intersectPt=new double[3];
+			int hit=body.computeRayIntersection(new Vector3D(0,0,midptRadial.getZ()).toArray(), midptRadial.normalize().toArray(), intersectPt);
+			if (hit<0)
+			{
+				result.add(segment);
+				return;
+			}
+			Vector3D midpoint=new Vector3D(intersectPt);
+			LineSegment subseg1=new LineSegment(segment.getStart(), midpoint);
+			LineSegment subseg2=new LineSegment(midpoint, segment.getEnd());
+			trySplit(subseg1, body, result, minLength);
+			trySplit(subseg2, body, result, minLength);
+		}
+		System.out.println(result);
+	}
+
+	/*	public static SimpleFeature createFeatureFrom(PatchStructure ps)
     	{
     		double[][] pts = ps.getPoints();
     		Coordinate[] coords = new Coordinate[pts.length];

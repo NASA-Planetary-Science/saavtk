@@ -22,6 +22,7 @@ import edu.jhuapl.saavtk.util.Point3D;
 import vtk.vtkAppendPolyData;
 import vtk.vtkPolyDataWriter;
 
+@Deprecated // ... for the moment... see AbstractStructureMappingControlPanel... nested class LoadEsriShapeFileAction
 public class StructuresImporter
 {
 
@@ -34,7 +35,7 @@ public class StructuresImporter
 		}
 		if (model instanceof LineModel)
 		{
-			importFromShapeFile((LineModel) model, shapeFile);
+			importFromShapeFile((LineModel) model, shapeFile, body);
 			return;
 		}
 		if (model instanceof AbstractEllipsePolygonModel)
@@ -62,12 +63,12 @@ public class StructuresImporter
 		}
 	}
 
-	public static void importFromShapeFile(LineModel model, Path shapeFile) throws IOException
+	public static void importFromShapeFile(LineModel model, Path shapeFile, GenericPolyhedralModel body) throws IOException
 	{
 		Collection<LineStructure> sc = ShapefileUtil.readLineStructures(shapeFile);
 		for (LineStructure s : sc)
 		{
-
+			
 			//
 			Color c = s.getLineStyle().getColor();
 			int[] color = new int[] { c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha() };
@@ -81,10 +82,14 @@ public class StructuresImporter
 			Line line = (Line) model.getStructure(id);
 			for (int i = 0; i < s.getNumberOfSegments(); i++)
 			{
-				LineSegment seg = s.getSegment(i);
-				line.xyzPointList.add(new Point3D(seg.getStart().toArray()));
-				if (i == s.getNumberOfSegments() - 1)
+				//List<LineSegment> subsegments=forceCylindricalProjection(s.getSegment(i), body, Math.sqrt(body.getMeanCellArea()));
+				//for (int j=0; j<subsegments.size(); j++)
+				//{
+					LineSegment seg = s.getSegment(i);
+					line.xyzPointList.add(new Point3D(seg.getStart().toArray()));
+						if (i == s.getNumberOfSegments() - 1)
 					line.xyzPointList.add(new Point3D(seg.getEnd().toArray()));
+				//}
 			}
 			model.setStructureColor(id, color);
 			model.setStructureLabel(id, label);
@@ -147,33 +152,4 @@ public class StructuresImporter
 			writer2.Write();*/
 	}
 
-
-	public static List<LineSegment> imposeCylindricalProjection(LineSegment segment, GenericPolyhedralModel body, int maxdiv)
-	{
-		List<LineSegment> result=Lists.newArrayList();
-		trySplit(segment, body, result, maxdiv);
-		return result;
-	}
-	
-	private static void trySplit(LineSegment segment, GenericPolyhedralModel body, List<LineSegment> result, int maxdiv)
-	{
-		Vector3D p1=segment.getStart();
-		Vector3D p2=segment.getEnd();
-		Vector3D delta=p1.subtract(p2);
-		Vector3D radial=p1.add(p2).scalarMultiply(0.5);
-		Vector3D radialCutPlaneNormal=delta.crossProduct(radial).normalize();
-		//
-		Vector3D n1=new Vector3D(body.getNormalAtPoint(p1.toArray()));
-		Vector3D n2=new Vector3D(body.getNormalAtPoint(p2.toArray()));
-		Vector3D navg=n1.add(n2).scalarMultiply(0.5);
-		Vector3D navgCutPlaneNormal=delta.crossProduct(navg).normalize();
-		//
-		double dp=radialCutPlaneNormal.dotProduct(navgCutPlaneNormal);
-		double toleranceLength=Math.sqrt(body.getMeanCellArea());
-		double circularChordLength=2*radial.getNorm()*Math.sqrt(1-dp*dp);//Math.sin(Math.acos(dp));
-		if (circularChordLength>toleranceLength)
-		{
-			
-		}
-	}
 }

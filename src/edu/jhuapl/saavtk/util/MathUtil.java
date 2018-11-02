@@ -2,6 +2,7 @@ package edu.jhuapl.saavtk.util;
 
 import java.util.Arrays;
 
+import org.apache.commons.math3.complex.Quaternion;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
@@ -711,5 +712,16 @@ public class MathUtil
 //            System.arraycopy(result, 0, vectorOut, 0, vectorOut.length);
     }
 
-
+    static public Vector3D slerp(Vector3D start, Vector3D end, double t)
+    {
+    	Rotation r1=new Rotation(start, end);
+    	double angle=r1.getAngle();
+    	Rotation r2=new Rotation(r1.getAxis(), angle*t);
+    	Vector3D result=r2.applyTo(start);
+    	//
+//    	Vector3D cphat=start.crossProduct(end).normalize();
+//    	double oopLen=result.dotProduct(cphat);
+//    	result=result.subtract(cphat.scalarMultiply(oopLen));
+    	return result;
+    }
 }
