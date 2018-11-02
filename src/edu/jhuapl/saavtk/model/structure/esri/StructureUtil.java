@@ -2,64 +2,54 @@ package edu.jhuapl.saavtk.model.structure.esri;
 
 import java.awt.Color;
 import java.util.Arrays;
+import java.util.List;
+
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
+import com.google.common.collect.Lists;
 
 public class StructureUtil
 {
-	public static double[] centroid(double[][] points)
+	public static Vector3D centroid(List<Vector3D> points)
 	{
-		double[] centroid=new double[3];
-		for (int i=0; i<points.length; i++)
+		Vector3D result=Vector3D.ZERO;
+		for (int i=0; i<points.size(); i++)
 		{
-			centroid[0]+=points[i][0];
-			centroid[1]+=points[i][1];
-			centroid[2]+=points[i][2];
+			result=result.add(points.get(i));
 		}
-		centroid[0]/=(double)points.length;
-		centroid[1]/=(double)points.length;
-		centroid[2]/=(double)points.length;
-		return centroid;
+		return result;
 	}
 	
-	public static double[] centroidClosedPoly(double[][] points)
+	public static Vector3D centroidClosedPoly(List<Vector3D> points)
 	{
-		double[][] subset=new double[points.length-1][];
-		for (int i=0; i<points.length-1; i++)
-			subset[i]=points[i];
-		return centroid(subset);
+		return centroid(points.subList(0, points.size()-1));
 	}
 	
-	public static double[] centroid(LineSegment[] segments)
+	public static Vector3D centroidOfSegments(List<LineSegment> segments)
 	{
-		double[] centroid=new double[3];
-		for (int i=0; i<segments.length; i++)
+		Vector3D result=Vector3D.ZERO;
+		for (int i=0; i<segments.size(); i++)
 		{
-			centroid[0]+=segments[i].start[0];
-			centroid[1]+=segments[i].start[1];
-			centroid[2]+=segments[i].start[2];
-			centroid[0]+=segments[i].end[0];
-			centroid[1]+=segments[i].end[1];
-			centroid[2]+=segments[i].end[2];
+			result=result.add(segments.get(i).getStart());
+			result=result.add(segments.get(i).getEnd());
 		}
-		centroid[0]/=segments.length*2;
-		centroid[1]/=segments.length*2;
-		centroid[2]/=segments.length*2;
-		return centroid;
+		return result.scalarMultiply(1./2./segments.size());
 	}
 	
-	public static double[] random()
+	public static Vector3D randomVector3D()
 	{
-		return new double[]{2*Math.random()-1,2*Math.random()-1,2*Math.random()-1};
+		return new Vector3D(2*Math.random()-1,2*Math.random()-1,2*Math.random()-1);
 	}
 	
-	public static double[][] random(int n)
+	public static List<Vector3D> random(int n)
 	{
-		double[][] pts=new double[n][];
+		List<Vector3D> pts=Lists.newArrayList();
 		for (int i=0; i<n; i++)
-			pts[i]=random();
+			pts.add(randomVector3D());
 		return pts;
 	}
 	
-	public static String toString(double[][] pts)
+/*	public static String toString(double[][] pts)
 	{
 		String str="{";
 		for (int i=0; i<pts.length; i++)
@@ -76,7 +66,7 @@ public class StructureUtil
 	{
 		return "("+pt[0]+" "+pt[1]+" "+pt[2]+")";
 	}
-	
+*/	
 	public static String colorToHex(Color color)
 	{
 		return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue()); // from http://stackoverflow.com/questions/3607858/convert-a-rgb-color-value-to-a-hexadecimal

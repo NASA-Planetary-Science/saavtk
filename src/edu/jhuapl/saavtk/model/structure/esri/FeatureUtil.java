@@ -109,7 +109,7 @@ public class FeatureUtil
 
     public static SimpleFeature createFeatureFrom(PointStructure ps)
     {
-        double[] location = ps.getCentroid();
+        double[] location = ps.getCentroid().toArray();
         LatLon latlon = MathUtil.reclat(location);
         Geometry geom = JTSFactoryFinder.getGeometryFactory().createPoint(new Coordinate(Math.toDegrees(latlon.lon), Math.toDegrees(latlon.lat)));
         // the coordinates are now in the DefaultGeocentric.CARTESIAN CRS
@@ -179,8 +179,8 @@ public class FeatureUtil
         {
             LineSegment s = ls.getSegment(i);
             Coordinate[] coords = new Coordinate[2];
-            LatLon ll1=MathUtil.reclat(s.getStart());
-            LatLon ll2=MathUtil.reclat(s.getEnd());
+            LatLon ll1=MathUtil.reclat(s.getStart().toArray());
+            LatLon ll2=MathUtil.reclat(s.getEnd().toArray());
             coords[0] = new Coordinate(Math.toDegrees(ll1.lon),Math.toDegrees(ll1.lat));//s.getStart()[0] * 1000, s.getStart()[1] * 1000, s.getStart()[2] * 1000);
             coords[1] = new Coordinate(Math.toDegrees(ll2.lon),Math.toDegrees(ll2.lat));//s.getEnd()[0] * 1000, s.getEnd()[1] * 1000, s.getEnd()[2] * 1000);
             // the coordinates are now in the DefaultGeocentric.CARTESIAN CRS
@@ -189,8 +189,8 @@ public class FeatureUtil
         Geometry geom = JTSFactoryFinder.getGeometryFactory().createMultiLineString(lines);
         lineBuilder.add(geom);
         lineBuilder.add(ls.getLabel());
-        lineBuilder.add(StructureUtil.colorToHex(ls.getStyle().getLineColor()));
-        lineBuilder.add(ls.getStyle().getLineWidth());
+        lineBuilder.add(StructureUtil.colorToHex(ls.getLineStyle().getColor()));
+        lineBuilder.add(ls.getLineStyle().getWidth());
         return lineBuilder.buildFeature(null);
     }
 
@@ -201,8 +201,8 @@ public class FeatureUtil
         {
             LineSegment s = es.getSegment(i);
             Coordinate[] coords = new Coordinate[2];
-            LatLon ll1=MathUtil.reclat(s.getStart());
-            LatLon ll2=MathUtil.reclat(s.getEnd());
+            LatLon ll1=MathUtil.reclat(s.getStart().toArray());
+            LatLon ll2=MathUtil.reclat(s.getEnd().toArray());
             coords[0] = new Coordinate(Math.toDegrees(ll1.lon),Math.toDegrees(ll1.lat));//s.getStart()[0] * 1000, s.getStart()[1] * 1000, s.getStart()[2] * 1000);
             coords[1] = new Coordinate(Math.toDegrees(ll2.lon),Math.toDegrees(ll2.lat));//s.getEnd()[0] * 1000, s.getEnd()[1] * 1000, s.getEnd()[2] * 1000);
             // the coordinates are now in the DefaultGeocentric.CARTESIAN CRS
@@ -211,9 +211,9 @@ public class FeatureUtil
         Geometry geom = JTSFactoryFinder.getGeometryFactory().createMultiLineString(lines);
         ellipseBuilder.add(geom);
         ellipseBuilder.add(es.getLabel());
-        ellipseBuilder.add(StructureUtil.colorToHex(es.getStyle().getLineColor()));
-        ellipseBuilder.add(es.getStyle().getLineWidth());
-        double[] center = es.getParameters().center;
+        ellipseBuilder.add(StructureUtil.colorToHex(es.getLineStyle().getColor()));
+        ellipseBuilder.add(es.getLineStyle().getWidth());
+        double[] center = es.getParameters().center.toArray();
         ellipseBuilder.add(center[0]);
         ellipseBuilder.add(center[1]);
         ellipseBuilder.add(center[2]);
@@ -280,7 +280,7 @@ public class FeatureUtil
 
         List<Vector3D> pts = Lists.newArrayList();
         for (int i = 0; i < segments.size(); i++)
-            pts.add(new Vector3D(segments.get(i).start));
+            pts.add(segments.get(i).getStart());
 
         Vector3D center = Vector3D.ZERO;
         for (int i = 0; i < pts.size(); i++)
@@ -353,12 +353,12 @@ public class FeatureUtil
 
         }
 
-        Parameters params = new Parameters(center.toArray(), majorRadius, flattening, angle);
+        Parameters params = new Parameters(center, majorRadius, flattening, angle);
         //
-        LineSegment[] segs = new LineSegment[segments.size()];
-        for (int i = 0; i < segments.size(); i++)
-            segs[i] = segments.get(i);
-        return new EllipseStructure(segs, style, label, params);
+        EllipseStructure es=new EllipseStructure(segments, params);
+        es.setLineStyle(style);
+        es.setLabel(label);
+        return es;
 
     }
 
@@ -406,7 +406,7 @@ public class FeatureUtil
                 double[] end=new double[3];
                 body.getPointAndCellIdFromLatLon(Math.toRadians(coords[j].y), Math.toRadians(coords[j].x), start);
                 body.getPointAndCellIdFromLatLon(Math.toRadians(coords[j+1].y), Math.toRadians(coords[j+1].x), end);
-                LineSegment seg = new LineSegment(start, end);
+                LineSegment seg = new LineSegment(new Vector3D(start), new Vector3D(end));
                 segments.add(seg);
             }
         }
@@ -421,7 +421,7 @@ public class FeatureUtil
                 double[] end=new double[3];
                 body.getPointAndCellIdFromLatLon(Math.toRadians(coords[j].y), Math.toRadians(coords[j].x), start);
                 body.getPointAndCellIdFromLatLon(Math.toRadians(coords[jp].y), Math.toRadians(coords[jp].x), end);
-                LineSegment seg = new LineSegment(start, end);
+                LineSegment seg = new LineSegment(new Vector3D(start), new Vector3D(end));
                 segments.add(seg);
             }
         }
@@ -468,7 +468,10 @@ public class FeatureUtil
             location[1] /= 1000;
             location[2] /= 1000;*/
             double[] location=MathUtil.latrec(new LatLon(Math.toRadians(coord.y), Math.toRadians(coord.x)));
-            return new PointStructure(location, style, label);
+            PointStructure ps=new PointStructure(new Vector3D(location));
+            ps.setPointStyle(style);
+            ps.setLabel(label);
+            return ps;
         }
         catch (FactoryException e)//| TransformException e)
         {
@@ -527,10 +530,10 @@ public class FeatureUtil
         }
 
         LineStyle style = new LineStyle(lineColor, lineWidth);
-        LineSegment[] segs = new LineSegment[segments.size()];
-        for (int i = 0; i < segments.size(); i++)
-            segs[i] = segments.get(i);
-        return new LineStructure(segs, style, label);
+        LineStructure ls=new LineStructure(segments);
+        ls.setLineStyle(style);
+        ls.setLabel(label);
+        return ls;
 
     }
 

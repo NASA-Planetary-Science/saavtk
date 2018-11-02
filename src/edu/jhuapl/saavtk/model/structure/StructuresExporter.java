@@ -70,7 +70,10 @@ public class StructuresExporter
 			PointStyle style = new PointStyle(new Color(c[0], c[1], c[2]), sz);
 			String label = s.getLabel();
 			double[] location = model.getStructureCenter(ids[i]);
-			structuresToWrite.add(new PointStructure(location, style, label));
+			PointStructure ps=new PointStructure(new Vector3D(location));
+			ps.setPointStyle(style);
+			ps.setLabel(label);
+			structuresToWrite.add(ps);
 		}
 		ShapefileUtil.writePointStructures(structuresToWrite, shapeFile);
 	}
@@ -97,16 +100,19 @@ public class StructuresExporter
 			//int nSegments=closed?line.xyzPointList.size():(line.xyzPointList.size()-1);
 			int nSegments=line.xyzPointList.size()-1;
 				
-			LineSegment[] segments=new LineSegment[nSegments];
+			List<LineSegment> segments=Lists.newArrayList();
 			for (int j = 0; j < nSegments; j++)
 			{
 				int jp=j+1;
 				double[] start=line.xyzPointList.get(j).xyz;
 				double[] end=line.xyzPointList.get(jp).xyz;
-				segments[j]=new LineSegment(start, end);
+				segments.add(new LineSegment(new Vector3D(start), new Vector3D(end)));
 			}
 			String label = line.getLabel();
-			structuresToWrite.add(new LineStructure(segments, style, label));
+			LineStructure ls=new LineStructure(segments);
+			ls.setLineStyle(style);
+			ls.setLabel(label);
+			structuresToWrite.add(ls);
 		}
 		ShapefileUtil.writeLineStructures(structuresToWrite, shapeFile);
 	}
@@ -140,7 +146,7 @@ public class StructuresExporter
 			// TODO: finish this
 		}    	
     }
-    
+
     public static void exportToVtkFile(LineModel model, Path vtkFile, boolean multipleFiles)
     {
 		Map<Integer, LineStructure> structuresToWrite = Maps.newHashMap();
@@ -163,26 +169,28 @@ public class StructuresExporter
 			//int nSegments=closed?line.xyzPointList.size():(line.xyzPointList.size()-1);
 			int nSegments=line.xyzPointList.size()-1;
 				
-			LineSegment[] segments=new LineSegment[nSegments];
+			List<LineSegment> segments=Lists.newArrayList();
 			for (int j = 0; j < nSegments; j++)
 			{
 				int jp=j+1;
 				double[] start=line.xyzPointList.get(j).xyz;
 				double[] end=line.xyzPointList.get(jp).xyz;
-				segments[j]=new LineSegment(start, end);
+				segments.add(new LineSegment(new Vector3D(start), new Vector3D(end)));
 			}
 			String label = line.getLabel();
 			
 			
-			Vector3D[] controlPoints=new Vector3D[line.controlPoints.size()];
+			List<Vector3D> controlPoints=Lists.newArrayList();
 			for (int j=0; j<line.controlPoints.size(); j++)
 			{
-				controlPoints[j]=new Vector3D(MathUtil.latrec(line.controlPoints.get(j)));
+				controlPoints.add(new Vector3D(MathUtil.latrec(line.controlPoints.get(j))));
 			}
 			
-			structuresToWrite.put(ids[i], new LineStructure(segments, style, label, controlPoints));
+			LineStructure ls=new LineStructure(segments, controlPoints);
+			ls.setLineStyle(style);
+			ls.setLabel(label);
+			structuresToWrite.put(ids[i], ls);
 		}
-
 		if (multipleFiles)
 		{
 			for (int id : structuresToWrite.keySet())

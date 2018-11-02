@@ -1,8 +1,9 @@
 package edu.jhuapl.saavtk.model.structure.esri;
 
-public class PolyhedralStructure implements Structure
+@Deprecated // this is only experimental
+public class PolyhedralStructure //implements Structure
 {
-	double[][] points;
+/*	double[][] points;
 	int[][] faces;
 	String label;
 	double[] centroid;
@@ -42,4 +43,4 @@ public class PolyhedralStructure implements Structure
 	{
 		return style;
 	}
-}
+*/}

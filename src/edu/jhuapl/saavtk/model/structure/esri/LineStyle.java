@@ -4,34 +4,46 @@ import java.awt.Color;
 
 public class LineStyle
 {
-	Color lineColor;
-	double lineWidth;
+	Color color;
+	double width;
 	
 	public LineStyle()
 	{
-		lineColor=Color.BLUE;
-		lineWidth=1;
+		color=Color.BLUE;
+		width=1;
 	}
 	
-	public LineStyle(Color lineColor, double lineWidth)
+	public LineStyle(Color color, double width)
 	{
-		this.lineColor=lineColor;
-		this.lineWidth=lineWidth;
+		this.color=color;
+		this.width=width;
 	}
 
-	public Color getLineColor()
+	
+
+	public Color getColor()
 	{
-		return lineColor;
+		return color;
 	}
 
-	public double getLineWidth()
+	public void setColor(Color color)
 	{
-		return lineWidth;
+		this.color = color;
+	}
+
+	public double getWidth()
+	{
+		return width;
+	}
+
+	public void setWidth(double width)
+	{
+		this.width = width;
 	}
 
 	@Override
 	public String toString()
 	{
-		return getClass().getSimpleName()+"{linecolor="+lineWidth+",linewidth="+lineWidth+"}";
+		return "LineStyle [color=" + color + ", width=" + width + "]";
 	}
 }

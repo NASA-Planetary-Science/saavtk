@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.geotools.data.DataStore;
 import org.geotools.data.DefaultTransaction;
 import org.geotools.data.FeatureReader;
@@ -66,7 +67,6 @@ import com.vividsolutions.jts.geom.CoordinateSequenceFactory;
 import com.vividsolutions.jts.geom.CoordinateSequences;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequenceFactory;
-import com.vividsolutions.jts.math.Vector3D;
 
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import vtk.vtkCellArray;
@@ -233,24 +233,23 @@ public class ShapefileUtil
 		List<PointStructure> points = Lists.newArrayList();
 		int nPoints = 10;
 		for (int i = 0; i < nPoints; i++)
-			points.add(new PointStructure(StructureUtil.random()));
+			points.add(new PointStructure(StructureUtil.randomVector3D()));
 
 		List<LineStructure> lines = Lists.newArrayList();
 		int nLines = 10;
-		int nPointsPerLine = 5;
+//		int nPointsPerLine = 5;
 		for (int i = 0; i < nLines; i++)
 		{
-			double[] start=StructureUtil.random();
-			double[] end=StructureUtil.random();
-			LineSegment[] segments=new LineSegment[]{new LineSegment(start,end)};
-			lines.add(new LineStructure(segments));
+			Vector3D start=StructureUtil.randomVector3D();
+			Vector3D end=StructureUtil.randomVector3D();
+			lines.add(new LineStructure(Lists.newArrayList(new LineSegment(start, end))));
 		}
 
-		List<PatchStructure> patches = Lists.newArrayList();
-		int nPolygons = 10;
-		int nPointsPerPolygon = 5;
-		for (int i = 0; i < nPolygons; i++)
-			patches.add(new PatchStructure(StructureUtil.random(nPointsPerPolygon)));
+//		List<PatchStructure> patches = Lists.newArrayList();
+//		int nPolygons = 10;
+//		int nPointsPerPolygon = 5;
+//		for (int i = 0; i < nPolygons; i++)
+//			patches.add(new PatchStructure(StructureUtil.random(nPointsPerPolygon)));
 
 		try
 		{
@@ -293,7 +292,11 @@ public class ShapefileUtil
 		
 		List<PointStructure> points=Lists.newArrayList();
 		for (int i=0; i<polyData.GetNumberOfPoints(); i++)
-			points.add(new PointStructure(polyData.GetPoint(i),"p"+i));
+		{
+			PointStructure ps=new PointStructure(new Vector3D(polyData.GetPoint(i)));
+			ps.setLabel("p"+i);
+			points.add(ps);
+		}
 		
 		vtkExtractEdges edgeFilter=new vtkExtractEdges();
 		edgeFilter.SetInputData(polyData);
@@ -312,13 +315,16 @@ public class ShapefileUtil
 			vtkPoints edgePoints=edgePolyData.GetCell(i).GetPoints();
 			if (edgePoints.GetNumberOfPoints()<2)
 				continue;
-			LineSegment[] segments=new LineSegment[edgePoints.GetNumberOfPoints()-1];
+			List<LineSegment> segments=Lists.newArrayList();
 			for (int j=0; j<edgePoints.GetNumberOfPoints()-1; j++)
-				segments[j]=new LineSegment(edgePoints.GetPoint(j), edgePoints.GetPoint(j+1));
-			lines.add(new LineStructure(segments,"l"+i));
+				segments.add(new LineSegment(new Vector3D(edgePoints.GetPoint(j)), new Vector3D(edgePoints.GetPoint(j+1))));
+			
+			LineStructure ls=new LineStructure(segments);
+			ls.setLabel("l"+i);
+			lines.add(ls);
 		}
 		
-		List<PatchStructure> patches=Lists.newArrayList();
+/*		List<PatchStructure> patches=Lists.newArrayList();
 		for (int i=0; i<polyData.GetNumberOfCells(); i++)
 		{
 			vtkPoints triPoints=polyData.GetCell(i).GetPoints();
@@ -327,7 +333,7 @@ public class ShapefileUtil
 				pts[j]=triPoints.GetPoint(j);
 			patches.add(new PatchStructure(pts,"P"+i));
 		}
-
+*/
 	
 		try
 		{

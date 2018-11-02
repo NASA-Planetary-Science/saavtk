@@ -2,6 +2,7 @@ package edu.jhuapl.saavtk.model.structure.esri;
 
 import java.awt.Color;
 
+@Deprecated		// use LineStyle, PointStyle, and not-yet-implemented FillStyle
 public class PatchStyle
 {
 	LineStyle lineStyle;

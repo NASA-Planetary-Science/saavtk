@@ -451,7 +451,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 						{
 							Feature f = it.next();
 							PointStructure ps = FeatureUtil.createPointStructureFrom((SimpleFeature) f, (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
-							model.addNewStructure(ps.getCentroid());
+							model.addNewStructure(ps.getCentroid().toArray());
 						}
 						it.close();
 						model.activateStructure(-1);
@@ -472,11 +472,14 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 							model.activateStructure(model.getNumberOfStructures() - 1);
 							for (int i = 0; i <= ls.getNumberOfSegments(); i++)
 							{
+								// subdivide segment
+								
+								
 								double[] pt;
 								if (i == ls.getNumberOfSegments())
-									pt = ls.getSegment(i - 1).getEnd();
+									pt = ls.getSegment(i - 1).getEnd().toArray();
 								else
-									pt = ls.getSegment(i).getStart();
+									pt = ls.getSegment(i).getStart().toArray();
 								LatLon latlon = MathUtil.reclat(pt);
 								// System.out.println(latlon.lat + " " + latlon.lon);
 								GenericPolyhedralModel body = (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY);
@@ -506,12 +509,12 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 							model.activateStructure(model.getNumberOfStructures() - 1);
 							for (int i = 0; i < ls.getNumberOfSegments(); i++)
 							{
-								Vector3D pt;
+								double[] pt;
 								if (i == ls.getNumberOfSegments())
-									pt = new Vector3D(ls.getSegment(i - 1).getEnd());
+									pt = ls.getSegment(i - 1).getEnd().toArray();
 								else
-									pt = new Vector3D(ls.getSegment(i).getStart());
-								LatLon latlon = MathUtil.reclat(pt.toArray());
+									pt = ls.getSegment(i).getStart().toArray();
+								LatLon latlon = MathUtil.reclat(pt);
 								GenericPolyhedralModel body = (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY);
 								double[] intersectPoint = new double[3];
 								body.getPointAndCellIdFromLatLon(latlon.lat, latlon.lon, intersectPoint);

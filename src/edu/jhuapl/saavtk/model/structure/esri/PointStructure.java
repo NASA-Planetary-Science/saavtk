@@ -1,52 +1,48 @@
 package edu.jhuapl.saavtk.model.structure.esri;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 public class PointStructure implements Structure
 {
-	double[] location;
-	PointStyle style;
+	Vector3D location;
+	PointStyle pointStyle;
 	String label;
 
-	public PointStructure(double[] location)
+	public PointStructure(Vector3D location)
 	{
-		this(location, "");
+		this.location = location;
 	}
-	
-	public PointStructure(double[] location, String label)
+
+	public PointStyle getPointStyle()
 	{
-		this(location, new PointStyle(), label);
+		return pointStyle;
 	}
-	
-	public PointStructure(double[] location, PointStyle style, String label)
+
+	public void setPointStyle(PointStyle pointStyle)
 	{
-		this.location=location;
-		this.style=style;
-		this.label=label;
+		this.pointStyle = pointStyle;
 	}
-	
-	@Override
+
 	public String getLabel()
 	{
 		return label;
 	}
-	
-	public PointStyle getPointStyle()
+
+	public void setLabel(String label)
 	{
-		return style;
+		this.label = label;
 	}
-	
+
 	@Override
-	public double[] getCentroid()
+	public Vector3D getCentroid()
 	{
 		return location;
 	}
-	
+
 	@Override
 	public String toString()
 	{
-		return getClass().getSimpleName()+"{centroid="+StructureUtil.toString(location)+",label="+label+",style="+style+"}";
+		return getClass().getSimpleName() + "{centroid=" + location + ",label=" + label + ",style=" + pointStyle + "}";
 	}
-	
-	
-	
+
 }

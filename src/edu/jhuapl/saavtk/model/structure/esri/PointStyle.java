@@ -24,15 +24,26 @@ public class PointStyle
 		return color;
 	}
 
+	public void setColor(Color color)
+	{
+		this.color = color;
+	}
+
 	public double getSize()
 	{
 		return size;
-	}	
-	
+	}
+
+	public void setSize(double size)
+	{
+		this.size = size;
+	}
+
 	@Override
 	public String toString()
 	{
-		return getClass().getSimpleName()+"{color="+color+",size="+size+"}";
+		return "PointStyle [color=" + color + ", size=" + size + "]";
 	}
+
 	
 }

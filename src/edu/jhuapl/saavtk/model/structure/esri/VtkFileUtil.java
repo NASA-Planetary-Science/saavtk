@@ -28,7 +28,7 @@ public final class VtkFileUtil {
 		for (int m = 0; m < lss.size(); m++) {
 			LineStructure ls = lss.get(m);
 			int structureId = m;
-			float[] c = ColorUtil.getRGBColorComponents(ls.getStyle().getLineColor());
+			float[] c = ColorUtil.getRGBColorComponents(ls.getLineStyle().getColor());
 
 			vtkFloatArray colors = new vtkFloatArray();
 			colors.SetNumberOfComponents(3);
@@ -46,8 +46,8 @@ public final class VtkFileUtil {
 
 			for (int i = 0; i < ls.getNumberOfSegments(); i++) {
 				LineSegment s = ls.getSegment(i);
-				int id1 = points.InsertNextPoint(s.start);
-				int id2 = points.InsertNextPoint(s.end);
+				int id1 = points.InsertNextPoint(s.getStart().toArray());
+				int id2 = points.InsertNextPoint(s.getEnd().toArray());
 				vtkLine line = new vtkLine();
 				line.GetPointIds().SetId(0, id1);
 				line.GetPointIds().SetId(1, id2);
@@ -71,7 +71,7 @@ public final class VtkFileUtil {
 		for (int m = 0; m < lss.size(); m++) {
 			LineStructure ls = lss.get(m);
 			int structureId = m;
-			float[] c = ColorUtil.getRGBColorComponents(ls.getStyle().getLineColor());
+			float[] c = ColorUtil.getRGBColorComponents(ls.getLineStyle().getColor());
 
 			vtkFloatArray colors = new vtkFloatArray();
 			colors.SetNumberOfComponents(3);
@@ -130,7 +130,7 @@ public final class VtkFileUtil {
 			PointStructure ls = lss.get(m);
 			int structureId = m;
 			float[] c = ColorUtil.getRGBColorComponents(ls.getPointStyle().getColor());
-			int id = points.InsertNextPoint(lss.get(m).location);
+			int id = points.InsertNextPoint(lss.get(m).getCentroid().toArray());
 			vtkVertex vert = new vtkVertex();
 			vert.GetPointIds().SetId(0, id);
 			verts.InsertNextCell(vert);
