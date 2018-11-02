@@ -59,6 +59,7 @@ public final class ShapeModelType
 	public static final ShapeModelType NASA_003 = create("NASA-003");
 	public static final ShapeModelType NASA_004 = create("NASA-004");
 	public static final ShapeModelType NASA_005 = create("NASA-005");
+	public static final ShapeModelType NASA_006 = create("NASA-006");
 	public static final ShapeModelType OREX = create("OSIRIS-REx");
 	public static final ShapeModelType TRUTH = create("Truth");
 
