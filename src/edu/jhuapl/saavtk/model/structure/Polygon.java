@@ -3,8 +3,13 @@ package edu.jhuapl.saavtk.model.structure;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import vtk.vtkClipPolyData;
+import vtk.vtkCutter;
+import vtk.vtkPoints;
 import vtk.vtkPolyData;
+import vtk.vtkPolygon;
 import vtk.vtkQuadricClustering;
+import vtk.vtkSelectPolyData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
 
@@ -52,9 +57,11 @@ public class Polygon extends Line
 
         if (showInterior)
         {
-            smallBodyModel.drawPolygon(controlPoints, interiorPolyData, null);
-            surfaceArea = PolyDataUtil.computeSurfaceArea(interiorPolyData);
-            
+//            smallBodyModel.drawPolygon(controlPoints, interiorPolyData, null);
+//            surfaceArea = PolyDataUtil.computeSurfaceArea(interiorPolyData);
+ 
+        	updateInteriorPolydata();
+        	
             // Decimate interiorPolyData for LODs
             vtkQuadricClustering decimator = new vtkQuadricClustering();
             decimator.SetInputData(interiorPolyData);
@@ -70,6 +77,33 @@ public class Polygon extends Line
             PolyDataUtil.clearPolyData(decimatedInteriorPolyData);
             surfaceArea = 0.0;
         }
+    }
+    
+    protected void updateInteriorPolydata()
+    {
+    	if (!showInterior)
+    		return;
+    	
+    	vtkPoints pts=new vtkPoints();
+    	for (int i=0; i<xyzPointList.size(); i++)
+    	{
+    		pts.InsertNextPoint(xyzPointList.get(i).xyz);
+    	}
+
+    	vtkSelectPolyData loop=new vtkSelectPolyData();
+    	loop.SetInputData(smallBodyModel.getSmallBodyPolyData());
+    	loop.SetLoop(pts);
+    	loop.GenerateSelectionScalarsOn();
+    	loop.SetSelectionModeToSmallestRegion();
+    	loop.Update();
+    	vtkClipPolyData clipper=new vtkClipPolyData();
+    	clipper.SetInputData(loop.GetOutput());
+    	clipper.InsideOutOn();
+    	clipper.GenerateClipScalarsOff();
+    	clipper.Update();
+    	interiorPolyData=clipper.GetOutput();
+    	surfaceArea=PolyDataUtil.computeSurfaceArea(interiorPolyData);
+
     }
 
     public boolean isShowInterior()

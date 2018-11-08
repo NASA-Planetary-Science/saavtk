@@ -343,6 +343,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 				actors.add(lin.caption);
 			}
 		}
+		
 	}
 	@Override
 	public List<vtkProp> getProps()

@@ -64,6 +64,7 @@ import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.gui.GNumberFieldSlider;
 import edu.jhuapl.saavtk.gui.ProfilePlot;
+import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.dialog.ColorChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.NormalOffsetChangerDialog;
@@ -108,7 +109,6 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	private StructureModel structureModel;
 	private PickManager pickManager;
 	private PickManager.PickMode pickMode;
-	private boolean supportsEsri = false;
 
 	// GUI vars
 	private JLabel structuresFileL;
@@ -130,6 +130,36 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 
 	private PopupButton saveB;
 	private PopupButton loadB;
+
+	public static StructureModel loadStructuresFromFile(File file, ModelNames name, PolyhedralModel body) throws Exception
+	{
+		StructureModel model = null;
+		switch (name)
+		{
+		case CIRCLE_STRUCTURES:
+			model = new CircleModel(body);
+			break;
+		case ELLIPSE_STRUCTURES:
+			model = new EllipseModel(body);
+			break;
+		case POINT_STRUCTURES:
+			model = new PointModel(body);
+			break;
+		case POLYGON_STRUCTURES:
+			model = new PolygonModel(body);
+			break;
+		case LINE_STRUCTURES:
+			model = new LineModel(body);
+			break;
+		default:
+			throw new Error(name.name() + " is not a valid structures type");
+		}
+
+		model.loadModel(file, false);
+		if (model.getNumberOfStructures()==0)
+			throw new Exception("No valid "+name.name()+" found");
+		return model;
+	}
 
 	class LoadSbmtStructuresFileAction extends AbstractAction
 	{
@@ -329,8 +359,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			JCheckBox multipleFileCB=new JCheckBox("Save as multiple files");
-			JPanel panel=new JPanel(new BorderLayout());
+			JCheckBox multipleFileCB = new JCheckBox("Save as multiple files");
+			JPanel panel = new JPanel(new BorderLayout());
 			panel.add(multipleFileCB, BorderLayout.EAST);
 			File file = CustomFileChooser.showSaveDialogWithCustomSouthComponent(null, "Save Structure (VTK)", "structures.vtk", "vtk", panel);
 			if (file != null)
@@ -355,6 +385,12 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			super("ESRI Shapefile Datastore...");
 		}
 
+		protected void updateStatusBar(Feature f, int m, int mtot)
+		{
+			statusBar.setLeftText("Loading " + f.getDefaultGeometryProperty().getClass().getSimpleName() + " [" + (m + 1) + "/" + mtot + "]");
+			statusBar.repaint();
+		}
+
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
@@ -362,12 +398,15 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			if (structureModel instanceof PointModel)
 				fileMenuTitle = "Points from shapefile...";
 			else if (structureModel instanceof LineModel)
-				fileMenuTitle = "Path control points from shapefile...";
+				fileMenuTitle = "Path from shapefile...";
 			else if (structureModel instanceof PolygonModel)
-				fileMenuTitle = "Polygon control points from shapefile...";
+				fileMenuTitle = "Polygon from shapefile...";
 			else
 				fileMenuTitle = "Datastore filename";
 			File[] files = CustomFileChooser.showOpenDialog(AbstractStructureMappingControlPanel.this, fileMenuTitle, Lists.newArrayList("shp"), true);
+			if (files == null)
+				return;
+
 			for (int p = 0; p < files.length; p++)
 			{
 				File file = files[p];
@@ -447,13 +486,19 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 						PointModel model = (PointModel) modelManager.getModel(ModelNames.POINT_STRUCTURES);
 						FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.pointType);
 						FeatureIterator<Feature> it = features.features();
+						List<Feature> flist = Lists.newArrayList();
 						while (it.hasNext())
 						{
-							Feature f = it.next();
-							PointStructure ps = FeatureUtil.createPointStructureFrom((SimpleFeature) f, (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
-							model.addNewStructure(ps.getCentroid().toArray());
+							flist.add(it.next());
 						}
 						it.close();
+						for (int m = 0; m < flist.size(); m++)
+						{
+							Feature f = flist.get(m);
+							updateStatusBar(f, m, flist.size());
+							PointStructure ps = FeatureUtil.createPointStructureFrom((SimpleFeature) flist.get(m), (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
+							model.addNewStructure(ps.getCentroid().toArray());
+						}
 						model.activateStructure(-1);
 					}
 				} else if (structureModel == modelManager.getModel(ModelNames.LINE_STRUCTURES))
@@ -463,9 +508,16 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 						LineModel model = (LineModel) modelManager.getModel(ModelNames.LINE_STRUCTURES);
 						FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.lineType);
 						FeatureIterator<Feature> it = features.features();
+						List<Feature> flist = Lists.newArrayList();
 						while (it.hasNext())
 						{
-							Feature f = it.next();
+							flist.add(it.next());
+						}
+						it.close();
+						for (int m = 0; m < flist.size(); m++)
+						{
+							Feature f = flist.get(m);
+							updateStatusBar(f, m, flist.size());
 							// System.out.println("reading line structure: "+f);
 							LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f, (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
 							model.addNewStructure();
@@ -473,8 +525,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 							for (int i = 0; i <= ls.getNumberOfSegments(); i++)
 							{
 								// subdivide segment
-								
-								
+
 								double[] pt;
 								if (i == ls.getNumberOfSegments())
 									pt = ls.getSegment(i - 1).getEnd().toArray();
@@ -500,10 +551,16 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 						PolygonModel model = (PolygonModel) modelManager.getModel(ModelNames.POLYGON_STRUCTURES);
 						FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.lineType);
 						FeatureIterator<Feature> it = features.features();
+						List<Feature> flist = Lists.newArrayList();
 						while (it.hasNext())
 						{
-							Feature f = it.next();
-							//                        System.out.println("reading polygon structure: "+f);
+							flist.add(it.next());
+						}
+						it.close();
+						for (int m = 0; m < flist.size(); m++)
+						{
+							Feature f = flist.get(m);
+							updateStatusBar(f, m, flist.size());
 							LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f, (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
 							model.addNewStructure();
 							model.activateStructure(model.getNumberOfStructures() - 1);
@@ -531,14 +588,16 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		}
 	}
 
-	public AbstractStructureMappingControlPanel(final ModelManager modelManager, ModelNames aModelType, final PickManager pickManager, final PickManager.PickMode pickMode, boolean supportsEsri)
+	StatusBar statusBar;
+
+	public AbstractStructureMappingControlPanel(final ModelManager modelManager, ModelNames aModelType, final PickManager pickManager, final PickManager.PickMode pickMode, final StatusBar statusBar)
 	{
 		this.modelManager = modelManager;
 		structureModel = (StructureModel) modelManager.getModel(aModelType);
 		this.pickManager = pickManager;
 		this.pickMode = pickMode;
 		structuresPopupMenu = (StructuresPopupMenu) pickManager.getPopupManager().getPopup(structureModel);
-		this.supportsEsri = true;// supportsEsri;
+		this.statusBar = statusBar;
 
 		changeOffsetDialog = null;
 
@@ -547,7 +606,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 
 		loadB.getPopup().add(new JMenuItem(new LoadSbmtStructuresFileAction()));
 		JMenuItem esriLoadMI = loadB.getPopup().add(new JMenuItem(new LoadEsriShapeFileAction()));
-		if (!(structureModel instanceof PointModel) && !(structureModel instanceof LineModel)) // don't let user import esri shapes as ellipses or circles; these require extra information to become "SBMT" structures ... instead they can use the polygons tab
+		if (!(structureModel instanceof PointModel) && !(structureModel instanceof LineModel)) // don't let user import esri shapes as ellipses or circles; these require extra information in order to be upgraded (downgraded?) to "SBMT" structures ... instead they can use the polygons tab
 		{
 			esriLoadMI.setEnabled(false);
 			esriLoadMI.setToolTipText("ESRI circles and ellipses can be imported using the Polygons tab");
