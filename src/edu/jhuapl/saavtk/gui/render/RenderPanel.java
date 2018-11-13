@@ -89,7 +89,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		viewCamera = new RenderPanelCamera(this);
 		viewCamera.addCameraListener(this);
 		this.toolbar = toolbar;
-		toolbar.addToolbarListener(this);
+		toolbar.addListener(this);
 		//
 		propRenderer = getRenderer();
 
@@ -121,7 +121,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		axesFrame.setAlwaysOnTop(true);
 
 		// frame.setUndecorated(true);
-		toolbar.addToolbarListener(new RenderToolbarListener() {
+		toolbar.addListener(new RenderToolbarListener() {
 
 			@Override
 			public void handle(RenderToolbarEvent event)

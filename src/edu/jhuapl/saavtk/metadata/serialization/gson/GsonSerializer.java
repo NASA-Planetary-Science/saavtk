@@ -20,21 +20,22 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
+import edu.jhuapl.saavtk.metadata.EmptyMetadata;
 import edu.jhuapl.saavtk.metadata.InstanceGetter;
 import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
 import edu.jhuapl.saavtk.metadata.MetadataManager;
 import edu.jhuapl.saavtk.metadata.MetadataManagerCollection;
-import edu.jhuapl.saavtk.metadata.ObjectToMetadata;
 import edu.jhuapl.saavtk.metadata.Serializer;
 import edu.jhuapl.saavtk.metadata.SettableMetadata;
+import edu.jhuapl.saavtk.metadata.StorableAsMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.metadata.serialization.gson.GsonElement.ElementIO;
 
 public class GsonSerializer implements Serializer
 {
 
-	private enum TestEnum implements ObjectToMetadata<TestEnum>
+	private enum TestEnum implements StorableAsMetadata<TestEnum>
 	{
 		OPTION0("Option 0"),
 		OPTION1("Option 1");
@@ -64,13 +65,13 @@ public class GsonSerializer implements Serializer
 		}
 
 		@Override
-		public Key<TestEnum> getProxyKey()
+		public Key<TestEnum> getKey()
 		{
 			return PROXY_KEY;
 		}
 
 		@Override
-		public Metadata to()
+		public Metadata store()
 		{
 			return SettableMetadata.of(VERSION).put(NAME, name());
 		}
@@ -161,7 +162,10 @@ public class GsonSerializer implements Serializer
 				{
 					MetadataManager manager = managerCollection.getManager(key);
 					Metadata metadata = manager.store();
-					metadataMap.put(key.getId(), metadata);
+					if (!EmptyMetadata.instance().equals(metadata))
+					{
+						metadataMap.put(key.getId(), metadata);
+					}
 				}
 				GSON.toJson(SERIALIZER_VERSION, DataTypeInfo.VERSION.getType(), jsonWriter);
 				jsonWriter.flush();

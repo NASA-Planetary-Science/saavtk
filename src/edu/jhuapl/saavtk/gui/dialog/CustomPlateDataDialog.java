@@ -92,6 +92,10 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 	private void updateConfigFile()
 	{
+		// It's unclear whether this code needs to continue to write the config file.
+		// The call at the end to "saveCustomMetadata" saves the colorings using the new
+		// metadata format, which should be all that is needed. But it still falls back
+		// on this old config file, so for now, keep writing both of them.
 		MapUtil configMap = new MapUtil(getConfigFilename());
 
 		// Load in the plate data
@@ -110,6 +114,13 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 				{
 					continue;
 				}
+
+				String fileName = coloringData.getFileName();
+				if (fileName == null)
+				{
+					continue;
+				}
+
 				if (!cellDataFilenames.isEmpty())
 				{
 					cellDataFilenames += PolyhedralModel.LIST_SEPARATOR;
@@ -119,7 +130,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 					cellDataResolutionLevels += PolyhedralModel.LIST_SEPARATOR;
 				}
 
-				cellDataFilenames += coloringData.getFileName().replaceFirst(".*/", "");
+				cellDataFilenames += fileName.replaceFirst(".*/", "");
 				cellDataNames += coloringData.getName();
 				cellDataUnits += coloringData.getUnits();
 				cellDataHasNulls += new Boolean(coloringData.hasNulls()).toString();

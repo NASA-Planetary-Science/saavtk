@@ -13,17 +13,17 @@ import com.google.gson.JsonSerializer;
 import edu.jhuapl.saavtk.metadata.InstanceGetter;
 import edu.jhuapl.saavtk.metadata.Key;
 import edu.jhuapl.saavtk.metadata.Metadata;
-import edu.jhuapl.saavtk.metadata.ObjectToMetadata;
+import edu.jhuapl.saavtk.metadata.StorableAsMetadata;
 
-final class ProxyIO<T> implements JsonSerializer<ObjectToMetadata<?>>, JsonDeserializer<T>
+final class ProxyIO<T> implements JsonSerializer<StorableAsMetadata<?>>, JsonDeserializer<T>
 {
 
 	@Override
-	public JsonElement serialize(ObjectToMetadata<?> src, @SuppressWarnings("unused") Type typeOfSrc, JsonSerializationContext context)
+	public JsonElement serialize(StorableAsMetadata<?> src, @SuppressWarnings("unused") Type typeOfSrc, JsonSerializationContext context)
 	{
 		JsonObject object = new JsonObject();
-		object.addProperty("proxiedType", src.getProxyKey().getId());
-		object.add("proxyMetadata", context.serialize(src.to(), DataTypeInfo.METADATA.getType()));
+		object.addProperty("proxiedType", src.getKey().getId());
+		object.add("proxyMetadata", context.serialize(src.store(), DataTypeInfo.METADATA.getType()));
 		return object;
 	}
 
@@ -33,7 +33,7 @@ final class ProxyIO<T> implements JsonSerializer<ObjectToMetadata<?>>, JsonDeser
 		JsonObject object = json.getAsJsonObject();
 		Key<T> proxyKey = Key.of(object.get("proxiedType").getAsString());
 		Metadata objectMetadata = context.deserialize(object.get("proxyMetadata"), DataTypeInfo.METADATA.getType());
-		return InstanceGetter.defaultInstanceGetter().of(proxyKey).from(objectMetadata);
+		return InstanceGetter.defaultInstanceGetter().of(proxyKey).provide(objectMetadata);
 	}
 
 }
