@@ -110,6 +110,13 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 				{
 					continue;
 				}
+
+				String fileName = coloringData.getFileName();
+				if (fileName == null)
+				{
+					continue;
+				}
+
 				if (!cellDataFilenames.isEmpty())
 				{
 					cellDataFilenames += PolyhedralModel.LIST_SEPARATOR;
@@ -119,7 +126,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 					cellDataResolutionLevels += PolyhedralModel.LIST_SEPARATOR;
 				}
 
-				cellDataFilenames += coloringData.getFileName().replaceFirst(".*/", "");
+				cellDataFilenames += fileName.replaceFirst(".*/", "");
 				cellDataNames += coloringData.getName();
 				cellDataUnits += coloringData.getUnits();
 				cellDataHasNulls += new Boolean(coloringData.hasNulls()).toString();
