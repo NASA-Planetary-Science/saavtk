@@ -367,7 +367,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		this.colormap = colormap;
 
 		this.colormap.addPropertyChangeListener(this);
-		
+
 		try
 		{
 			paintBody();
@@ -377,7 +377,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 	}
 
 	@Override
@@ -2964,14 +2964,23 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				}
 				out.write(lineSeparator);
 
+				vtkTriangle triangle = new vtkTriangle();
+
+				vtkPoints points = smallBodyPolyData.GetPoints();
+				int numberCells = smallBodyPolyData.GetNumberOfCells();
+				smallBodyPolyData.BuildCells();
+				vtkIdList idList = new vtkIdList();
+
 				for (int index = 0; index < indexable.size(); ++index)
 				{
 					int cellId = indexable.get(index);
 					FacetColoringData facetData = new FacetColoringData(cellId, allColoringData);
-					facetData.generateDataFromPolydata(smallBodyPolyData);
+					facetData.generateDataFromPolydata(smallBodyPolyData, numberCells, triangle, points, idList);
 					facetData.writeTo(out);
 					out.write(lineSeparator);
 				}
+				triangle.Delete();
+				idList.Delete();
 			}
 		}
 	}

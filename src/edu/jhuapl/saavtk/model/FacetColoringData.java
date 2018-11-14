@@ -95,7 +95,15 @@ public class FacetColoringData
 				data = coloring;
 		}
 		if (data == null)
-			return null; //really should throw an exception here
+		{
+			throw new IllegalArgumentException("Cannot find values for coloring " + coloringName);
+		}
+
+		return getColoringValuesFor(data);
+	}
+
+	private double[] getColoringValuesFor(ColoringData data) throws IOException
+	{
 		data.load();
 		vtkFloatArray array = data.getData();
 		int number = data.getElementNames().size();
@@ -134,6 +142,15 @@ public class FacetColoringData
 		int numberCells = smallBodyPolyData.GetNumberOfCells();
 		smallBodyPolyData.BuildCells();
 		vtkIdList idList = new vtkIdList();
+
+		generateDataFromPolydata(smallBodyPolyData, numberCells, triangle, points, idList);
+
+		triangle.Delete();
+		idList.Delete();
+	}
+
+	public void generateDataFromPolydata(vtkPolyData smallBodyPolyData, int numberCells, vtkTriangle triangle, vtkPoints points, vtkIdList idList)
+	{
 		double[] pt0 = new double[3];
 		double[] pt1 = new double[3];
 		double[] pt2 = new double[3];
@@ -155,8 +172,6 @@ public class FacetColoringData
 		triangle.TriangleCenter(pt0, pt1, pt2, center);
 		llr = MathUtil.reclat(center);
 
-		triangle.Delete();
-		idList.Delete();
 	}
 
 	public void writeTo(BufferedWriter out) throws IOException
