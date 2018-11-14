@@ -14,7 +14,7 @@ import vtk.vtkPoints;
 import vtk.vtkPolyData;
 import vtk.vtkTriangle;
 
-public class FacetColoringData 
+public class FacetColoringData
 {
 	int cellId;
 	double area;
@@ -22,70 +22,70 @@ public class FacetColoringData
 	LatLon llr;
 	ImmutableList<ColoringData> allColoringData;
 
-	public FacetColoringData(int cellId, ImmutableList<ColoringData> allColoringData) 
+	public FacetColoringData(int cellId, ImmutableList<ColoringData> allColoringData)
 	{
 		this.cellId = cellId;
 		this.allColoringData = allColoringData;
 	}
-	
+
 	public String[] getAvailableColoringNames()
 	{
 		String[] names = new String[allColoringData.size()];
-		int i=0;
+		int i = 0;
 		for (ColoringData data : allColoringData)
 		{
 			names[i++] = data.getName();
 		}
-		
+
 		return names;
 	}
-	
+
 	public String[] getAvailableColoringNameUnits()
 	{
 		String[] names = new String[allColoringData.size()];
-		int i=0;
+		int i = 0;
 		for (ColoringData data : allColoringData)
 		{
 			names[i++] = data.getUnits();
 		}
-		
+
 		return names;
 	}
-	
+
 	public String[] getAvailable1DColoringNames()
 	{
 		String[] names = new String[get1DColorings().size()];
-		int i=0;
+		int i = 0;
 		for (ColoringData data : get1DColorings())
 		{
 			names[i++] = data.getName();
 		}
-		
+
 		return names;
 	}
-	
+
 	public String[] getAvailable1DColoringNameUnits()
 	{
 		String[] names = new String[get1DColorings().size()];
-		int i=0;
+		int i = 0;
 		for (ColoringData data : get1DColorings())
 		{
 			names[i++] = data.getUnits();
 		}
 		return names;
 	}
-	
+
 	private Vector<ColoringData> get1DColorings()
 	{
 		Vector<ColoringData> oneDColorings = new Vector<ColoringData>();
 		for (ColoringData data : allColoringData)
 		{
-			if(data.getElementNames().size() == 1)
-				oneDColorings.add(data);		
+			if (data.getElementNames().size() == 1)
+				oneDColorings.add(data);
 		}
 		return oneDColorings;
 	}
-	
+
 	public double[] getColoringValuesFor(String coloringName) throws IOException
 	{
 		ColoringData data = null;
@@ -94,12 +94,14 @@ public class FacetColoringData
 			if (coloring.getName().equals(coloringName))
 				data = coloring;
 		}
-		if (data == null) return null;	//really should throw an exception here
+		if (data == null)
+			return null; //really should throw an exception here
 		data.load();
 		vtkFloatArray array = data.getData();
 		int number = data.getElementNames().size();
 		double[] vals = new double[number];
-		switch (number) {
+		switch (number)
+		{
 		case 1:
 			vals = new double[] { array.GetTuple1(cellId) };
 			break;
@@ -123,7 +125,7 @@ public class FacetColoringData
 		}
 		return vals;
 	}
-	
+
 	public void generateDataFromPolydata(vtkPolyData smallBodyPolyData)
 	{
 		vtkTriangle triangle = new vtkTriangle();
@@ -156,7 +158,7 @@ public class FacetColoringData
 		triangle.Delete();
 		idList.Delete();
 	}
-	
+
 	public void writeTo(BufferedWriter out) throws IOException
 	{
 		out.write(cellId + ",");
