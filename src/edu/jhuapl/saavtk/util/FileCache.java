@@ -313,7 +313,7 @@ public final class FileCache
 	{
 		try
 		{
-			return new URL(firstSegment + toUrlSegment(pathSegments));
+			return new URL(toUrlSegment(firstSegment, pathSegments));
 		}
 		catch (MalformedURLException e)
 		{
@@ -380,7 +380,7 @@ public final class FileCache
 			// construct the URL relative to the data root.
 			try
 			{
-				url = new URL(dataRootUrl + toUrlSegment(urlOrPathSegment));
+				url = new URL(toUrlSegment(dataRootUrl.toString(), urlOrPathSegment));
 			}
 			catch (MalformedURLException e1)
 			{
@@ -727,15 +727,18 @@ public final class FileCache
 		showDotsForFiles = enable;
 	}
 
-	private static String toUrlSegment(String... pathSegments)
+	private static String toUrlSegment(String firstSegment, String... pathSegments)
 	{
-		// Prepend a slash and concatenate the paths safely. Substitute
-		// / for \.
-		String urlSegment = SafePaths.getString("/", pathSegments).replace('\\', '/');
+		// Concatenate the paths safely with a single delimiter. Substitute / for \.
+		String result = SafePaths.getString(firstSegment, pathSegments).replace('\\', '/');
 
-		// If the segment is just a slash, return blank. Otherwise
-		// return the segment.
-		return urlSegment.equals("/") ? "" : urlSegment;
+		// Now fix the protocol, if present. Add 2 slashes for "file:" for a total of 3,
+		// which includes the empty host segment, i.e., "file:///". Only add 1 slash (for a
+		// total of 2, e.g., "http://") for other protocols.
+		String protocol = result.replaceFirst("/.*", "").toLowerCase();
+		result = result.replaceFirst("^(\\w+:)", protocol.equals("file:") ? "$1//" : "$1/");
+
+		return result;
 	}
 
 	private FileCache()
