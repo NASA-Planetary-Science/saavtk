@@ -124,7 +124,7 @@ public class ShapeModelImporter
                 }
                 catch (Exception ex)
                 {
-                    errorMessage[0] = "The was an error loading " + modelPath + ".\nAre you sure you specified the right format?";
+                    errorMessage[0] = "There was an error loading " + modelPath + ".\nAre you sure you specified the right format?";
                     return false;
                 }
 
@@ -138,7 +138,7 @@ public class ShapeModelImporter
                 }
                 catch (Exception ex)
                 {
-                    errorMessage[0] = "The was an error loading " + modelPath + ".\nAre you sure you specified the right format?";
+                    errorMessage[0] = "There was an error loading " + modelPath + ".\nAre you sure you specified the right format?";
                     return false;
                 }
 
@@ -152,7 +152,7 @@ public class ShapeModelImporter
                 }
                 catch (Exception ex)
                 {
-                    errorMessage[0] = "The was an error loading " + modelPath + ".\nAre you sure you specified the right format?";
+                    errorMessage[0] = "There was an error loading " + modelPath + ".\nAre you sure you specified the right format?";
                     return false;
                 }
 
@@ -170,7 +170,8 @@ public class ShapeModelImporter
                 }
                 catch (Exception ex)
                 {
-                    errorMessage[0] = "The was an error loading " + modelPath + ".\nAre you sure you specified the right format?";
+                    errorMessage[0] = "There was an error loading " + modelPath + ".\nAre you sure you specified the right format?";
+                    ex.printStackTrace();
                     return false;
                 }
 
@@ -199,7 +200,7 @@ public class ShapeModelImporter
 		        try {
 					FileUtil.copyFile(jsonFile, jsonFileDestination);
 				} catch (IOException e) {
-		            errorMessage[0] = "The was an error copying " + jsonFile + " to " + jsonFileDestination;
+		            errorMessage[0] = "There was an error copying " + jsonFile + " to " + jsonFileDestination;
 		            e.printStackTrace();
 		            return false;
 				}    
@@ -212,7 +213,7 @@ public class ShapeModelImporter
 	            try {
 					FileUtil.copyFile(key, copyMap.get(key));
 				} catch (IOException e) {
-	                errorMessage[0] = "The was an error copying " + modelPath + " to " + copyMap.get(key);
+	                errorMessage[0] = "There was an error copying " + modelPath + " to " + copyMap.get(key);
 	                return false;
 				}            
 	        }

@@ -1,305 +1,233 @@
 package edu.jhuapl.saavtk.gui.render.toolbar;
 
-import java.awt.Image;
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.HierarchyBoundsListener;
-import java.awt.event.HierarchyEvent;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.JPanel;
-import net.miginfocom.swing.MigLayout;
-import vtk.vtkAxesActor;
-import vtk.vtkCamera;
-import vtk.vtkOrientationMarkerWidget;
-import vtk.vtkRenderWindowInteractor;
-import vtk.rendering.jogl.vtkJoglPanelComponent;
-
+import javax.swing.JButton;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
-import com.google.common.collect.Lists;
-
+import edu.jhuapl.saavtk.gui.GuiUtil;
 import edu.jhuapl.saavtk.gui.render.axes.CartesianAxis;
 import edu.jhuapl.saavtk.gui.render.axes.CartesianViewDirection;
 
-import javax.swing.BorderFactory;
-import javax.swing.ButtonGroup;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JSeparator;
-import java.awt.GridLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import javax.swing.JLabel;
-import javax.swing.SwingConstants;
-import javax.swing.border.Border;
-
-public class RenderToolbar extends JToolBar implements ItemListener, ActionListener, PropertyChangeListener, HierarchyBoundsListener
+public class RenderToolbar extends JToolBar implements ActionListener
 {
-	JToggleButton				constrainRotationXButton		= new JToggleButton();
-	JToggleButton				constrainRotationYButton		= new JToggleButton();
-	JToggleButton				constrainRotationZButton		= new JToggleButton();
-	protected final ButtonGroup	constrainRotationButtonGroup	= new UnselectableButtonGroup();
+	// Constants
+	private static final long serialVersionUID = 1L;
+//	public static final String	orientationAxesStateProperty	= "ORIENTATION_AXES_STATE_CHANGED";
+//	public static final String	viewAllProperty					= "VIEW_CHANGED";
+//	public static final String	pickRotationCenterProperty		= "ROTATION_CENTER_CHANGED";
 
-	ImageIcon					constrainRotationXIcon			= new ImageIcon(
-			RenderToolbar.class.getResource("lock-orientation-x.png"));
-	ImageIcon					constrainRotationYIcon			= new ImageIcon(
-			RenderToolbar.class.getResource("lock-orientation-y.png"));
-	ImageIcon					constrainRotationZIcon			= new ImageIcon(
-			RenderToolbar.class.getResource("lock-orientation-z.png"));
+	// State vars
+	private List<RenderToolbarListener> listeners;
 
-	JButton						viewAlignPlusXButton			= new JButton();
-	JButton						viewAlignMinusXButton			= new JButton();
-	JButton						viewAlignPlusYButton			= new JButton();
-	JButton						viewAlignMinusYButton			= new JButton();
-	JButton						viewAlignPlusZButton			= new JButton();
-	JButton						viewAlignMinusZButton			= new JButton();
+	// GUI vars
+	private JToggleButton showOrientationAxesTB, pickRotationCenterTB;
+	private JButton resetViewB;
 
-	ImageIcon					viewAlignPlusXIcon				= new ImageIcon(
-			RenderToolbar.class.getResource("pqXPlus.png"));
-	ImageIcon					viewAlignMinusXIcon				= new ImageIcon(
-			RenderToolbar.class.getResource("pqXMinus.png"));
-	ImageIcon					viewAlignPlusYIcon				= new ImageIcon(
-			RenderToolbar.class.getResource("pqYPlus.png"));
-	ImageIcon					viewAlignMinusYIcon				= new ImageIcon(
-			RenderToolbar.class.getResource("pqYMinus.png"));
-	ImageIcon					viewAlignPlusZIcon				= new ImageIcon(
-			RenderToolbar.class.getResource("pqZPlus.png"));
-	ImageIcon					viewAlignMinusZIcon				= new ImageIcon(
-			RenderToolbar.class.getResource("pqZMinus.png"));
+	private JToggleButton xAxisLockTB, yAxisLockTB, zAxisLockTB;
 
-	JToggleButton				showOrientationAxesToggleButton	= new JToggleButton();
+	private JButton xAlignPosB, xAlignNegB, yAlignPosB, yAlignNegB, zAlignPosB, zAlignNegB;
 
-	JButton						viewAllButton					= new JButton();
-	JToggleButton				pickRotationCenterButton		= new JToggleButton();
+//	// ImageIcon dragToolbarIcon=new
+//	// ImageIcon(RenderToolbar.class.getResource("grab.png"));
+//	
+//	// TODO: add dropdown for out-of-bounds components
+//	List<Component> componentsToShow=Lists.newArrayList();
+//	List<Component> visibleComponents=Lists.newArrayList();
+//	List<Component> outOfBoundsComponents=Lists.newArrayList();
 
-	ImageIcon					showOrientationAxesIcon			= new ImageIcon(
-			RenderToolbar.class.getResource("pqShowOrientationAxes.png"));
-	ImageIcon					viewAllIcon						= new ImageIcon(
-			RenderToolbar.class.getResource("pqResetCamera.png"));
-	ImageIcon					pickRotationIcon				= new ImageIcon(
-			RenderToolbar.class.getResource("pqPickCenter.png"));
-	// ImageIcon dragToolbarIcon=new
-	// ImageIcon(RenderToolbar.class.getResource("grab.png"));
-
-	public static final String	orientationAxesStateProperty	= "ORIENTATION_AXES_STATE_CHANGED";
-	public static final String	viewAllProperty					= "VIEW_CHANGED";
-	public static final String	pickRotationCenterProperty		= "ROTATION_CENTER_CHANGED";
-	
-	// TODO: add dropdown for out-of-bounds components
-	List<Component> componentsToShow=Lists.newArrayList();
-	List<Component> visibleComponents=Lists.newArrayList();
-	List<Component> outOfBoundsComponents=Lists.newArrayList();
-
-	public void setOrientationAxesToggleState(boolean show)
-	{
-		showOrientationAxesToggleButton.setSelected(show);
-	}
-	
-	public boolean getOrientationAxesToggleState()
-	{
-		return showOrientationAxesToggleButton.isSelected();
-	}
-	
 	public RenderToolbar()
 	{
+		listeners = new ArrayList<>();
+
 		setFloatable(false);
 		setRollover(true);
 		setOrientation(JToolBar.HORIZONTAL);
 		setAutoscrolls(true);
-		
-		addPropertyChangeListener(this);
-		addHierarchyBoundsListener(this);
 
+		BufferedImage secImage, priImage;
+		Color dyeColor = new Color(255, 0, 0, 48);
 		int iconSize = 32;
-		constrainRotationXIcon
-				.setImage(constrainRotationXIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
-		constrainRotationYIcon
-				.setImage(constrainRotationYIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
-		constrainRotationZIcon
-				.setImage(constrainRotationZIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
+
+		// Set up the buttons: showOrientationB, pickRotationCenterB, resetOrientationB
+		priImage = loadImage("pqShowOrientationAxes.png", iconSize, iconSize);
+		priImage = ImageUtil.replaceAlpha(priImage, Color.WHITE, 0);
+		secImage = ImageUtil.colorize(priImage, dyeColor);
+		showOrientationAxesTB = GuiUtil.formToggleButton(this, priImage, secImage, "Show Orientation Axes");
+
+		priImage = loadImage("pqPickCenter.png", iconSize, iconSize);
+//		priImage = ImageUtil.replaceAlpha(secImage, Color.WHITE, 0);
+		secImage = ImageUtil.colorize(priImage, dyeColor);
+		pickRotationCenterTB = GuiUtil.formToggleButton(this, priImage, secImage, "Pick Center");
+		pickRotationCenterTB.setEnabled(false);
+
+		priImage = loadImage("pqResetCamera.png", iconSize, iconSize);
+		resetViewB = GuiUtil.formButton(this, priImage, "Reset View");
 
 		addSeparator();
+		add(showOrientationAxesTB);
+		add(pickRotationCenterTB);
+		add(resetViewB);
 
-		//
+		// Set up the x,y,z view align buttons
+		priImage = loadImage("pqXMinus.png", iconSize, iconSize);
+		xAlignNegB = GuiUtil.formButton(this, priImage, "Set View to Axis: -X");
 
-		viewAlignPlusXIcon
-				.setImage(viewAlignPlusXIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
-		viewAlignMinusXIcon
-				.setImage(viewAlignMinusXIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
-		viewAlignPlusYIcon
-				.setImage(viewAlignPlusYIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
-		viewAlignMinusYIcon
-				.setImage(viewAlignMinusYIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
-		viewAlignPlusZIcon
-				.setImage(viewAlignPlusZIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
+		priImage = loadImage("pqXPlus.png", iconSize, iconSize);
+		xAlignPosB = GuiUtil.formButton(this, priImage, "Set View to Axis: +X");
 
-		showOrientationAxesToggleButton.setIcon(showOrientationAxesIcon);
-		add(showOrientationAxesToggleButton);
-		showOrientationAxesToggleButton.addItemListener(this);
-		showOrientationAxesToggleButton.setSelected(false);
-		
-		pickRotationCenterButton.setIcon(pickRotationIcon);
-		add(pickRotationCenterButton);
-		pickRotationCenterButton.addItemListener(this);
-		pickRotationCenterButton.setEnabled(false);
+		priImage = loadImage("pqYMinus.png", iconSize, iconSize);
+		yAlignNegB = GuiUtil.formButton(this, priImage, "Set View to Axis: -Y");
 
-		//
+		priImage = loadImage("pqYPlus.png", iconSize, iconSize);
+		yAlignPosB = GuiUtil.formButton(this, priImage, "Set View to Axis: +Y");
 
-		viewAllButton.setIcon(viewAllIcon);
-		add(viewAllButton);
-		viewAllButton.addActionListener(this);
+		priImage = loadImage("pqZMinus.png", iconSize, iconSize);
+		zAlignNegB = GuiUtil.formButton(this, priImage, "Set View to Axis: -Z");
+
+		priImage = loadImage("pqZPlus.png", iconSize, iconSize);
+		zAlignPosB = GuiUtil.formButton(this, priImage, "Set View to Axis: +Z");
 
 		addSeparator();
+		add(xAlignPosB);
+		add(xAlignNegB);
+		add(yAlignPosB);
+		add(yAlignNegB);
+		add(zAlignPosB);
+		add(zAlignNegB);
 
-		viewAlignPlusXButton.setIcon(viewAlignPlusXIcon);
+		// Set up the xAxisLockTB, yAxisLockTB, zAxisLockTB;
+		priImage = loadImage("lock-orientation-x.png", iconSize, iconSize);
+		secImage = ImageUtil.colorize(priImage, dyeColor);
+		xAxisLockTB = GuiUtil.formToggleButton(this, priImage, secImage, "Lock x-Axis");
 
-		add(viewAlignPlusXButton);
+		priImage = loadImage("lock-orientation-y.png", iconSize, iconSize);
+		secImage = ImageUtil.colorize(priImage, dyeColor);
+		yAxisLockTB = GuiUtil.formToggleButton(this, priImage, secImage, "Lock y-Axis");
 
-		viewAlignPlusXButton.addActionListener(this);
-		viewAlignMinusXButton.setIcon(viewAlignMinusXIcon);
-		add(viewAlignMinusXButton);
-		viewAlignMinusXButton.addActionListener(this);
-		viewAlignPlusYButton.setIcon(viewAlignPlusYIcon);
-		add(viewAlignPlusYButton);
-		viewAlignPlusYButton.addActionListener(this);
-		viewAlignMinusYButton.setIcon(viewAlignMinusYIcon);
-		add(viewAlignMinusYButton);
-		viewAlignMinusYButton.addActionListener(this);
-		viewAlignPlusZButton.setIcon(viewAlignPlusZIcon);
-		add(viewAlignPlusZButton);
-		viewAlignPlusZButton.addActionListener(this);
+		priImage = loadImage("lock-orientation-z.png", iconSize, iconSize);
+		secImage = ImageUtil.colorize(priImage, dyeColor);
+		zAxisLockTB = GuiUtil.formToggleButton(this, priImage, secImage, "Lock z-Axis");
 
-		//
-
-		pickRotationIcon
-				.setImage(pickRotationIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
-
-		//
-
-		showOrientationAxesIcon
-				.setImage(showOrientationAxesIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
-		viewAllIcon.setImage(viewAllIcon.getImage().getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH));
-		//showOrientationAxesToggleButton.setSelected(true);
-		viewAlignMinusZButton.setIcon(viewAlignMinusZIcon);
-		add(viewAlignMinusZButton);
-		viewAlignMinusZButton.addActionListener(this);
-		
-				//
-				addSeparator();
-				
-						constrainRotationButtonGroup.add(constrainRotationXButton);
-						
-								constrainRotationXButton.setIcon(constrainRotationXIcon);
-								
-										// dragToolbarIcon.setImage(dragToolbarIcon.getImage().getScaledInstance(iconSize/2,
-										// iconSize/2, Image.SCALE_SMOOTH));
-										// setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
-								
-										add(constrainRotationXButton);
-										
-												constrainRotationXButton.addItemListener(this);
-												constrainRotationButtonGroup.add(constrainRotationYButton);
-												constrainRotationYButton.setIcon(constrainRotationYIcon);
-												add(constrainRotationYButton);
-												constrainRotationYButton.addItemListener(this);
-												constrainRotationButtonGroup.add(constrainRotationZButton);
-												constrainRotationZButton.setIcon(constrainRotationZIcon);
-												add(constrainRotationZButton);
-												constrainRotationZButton.addItemListener(this);
-
+		addSeparator();
+		add(xAxisLockTB);
+		add(yAxisLockTB);
+		add(zAxisLockTB);
 	}
 
-	public void addToolbarListener(RenderToolbarListener listener)
+	/**
+	 * Registers a listener with this toolbar.
+	 */
+	public void addListener(RenderToolbarListener aListener)
 	{
-		listeners.add(listener);
+		listeners.add(aListener);
 	}
 
-	List<RenderToolbarListener> listeners = Lists.newArrayList();
-
-	public void fire(RenderToolbarEvent event)
+	/**
+	 * Returns the Show Orientation Axis toggle state.
+	 */
+	public boolean getOrientationAxesToggleState()
 	{
-		for (int i = 0; i < listeners.size(); i++)
-			listeners.get(i).handle(event);
+		return showOrientationAxesTB.isSelected();
+	}
+
+	/**
+	 * Sets the Show Orientation Axis toggle state.
+	 */
+	public void setOrientationAxesToggleState(boolean aBool)
+	{
+		showOrientationAxesTB.setSelected(aBool);
 	}
 
 	@Override
-	public void itemStateChanged(ItemEvent e)
+	public void actionPerformed(ActionEvent aEvent)
 	{
-		if (e.getSource() == constrainRotationXButton)
-		{
-			if (constrainRotationXButton.isSelected())
-				fire(new RenderToolbarEvent.ConstrainRotationAxisEvent(this, CartesianAxis.X));
-			else
-				fire(new RenderToolbarEvent.ConstrainRotationAxisEvent(this, CartesianAxis.NONE));
-		} else if (e.getSource() == constrainRotationYButton)
-		{
-			if (constrainRotationYButton.isSelected())
-				fire(new RenderToolbarEvent.ConstrainRotationAxisEvent(this, CartesianAxis.Y));
-			else
-				fire(new RenderToolbarEvent.ConstrainRotationAxisEvent(this, CartesianAxis.NONE));
-		} else if (e.getSource() == constrainRotationZButton)
-		{
-			if (constrainRotationZButton.isSelected())
-				fire(new RenderToolbarEvent.ConstrainRotationAxisEvent(this, CartesianAxis.Z));
-			else
-				fire(new RenderToolbarEvent.ConstrainRotationAxisEvent(this, CartesianAxis.NONE));
-		} else if (e.getSource() == showOrientationAxesToggleButton)
-		{
-			fire(new RenderToolbarEvent.ToggleAxesVisibilityEvent(this, showOrientationAxesToggleButton.isSelected()));
-		}
+		Object source = aEvent.getSource();
 
-	}
-
-	@Override
-	public void actionPerformed(ActionEvent e)
-	{
-		if (e.getSource() == viewAlignPlusXButton)
-			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.PLUS_X));
-		else if (e.getSource() == viewAlignMinusXButton)
-			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.MINUS_X));
-		else if (e.getSource() == viewAlignPlusYButton)
-			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.PLUS_Y));
-		else if (e.getSource() == viewAlignMinusYButton)
-			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.MINUS_Y));
-		else if (e.getSource() == viewAlignPlusZButton)
-			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.PLUS_Z));
-		else if (e.getSource() == viewAlignMinusZButton)
-			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.MINUS_Z));
-		else if (e.getSource() == viewAllButton)
+		if (source == showOrientationAxesTB)
+			fire(new RenderToolbarEvent.ToggleAxesVisibilityEvent(this, showOrientationAxesTB.isSelected()));
+		else if (source == pickRotationCenterTB)
+			;
+//			fire(new RenderToolbarEvent.PickRotationCenterEvent(this, pickRotationCenterTB.isSelected()));
+//			firePropertyChange(pickRotationCenterProperty, null, null);
+		else if (source == pickRotationCenterTB)
 			fire(new RenderToolbarEvent.ViewAllEvent(this));
-		// else if (e.getSource() == pickRotationCenterButton)
-		// firePropertyChange(pickRotationCenterProperty, null, null);
+
+		// Set View along axis...
+		else if (source == xAlignPosB)
+			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.PLUS_X));
+		else if (source == xAlignNegB)
+			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.MINUS_X));
+		else if (source == yAlignPosB)
+			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.PLUS_Y));
+		else if (source == yAlignNegB)
+			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.MINUS_Y));
+		else if (source == zAlignPosB)
+			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.PLUS_Z));
+		else if (source == zAlignNegB)
+			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.MINUS_Z));
+		else if (source == resetViewB)
+			fire(new RenderToolbarEvent.ViewAllEvent(this));
+
+		// Logic: Lock Axis
+		else if (source == xAxisLockTB)
+		{
+			yAxisLockTB.setSelected(false);
+			zAxisLockTB.setSelected(false);
+
+			CartesianAxis targAxis = CartesianAxis.NONE;
+			if (xAxisLockTB.isSelected() == true)
+				targAxis = CartesianAxis.X;
+			fire(new RenderToolbarEvent.ConstrainRotationAxisEvent(this, targAxis));
+		}
+		else if (source == yAxisLockTB)
+		{
+			xAxisLockTB.setSelected(false);
+			zAxisLockTB.setSelected(false);
+
+			CartesianAxis targAxis = CartesianAxis.NONE;
+			if (yAxisLockTB.isSelected() == true)
+				targAxis = CartesianAxis.Y;
+			fire(new RenderToolbarEvent.ConstrainRotationAxisEvent(this, targAxis));
+		}
+		else if (source == zAxisLockTB)
+		{
+			xAxisLockTB.setSelected(false);
+			yAxisLockTB.setSelected(false);
+
+			CartesianAxis targAxis = CartesianAxis.NONE;
+			if (zAxisLockTB.isSelected() == true)
+				targAxis = CartesianAxis.Z;
+			fire(new RenderToolbarEvent.ConstrainRotationAxisEvent(this, targAxis));
+		}
 	}
 
-	@Override
-	public void propertyChange(PropertyChangeEvent evt)
+	/**
+	 * Helper method that will fire off the specified event to all the registered
+	 * listeners.
+	 * 
+	 * @param aEvent
+	 */
+	private void fire(RenderToolbarEvent aEvent)
 	{
-//		for (Component c : getComponents())
-//			System.out.println(this.getBounds()+" "+c.getBounds());
+		for (RenderToolbarListener aListener : listeners)
+			aListener.handle(aEvent);
 	}
-	
-	@Override
-	public void ancestorResized(HierarchyEvent e)
+
+	/**
+	 * Helper method to load the image at the specified resource. The specified
+	 * resource must be located in the same folder/package as this
+	 * RenderToolbar.class.
+	 */
+	private BufferedImage loadImage(String aResourceName, int aImageW, int aImageH)
 	{
-//		for (Component c : getComponents())
-//			System.out.println(this.getBounds()+" "+c.getBounds());
+		return ImageUtil.loadImage(RenderToolbar.class.getResource(aResourceName), aImageW, aImageH);
 	}
-	
-	@Override
-	public void ancestorMoved(HierarchyEvent e)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-	
+
 }

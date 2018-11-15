@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.metadata;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,7 +95,7 @@ public class SettableMetadata extends BasicMetadata
 			return;
 		if (object instanceof Metadata)
 			return;
-		if (object instanceof ObjectToMetadata)
+		if (object instanceof StorableAsMetadata)
 			return;
 		if (object instanceof Version)
 			return;
@@ -131,6 +132,8 @@ public class SettableMetadata extends BasicMetadata
 			return;
 		if (object instanceof Byte)
 			return;
+		if (object instanceof Date)
+			return;
 		if (object instanceof String[])
 			return;
 		if (object instanceof Character[])
@@ -149,6 +152,10 @@ public class SettableMetadata extends BasicMetadata
 			return;
 		if (object instanceof Byte[])
 			return;
+		if (object instanceof Date[])
+			return;
+		if (object instanceof Metadata[])
+			return;
 		if (object instanceof char[])
 			return;
 		if (object instanceof boolean[])
@@ -165,9 +172,7 @@ public class SettableMetadata extends BasicMetadata
 			return;
 		if (object instanceof byte[])
 			return;
-		if (object instanceof Metadata[])
-			return;
-		throw new IllegalArgumentException("Cannot serialize objects of type " + object.getClass().getSimpleName() + ". Serialize fields instead, or for enums serialize/deserialize with name()/valueOf().");
+		throw new IllegalArgumentException("Cannot directly represent objects of type " + object.getClass().getSimpleName() + " as metadata");
 	}
 
 	protected void validateIterable(Iterable<?> iterable)

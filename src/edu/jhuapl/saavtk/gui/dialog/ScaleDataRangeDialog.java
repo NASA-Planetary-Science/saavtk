@@ -11,6 +11,7 @@ import javax.swing.JLabel;
 
 import com.google.common.base.Preconditions;
 
+import edu.jhuapl.saavtk.colormap.SigFigNumberFormat;
 import edu.jhuapl.saavtk.gui.GNumberField;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 
@@ -41,8 +42,7 @@ public class ScaleDataRangeDialog extends JDialog implements ActionListener
     private GNumberField maxValueNF;
     private JButton applyB;
     private JButton resetB;
-    private JButton okayB;
-    private JButton cancelB;
+    private JButton closeB;
 
     /**
      * Standard Constructor
@@ -110,13 +110,13 @@ public class ScaleDataRangeDialog extends JDialog implements ActionListener
         if (source == minValueNF || source == maxValueNF)
             updateControlArea();
 
-        if (source == applyB || source == okayB)
+        if (source == applyB)
             syncModelToGui();
 
         if (source == resetB)
             doResetAction();
 
-        if (source == okayB || source == cancelB)
+        if (source == closeB)
             setVisible(false);
     }
 
@@ -140,8 +140,10 @@ public class ScaleDataRangeDialog extends JDialog implements ActionListener
         JLabel minValueL = new JLabel("Minimum");
         JLabel maxValueL = new JLabel("Maximum");
         minValueNF = new GNumberField(this);
+        minValueNF.setFormat(new SigFigNumberFormat(3));
         minValueNF.setColumns(8);
         maxValueNF = new GNumberField(this);
+        maxValueNF.setFormat(new SigFigNumberFormat(3));
         maxValueNF.setColumns(8);
         add(minValueL);
         add(minValueNF, "");
@@ -153,14 +155,11 @@ public class ScaleDataRangeDialog extends JDialog implements ActionListener
         applyB.addActionListener(this);
         resetB = new JButton("Reset");
         resetB.addActionListener(this);
-        okayB = new JButton("OK");
-        okayB.addActionListener(this);
-        cancelB = new JButton("Cancel");
-        cancelB.addActionListener(this);
+        closeB = new JButton("Close");
+        closeB.addActionListener(this);
         add(applyB, "align right,span,split");
         add(resetB, "");
-        add(okayB, "");
-        add(cancelB, "");
+        add(closeB, "");
     }
 
     /**
@@ -228,6 +227,5 @@ public class ScaleDataRangeDialog extends JDialog implements ActionListener
         isEnabled &= maxValueNF.isValidInput();
         isEnabled &= minValueNF.getValue() < maxValueNF.getValue();
         applyB.setEnabled(isEnabled);
-        okayB.setEnabled(isEnabled);
     }
 }
