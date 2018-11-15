@@ -514,8 +514,8 @@ public final class FileCache
 		}
 		return info;
 	}
-	
-	public static boolean isFileInCustomData(String urlOrPathSegment) 
+
+	public static boolean isFileInCustomData(String urlOrPathSegment)
 	{
 		return new File(urlOrPathSegment).exists();
 	}
@@ -529,8 +529,8 @@ public final class FileCache
 	 * 
 	 * @param urlOrPathSegment the input URL string or path segment
 	 * @return true if it appears the file could be successfully downloaded/used
-	 * @throws UnauthorizedAccessException if a 401/403 (Unauthorized/Forbidden) error
-	 *             is encountered when attempting to access the server for the
+	 * @throws UnauthorizedAccessException if a 401/403 (Unauthorized/Forbidden)
+	 *             error is encountered when attempting to access the server for the
 	 *             remote file
 	 */
 	public static boolean isFileGettable(String urlOrPathSegment) throws NoInternetAccessException
