@@ -63,6 +63,7 @@ public final class ShapeModelType
 	public static final ShapeModelType NASA_006 = create("NASA-006");
 	public static final ShapeModelType OREX = create("OSIRIS-REx");
 	public static final ShapeModelType TRUTH = create("Truth");
+	public static final ShapeModelType ALTWG_SPC_v20181109b = create("ALTWG-SPC-v20181109b");
 
 	private final String identifier;
 
