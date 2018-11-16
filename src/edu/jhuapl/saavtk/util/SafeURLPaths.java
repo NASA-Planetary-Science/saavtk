@@ -26,8 +26,22 @@ import com.google.common.collect.ImmutableList;
  * @author James Peachey
  *
  */
-public class SafePaths
+public class SafeURLPaths
 {
+	private static final SafeURLPaths INSTANCE = new SafeURLPaths(File.separator);
+
+	public static SafeURLPaths instance()
+	{
+		return INSTANCE;
+	}
+
+	private final String pathSegmentDelimiter;
+
+	private SafeURLPaths(String pathSegmentDelimiter)
+	{
+		this.pathSegmentDelimiter = pathSegmentDelimiter;
+	}
+
 	/**
 	 * Uses {@link Paths} to convert a path string, or a sequence of strings that
 	 * when joined form a path string, to a {@link Path} object containing a
@@ -50,7 +64,7 @@ public class SafePaths
 	 *             i.e., if any directory element in the converted path is "." or
 	 *             "..".
 	 */
-	public static Path get(String first, String... more)
+	public Path get(String first, String... more)
 	{
 		return Paths.get(getString(first, more));
 	}
@@ -76,7 +90,7 @@ public class SafePaths
 	 *             i.e., if any directory element in the converted path is "." or
 	 *             "..".
 	 */
-	public static Path get(Iterable<String> sequence)
+	public Path get(Iterable<String> sequence)
 	{
 		return Paths.get(getString(sequence));
 	}
@@ -103,7 +117,7 @@ public class SafePaths
 	 *             i.e., if any directory element in the converted path is "." or
 	 *             "..".
 	 */
-	public static String getString(String first, String... more)
+	public String getString(String first, String... more)
 	{
 		return joinSegments(getSegments(first, more));
 	}
@@ -129,12 +143,12 @@ public class SafePaths
 	 *             i.e., if any directory element in the converted path is "." or
 	 *             "..".
 	 */
-	public static String getString(Iterable<String> sequence)
+	public String getString(Iterable<String> sequence)
 	{
 		return getString(String.join("/", sequence));
 	}
 
-	private static String[] getSegments(String first, String... more)
+	private String[] getSegments(String first, String... more)
 	{
 		// Join all the arguments with slashes between, then split them on any kind of path delimiter.
 		String combined = more.length == 0 ? first : String.join("/", first, String.join("/", more));
@@ -156,7 +170,7 @@ public class SafePaths
 		return segments;
 	}
 
-	private static String joinSegments(String[] segments)
+	private String joinSegments(String[] segments)
 	{
 		StringBuilder builder = new StringBuilder(segments[0]);
 
@@ -185,7 +199,7 @@ public class SafePaths
 				builder.append("//");
 			}
 		}
-		else if (segments[0].matches("^\\w+:$"))
+		else if (segments[0].matches("^\\w\\w+:$")) // This is kinda hinky -- drive letters on Windows are 1 character. Assume all protocols have > 1 character.
 		{
 			url = true;
 			builder.append("/");
@@ -195,7 +209,7 @@ public class SafePaths
 			url = false;
 		}
 
-		String delimiter = url ? "/" : File.separator;
+		String delimiter = url ? "/" : pathSegmentDelimiter;
 		for (int index = 1; index < segments.length; ++index)
 		{
 			builder.append(delimiter);
@@ -207,6 +221,22 @@ public class SafePaths
 	// TEST CODE.
 	public static void main(String[] args)
 	{
+		// Test Linux/Mac:
+		test("/");
+
+		System.out.println();
+
+		// Test Windows:
+		test("\\");
+	}
+
+	// TEST CODE.
+	private static void test(String separator)
+	{
+		System.out.println("Running test with separator \"" + separator + "\"");
+
+		SafeURLPaths safePaths = new SafeURLPaths(separator);
+
 		String[] testPaths = { "C:\\Users\\\\user/data\\/file.txt", "/\\home/user/\\\\/", "file.txt",
 				"/file", "relativePath/", "/", "bin/foo/", "",
 				"file:/C:/spud/junk.html", "https://sbmt.jhuapl.edu", "file:", "ftp:", "http:///", "file://///",
@@ -216,11 +246,11 @@ public class SafePaths
 		System.out.println("Test0");
 		for (String path : testPaths)
 		{
-			System.out.println("Paths.getString(\"" + path + "\") = \"" + SafePaths.getString(path) + "\"");
+			System.out.println("Paths.getString(\"" + path + "\") = \"" + safePaths.getString(path) + "\"");
 		}
 
 		System.out.println("\nTest1");
 		ImmutableList<String> testList = ImmutableList.of("path", "to/", "\\\\my", "files/file.txt");
-		System.out.println("Paths.getString(" + testList + ") = \"" + SafePaths.getString(testList) + "\"");
+		System.out.println("Paths.getString(" + testList + ") = \"" + safePaths.getString(testList) + "\"");
 	}
 }

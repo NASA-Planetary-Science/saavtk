@@ -13,7 +13,7 @@ import com.google.common.collect.Lists;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.util.Configuration;
-import edu.jhuapl.saavtk.util.SafePaths;
+import edu.jhuapl.saavtk.util.SafeURLPaths;
 
 class FavoritesFile
 {
@@ -22,7 +22,7 @@ class FavoritesFile
 
 	public FavoritesFile(ViewManager viewManager)
 	{
-		this.favoritesFilePath = SafePaths.get(Configuration.getApplicationDataDir(), "favorites");
+		this.favoritesFilePath = SafeURLPaths.instance().get(Configuration.getApplicationDataDir(), "favorites");
 		this.favorites = Lists.newArrayList();
 
 		if (this.favoritesFilePath.toFile().exists())

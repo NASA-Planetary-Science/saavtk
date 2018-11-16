@@ -28,6 +28,8 @@ import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
 
 public final class FileCache
 {
+	private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
+
 	// TODO this should extend Exception and thus be checked.
 	public static class NoInternetAccessException extends RuntimeException
 	{
@@ -355,7 +357,7 @@ public final class FileCache
 		Preconditions.checkNotNull(urlOrPathSegment);
 
 		// Clean up the path or URL.
-		urlOrPathSegment = SafePaths.getString(urlOrPathSegment);
+		urlOrPathSegment = SAFE_URL_PATHS.getString(urlOrPathSegment);
 
 		URL url = null;
 		URL dataRootUrl = Configuration.getDataRootURL();
@@ -418,7 +420,7 @@ public final class FileCache
 		{
 			// It's possible there is information about this file already from a previous query
 			// when offlineMode was disabled.
-			File file = url.getProtocol().equalsIgnoreCase("file") ? SafePaths.get(url.getFile()).toFile() : SafePaths.get(offlineModeRootFolder, ungzippedPath).toFile();
+			File file = url.getProtocol().equalsIgnoreCase("file") ? SAFE_URL_PATHS.get(url.getFile()).toFile() : SAFE_URL_PATHS.get(offlineModeRootFolder, ungzippedPath).toFile();
 			FileInfo info = INFO_MAP.get(file);
 			if (info == null)
 			{
@@ -433,7 +435,7 @@ public final class FileCache
 		{
 			// File "on the server" is not gzipped, and is allegedly on local file system,
 			// so just try to use it directly.
-			File file = SafePaths.get(url.getFile()).toFile();
+			File file = SAFE_URL_PATHS.get(url.getFile()).toFile();
 
 			FileInfo info = INFO_MAP.get(file);
 			if (info == null)
@@ -445,7 +447,7 @@ public final class FileCache
 		}
 
 		// Local file must be gunzipped, so need the full FileInfo no matter where the URL points.
-		File file = SafePaths.get(Configuration.getCacheDir(), ungzippedPath).toFile();
+		File file = SAFE_URL_PATHS.get(Configuration.getCacheDir(), ungzippedPath).toFile();
 
 		FileInfo info = INFO_MAP.get(file);
 		if (info == null && file.isDirectory())
@@ -592,7 +594,7 @@ public final class FileCache
 			try
 			{
 				final File file = fileInfo.getFile();
-				final Path tmpFilePath = SafePaths.get(file + FileUtil.getTemporarySuffix());
+				final Path tmpFilePath = SAFE_URL_PATHS.get(file + FileUtil.getTemporarySuffix());
 				long lastModified = 0;
 
 				Files.deleteIfExists(tmpFilePath);
@@ -733,7 +735,7 @@ public final class FileCache
 	private static String toUrlSegment(String firstSegment, String... pathSegments)
 	{
 		// Concatenate the paths safely with a single delimiter.
-		return SafePaths.getString(firstSegment, pathSegments);
+		return SAFE_URL_PATHS.getString(firstSegment, pathSegments);
 	}
 
 	private FileCache()

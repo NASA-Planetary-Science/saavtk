@@ -1,6 +1,6 @@
 package edu.jhuapl.saavtk.util.file;
 
-import edu.jhuapl.saavtk.util.SafePaths;
+import edu.jhuapl.saavtk.util.SafeURLPaths;
 
 public class FileLocators
 {
@@ -29,7 +29,7 @@ public class FileLocators
 			@Override
 			public String getLocation(String name)
 			{
-				return SafePaths.getString(prefix, name);
+				return SafeURLPaths.instance().getString(prefix, name);
 			}
 		};
 	}

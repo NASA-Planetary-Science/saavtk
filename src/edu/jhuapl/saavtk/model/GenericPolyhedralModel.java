@@ -34,7 +34,7 @@ import edu.jhuapl.saavtk.util.PolyDataUtil;
 import edu.jhuapl.saavtk.util.Preferences;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
-import edu.jhuapl.saavtk.util.SafePaths;
+import edu.jhuapl.saavtk.util.SafeURLPaths;
 import edu.jhuapl.saavtk.util.SmallBodyCubes;
 import vtk.vtkActor;
 import vtk.vtkActor2D;
@@ -239,7 +239,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			coloringHasNulls = new boolean[] {};
 
 		String metadataFileName = BasicColoringDataManager.getMetadataFileName(Serializers.of().getVersion());
-		metadataFileName = SafePaths.getString(SafePaths.get(coloringFiles[0]).toFile().getParent(), metadataFileName);
+		final SafeURLPaths safeUrlPaths = SafeURLPaths.instance();
+		metadataFileName = safeUrlPaths.getString(safeUrlPaths.get(coloringFiles[0]).toFile().getParent(), metadataFileName);
 		if (FileCache.isFileGettable(metadataFileName))
 		{
 			File metadataFile = FileCache.getFileFromServer(metadataFileName);
