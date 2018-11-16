@@ -780,6 +780,7 @@ public final class FileCache
 		{
 			if (inputStream != null)
 			{
+				inputStream.close();
 				inputStream = null;
 			}
 		}
