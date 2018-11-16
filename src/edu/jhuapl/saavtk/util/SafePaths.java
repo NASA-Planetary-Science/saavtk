@@ -1,7 +1,7 @@
 package edu.jhuapl.saavtk.util;
 
 import java.io.File;
-import java.net.URI;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -28,9 +28,6 @@ import com.google.common.collect.ImmutableList;
  */
 public class SafePaths
 {
-	// Regular expression that will match one or more separators.
-	private static final String PATH_SEPARATORS_REGEX = "[/\\\\][/\\\\]*";
-
 	/**
 	 * Uses {@link Paths} to convert a path string, or a sequence of strings that
 	 * when joined form a path string, to a {@link Path} object containing a
@@ -55,12 +52,7 @@ public class SafePaths
 	 */
 	public static Path get(String first, String... more)
 	{
-		Path result = Paths.get(getStringUnchecked(first, more));
-		if (result.compareTo(result.normalize()) != 0)
-		{
-			throw new IllegalArgumentException("Safe path strings may not include any redirections (./ or ../)");
-		}
-		return result;
+		return Paths.get(getString(first, more));
 	}
 
 	/**
@@ -86,31 +78,7 @@ public class SafePaths
 	 */
 	public static Path get(Iterable<String> sequence)
 	{
-		Path result = Paths.get(getStringUnchecked(sequence));
-		if (result.compareTo(result.normalize()) != 0)
-		{
-			throw new IllegalArgumentException("Safe path strings may not include any redirections (./ or ../)");
-		}
-		return result;
-	}
-
-	/**
-	 * Uses {@link Paths} to convert the given URI to a {@link Path} object. Prior
-	 * to conversion, the URI object is checked to ensure it is normalized, and if
-	 * not an IllegalArgumentException is thrown.
-	 * 
-	 * @param uri the input {@link URI} object
-	 * @return the {@link Path} object
-	 * @throws IllegalArgumentException if the input URI is not "normalized", i.e.,
-	 *             if any URI element is "." or "..".
-	 */
-	public static Path get(URI uri)
-	{
-		if (uri.compareTo(uri.normalize()) != 0)
-		{
-			throw new IllegalArgumentException("Safe path URIs may not include any redirections (./ or ../)");
-		}
-		return Paths.get(uri);
+		return Paths.get(getString(sequence));
 	}
 
 	/**
@@ -137,7 +105,7 @@ public class SafePaths
 	 */
 	public static String getString(String first, String... more)
 	{
-		return get(first, more).toString();
+		return joinSegments(getSegments(first, more));
 	}
 
 	/**
@@ -163,62 +131,86 @@ public class SafePaths
 	 */
 	public static String getString(Iterable<String> sequence)
 	{
-		return get(sequence).toString();
+		return getString(String.join("/", sequence));
 	}
 
-	/**
-	 * Concatenate a path string, or a sequence of strings that when joined form a
-	 * path string, to a string containing a lexically valid path on the current OS.
-	 * The input strings may include and freely mix separators valid for any
-	 * supported OS. All such separators are converted to the correct separator for
-	 * the current OS, as specified by File.separator. Multiple consecutive
-	 * separators are replaced with a single separator. This method does not check
-	 * for normalization.
-	 * <p>
-	 * For example C:\Users\my/data//file.txt would be converted to
-	 * C:\Users\my\data\file.txt on Windows and C:/Users/my/data/file.txt on Unix or
-	 * MacOS.
-	 * 
-	 * @param first the first string in the sequence being combined into the path
-	 * @param more any remaining strings in the sequence being combined into the
-	 *            path
-	 * @return the path string
-	 */
-	public static String getStringUnchecked(String first, String... more)
+	private static String[] getSegments(String first, String... more)
 	{
+		// Join all the arguments with slashes between, then split them on any kind of path delimiter.
 		String combined = more.length == 0 ? first : String.join("/", first, String.join("/", more));
-		// If the separator is backslash, which Java uses for escape sequences, need to
-		// escape the escape or replaceAll will get confused.
-		String separator = File.separator.equals("\\") ? "\\\\" : File.separator;
-		return combined.replaceAll(PATH_SEPARATORS_REGEX, separator);
+		String[] segments = combined.split("[/\\\\]+", -1);
+
+		// Check if these segments begin with a non-file URL protocol.  
+		boolean nonLocalUrl = segments[0].matches("\\w+:") && !segments[0].equalsIgnoreCase("file:");
+
+		if (nonLocalUrl)
+		{
+			for (String segment : segments)
+			{
+				if (segment.equals(".") || segment.equals(".."))
+				{
+					throw new IllegalArgumentException("A non-local URL may not contain any redirections (./ or ../)");
+				}
+			}
+		}
+		return segments;
 	}
 
-	/**
-	 * Concatenate an {@link Iterable} sequence of strings that when joined form a
-	 * path string, to a string containing a lexically valid path on the current OS.
-	 * The input strings may include and freely mix separators valid for any
-	 * supported OS. All such separators are converted to the correct separator for
-	 * the current OS, as specified by File.separator. Multiple consecutive
-	 * separators are replaced with a single separator. This method does not check
-	 * for normalization.
-	 * <p>
-	 * For example C:\Users\my/data//file.txt would be converted to
-	 * C:\Users\my\data\file.txt on Windows and C:/Users/my/data/file.txt on Unix or
-	 * MacOS.
-	 * 
-	 * @param sequence the {@link Iterable} sequence of strings being combined into
-	 *            the path
-	 * @return the path string
-	 */
-	public static String getStringUnchecked(Iterable<String> sequence)
+	private static String joinSegments(String[] segments)
 	{
-		return getStringUnchecked(String.join("/", sequence));
+		StringBuilder builder = new StringBuilder(segments[0]);
+
+		boolean url;
+		if (segments[0].equalsIgnoreCase("file:"))
+		{
+			url = true;
+			if (segments.length > 1 && (segments[1].equals(".") || segments[1].equals("..")))
+			{
+				builder.append("/");
+				// This appears to be a relative path reference within a file url. Attempt to do
+				// what is probably intended in this case.
+				try
+				{
+					segments[1] = new File(".").getCanonicalPath().replaceAll("[/\\\\]", "/") + "/" + segments[1];
+				}
+				catch (@SuppressWarnings("unused") IOException e)
+				{
+					// Ignore this exception -- probably it won't ever happen. If it does,
+					// another exception will be thrown as soon as anyone tries to access the file.
+					// That exception will still be clear, as segments[1] will indicate a relative path.
+				}
+			}
+			else
+			{
+				builder.append("//");
+			}
+		}
+		else if (segments[0].matches("^\\w+:$"))
+		{
+			url = true;
+			builder.append("/");
+		}
+		else
+		{
+			url = false;
+		}
+
+		String delimiter = url ? "/" : File.separator;
+		for (int index = 1; index < segments.length; ++index)
+		{
+			builder.append(delimiter);
+			builder.append(segments[index]);
+		}
+		return builder.toString();
 	}
 
 	// TEST CODE.
 	public static void main(String[] args)
 	{
-		String[] testPaths = { "C:\\Users\\\\user/data\\/file.txt", "/\\home/user/\\\\/", "file.txt", "/file", "relativePath/", "/", "bin/foo/", ""
+		String[] testPaths = { "C:\\Users\\\\user/data\\/file.txt", "/\\home/user/\\\\/", "file.txt",
+				"/file", "relativePath/", "/", "bin/foo/", "",
+				"file:/C:/spud/junk.html", "https://sbmt.jhuapl.edu", "file:", "ftp:", "http:///", "file://///",
+				"file:/../../../../../../Downloads/SHAPE0.obj", "file:///Downloads/../Downloads/SHAPE0.obj"
 		};
 
 		System.out.println("Test0");

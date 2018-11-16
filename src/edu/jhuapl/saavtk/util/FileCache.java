@@ -354,6 +354,9 @@ public final class FileCache
 	{
 		Preconditions.checkNotNull(urlOrPathSegment);
 
+		// Clean up the path or URL.
+		urlOrPathSegment = SafePaths.getString(urlOrPathSegment);
+
 		URL url = null;
 		URL dataRootUrl = Configuration.getDataRootURL();
 		try
@@ -729,16 +732,8 @@ public final class FileCache
 
 	private static String toUrlSegment(String firstSegment, String... pathSegments)
 	{
-		// Concatenate the paths safely with a single delimiter. Substitute / for \.
-		String result = SafePaths.getString(firstSegment, pathSegments).replace('\\', '/');
-
-		// Now fix the protocol, if present. Add 2 slashes for "file:" for a total of 3,
-		// which includes the empty host segment, i.e., "file:///". Only add 1 slash (for a
-		// total of 2, e.g., "http://") for other protocols.
-		String protocol = result.replaceFirst("/.*", "").toLowerCase();
-		result = result.replaceFirst("^(\\w+:)", protocol.equals("file:") ? "$1//" : "$1/");
-
-		return result;
+		// Concatenate the paths safely with a single delimiter.
+		return SafePaths.getString(firstSegment, pathSegments);
 	}
 
 	private FileCache()
