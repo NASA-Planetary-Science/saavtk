@@ -184,7 +184,7 @@ public abstract class ViewConfig implements Cloneable
 		return firstTimeDefaultModel;
 	}
 
-	protected static void setFirstTimeDefaultModelName(String firstTimeDefaultModel)
+	public static void setFirstTimeDefaultModelName(String firstTimeDefaultModel)
 	{
 		Preconditions.checkState(ViewConfig.firstTimeDefaultModel == null);
 		ViewConfig.firstTimeDefaultModel = firstTimeDefaultModel;
