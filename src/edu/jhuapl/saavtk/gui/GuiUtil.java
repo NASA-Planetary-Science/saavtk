@@ -2,6 +2,7 @@ package edu.jhuapl.saavtk.gui;
 
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Cursor;
 import java.awt.Image;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -72,6 +73,19 @@ public class GuiUtil
 			if (aComp instanceof Container)
 				setEnabled((Container) aComp, aBool);
 		}
+	}
+
+	/**
+	 * Utility method to ensure the proper cursor is configured.
+	 * <P>
+	 * The Component's cursor will only be changed if it does not already match the
+	 * specified cursor type.
+	 */
+	public static void updateCursor(Component aComp, int aCursorType)
+	{
+		// Switch to the proper cursor (if necessary)
+		if (aComp.getCursor().getType() != aCursorType)
+			aComp.setCursor(new Cursor(aCursorType));
 	}
 
 }

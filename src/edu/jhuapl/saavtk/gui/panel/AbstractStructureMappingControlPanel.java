@@ -69,8 +69,8 @@ import edu.jhuapl.saavtk.model.structure.geotools.FeatureUtil;
 import edu.jhuapl.saavtk.model.structure.geotools.LineStructure;
 import edu.jhuapl.saavtk.pick.PickEvent;
 import edu.jhuapl.saavtk.pick.PickManager;
-import edu.jhuapl.saavtk.pick.Picker;
 import edu.jhuapl.saavtk.pick.PickManager.PickMode;
+import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.popup.StructuresPopupMenu;
 import edu.jhuapl.saavtk.util.ColorIcon;
 import edu.jhuapl.saavtk.util.Properties;
@@ -681,7 +681,7 @@ this.supportsEsri=supportsEsri;
             {
                 int idx = structureModel.getStructureIndexFromCellId(e.getPickedCellId(), e.getPickedProp());
 
-                if (Picker.isPopupTrigger(e.getMouseEvent()))
+                if (PickUtil.isPopupTrigger(e.getMouseEvent()))
                 {
                     // If the item right-clicked on is not selected, then deselect all the
                     // other items and select the item right-clicked on.
