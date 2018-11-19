@@ -823,14 +823,16 @@ public class Renderer extends JPanel implements ActionListener
 		return mainCanvas;
 	}
 
-	public void setInteractorStyleToDefault()
+	/**
+	 * Sets the enable state of the associated Interactor.
+	 * <P>
+	 * If the Interactor is disabled then it will not respond to mouse / keyboard
+	 * events.
+	 */
+	public void setInteractorEnableState(boolean aBool)
 	{
-		mainCanvas.setInteractorStyleToDefault();
-	}
-
-	public void setInteractorStyleToNone()
-	{
-		mainCanvas.setInteractorStyle(null);
+		// Delegate
+		mainCanvas.setInteractorEnableState(aBool);
 	}
 
 	public void setLighting(LightingType type)

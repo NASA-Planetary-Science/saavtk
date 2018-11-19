@@ -58,7 +58,6 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 	RenderToolbar toolbar = null;
 	AxesPanel axesPanel = null;
 	CustomInteractorStyle interactorStyle;
-	CustomInteractorStyle defaultInteractorStyle;
 
 	int cameraObserver;
 	// vtkRenderer axesRenderer=new vtkRenderer();
@@ -84,8 +83,10 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 	{
 
 		getInteractorForwarder().setEventInterceptor(new Interceptor());
+
 		interactorStyle = new CustomInteractorStyle(getRenderWindowInteractor());
-		defaultInteractorStyle = interactorStyle;
+		windowInteractor.SetInteractorStyle(interactorStyle);
+
 		viewCamera = new RenderPanelCamera(this);
 		viewCamera.addCameraListener(this);
 		this.toolbar = toolbar;
@@ -181,15 +182,12 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		getComponent().addComponentListener(this);
 	}
 
-	public void setInteractorStyleToDefault()
+	public void setInteractorEnableState(boolean aBool)
 	{
-
-		if (this.windowInteractor != null)
-		{
-			this.lock.lock();
-			this.windowInteractor.SetInteractorStyle(defaultInteractorStyle);
-			this.lock.unlock();
-		}
+		if (aBool == true)
+			windowInteractor.Enable();
+		else
+			windowInteractor.Disable();
 	}
 
 	public void mouseOff()
