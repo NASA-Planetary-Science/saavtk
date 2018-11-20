@@ -66,7 +66,12 @@ public class SafeURLPaths
 	 */
 	public Path get(String first, String... more)
 	{
-		return Paths.get(getString(first, more));
+		String string = getString(first, more);
+		if (string.contains("spud"))
+		{
+			System.err.println("first is " + first + " get string is " + string);
+		}
+		return Paths.get(string);
 	}
 
 	/**
@@ -92,7 +97,12 @@ public class SafeURLPaths
 	 */
 	public Path get(Iterable<String> sequence)
 	{
-		return Paths.get(getString(sequence));
+		String string = getString(sequence);
+		if (string.contains("spud"))
+		{
+			System.err.println("first is " + sequence.iterator().next() + " get string is " + string);
+		}
+		return Paths.get(string);
 	}
 
 	/**
