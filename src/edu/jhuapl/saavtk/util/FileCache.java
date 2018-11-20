@@ -435,6 +435,10 @@ public final class FileCache
 		{
 			// File "on the server" is not gzipped, and is allegedly on local file system,
 			// so just try to use it directly.
+			if (url.toString().contains("spud"))
+			{
+				System.err.println("url is " + url);
+			}
 			File file = SAFE_URL_PATHS.get(url.getFile()).toFile();
 
 			FileInfo info = INFO_MAP.get(file);
