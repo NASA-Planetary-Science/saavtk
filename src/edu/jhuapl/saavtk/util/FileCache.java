@@ -357,9 +357,7 @@ public final class FileCache
 		Preconditions.checkNotNull(urlOrPathSegment);
 
 		// Clean up the path or URL.
-		System.err.println("Before safepaths " + urlOrPathSegment);
 		urlOrPathSegment = SAFE_URL_PATHS.getString(urlOrPathSegment);
-		System.err.println("After safepaths " + urlOrPathSegment);
 
 		URL url = null;
 		URL dataRootUrl = Configuration.getDataRootURL();

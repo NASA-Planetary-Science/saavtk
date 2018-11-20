@@ -154,10 +154,6 @@ public class SafeURLPaths
 		String combined = more.length == 0 ? first : String.join("/", first, String.join("/", more));
 		String[] segments = combined.split("[/\\\\]+", -1);
 
-		if (combined.contains("spud"))
-		{
-			System.err.println("Splitting name " + combined + "; first is " + first);
-		}
 		// Check if these segments begin with a non-file URL protocol.  
 		boolean nonLocalUrl = segments[0].matches("\\w+:") && !segments[0].equalsIgnoreCase("file:");
 
@@ -219,13 +215,7 @@ public class SafeURLPaths
 			builder.append(delimiter);
 			builder.append(segments[index]);
 		}
-		String result = builder.toString();
-		if (result.contains("spud"))
-		{
-			System.err.println("First segment was " + segments[0]);
-		}
-
-		return result;
+		return builder.toString();
 	}
 
 	// TEST CODE.
