@@ -734,7 +734,10 @@ public final class FileCache
 
 	private static String toUrlSegment(String firstSegment, String... pathSegments)
 	{
-		// Concatenate the paths safely with a single delimiter.
+		// This is a hack to avoid including a leading slash/backslash on a Windows absolute path.
+		firstSegment = firstSegment.replaceFirst("^[/\\\\]+(\\w:[/\\\\])", "$1");
+
+		// Concatenate the paths safely with single delimiters between each segment.
 		return SAFE_URL_PATHS.getString(firstSegment, pathSegments);
 	}
 
@@ -811,7 +814,10 @@ public final class FileCache
 	public static void main(String[] args) throws MalformedURLException
 	{
 		Debug.setEnabled(true);
-		File file = getFileFromServer("file://Users/peachjm1/jhuapl/dev/sbmt/bennu/bennu-simulated-v4/coloring/Elevation0.fits.gz");
-		System.err.println("File " + file + " exists? " + file.exists());
+		//		File file = getFileFromServer("file://Users/peachjm1/jhuapl/dev/sbmt/bennu/bennu-simulated-v4/coloring/Elevation0.fits.gz");
+		//		System.err.println("File " + file + " exists? " + file.exists());
+		System.err.println(toUrlSegment("\\C:\\Users\\windowsUser\\Documents/spud.fits"));
+		System.err.println(toUrlSegment("/C:/Users/windowsUser/Documents/spud.fits"));
+		System.err.println(toUrlSegment("/Users/macUser/Documents/spud.fits"));
 	}
 }
