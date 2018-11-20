@@ -243,6 +243,19 @@ public class FileUtil
 	}
 
 	/**
+	 * Remove the extension from a file name. The extension may have any length. The
+	 * extension is the last dot "." in the file name that is followed by zero or
+	 * more non-dot characters.
+	 * 
+	 * @param fileName
+	 * @return
+	 */
+	public static String removeExtension(String fileName)
+	{
+		return fileName != null ? fileName.substring(0, fileName.lastIndexOf('.')) : null;
+	}
+
+	/**
 	 * @param in
 	 * @param out
 	 * @throws IOException
@@ -355,7 +368,7 @@ public class FileUtil
 		ZipFile zipFile;
 
 		String zipContainingFolder = file.getParent();
-		String zipTopLevelFolderName = file.getName().substring(0, file.getName().length() - 4);
+		String zipTopLevelFolderName = FileUtil.removeExtension(file.getName());
 		String zipTopLevelFolder = zipContainingFolder + File.separator + zipTopLevelFolderName;
 		String tempExtractToFolder = zipTopLevelFolder + getTemporarySuffix();
 
