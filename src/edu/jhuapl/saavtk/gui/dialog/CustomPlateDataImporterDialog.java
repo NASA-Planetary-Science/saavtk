@@ -833,7 +833,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		{
 			currentData.load();
 		}
-		catch (IOException e)
+		catch (Exception e)
 		{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
