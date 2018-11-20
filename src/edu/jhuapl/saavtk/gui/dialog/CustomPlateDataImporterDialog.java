@@ -828,12 +828,13 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		//
 		//		if (origVtkArray == null)
 		//		{
+		System.err.println("before anything " + fileName);
 		currentData = ColoringData.of(nameTextField.getText(), FileCache.createFileURL(fileName).toString(), elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
 		try
 		{
 			currentData.load();
 		}
-		catch (IOException e)
+		catch (Exception e)
 		{
 			// TODO Auto-generated catch block
 			e.printStackTrace();

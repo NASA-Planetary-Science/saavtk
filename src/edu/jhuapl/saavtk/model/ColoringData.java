@@ -238,6 +238,7 @@ public class ColoringData
 				throw new IllegalStateException();
 			}
 
+			System.err.println("before get file " + fileName);
 			File file = FileCache.getFileFromServer(fileName);
 			if (!file.exists())
 			{
