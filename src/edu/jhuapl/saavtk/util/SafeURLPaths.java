@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 import com.google.common.collect.ImmutableList;
 
@@ -154,6 +155,13 @@ public class SafeURLPaths
 		String combined = more.length == 0 ? first : String.join("/", first, String.join("/", more));
 		String[] segments = combined.split("[/\\\\]+", -1);
 
+		// Hack to avoid ever putting a slash or backslash before a drive letter on Windows.
+		// Necessary because Java's URL class's getFile method includes the slash.
+		if (segments[0].matches("^\\s*$") && segments.length > 1 && segments[1].matches("^[A-Za-z]:"))
+		{
+			segments = Arrays.copyOfRange(segments, 1, segments.length);
+		}
+
 		// Check if these segments begin with a non-file URL protocol.  
 		boolean nonLocalUrl = segments[0].matches("\\w+:") && !segments[0].equalsIgnoreCase("file:");
 
@@ -237,7 +245,7 @@ public class SafeURLPaths
 
 		SafeURLPaths safePaths = new SafeURLPaths(separator);
 
-		String[] testPaths = { "C:\\Users\\\\user/data\\/file.txt", "/\\home/user/\\\\/", "file.txt",
+		String[] testPaths = { "\\C:\\Users\\\\user/data\\/file.txt", "/\\home/user/\\\\/", "/C:/", "\\c", "\\c:", "file.txt",
 				"/file", "relativePath/", "/", "bin/foo/", "",
 				"file:/C:/spud/junk.html", "https://sbmt.jhuapl.edu", "file:", "ftp:", "http:///", "file://///",
 				"file:/../../../../../../Downloads/SHAPE0.obj", "file:///Downloads/../Downloads/SHAPE0.obj"
