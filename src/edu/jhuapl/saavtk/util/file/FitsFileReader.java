@@ -45,11 +45,34 @@ public final class FitsFileReader extends DataFileReader
 	}
 
 	@Override
-	public DataFileInfo readFileInfo(File file) throws IncorrectFileFormatException, IOException
+	public void checkFormat(File file) throws IOException, FileFormatException
+	{
+		if (isFileGzipped(file))
+		{
+			try (Fits fits = new Fits(new GZIPInputStream(new FileInputStream(file))))
+			{}
+			catch (FitsException e)
+			{
+				throw new IncorrectFileFormatException(e);
+			}
+		}
+		else
+		{
+			try (Fits fits = new Fits(file))
+			{}
+			catch (FitsException e)
+			{
+				throw new IncorrectFileFormatException(e);
+			}
+		}
+	}
+
+	@Override
+	public DataFileInfo readFileInfo(File file) throws IOException, FileFormatException
 	{
 		Preconditions.checkNotNull(file);
 
-		if (file.getName().toLowerCase().endsWith(".gz"))
+		if (isFileGzipped(file))
 		{
 			return readFileInfoGzipped(file);
 		}
