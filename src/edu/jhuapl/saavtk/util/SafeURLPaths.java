@@ -153,6 +153,7 @@ public class SafeURLPaths
 	{
 		// Join all the arguments with slashes between, then split them on any kind of path delimiter.
 		String combined = more.length == 0 ? first : String.join("/", first, String.join("/", more));
+		combined = combined.replaceFirst("[/\\\\]+$", "");
 		String[] segments = combined.split("[/\\\\]+", -1);
 
 		// Hack to avoid ever putting a slash or backslash before a drive letter on Windows.
@@ -245,11 +246,9 @@ public class SafeURLPaths
 
 		SafeURLPaths safePaths = new SafeURLPaths(separator);
 
-		String[] testPaths = { "\\C:\\Users\\\\user/data\\/file.txt", "/\\home/user/\\\\/", "/C:/", "\\c", "\\c:", "file.txt",
-				"/file", "relativePath/", "/", "bin/foo/", "",
-				"file:/C:/spud/junk.html", "https://sbmt.jhuapl.edu", "file:", "ftp:", "http:///", "file://///",
-				"file:/../../../../../../Downloads/SHAPE0.obj", "file:///Downloads/../Downloads/SHAPE0.obj"
-		};
+		String[] testPaths =
+				{ "\\C:\\Users\\\\user/data\\/file.txt", "/\\home/user/\\\\/", "/C:/", "\\c", "\\c:", "file.txt", "/file", "relativePath/", "/", "bin/foo/", "", "file:/C:/spud/junk.html", "https://sbmt.jhuapl.edu", "file:", "ftp:", "http:///", "file://///", "file:/../../../../../../Downloads/SHAPE0.obj", "file:///Downloads/../Downloads/SHAPE0.obj"
+				};
 
 		System.out.println("Test0");
 		for (String path : testPaths)
