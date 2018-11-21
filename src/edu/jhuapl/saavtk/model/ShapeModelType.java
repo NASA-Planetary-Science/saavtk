@@ -64,6 +64,7 @@ public final class ShapeModelType
 	public static final ShapeModelType OREX = create("OSIRIS-REx");
 	public static final ShapeModelType TRUTH = create("Truth");
 	public static final ShapeModelType ALTWG_SPC_v20181109b = create("ALTWG-SPC-v20181109b");
+	public static final ShapeModelType ALTWG_SPC_v20181115 = create("ALTWG-SPC-v20181115");
 
 	private final String identifier;
 
