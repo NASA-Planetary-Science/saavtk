@@ -11,6 +11,7 @@ import java.awt.event.MouseWheelListener;
 import java.util.Map;
 
 import javax.swing.JComponent;
+import javax.swing.event.MouseInputListener;
 
 import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.render.Renderer;
@@ -177,6 +178,7 @@ public class PickManager
 	{
 		// Register our internal event handler
 		EventHandler tmpHandler = new EventHandler();
+		DragSensitiveListener wrapHandler = new DragSensitiveListener(tmpHandler, 4, 500L);
 
 		JComponent tmpComp = refRenWin.getComponent();
 
@@ -192,8 +194,8 @@ public class PickManager
 
 		// Register our custom event handler
 		tmpComp.addKeyListener(tmpHandler);
-		tmpComp.addMouseListener(tmpHandler);
-		tmpComp.addMouseMotionListener(tmpHandler);
+		tmpComp.addMouseListener(wrapHandler);
+		tmpComp.addMouseMotionListener(wrapHandler);
 		tmpComp.addMouseWheelListener(tmpHandler);
 
 		// Re-add the (previously registered) MouseListener / MouseMotionListener
@@ -212,7 +214,7 @@ public class PickManager
 	 * Internal class used to process and dispatch all keyboard / mouse events to
 	 * the actual Pickers.
 	 */
-	private class EventHandler implements KeyListener, MouseListener, MouseMotionListener, MouseWheelListener
+	private class EventHandler implements KeyListener, MouseInputListener, MouseWheelListener
 	{
 		@Override
 		public void keyPressed(KeyEvent aEvent)
