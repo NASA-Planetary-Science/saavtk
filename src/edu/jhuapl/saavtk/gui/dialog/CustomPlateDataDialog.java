@@ -38,7 +38,7 @@ import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.FileUtil;
 import edu.jhuapl.saavtk.util.MapUtil;
-import edu.jhuapl.saavtk.util.SafePaths;
+import edu.jhuapl.saavtk.util.SafeURLPaths;
 
 public class CustomPlateDataDialog extends javax.swing.JDialog
 {
@@ -166,7 +166,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		String extension = sourceFileName.replaceFirst("[^\\.]*\\.", ".");
 		String uuid = UUID.randomUUID().toString();
 		String destFileName = "platedata-" + uuid + extension;
-		String destFilePath = SafePaths.getString(getCustomDataFolder(), destFileName);
+		String destFilePath = SafeURLPaths.instance().getString(getCustomDataFolder(), destFileName);
 
 		// Copy the cell data file to the model directory
 		try
