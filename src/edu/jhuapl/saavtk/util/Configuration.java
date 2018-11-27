@@ -343,7 +343,7 @@ public class Configuration
 	{
 		if (cacheDir == null)
 		{
-			cacheDir = SafePaths.getString(Configuration.getApplicationDataDir(), "cache", cacheVersion);
+			cacheDir = SafeURLPaths.instance().getString(Configuration.getApplicationDataDir(), "cache", cacheVersion);
 		}
 
 		return cacheDir;
@@ -426,15 +426,15 @@ public class Configuration
 	{
 		return System.getProperty("os.name").toLowerCase().startsWith("windows");
 	}
-	
+
 	static public void setDatabaseSuffix(String suffix)
 	{
-	    databaseSuffix = suffix;
+		databaseSuffix = suffix;
 	}
-	
+
 	static public String getDatabaseSuffix()
 	{
-	    return databaseSuffix;
+		return databaseSuffix;
 	}
 
 	/**

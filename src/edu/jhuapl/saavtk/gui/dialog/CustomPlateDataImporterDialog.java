@@ -31,8 +31,8 @@ import edu.jhuapl.saavtk.model.ColoringDataManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.file.DataFileReader;
+import edu.jhuapl.saavtk.util.file.DataFileReader.FileFormatException;
 import edu.jhuapl.saavtk.util.file.DataFileReader.IncorrectFileFormatException;
-import edu.jhuapl.saavtk.util.file.DataFileReader.InvalidFileFormatException;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo;
 import edu.jhuapl.saavtk.util.file.TableInfo;
 import nom.tam.fits.BasicHDU;
@@ -148,7 +148,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 				ImmutableList<String> columnTitles = getColumnTitles(cellDataPath);
 
 			}
-			catch (IncorrectFileFormatException | InvalidFileFormatException | IOException e)
+			catch (IOException | FileFormatException e)
 			{
 				return e.getMessage();
 			}
@@ -176,7 +176,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		return null;
 	}
 
-	private ImmutableList<String> getColumnTitles(String cellDataPath) throws IncorrectFileFormatException, IOException, InvalidFileFormatException
+	private ImmutableList<String> getColumnTitles(String cellDataPath) throws IOException, FileFormatException
 	{
 		ImmutableList.Builder<String> builder = ImmutableList.builder();
 		File file = new File(cellDataPath);
@@ -833,7 +833,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		{
 			currentData.load();
 		}
-		catch (IOException e)
+		catch (Exception e)
 		{
 			// TODO Auto-generated catch block
 			e.printStackTrace();

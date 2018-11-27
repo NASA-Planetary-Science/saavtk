@@ -4,16 +4,12 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.image.BufferedImage;
 
-import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.JToggleButton;
@@ -74,8 +70,8 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 
 		// Instantiate the various GUI controls
 		colormapComboBox = new JComboBox<>();
-		ColormapComboBoxRenderer tmpRenderer = new ColormapComboBoxRenderer();
-		tmpRenderer.setEnabled(false);
+		ListCellRenderer<Colormap> tmpRenderer = ColormapUtil.getFancyColormapRender();
+		((Component) tmpRenderer).setEnabled(false);
 		colormapComboBox.setRenderer(tmpRenderer);
 		for (String aStr : Colormaps.getAllBuiltInColormapNames())
 		{
@@ -269,26 +265,6 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 	}
 
 	/**
-	 * Helper method responsible for generating the (Colorbar) Icon associated with
-	 * the specified Colormap.
-	 */
-	private static ImageIcon createIcon(Colormap cmap)
-	{
-		int w = 100;
-		int h = 30;
-		cmap.setRangeMin(0);
-		cmap.setRangeMax(1);
-		BufferedImage image = new BufferedImage(w, h, java.awt.color.ColorSpace.TYPE_RGB);
-		for (int i = 0; i < w; i++)
-		{
-			double val = (double) i / (double) (image.getWidth() - 1);
-			for (int j = 0; j < h; j++)
-				image.setRGB(i, j, cmap.getColor(val).getRGB());
-		}
-		return new ImageIcon(image);
-	}
-
-	/**
 	 * Helper method that synchronizes the ColorMap when the sync toggle is enabled
 	 */
 	private void doAutoSync()
@@ -367,36 +343,6 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 		isEnabled = syncButton.isSelected() != true;
 		isEnabled &= isColorMapConfigValid();
 		applyButton.setEnabled(isEnabled);
-	}
-
-	/**
-	 * Class that provides the custom Renderer for the Colormap ComboBox.
-	 */
-	private class ColormapComboBoxRenderer extends JLabel implements ListCellRenderer<Colormap>
-	{
-		// Constants
-		private static final long serialVersionUID = 1L;
-
-		@Override
-		public Component getListCellRendererComponent(JList<? extends Colormap> list, Colormap value, int index,
-				boolean isSelected, boolean cellHasFocus)
-		{
-			if (isSelected)
-			{
-				setBackground(Color.DARK_GRAY);
-				setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
-			}
-			else
-			{
-				setBackground(list.getBackground());
-				setBorder(null);
-			}
-
-			setIcon(createIcon(value));
-			setText(value.getName());
-			return this;
-		}
-
 	}
 
 }

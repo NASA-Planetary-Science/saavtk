@@ -34,7 +34,7 @@ import edu.jhuapl.saavtk.util.PolyDataUtil;
 import edu.jhuapl.saavtk.util.Preferences;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
-import edu.jhuapl.saavtk.util.SafePaths;
+import edu.jhuapl.saavtk.util.SafeURLPaths;
 import edu.jhuapl.saavtk.util.SmallBodyCubes;
 import vtk.vtkActor;
 import vtk.vtkActor2D;
@@ -239,7 +239,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			coloringHasNulls = new boolean[] {};
 
 		String metadataFileName = BasicColoringDataManager.getMetadataFileName(Serializers.of().getVersion());
-		metadataFileName = SafePaths.getString(SafePaths.get(coloringFiles[0]).toFile().getParent(), metadataFileName);
+		final SafeURLPaths safeUrlPaths = SafeURLPaths.instance();
+		metadataFileName = safeUrlPaths.getString(safeUrlPaths.get(coloringFiles[0]).toFile().getParent(), metadataFileName);
 		if (FileCache.isFileGettable(metadataFileName))
 		{
 			File metadataFile = FileCache.getFileFromServer(metadataFileName);
@@ -367,7 +368,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		this.colormap = colormap;
 
 		this.colormap.addPropertyChangeListener(this);
-		
+
 		try
 		{
 			paintBody();
@@ -377,7 +378,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 	}
 
 	@Override
@@ -2042,6 +2043,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	@Override
 	public double[] getCurrentColoringRange(int coloringIndex)
 	{
+		if (colormap != null)
+			return new double[] { colormap.getRangeMin(), colormap.getRangeMax() };
+
 		return getColoringData(coloringIndex).getCurrentRange();
 	}
 
@@ -2964,14 +2968,23 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				}
 				out.write(lineSeparator);
 
+				vtkTriangle triangle = new vtkTriangle();
+
+				vtkPoints points = smallBodyPolyData.GetPoints();
+				int numberCells = smallBodyPolyData.GetNumberOfCells();
+				smallBodyPolyData.BuildCells();
+				vtkIdList idList = new vtkIdList();
+
 				for (int index = 0; index < indexable.size(); ++index)
 				{
 					int cellId = indexable.get(index);
 					FacetColoringData facetData = new FacetColoringData(cellId, allColoringData);
-					facetData.generateDataFromPolydata(smallBodyPolyData);
+					facetData.generateDataFromPolydata(smallBodyPolyData, numberCells, triangle, points, idList);
 					facetData.writeTo(out);
 					out.write(lineSeparator);
 				}
+				triangle.Delete();
+				idList.Delete();
 			}
 		}
 	}

@@ -97,9 +97,23 @@ public class CsvFileReader extends DataFileReader
 	}
 
 	@Override
-	public DataFileInfo readFileInfo(File file) throws IOException, InvalidFileFormatException
+	public void checkFormat(File file) throws IOException, FileFormatException
 	{
-		if (file.toString().toLowerCase().endsWith(".gz"))
+		String lowerCaseUnzippedName = file.toString().toLowerCase().replaceFirst("\\.gz$", "");
+		if (!(lowerCaseUnzippedName.endsWith(".csv") || lowerCaseUnzippedName.endsWith(".txt")))
+		{
+			String fileType = file.toString().toLowerCase().replaceFirst("\\.gz$", "");
+			fileType = fileType.replaceFirst(".*\\.", "");
+			throw new IncorrectFileFormatException("File has unknown/unsupported type: " + fileType);
+		}
+	}
+
+	@Override
+	public DataFileInfo readFileInfo(File file) throws IOException, FileFormatException
+	{
+		checkFormat(file);
+
+		if (isFileGzipped(file))
 		{
 			return readFileInfoGzipped(file);
 		}
@@ -120,7 +134,7 @@ public class CsvFileReader extends DataFileReader
 		Preconditions.checkNotNull(file);
 		Preconditions.checkArgument(file.exists());
 
-		if (file.toString().toLowerCase().endsWith(".gz"))
+		if (isFileGzipped(file))
 		{
 			return readTuplesGzipped(file, numberColumns, columnNumbers);
 		}
@@ -182,13 +196,13 @@ public class CsvFileReader extends DataFileReader
 
 		// Create column information.
 		ImmutableList.Builder<ColumnInfo> builder = ImmutableList.builder();
-		
-			for (int index = 0; index < numberColumns; ++index)
-			{
-				String name = columnNames != null ? columnNames.get(index) : "";
-				String units = columnUnits != null ? columnUnits.get(index) : "";
-				builder.add(ColumnInfo.of(name, units));
-			}
+
+		for (int index = 0; index < numberColumns; ++index)
+		{
+			String name = columnNames != null ? columnNames.get(index) : "";
+			String units = columnUnits != null ? columnUnits.get(index) : "";
+			builder.add(ColumnInfo.of(name, units));
+		}
 		ImmutableList<ColumnInfo> columnInfo = builder.build();
 
 		return DataFileInfo.of(file, CSV_FORMAT, ImmutableList.of(TableInfo.of(file.getName(), BLANK_DESCRIPTION, numberRows, columnInfo)));

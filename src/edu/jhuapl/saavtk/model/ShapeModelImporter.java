@@ -119,7 +119,7 @@ public class ShapeModelImporter
                 }
                 catch (Exception ex)
                 {
-                    errorMessage[0] = "The was an error loading " + modelPath + ".\nAre you sure you specified the right format?";
+                    errorMessage[0] = "There was an error loading " + modelPath + ".\nAre you sure you specified the right format?";
                     return false;
                 }
 
@@ -133,7 +133,7 @@ public class ShapeModelImporter
                 }
                 catch (Exception ex)
                 {
-                    errorMessage[0] = "The was an error loading " + modelPath + ".\nAre you sure you specified the right format?";
+                    errorMessage[0] = "There was an error loading " + modelPath + ".\nAre you sure you specified the right format?";
                     return false;
                 }
 
@@ -147,7 +147,7 @@ public class ShapeModelImporter
                 }
                 catch (Exception ex)
                 {
-                    errorMessage[0] = "The was an error loading " + modelPath + ".\nAre you sure you specified the right format?";
+                    errorMessage[0] = "There was an error loading " + modelPath + ".\nAre you sure you specified the right format?";
                     return false;
                 }
 
