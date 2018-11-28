@@ -18,7 +18,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URL;
 import java.util.List;
 
 import javax.swing.JComboBox;
@@ -30,6 +29,7 @@ import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.ColoringDataManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.FileCache;
+import edu.jhuapl.saavtk.util.FileCache.FileInfo;
 import edu.jhuapl.saavtk.util.SafeURLPaths;
 import edu.jhuapl.saavtk.util.file.DataFileReader;
 import edu.jhuapl.saavtk.util.file.DataFileReader.FileFormatException;
@@ -299,16 +299,8 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		String fileName = null;
 		if (urlString != null)
 		{
-			try
-			{
-				URL url = FileCache.createURL(urlString);
-				fileName = url.getPath();
-			}
-			catch (@SuppressWarnings("unused") AssertionError e)
-			{
-				// Hope that perhaps the url was just a file name in the first place.
-				fileName = urlString;
-			}
+			FileInfo fileInfo = FileCache.getFileInfoFromServer(urlString);
+			fileName = fileInfo.getFile().getPath();
 		}
 		return fileName;
 	}
