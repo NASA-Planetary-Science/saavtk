@@ -270,6 +270,12 @@ public final class FileCache
 		}
 	}
 
+	/**
+	 * Deprecated in favor of utilities in SafeURLPaths such as getString(...) and
+	 * getUrl(...), which encapsulate forming strings that contain valid file paths
+	 * and URLs.
+	 */
+	@Deprecated
 	public static final String FILE_PREFIX = "file://";
 
 	private static final ConcurrentHashMap<File, FileInfo> INFO_MAP = new ConcurrentHashMap<>();
