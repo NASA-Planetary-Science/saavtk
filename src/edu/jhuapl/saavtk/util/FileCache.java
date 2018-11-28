@@ -278,39 +278,6 @@ public final class FileCache
 	private static String offlineModeRootFolder;
 
 	/**
-	 * Deprecated. Use SafeURLPaths.getUrl(...) method instead.
-	 * <p>
-	 * Create a URL from an ordered collection of path segements. The first segment
-	 * must begin with a valid URL protocol, and may contain / or \. Note that no
-	 * substitutions are performed on the first path segement, so this method may be
-	 * used to produce a URL containing backslashes \. Using backslashes to mean
-	 * something other than a delimiter is discouraged, but may occasionally be
-	 * necessary.
-	 * 
-	 * The path segments may use / or \ as path separators, However, all occurrences
-	 * of \ will be replaced with / in the output URL. Therefore this method may not
-	 * be used to produce a URL that actually does contain \ as a token.
-	 * 
-	 * @param firstSegment initial segment, which must start with the protocol and
-	 *            is used verbatim
-	 * @param pathSegments additional segments, which will have \ substituted with /
-	 * @return the URL
-	 * @throws AssertionError if the URL is malformed
-	 */
-	@Deprecated
-	public static URL createURL(String firstSegment, String... pathSegments)
-	{
-		try
-		{
-			return new URL(SAFE_URL_PATHS.getUrl(SAFE_URL_PATHS.getString(firstSegment, pathSegments)));
-		}
-		catch (MalformedURLException e)
-		{
-			throw new AssertionError(e);
-		}
-	}
-
-	/**
 	 * Get information about the resource identified by the provided URL string or
 	 * path segment. If the argument specifies a lexically valid URL string, it is
 	 * used *without modification*. If the argument specifies a path segment such as
