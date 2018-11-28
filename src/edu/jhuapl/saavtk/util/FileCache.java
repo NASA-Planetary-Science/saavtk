@@ -288,9 +288,12 @@ public final class FileCache
 	 * @return the URL
 	 * @throws AssertionError if the URL is malformed
 	 */
-	public static URL createFileURL(String... pathSegments)
+	public static URL createFileURL(String firstSegment, String... pathSegments)
 	{
-		return createURL(FILE_PREFIX, pathSegments);
+		Preconditions.checkNotNull(firstSegment);
+		Preconditions.checkArgument(!SAFE_URL_PATHS.hasProtocol(firstSegment) || SAFE_URL_PATHS.hasFileProtocol(firstSegment));
+
+		return createURL(firstSegment, pathSegments);
 	}
 
 	/**
@@ -315,9 +318,9 @@ public final class FileCache
 	{
 		try
 		{
-			return new URL(toUrlSegment(firstSegment, pathSegments));
+			return new URL(SAFE_URL_PATHS.getUrl(SAFE_URL_PATHS.getString(firstSegment, pathSegments)));
 		}
-		catch (MalformedURLException e)
+		catch (IOException e)
 		{
 			throw new AssertionError(e);
 		}
