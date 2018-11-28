@@ -196,13 +196,13 @@ public class SafeURLPaths
 	 * @return true if the path starts with what appears to be a URL protocol, false
 	 *         otherwise.
 	 */
-	boolean hasProtocol(String path)
+	public boolean hasProtocol(String path)
 	{
 		Preconditions.checkNotNull(path);
 		return path.matches("\\w\\w+:$") || path.matches("\\w\\w+:[/\\\\].*");
 	}
 
-	boolean hasFileProtocol(String path)
+	public boolean hasFileProtocol(String path)
 	{
 		Preconditions.checkNotNull(path);
 		return path.matches("[Ff][Ii][Ll][Ee]:") || path.matches("[Ff][Ii][Ll][Ee]:[/\\\\].*");
