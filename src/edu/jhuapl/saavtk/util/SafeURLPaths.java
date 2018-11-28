@@ -159,12 +159,21 @@ public class SafeURLPaths
 		return getString(String.join("/", sequence));
 	}
 
-	public String getUrl(String string) throws IOException
+	public String getUrl(String string)
 	{
 		if (!hasProtocol(string))
 		{
 			// Assume string is a file path. Convert it to canonical form and replace backslashes with forward slashes.
-			string = new File(string).getCanonicalPath().replace("\\", "/");
+			try
+			{
+				string = new File(string).getCanonicalPath().replace("\\", "/");
+			}
+			catch (IOException e)
+			{
+				// Print but otherwise ignore this error. The URL may have an invalid string in it, but this
+				// should cause obvious problems when it's accessed.
+				e.printStackTrace();
+			}
 
 			// Create a file:///absolute/url out of the string with exactly 3 slashes after file: no matter what OS.
 			string = "file:///" + string.replaceFirst("^/", "");
@@ -307,50 +316,16 @@ public class SafeURLPaths
 		}
 
 		System.out.println("\nTest3");
-		try
-		{
-			System.out.println("Paths.getUrl(relative/path/) = \"" + safePaths.getUrl("relative/path").toString() + "\"");
-		}
-		catch (IOException e)
-		{
-			System.err.println("FAILED");
-			e.printStackTrace();
-		}
+		System.out.println("Paths.getUrl(relative/path/) = \"" + safePaths.getUrl("relative/path").toString() + "\"");
 
 		System.out.println("\nTest4");
-		try
-		{
-			System.out.println("Paths.getUrl(/absolute/path/) = \"" + safePaths.getUrl("/absolute/path/").toString() + "\"");
-		}
-		catch (IOException e)
-		{
-			System.err.println("FAILED");
-			e.printStackTrace();
-		}
+		System.out.println("Paths.getUrl(/absolute/path/) = \"" + safePaths.getUrl("/absolute/path/").toString() + "\"");
 
 		System.out.println("\nTest5");
-		try
-		{
-			System.out.println("Paths.getUrl(relative/path/./../path/with/redirects) = \"" + safePaths.getUrl("relative/path/./../path/with/redirects").toString() + "\"");
-		}
-		catch (IOException e)
-		{
-			System.err.println("FAILED");
-			e.printStackTrace();
-		}
+		System.out.println("Paths.getUrl(relative/path/./../path/with/redirects) = \"" + safePaths.getUrl("relative/path/./../path/with/redirects").toString() + "\"");
 
 		System.out.println("\nTest6 (on Windows, should be interpreted as file:///C:/absolute/path. Otherwise, treated like a relative path.)");
-		try
-		{
-			// On a non-Windows machine, getCanonicalPath treats C: as if it were just another token, so this will appear wrong, but it should
-			// look right on a Windows machine.
-			System.out.println("Paths.getUrl(C:\\absolute\\path\\) = \"" + safePaths.getUrl("C:\\absolute\\path\\").toString() + "\"");
-		}
-		catch (IOException e)
-		{
-			System.err.println("FAILED");
-			e.printStackTrace();
-		}
+		System.out.println("Paths.getUrl(C:\\absolute\\path\\) = \"" + safePaths.getUrl("C:\\absolute\\path\\").toString() + "\"");
 
 	}
 }
