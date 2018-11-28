@@ -30,6 +30,7 @@ import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.ColoringDataManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.FileCache;
+import edu.jhuapl.saavtk.util.SafeURLPaths;
 import edu.jhuapl.saavtk.util.file.DataFileReader;
 import edu.jhuapl.saavtk.util.file.DataFileReader.FileFormatException;
 import edu.jhuapl.saavtk.util.file.DataFileReader.IncorrectFileFormatException;
@@ -828,7 +829,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
 		//
 		//		if (origVtkArray == null)
 		//		{
-		currentData = ColoringData.of(nameTextField.getText(), FileCache.createFileURL(fileName).toString(), elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
+		currentData = ColoringData.of(nameTextField.getText(), SafeURLPaths.instance().getUrl(fileName), elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
 		try
 		{
 			currentData.load();

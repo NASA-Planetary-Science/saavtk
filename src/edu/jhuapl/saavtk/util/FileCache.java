@@ -278,25 +278,8 @@ public final class FileCache
 	private static String offlineModeRootFolder;
 
 	/**
-	 * Create a URL with file protocol from an ordered collection of path segements.
-	 * 
-	 * The path segments may use / or \ as path separators. However, all occurrences
-	 * of \ will be replaced with / in the output URL. Therefore this method may not
-	 * be used to produce a URL that actually does contain \ as a token.
-	 * 
-	 * @param pathSegments segments to concatenate and clean
-	 * @return the URL
-	 * @throws AssertionError if the URL is malformed
-	 */
-	public static URL createFileURL(String firstSegment, String... pathSegments)
-	{
-		Preconditions.checkNotNull(firstSegment);
-		Preconditions.checkArgument(!SAFE_URL_PATHS.hasProtocol(firstSegment) || SAFE_URL_PATHS.hasFileProtocol(firstSegment));
-
-		return createURL(firstSegment, pathSegments);
-	}
-
-	/**
+	 * Deprecated. Use SafeURLPaths.getUrl(...) method instead.
+	 * <p>
 	 * Create a URL from an ordered collection of path segements. The first segment
 	 * must begin with a valid URL protocol, and may contain / or \. Note that no
 	 * substitutions are performed on the first path segement, so this method may be
@@ -314,13 +297,14 @@ public final class FileCache
 	 * @return the URL
 	 * @throws AssertionError if the URL is malformed
 	 */
+	@Deprecated
 	public static URL createURL(String firstSegment, String... pathSegments)
 	{
 		try
 		{
 			return new URL(SAFE_URL_PATHS.getUrl(SAFE_URL_PATHS.getString(firstSegment, pathSegments)));
 		}
-		catch (IOException e)
+		catch (MalformedURLException e)
 		{
 			throw new AssertionError(e);
 		}
