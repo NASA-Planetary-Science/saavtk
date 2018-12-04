@@ -13,6 +13,11 @@ public class ImageDataUtil
 {
     public static final float FILL_CUTOFF = 1.e32f;
 
+    public static vtkImageData createRawImage(int height, int width, int depth, boolean transpose, float[][] array2D, float[][][] array3D, float[] minValue, float[] maxValue, FillDetector<Float> fillDetector)
+    {
+    	return createRawImage(height, width, depth, transpose, array2D, array3D, minValue, maxValue, fillDetector, null);
+    }
+    
     /**
      * Helper function to create raw vtkImageData from float array
      *
@@ -23,8 +28,9 @@ public class ImageDataUtil
      * @param maxValue Float array of length depth where max values at each layer will be stored
      * @param fillDetector An object that identifies filler values, i.e., values that should not be displayed.
      */
-    public static vtkImageData createRawImage(int height, int width, int depth, boolean transpose, float[][] array2D, float[][][] array3D, float[] minValue, float[] maxValue, FillDetector<Float> fillDetector)
+    public static vtkImageData createRawImage(int height, int width, int depth, boolean transpose, float[][] array2D, float[][][] array3D, float[] minValue, float[] maxValue, FillDetector<Float> fillDetector, ProgressListener listener)
     {
+    	System.out.println("ImageDataUtil: createRawImage: creating raw image");
         vtkImageData image = new vtkImageData();
         if (transpose)
             image.SetDimensions(width, height, depth);
@@ -39,13 +45,18 @@ public class ImageDataUtil
             maxValue[k] = -Float.MAX_VALUE;
             minValue[k] = Float.MAX_VALUE;
         }
-
+        System.out.println("ImageDataUtil: createRawImage: flattening");
         // For performance, flatten out the 2D or 3D array into a 1D array and call
         // SetJavaArray directly on the pixel data since calling SetScalarComponentFromDouble
         // for every pixel takes too long.
         float[] array1D = new float[height * width * depth];
 
         for (int i=0; i<height; ++i)
+        {
+        	if (listener != null)
+        	{
+        		listener.setProgress(i*100/height);        		
+        	}
             for (int j=0; j<width; ++j)
                 for (int k=0; k<depth; k++)
                 {
@@ -75,39 +86,61 @@ public class ImageDataUtil
                     if (value < minValue[k])
                         minValue[k] = value;
                 }
-
+        }
+        System.out.println("ImageDataUtil: createRawImage: setting array");
         ((vtkFloatArray)image.GetPointData().GetScalars()).SetJavaArray(array1D);
-
+        System.out.println("ImageDataUtil: createRawImage: returning image");
+        if (listener != null) listener.setProgress(100);
         return image;
     }
 
+    public static vtkImageData createRawImage(int height, int width, int depth, boolean transpose, float[][] array2D, float[][][] array3D, FillDetector<Float> fillDetector)
+    {
+    	return createRawImage(height, width, depth, transpose, array2D, array3D, fillDetector, null);
+    }
+    
     /**
      * Same as method above but without storing min and max values
      */
-    public static vtkImageData createRawImage(int height, int width, int depth, boolean transpose, float[][] array2D, float[][][] array3D, FillDetector<Float> fillDetector)
+    public static vtkImageData createRawImage(int height, int width, int depth, boolean transpose, float[][] array2D, float[][][] array3D, FillDetector<Float> fillDetector, ProgressListener listener)
     {
         // Unused
         float[] minValue = new float[depth];
         float[] maxValue = new float[depth];
 
         // Call helper
-        return createRawImage(height, width, depth, transpose, array2D, array3D, minValue, maxValue, fillDetector);
+        return createRawImage(height, width, depth, transpose, array2D, array3D, minValue, maxValue, fillDetector, listener);
     }
-
-    /**
-     * Same as methods above but with default fill detection.
-     */
+    
     public static vtkImageData createRawImage(int height, int width, int depth, boolean transpose, float[][] array2D, float[][][] array3D, float[] minValue, float[] maxValue)
     {
-        return createRawImage(height, width, depth, transpose, array2D, array3D, minValue, maxValue, getDefaultFillDetector());
+    	return createRawImage(height, width, depth, transpose, array2D, array3D, minValue, maxValue, (ProgressListener)null);
     }
 
     /**
      * Same as methods above but with default fill detection.
      */
+    public static vtkImageData createRawImage(int height, int width, int depth, boolean transpose, float[][] array2D, float[][][] array3D, float[] minValue, float[] maxValue, ProgressListener listener)
+    {
+        return createRawImage(height, width, depth, transpose, array2D, array3D, minValue, maxValue, getDefaultFillDetector(), listener);
+    }
+    
     public static vtkImageData createRawImage(int height, int width, int depth, boolean transpose, float[][] array2D, float[][][] array3D)
     {
-        return createRawImage(height, width, depth, transpose, array2D, array3D, getDefaultFillDetector());
+    	return createRawImage(height, width, depth, transpose, array2D, array3D, (ProgressListener)null);
+    }
+    
+//    public static vtkImageData createRawImage(int height, int width, int depth, boolean transpose, float[][] array2D, float[][][] array3D, ProgressListener listener)
+//    {
+//    	createRawImage(height, width, depth, transpose, array2D, array3D, listener);
+//    }
+
+    /**
+     * Same as methods above but with default fill detection.
+     */
+    public static vtkImageData createRawImage(int height, int width, int depth, boolean transpose, float[][] array2D, float[][][] array3D, ProgressListener listener)
+    {
+        return createRawImage(height, width, depth, transpose, array2D, array3D, getDefaultFillDetector(), listener);
     }
 
 
