@@ -30,7 +30,6 @@ public class ImageDataUtil
      */
     public static vtkImageData createRawImage(int height, int width, int depth, boolean transpose, float[][] array2D, float[][][] array3D, float[] minValue, float[] maxValue, FillDetector<Float> fillDetector, ProgressListener listener)
     {
-    	System.out.println("ImageDataUtil: createRawImage: creating raw image");
         vtkImageData image = new vtkImageData();
         if (transpose)
             image.SetDimensions(width, height, depth);
@@ -45,7 +44,6 @@ public class ImageDataUtil
             maxValue[k] = -Float.MAX_VALUE;
             minValue[k] = Float.MAX_VALUE;
         }
-        System.out.println("ImageDataUtil: createRawImage: flattening");
         // For performance, flatten out the 2D or 3D array into a 1D array and call
         // SetJavaArray directly on the pixel data since calling SetScalarComponentFromDouble
         // for every pixel takes too long.
@@ -87,9 +85,7 @@ public class ImageDataUtil
                         minValue[k] = value;
                 }
         }
-        System.out.println("ImageDataUtil: createRawImage: setting array");
         ((vtkFloatArray)image.GetPointData().GetScalars()).SetJavaArray(array1D);
-        System.out.println("ImageDataUtil: createRawImage: returning image");
         if (listener != null) listener.setProgress(100);
         return image;
     }
