@@ -980,11 +980,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		List<String> lines = FileUtil.getFileLinesAsStringList(file.getAbsolutePath());
 		List<String> labels = new ArrayList<>();
 		List<EllipsePolygon> newPolygons = new ArrayList<>();
-		int maxPolygonId = append ? this.maxPolygonId : 0;
+//		int maxPolygonId = append ? this.maxPolygonId : 0;
 		for (int i = 0; i < lines.size(); ++i)
 		{
-			EllipsePolygon pol = new EllipsePolygon(numberOfSides, type, defaultColor, mode, ++maxPolygonId, "");
-			pol.center = new double[3];
 //			String[] words = lines.get(i).trim().split("\\s+");
 			List<String> list = new ArrayList<String>();
 			Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(lines.get(i));
@@ -995,6 +993,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 			// The latest version of this file format has 16 columns. The previous version had
 			// 10 columns for circles and 13 columns for points. We still want to support loading
 			// both versions, so look at how many columns are in the line.
+			EllipsePolygon pol = new EllipsePolygon(numberOfSides, type, defaultColor, mode, Integer.parseInt(words[0]), "");
+//			maxPolygonId = Integer.parseInt(words[0]) + 1;
+			pol.center = new double[3];
 
 			// The first 8 columns are the same in both the old and new formats.
 			pol.name = words[1];
