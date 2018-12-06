@@ -11,6 +11,8 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
@@ -983,9 +985,13 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		{
 			EllipsePolygon pol = new EllipsePolygon(numberOfSides, type, defaultColor, mode, ++maxPolygonId, "");
 			pol.center = new double[3];
-
-			String[] words = lines.get(i).trim().split("\\s+");
-
+//			String[] words = lines.get(i).trim().split("\\s+");
+			List<String> list = new ArrayList<String>();
+			Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(lines.get(i));
+			while (m.find())
+			    list.add(m.group(1));
+			String[] words = new String[list.size()];
+			list.toArray(words);
 			// The latest version of this file format has 16 columns. The previous version had
 			// 10 columns for circles and 13 columns for points. We still want to support loading
 			// both versions, so look at how many columns are in the line.
@@ -1006,40 +1012,20 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 
 			// For the new format and the points file in the old format, the next 4 columns (slope,
 			// elevation, acceleration, and potential) are not used.
-
-			if (words.length < 16)
+			if (words.length == 18)
 			{
-				// OLD VERSION of file
-				if (mode == Mode.CIRCLE_MODE || mode == Mode.ELLIPSE_MODE)
-					pol.radius = Double.parseDouble(words[8]) / 2.0; // read in diameter not radius
-				else
-					pol.radius = defaultRadius;
-			}
-			else
-			{
-				// NEW VERSION of file
 				pol.radius = Double.parseDouble(words[12]) / 2.0; // read in diameter not radius
-			}
-
-			if (mode == Mode.ELLIPSE_MODE && words.length >= 16)
-			{
-				pol.flattening = Double.parseDouble(words[13]);
-				pol.angle = Double.parseDouble(words[14]);
-			}
-			else
-			{
-				pol.flattening = 1.0;
-				pol.angle = 0.0;
-			}
-
-			// If there are 9 or more columns in the file, the last column is the color in both
-			// the new and old formats.
-			if (words.length > 9)
-			{
-				int colorIdx = words.length - 3;
-				if (words.length == 17)
-					colorIdx = 15;
-
+				if (mode == Mode.ELLIPSE_MODE)
+				{
+					pol.flattening = Double.parseDouble(words[13]);
+					pol.angle = Double.parseDouble(words[14]);
+				}
+				else
+				{
+					pol.flattening = 1.0;
+					pol.angle = 0.0;
+				}
+				int colorIdx = 15;
 				String[] colorStr = words[colorIdx].split(",");
 				if (colorStr.length == 3)
 				{
@@ -1047,42 +1033,96 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 					pol.color[1] = Integer.parseInt(colorStr[1]);
 					pol.color[2] = Integer.parseInt(colorStr[2]);
 				}
+				pol.updatePolygon(smallBodyModel, pol.center, pol.radius, pol.flattening, pol.angle);
+				newPolygons.add(pol);
+				
+				if (words[words.length - 1].startsWith("\"")) // labels in quotations
+				{
+					pol.label = words[words.length - 1];
+					pol.label = pol.label.substring(1, pol.label.length() - 1);
+					labels.add(pol.label);
+				}
 			}
-
-			pol.updatePolygon(smallBodyModel, pol.center, pol.radius, pol.flattening, pol.angle);
-			newPolygons.add(pol);
-
-			//            System.out.println(pol.name+" "+Arrays.toString(pol.center));
-
-			//Second to last word is the label, last string is the color
-			if (words[words.length - 2].substring(0, 2).equals("l:"))
+			else
 			{
-				pol.label = words[words.length - 2].substring(2);
-				labels.add(pol.label);
+			
+				if (words.length < 16)
+				{
+					// OLD VERSION of file
+					if (mode == Mode.CIRCLE_MODE || mode == Mode.ELLIPSE_MODE)
+						pol.radius = Double.parseDouble(words[8]) / 2.0; // read in diameter not radius
+					else
+						pol.radius = defaultRadius;
+				}
+				else
+				{
+					// NEW VERSION of file
+					pol.radius = Double.parseDouble(words[12]) / 2.0; // read in diameter not radius
+				}
+	
+				if (mode == Mode.ELLIPSE_MODE && words.length >= 16)
+				{
+					pol.flattening = Double.parseDouble(words[13]);
+					pol.angle = Double.parseDouble(words[14]);
+				}
+				else
+				{
+					pol.flattening = 1.0;
+					pol.angle = 0.0;
+				}
+	
+				// If there are 9 or more columns in the file, the last column is the color in both
+				// the new and old formats.
+				if (words.length > 9)
+				{
+					int colorIdx = words.length - 3;
+					if (words.length == 17)
+						colorIdx = 15;
+	
+					String[] colorStr = words[colorIdx].split(",");
+					if (colorStr.length == 3)
+					{
+						pol.color[0] = Integer.parseInt(colorStr[0]);
+						pol.color[1] = Integer.parseInt(colorStr[1]);
+						pol.color[2] = Integer.parseInt(colorStr[2]);
+					}
+				}
+	
+				pol.updatePolygon(smallBodyModel, pol.center, pol.radius, pol.flattening, pol.angle);
+				newPolygons.add(pol);
+	
+				//            System.out.println(pol.name+" "+Arrays.toString(pol.center));
+	
+				//Second to last word is the label, last string is the color
+				if (words[words.length - 2].substring(0, 2).equals("l:"))
+				{
+					pol.label = words[words.length - 2].substring(2);
+					labels.add(pol.label);
+				}
+				// new format means no color
+				else if (words[words.length - 1].startsWith("\"")) // labels in quotations
+				{
+					pol.label = words[words.length - 1];
+					pol.label = pol.label.substring(1, pol.label.length() - 1);
+					labels.add(pol.label);
+				}
+				//            else
+				//            {
+				//                pol.label = words[words.length-1];
+				//                labels.add(pol.label);
+				//            }
+	
+				//            if(words[words.length-1].substring(0, 3).equals("lc:"))
+				//            {
+				//                double[] labelcoloradd = {1.0,1.0,1.0};
+				//                String[] labelColors=words[words.length-1].substring(3).split(",");
+				//                labelcoloradd[0] = Double.parseDouble(labelColors[0]);
+				//                labelcoloradd[1] = Double.parseDouble(labelColors[1]);
+				//                labelcoloradd[2] = Double.parseDouble(labelColors[2]);
+				//                pol.labelcolor=labelcoloradd;
+				//                colors.add(labelcoloradd);
+				//            }
 			}
-			// new format means no color
-			else if (words[words.length - 1].startsWith("\"")) // labels in quotations
-			{
-				pol.label = words[words.length - 1];
-				pol.label = pol.label.substring(1, pol.label.length() - 1);
-				labels.add(pol.label);
-			}
-			//            else
-			//            {
-			//                pol.label = words[words.length-1];
-			//                labels.add(pol.label);
-			//            }
-
-			//            if(words[words.length-1].substring(0, 3).equals("lc:"))
-			//            {
-			//                double[] labelcoloradd = {1.0,1.0,1.0};
-			//                String[] labelColors=words[words.length-1].substring(3).split(",");
-			//                labelcoloradd[0] = Double.parseDouble(labelColors[0]);
-			//                labelcoloradd[1] = Double.parseDouble(labelColors[1]);
-			//                labelcoloradd[2] = Double.parseDouble(labelColors[2]);
-			//                pol.labelcolor=labelcoloradd;
-			//                colors.add(labelcoloradd);
-			//            }
 		}
 
 		// Only if we reach here and no exception is thrown do we modify this class
