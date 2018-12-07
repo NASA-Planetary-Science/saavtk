@@ -67,6 +67,7 @@ public final class ShapeModelType
 	public static final ShapeModelType ALTWG_SPC_v20181115 = create("ALTWG-SPC-v20181115");
 	public static final ShapeModelType ALTWG_SPC_v20181116 = create("ALTWG-SPC-v20181116");
 	public static final ShapeModelType ALTWG_SPC_v20181123b = create("ALTWG-SPC-v20181123b");
+	public static final ShapeModelType ALTWG_SPC_v20181202 = create("ALTWG-SPC-v20181202");
 
 	private final String identifier;
 
