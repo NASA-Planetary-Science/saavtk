@@ -68,6 +68,8 @@ import vtk.vtksbCellLocator;
 
 public class GenericPolyhedralModel extends PolyhedralModel implements PropertyChangeListener
 {
+	private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
+
 	private final CustomizableColoringDataManager coloringDataManager;
 
 	private ColoringValueType coloringValueType;
@@ -239,8 +241,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			coloringHasNulls = new boolean[] {};
 
 		String metadataFileName = BasicColoringDataManager.getMetadataFileName(Serializers.of().getVersion());
-		final SafeURLPaths safeUrlPaths = SafeURLPaths.instance();
-		metadataFileName = safeUrlPaths.getString(safeUrlPaths.get(coloringFiles[0]).toFile().getParent(), metadataFileName);
+		metadataFileName = SAFE_URL_PATHS.getString(SAFE_URL_PATHS.get(coloringFiles[0]).toFile().getParent(), metadataFileName);
 		if (FileCache.isFileGettable(metadataFileName))
 		{
 			File metadataFile = FileCache.getFileFromServer(metadataFileName);
@@ -625,7 +626,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					String coloringFile = cellDataFilenames[i];
 					if (!coloringFile.trim().isEmpty())
 					{
-						coloringFile = FileCache.FILE_PREFIX + getCustomDataFolder() + "/" + coloringFile;
+						coloringFile = SAFE_URL_PATHS.getUrl(SAFE_URL_PATHS.getString(getCustomDataFolder(), coloringFile));
 						String coloringName = cellDataNames[i];
 						String coloringUnits = cellDataUnits[i];
 						boolean coloringHasNulls = Boolean.parseBoolean(cellDataHasNulls[i]);
@@ -1625,7 +1626,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	private static String getColoringFileName(String baseFileName, int resolutionLevel, Format format, boolean sbmt2Style)
 	{
 		String fileName = null;
-		if (!baseFileName.startsWith(FileCache.FILE_PREFIX))
+		if (!SAFE_URL_PATHS.hasFileProtocol(baseFileName))
 		{
 			if (sbmt2Style)
 			{

@@ -23,6 +23,7 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
 import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
+import edu.jhuapl.saavtk.gui.render.camera.Camera;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
@@ -513,18 +514,19 @@ public class DefaultPicker extends Picker
         {
             char keyChar = e.getKeyChar();
 
+            Camera tmpCamera = renderer.getCamera();
             if ('X' == keyChar)
-                renderer.setCameraOrientationInDirectionOfAxis(AxisType.NEGATIVE_X, true);
+                tmpCamera.setOrientationInDirectionOfAxis(AxisType.NEGATIVE_X, true);
             else if ('x' == keyChar)
-                renderer.setCameraOrientationInDirectionOfAxis(AxisType.POSITIVE_X, true);
+                tmpCamera.setOrientationInDirectionOfAxis(AxisType.POSITIVE_X, true);
             else if ('Y' == keyChar)
-                renderer.setCameraOrientationInDirectionOfAxis(AxisType.NEGATIVE_Y, true);
+                tmpCamera.setOrientationInDirectionOfAxis(AxisType.NEGATIVE_Y, true);
             else if ('y' == keyChar)
-                renderer.setCameraOrientationInDirectionOfAxis(AxisType.POSITIVE_Y, true);
+                tmpCamera.setOrientationInDirectionOfAxis(AxisType.POSITIVE_Y, true);
             else if ('Z' == keyChar)
-                renderer.setCameraOrientationInDirectionOfAxis(AxisType.NEGATIVE_Z, true);
+                tmpCamera.setOrientationInDirectionOfAxis(AxisType.NEGATIVE_Z, true);
             else if ('z' == keyChar)
-                renderer.setCameraOrientationInDirectionOfAxis(AxisType.POSITIVE_Z, true);
+                tmpCamera.setOrientationInDirectionOfAxis(AxisType.POSITIVE_Z, true);
             updatePositionInfoInStatusBar(e);
         }
         else if (keyCode == KeyEvent.VK_N)
@@ -554,9 +556,9 @@ public class DefaultPicker extends Picker
         }
         else if (keyCode == KeyEvent.VK_R)
         {
-            renderer.setCameraOrientationInDirectionOfAxis(AxisType.NEGATIVE_Z, true);
-        	renWin.resetCamera();
-        	renWin.Render();
+            Camera tmpCamera = renderer.getCamera();
+            tmpCamera.reset();
+
             updatePositionInfoInStatusBar(e);
         }
         else if (keyCode == KeyEvent.VK_S)

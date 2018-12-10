@@ -12,7 +12,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.Set;
 
 import javax.swing.BorderFactory;
 import javax.swing.JDialog;
@@ -21,80 +20,68 @@ import javax.swing.SwingUtilities;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import com.google.common.collect.Sets;
-
 import edu.jhuapl.saavtk.gui.MainWindow;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
-import edu.jhuapl.saavtk.gui.render.axes.CartesianViewDirection;
-import edu.jhuapl.saavtk.gui.render.camera.Camera;
-import edu.jhuapl.saavtk.gui.render.camera.CameraEvent;
-import edu.jhuapl.saavtk.gui.render.camera.CameraListener;
-import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
-import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent;
-import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarEvent.ConstrainRotationAxisEvent;
-import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
-import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbarListener;
 import vtk.vtkActor;
 import vtk.vtkConeSource;
-import vtk.vtkIdFilter;
-import vtk.vtkIdList;
-import vtk.vtkIdTypeArray;
 import vtk.vtkNativeLibrary;
-import vtk.vtkPoints;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
-import vtk.vtkPolyDataWriter;
-import vtk.vtkProp;
-import vtk.vtkPropCollection;
 import vtk.vtkRenderer;
-import vtk.vtkSelectVisiblePoints;
 import vtk.rendering.vtkEventInterceptor;
 import vtk.rendering.vtkInteractorForwarder;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
-public class RenderPanel extends vtkJoglPanelComponent implements CameraListener, RenderToolbarListener, ComponentListener
+public class RenderPanel extends vtkJoglPanelComponent implements ComponentListener
 {
-	Camera viewCamera;
-	RenderToolbar toolbar = null;
-	AxesPanel axesPanel = null;
-	CustomInteractorStyle interactorStyle;
-	CustomInteractorStyle defaultInteractorStyle;
+	// GUI vars
+	private JFrame axesFrame;
+	private AxesPanel axesPanel;
+	private CustomInteractorStyle interactorStyle;
 
-	int cameraObserver;
+	// State vars
+	private boolean showAxesPanelOnRestore = false;
+	private boolean axesPanelShownBefore = false;
+
+	// VTK vars
 	// vtkRenderer axesRenderer=new vtkRenderer();
 	vtkRenderer propRenderer;
 
 	// Axes axes=new Axes();
+
+	/**
+	 * Returns the JFrame associated with the Axes window.
+	 */
+	public JFrame getAxesFrame()
+	{
+		return axesFrame;
+	}
 
 	public AxesPanel getAxesPanel()
 	{
 		return axesPanel;
 	}
 
-	boolean showAxesPanelOnRestore = false;
-	boolean axesPanelShownBefore = false;
-	JFrame axesFrame;
-	Point location;
-
-	public boolean isAxesPanelVisible() {
+	public boolean isAxesPanelVisible()
+	{
 		return axesFrame.isVisible();
 	}
 
-	public RenderPanel(RenderToolbar toolbar)// , RenderStatusBar statusBar)
+	public void setAxesFrameVisible(boolean aBool)
 	{
+		axesFrame.setVisible(aBool);
+	}
 
+	public RenderPanel()
+	{
 		getInteractorForwarder().setEventInterceptor(new Interceptor());
 		interactorStyle = new CustomInteractorStyle(getRenderWindowInteractor());
-		defaultInteractorStyle = interactorStyle;
-		viewCamera = new RenderPanelCamera(this);
-		viewCamera.addCameraListener(this);
-		this.toolbar = toolbar;
-		toolbar.addListener(this);
-		//
+
 		propRenderer = getRenderer();
 
 		axesPanel = new AxesPanel(this);
 
+		// Set up the axesFrame
 		axesFrame = new JFrame() {
 			@Override
 			public void setVisible(boolean b)
@@ -121,18 +108,6 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		axesFrame.setAlwaysOnTop(true);
 
 		// frame.setUndecorated(true);
-		toolbar.addListener(new RenderToolbarListener() {
-
-			@Override
-			public void handle(RenderToolbarEvent event)
-			{
-				if (event instanceof RenderToolbarEvent.ToggleAxesVisibilityEvent)
-				{
-					axesFrame.setVisible(((RenderToolbarEvent.ToggleAxesVisibilityEvent) event).show());
-				}
-
-			}
-		});
 
 		axesFrame.getRootPane().setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY, 2));
 
@@ -147,17 +122,17 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		 * axesFrame.getRootPane().setBorder(null); } });
 		 */
 
-		axesFrame.addWindowListener(new WindowAdapter() {
-
+		axesFrame.addWindowListener(new WindowAdapter()
+		{
 			@Override
-			public void windowClosing(WindowEvent e)
+			public void windowClosing(WindowEvent aEvent)
 			{
-				toolbar.setOrientationAxesToggleState(false);
+				axesFrame.setVisible(false);
 			}
-
 		});
 
-		axesFrame.addComponentListener(new ComponentAdapter() {
+		axesFrame.addComponentListener(new ComponentAdapter()
+		{
 			@Override
 			public void componentResized(ComponentEvent e)
 			{
@@ -172,8 +147,6 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 			@Override
 			public void componentShown(ComponentEvent e)
 			{
-				// TODO Auto-generated method stub
-				super.componentShown(e);
 				axesPanel.Render();
 			}
 		});
@@ -187,7 +160,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 		if (this.windowInteractor != null)
 		{
 			this.lock.lock();
-			this.windowInteractor.SetInteractorStyle(defaultInteractorStyle);
+			this.windowInteractor.SetInteractorStyle(interactorStyle);
 			this.lock.unlock();
 		}
 	}
@@ -212,14 +185,12 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 	public void componentHidden(ComponentEvent e)
 	{
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void componentMoved(ComponentEvent e)
 	{
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -232,55 +203,16 @@ public class RenderPanel extends vtkJoglPanelComponent implements CameraListener
 	@Override
 	public void componentShown(ComponentEvent e)
 	{
-
 	}
 
-	@Override
-	public void handle(CameraEvent event)
+	/**
+	 * Configures the RenderPanel so that rotation is constrained to the specified
+	 * axis.
+	 */
+	public void constrainRotationAxis(Vector3D aAxis, Vector3D aOrigin)
 	{
-		// redrawAxes();
-		Render();
-	}
-
-	@Override
-	public void handle(RenderToolbarEvent event)
-	{
-		getActiveCamera().RemoveObserver(cameraObserver);
-		viewCamera.removeCameraListener(this);
-		if (event instanceof RenderToolbarEvent.ConstrainRotationAxisEvent)
-		{
-			interactorStyle.setRotationConstraint(((ConstrainRotationAxisEvent) event).getAxis());
-		}
-		else if (event instanceof RenderToolbarEvent.LookAlongAxisEvent)
-		{
-			Vector3D position = new Vector3D(getActiveCamera().GetPosition());
-			CartesianViewDirection direction = ((RenderToolbarEvent.LookAlongAxisEvent) event).getDirection();
-			viewCamera.setPosition(direction.getLookUnit().negate().scalarMultiply(position.getNorm()));
-			viewCamera.setUpUnit(direction.getUpUnit());
-		}
-		else if (event instanceof RenderToolbarEvent.ViewAllEvent)
-		{
-			viewAll();
-		} /*
-			 * else if (event instanceof RenderToolbarEvent.ToggleAxesVisibilityEvent) {
-			 * axes.setVisible(((RenderToolbarEvent.ToggleAxesVisibilityEvent)
-			 * event).show()); super.Render(); }
-			 */
-		viewCamera.addCameraListener(this);
-		// cameraObserver=getActiveCamera().AddObserver("ModifiedEvent", this,
-		// "redrawAxes");
-		// redrawAxes();
-		Render();
-
-	}
-
-	public void viewAll()
-	{
-		// boolean showAxes=axes.isVisible();
-		// axes.setVisible(false);
-		getRenderer().ResetCamera();
-		// axes.setVisible(showAxes);
-		super.Render();
+		// Delegate
+		interactorStyle.setRotationConstraint(aAxis, aOrigin);
 	}
 
 	@Override

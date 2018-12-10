@@ -270,58 +270,18 @@ public final class FileCache
 		}
 	}
 
+	/**
+	 * Deprecated in favor of utilities in SafeURLPaths such as getString(...) and
+	 * getUrl(...), which encapsulate forming strings that contain valid file paths
+	 * and URLs.
+	 */
+	@Deprecated
 	public static final String FILE_PREFIX = "file://";
 
 	private static final ConcurrentHashMap<File, FileInfo> INFO_MAP = new ConcurrentHashMap<>();
 	private static boolean showDotsForFiles = false;
 	private static boolean offlineMode;
 	private static String offlineModeRootFolder;
-
-	/**
-	 * Create a URL with file protocol from an ordered collection of path segements.
-	 * 
-	 * The path segments may use / or \ as path separators. However, all occurrences
-	 * of \ will be replaced with / in the output URL. Therefore this method may not
-	 * be used to produce a URL that actually does contain \ as a token.
-	 * 
-	 * @param pathSegments segments to concatenate and clean
-	 * @return the URL
-	 * @throws AssertionError if the URL is malformed
-	 */
-	public static URL createFileURL(String... pathSegments)
-	{
-		return createURL(FILE_PREFIX, pathSegments);
-	}
-
-	/**
-	 * Create a URL from an ordered collection of path segements. The first segment
-	 * must begin with a valid URL protocol, and may contain / or \. Note that no
-	 * substitutions are performed on the first path segement, so this method may be
-	 * used to produce a URL containing backslashes \. Using backslashes to mean
-	 * something other than a delimiter is discouraged, but may occasionally be
-	 * necessary.
-	 * 
-	 * The path segments may use / or \ as path separators, However, all occurrences
-	 * of \ will be replaced with / in the output URL. Therefore this method may not
-	 * be used to produce a URL that actually does contain \ as a token.
-	 * 
-	 * @param firstSegment initial segment, which must start with the protocol and
-	 *            is used verbatim
-	 * @param pathSegments additional segments, which will have \ substituted with /
-	 * @return the URL
-	 * @throws AssertionError if the URL is malformed
-	 */
-	public static URL createURL(String firstSegment, String... pathSegments)
-	{
-		try
-		{
-			return new URL(toUrlSegment(firstSegment, pathSegments));
-		}
-		catch (MalformedURLException e)
-		{
-			throw new AssertionError(e);
-		}
-	}
 
 	/**
 	 * Get information about the resource identified by the provided URL string or
