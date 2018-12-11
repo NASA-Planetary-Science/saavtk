@@ -7,10 +7,10 @@ import java.util.List;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.metadata.FixedMetadata;
-import edu.jhuapl.saavtk.metadata.Key;
-import edu.jhuapl.saavtk.metadata.SettableMetadata;
-import edu.jhuapl.saavtk.metadata.Version;
+import edu.jhuapl.saavtk.metadata.api.Key;
+import edu.jhuapl.saavtk.metadata.api.Version;
+import edu.jhuapl.saavtk.metadata.impl.FixedMetadata;
+import edu.jhuapl.saavtk.metadata.impl.SettableMetadata;
 
 /**
  * Class that provides information about one data object (image or table) within

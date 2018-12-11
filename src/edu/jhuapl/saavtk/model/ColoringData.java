@@ -9,11 +9,11 @@ import javax.swing.JOptionPane;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.metadata.FixedMetadata;
-import edu.jhuapl.saavtk.metadata.Key;
-import edu.jhuapl.saavtk.metadata.Metadata;
-import edu.jhuapl.saavtk.metadata.SettableMetadata;
-import edu.jhuapl.saavtk.metadata.Version;
+import edu.jhuapl.saavtk.metadata.api.Key;
+import edu.jhuapl.saavtk.metadata.api.Metadata;
+import edu.jhuapl.saavtk.metadata.api.Version;
+import edu.jhuapl.saavtk.metadata.impl.FixedMetadata;
+import edu.jhuapl.saavtk.metadata.impl.SettableMetadata;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.file.CsvFileReader;
 import edu.jhuapl.saavtk.util.file.DataFileReader.IncorrectFileFormatException;

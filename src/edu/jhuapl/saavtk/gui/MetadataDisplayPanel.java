@@ -21,10 +21,10 @@ import javax.swing.table.TableColumnModel;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.metadata.Key;
-import edu.jhuapl.saavtk.metadata.Metadata;
-import edu.jhuapl.saavtk.metadata.SettableMetadata;
-import edu.jhuapl.saavtk.metadata.Version;
+import edu.jhuapl.saavtk.metadata.api.Key;
+import edu.jhuapl.saavtk.metadata.api.Metadata;
+import edu.jhuapl.saavtk.metadata.api.Version;
+import edu.jhuapl.saavtk.metadata.impl.SettableMetadata;
 
 /**
  * Panel capable of displaying metadata that meet one of the following criteria:

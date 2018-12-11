@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.colormap.Colormaps;
 import edu.jhuapl.saavtk.config.ViewConfig;
-import edu.jhuapl.saavtk.metadata.serialization.Serializers;
+import edu.jhuapl.saavtk.metadata.impl.gson.Serializers;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.ConvertResourceToFile;
