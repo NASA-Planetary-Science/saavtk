@@ -16,13 +16,13 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.metadata.api.Key;
-import edu.jhuapl.saavtk.metadata.api.Metadata;
-import edu.jhuapl.saavtk.metadata.api.MetadataManager;
-import edu.jhuapl.saavtk.metadata.api.StorableAsMetadata;
-import edu.jhuapl.saavtk.metadata.api.Version;
-import edu.jhuapl.saavtk.metadata.impl.InstanceGetter;
-import edu.jhuapl.saavtk.metadata.impl.SettableMetadata;
+import crucible.crust.metadata.api.Key;
+import crucible.crust.metadata.api.Metadata;
+import crucible.crust.metadata.api.MetadataManager;
+import crucible.crust.metadata.api.StorableAsMetadata;
+import crucible.crust.metadata.api.Version;
+import crucible.crust.metadata.impl.InstanceGetter;
+import crucible.crust.metadata.impl.SettableMetadata;
 import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.CommonData;
 import edu.jhuapl.saavtk.model.FacetColoringData;

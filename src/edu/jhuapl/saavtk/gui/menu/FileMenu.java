@@ -12,13 +12,13 @@ import javax.swing.JOptionPane;
 
 import com.google.common.collect.ImmutableList;
 
+import crucible.crust.metadata.api.Serializer;
+import crucible.crust.metadata.impl.gson.Serializers;
 import edu.jhuapl.saavtk.gui.OSXAdapter;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CameraDialog;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
-import edu.jhuapl.saavtk.metadata.api.Serializer;
-import edu.jhuapl.saavtk.metadata.impl.gson.Serializers;
 import edu.jhuapl.saavtk.util.Configuration;
 
 public class FileMenu extends JMenu

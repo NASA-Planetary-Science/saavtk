@@ -5,12 +5,12 @@ import java.io.IOException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.metadata.api.Key;
-import edu.jhuapl.saavtk.metadata.api.Metadata;
-import edu.jhuapl.saavtk.metadata.api.MetadataManager;
-import edu.jhuapl.saavtk.metadata.api.Version;
-import edu.jhuapl.saavtk.metadata.impl.SettableMetadata;
-import edu.jhuapl.saavtk.metadata.impl.gson.Serializers;
+import crucible.crust.metadata.api.Key;
+import crucible.crust.metadata.api.Metadata;
+import crucible.crust.metadata.api.MetadataManager;
+import crucible.crust.metadata.api.Version;
+import crucible.crust.metadata.impl.SettableMetadata;
+import crucible.crust.metadata.impl.gson.Serializers;
 import edu.jhuapl.saavtk.util.SafeURLPaths;
 
 public final class CustomizableColoringDataManager implements ColoringDataManager

@@ -10,11 +10,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Table;
 import com.google.common.collect.TreeBasedTable;
 
-import edu.jhuapl.saavtk.metadata.api.Key;
-import edu.jhuapl.saavtk.metadata.api.Metadata;
-import edu.jhuapl.saavtk.metadata.api.MetadataManager;
-import edu.jhuapl.saavtk.metadata.api.Version;
-import edu.jhuapl.saavtk.metadata.impl.SettableMetadata;
+import crucible.crust.metadata.api.Key;
+import crucible.crust.metadata.api.Metadata;
+import crucible.crust.metadata.api.MetadataManager;
+import crucible.crust.metadata.api.Version;
+import crucible.crust.metadata.impl.SettableMetadata;
 
 public class BasicColoringDataManager implements ColoringDataManager
 {
