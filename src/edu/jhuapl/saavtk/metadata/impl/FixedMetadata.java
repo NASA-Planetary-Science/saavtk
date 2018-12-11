@@ -8,7 +8,7 @@ import edu.jhuapl.saavtk.metadata.api.Key;
 import edu.jhuapl.saavtk.metadata.api.Metadata;
 import edu.jhuapl.saavtk.metadata.api.Version;
 
-public class FixedMetadata extends BasicMetadata
+public class FixedMetadata extends AbstractMetadata
 {
 	public static FixedMetadata of(Metadata metadata)
 	{

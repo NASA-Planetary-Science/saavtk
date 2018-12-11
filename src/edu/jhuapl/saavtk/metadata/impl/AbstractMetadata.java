@@ -15,7 +15,7 @@ import edu.jhuapl.saavtk.metadata.api.Version;
  * impementation. To ensure invariants are preserved in sublasses, all methods
  * that rely on this implementation's contract are final.
  */
-public abstract class BasicMetadata implements Metadata
+public abstract class AbstractMetadata implements Metadata
 {
 	/**
 	 * Object used to represent null. By proxying null with this object, it is
@@ -33,7 +33,7 @@ public abstract class BasicMetadata implements Metadata
 
 	private final Version version;
 
-	protected BasicMetadata(Version version)
+	protected AbstractMetadata(Version version)
 	{
 		Preconditions.checkNotNull(version);
 		this.version = version;
@@ -80,7 +80,7 @@ public abstract class BasicMetadata implements Metadata
 	}
 
 	@Override
-	public abstract BasicMetadata copy();
+	public abstract AbstractMetadata copy();
 
 	@Override
 	public final int hashCode()
@@ -98,9 +98,9 @@ public abstract class BasicMetadata implements Metadata
 		{
 			return true;
 		}
-		if (other instanceof BasicMetadata)
+		if (other instanceof AbstractMetadata)
 		{
-			BasicMetadata that = (BasicMetadata) other;
+			AbstractMetadata that = (AbstractMetadata) other;
 			return this.getMap().equals(that.getMap());
 		}
 		return false;

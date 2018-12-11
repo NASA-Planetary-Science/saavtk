@@ -17,7 +17,7 @@ import edu.jhuapl.saavtk.metadata.api.Metadata;
 import edu.jhuapl.saavtk.metadata.api.StorableAsMetadata;
 import edu.jhuapl.saavtk.metadata.api.Version;
 
-public class SettableMetadata extends BasicMetadata
+public class SettableMetadata extends AbstractMetadata
 {
 	public static SettableMetadata of(Version version)
 	{
