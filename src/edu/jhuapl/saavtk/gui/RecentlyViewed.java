@@ -15,7 +15,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 
 import edu.jhuapl.saavtk.util.Configuration;
-import edu.jhuapl.saavtk.util.SafePaths;
+import edu.jhuapl.saavtk.util.SafeURLPaths;
 
 public class RecentlyViewed extends JMenu
 {
@@ -30,7 +30,7 @@ public class RecentlyViewed extends JMenu
 		super("Recents");
 		this.manager = manager;
 		this.recentViews = new ArrayList<>();
-		this.recentsFile = new File(SafePaths.getString(Configuration.getApplicationDataDir(), "recents.txt"));
+		this.recentsFile = new File(SafeURLPaths.instance().getString(Configuration.getApplicationDataDir(), "recents.txt"));
 		this.clearAllMenuItem = createClearAllMenuItem();
 		if (this.recentsFile.exists())
 		{

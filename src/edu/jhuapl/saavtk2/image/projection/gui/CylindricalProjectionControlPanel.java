@@ -15,6 +15,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import edu.jhuapl.saavtk.gui.render.RenderPanel;
+import edu.jhuapl.saavtk.gui.render.camera.InvalidCamera;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk2.image.CylindricalImage;
@@ -30,9 +31,8 @@ import vtk.vtkSphereSource;
 
 public class CylindricalProjectionControlPanel extends JPanel implements ChangeListener
 {
-
-	RenderToolbar toolbar = new RenderToolbar();
-	RenderPanel renderObject = new RenderPanel(toolbar);
+	RenderPanel renderObject = new RenderPanel();
+	RenderToolbar toolbar = new RenderToolbar(renderObject, InvalidCamera.Instance);
 
 	JPanel sliderPanel = new JPanel();
 	JSlider midLatSlider = new JSlider(-90, 90);
