@@ -17,6 +17,7 @@ import edu.jhuapl.saavtk.gui.GuiUtil;
 import edu.jhuapl.saavtk.gui.render.RenderPanel;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.gui.render.camera.Camera;
+import edu.jhuapl.saavtk.gui.render.camera.CameraUtil;
 
 public class RenderToolbar extends JToolBar implements ActionListener
 {
@@ -159,17 +160,17 @@ public class RenderToolbar extends JToolBar implements ActionListener
 
 		// Set View along axis...
 		else if (source == xAlignPosB)
-			refCamera.setOrientationInDirectionOfAxis(AxisType.POSITIVE_X, true);
+			CameraUtil.setOrientationInDirectionOfAxis(refCamera, AxisType.POSITIVE_X);
 		else if (source == xAlignNegB)
-			refCamera.setOrientationInDirectionOfAxis(AxisType.NEGATIVE_X, true);
+			CameraUtil.setOrientationInDirectionOfAxis(refCamera, AxisType.NEGATIVE_X);
 		else if (source == yAlignPosB)
-			refCamera.setOrientationInDirectionOfAxis(AxisType.POSITIVE_Y, true);
+			CameraUtil.setOrientationInDirectionOfAxis(refCamera, AxisType.POSITIVE_Y);
 		else if (source == yAlignNegB)
-			refCamera.setOrientationInDirectionOfAxis(AxisType.NEGATIVE_Y, true);
+			CameraUtil.setOrientationInDirectionOfAxis(refCamera, AxisType.NEGATIVE_Y);
 		else if (source == zAlignPosB)
-			refCamera.setOrientationInDirectionOfAxis(AxisType.POSITIVE_Z, true);
+			CameraUtil.setOrientationInDirectionOfAxis(refCamera, AxisType.POSITIVE_Z);
 		else if (source == zAlignNegB)
-			refCamera.setOrientationInDirectionOfAxis(AxisType.NEGATIVE_Z, true);
+			CameraUtil.setOrientationInDirectionOfAxis(refCamera, AxisType.NEGATIVE_Z);
 
 		// Logic: Lock Axis
 		else if (source == xAxisLockTB)
@@ -179,7 +180,7 @@ public class RenderToolbar extends JToolBar implements ActionListener
 
 			Vector3D targAxis = Vector3D.ZERO;
 			if (xAxisLockTB.isSelected() == true)
-				targAxis = refCamera.getLogicalAxis(AxisType.POSITIVE_X);
+				targAxis = refCamera.getCoordinateSystem().getAxisX();
 
 			Vector3D targOrig = refCamera.getFocalPoint();
 
@@ -192,7 +193,7 @@ public class RenderToolbar extends JToolBar implements ActionListener
 
 			Vector3D targAxis = Vector3D.ZERO;
 			if (yAxisLockTB.isSelected() == true)
-				targAxis = refCamera.getLogicalAxis(AxisType.POSITIVE_Y);
+				targAxis = refCamera.getCoordinateSystem().getAxisY();
 
 			Vector3D targOrig = refCamera.getFocalPoint();
 
@@ -205,7 +206,7 @@ public class RenderToolbar extends JToolBar implements ActionListener
 
 			Vector3D targAxis = Vector3D.ZERO;
 			if (zAxisLockTB.isSelected() == true)
-				targAxis = refCamera.getLogicalAxis(AxisType.POSITIVE_Z);
+				targAxis = refCamera.getCoordinateSystem().getAxisZ();
 
 			Vector3D targOrig = refCamera.getFocalPoint();
 

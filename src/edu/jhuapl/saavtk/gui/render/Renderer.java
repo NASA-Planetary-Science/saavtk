@@ -27,6 +27,7 @@ import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
 import edu.jhuapl.saavtk.gui.render.camera.Camera;
 import edu.jhuapl.saavtk.gui.render.camera.CameraFrame;
+import edu.jhuapl.saavtk.gui.render.camera.CameraUtil;
 import edu.jhuapl.saavtk.gui.render.camera.StandardCamera;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
@@ -134,7 +135,8 @@ public class Renderer extends JPanel implements ActionListener
 		mainCanvas = new RenderPanel();
 		mainCanvas.getRenderWindowInteractor().AddObserver("KeyPressEvent", this, "localKeypressHandler");
 
-		camera = new StandardCamera(mainCanvas, aModelManager.getPolyhedralModel());
+		double tmpDistance = aModelManager.getPolyhedralModel().getBoundingBoxDiagonalLength() * 2.0;
+		camera = new StandardCamera(mainCanvas, tmpDistance);
 		toolbar = new RenderToolbar(mainCanvas, camera);
 
 		trackballCameraInteractorStyle = new vtkInteractorStyleTrackballCamera();
@@ -876,7 +878,10 @@ public class Renderer extends JPanel implements ActionListener
 		{
 			vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
 			cam.ParallelProjectionOn();
-			camera.setOrientationInDirectionOfAxis(AxisType.NEGATIVE_X, false);
+
+			double tmpDistance = refModelManager.getPolyhedralModel().getBoundingBoxDiagonalLength() * 2.0;
+			CameraUtil.setOrientationInDirectionOfAxis(camera, AxisType.NEGATIVE_X, tmpDistance);
+			
 			mainCanvas.getVTKLock().lock();
 			cam.SetViewUp(0.0, 1.0, 0.0);
 			mainCanvas.getVTKLock().unlock();
