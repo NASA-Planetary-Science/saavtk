@@ -184,7 +184,6 @@ public class PolyDataUtil
 		vtkAlgorithmOutput clipPolyData4OutputPort = clipPolyData4.GetOutputPort();
 		if (clipPolyData4.GetOutput().GetNumberOfCells() == 0)
 		{
-			System.out.println("clipped data is empty");
 			return null;
 		}
 
