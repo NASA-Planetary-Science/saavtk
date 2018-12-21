@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.TreeSet;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.util.BoundingBox;
@@ -284,5 +286,27 @@ public abstract class PolyhedralModel extends AbstractModel
 	public abstract double[] getClosestNormal(double[] point);
 
 	public abstract void drawPolygon(List<LatLon> controlPoints, vtkPolyData outputInterior, vtkPolyData outputBoundary);
+	
+	/**
+	 * Method that returns the average surface normal over the the entire
+	 * PolyhedralModel.
+	 * <P>
+	 * A polyhedral model is a closed 3 dimensional body - however due to the
+	 * defective design some derived classes will result in objects that are
+	 * polygonal models rather than polyhedral models.
+	 * <P>
+	 * Objects that are polyhedral models should return the Zero vector (no normal)
+	 * where as objects that are (open ended) polygonal models should return their
+	 * average surface normal (normalized).
+	 * <P>
+	 * TODO: Consider abstracting PolyhedralModel into PolyModel and moving this
+	 * method declaration there or renaming PolyhedralModel to PolygonalModel.
+	 * 
+	 * @return Returns a normalized vector describing the average surface normal.
+	 */
+	public Vector3D getAverageSurfaceNormal()
+	{
+		return Vector3D.ZERO;
+	}
 
 }
