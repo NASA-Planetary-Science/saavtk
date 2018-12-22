@@ -33,28 +33,28 @@ public class StandardCamera implements Camera
 	/**
 	 * Standard constructor
 	 * 
-	 * @param aPanel       The panel associated with this camera.
-	 * @param aDefDistance The distance between the camera and the focus position.
-	 *                     This distance is utilized whenever the camera is reset.
+	 * @param aPanel            The panel associated with this camera.
+	 * @param aCoordinateSystem The coordinate system associated with the camera. This coordinate system is utilized
+	 *                          whenever the camera is reset.
+	 * @param aDistance         The distance between the camera and the focus position. This distance is utilized
+	 *                          whenever the camera is reset.
 	 */
-	public StandardCamera(vtkJoglPanelComponent aPanel, double aDefDistance)
+	public StandardCamera(vtkJoglPanelComponent aPanel, CoordinateSystem aCoordinateSystem, double aDistance)
 	{
 		refPanel = aPanel;
 
 		myListenerL = new ArrayList<>();
-		curCoordSystem = CoordinateSystem.Standard;
+		curCoordSystem = aCoordinateSystem;
 
-		defCoordSystem = CoordinateSystem.Standard;
-		defDistance = aDefDistance;
+		defCoordSystem = aCoordinateSystem;
+		defDistance = aDistance;
 	}
 
 	/**
 	 * Sets in the default that will be utilized whenever the camera is reset.
-	 * <P>
-	 * TODO: Consider passing the defaults at construction time.
 	 * 
-	 * @param aCoordSystem
-	 * @param aDefDistance
+	 * @param aCoordSystem The coordinate system associated with the camera.
+	 * @param aDefDistance The distance between the camera and the focus position.
 	 */
 	public void setDefaults(CoordinateSystem aCoordSystem, double aDefDistance)
 	{
