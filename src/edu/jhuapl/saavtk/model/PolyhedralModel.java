@@ -309,4 +309,15 @@ public abstract class PolyhedralModel extends AbstractModel
 		return Vector3D.ZERO;
 	}
 
+	/**
+	 * Method that returns the geometric center of the polyhedral model.
+	 * <P>
+	 * The geometric center of the polyhedral model will typically lie at the origin
+	 * but may differ if the model is offset or is a polygonal model instead.
+	 */
+	public Vector3D getGeometricCenterPoint()
+	{
+		return Vector3D.ZERO;
+	}
+
 }
