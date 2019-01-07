@@ -154,7 +154,6 @@ public class PolyDataUtil
 		vtkPlane plane4 = new vtkPlane();
 		plane4.SetOrigin(LL2);
 		plane4.SetNormal(left);
-		System.out.println("PolyDataUtil: computeFrustumIntersection: 0 " + sw.elapsedMillis());
 
 		// I found that the results are MUCH better when you use a separate vtkClipPolyData
 		// for each plane of the frustum rather than trying to use a single vtkClipPolyData
@@ -164,21 +163,18 @@ public class PolyDataUtil
 		clipPolyData1.SetClipFunction(plane1);
 		clipPolyData1.SetInsideOut(1);
 		vtkAlgorithmOutput clipPolyData1OutputPort = clipPolyData1.GetOutputPort();
-		System.out.println("PolyDataUtil: computeFrustumIntersection: 0a " + sw.elapsedMillis());
 
 		vtkClipPolyData clipPolyData2 = new vtkClipPolyData();
 		clipPolyData2.SetInputConnection(clipPolyData1OutputPort);
 		clipPolyData2.SetClipFunction(plane2);
 		clipPolyData2.SetInsideOut(1);
 		vtkAlgorithmOutput clipPolyData2OutputPort = clipPolyData2.GetOutputPort();
-		System.out.println("PolyDataUtil: computeFrustumIntersection: 0b " + sw.elapsedMillis());
 
 		vtkClipPolyData clipPolyData3 = new vtkClipPolyData();
 		clipPolyData3.SetInputConnection(clipPolyData2OutputPort);
 		clipPolyData3.SetClipFunction(plane3);
 		clipPolyData3.SetInsideOut(1);
 		vtkAlgorithmOutput clipPolyData3OutputPort = clipPolyData3.GetOutputPort();
-		System.out.println("PolyDataUtil: computeFrustumIntersection: 0c " + sw.elapsedMillis());
 
 		vtkClipPolyData clipPolyData4 = new vtkClipPolyData();
 		clipPolyData4.SetInputConnection(clipPolyData3OutputPort);
@@ -186,10 +182,8 @@ public class PolyDataUtil
 		clipPolyData4.SetInsideOut(1);
 		clipPolyData4.Update();
 		vtkAlgorithmOutput clipPolyData4OutputPort = clipPolyData4.GetOutputPort();
-		System.out.println("PolyDataUtil: computeFrustumIntersection: 1 " + sw.elapsedMillis());
 		if (clipPolyData4.GetOutput().GetNumberOfCells() == 0)
 		{
-			System.out.println("clipped data is empty");
 			return null;
 		}
 
@@ -212,7 +206,6 @@ public class PolyDataUtil
 
 		vtkIdList idList = new vtkIdList();
 		idList.SetNumberOfIds(0);
-		System.out.println("PolyDataUtil: computeFrustumIntersection: 2 " + sw.elapsedMillis());
 		double[] viewDir = new double[3];
 		for (int i = 0; i < numCells; ++i)
 		{
@@ -243,7 +236,6 @@ public class PolyDataUtil
 
 		//polyData = new vtkPolyData();
 		tmpPolyData.DeepCopy(cleanPolyOutput);
-		System.out.println("PolyDataUtil: computeFrustumIntersection: 3 " + sw.elapsedMillis());
 		// If the body was a convex shape we would be done now.
 		// Unfortunately, since it's not, it's possible for the polydata to have multiple connected
 		// pieces in view of the camera and some of these pieces are obscured by other pieces.
@@ -290,7 +282,6 @@ public class PolyDataUtil
 		double[] pcoords = new double[3];
 		int[] subId = new int[1];
 		int[] cell_id = new int[1];
-		System.out.println("PolyDataUtil: computeFrustumIntersection: 4 " + sw.elapsedMillis());
 		for (int i = 0; i < numPoints; ++i)
 		{
 			double[] sourcePnt = points.GetPoint(i);
@@ -335,7 +326,6 @@ public class PolyDataUtil
 
 		//polyData = new vtkPolyData();
 		tmpPolyData.DeepCopy(cleanPolyOutput);
-		System.out.println("PolyDataUtil: computeFrustumIntersection: 5 " + sw.elapsedMillis());
 		return tmpPolyData;
 	}
 
