@@ -28,6 +28,8 @@ import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
 
 public final class FileCache
 {
+	private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
+
 	// TODO this should extend Exception and thus be checked.
 	public static class NoInternetAccessException extends RuntimeException
 	{
@@ -268,58 +270,18 @@ public final class FileCache
 		}
 	}
 
+	/**
+	 * Deprecated in favor of utilities in SafeURLPaths such as getString(...) and
+	 * getUrl(...), which encapsulate forming strings that contain valid file paths
+	 * and URLs.
+	 */
+	@Deprecated
 	public static final String FILE_PREFIX = "file://";
 
 	private static final ConcurrentHashMap<File, FileInfo> INFO_MAP = new ConcurrentHashMap<>();
 	private static boolean showDotsForFiles = false;
 	private static boolean offlineMode;
 	private static String offlineModeRootFolder;
-
-	/**
-	 * Create a URL with file protocol from an ordered collection of path segements.
-	 * 
-	 * The path segments may use / or \ as path separators. However, all occurrences
-	 * of \ will be replaced with / in the output URL. Therefore this method may not
-	 * be used to produce a URL that actually does contain \ as a token.
-	 * 
-	 * @param pathSegments segments to concatenate and clean
-	 * @return the URL
-	 * @throws AssertionError if the URL is malformed
-	 */
-	public static URL createFileURL(String... pathSegments)
-	{
-		return createURL(FILE_PREFIX, pathSegments);
-	}
-
-	/**
-	 * Create a URL from an ordered collection of path segements. The first segment
-	 * must begin with a valid URL protocol, and may contain / or \. Note that no
-	 * substitutions are performed on the first path segement, so this method may be
-	 * used to produce a URL containing backslashes \. Using backslashes to mean
-	 * something other than a delimiter is discouraged, but may occasionally be
-	 * necessary.
-	 * 
-	 * The path segments may use / or \ as path separators, However, all occurrences
-	 * of \ will be replaced with / in the output URL. Therefore this method may not
-	 * be used to produce a URL that actually does contain \ as a token.
-	 * 
-	 * @param firstSegment initial segment, which must start with the protocol and
-	 *            is used verbatim
-	 * @param pathSegments additional segments, which will have \ substituted with /
-	 * @return the URL
-	 * @throws AssertionError if the URL is malformed
-	 */
-	public static URL createURL(String firstSegment, String... pathSegments)
-	{
-		try
-		{
-			return new URL(firstSegment + toUrlSegment(pathSegments));
-		}
-		catch (MalformedURLException e)
-		{
-			throw new AssertionError(e);
-		}
-	}
 
 	/**
 	 * Get information about the resource identified by the provided URL string or
@@ -354,6 +316,9 @@ public final class FileCache
 	{
 		Preconditions.checkNotNull(urlOrPathSegment);
 
+		// Clean up the path or URL.
+		urlOrPathSegment = SAFE_URL_PATHS.getString(urlOrPathSegment);
+
 		URL url = null;
 		URL dataRootUrl = Configuration.getDataRootURL();
 		try
@@ -380,7 +345,7 @@ public final class FileCache
 			// construct the URL relative to the data root.
 			try
 			{
-				url = new URL(dataRootUrl + toUrlSegment(urlOrPathSegment));
+				url = new URL(toUrlSegment(dataRootUrl.toString(), urlOrPathSegment));
 			}
 			catch (MalformedURLException e1)
 			{
@@ -415,7 +380,7 @@ public final class FileCache
 		{
 			// It's possible there is information about this file already from a previous query
 			// when offlineMode was disabled.
-			File file = url.getProtocol().equalsIgnoreCase("file") ? SafePaths.get(url.getFile()).toFile() : SafePaths.get(offlineModeRootFolder, ungzippedPath).toFile();
+			File file = url.getProtocol().equalsIgnoreCase("file") ? SAFE_URL_PATHS.get(url.getFile()).toFile() : SAFE_URL_PATHS.get(offlineModeRootFolder, ungzippedPath).toFile();
 			FileInfo info = INFO_MAP.get(file);
 			if (info == null)
 			{
@@ -430,7 +395,7 @@ public final class FileCache
 		{
 			// File "on the server" is not gzipped, and is allegedly on local file system,
 			// so just try to use it directly.
-			File file = SafePaths.get(url.getFile()).toFile();
+			File file = SAFE_URL_PATHS.get(url.getFile()).toFile();
 
 			FileInfo info = INFO_MAP.get(file);
 			if (info == null)
@@ -442,7 +407,7 @@ public final class FileCache
 		}
 
 		// Local file must be gunzipped, so need the full FileInfo no matter where the URL points.
-		File file = SafePaths.get(Configuration.getCacheDir(), ungzippedPath).toFile();
+		File file = SAFE_URL_PATHS.get(Configuration.getCacheDir(), ungzippedPath).toFile();
 
 		FileInfo info = INFO_MAP.get(file);
 		if (info == null && file.isDirectory())
@@ -589,7 +554,7 @@ public final class FileCache
 			try
 			{
 				final File file = fileInfo.getFile();
-				final Path tmpFilePath = SafePaths.get(file + FileUtil.getTemporarySuffix());
+				final Path tmpFilePath = SAFE_URL_PATHS.get(file + FileUtil.getTemporarySuffix());
 				long lastModified = 0;
 
 				Files.deleteIfExists(tmpFilePath);
@@ -727,15 +692,10 @@ public final class FileCache
 		showDotsForFiles = enable;
 	}
 
-	private static String toUrlSegment(String... pathSegments)
+	private static String toUrlSegment(String firstSegment, String... pathSegments)
 	{
-		// Prepend a slash and concatenate the paths safely. Substitute
-		// / for \.
-		String urlSegment = SafePaths.getString("/", pathSegments).replace('\\', '/');
-
-		// If the segment is just a slash, return blank. Otherwise
-		// return the segment.
-		return urlSegment.equals("/") ? "" : urlSegment;
+		// Concatenate the paths safely with a single delimiter.
+		return SAFE_URL_PATHS.getString(firstSegment, pathSegments);
 	}
 
 	private FileCache()
@@ -782,6 +742,7 @@ public final class FileCache
 		{
 			if (inputStream != null)
 			{
+				inputStream.close();
 				inputStream = null;
 			}
 		}

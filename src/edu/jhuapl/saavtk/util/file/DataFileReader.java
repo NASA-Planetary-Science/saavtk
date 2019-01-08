@@ -69,7 +69,14 @@ public abstract class DataFileReader
 		return INSTANCE;
 	}
 
-	public abstract DataFileInfo readFileInfo(File file) throws IOException, IncorrectFileFormatException, InvalidFileFormatException;
+	public abstract void checkFormat(File file) throws IOException, FileFormatException;
+
+	public abstract DataFileInfo readFileInfo(File file) throws IOException, FileFormatException;
+
+	protected boolean isFileGzipped(File file)
+	{
+		return file.getName().toLowerCase().endsWith(".gz");
+	}
 
 	protected static int checkColumnNumbers(Iterable<Integer> columnNumbers)
 	{
@@ -88,7 +95,23 @@ public abstract class DataFileReader
 		return new DataFileReader() {
 
 			@Override
-			public DataFileInfo readFileInfo(File file) throws IOException, IncorrectFileFormatException, InvalidFileFormatException
+			public void checkFormat(File file) throws FileFormatException, IOException
+			{
+				Preconditions.checkNotNull(file);
+				Preconditions.checkArgument(file.exists(), "File not found: " + file.getPath());
+
+				try
+				{
+					FitsFileReader.of().checkFormat(file);
+				}
+				catch (@SuppressWarnings("unused") IncorrectFileFormatException e)
+				{
+					CsvFileReader.of().checkFormat(file);
+				}
+			}
+
+			@Override
+			public DataFileInfo readFileInfo(File file) throws IOException, FileFormatException
 			{
 				Preconditions.checkNotNull(file);
 				Preconditions.checkArgument(file.exists(), "File not found: " + file.getPath());
@@ -99,18 +122,8 @@ public abstract class DataFileReader
 				}
 				catch (@SuppressWarnings("unused") IncorrectFileFormatException e)
 				{
-					// Fall through to avoid nesting try-catch.
-				}
-
-				String lowerCaseUnzippedName = file.toString().toLowerCase().replaceFirst("\\.gz$", "");
-				if (lowerCaseUnzippedName.endsWith(".csv") || lowerCaseUnzippedName.endsWith(".txt"))
-				{
 					return CsvFileReader.of().readFileInfo(file);
 				}
-
-				String fileType = file.toString().replaceFirst("\\.gz$", "");
-				fileType = fileType.replaceFirst(".*\\.", "");
-				throw new IncorrectFileFormatException("File has unsupported type: " + fileType);
 			}
 
 		};

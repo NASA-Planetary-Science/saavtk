@@ -2,7 +2,7 @@ package edu.jhuapl.saavtk2.polydata.clip;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk2.util.Frustum;
+import edu.jhuapl.saavtk2.geom.euclidean.Frustum;
 import vtk.vtkDoubleArray;
 import vtk.vtkImplicitFunction;
 import vtk.vtkNativeLibrary;
