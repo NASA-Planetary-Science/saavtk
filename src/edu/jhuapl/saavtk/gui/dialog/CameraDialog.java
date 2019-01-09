@@ -19,6 +19,7 @@ import edu.jhuapl.saavtk.gui.GNumberField;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.gui.render.Renderer.ProjectionType;
+import edu.jhuapl.saavtk.gui.render.camera.Camera;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 
@@ -157,9 +158,9 @@ public class CameraDialog extends JDialog implements ActionListener
 		}
 		else if (source == resetButton)
 		{
-			renderer.resetToDefaultCameraViewAngle();
-			renderer.resetCamera();
-			renderer.setCameraOrientationInDirectionOfAxis(AxisType.NEGATIVE_Z, true);
+			Camera tmpCamera = renderer.getCamera();
+			renderer.setCameraViewAngle(30.0);
+			tmpCamera.reset();
 			updateGuiMain();
 			updateModel();
 		}
@@ -327,7 +328,6 @@ public class CameraDialog extends JDialog implements ActionListener
 		MathUtil.unorm(pos, pos);
 		MathUtil.vscl(radius + lineOfSightAltitude, pos, pos);
 		renderer.setCameraFocalPoint(pos);
-		renderer.setViewPointLatLong(); // TODO: This doesn't do anything?
 
 		printCameraOrientation();
 	}

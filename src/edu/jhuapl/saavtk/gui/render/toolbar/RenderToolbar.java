@@ -3,28 +3,30 @@ package edu.jhuapl.saavtk.gui.render.toolbar;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import edu.jhuapl.saavtk.gui.GuiUtil;
-import edu.jhuapl.saavtk.gui.render.axes.CartesianAxis;
-import edu.jhuapl.saavtk.gui.render.axes.CartesianViewDirection;
+import edu.jhuapl.saavtk.gui.render.RenderPanel;
+import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
+import edu.jhuapl.saavtk.gui.render.camera.Camera;
+import edu.jhuapl.saavtk.gui.render.camera.CameraUtil;
 
 public class RenderToolbar extends JToolBar implements ActionListener
 {
 	// Constants
 	private static final long serialVersionUID = 1L;
-//	public static final String	orientationAxesStateProperty	= "ORIENTATION_AXES_STATE_CHANGED";
-//	public static final String	viewAllProperty					= "VIEW_CHANGED";
-//	public static final String	pickRotationCenterProperty		= "ROTATION_CENTER_CHANGED";
 
-	// State vars
-	private List<RenderToolbarListener> listeners;
+	// Ref vars
+	private RenderPanel refRenderPanel;
+	private Camera refCamera;
 
 	// GUI vars
 	private JToggleButton showOrientationAxesTB, pickRotationCenterTB;
@@ -42,9 +44,12 @@ public class RenderToolbar extends JToolBar implements ActionListener
 //	List<Component> visibleComponents=Lists.newArrayList();
 //	List<Component> outOfBoundsComponents=Lists.newArrayList();
 
-	public RenderToolbar()
+	public RenderToolbar(RenderPanel aRenderPanel, Camera aCamera)
 	{
-		listeners = new ArrayList<>();
+		refRenderPanel = aRenderPanel;
+		refCamera = aCamera;
+		if (refCamera == null)
+			throw new NullPointerException();
 
 		setFloatable(false);
 		setRollover(true);
@@ -105,28 +110,30 @@ public class RenderToolbar extends JToolBar implements ActionListener
 		// Set up the xAxisLockTB, yAxisLockTB, zAxisLockTB;
 		priImage = loadImage("lock-orientation-x.png", iconSize, iconSize);
 		secImage = ImageUtil.colorize(priImage, dyeColor);
-		xAxisLockTB = GuiUtil.formToggleButton(this, priImage, secImage, "Lock x-Axis");
+		xAxisLockTB = GuiUtil.formToggleButton(this, priImage, secImage, "Lock X-Axis");
 
 		priImage = loadImage("lock-orientation-y.png", iconSize, iconSize);
 		secImage = ImageUtil.colorize(priImage, dyeColor);
-		yAxisLockTB = GuiUtil.formToggleButton(this, priImage, secImage, "Lock y-Axis");
+		yAxisLockTB = GuiUtil.formToggleButton(this, priImage, secImage, "Lock Y-Axis");
 
 		priImage = loadImage("lock-orientation-z.png", iconSize, iconSize);
 		secImage = ImageUtil.colorize(priImage, dyeColor);
-		zAxisLockTB = GuiUtil.formToggleButton(this, priImage, secImage, "Lock z-Axis");
+		zAxisLockTB = GuiUtil.formToggleButton(this, priImage, secImage, "Lock Z-Axis");
 
 		addSeparator();
 		add(xAxisLockTB);
 		add(yAxisLockTB);
 		add(zAxisLockTB);
-	}
 
-	/**
-	 * Registers a listener with this toolbar.
-	 */
-	public void addListener(RenderToolbarListener aListener)
-	{
-		listeners.add(aListener);
+		// Register for events of interest
+		aRenderPanel.getAxesFrame().addComponentListener(new ComponentAdapter()
+		{
+			@Override
+			public void componentHidden(ComponentEvent aEvent)
+			{
+				showOrientationAxesTB.setSelected(false);
+			}
+		});
 	}
 
 	/**
@@ -137,43 +144,33 @@ public class RenderToolbar extends JToolBar implements ActionListener
 		return showOrientationAxesTB.isSelected();
 	}
 
-	/**
-	 * Sets the Show Orientation Axis toggle state.
-	 */
-	public void setOrientationAxesToggleState(boolean aBool)
-	{
-		showOrientationAxesTB.setSelected(aBool);
-	}
-
 	@Override
 	public void actionPerformed(ActionEvent aEvent)
 	{
 		Object source = aEvent.getSource();
 
 		if (source == showOrientationAxesTB)
-			fire(new RenderToolbarEvent.ToggleAxesVisibilityEvent(this, showOrientationAxesTB.isSelected()));
+			refRenderPanel.setAxesFrameVisible(showOrientationAxesTB.isSelected());
 		else if (source == pickRotationCenterTB)
 			;
 //			fire(new RenderToolbarEvent.PickRotationCenterEvent(this, pickRotationCenterTB.isSelected()));
 //			firePropertyChange(pickRotationCenterProperty, null, null);
-		else if (source == pickRotationCenterTB)
-			fire(new RenderToolbarEvent.ViewAllEvent(this));
+		else if (source == resetViewB)
+			refCamera.reset();
 
 		// Set View along axis...
 		else if (source == xAlignPosB)
-			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.PLUS_X));
+			CameraUtil.setOrientationInDirectionOfAxis(refCamera, AxisType.POSITIVE_X);
 		else if (source == xAlignNegB)
-			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.MINUS_X));
+			CameraUtil.setOrientationInDirectionOfAxis(refCamera, AxisType.NEGATIVE_X);
 		else if (source == yAlignPosB)
-			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.PLUS_Y));
+			CameraUtil.setOrientationInDirectionOfAxis(refCamera, AxisType.POSITIVE_Y);
 		else if (source == yAlignNegB)
-			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.MINUS_Y));
+			CameraUtil.setOrientationInDirectionOfAxis(refCamera, AxisType.NEGATIVE_Y);
 		else if (source == zAlignPosB)
-			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.PLUS_Z));
+			CameraUtil.setOrientationInDirectionOfAxis(refCamera, AxisType.POSITIVE_Z);
 		else if (source == zAlignNegB)
-			fire(new RenderToolbarEvent.LookAlongAxisEvent(this, CartesianViewDirection.MINUS_Z));
-		else if (source == resetViewB)
-			fire(new RenderToolbarEvent.ViewAllEvent(this));
+			CameraUtil.setOrientationInDirectionOfAxis(refCamera, AxisType.NEGATIVE_Z);
 
 		// Logic: Lock Axis
 		else if (source == xAxisLockTB)
@@ -181,43 +178,40 @@ public class RenderToolbar extends JToolBar implements ActionListener
 			yAxisLockTB.setSelected(false);
 			zAxisLockTB.setSelected(false);
 
-			CartesianAxis targAxis = CartesianAxis.NONE;
+			Vector3D targAxis = Vector3D.ZERO;
 			if (xAxisLockTB.isSelected() == true)
-				targAxis = CartesianAxis.X;
-			fire(new RenderToolbarEvent.ConstrainRotationAxisEvent(this, targAxis));
+				targAxis = refCamera.getCoordinateSystem().getAxisX();
+
+			Vector3D targOrig = refCamera.getFocalPoint();
+
+			refRenderPanel.constrainRotationAxis(targAxis, targOrig);
 		}
 		else if (source == yAxisLockTB)
 		{
 			xAxisLockTB.setSelected(false);
 			zAxisLockTB.setSelected(false);
 
-			CartesianAxis targAxis = CartesianAxis.NONE;
+			Vector3D targAxis = Vector3D.ZERO;
 			if (yAxisLockTB.isSelected() == true)
-				targAxis = CartesianAxis.Y;
-			fire(new RenderToolbarEvent.ConstrainRotationAxisEvent(this, targAxis));
+				targAxis = refCamera.getCoordinateSystem().getAxisY();
+
+			Vector3D targOrig = refCamera.getFocalPoint();
+
+			refRenderPanel.constrainRotationAxis(targAxis, targOrig);
 		}
 		else if (source == zAxisLockTB)
 		{
 			xAxisLockTB.setSelected(false);
 			yAxisLockTB.setSelected(false);
 
-			CartesianAxis targAxis = CartesianAxis.NONE;
+			Vector3D targAxis = Vector3D.ZERO;
 			if (zAxisLockTB.isSelected() == true)
-				targAxis = CartesianAxis.Z;
-			fire(new RenderToolbarEvent.ConstrainRotationAxisEvent(this, targAxis));
-		}
-	}
+				targAxis = refCamera.getCoordinateSystem().getAxisZ();
 
-	/**
-	 * Helper method that will fire off the specified event to all the registered
-	 * listeners.
-	 * 
-	 * @param aEvent
-	 */
-	private void fire(RenderToolbarEvent aEvent)
-	{
-		for (RenderToolbarListener aListener : listeners)
-			aListener.handle(aEvent);
+			Vector3D targOrig = refCamera.getFocalPoint();
+
+			refRenderPanel.constrainRotationAxis(targAxis, targOrig);
+		}
 	}
 
 	/**

@@ -220,7 +220,7 @@ public class ShapeModelImporter
         }
         
         // Save out all information about this shape model to the config.txt file
-        MapUtil map = new MapUtil(newModelDir.getAbsolutePath() + File.separator + "config.txt");
+        MapUtil map = new MapUtil(newModelDir.getAbsolutePath() + File.separator + "shapeConfig.txt");
         map.put(configMap);
 
         return true;

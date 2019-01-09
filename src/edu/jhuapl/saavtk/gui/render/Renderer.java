@@ -23,15 +23,19 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
 
-import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
+import edu.jhuapl.saavtk.gui.render.camera.Camera;
 import edu.jhuapl.saavtk.gui.render.camera.CameraFrame;
+import edu.jhuapl.saavtk.gui.render.camera.CameraUtil;
+import edu.jhuapl.saavtk.gui.render.camera.CoordinateSystem;
+import edu.jhuapl.saavtk.gui.render.camera.StandardCamera;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
+import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
@@ -97,10 +101,21 @@ public class Renderer extends JPanel implements ActionListener
 			}
 		}
 	}
+	
+	// Constants
+	private static final long serialVersionUID = 1L;
 
-	protected RenderPanel mainCanvas;
+	// Ref vars
+	private ModelManager refModelManager;
 
-	private ModelManager modelManager;
+	// GUI vars
+	private RenderPanel mainCanvas;
+	private RenderToolbar toolbar;
+
+	// State vars
+	private Camera camera;
+
+	// VTK vars
 	private vtkInteractorStyleTrackballCamera trackballCameraInteractorStyle;
 	private vtkLightKit lightKit;
 	private vtkLight headlight;
@@ -110,8 +125,61 @@ public class Renderer extends JPanel implements ActionListener
 	public static boolean enableLODs = true; // This is temporary to show off the LOD feature, very soon we will replace this with an actual menu
 	public boolean showingLODs = false;
 
-	private StatusBar statusBar = null;
 	boolean inInteraction = false;
+
+	/**
+	 * Constructor
+	 */
+	public Renderer(final ModelManager aModelManager)
+	{
+		refModelManager = aModelManager;
+
+		mainCanvas = new RenderPanel();
+		mainCanvas.getRenderWindowInteractor().AddObserver("KeyPressEvent", this, "localKeypressHandler");
+		
+		// Form a CoordinateSystem relative to tmpPolyModel
+		PolyhedralModel tmpPolyModel = aModelManager.getPolyhedralModel();
+		Vector3D centerVect = tmpPolyModel.getGeometricCenterPoint();
+		Vector3D normalVect = tmpPolyModel.getAverageSurfaceNormal();
+		CoordinateSystem tmpCoordinateSystem = CameraUtil.formCoordinateSystem(normalVect, centerVect);
+
+		double tmpDistance = tmpPolyModel.getBoundingBoxDiagonalLength() * 2.0;
+
+		camera = new StandardCamera(mainCanvas, tmpCoordinateSystem, tmpDistance);
+		toolbar = new RenderToolbar(mainCanvas, camera);
+
+		trackballCameraInteractorStyle = new vtkInteractorStyleTrackballCamera();
+
+		setBackgroundColor(new int[] { 0, 0, 0 });// Preferences.getInstance().getAsIntArray(Preferences.BACKGROUND_COLOR,
+																// new int[]{0, 0, 0}));
+		initLights();
+		setLayout(new BorderLayout());
+
+		add(toolbar, BorderLayout.NORTH);
+		add(mainCanvas.getComponent(), BorderLayout.CENTER);
+		toolbar.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
+
+		// Setup observers for start/stop interaction events
+		mainCanvas.getRenderWindowInteractor().AddObserver("StartInteractionEvent", this, "onStartInteraction");
+		mainCanvas.getRenderWindowInteractor().AddObserver("InteractionEvent", this, "duringInteraction");
+		mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
+
+		javax.swing.SwingUtilities.invokeLater(() -> {
+			setProps(aModelManager.getProps());
+		});
+		
+		// Cause the RenderPanel to be rendered whenever the camera changes
+		camera.addListener((aEvent) -> { mainCanvas.Render(); }); 
+	}
+
+	/**
+	 * Method that is called when this Renderer will no longer be used.
+	 */
+	public void dispose()
+	{
+		// Ensure the AxesFrame is hidden
+		mainCanvas.setAxesFrameVisible(false);
+	}
 
 	void initLights()
 	{
@@ -160,49 +228,12 @@ public class Renderer extends JPanel implements ActionListener
 
 	}
 
-	public Renderer(final ModelManager modelManager, StatusBar statusBar)
+	/**
+	 * Returns the camera associated with this Renderer.
+	 */
+	public Camera getCamera()
 	{
-		this(modelManager);
-		this.statusBar = statusBar;
-	}
-
-	RenderToolbar toolbar;
-	private double cameraDistance;
-	AxesPanel axesPanel;
-
-	public Renderer(final ModelManager modelManager)
-	{
-
-		//
-		toolbar = new RenderToolbar();
-		mainCanvas = new RenderPanel(toolbar);//, statusBar)
-		mainCanvas.getRenderWindowInteractor().AddObserver("KeyPressEvent", this, "localKeypressHandler");
-
-		this.modelManager = modelManager;
-
-		trackballCameraInteractorStyle = new vtkInteractorStyleTrackballCamera();
-
-		setBackgroundColor(new int[] { 0, 0, 0 });//Preferences.getInstance().getAsIntArray(Preferences.BACKGROUND_COLOR, new int[]{0, 0, 0}));
-
-		initLights();
-		setLayout(new BorderLayout());
-
-		add(toolbar, BorderLayout.NORTH);
-		add(mainCanvas.getComponent(), BorderLayout.CENTER);
-		toolbar.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
-
-		// Setup observers for start/stop interaction events
-		mainCanvas.getRenderWindowInteractor().AddObserver("StartInteractionEvent", this, "onStartInteraction");
-		mainCanvas.getRenderWindowInteractor().AddObserver("InteractionEvent", this, "duringInteraction");
-		mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
-
-		javax.swing.SwingUtilities.invokeLater(new Runnable() {
-			@Override
-			public void run()
-			{
-				setProps(modelManager.getProps());
-			}
-		});
+		return camera;
 	}
 
 	public void setProps(List<vtkProp> props)
@@ -243,14 +274,14 @@ public class Renderer extends JPanel implements ActionListener
 
 		// If we are in 2D mode, then remove all props of models that
 		// do not support 2D mode.
-		if (modelManager.is2DMode())
+		if (refModelManager.is2DMode())
 		{
 			propCollection = whichRenderer.GetViewProps();
 			size = propCollection.GetNumberOfItems();
 			for (int i = size - 1; i >= 0; --i)
 			{
 				vtkProp prop = (vtkProp) propCollection.GetItemAsObject(i);
-				Model model = modelManager.getModel(prop);
+				Model model = refModelManager.getModel(prop);
 				if (model != null && !model.supports2DMode())
 				{
 					whichRenderer.RemoveViewProp(prop);
@@ -279,10 +310,10 @@ public class Renderer extends JPanel implements ActionListener
 	public void showLODs()
 	{
 		// LOD switching control for SaavtkLODActor
-		if (enableLODs && modelManager != null && !showingLODs)
+		if (enableLODs && refModelManager != null && !showingLODs)
 		{
 			showingLODs = true;
-			List<vtkProp> props = modelManager.getProps();
+			List<vtkProp> props = refModelManager.getProps();
 			for (vtkProp prop : props)
 			{
 				if (prop instanceof SaavtkLODActor)
@@ -296,10 +327,10 @@ public class Renderer extends JPanel implements ActionListener
 
 	public void hideLODs()
 	{
-		if (enableLODs && modelManager != null && showingLODs)
+		if (enableLODs && refModelManager != null && showingLODs)
 		{
 			showingLODs = false;
-			List<vtkProp> props = modelManager.getProps();
+			List<vtkProp> props = refModelManager.getProps();
 			for (vtkProp prop : props)
 			{
 				if (prop instanceof SaavtkLODActor)
@@ -327,9 +358,9 @@ public class Renderer extends JPanel implements ActionListener
 		Vector3D lookat = new Vector3D(getRenderWindowPanel().getActiveCamera().GetFocalPoint());
 		Vector3D campos = new Vector3D(getRenderWindowPanel().getActiveCamera().GetPosition());
 		Vector3D lookdir = lookat.subtract(campos);
-		GenericPolyhedralModel model = (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY);
+		GenericPolyhedralModel model = (GenericPolyhedralModel) refModelManager.getModel(ModelNames.SMALL_BODY);
 		vtkCellLocator locator = model.getCellLocator();
-		for (vtkProp prop : modelManager.getProps())
+		for (vtkProp prop : refModelManager.getProps())
 			if (prop instanceof OccludingCaptionActor)
 			{
 				OccludingCaptionActor caption = (OccludingCaptionActor) prop;
@@ -440,88 +471,13 @@ public class Renderer extends JPanel implements ActionListener
 
 	}
 
-	public void setCameraOrientationInDirectionOfAxis(AxisType axisType, boolean preserveCurrentDistance)
-	{
-		vtkRenderer ren = mainCanvas.getRenderer();
-		if (ren.VisibleActorCount() == 0)
-			return;
-
-		mainCanvas.getVTKLock().lock();
-
-		double[] bounds = modelManager.getPolyhedralModel().getBoundingBox().getBounds();
-		double xSize = Math.abs(bounds[1] - bounds[0]);
-		double ySize = Math.abs(bounds[3] - bounds[2]);
-		double zSize = Math.abs(bounds[5] - bounds[4]);
-		double maxSize = Math.max(Math.max(xSize, ySize), zSize);
-
-		double cameraDistance = getCameraDistance();
-
-		vtkCamera cam = ren.GetActiveCamera();
-		cam.SetFocalPoint(0.0, 0.0, 0.0);
-
-		if (axisType == AxisType.NEGATIVE_X)
-		{
-			double xpos = xSize / Math.tan(Math.PI / 6.0) + 2.0 * maxSize;
-			cam.SetPosition(xpos, 0.0, 0.0);
-			cam.SetViewUp(0.0, 0.0, 1.0);
-		}
-		else if (axisType == AxisType.POSITIVE_X)
-		{
-			double xpos = -xSize / Math.tan(Math.PI / 6.0) - 2.0 * maxSize;
-			cam.SetPosition(xpos, 0.0, 0.0);
-			cam.SetViewUp(0.0, 0.0, 1.0);
-		}
-		else if (axisType == AxisType.NEGATIVE_Y)
-		{
-			double ypos = ySize / Math.tan(Math.PI / 6.0) + 2.0 * maxSize;
-			cam.SetPosition(0.0, ypos, 0.0);
-			cam.SetViewUp(0.0, 0.0, 1.0);
-		}
-		else if (axisType == AxisType.POSITIVE_Y)
-		{
-			double ypos = -ySize / Math.tan(Math.PI / 6.0) - 2.0 * maxSize;
-			cam.SetPosition(0.0, ypos, 0.0);
-			cam.SetViewUp(0.0, 0.0, 1.0);
-		}
-		else if (axisType == AxisType.NEGATIVE_Z)
-		{
-			double zpos = zSize / Math.tan(Math.PI / 6.0) + 2.0 * maxSize;
-			cam.SetPosition(0.0, 0.0, zpos);
-			cam.SetViewUp(0.0, 1.0, 0.0);
-		}
-		else if (axisType == AxisType.POSITIVE_Z)
-		{
-			double zpos = -zSize / Math.tan(Math.PI / 6.0) - 2.0 * maxSize;
-			cam.SetPosition(0.0, 0.0, zpos);
-			cam.SetViewUp(0.0, 1.0, 0.0);
-		}
-
-		if (preserveCurrentDistance)
-		{
-			double[] pos = cam.GetPosition();
-
-			MathUtil.unorm(pos, pos);
-
-			pos[0] *= cameraDistance;
-			pos[1] *= cameraDistance;
-			pos[2] *= cameraDistance;
-
-			cam.SetPosition(pos);
-		}
-
-		mainCanvas.getVTKLock().unlock();
-
-		mainCanvas.resetCameraClippingRange();
-		mainCanvas.Render();
-	}
-
 	public CameraFrame createCameraFrameInDirectionOfAxis(AxisType axisType, boolean preserveCurrentDistance, File file, int delayMilliseconds)
 	{
 		CameraFrame result = new CameraFrame();
 		result.file = file;
 		result.delay = delayMilliseconds;
 
-		double[] bounds = modelManager.getPolyhedralModel().getBoundingBox().getBounds();
+		double[] bounds = refModelManager.getPolyhedralModel().getBoundingBox().getBounds();
 		double xSize = Math.abs(bounds[1] - bounds[0]);
 		double ySize = Math.abs(bounds[3] - bounds[2]);
 		double zSize = Math.abs(bounds[5] - bounds[4]);
@@ -630,18 +586,6 @@ public class Renderer extends JPanel implements ActionListener
 	{
 		return mainCanvas.getRenderer().GetActiveCamera().GetViewAngle();
 	}
-
-	public void resetToDefaultCameraViewAngle()
-	{
-		setCameraViewAngle(30.0);
-	}
-	
-	public void resetCamera()
-	{
-		mainCanvas.resetCamera();
-		
-	}
-	
 
 	public void setProjectionType(ProjectionType projectionType)
 	{
@@ -796,12 +740,12 @@ public class Renderer extends JPanel implements ActionListener
 
 	public void viewDeactivating()
 	{
-		mainCanvas.axesFrame.setVisible(false);
+		mainCanvas.getAxesFrame().setVisible(false);
 	}
 
 	public void viewActivating()
 	{
-		mainCanvas.axesFrame.setVisible(toolbar.getOrientationAxesToggleState());
+		mainCanvas.getAxesFrame().setVisible(toolbar.getOrientationAxesToggleState());
 	}
 
 	// Gets the camera roll with roll as defined by vtkCamera
@@ -908,7 +852,7 @@ public class Renderer extends JPanel implements ActionListener
 	{
 		dir = dir.clone();
 		MathUtil.vhat(dir, dir);
-		double bbd = modelManager.getPolyhedralModel().getBoundingBoxDiagonalLength();
+		double bbd = refModelManager.getPolyhedralModel().getBoundingBoxDiagonalLength();
 		dir[0] *= (1.0e5 * bbd);
 		dir[1] *= (1.0e5 * bbd);
 		dir[2] *= (1.0e5 * bbd);
@@ -937,13 +881,16 @@ public class Renderer extends JPanel implements ActionListener
 
 	public void set2DMode(boolean enable)
 	{
-		modelManager.set2DMode(enable);
+		refModelManager.set2DMode(enable);
 
 		if (enable)
 		{
 			vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
 			cam.ParallelProjectionOn();
-			setCameraOrientationInDirectionOfAxis(AxisType.NEGATIVE_X, false);
+
+			double tmpDistance = refModelManager.getPolyhedralModel().getBoundingBoxDiagonalLength() * 2.0;
+			CameraUtil.setOrientationInDirectionOfAxis(camera, AxisType.NEGATIVE_X, tmpDistance);
+			
 			mainCanvas.getVTKLock().lock();
 			cam.SetViewUp(0.0, 1.0, 0.0);
 			mainCanvas.getVTKLock().unlock();
@@ -1096,7 +1043,7 @@ public class Renderer extends JPanel implements ActionListener
 
 	public GenericPolyhedralModel getGenericPolyhedralModel()
 	{
-		return (GenericPolyhedralModel) modelManager.getPolyhedralModel();
+		return (GenericPolyhedralModel) refModelManager.getPolyhedralModel();
 	}
 
 	public void setMouseEnabled(boolean enabled)
@@ -1105,11 +1052,6 @@ public class Renderer extends JPanel implements ActionListener
 			mainCanvas.mouseOn();
 		else
 			mainCanvas.mouseOff();
-	}
-
-	public void setViewPointLatLong()//LatLon viewPoint)
-	{
-		//System.out.println( (SmallBodyModel) modelManager.getPolyhedralModel());
 	}
 
 }

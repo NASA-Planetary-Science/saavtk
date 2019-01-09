@@ -36,7 +36,9 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JToggleButton;
 import javax.swing.ListSelectionModel;
+import javax.swing.ProgressMonitor;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 import javax.swing.border.Border;
@@ -69,10 +71,12 @@ import edu.jhuapl.saavtk.model.structure.geotools.FeatureUtil;
 import edu.jhuapl.saavtk.model.structure.geotools.LineStructure;
 import edu.jhuapl.saavtk.pick.PickEvent;
 import edu.jhuapl.saavtk.pick.PickManager;
-import edu.jhuapl.saavtk.pick.Picker;
 import edu.jhuapl.saavtk.pick.PickManager.PickMode;
+import edu.jhuapl.saavtk.pick.Picker;
 import edu.jhuapl.saavtk.popup.StructuresPopupMenu;
 import edu.jhuapl.saavtk.util.ColorIcon;
+import edu.jhuapl.saavtk.util.FileUtil;
+import edu.jhuapl.saavtk.util.ProgressListener;
 import edu.jhuapl.saavtk.util.Properties;
 import net.miginfocom.swing.MigLayout;
 
@@ -112,7 +116,10 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 
 	private JPopupMenu saveAsPopupMenu = new JPopupMenu();
 	private PopupListener saveAsPopupListener = new PopupListener(saveAsPopupMenu);
-    
+	
+	private StructuresLoadingTask task;
+	private ProgressMonitor structuresLoadingProgressMonitor;
+	
 	public AbstractStructureMappingControlPanel(final ModelManager modelManager, ModelNames aModelType, final PickManager pickManager, final PickManager.PickMode pickMode, boolean supportsEsri)
 	{
 		this.modelManager = modelManager;
@@ -311,6 +318,44 @@ this.supportsEsri=supportsEsri;
 
 		updateControlGui();
 	}
+	
+	class StructuresLoadingTask extends SwingWorker<Void, Void>
+    {
+    	File file;
+    	boolean append;
+
+    	public StructuresLoadingTask(File file, boolean append)
+    	{
+    		this.file = file;
+    		this.append = append;
+    	}
+
+    	@Override
+    	protected Void doInBackground() throws Exception
+    	{
+    		structureModel.loadModel(file, append, new ProgressListener()
+    		{
+				@Override
+				public void setProgress(int progress)
+				{
+					task.setProgress(progress);
+				}
+
+    		});
+    		structuresFileL.setText(file.getAbsolutePath());
+			structuresFile = file;
+    		return null;
+    	}
+
+    	@Override
+    	protected void done()
+    	{
+    		// TODO Auto-generated method stub
+    		super.done();
+
+    	}
+
+    }
 
 	@Override
 	public void actionPerformed(ActionEvent actionEvent)
@@ -336,10 +381,17 @@ this.supportsEsri=supportsEsri;
 								JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 						append = (n == 0 ? true : false);
 					}
+					List<String> lines = FileUtil.getFileLinesAsStringList(file.getAbsolutePath());
+					structuresLoadingProgressMonitor = new ProgressMonitor(null, "Loading Structures...", "", 0, 100);
+			        structuresLoadingProgressMonitor.setProgress(0);
 
-					structureModel.loadModel(file, append);
-					structuresFileL.setText(file.getAbsolutePath());
-					structuresFile = file;
+					task = new StructuresLoadingTask(file, append);
+			        task.addPropertyChangeListener(this);
+			        task.execute();
+					
+//					structureModel.loadModel(file, append);
+//					structuresFileL.setText(file.getAbsolutePath());
+//					structuresFile = file;
 				} 
 				catch (Exception e)
 				{
@@ -738,6 +790,21 @@ this.supportsEsri=supportsEsri;
         else if (Properties.ALL_STRUCTURES_REMOVED.equals(evt.getPropertyName()) || Properties.COLOR_CHANGED.equals(evt.getPropertyName()))
         {
             updateStructureTable();
+        }
+        else if ("progress" == evt.getPropertyName() ) {
+            int progress = (Integer) evt.getNewValue();
+            structuresLoadingProgressMonitor.setProgress(progress);
+            String message =
+                String.format("Completed %d%%.\n", progress);
+            structuresLoadingProgressMonitor.setNote(message);
+            if (structuresLoadingProgressMonitor.isCanceled() || task.isDone()) {
+                if (structuresLoadingProgressMonitor.isCanceled()) {
+                    task.cancel(true);
+                } else {
+//                    taskOutput.append("Task completed.\n");
+                }
+            }
+//            this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
         }
     }
 

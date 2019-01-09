@@ -38,7 +38,7 @@ import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.FileUtil;
 import edu.jhuapl.saavtk.util.MapUtil;
-import edu.jhuapl.saavtk.util.SafePaths;
+import edu.jhuapl.saavtk.util.SafeURLPaths;
 
 public class CustomPlateDataDialog extends javax.swing.JDialog
 {
@@ -161,12 +161,13 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 	private ColoringData copyCellData(int index, ColoringData source)
 	{
+		final SafeURLPaths safeUrlPaths = SafeURLPaths.instance();
 		String sourceFilePath = source.getFileName();
 		String sourceFileName = sourceFilePath.replaceFirst(".*[/\\\\]", "");
 		String extension = sourceFileName.replaceFirst("[^\\.]*\\.", ".");
 		String uuid = UUID.randomUUID().toString();
 		String destFileName = "platedata-" + uuid + extension;
-		String destFilePath = SafePaths.getString(getCustomDataFolder(), destFileName);
+		String destFilePath = safeUrlPaths.getString(getCustomDataFolder(), destFileName);
 
 		// Copy the cell data file to the model directory
 		try
@@ -181,7 +182,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		}
 
 		// After copying the file, convert the file path to a URL format.
-		destFilePath = FileCache.createFileURL(getCustomDataFolder(), destFileName).toString();
+		destFilePath = safeUrlPaths.getUrl(safeUrlPaths.getString(getCustomDataFolder(), destFileName));
 		ColoringData newColoringData = ColoringData.of(source.getName(), destFilePath, source.getElementNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls());
 
 		DefaultListModel<ColoringData> model = (DefaultListModel<ColoringData>) cellDataList.getModel();

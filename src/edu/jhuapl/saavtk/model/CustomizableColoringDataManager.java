@@ -11,7 +11,7 @@ import edu.jhuapl.saavtk.metadata.MetadataManager;
 import edu.jhuapl.saavtk.metadata.SettableMetadata;
 import edu.jhuapl.saavtk.metadata.Version;
 import edu.jhuapl.saavtk.metadata.serialization.Serializers;
-import edu.jhuapl.saavtk.util.SafePaths;
+import edu.jhuapl.saavtk.util.SafeURLPaths;
 
 public final class CustomizableColoringDataManager implements ColoringDataManager
 {
@@ -127,13 +127,13 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 	public void loadCustomMetadata(String folder) throws IOException
 	{
 		custom.clear();
-		Serializers.deserialize(SafePaths.get(folder, CUSTOM_METADATA_FILE_NAME).toFile(), "Custom Coloring", custom.getMetadataManager());
+		Serializers.deserialize(SafeURLPaths.instance().get(folder, CUSTOM_METADATA_FILE_NAME).toFile(), "Custom Coloring", custom.getMetadataManager());
 		update();
 	}
 
 	public void saveCustomMetadata(String folder) throws IOException
 	{
-		Serializers.serialize("Custom Coloring", custom.getMetadataManager(), SafePaths.get(folder, CUSTOM_METADATA_FILE_NAME).toFile());
+		Serializers.serialize("Custom Coloring", custom.getMetadataManager(), SafeURLPaths.instance().get(folder, CUSTOM_METADATA_FILE_NAME).toFile());
 	}
 
 	@Override
