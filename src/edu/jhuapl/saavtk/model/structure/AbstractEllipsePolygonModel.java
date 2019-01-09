@@ -33,6 +33,7 @@ import edu.jhuapl.saavtk.util.IdPair;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
+import edu.jhuapl.saavtk.util.ProgressListener;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
 import vtk.vtkActor;
@@ -975,7 +976,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	}
 
 	@Override
-	public void loadModel(File file, boolean append) throws IOException
+	public void loadModel(File file, boolean append, ProgressListener listener) throws IOException
 	{
 		List<String> lines = FileUtil.getFileLinesAsStringList(file.getAbsolutePath());
 		List<String> labels = new ArrayList<>();
@@ -983,6 +984,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 //		int maxPolygonId = append ? this.maxPolygonId : 0;
 		for (int i = 0; i < lines.size(); ++i)
 		{
+			if (listener != null) listener.setProgress(i*100/lines.size());
 //			String[] words = lines.get(i).trim().split("\\s+");
 			List<String> list = new ArrayList<String>();
 			Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(lines.get(i));
@@ -1091,7 +1093,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	
 				pol.updatePolygon(smallBodyModel, pol.center, pol.radius, pol.flattening, pol.angle);
 				newPolygons.add(pol);
-	
+
 				//            System.out.println(pol.name+" "+Arrays.toString(pol.center));
 	
 				//Second to last word is the label, last string is the color
@@ -1125,7 +1127,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 				//            }
 			}
 		}
-
+		if (listener != null) listener.setProgress(100);
 		// Only if we reach here and no exception is thrown do we modify this class
 		if (append)
 		{
