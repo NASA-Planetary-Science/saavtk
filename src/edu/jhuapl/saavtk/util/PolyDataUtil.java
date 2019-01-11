@@ -18,6 +18,8 @@ import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import com.google.common.base.Stopwatch;
+
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
 import nom.tam.fits.Header;
@@ -120,7 +122,8 @@ public class PolyDataUtil
 		//printpt(ur, "ur");
 		//printpt(lr, "lr");
 		//printpt(ll, "ll");
-
+		Stopwatch sw = new Stopwatch();
+		sw.start();
 		// First compute the normals of the 6 planes.
 		// Start with computing the normals of the 4 side planes of the frustum.
 		double[] top = new double[3];
@@ -179,10 +182,8 @@ public class PolyDataUtil
 		clipPolyData4.SetInsideOut(1);
 		clipPolyData4.Update();
 		vtkAlgorithmOutput clipPolyData4OutputPort = clipPolyData4.GetOutputPort();
-
 		if (clipPolyData4.GetOutput().GetNumberOfCells() == 0)
 		{
-			System.out.println("clipped data is empty");
 			return null;
 		}
 
@@ -205,7 +206,6 @@ public class PolyDataUtil
 
 		vtkIdList idList = new vtkIdList();
 		idList.SetNumberOfIds(0);
-
 		double[] viewDir = new double[3];
 		for (int i = 0; i < numCells; ++i)
 		{
@@ -236,7 +236,6 @@ public class PolyDataUtil
 
 		//polyData = new vtkPolyData();
 		tmpPolyData.DeepCopy(cleanPolyOutput);
-
 		// If the body was a convex shape we would be done now.
 		// Unfortunately, since it's not, it's possible for the polydata to have multiple connected
 		// pieces in view of the camera and some of these pieces are obscured by other pieces.
@@ -283,7 +282,6 @@ public class PolyDataUtil
 		double[] pcoords = new double[3];
 		int[] subId = new int[1];
 		int[] cell_id = new int[1];
-
 		for (int i = 0; i < numPoints; ++i)
 		{
 			double[] sourcePnt = points.GetPoint(i);
@@ -328,7 +326,6 @@ public class PolyDataUtil
 
 		//polyData = new vtkPolyData();
 		tmpPolyData.DeepCopy(cleanPolyOutput);
-
 		return tmpPolyData;
 	}
 

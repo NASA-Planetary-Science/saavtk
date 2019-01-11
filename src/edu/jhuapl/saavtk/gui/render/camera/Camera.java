@@ -4,9 +4,8 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 public interface Camera
 {
-	public void addCameraListener(CameraListener listener);
-	public void removeCameraListener(CameraListener listener);
-	public void fireCameraEvent();
+	public void addListener(CameraListener listener);
+	public void removeListener(CameraListener listener);
 	
 	public Vector3D getPosition();
 	public Vector3D getFocalPoint();
@@ -25,35 +24,34 @@ public interface Camera
 	public void roll(double angleDeg);
 	public void pitch(double angleDeg);
 	public void yaw(double angleDeg);
-	
-		
-/*    public enum CartesianAxis
-    {
-        POSITIVE_X,
-        NEGATIVE_X,
-        POSITIVE_Y,
-        NEGATIVE_Y,
-        POSITIVE_Z,
-        NEGATIVE_Z
-    }
 
-    Vector3D position;
-    Vector3D focalPoint;
-    Vector3D upVector;
-  	
-    void setPosition(Vector3D position)
-    {
-    	this.position=position;
-    }
-    
-    void setFocalPoint(Vector3D focalPoint)
-    {
-    	this.focalPoint=focalPoint;
-    }
-    
-    void setUpVector(Vector3D up)
-    {
-    	this.upVector=up;
-    }*/
-	
+	/**
+	 * Returns the coordinate system used by the camera.
+	 */
+	public CoordinateSystem getCoordinateSystem();
+
+	/**
+	 * Resets the camera's orientation to a default configuration.
+	 */
+	public void reset();
+
+	/**
+	 * Sets in a new coordinate system used by the camera.
+	 * <P>
+	 * The new coordinate system will be with utilized with future view
+	 * manipulations.
+	 */
+	public void setCoordinateSystem(CoordinateSystem aCoordinateSystem);
+
+	/**
+	 * Configures the camera's view to be aligned with the specified focalVect,
+	 * positionalVect, and viewUpVect.
+	 * 
+	 * @param aFocalVect    The vector that defines the camera focus.
+	 * @param aPositionVect The vector that defines where the camera will be
+	 *                      positioned.
+	 * @param aViewUpVect   The vector that defines what the up direction is.
+	 */
+	public void setView(Vector3D aFocalVect, Vector3D aPositionVect, Vector3D aViewUpVect);
+
 }

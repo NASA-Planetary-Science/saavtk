@@ -252,6 +252,7 @@ public class FileUtil
 	 */
 	public static String removeExtension(String fileName)
 	{
+		if (fileName.lastIndexOf('.') == -1) return fileName;
 		return fileName != null ? fileName.substring(0, fileName.lastIndexOf('.')) : null;
 	}
 
