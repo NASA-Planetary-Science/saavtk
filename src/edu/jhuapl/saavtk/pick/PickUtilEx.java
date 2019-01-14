@@ -9,9 +9,9 @@ import vtk.vtkProp;
 import vtk.vtkPropCollection;
 
 /**
- * Collection of package private utility methods associated with Pickers.
+ * Collection of (extra) utility methods associated with Pickers.
  */
-class PickUtilEx
+public class PickUtilEx
 {
 	/**
 	 * Utility method to form a vtkCellPicker suitable for picking targets on the
