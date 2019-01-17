@@ -14,10 +14,10 @@ import vtk.vtksbCellLocator;
 public class AbstractModelManager extends DefaultDatasourceModel implements ModelManager, PropertyChangeListener
 {
 	private PolyhedralModel mainModel;
-	private List<vtkProp> props = new ArrayList<vtkProp>();
-	private List<vtkProp> propsExceptSmallBody = new ArrayList<vtkProp>();
-	private HashMap<vtkProp, Model> propToModelMap = new HashMap<vtkProp, Model>();
-	private HashMap<ModelNames, Model> allModels = new HashMap<ModelNames, Model>();
+	private List<vtkProp> props = new ArrayList<>();
+	private List<vtkProp> propsExceptSmallBody = new ArrayList<>();
+	private HashMap<vtkProp, Model> propToModelMap = new HashMap<>();
+	private HashMap<ModelNames, Model> allModels = new HashMap<>();
 	private boolean mode2D = false;
 
 	public AbstractModelManager(PolyhedralModel mainModel)
@@ -32,11 +32,11 @@ public class AbstractModelManager extends DefaultDatasourceModel implements Mode
 	}
 
 	@Override
-	public void updateScaleBarValue(double pixelSizeInKm)
+	public void updateScaleBarValue(@SuppressWarnings("unused") double pixelSizeInKm)
 	{}
 
 	@Override
-	public void updateScaleBarPosition(int windowWidth, int windowHeight)
+	public void updateScaleBarPosition(@SuppressWarnings("unused") int windowWidth, @SuppressWarnings("unused") int windowHeight)
 	{}
 
 	@Override
