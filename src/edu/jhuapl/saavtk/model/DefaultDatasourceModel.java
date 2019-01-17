@@ -9,17 +9,36 @@ import vtk.vtksbCellLocator;
 
 public class DefaultDatasourceModel extends DatasourceModel
 {
+	private final CommonData commonData;
+
+	protected DefaultDatasourceModel(CommonData commonData)
+	{
+		this.commonData = commonData;
+	}
+
 	@Override
 	public boolean isBuiltIn()
 	{
 		return false;
 	}
 
-	public void updateScaleBarValue(double pixelSizeInKm)
+	public void updateScaleBarValue(@SuppressWarnings("unused") double pixelSizeInKm)
 	{}
 
-	public void updateScaleBarPosition(int windowWidth, int windowHeight)
+	public void updateScaleBarPosition(@SuppressWarnings("unused") int windowWidth, @SuppressWarnings("unused") int windowHeight)
 	{}
+
+	@Override
+	public final void setCommonData(@SuppressWarnings("unused") CommonData commonData)
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public CommonData getCommonData()
+	{
+		return commonData;
+	}
 
 	@Override
 	public List<vtkProp> getProps()
@@ -37,7 +56,7 @@ public class DefaultDatasourceModel extends DatasourceModel
 		return null;
 	}
 
-	public void setShowScaleBar(boolean enabled)
+	public void setShowScaleBar(@SuppressWarnings("unused") boolean enabled)
 	{}
 
 	public boolean getShowScaleBar()

@@ -7,23 +7,37 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
+
 import edu.jhuapl.saavtk.util.Properties;
 import vtk.vtkProp;
 import vtk.vtksbCellLocator;
 
 public class AbstractModelManager extends DefaultDatasourceModel implements ModelManager, PropertyChangeListener
 {
-	private PolyhedralModel mainModel;
+	private final PolyhedralModel mainModel;
+	private final ImmutableMap<ModelNames, Model> allModels;
+
 	private List<vtkProp> props = new ArrayList<>();
 	private List<vtkProp> propsExceptSmallBody = new ArrayList<>();
 	private HashMap<vtkProp, Model> propToModelMap = new HashMap<>();
-	private HashMap<ModelNames, Model> allModels = new HashMap<>();
 	private boolean mode2D = false;
 
-	public AbstractModelManager(PolyhedralModel mainModel)
+	public AbstractModelManager(PolyhedralModel mainModel, Map<ModelNames, Model> allModels)
 	{
-		super();
+		super(new CommonData());
 		this.mainModel = mainModel;
+		this.allModels = ImmutableMap.copyOf(allModels);
+
+		final CommonData commonData = getCommonData();
+		for (ModelNames modelName : this.allModels.keySet())
+		{
+			Model model = this.allModels.get(modelName);
+			model.setCommonData(commonData);
+			model.addPropertyChangeListener(this);
+		}
+
+		updateProps();
 	}
 
 	protected void addProp(vtkProp prop, Model model)
@@ -52,22 +66,9 @@ public class AbstractModelManager extends DefaultDatasourceModel implements Mode
 	}
 
 	@Override
-	public void setModels(HashMap<ModelNames, Model> models)
+	public void setModels(@SuppressWarnings("unused") HashMap<ModelNames, Model> models)
 	{
-		allModels.clear();
-
-		CommonData commonData = new CommonData();
-		setCommonData(commonData);
-
-		for (ModelNames modelName : models.keySet())
-		{
-			Model model = models.get(modelName);
-			model.addPropertyChangeListener(this);
-			model.setCommonData(commonData);
-			allModels.put(modelName, model);
-		}
-
-		updateProps();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
