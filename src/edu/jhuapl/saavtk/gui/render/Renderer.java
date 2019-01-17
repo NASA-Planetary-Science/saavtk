@@ -27,12 +27,15 @@ import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
 import edu.jhuapl.saavtk.gui.render.camera.Camera;
 import edu.jhuapl.saavtk.gui.render.camera.CameraFrame;
+import edu.jhuapl.saavtk.gui.render.camera.CameraUtil;
+import edu.jhuapl.saavtk.gui.render.camera.CoordinateSystem;
 import edu.jhuapl.saavtk.gui.render.camera.StandardCamera;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
+import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
@@ -133,8 +136,16 @@ public class Renderer extends JPanel implements ActionListener
 
 		mainCanvas = new RenderPanel();
 		mainCanvas.getRenderWindowInteractor().AddObserver("KeyPressEvent", this, "localKeypressHandler");
+		
+		// Form a CoordinateSystem relative to tmpPolyModel
+		PolyhedralModel tmpPolyModel = aModelManager.getPolyhedralModel();
+		Vector3D centerVect = tmpPolyModel.getGeometricCenterPoint();
+		Vector3D normalVect = tmpPolyModel.getAverageSurfaceNormal();
+		CoordinateSystem tmpCoordinateSystem = CameraUtil.formCoordinateSystem(normalVect, centerVect);
 
-		camera = new StandardCamera(mainCanvas, aModelManager.getPolyhedralModel());
+		double tmpDistance = tmpPolyModel.getBoundingBoxDiagonalLength() * 2.0;
+
+		camera = new StandardCamera(mainCanvas, tmpCoordinateSystem, tmpDistance);
 		toolbar = new RenderToolbar(mainCanvas, camera);
 
 		trackballCameraInteractorStyle = new vtkInteractorStyleTrackballCamera();
@@ -876,7 +887,10 @@ public class Renderer extends JPanel implements ActionListener
 		{
 			vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
 			cam.ParallelProjectionOn();
-			camera.setOrientationInDirectionOfAxis(AxisType.NEGATIVE_X, false);
+
+			double tmpDistance = refModelManager.getPolyhedralModel().getBoundingBoxDiagonalLength() * 2.0;
+			CameraUtil.setOrientationInDirectionOfAxis(camera, AxisType.NEGATIVE_X, tmpDistance);
+			
 			mainCanvas.getVTKLock().lock();
 			cam.SetViewUp(0.0, 1.0, 0.0);
 			mainCanvas.getVTKLock().unlock();
