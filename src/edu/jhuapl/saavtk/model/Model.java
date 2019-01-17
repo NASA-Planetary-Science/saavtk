@@ -18,7 +18,7 @@ public interface Model
 	 * setCommonData function. This way each model has access to the data.
 	 */
 	/**
-	 * Should be called be the model manager to set the common data.
+	 * Should be called by the model manager to set the common data.
 	 * 
 	 * @param commonData
 	 */
