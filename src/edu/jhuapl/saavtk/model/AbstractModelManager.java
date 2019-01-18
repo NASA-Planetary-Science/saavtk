@@ -6,15 +6,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.google.common.collect.ImmutableMap;
 
+import crucible.crust.metadata.api.Key;
+import crucible.crust.metadata.api.Metadata;
+import crucible.crust.metadata.api.MetadataManager;
+import crucible.crust.metadata.api.Version;
+import crucible.crust.metadata.impl.SettableMetadata;
 import edu.jhuapl.saavtk.util.Properties;
 import vtk.vtkProp;
 import vtk.vtksbCellLocator;
 
-public class AbstractModelManager extends DefaultDatasourceModel implements ModelManager, PropertyChangeListener
+public class AbstractModelManager extends DefaultDatasourceModel implements ModelManager, PropertyChangeListener, MetadataManager
 {
+	private static final Version METADATA_VERSION = Version.of(1, 0);
 	private final PolyhedralModel mainModel;
 	private final ImmutableMap<ModelNames, Model> allModels;
 
@@ -173,4 +180,38 @@ public class AbstractModelManager extends DefaultDatasourceModel implements Mode
 	{
 		return mode2D;
 	}
+
+	@Override
+	public Metadata store()
+	{
+		SettableMetadata metadata = SettableMetadata.of(METADATA_VERSION);
+		for (Entry<ModelNames, Model> entry : allModels.entrySet())
+		{
+			Model model = entry.getValue();
+			if (model instanceof MetadataManager)
+			{
+				metadata.put(Key.of(entry.getKey().name()), ((MetadataManager) model).store());
+			}
+		}
+
+		return metadata;
+	}
+
+	@Override
+	public void retrieve(Metadata source)
+	{
+		for (Entry<ModelNames, Model> entry : allModels.entrySet())
+		{
+			Key<Metadata> key = Key.of(entry.getKey().name());
+			if (source.hasKey(key))
+			{
+				Model model = entry.getValue();
+				if (model instanceof MetadataManager)
+				{
+					((MetadataManager) model).retrieve(source.get(key));
+				}
+			}
+		}
+	}
+
 }
