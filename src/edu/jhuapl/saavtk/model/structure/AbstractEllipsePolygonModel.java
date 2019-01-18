@@ -55,7 +55,7 @@ import vtk.vtkUnsignedCharArray;
  * Model of regular polygon structures drawn on a body.
  */
 
-abstract public class AbstractEllipsePolygonModel extends StructureModel implements PropertyChangeListener
+abstract public class AbstractEllipsePolygonModel extends StructureModel implements PropertyChangeListener, MetadataManager
 {
 	private final List<EllipsePolygon> polygons = new ArrayList<>();
 	private final List<vtkProp> actors = new ArrayList<>();
@@ -993,7 +993,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 			if (listener != null)
 				listener.setProgress(i * 100 / lines.size());
 			// String[] words = lines.get(i).trim().split("\\s+");
-			List<String> list = new ArrayList<String>();
+			List<String> list = new ArrayList<>();
 			Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(lines.get(i));
 			while (m.find())
 				list.add(m.group(1));
@@ -1734,49 +1734,59 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	private static final Key<int[]> SELECTED_STRUCTURES_KEY = Key.of("selectedStructures");
 	private static final Key<Double> OFFSET_KEY = Key.of("offset");
 
-	public MetadataManager getMetadataManager()
+	@Override
+	public Metadata store()
 	{
-		return new MetadataManager() {
+		SettableMetadata result = SettableMetadata.of(Version.of(1, 0));
 
-			@Override
-			public Metadata store()
-			{
-				SettableMetadata result = SettableMetadata.of(Version.of(1, 0));
+		result.put(ELLIPSE_POLYGON_KEY, polygons);
+		result.put(DEFAULT_RADIUS_KEY, defaultRadius);
+		result.put(DEFAULT_COLOR_KEY, defaultColor);
+		result.put(INTERIOR_OPACITY_KEY, interiorOpacity);
+		result.put(SELECTED_STRUCTURES_KEY, selectedStructures);
+		result.put(OFFSET_KEY, offset);
 
-				result.put(ELLIPSE_POLYGON_KEY, polygons);
-				result.put(DEFAULT_RADIUS_KEY, defaultRadius);
-				result.put(DEFAULT_COLOR_KEY, defaultColor);
-				result.put(INTERIOR_OPACITY_KEY, interiorOpacity);
-				result.put(SELECTED_STRUCTURES_KEY, selectedStructures);
-				result.put(OFFSET_KEY, offset);
-
-				return result;
-			}
-
-			@Override
-			public void retrieve(Metadata source)
-			{
-				defaultRadius = source.get(DEFAULT_RADIUS_KEY);
-				defaultColor = source.get(DEFAULT_COLOR_KEY);
-				interiorOpacity = source.get(INTERIOR_OPACITY_KEY);
-				selectedStructures = source.get(SELECTED_STRUCTURES_KEY);
-				offset = source.get(OFFSET_KEY);
-				List<EllipsePolygon> restoredPolygons = source.get(ELLIPSE_POLYGON_KEY);
-				for (EllipsePolygon polygon : restoredPolygons)
-				{
-					polygon.updatePolygon(smallBodyModel, polygon.center, polygon.radius, polygon.flattening, polygon.angle);
-				}
-				removeAllStructures();
-				maxPolygonId = 0;
-				polygons.addAll(restoredPolygons);
-
-				updatePolyData();
-
-				AbstractEllipsePolygonModel.this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-				AbstractEllipsePolygonModel.this.pcs.firePropertyChange(Properties.STRUCTURE_ADDED, null, null);
-
-			}
-
-		};
+		return result;
 	}
+
+	@Override
+	public void retrieve(Metadata source)
+	{
+		// The order of these operations is significant to try to keep the object state consistent.
+		// First get everything from the metadata into local variables. Don't touch the model yet
+		// in case there's a problem.
+		double defaultRadius = source.get(DEFAULT_RADIUS_KEY);
+		int[] defaultColor = source.get(DEFAULT_COLOR_KEY);
+		double interiorOpacity = source.get(INTERIOR_OPACITY_KEY);
+		int[] selectedStructures = source.get(SELECTED_STRUCTURES_KEY);
+		double offset = source.get(OFFSET_KEY);
+		List<EllipsePolygon> restoredPolygons = source.get(ELLIPSE_POLYGON_KEY);
+
+		// Now set the state of the individual restored polygons, again without directly changing the model.
+		// TODO Note that the smallBodyModel is changed here though -- need to make sure this doesn't cause
+		// problems if something throws before the whole retrieve operation is done.
+		for (EllipsePolygon polygon : restoredPolygons)
+		{
+			polygon.updatePolygon(smallBodyModel, polygon.center, polygon.radius, polygon.flattening, polygon.angle);
+		}
+
+		// Now we're committed. Get rid of whatever's currently in this model and then add the restored polygons.
+		polygons.clear();
+
+		// Finally, change the rest of the fields.
+		this.defaultRadius = defaultRadius;
+		this.defaultColor = defaultColor;
+		this.interiorOpacity = interiorOpacity;
+		this.selectedStructures = selectedStructures;
+		this.offset = offset;
+
+		// Put the restored polygons in the list.
+		polygons.addAll(restoredPolygons);
+
+		// Sync everything up.
+		updatePolyData();
+
+		AbstractEllipsePolygonModel.this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+	}
+
 }
