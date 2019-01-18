@@ -319,6 +319,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		fontSizeNFS.getLabelComponent().setPreferredSize(lineWidthNFS.getLabelComponent().getPreferredSize());
 
 		updateControlGui();
+
+		updateModelDisplay();
 	}
 
 	class StructuresLoadingTask extends SwingWorker<Void, Void>
@@ -692,31 +694,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	{
 		if (Properties.MODEL_CHANGED.equals(evt.getPropertyName()))
 		{
-			updateStructureTable();
-
-			if (structureModel.supportsActivation())
-			{
-				int idx = structureModel.getActivatedStructureIndex();
-				if (idx >= 0)
-				{
-					pickManager.setPickMode(pickMode);
-					if (!editB.isSelected())
-						editB.setSelected(true);
-					structuresTable.setRowSelectionInterval(idx, idx);
-					structuresTable.setEnabled(false);
-				}
-				else
-				{
-					// Don't change the picker if this tab is not in view since
-					// it's possible we could be in the middle of drawing other
-					// objects.
-					if (isVisible())
-						pickManager.setPickMode(PickManager.PickMode.DEFAULT);
-					if (editB.isSelected())
-						editB.setSelected(false);
-					structuresTable.setEnabled(true);
-				}
-			}
+			updateModelDisplay();
 		}
 		else if (Properties.MODEL_PICKED.equals(evt.getPropertyName()))
 		{
@@ -809,6 +787,36 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			}
 			//            this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 		}
+	}
+
+	private void updateModelDisplay()
+	{
+		updateStructureTable();
+
+		if (structureModel.supportsActivation())
+		{
+			int idx = structureModel.getActivatedStructureIndex();
+			if (idx >= 0)
+			{
+				pickManager.setPickMode(pickMode);
+				if (!editB.isSelected())
+					editB.setSelected(true);
+				structuresTable.setRowSelectionInterval(idx, idx);
+				structuresTable.setEnabled(false);
+			}
+			else
+			{
+				// Don't change the picker if this tab is not in view since
+				// it's possible we could be in the middle of drawing other
+				// objects.
+				if (isVisible())
+					pickManager.setPickMode(PickManager.PickMode.DEFAULT);
+				if (editB.isSelected())
+					editB.setSelected(false);
+				structuresTable.setEnabled(true);
+			}
+		}
+
 	}
 
 	private void updateStructureTable()
