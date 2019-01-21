@@ -37,6 +37,7 @@ import javax.swing.JTable;
 import javax.swing.JToggleButton;
 import javax.swing.ListSelectionModel;
 import javax.swing.ProgressMonitor;
+import javax.swing.RowSorter.SortKey;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.UIDefaults;
@@ -181,6 +182,7 @@ this.supportsEsri=supportsEsri;
 		// "Hide Structure"
 
 		structuresTable = new JTable(new StructuresTableModel(columnNames));
+		structuresTable.setAutoCreateRowSorter(true);
 		structuresTable.setBorder(BorderFactory.createTitledBorder(""));
 		structuresTable.setColumnSelectionAllowed(false);
 		structuresTable.setRowSelectionAllowed(true);
@@ -811,22 +813,22 @@ this.supportsEsri=supportsEsri;
     private void updateStructureTable()
     {
         int numStructures = structureModel.getNumberOfStructures();
-
+        List<? extends SortKey> sortKeys = structuresTable.getRowSorter().getSortKeys();
         ((DefaultTableModel) structuresTable.getModel()).setRowCount(numStructures);
         for (int i = 0; i < numStructures; ++i)
         {
             StructureModel.Structure structure = structureModel.getStructure(i);
             int[] c = structure.getColor();
-            structuresTable.setValueAt(String.valueOf(structure.getId()), i, 0);
-            structuresTable.setValueAt(structure.getType(), i, 1);
-            structuresTable.setValueAt(structure.getName(), i, 2);
-            structuresTable.setValueAt(structure.getInfo(), i, 3);
-            structuresTable.setValueAt(new Color(c[0], c[1], c[2]), i, 4);
-            structuresTable.setValueAt(structure.getLabel(), i, 5);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(String.valueOf(structure.getId()), i, 0);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getType(), i, 1);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getName(), i, 2);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getInfo(), i, 3);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(new Color(c[0], c[1], c[2]), i, 4);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getLabel(), i, 5);
             //structuresTable.setValueAt(structure.getLabelHidden(), i, 6);
             //structuresTable.setValueAt(structure.getHidden(), i, 6);
         }
-
+        structuresTable.getRowSorter().setSortKeys(sortKeys);
         updateColoredButtons();
     }
 
