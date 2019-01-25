@@ -365,9 +365,12 @@ public abstract class View extends JPanel
 	protected void setupRenderer()
 	{
 		ModelManager manager = getModelManager();
-		Renderer renderer = new Renderer(manager, getStatusBar());
+		Renderer renderer = new Renderer(manager);
 		renderer.addPropertyChangeListener(manager);
 		setRenderer(renderer);
+		
+        // Force the renderer's camera to the "reset" default view
+        renderer.getCamera().reset();
 	}
 
 	protected abstract void setupPickManager();

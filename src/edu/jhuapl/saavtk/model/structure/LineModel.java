@@ -35,6 +35,7 @@ import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Point3D;
+import edu.jhuapl.saavtk.util.ProgressListener;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
 import vtk.vtkActor;
@@ -855,7 +856,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	}
 
 	@Override
-	public void loadModel(File file, boolean append) throws Exception
+	public void loadModel(File file, boolean append, ProgressListener listener) throws Exception
 	{
 		//get the factory
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();

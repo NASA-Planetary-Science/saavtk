@@ -3,6 +3,7 @@ package edu.jhuapl.saavtk.util;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -30,6 +31,7 @@ import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
  */
 public class Configuration
 {
+	private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
 	private static final int DEFAULT_MAXIMUM_NUMBER_TRIES = 3;
 
 	private static final String INITIAL_MESSAGE =
@@ -37,7 +39,7 @@ public class Configuration
 
 	static private String webURL = "http://sbmt.jhuapl.edu";
 	static private String rootURL = webURL + "/sbmt/prod";
-	static private URL dataRootURL = FileCache.createURL(rootURL, "data");
+	static private URL dataRootURL = createUrl(rootURL + "/data");
 	static private String helpURL = webURL;
 
 	static private String appName = null;
@@ -87,10 +89,10 @@ public class Configuration
 		boolean userPasswordAccepted = false;
 		final int maximumNumberTries = 1;
 
-		URL restrictedAccessUrl = FileCache.createURL(restrictedAccessRoot.toString(), restrictedFileName);
+		String restrictedAccessUrl = SAFE_URL_PATHS.getString(restrictedAccessRoot.toString(), restrictedFileName);
 
 		// First confirm queries for information at least work. If not, don't try to update credentials.
-		FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessUrl, restrictedFileName);
+		FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessUrl);
 		if (!info.isURLAccessAuthorized().equals(YesOrNo.NO))
 		{
 			return;
@@ -115,7 +117,7 @@ public class Configuration
 							{
 								foundCredentials = true;
 								setupPasswordAuthentication(userName, password, maximumNumberTries);
-								info = FileCache.getFileInfoFromServer(restrictedAccessUrl, restrictedFileName);
+								info = FileCache.getFileInfoFromServer(restrictedAccessUrl);
 								if (info.isURLAccessAuthorized().equals(YesOrNo.YES))
 								{
 									userPasswordAccepted = true;
@@ -138,7 +140,7 @@ public class Configuration
 
 		if (!userPasswordAccepted && !foundEmptyPasswordFile)
 		{
-			userPasswordAccepted = promptUserForPassword(restrictedAccessUrl, restrictedFileName, passwordFilesToTry.iterator().next(), false);
+			userPasswordAccepted = promptUserForPassword(restrictedAccessUrl, passwordFilesToTry.iterator().next(), false);
 		}
 		if (!userPasswordAccepted)
 		{
@@ -147,7 +149,7 @@ public class Configuration
 		Configuration.userPasswordAccepted = userPasswordAccepted;
 	}
 
-	private static boolean promptUserForPassword(final URL restrictedAccessUrl, final String restrictedFileName, final Path passwordFile, final boolean updateMode)
+	private static boolean promptUserForPassword(final String restrictedAccessUrl, final Path passwordFile, final boolean updateMode)
 	{
 		JPanel mainPanel = new JPanel();
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
@@ -197,7 +199,7 @@ public class Configuration
 				{
 					// Attempt authentication.
 					setupPasswordAuthentication(name, password, maximumNumberTries);
-					FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessUrl, restrictedFileName);
+					FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessUrl);
 					if (!info.isURLAccessAuthorized().equals(YesOrNo.YES))
 					{
 						// Try again.
@@ -297,7 +299,7 @@ public class Configuration
 		{
 			throw new AssertionError("Cannot update password; authentication was not properly initialized.");
 		}
-		promptUserForPassword(restrictedAccessRoot, restrictedFileName, passwordFilesToTry.iterator().next(), true);
+		promptUserForPassword(SAFE_URL_PATHS.getString(restrictedAccessRoot.toString(), restrictedFileName), passwordFilesToTry.iterator().next(), true);
 
 	}
 
@@ -357,7 +359,7 @@ public class Configuration
 	public static void setRootURL(String rootURL)
 	{
 		Configuration.rootURL = rootURL;
-		Configuration.dataRootURL = FileCache.createURL(rootURL, "data");
+		Configuration.dataRootURL = createUrl(SAFE_URL_PATHS.getString(rootURL, "data"));
 	}
 
 	/**
@@ -566,6 +568,18 @@ public class Configuration
 					e.printStackTrace();
 				}
 			}
+		}
+	}
+
+	private static URL createUrl(String url)
+	{
+		try
+		{
+			return new URL(url);
+		}
+		catch (MalformedURLException e)
+		{
+			throw new AssertionError(e);
 		}
 	}
 

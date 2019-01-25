@@ -4,8 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 /**
@@ -96,6 +96,11 @@ public class SafeURLPaths
 		return Paths.get(getString(sequence));
 	}
 
+	public Path get(String[] sequence)
+	{
+		return Paths.get(getString(sequence));
+	}
+
 	/**
 	 * Uses {@link Paths} to convert a path string, or a sequence of strings that
 	 * when joined form a path string, to a string containing a lexically valid path
@@ -149,22 +154,70 @@ public class SafeURLPaths
 		return getString(String.join("/", sequence));
 	}
 
+	public String getString(String[] sequence)
+	{
+		return getString(String.join("/", sequence));
+	}
+
+	public String getUrl(String string)
+	{
+		if (!hasProtocol(string))
+		{
+			// Assume string is a file path. Convert it to canonical form and replace backslashes with forward slashes.
+			try
+			{
+				string = new File(string).getCanonicalPath().replace("\\", "/");
+			}
+			catch (IOException e)
+			{
+				// Print but otherwise ignore this error. The URL may have an invalid string in it, but this
+				// should cause obvious problems when it's accessed.
+				e.printStackTrace();
+			}
+
+			// Create a file:///absolute/url out of the string with exactly 3 slashes after file: no matter what OS.
+			string = "file:///" + string.replaceFirst("^/", "");
+		}
+		return string;
+	}
+
+	/**
+	 * Return whether the supplied string looks like it has a URL protocol that
+	 * SafeURLPaths could handle. Specifically, this method checks whether the
+	 * supplied string starts with 2 or more characters followed by a colon,
+	 * optionally followed by one or more path delimiters (any kind) and other text.
+	 * 2 characters are required to distinguish a potential protocol from the case
+	 * of drive letters on a Windows system.
+	 * 
+	 * <pre>
+	 * This method does not check the rest of the string for valid URL syntax.
+	 * 
+	 * @param path the path string to check.
+	 * @return true if the path starts with what appears to be a URL protocol, false
+	 *         otherwise.
+	 */
+	public boolean hasProtocol(String path)
+	{
+		Preconditions.checkNotNull(path);
+		return path.matches("\\w\\w+:$") || path.matches("\\w\\w+:[/\\\\].*");
+	}
+
+	public boolean hasFileProtocol(String path)
+	{
+		Preconditions.checkNotNull(path);
+		return path.matches("[Ff][Ii][Ll][Ee]:") || path.matches("[Ff][Ii][Ll][Ee]:[/\\\\].*");
+	}
+
 	private String[] getSegments(String first, String... more)
 	{
-		// Join all the arguments with slashes between, then split them on any kind of path delimiter.
+		// Join all the arguments with slashes between.
 		String combined = more.length == 0 ? first : String.join("/", first, String.join("/", more));
-		combined = combined.replaceFirst("[/\\\\]+$", "");
+
+		// Now split the combined string on any kind of path delimiter.
 		String[] segments = combined.split("[/\\\\]+", -1);
 
-		// Hack to avoid ever putting a slash or backslash before a drive letter on Windows.
-		// Necessary because Java's URL class's getFile method includes the slash.
-		if (segments[0].matches("^\\s*$") && segments.length > 1 && segments[1].matches("^[A-Za-z]:"))
-		{
-			segments = Arrays.copyOfRange(segments, 1, segments.length);
-		}
-
 		// Check if these segments begin with a non-file URL protocol.  
-		boolean nonLocalUrl = segments[0].matches("\\w+:") && !segments[0].equalsIgnoreCase("file:");
+		boolean nonLocalUrl = hasProtocol(segments[0]) && !hasFileProtocol(segments[0]);
 
 		if (nonLocalUrl)
 		{
@@ -181,50 +234,37 @@ public class SafeURLPaths
 
 	private String joinSegments(String[] segments)
 	{
+		boolean isUrl = hasProtocol(segments[0]);
+		boolean isFileUrl = hasFileProtocol(segments[0]);
+
 		StringBuilder builder = new StringBuilder(segments[0]);
 
-		boolean url;
-		if (segments[0].equalsIgnoreCase("file:"))
+		if (isFileUrl)
 		{
-			url = true;
-			if (segments.length > 1 && (segments[1].equals(".") || segments[1].equals("..")))
-			{
-				builder.append("/");
-				// This appears to be a relative path reference within a file url. Attempt to do
-				// what is probably intended in this case.
-				try
-				{
-					segments[1] = new File(".").getCanonicalPath().replaceAll("[/\\\\]", "/") + "/" + segments[1];
-				}
-				catch (@SuppressWarnings("unused") IOException e)
-				{
-					// Ignore this exception -- probably it won't ever happen. If it does,
-					// another exception will be thrown as soon as anyone tries to access the file.
-					// That exception will still be clear, as segments[1] will indicate a relative path.
-				}
-			}
-			else
-			{
-				builder.append("//");
-			}
+			builder.append("///");
 		}
-		else if (segments[0].matches("^\\w\\w+:$")) // This is kinda hinky -- drive letters on Windows are 1 character. Assume all protocols have > 1 character.
+		else if (isUrl)
 		{
-			url = true;
-			builder.append("/");
-		}
-		else
-		{
-			url = false;
+			builder.append("//");
 		}
 
-		String delimiter = url ? "/" : pathSegmentDelimiter;
+		// For URLs, start with a blank delimiter because the right number
+		// of initial slashes was added above.
+		String delimiter = isUrl ? "" : pathSegmentDelimiter;
 		for (int index = 1; index < segments.length; ++index)
 		{
 			builder.append(delimiter);
 			builder.append(segments[index]);
+			delimiter = isUrl ? "/" : pathSegmentDelimiter;
 		}
-		return builder.toString();
+
+		String result = builder.toString();
+		if (pathSegmentDelimiter.equals("\\") && result.startsWith(pathSegmentDelimiter))
+		{
+			// Windows hack to prevent leading backslashes before drive letters.
+			result = result.replaceFirst("^\\\\([A-Za-z]:)", "$1");
+		}
+		return result;
 	}
 
 	// TEST CODE.
@@ -246,9 +286,13 @@ public class SafeURLPaths
 
 		SafeURLPaths safePaths = new SafeURLPaths(separator);
 
-		String[] testPaths =
-				{ "\\C:\\Users\\\\user/data\\/file.txt", "/\\home/user/\\\\/", "/C:/", "\\c", "\\c:", "file.txt", "/file", "relativePath/", "/", "bin/foo/", "", "file:/C:/spud/junk.html", "https://sbmt.jhuapl.edu", "file:", "ftp:", "http:///", "file://///", "file:/../../../../../../Downloads/SHAPE0.obj", "file:///Downloads/../Downloads/SHAPE0.obj"
-				};
+		String[] testPaths = {
+				"\\C:\\Users\\\\user/data\\/file.txt", "/\\home/user/\\\\/", "/C:/", "\\c", "\\c:",
+				"file.txt", "/file", "relativePath/", "/", "bin/foo/", "",
+				"file:/C:/spud/junk.html", "https://sbmt.jhuapl.edu",
+				"file:", "file://///", "ftp:", "http:///", "file:/../../../../../../Downloads/SHAPE0.obj",
+				"file:///Downloads/../Downloads/SHAPE0.obj", "local/relative/path", "/absolute/path"
+		};
 
 		System.out.println("Test0");
 		for (String path : testPaths)
@@ -259,5 +303,29 @@ public class SafeURLPaths
 		System.out.println("\nTest1");
 		ImmutableList<String> testList = ImmutableList.of("path", "to/", "\\\\my", "files/file.txt");
 		System.out.println("Paths.getString(" + testList + ") = \"" + safePaths.getString(testList) + "\"");
+
+		System.out.println("\nTest2");
+		try
+		{
+			safePaths.getString("http://sbmt.jhuapl.edu/sbmt/../secret/path");
+			System.err.println("FAILED -- no exception thrown for a relative http:// URL");
+		}
+		catch (@SuppressWarnings("unused") IllegalArgumentException e)
+		{
+			System.out.println("Passed");
+		}
+
+		System.out.println("\nTest3");
+		System.out.println("Paths.getUrl(relative/path/) = \"" + safePaths.getUrl("relative/path").toString() + "\"");
+
+		System.out.println("\nTest4");
+		System.out.println("Paths.getUrl(/absolute/path/) = \"" + safePaths.getUrl("/absolute/path/").toString() + "\"");
+
+		System.out.println("\nTest5");
+		System.out.println("Paths.getUrl(relative/path/./../path/with/redirects) = \"" + safePaths.getUrl("relative/path/./../path/with/redirects").toString() + "\"");
+
+		System.out.println("\nTest6 (on Windows, should be interpreted as file:///C:/absolute/path. Otherwise, treated like a relative path.)");
+		System.out.println("Paths.getUrl(C:\\absolute\\path\\) = \"" + safePaths.getUrl("C:\\absolute\\path\\").toString() + "\"");
+
 	}
 }

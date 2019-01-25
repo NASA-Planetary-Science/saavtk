@@ -26,7 +26,7 @@ import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CameraDialog;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
-import edu.jhuapl.saavtk.gui.panel.structures.AbstractStructureMappingControlPanel;
+import edu.jhuapl.saavtk.gui.panel.AbstractStructureMappingControlPanel;
 import edu.jhuapl.saavtk.metadata.Serializer;
 import edu.jhuapl.saavtk.metadata.serialization.Serializers;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;

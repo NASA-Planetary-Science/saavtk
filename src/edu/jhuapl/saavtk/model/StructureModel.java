@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.List;
 
 import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
+import edu.jhuapl.saavtk.util.ProgressListener;
 import edu.jhuapl.saavtk.util.Properties;
 import vtk.vtkCaptionActor2D;
 import vtk.vtkProp;
@@ -63,7 +64,7 @@ public abstract class StructureModel extends AbstractModel
 
 	public abstract int getStructureIndexFromCellId(int cellId, vtkProp prop);
 
-	public abstract void loadModel(File file, boolean append) throws Exception;
+	public abstract void loadModel(File file, boolean append, ProgressListener listener) throws Exception;
 
 	public abstract void saveModel(File file) throws Exception;
 

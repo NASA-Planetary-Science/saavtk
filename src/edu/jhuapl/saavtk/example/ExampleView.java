@@ -6,7 +6,7 @@ import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.panel.PolyhedralModelControlPanel;
-import edu.jhuapl.saavtk.gui.panel.structures.StructuresControlPanel;
+import edu.jhuapl.saavtk.gui.panel.StructuresControlPanel;
 import edu.jhuapl.saavtk.model.Graticule;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelNames;
