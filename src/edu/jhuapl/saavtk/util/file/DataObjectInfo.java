@@ -16,26 +16,32 @@ import crucible.crust.metadata.impl.SettableMetadata;
  * Class that provides information about one data object (image or table) within
  * a data file.
  */
-public class DataObjectInfo {
+public class DataObjectInfo
+{
 	/**
 	 * Textual metadata that describes the data object, for example key-value pairs,
 	 * represented as a row-oriented table.
 	 */
-	public static class Description {
-		public static Description of(List<String> fields, List<? extends InfoRow> elements) {
+	public static class Description
+	{
+		public static Description of(List<String> fields, List<? extends InfoRow> elements)
+		{
 			return new Description(fields, elements);
 		}
 
 		private final ImmutableList<String> fields;
 		private final ImmutableList<InfoRow> elements;
 
-		protected Description(List<String> fields, List<? extends InfoRow> elements) {
+		protected Description(List<String> fields, List<? extends InfoRow> elements)
+		{
 			Preconditions.checkNotNull(fields);
-			for (String field : fields) {
+			for (String field : fields)
+			{
 				checkStringBeginsAndEndsWithText(field);
 			}
 			Preconditions.checkNotNull(elements);
-			for (InfoRow info : elements) {
+			for (InfoRow info : elements)
+			{
 				Preconditions.checkArgument(fields.size() == info.getNumberElements());
 			}
 
@@ -49,7 +55,8 @@ public class DataObjectInfo {
 		 * 
 		 * @return the list of column titles
 		 */
-		public ImmutableList<String> getColumnTitles() {
+		public ImmutableList<String> getColumnTitles()
+		{
 			return fields;
 		}
 
@@ -58,7 +65,8 @@ public class DataObjectInfo {
 		 * 
 		 * @return
 		 */
-		public ImmutableList<InfoRow> get() {
+		public ImmutableList<InfoRow> get()
+		{
 			return elements;
 		}
 
@@ -67,14 +75,18 @@ public class DataObjectInfo {
 		 * 
 		 * @return the data object info, as metadata
 		 */
-		public FixedMetadata getAsMetadata() {
+		public FixedMetadata getAsMetadata()
+		{
 			SettableMetadata result = SettableMetadata.of(Version.of(0, 1));
-			for (InfoRow element : elements) {
+			for (InfoRow element : elements)
+			{
 				Iterator<String> iterator = element.get().iterator();
-				if (iterator.hasNext()) {
+				if (iterator.hasNext())
+				{
 					Key<List<String>> key = Key.of(iterator.next());
 					List<String> values = new ArrayList<>();
-					while (iterator.hasNext()) {
+					while (iterator.hasNext())
+					{
 						values.add(iterator.next());
 					}
 					result.put(key, values);
@@ -84,7 +96,8 @@ public class DataObjectInfo {
 		}
 
 		@Override
-		public String toString() {
+		public String toString()
+		{
 			return "Fields: " + getColumnTitles();
 		}
 	}
@@ -97,14 +110,17 @@ public class DataObjectInfo {
 	 * Note that this represents only descriptive information, not rows of data from
 	 * a table or pixels from an image.
 	 */
-	public static class InfoRow {
-		public static InfoRow of(List<String> elements) {
+	public static class InfoRow
+	{
+		public static InfoRow of(List<String> elements)
+		{
 			return new InfoRow(elements);
 		}
 
 		private final List<String> elements;
 
-		protected InfoRow(List<String> elements) {
+		protected InfoRow(List<String> elements)
+		{
 			Preconditions.checkNotNull(elements);
 			this.elements = new ArrayList<>(elements);
 		}
@@ -114,7 +130,8 @@ public class DataObjectInfo {
 		 * 
 		 * @return the row size
 		 */
-		public int getNumberElements() {
+		public int getNumberElements()
+		{
 			return elements.size();
 		}
 
@@ -123,44 +140,52 @@ public class DataObjectInfo {
 		 * 
 		 * @return the row content
 		 */
-		public List<String> get() {
+		public List<String> get()
+		{
 			return new ArrayList<>(elements);
 		}
 
 		@Override
-		public String toString() {
+		public String toString()
+		{
 			return String.join(" ", elements);
 		}
 	}
 
-	public static DataObjectInfo of(String title, Description description) {
+	public static DataObjectInfo of(String title, Description description)
+	{
 		return new DataObjectInfo(title, description);
 	}
 
 	private final String title;
 	private final Description description;
 
-	protected DataObjectInfo(String title, Description description) {
+	protected DataObjectInfo(String title, Description description)
+	{
 		checkStringBeginsAndEndsWithText(title);
 		Preconditions.checkNotNull(description);
 		this.title = title;
 		this.description = description;
 	}
 
-	public String getTitle() {
+	public String getTitle()
+	{
 		return title;
 	}
 
-	public Description getDescription() {
+	public Description getDescription()
+	{
 		return description;
 	}
 
 	@Override
-	public String toString() {
+	public String toString()
+	{
 		return getTitle() + ": " + getDescription();
 	}
 
-	protected static void checkStringBeginsAndEndsWithText(String string) {
+	protected static void checkStringBeginsAndEndsWithText(String string)
+	{
 		Preconditions.checkNotNull(string);
 		Preconditions.checkArgument(string.matches("^\\S.*"));
 		Preconditions.checkArgument(string.matches(".*\\S$"));
