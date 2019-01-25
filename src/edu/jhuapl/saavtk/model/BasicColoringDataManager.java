@@ -40,7 +40,7 @@ public class BasicColoringDataManager implements ColoringDataManager
 	 */
 	public static String getMetadataFileName(Version serializerVersion)
 	{
-		return "coloring-" + serializerVersion + ".smd";
+		return "coloring-" + METADATA_VERSION + ".smd";
 	}
 
 	private final String dataId;
