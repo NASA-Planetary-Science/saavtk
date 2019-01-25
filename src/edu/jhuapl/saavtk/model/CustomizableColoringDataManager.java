@@ -8,8 +8,8 @@ import com.google.common.collect.ImmutableList;
 import crucible.crust.metadata.api.Key;
 import crucible.crust.metadata.api.Metadata;
 import crucible.crust.metadata.api.MetadataManager;
-import crucible.crust.metadata.impl.SettableMetadata;
 import crucible.crust.metadata.api.Version;
+import crucible.crust.metadata.impl.SettableMetadata;
 import crucible.crust.metadata.impl.gson.Serializers;
 import edu.jhuapl.saavtk.util.SafeURLPaths;
 

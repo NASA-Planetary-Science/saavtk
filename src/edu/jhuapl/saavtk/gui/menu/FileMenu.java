@@ -12,13 +12,13 @@ import javax.swing.JOptionPane;
 
 import com.google.common.collect.ImmutableList;
 
+import crucible.crust.metadata.api.Serializer;
+import crucible.crust.metadata.impl.gson.Serializers;
 import edu.jhuapl.saavtk.gui.OSXAdapter;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CameraDialog;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
-import crucible.crust.metadata.api.Serializer;
-import crucible.crust.metadata.impl.gson.Serializers;
 import edu.jhuapl.saavtk.util.Configuration;
 
 public class FileMenu extends JMenu
@@ -370,7 +370,8 @@ public class FileMenu extends JMenu
 		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			int option =
-					JOptionPane.showOptionDialog(frame, "Do you wish to clear your local data cache? \nIf you do, all remotely loaded data will need to be reloaded " + "from the server the next time you wish to view it. \nThis may take a few moments.", "Clear cache", 1, 3, null, null, null);
+					JOptionPane.showOptionDialog(frame, "Do you wish to clear your local data cache? \nIf you do, all remotely loaded data will need to be reloaded "
+							+ "from the server the next time you wish to view it. \nThis may take a few moments.", "Clear cache", 1, 3, null, null, null);
 			if (option == 0)
 			{
 				Configuration.clearCache();
