@@ -16,13 +16,13 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.metadata.InstanceGetter;
-import edu.jhuapl.saavtk.metadata.Key;
-import edu.jhuapl.saavtk.metadata.Metadata;
-import edu.jhuapl.saavtk.metadata.MetadataManager;
-import edu.jhuapl.saavtk.metadata.SettableMetadata;
-import edu.jhuapl.saavtk.metadata.StorableAsMetadata;
-import edu.jhuapl.saavtk.metadata.Version;
+import crucible.crust.metadata.api.Key;
+import crucible.crust.metadata.api.Metadata;
+import crucible.crust.metadata.api.MetadataManager;
+import crucible.crust.metadata.api.StorableAsMetadata;
+import crucible.crust.metadata.api.Version;
+import crucible.crust.metadata.impl.InstanceGetter;
+import crucible.crust.metadata.impl.SettableMetadata;
 import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.CommonData;
 import edu.jhuapl.saavtk.model.FacetColoringData;
@@ -751,7 +751,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	{
 		EllipsePolygon pol = polygons.get(polygonId);
 		double newRadius =
-				Math.sqrt((pol.center[0] - newPointOnPerimeter[0]) * (pol.center[0] - newPointOnPerimeter[0]) + (pol.center[1] - newPointOnPerimeter[1]) * (pol.center[1] - newPointOnPerimeter[1]) + (pol.center[2] - newPointOnPerimeter[2]) * (pol.center[2] - newPointOnPerimeter[2]));
+				Math.sqrt((pol.center[0] - newPointOnPerimeter[0]) * (pol.center[0] - newPointOnPerimeter[0]) + (pol.center[1] - newPointOnPerimeter[1]) * (pol.center[1] - newPointOnPerimeter[1])
+						+ (pol.center[2] - newPointOnPerimeter[2]) * (pol.center[2] - newPointOnPerimeter[2]));
 		if (newRadius > maxRadius)
 			newRadius = maxRadius;
 
@@ -981,22 +982,23 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		List<String> lines = FileUtil.getFileLinesAsStringList(file.getAbsolutePath());
 		List<String> labels = new ArrayList<>();
 		List<EllipsePolygon> newPolygons = new ArrayList<>();
-//		int maxPolygonId = append ? this.maxPolygonId : 0;
+		//		int maxPolygonId = append ? this.maxPolygonId : 0;
 		for (int i = 0; i < lines.size(); ++i)
 		{
-			if (listener != null) listener.setProgress(i*100/lines.size());
-//			String[] words = lines.get(i).trim().split("\\s+");
+			if (listener != null)
+				listener.setProgress(i * 100 / lines.size());
+			//			String[] words = lines.get(i).trim().split("\\s+");
 			List<String> list = new ArrayList<String>();
 			Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(lines.get(i));
 			while (m.find())
-			    list.add(m.group(1));
+				list.add(m.group(1));
 			String[] words = new String[list.size()];
 			list.toArray(words);
 			// The latest version of this file format has 16 columns. The previous version had
 			// 10 columns for circles and 13 columns for points. We still want to support loading
 			// both versions, so look at how many columns are in the line.
 			EllipsePolygon pol = new EllipsePolygon(numberOfSides, type, defaultColor, mode, Integer.parseInt(words[0]), "");
-//			maxPolygonId = Integer.parseInt(words[0]) + 1;
+			//			maxPolygonId = Integer.parseInt(words[0]) + 1;
 			pol.center = new double[3];
 
 			// The first 8 columns are the same in both the old and new formats.
@@ -1038,7 +1040,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 				}
 				pol.updatePolygon(smallBodyModel, pol.center, pol.radius, pol.flattening, pol.angle);
 				newPolygons.add(pol);
-				
+
 				if (words[words.length - 1].startsWith("\"")) // labels in quotations
 				{
 					pol.label = words[words.length - 1];
@@ -1048,7 +1050,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 			}
 			else
 			{
-			
+
 				if (words.length < 16)
 				{
 					// OLD VERSION of file
@@ -1062,7 +1064,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 					// NEW VERSION of file
 					pol.radius = Double.parseDouble(words[12]) / 2.0; // read in diameter not radius
 				}
-	
+
 				if (mode == Mode.ELLIPSE_MODE && words.length >= 16)
 				{
 					pol.flattening = Double.parseDouble(words[13]);
@@ -1073,7 +1075,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 					pol.flattening = 1.0;
 					pol.angle = 0.0;
 				}
-	
+
 				// If there are 9 or more columns in the file, the last column is the color in both
 				// the new and old formats.
 				if (words.length > 9)
@@ -1081,7 +1083,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 					int colorIdx = words.length - 3;
 					if (words.length == 17)
 						colorIdx = 15;
-	
+
 					String[] colorStr = words[colorIdx].split(",");
 					if (colorStr.length == 3)
 					{
@@ -1090,12 +1092,12 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 						pol.color[2] = Integer.parseInt(colorStr[2]);
 					}
 				}
-	
+
 				pol.updatePolygon(smallBodyModel, pol.center, pol.radius, pol.flattening, pol.angle);
 				newPolygons.add(pol);
 
 				//            System.out.println(pol.name+" "+Arrays.toString(pol.center));
-	
+
 				//Second to last word is the label, last string is the color
 				if (words[words.length - 2].substring(0, 2).equals("l:"))
 				{
@@ -1114,7 +1116,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 				//                pol.label = words[words.length-1];
 				//                labels.add(pol.label);
 				//            }
-	
+
 				//            if(words[words.length-1].substring(0, 3).equals("lc:"))
 				//            {
 				//                double[] labelcoloradd = {1.0,1.0,1.0};
@@ -1127,7 +1129,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 				//            }
 			}
 		}
-		if (listener != null) listener.setProgress(100);
+		if (listener != null)
+			listener.setProgress(100);
 		// Only if we reach here and no exception is thrown do we modify this class
 		if (append)
 		{
