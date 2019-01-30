@@ -44,7 +44,7 @@ public class Line extends StructureModel.Structure
 	}
 
 	// Note that controlPoints is what gets stored in the saved file.
-	public List<LatLon> controlPoints = new ArrayList<LatLon>();
+	private final List<LatLon> controlPoints = new ArrayList<>();
 
 	// Note xyzPointList is what's displayed. There will usually be more of these points than
 	// controlPoints in order to ensure the line is right above the surface of the asteroid.
@@ -139,6 +139,11 @@ public class Line extends StructureModel.Structure
 		configuration.getContent().getValue(COLOR).setValue(color.clone());
 	}
 
+	public List<LatLon> getControlPoints()
+	{
+		return controlPoints;
+	}
+
 	public Element toXmlDomElement(Document dom)
 	{
 		Element linEle = dom.createElement(getType());
@@ -154,11 +159,11 @@ public class Line extends StructureModel.Structure
 		linEle.setAttribute(COLOR.getId(), colorStr);
 
 		String vertices = "";
-		int size = controlPoints.size();
+		int size = getControlPoints().size();
 
 		for (int i = 0; i < size; ++i)
 		{
-			LatLon ll = controlPoints.get(i);
+			LatLon ll = getControlPoints().get(i);
 			double latitude = ll.lat * 180.0 / Math.PI;
 			double longitude = ll.lon * 180.0 / Math.PI;
 			if (longitude < 0.0)
@@ -177,7 +182,7 @@ public class Line extends StructureModel.Structure
 
 	public void fromXmlDomElement(Element element, String shapeModelName, boolean append)
 	{
-		controlPoints.clear();
+		getControlPoints().clear();
 		controlPointIds.clear();
 		xyzPointList.clear();
 
@@ -205,7 +210,7 @@ public class Line extends StructureModel.Structure
 			double lat = Double.parseDouble(tokens[i++]) * Math.PI / 180.0;
 			double lon = Double.parseDouble(tokens[i++]) * Math.PI / 180.0;
 			double rad = Double.parseDouble(tokens[i++]);
-			controlPoints.add(new LatLon(lat, lon, rad));
+			getControlPoints().add(new LatLon(lat, lon, rad));
 
 			if (shapeModelName == null || !shapeModelName.equals(smallBodyModel.getModelName()))
 				shiftPointOnPathToClosestPointOnAsteroid(count);
@@ -247,7 +252,7 @@ public class Line extends StructureModel.Structure
 	@Override
 	public String getClickStatusBarText()
 	{
-		return "Path, Id = " + getId() + ", Length = " + decimalFormatter.format(getPathLength()) + " km" + ", Number of Vertices = " + controlPoints.size();
+		return "Path, Id = " + getId() + ", Length = " + decimalFormatter.format(getPathLength()) + " km" + ", Number of Vertices = " + getControlPoints().size();
 	}
 
 	public double getPathLength()
@@ -273,11 +278,11 @@ public class Line extends StructureModel.Structure
 	public void updateSegment(int segment)
 	{
 		int nextSegment = segment + 1;
-		if (nextSegment == controlPoints.size())
+		if (nextSegment == getControlPoints().size())
 			nextSegment = 0;
 
-		LatLon ll1 = controlPoints.get(segment);
-		LatLon ll2 = controlPoints.get(nextSegment);
+		LatLon ll1 = getControlPoints().get(segment);
+		LatLon ll2 = getControlPoints().get(nextSegment);
 		double pt1[] = MathUtil.latrec(ll1);
 		double pt2[] = MathUtil.latrec(ll2);
 
@@ -334,21 +339,21 @@ public class Line extends StructureModel.Structure
 		// When the resolution changes, the control points, might no longer
 		// be touching the asteroid. Therefore shift each control to the closest
 		// point on the asteroid.
-		LatLon llr = controlPoints.get(idx);
+		LatLon llr = getControlPoints().get(idx);
 		double pt[] = MathUtil.latrec(llr);
 		double[] closestPoint = smallBodyModel.findClosestPoint(pt);
 		LatLon ll = MathUtil.reclat(closestPoint);
-		controlPoints.set(idx, ll);
+		getControlPoints().set(idx, ll);
 	}
 
 	public double[] getCentroid()
 	{
-		int size = controlPoints.size();
+		int size = getControlPoints().size();
 
 		double[] centroid = { 0.0, 0.0, 0.0 };
 		for (int i = 0; i < size; ++i)
 		{
-			LatLon ll = controlPoints.get(i);
+			LatLon ll = getControlPoints().get(i);
 			double[] p = MathUtil.latrec(ll);
 			centroid[0] += p[0];
 			centroid[1] += p[1];
@@ -366,13 +371,13 @@ public class Line extends StructureModel.Structure
 
 	public double getSize()
 	{
-		int size = controlPoints.size();
+		int size = getControlPoints().size();
 
 		double[] centroid = getCentroid();
 		double maxDistFromCentroid = 0.0;
 		for (int i = 0; i < size; ++i)
 		{
-			LatLon ll = controlPoints.get(i);
+			LatLon ll = getControlPoints().get(i);
 			double[] p = MathUtil.latrec(ll);
 			double dist = MathUtil.distanceBetween(centroid, p);
 			if (dist > maxDistFromCentroid)

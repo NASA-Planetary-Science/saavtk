@@ -105,7 +105,7 @@ public class ProfilePlot implements ChartMouseListener, PropertyChangeListener
 		List<Double> distance = new ArrayList<Double>();
 		try
 		{
-			if (!line.hidden && line.controlPoints.size() == 2)
+			if (!line.hidden && line.getControlPoints().size() == 2)
 			{
 				if (coloringIndex >= 0 && coloringIndex < smallBodyModel.getNumberOfColors())
 				{

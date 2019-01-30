@@ -37,13 +37,13 @@ public class Polygon extends Line
 	@Override
 	public String getInfo()
 	{
-		return "Area: " + decimalFormatter.format(surfaceArea) + " km^2, Length: " + decimalFormatter.format(getPathLength()) + " km, " + controlPoints.size() + " vertices";
+		return "Area: " + decimalFormatter.format(surfaceArea) + " km^2, Length: " + decimalFormatter.format(getPathLength()) + " km, " + getControlPoints().size() + " vertices";
 	}
 
 	@Override
 	public String getClickStatusBarText()
 	{
-		return "Polygon, Id = " + getId() + ", Length = " + decimalFormatter.format(getPathLength()) + " km" + ", Surface Area = " + decimalFormatter.format(surfaceArea) + " km^2" + ", Number of Vertices = " + controlPoints.size();
+		return "Polygon, Id = " + getId() + ", Length = " + decimalFormatter.format(getPathLength()) + " km" + ", Surface Area = " + decimalFormatter.format(surfaceArea) + " km^2" + ", Number of Vertices = " + getControlPoints().size();
 	}
 
 	public void setShowInterior(boolean showInterior)
@@ -52,7 +52,7 @@ public class Polygon extends Line
 
 		if (showInterior)
 		{
-			smallBodyModel.drawPolygon(controlPoints, interiorPolyData, null);
+			smallBodyModel.drawPolygon(getControlPoints(), interiorPolyData, null);
 			surfaceArea = PolyDataUtil.computeSurfaceArea(interiorPolyData);
 
 			// Decimate interiorPolyData for LODs

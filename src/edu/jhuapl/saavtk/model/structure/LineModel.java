@@ -421,7 +421,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		int numberOfPoints = 0;
 		for (Line lin : this.lines)
 		{
-			numberOfPoints += lin.controlPoints.size();
+			numberOfPoints += lin.getControlPoints().size();
 		}
 		return numberOfPoints;
 	}
@@ -440,10 +440,10 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	{
 		Line lin = lines.get(activatedLine);
 
-		int numVertices = lin.controlPoints.size();
+		int numVertices = lin.getControlPoints().size();
 
 		LatLon ll = MathUtil.reclat(newPoint);
-		lin.controlPoints.set(vertexId, ll);
+		lin.getControlPoints().set(vertexId, ll);
 
 		// If we're modifying the last vertex
 		if (vertexId == numVertices - 1)
@@ -490,7 +490,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		LatLon ll = MathUtil.reclat(newPoint);
 
-		lin.controlPoints.add(currentLineVertex + 1, ll);
+		lin.getControlPoints().add(currentLineVertex + 1, ll);
 
 		// Remove points BETWEEN the 2 control points (If we're adding a point in the middle)
 		if (currentLineVertex < lin.controlPointIds.size() - 1)
@@ -557,7 +557,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		int vertexId = currentLineVertex;
 
-		lin.controlPoints.remove(vertexId);
+		lin.getControlPoints().remove(vertexId);
 
 		// If not in CLOSED mode:
 		// If one of the end points is being removed, then we only need to remove the line connecting the
@@ -954,7 +954,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 				lin.updateSegment(i);
 
 			if (mode == Mode.CLOSED)
-				lin.updateSegment(lin.controlPoints.size() - 1);
+				lin.updateSegment(lin.getControlPoints().size() - 1);
 		}
 
 		updatePolyData();
