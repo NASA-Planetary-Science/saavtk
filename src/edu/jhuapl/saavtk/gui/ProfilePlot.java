@@ -81,7 +81,7 @@ public class ProfilePlot implements ChartMouseListener, PropertyChangeListener
 	private void setSeriesColor(int lineId)
 	{
 		Line line = (Line) lineModel.getStructure(lineId);
-		int[] c = line.color;
+		int[] c = line.getColor();
 		((XYPlot) chartPanel.getChart().getPlot()).getRenderer().setSeriesPaint(lineId, new Color(c[0], c[1], c[2], c[3]));
 	}
 

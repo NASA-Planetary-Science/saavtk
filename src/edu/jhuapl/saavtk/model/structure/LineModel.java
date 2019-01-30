@@ -235,7 +235,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		{
 			Line lin = this.lines.get(j);
 
-			int[] color = lin.color;
+			int[] color = lin.getColor();
 
 			if (Arrays.binarySearch(this.selectedStructures, j) >= 0)
 				color = getCommonData().getSelectionColor();
@@ -285,7 +285,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		{
 			Line lin = this.lines.get(j);
 
-			int[] color = lin.color;
+			int[] color = lin.getColor();
 
 			if (Arrays.binarySearch(this.selectedStructures, j) >= 0)
 				color = getCommonData().getSelectionColor();

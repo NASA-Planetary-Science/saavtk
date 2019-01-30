@@ -8,9 +8,15 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import crucible.crust.settings.redux.api.Configuration;
 import crucible.crust.settings.redux.api.ContentKey;
+import crucible.crust.settings.redux.api.KeyValueCollection;
 import crucible.crust.settings.redux.api.SettableValue;
+import crucible.crust.settings.redux.api.Version;
+import crucible.crust.settings.redux.impl.Configurations;
+import crucible.crust.settings.redux.impl.KeyValueCollections;
 import crucible.crust.settings.redux.impl.SettableValues;
+import crucible.crust.settings.redux.impl.Utilities;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -22,11 +28,21 @@ import vtk.vtkPolyData;
 
 public class Line extends StructureModel.Structure
 {
+	private static final Version CONFIGURATION_VERSION = Version.of(1, 0);
 	private static final SettableValues settableValues = SettableValues.instance();
+
+	public static Configuration<KeyValueCollection<SettableValue<?>>> createConfiguration(int id, int[] color)
+	{
+		KeyValueCollections.Builder<SettableValue<?>> builder = KeyValueCollections.instance().builder(Utilities.getSpecificType(SettableValue.class));
+
+		builder.put(ID, settableValues.of(id));
+		builder.put(COLOR, settableValues.of(color));
+
+		return Configurations.instance().of(CONFIGURATION_VERSION, builder.build());
+	}
 
 	public String name = "default";
 	public String label = "";
-	public int id;
 
 	// Note that controlPoints is what gets stored in the saved file.
 	public List<LatLon> controlPoints = new ArrayList<LatLon>();
@@ -35,7 +51,6 @@ public class Line extends StructureModel.Structure
 	// controlPoints in order to ensure the line is right above the surface of the asteroid.
 	public List<Point3D> xyzPointList = new ArrayList<Point3D>();
 	public List<Integer> controlPointIds = new ArrayList<Integer>();
-	public int[] color;
 	public boolean hidden = false;
 	public boolean labelHidden = false;
 
@@ -53,22 +68,28 @@ public class Line extends StructureModel.Structure
 	public static final ContentKey<SettableValue<String>> NAME = settableValues.key("name");
 	public static final ContentKey<SettableValue<String>> VERTICES = settableValues.key("vertices");
 	public static final String LENGTH = "length";
-	public static final ContentKey<SettableValue<String>> COLOR = settableValues.key("color");
+	public static final ContentKey<SettableValue<int[]>> COLOR = settableValues.key("color");
 	public static final ContentKey<SettableValue<String>> LABEL = settableValues.key("label");
 	public static final String LABELCOLOR = "labelcolor";
 
+	private final Configuration<KeyValueCollection<SettableValue<?>>> configuration;
+
 	public Line(PolyhedralModel smallBodyModel, boolean closed, int id)
 	{
+		this.configuration = createConfiguration(id, purpleColor.clone());
 		this.smallBodyModel = smallBodyModel;
 		this.closed = closed;
-		this.id = id;
-		color = purpleColor.clone();
 	}
 
 	@Override
 	public int getId()
 	{
-		return id;
+		return configuration.getContent().getValue(ID).getValue();
+	}
+
+	private void setId(int id)
+	{
+		configuration.getContent().getValue(ID).setValue(id);
 	}
 
 	@Override
@@ -110,25 +131,26 @@ public class Line extends StructureModel.Structure
 	@Override
 	public int[] getColor()
 	{
-		return color;
+		return configuration.getContent().getValue(COLOR).getValue().clone();
 	}
 
 	@Override
 	public void setColor(int[] color)
 	{
-		this.color = color.clone();
+		configuration.getContent().getValue(COLOR).setValue(color.clone());
 	}
 
 	public Element toXmlDomElement(Document dom)
 	{
 		Element linEle = dom.createElement(getType());
-		linEle.setAttribute(ID.getId(), String.valueOf(id));
+		linEle.setAttribute(ID.getId(), String.valueOf(getId()));
 		linEle.setAttribute(NAME.getId(), name);
 		linEle.setAttribute(LABEL.getId(), label);
 		//        String labelcolorStr=labelcolor[0] + "," + labelcolor[1] + "," + labelcolor[2];
 		//        linEle.setAttribute(LABELCOLOR, labelcolorStr);
 		linEle.setAttribute(LENGTH, String.valueOf(getPathLength()));
 
+		int[] color = getColor();
 		String colorStr = color[0] + "," + color[1] + "," + color[2];
 		linEle.setAttribute(COLOR.getId(), colorStr);
 
@@ -160,9 +182,12 @@ public class Line extends StructureModel.Structure
 		controlPointIds.clear();
 		xyzPointList.clear();
 
-		if (!append) // If appending, simply use maxId
+		int id = getId();
+		if (!append)
+		{ // If appending, simply use maxId
 			id = Integer.parseInt(element.getAttribute(ID.getId()));
-
+			setId(id);
+		}
 		if (id > maxId)
 			maxId = id;
 
@@ -209,9 +234,9 @@ public class Line extends StructureModel.Structure
 		if (tmp.length() == 0)
 			return;
 		tokens = tmp.split(",");
-		color[0] = Integer.parseInt(tokens[0]);
-		color[1] = Integer.parseInt(tokens[1]);
-		color[2] = Integer.parseInt(tokens[2]);
+
+		int[] color = { Integer.parseInt(tokens[0]), Integer.parseInt(tokens[1]), Integer.parseInt(tokens[2]) };
+		setColor(color);
 
 		//        String[] labelColors=element.getAttribute(LABELCOLOR).split(",");
 		//        labelcolor[0] = Double.parseDouble(labelColors[0]);
@@ -223,7 +248,7 @@ public class Line extends StructureModel.Structure
 	@Override
 	public String getClickStatusBarText()
 	{
-		return "Path, Id = " + id + ", Length = " + decimalFormatter.format(getPathLength()) + " km" + ", Number of Vertices = " + controlPoints.size();
+		return "Path, Id = " + getId() + ", Length = " + decimalFormatter.format(getPathLength()) + " km" + ", Number of Vertices = " + controlPoints.size();
 	}
 
 	public double getPathLength()
