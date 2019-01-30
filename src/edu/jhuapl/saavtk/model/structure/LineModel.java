@@ -212,7 +212,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 				lin.fromXmlDomElement(el, shapeModelName, append);
 
 				this.lines.add(lin);
-				setStructureLabel(lines.size() - 1, lines.get(lines.size() - 1).label);
+				setStructureLabel(lines.size() - 1, lines.get(lines.size() - 1).getLabel());
 			}
 		}
 
@@ -338,7 +338,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		for (int j = 0; j < this.lines.size(); ++j)
 		{
 			Line lin = this.lines.get(j);
-			if (lin.label != null && !lin.labelHidden && !lin.hidden && lin.caption != null)
+			if (lin.getLabel() != null && !lin.labelHidden && !lin.hidden && lin.caption != null)
 			{
 				lin.caption.SetAttachmentPoint(lin.getCentroid());
 				actors.add(lin.caption);
@@ -1380,7 +1380,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		// Create a caption if necessary
 		if (tmpStruct.caption == null)
-			tmpStruct.caption = formCaption(smallBodyModel, tmpStruct.getCentroid(), tmpStruct.name, aLabel);
+			tmpStruct.caption = formCaption(smallBodyModel, tmpStruct.getCentroid(), tmpStruct.getName(), aLabel);
 
 		// Update the caption and send out notification
 		tmpStruct.caption.SetCaption(aLabel);

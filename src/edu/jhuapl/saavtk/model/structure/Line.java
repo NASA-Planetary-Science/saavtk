@@ -36,13 +36,12 @@ public class Line extends StructureModel.Structure
 		KeyValueCollections.Builder<SettableValue<?>> builder = KeyValueCollections.instance().builder(Utilities.getSpecificType(SettableValue.class));
 
 		builder.put(ID, settableValues.of(id));
+		builder.put(NAME, settableValues.of("default"));
 		builder.put(COLOR, settableValues.of(color));
+		builder.put(LABEL, settableValues.of(""));
 
 		return Configurations.instance().of(CONFIGURATION_VERSION, builder.build());
 	}
-
-	public String name = "default";
-	public String label = "";
 
 	// Note that controlPoints is what gets stored in the saved file.
 	public List<LatLon> controlPoints = new ArrayList<LatLon>();
@@ -95,25 +94,25 @@ public class Line extends StructureModel.Structure
 	@Override
 	public String getLabel()
 	{
-		return label;
+		return configuration.getContent().getValue(LABEL).getValue();
 	}
 
 	@Override
 	public void setLabel(String label)
 	{
-		this.label = label;
+		configuration.getContent().getValue(LABEL).setValue(label);
 	}
 
 	@Override
 	public String getName()
 	{
-		return name;
+		return configuration.getContent().getValue(NAME).getValue();
 	}
 
 	@Override
 	public void setName(String name)
 	{
-		this.name = name;
+		configuration.getContent().getValue(NAME).setValue(name);
 	}
 
 	@Override
@@ -144,8 +143,8 @@ public class Line extends StructureModel.Structure
 	{
 		Element linEle = dom.createElement(getType());
 		linEle.setAttribute(ID.getId(), String.valueOf(getId()));
-		linEle.setAttribute(NAME.getId(), name);
-		linEle.setAttribute(LABEL.getId(), label);
+		linEle.setAttribute(NAME.getId(), getName());
+		linEle.setAttribute(LABEL.getId(), getLabel());
 		//        String labelcolorStr=labelcolor[0] + "," + labelcolor[1] + "," + labelcolor[2];
 		//        linEle.setAttribute(LABELCOLOR, labelcolorStr);
 		linEle.setAttribute(LENGTH, String.valueOf(getPathLength()));
@@ -191,8 +190,8 @@ public class Line extends StructureModel.Structure
 		if (id > maxId)
 			maxId = id;
 
-		name = element.getAttribute(NAME.getId());
-		label = element.getAttribute(LABEL.getId());
+		setName(element.getAttribute(NAME.getId()));
+		setLabel(element.getAttribute(LABEL.getId()));
 		String tmp = element.getAttribute(VERTICES.getId());
 
 		if (tmp.length() == 0)
