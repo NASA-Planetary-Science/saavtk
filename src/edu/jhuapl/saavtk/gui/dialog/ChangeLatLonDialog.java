@@ -95,13 +95,16 @@ public class ChangeLatLonDialog extends JDialog implements ActionListener
 					double[] center = ((AbstractEllipsePolygonModel.EllipsePolygon) structureModel.getStructure(structureIndex)).center;
 
 					LatLon ll = MathUtil.reclat(center);
-					if (ll.lon < 0.0)
-						ll.lon += 2.0 * Math.PI;
+
+					latitude = ll.lat;
+					longitude = ll.lon;
+					if (longitude < 0.0)
+						longitude += 2.0 * Math.PI;
 
 					// Reset the text fields in case the requested lat/lon change was not
 					// fully fulfilled.
-					latTextField.setValue((180.0 / Math.PI) * ll.lat);
-					lonTextField.setValue((180.0 / Math.PI) * ll.lon);
+					latTextField.setValue((180.0 / Math.PI) * latitude);
+					lonTextField.setValue((180.0 / Math.PI) * longitude);
 				}
 			}
 			catch (NumberFormatException ex)
@@ -122,10 +125,14 @@ public class ChangeLatLonDialog extends JDialog implements ActionListener
 		double[] center = ((AbstractEllipsePolygonModel.EllipsePolygon) structureModel.getStructure(structureIndex)).center;
 
 		LatLon ll = MathUtil.reclat(center);
-		if (ll.lon < 0.0)
-			ll.lon += 2.0 * Math.PI;
-		latTextField.setValue((180.0 / Math.PI) * ll.lat);
-		lonTextField.setValue((180.0 / Math.PI) * ll.lon);
+
+		double latitude = ll.lat;
+		double longitude = ll.lon;
+		if (longitude < 0.0)
+			longitude += 2.0 * Math.PI;
+
+		latTextField.setValue((180.0 / Math.PI) * latitude);
+		lonTextField.setValue((180.0 / Math.PI) * longitude);
 
 		super.setVisible(b);
 	}
