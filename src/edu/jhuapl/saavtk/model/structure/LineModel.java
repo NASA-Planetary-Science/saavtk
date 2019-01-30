@@ -443,7 +443,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		int numVertices = lin.getControlPoints().size();
 
 		LatLon ll = MathUtil.reclat(newPoint);
-		lin.getControlPoints().set(vertexId, ll);
+		lin.setControlPoint(vertexId, ll);
 
 		// If we're modifying the last vertex
 		if (vertexId == numVertices - 1)
@@ -490,7 +490,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		LatLon ll = MathUtil.reclat(newPoint);
 
-		lin.getControlPoints().add(currentLineVertex + 1, ll);
+		lin.addControlPoint(currentLineVertex + 1, ll);
 
 		// Remove points BETWEEN the 2 control points (If we're adding a point in the middle)
 		if (currentLineVertex < lin.controlPointIds.size() - 1)
@@ -557,7 +557,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		int vertexId = currentLineVertex;
 
-		lin.getControlPoints().remove(vertexId);
+		lin.removeControlPoint(vertexId);
 
 		// If not in CLOSED mode:
 		// If one of the end points is being removed, then we only need to remove the line connecting the

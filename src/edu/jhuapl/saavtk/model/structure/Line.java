@@ -8,6 +8,9 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+
 import crucible.crust.settings.api.Configuration;
 import crucible.crust.settings.api.ContentKey;
 import crucible.crust.settings.api.KeyValueCollection;
@@ -139,9 +142,31 @@ public class Line extends StructureModel.Structure
 		configuration.getContent().getValue(COLOR).setValue(color.clone());
 	}
 
-	public List<LatLon> getControlPoints()
+	public ImmutableList<LatLon> getControlPoints()
 	{
-		return controlPoints;
+		return ImmutableList.copyOf(controlPoints);
+	}
+
+	public void setControlPoint(int index, LatLon controlPoint)
+	{
+		Preconditions.checkArgument(index >= 0 && index < controlPoints.size());
+
+		controlPoints.set(index, controlPoint);
+	}
+
+	public void addControlPoint(int index, LatLon controlPoint)
+	{
+		// One past last is OK for this one.
+		Preconditions.checkArgument(index >= 0 && index <= controlPoints.size());
+
+		controlPoints.add(index, controlPoint);
+	}
+
+	public void removeControlPoint(int index)
+	{
+		Preconditions.checkArgument(index >= 0 && index < controlPoints.size());
+
+		controlPoints.remove(index);
 	}
 
 	public Element toXmlDomElement(Document dom)
@@ -182,13 +207,13 @@ public class Line extends StructureModel.Structure
 
 	public void fromXmlDomElement(Element element, String shapeModelName, boolean append)
 	{
-		getControlPoints().clear();
+		controlPoints.clear();
 		controlPointIds.clear();
 		xyzPointList.clear();
 
 		int id = getId();
 		if (!append)
-		{ // If appending, simply use maxId
+		{ // If appending, use id as-is
 			id = Integer.parseInt(element.getAttribute(ID.getId()));
 			setId(id);
 		}
@@ -210,7 +235,7 @@ public class Line extends StructureModel.Structure
 			double lat = Double.parseDouble(tokens[i++]) * Math.PI / 180.0;
 			double lon = Double.parseDouble(tokens[i++]) * Math.PI / 180.0;
 			double rad = Double.parseDouble(tokens[i++]);
-			getControlPoints().add(new LatLon(lat, lon, rad));
+			addControlPoint(count, new LatLon(lat, lon, rad));
 
 			if (shapeModelName == null || !shapeModelName.equals(smallBodyModel.getModelName()))
 				shiftPointOnPathToClosestPointOnAsteroid(count);
@@ -343,7 +368,7 @@ public class Line extends StructureModel.Structure
 		double pt[] = MathUtil.latrec(llr);
 		double[] closestPoint = smallBodyModel.findClosestPoint(pt);
 		LatLon ll = MathUtil.reclat(closestPoint);
-		getControlPoints().set(idx, ll);
+		setControlPoint(idx, ll);
 	}
 
 	public double[] getCentroid()
