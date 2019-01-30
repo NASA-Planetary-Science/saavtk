@@ -8,6 +8,9 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import crucible.crust.settings.redux.api.ContentKey;
+import crucible.crust.settings.redux.api.SettableValue;
+import crucible.crust.settings.redux.impl.SettableValues;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -19,6 +22,8 @@ import vtk.vtkPolyData;
 
 public class Line extends StructureModel.Structure
 {
+	private static final SettableValues settableValues = SettableValues.instance();
+
 	public String name = "default";
 	public String label = "";
 	public int id;
@@ -44,12 +49,12 @@ public class Line extends StructureModel.Structure
 	private static int maxId = 0;
 
 	public static final String PATH = "path";
-	public static final String ID = "id";
-	public static final String NAME = "name";
-	public static final String VERTICES = "vertices";
+	public static final ContentKey<SettableValue<Integer>> ID = settableValues.key("id");
+	public static final ContentKey<SettableValue<String>> NAME = settableValues.key("name");
+	public static final ContentKey<SettableValue<String>> VERTICES = settableValues.key("vertices");
 	public static final String LENGTH = "length";
-	public static final String COLOR = "color";
-	public static final String LABEL = "label";
+	public static final ContentKey<SettableValue<String>> COLOR = settableValues.key("color");
+	public static final ContentKey<SettableValue<String>> LABEL = settableValues.key("label");
 	public static final String LABELCOLOR = "labelcolor";
 
 	public Line(PolyhedralModel smallBodyModel, boolean closed, int id)
@@ -117,15 +122,15 @@ public class Line extends StructureModel.Structure
 	public Element toXmlDomElement(Document dom)
 	{
 		Element linEle = dom.createElement(getType());
-		linEle.setAttribute(ID, String.valueOf(id));
-		linEle.setAttribute(NAME, name);
-		linEle.setAttribute(LABEL, label);
+		linEle.setAttribute(ID.getId(), String.valueOf(id));
+		linEle.setAttribute(NAME.getId(), name);
+		linEle.setAttribute(LABEL.getId(), label);
 		//        String labelcolorStr=labelcolor[0] + "," + labelcolor[1] + "," + labelcolor[2];
 		//        linEle.setAttribute(LABELCOLOR, labelcolorStr);
 		linEle.setAttribute(LENGTH, String.valueOf(getPathLength()));
 
 		String colorStr = color[0] + "," + color[1] + "," + color[2];
-		linEle.setAttribute(COLOR, colorStr);
+		linEle.setAttribute(COLOR.getId(), colorStr);
 
 		String vertices = "";
 		int size = controlPoints.size();
@@ -144,7 +149,7 @@ public class Line extends StructureModel.Structure
 				vertices += " ";
 		}
 
-		linEle.setAttribute(VERTICES, vertices);
+		linEle.setAttribute(VERTICES.getId(), vertices);
 
 		return linEle;
 	}
@@ -156,14 +161,14 @@ public class Line extends StructureModel.Structure
 		xyzPointList.clear();
 
 		if (!append) // If appending, simply use maxId
-			id = Integer.parseInt(element.getAttribute(ID));
+			id = Integer.parseInt(element.getAttribute(ID.getId()));
 
 		if (id > maxId)
 			maxId = id;
 
-		name = element.getAttribute(NAME);
-		label = element.getAttribute(LABEL);
-		String tmp = element.getAttribute(VERTICES);
+		name = element.getAttribute(NAME.getId());
+		label = element.getAttribute(LABEL.getId());
+		String tmp = element.getAttribute(VERTICES.getId());
 
 		if (tmp.length() == 0)
 			return;
@@ -200,7 +205,7 @@ public class Line extends StructureModel.Structure
 			this.updateSegment(controlPointIds.size() - 1);
 		}
 
-		tmp = element.getAttribute(COLOR);
+		tmp = element.getAttribute(COLOR.getId());
 		if (tmp.length() == 0)
 			return;
 		tokens = tmp.split(",");
