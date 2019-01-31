@@ -842,7 +842,8 @@ this.supportsEsri=supportsEsri;
             int row = e.getFirstRow();
             int col = e.getColumn();
             StructureModel.Structure structure = structureModel.getStructure(row);
-            String name = (String) structuresTable.getValueAt(row, col);
+//            String name = (String) structuresTable.getValueAt(row, col);
+            String name = (String)((DefaultTableModel) structuresTable.getModel()).getValueAt(row, col);
             if (name != null && !name.equals(structure.getName()))
             {
                 structure.setName(name);
@@ -853,7 +854,8 @@ this.supportsEsri=supportsEsri;
             int row = e.getFirstRow();
             int col = e.getColumn();
             StructureModel.Structure structure = structureModel.getStructure(row);
-            String label = (String) structuresTable.getValueAt(row, col);
+            String label = (String)((DefaultTableModel) structuresTable.getModel()).getValueAt(row, col);
+//            String label = (String) structuresTable.getValueAt(row, col);
             if (label != null && !label.equals(structure.getLabel()))
             {
                 structure.setLabel(label);
