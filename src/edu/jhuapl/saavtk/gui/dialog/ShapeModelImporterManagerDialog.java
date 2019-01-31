@@ -222,7 +222,7 @@ public class ShapeModelImporterManagerDialog extends javax.swing.JDialog
 
 			try
 			{
-				dialog.loadConfig(dirpath + File.separator + "config.txt");
+				dialog.loadConfig(dirpath + File.separator + "shapeConfig.txt");
 			}
 			catch (IOException ex)
 			{
@@ -253,7 +253,7 @@ public class ShapeModelImporterManagerDialog extends javax.swing.JDialog
 
 			try
 			{
-				dialog.loadConfig(dirpath + File.separator + "config.txt");
+				dialog.loadConfig(dirpath + File.separator + "shapeConfig.txt");
 			}
 			catch (IOException ex)
 			{

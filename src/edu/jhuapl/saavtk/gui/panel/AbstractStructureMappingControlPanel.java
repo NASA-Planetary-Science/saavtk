@@ -36,7 +36,10 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JToggleButton;
 import javax.swing.ListSelectionModel;
+import javax.swing.ProgressMonitor;
+import javax.swing.RowSorter.SortKey;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 import javax.swing.border.Border;
@@ -73,6 +76,8 @@ import edu.jhuapl.saavtk.pick.PickManager.PickMode;
 import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.popup.StructuresPopupMenu;
 import edu.jhuapl.saavtk.util.ColorIcon;
+import edu.jhuapl.saavtk.util.FileUtil;
+import edu.jhuapl.saavtk.util.ProgressListener;
 import edu.jhuapl.saavtk.util.Properties;
 import net.miginfocom.swing.MigLayout;
 
@@ -113,6 +118,9 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	private JPopupMenu saveAsPopupMenu = new JPopupMenu();
 	private PopupListener saveAsPopupListener = new PopupListener(saveAsPopupMenu);
     
+	private StructuresLoadingTask task;
+	private ProgressMonitor structuresLoadingProgressMonitor;
+	
 	public AbstractStructureMappingControlPanel(final ModelManager modelManager, ModelNames aModelType, final PickManager pickManager, final PickManager.PickMode pickMode, boolean supportsEsri)
 	{
 		this.modelManager = modelManager;
@@ -174,6 +182,7 @@ this.supportsEsri=supportsEsri;
 		// "Hide Structure"
 
 		structuresTable = new JTable(new StructuresTableModel(columnNames));
+		structuresTable.setAutoCreateRowSorter(true);
 		structuresTable.setBorder(BorderFactory.createTitledBorder(""));
 		structuresTable.setColumnSelectionAllowed(false);
 		structuresTable.setRowSelectionAllowed(true);
@@ -312,6 +321,44 @@ this.supportsEsri=supportsEsri;
 		updateControlGui();
 	}
 
+	class StructuresLoadingTask extends SwingWorker<Void, Void>
+    {
+    	File file;
+    	boolean append;
+
+    	public StructuresLoadingTask(File file, boolean append)
+    	{
+    		this.file = file;
+    		this.append = append;
+    	}
+
+    	@Override
+    	protected Void doInBackground() throws Exception
+    	{
+    		structureModel.loadModel(file, append, new ProgressListener()
+    		{
+	@Override
+				public void setProgress(int progress)
+				{
+					task.setProgress(progress);
+				}
+
+    		});
+    		structuresFileL.setText(file.getAbsolutePath());
+			structuresFile = file;
+    		return null;
+    	}
+
+    	@Override
+    	protected void done()
+    	{
+    		// TODO Auto-generated method stub
+    		super.done();
+
+    	}
+
+    }
+
 	@Override
 	public void actionPerformed(ActionEvent actionEvent)
 	{
@@ -336,10 +383,17 @@ this.supportsEsri=supportsEsri;
 								JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 						append = (n == 0 ? true : false);
 					}
+					List<String> lines = FileUtil.getFileLinesAsStringList(file.getAbsolutePath());
+					structuresLoadingProgressMonitor = new ProgressMonitor(null, "Loading Structures...", "", 0, 100);
+			        structuresLoadingProgressMonitor.setProgress(0);
 
-					structureModel.loadModel(file, append);
-					structuresFileL.setText(file.getAbsolutePath());
-					structuresFile = file;
+					task = new StructuresLoadingTask(file, append);
+			        task.addPropertyChangeListener(this);
+			        task.execute();
+
+//					structureModel.loadModel(file, append);
+//					structuresFileL.setText(file.getAbsolutePath());
+//					structuresFile = file;
 				} 
 				catch (Exception e)
 				{
@@ -642,6 +696,8 @@ this.supportsEsri=supportsEsri;
     {
         if (Properties.MODEL_CHANGED.equals(evt.getPropertyName()))
         {
+    		((DefaultTableModel) structuresTable.getModel()).setRowCount(structureModel.getNumberOfStructures());
+
             updateStructureTable();
 
             if (structureModel.supportsActivation())
@@ -739,27 +795,42 @@ this.supportsEsri=supportsEsri;
         {
             updateStructureTable();
         }
+        else if ("progress" == evt.getPropertyName() ) {
+            int progress = (Integer) evt.getNewValue();
+            structuresLoadingProgressMonitor.setProgress(progress);
+            String message =
+                String.format("Completed %d%%.\n", progress);
+            structuresLoadingProgressMonitor.setNote(message);
+            if (structuresLoadingProgressMonitor.isCanceled() || task.isDone()) {
+                if (structuresLoadingProgressMonitor.isCanceled()) {
+                    task.cancel(true);
+                } else {
+//                    taskOutput.append("Task completed.\n");
+                }
+            }
+//            this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+    }
     }
 
     private void updateStructureTable()
     {
         int numStructures = structureModel.getNumberOfStructures();
-
+        List<? extends SortKey> sortKeys = structuresTable.getRowSorter().getSortKeys();
         ((DefaultTableModel) structuresTable.getModel()).setRowCount(numStructures);
         for (int i = 0; i < numStructures; ++i)
         {
             StructureModel.Structure structure = structureModel.getStructure(i);
             int[] c = structure.getColor();
-            structuresTable.setValueAt(String.valueOf(structure.getId()), i, 0);
-            structuresTable.setValueAt(structure.getType(), i, 1);
-            structuresTable.setValueAt(structure.getName(), i, 2);
-            structuresTable.setValueAt(structure.getInfo(), i, 3);
-            structuresTable.setValueAt(new Color(c[0], c[1], c[2]), i, 4);
-            structuresTable.setValueAt(structure.getLabel(), i, 5);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(String.valueOf(structure.getId()), i, 0);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getType(), i, 1);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getName(), i, 2);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getInfo(), i, 3);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(new Color(c[0], c[1], c[2]), i, 4);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getLabel(), i, 5);
             //structuresTable.setValueAt(structure.getLabelHidden(), i, 6);
             //structuresTable.setValueAt(structure.getHidden(), i, 6);
         }
-
+        structuresTable.getRowSorter().setSortKeys(sortKeys);
         updateColoredButtons();
     }
 
@@ -773,7 +844,8 @@ this.supportsEsri=supportsEsri;
             int row = e.getFirstRow();
             int col = e.getColumn();
             StructureModel.Structure structure = structureModel.getStructure(row);
-            String name = (String) structuresTable.getValueAt(row, col);
+//            String name = (String) structuresTable.getValueAt(row, col);
+            String name = (String)((DefaultTableModel) structuresTable.getModel()).getValueAt(row, col);
             if (name != null && !name.equals(structure.getName()))
             {
                 structure.setName(name);
@@ -784,7 +856,8 @@ this.supportsEsri=supportsEsri;
             int row = e.getFirstRow();
             int col = e.getColumn();
             StructureModel.Structure structure = structureModel.getStructure(row);
-            String label = (String) structuresTable.getValueAt(row, col);
+            String label = (String)((DefaultTableModel) structuresTable.getModel()).getValueAt(row, col);
+//            String label = (String) structuresTable.getValueAt(row, col);
             if (label != null && !label.equals(structure.getLabel()))
             {
                 structure.setLabel(label);
@@ -1041,7 +1114,7 @@ this.supportsEsri=supportsEsri;
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
         {
             Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-
+            if (row >= structureModel.getNumberOfStructures()) return c;
             if (structureModel.isStructureVisible(row) == false)
             {
                 c.setForeground(Color.GRAY);
@@ -1071,7 +1144,7 @@ this.supportsEsri=supportsEsri;
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
 		{
 			Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-
+			if (row >= structureModel.getNumberOfStructures()) return c;
 			boolean isVisible = structureModel.isStructureVisible(row) && structureModel.isLabelVisible(row);
 			if (isVisible == false)
 				c.setForeground(Color.GRAY);

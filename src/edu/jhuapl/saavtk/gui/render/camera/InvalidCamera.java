@@ -2,8 +2,6 @@ package edu.jhuapl.saavtk.gui.render.camera;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
-
 /**
  * Invalid Camera useful as a test harness / place holder.
  */
@@ -120,7 +118,7 @@ public class InvalidCamera implements Camera
 	}
 
 	@Override
-	public Vector3D getLogicalAxis(AxisType aAxisType)
+	public CoordinateSystem getCoordinateSystem()
 	{
 		throw new UnsupportedOperationException();
 	}
@@ -132,7 +130,13 @@ public class InvalidCamera implements Camera
 	}
 
 	@Override
-	public void setOrientationInDirectionOfAxis(AxisType aAxisType, boolean aPreserveCurrentDistance)
+	public void setCoordinateSystem(CoordinateSystem aCoordinateSystem)
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void setView(Vector3D aFocalVect, Vector3D aPositionVect, Vector3D aViewUpVect)
 	{
 		throw new UnsupportedOperationException();
 	}

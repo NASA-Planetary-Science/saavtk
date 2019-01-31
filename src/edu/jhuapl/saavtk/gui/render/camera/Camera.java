@@ -2,8 +2,6 @@ package edu.jhuapl.saavtk.gui.render.camera;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
-
 public interface Camera
 {
 	public void addListener(CameraListener listener);
@@ -28,9 +26,9 @@ public interface Camera
 	public void yaw(double angleDeg);
 
 	/**
-	 * Returns the logical axis corresponding to aAxisType.
+	 * Returns the coordinate system used by the camera.
 	 */
-	public Vector3D getLogicalAxis(AxisType aAxisType);
+	public CoordinateSystem getCoordinateSystem();
 
 	/**
 	 * Resets the camera's orientation to a default configuration.
@@ -38,12 +36,22 @@ public interface Camera
 	public void reset();
 
 	/**
-	 * Configures the camera so that the camera is pointed down the logical axis
-	 * corresponding to the specified AxisType.
-	 * 
-	 * @param aAxisType
-	 * @param preserveCurrentDistance
+	 * Sets in a new coordinate system used by the camera.
+	 * <P>
+	 * The new coordinate system will be with utilized with future view
+	 * manipulations.
 	 */
-	public void setOrientationInDirectionOfAxis(AxisType aAxisType, boolean aPreserveCurrentDistance);
+	public void setCoordinateSystem(CoordinateSystem aCoordinateSystem);
+
+	/**
+	 * Configures the camera's view to be aligned with the specified focalVect,
+	 * positionalVect, and viewUpVect.
+	 * 
+	 * @param aFocalVect    The vector that defines the camera focus.
+	 * @param aPositionVect The vector that defines where the camera will be
+	 *                      positioned.
+	 * @param aViewUpVect   The vector that defines what the up direction is.
+	 */
+	public void setView(Vector3D aFocalVect, Vector3D aPositionVect, Vector3D aViewUpVect);
 
 }
