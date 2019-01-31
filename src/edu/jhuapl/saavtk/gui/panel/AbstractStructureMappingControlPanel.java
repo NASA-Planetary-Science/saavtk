@@ -694,6 +694,8 @@ this.supportsEsri=supportsEsri;
     {
         if (Properties.MODEL_CHANGED.equals(evt.getPropertyName()))
         {
+    		((DefaultTableModel) structuresTable.getModel()).setRowCount(structureModel.getNumberOfStructures());
+
             updateStructureTable();
 
             if (structureModel.supportsActivation())
@@ -817,12 +819,12 @@ this.supportsEsri=supportsEsri;
         {
             StructureModel.Structure structure = structureModel.getStructure(i);
             int[] c = structure.getColor();
-            structuresTable.setValueAt(String.valueOf(structure.getId()), i, 0);
-            structuresTable.setValueAt(structure.getType(), i, 1);
-            structuresTable.setValueAt(structure.getName(), i, 2);
-            structuresTable.setValueAt(structure.getInfo(), i, 3);
-            structuresTable.setValueAt(new Color(c[0], c[1], c[2]), i, 4);
-            structuresTable.setValueAt(structure.getLabel(), i, 5);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(String.valueOf(structure.getId()), i, 0);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getType(), i, 1);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getName(), i, 2);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getInfo(), i, 3);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(new Color(c[0], c[1], c[2]), i, 4);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getLabel(), i, 5);
             //structuresTable.setValueAt(structure.getLabelHidden(), i, 6);
             //structuresTable.setValueAt(structure.getHidden(), i, 6);
         }
@@ -1108,7 +1110,7 @@ this.supportsEsri=supportsEsri;
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
         {
             Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-
+            if (row >= structureModel.getNumberOfStructures()) return c;
             if (structureModel.isStructureVisible(row) == false)
             {
                 c.setForeground(Color.GRAY);
@@ -1120,7 +1122,6 @@ this.supportsEsri=supportsEsri;
                 else
                     c.setForeground(Color.BLACK);
             }
-
             return c;
         }
     }
@@ -1138,7 +1139,7 @@ this.supportsEsri=supportsEsri;
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
 		{
 			Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-
+			if (row >= structureModel.getNumberOfStructures()) return c;
 			boolean isVisible = structureModel.isStructureVisible(row) && structureModel.isLabelVisible(row);
 			if (isVisible == false)
 				c.setForeground(Color.GRAY);
