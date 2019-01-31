@@ -37,6 +37,7 @@ import javax.swing.JTable;
 import javax.swing.JToggleButton;
 import javax.swing.ListSelectionModel;
 import javax.swing.ProgressMonitor;
+import javax.swing.RowSorter.SortKey;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.UIDefaults;
@@ -181,6 +182,7 @@ this.supportsEsri=supportsEsri;
 		// "Hide Structure"
 
 		structuresTable = new JTable(new StructuresTableModel(columnNames));
+		structuresTable.setAutoCreateRowSorter(true);
 		structuresTable.setBorder(BorderFactory.createTitledBorder(""));
 		structuresTable.setColumnSelectionAllowed(false);
 		structuresTable.setRowSelectionAllowed(true);
@@ -813,7 +815,7 @@ this.supportsEsri=supportsEsri;
     private void updateStructureTable()
     {
         int numStructures = structureModel.getNumberOfStructures();
-
+        List<? extends SortKey> sortKeys = structuresTable.getRowSorter().getSortKeys();
         ((DefaultTableModel) structuresTable.getModel()).setRowCount(numStructures);
         for (int i = 0; i < numStructures; ++i)
         {
@@ -828,7 +830,7 @@ this.supportsEsri=supportsEsri;
             //structuresTable.setValueAt(structure.getLabelHidden(), i, 6);
             //structuresTable.setValueAt(structure.getHidden(), i, 6);
         }
-
+        structuresTable.getRowSorter().setSortKeys(sortKeys);
         updateColoredButtons();
     }
 
@@ -842,7 +844,8 @@ this.supportsEsri=supportsEsri;
             int row = e.getFirstRow();
             int col = e.getColumn();
             StructureModel.Structure structure = structureModel.getStructure(row);
-            String name = (String) structuresTable.getValueAt(row, col);
+//            String name = (String) structuresTable.getValueAt(row, col);
+            String name = (String)((DefaultTableModel) structuresTable.getModel()).getValueAt(row, col);
             if (name != null && !name.equals(structure.getName()))
             {
                 structure.setName(name);
@@ -853,7 +856,8 @@ this.supportsEsri=supportsEsri;
             int row = e.getFirstRow();
             int col = e.getColumn();
             StructureModel.Structure structure = structureModel.getStructure(row);
-            String label = (String) structuresTable.getValueAt(row, col);
+            String label = (String)((DefaultTableModel) structuresTable.getModel()).getValueAt(row, col);
+//            String label = (String) structuresTable.getValueAt(row, col);
             if (label != null && !label.equals(structure.getLabel()))
             {
                 structure.setLabel(label);
