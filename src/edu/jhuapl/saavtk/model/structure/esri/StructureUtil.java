@@ -1,7 +1,6 @@
 package edu.jhuapl.saavtk.model.structure.esri;
 
 import java.awt.Color;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;

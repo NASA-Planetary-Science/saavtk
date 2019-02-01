@@ -1,51 +1,91 @@
 package edu.jhuapl.saavtk.model;
 
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import java.util.List;
 
-import vtk.vtkAbstractTransform;
-import vtk.vtkAlgorithmOutput;
-import vtk.vtkAppendPolyData;
-import vtk.vtkClipPolyData;
-import vtk.vtkPlane;
-import vtk.vtkPoints;
+import edu.jhuapl.saavtk.util.BoundingBox;
 import vtk.vtkPolyData;
 import vtk.vtkProp;
-import vtk.vtkSphericalTransform;
-import vtk.vtkTransformPolyDataFilter;
 import vtk.vtksbCellLocator;
-import edu.jhuapl.saavtk.util.BoundingBox;
-import edu.jhuapl.saavtk.util.LatLon;
-import edu.jhuapl.saavtk.util.MathUtil;
-import edu.jhuapl.saavtk.util.Preferences;
-import edu.jhuapl.saavtk.util.Properties;
 
 public class DefaultDatasourceModel extends DatasourceModel
 {
-    public boolean isBuiltIn() { return false; }
+	private final CommonData commonData;
 
-    public void updateScaleBarValue(double pixelSizeInKm) {}
+	protected DefaultDatasourceModel(CommonData commonData)
+	{
+		this.commonData = commonData;
+	}
 
-    public void updateScaleBarPosition(int windowWidth, int windowHeight) {}
+	@Override
+	public boolean isBuiltIn()
+	{
+		return false;
+	}
 
-    public List<vtkProp> getProps() { return null; }
+	public void updateScaleBarValue(@SuppressWarnings("unused") double pixelSizeInKm)
+	{}
 
-    public vtksbCellLocator getCellLocator() { return null; }
+	public void updateScaleBarPosition(@SuppressWarnings("unused") int windowWidth, @SuppressWarnings("unused") int windowHeight)
+	{}
 
-    public BoundingBox getBoundingBox() { return null; }
+	@Override
+	public final void setCommonData(@SuppressWarnings("unused") CommonData commonData)
+	{
+		throw new UnsupportedOperationException();
+	}
 
-    public void setShowScaleBar(boolean enabled) { }
+	@Override
+	public CommonData getCommonData()
+	{
+		return commonData;
+	}
 
-    public boolean getShowScaleBar() { return false; }
+	@Override
+	public List<vtkProp> getProps()
+	{
+		return null;
+	}
 
-    public boolean isEllipsoid() { return false; }
+	public vtksbCellLocator getCellLocator()
+	{
+		return null;
+	}
 
-    public vtkPolyData getSmallBodyPolyData() { return null; }
+	public BoundingBox getBoundingBox()
+	{
+		return null;
+	}
 
-    public List<vtkPolyData> getSmallBodyPolyDatas() { return null; }
+	public void setShowScaleBar(@SuppressWarnings("unused") boolean enabled)
+	{}
 
-    public String getCustomDataFolder() { return null; }
+	public boolean getShowScaleBar()
+	{
+		return false;
+	}
 
-    public String getConfigFilename() { return null; }
+	public boolean isEllipsoid()
+	{
+		return false;
+	}
+
+	public vtkPolyData getSmallBodyPolyData()
+	{
+		return null;
+	}
+
+	public List<vtkPolyData> getSmallBodyPolyDatas()
+	{
+		return null;
+	}
+
+	public String getCustomDataFolder()
+	{
+		return null;
+	}
+
+	public String getConfigFilename()
+	{
+		return null;
+	}
 }

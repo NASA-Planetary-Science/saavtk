@@ -38,9 +38,10 @@ public abstract class StructureModel extends AbstractModel
 		public abstract void setLabelHidden(boolean b);
 	}
 
-    public abstract Structure addNewStructure();
-
+	@Override
     public abstract List<vtkProp> getProps();
+
+	public abstract Structure addNewStructure();
 
 	public abstract boolean supportsActivation();
 
@@ -118,8 +119,8 @@ public abstract class StructureModel extends AbstractModel
 	}
 
 	/**
-	 * Returns the font size of the label associated with the (sub)structures at
-	 * the specified index.
+	 * Returns the font size of the label associated with the (sub)structures at the
+	 * specified index.
 	 */
 	public int getLabelFontSize(int aIndex)
 	{
@@ -162,8 +163,8 @@ public abstract class StructureModel extends AbstractModel
 	 * @param aIdxArr     An array which holds the indexes corresponding to the
 	 *                    (sub)structures to change
 	 * @param aFontFamily The font family to switch to. Currently the only supported
-	 *                    families are: [Times, Arial, Courier]. A
-	 *                    {@link RuntimeException} will be thrown if not supported.
+	 *            families are: [Times, Arial, Courier]. A {@link RuntimeException}
+	 *            will be thrown if not supported.
 	 */
 	public void setLabelFontType(int[] aIdxArr, String aFontFamily)
 	{

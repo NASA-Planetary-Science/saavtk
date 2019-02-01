@@ -1,25 +1,17 @@
 package edu.jhuapl.saavtk.model.structure.esri;
 
 import java.awt.Color;
-import java.util.Arrays;
 import java.util.List;
 
-import org.apache.commons.math3.complex.Quaternion;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.geometry.jts.JTS;
 import org.geotools.geometry.jts.JTSFactoryFinder;
-import org.geotools.metadata.iso.citation.Citations;
 import org.geotools.referencing.CRS;
-import org.geotools.referencing.crs.DefaultEngineeringCRS;
 import org.geotools.referencing.crs.DefaultGeocentricCRS;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
-import org.geotools.referencing.crs.DefaultProjectedCRS;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.metadata.citation.Citation;
-import org.opengis.metadata.citation.CitationFactory;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
@@ -33,7 +25,6 @@ import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
 
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
-import edu.jhuapl.saavtk.model.structure.Line;
 import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure.Parameters;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.LinearSpace;

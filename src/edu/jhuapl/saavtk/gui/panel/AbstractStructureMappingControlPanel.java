@@ -40,7 +40,10 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JToggleButton;
 import javax.swing.ListSelectionModel;
+import javax.swing.RowSorter.SortKey;
+import javax.swing.ProgressMonitor;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 import javax.swing.border.Border;
@@ -90,10 +93,13 @@ import edu.jhuapl.saavtk.pick.PickEvent;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.pick.Picker;
 import edu.jhuapl.saavtk.pick.PickManager.PickMode;
+import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.popup.StructuresPopupMenu;
 import edu.jhuapl.saavtk.util.ColorIcon;
+import edu.jhuapl.saavtk.util.FileUtil;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
+import edu.jhuapl.saavtk.util.ProgressListener;
 import edu.jhuapl.saavtk.util.Properties;
 import net.miginfocom.swing.MigLayout;
 
@@ -126,6 +132,9 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	private JButton changeOffsetB;
 	private GNumberFieldSlider fontSizeNFS;
 	private GNumberFieldSlider lineWidthNFS;
+
+	private StructuresLoadingTask task;
+	private ProgressMonitor structuresLoadingProgressMonitor;
 
 	private PopupButton saveB;
 	private PopupButton loadB;
@@ -186,10 +195,14 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 						int n = JOptionPane.showOptionDialog(AbstractStructureMappingControlPanel.this, "Would you like to append to or replace the existing structures?", "Append or Replace?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 						append = (n == 0 ? true : false);
 					}
+					List<String> lines = FileUtil.getFileLinesAsStringList(file.getAbsolutePath());
+					structuresLoadingProgressMonitor = new ProgressMonitor(null, "Loading Structures...", "", 0, 100);
+					structuresLoadingProgressMonitor.setProgress(0);
 
-					structureModel.loadModel(file, append, null);
-					structuresFileL.setText(file.getAbsolutePath());
-					structuresFile = file;
+					task = new StructuresLoadingTask(file, append);
+					task.addPropertyChangeListener(AbstractStructureMappingControlPanel.this);
+					task.execute();
+
 				} catch (Exception ex)
 				{
 					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(AbstractStructureMappingControlPanel.this), "There was an error reading the file.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -616,8 +629,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		saveB.getPopup().add(new JMenuItem(new SaveVtkFileAction()));
 
 		structureModel.addPropertyChangeListener(this);
-		this.addComponentListener(new ComponentAdapter()
-		{
+		this.addComponentListener(new ComponentAdapter() {
+			@Override
 			public void componentHidden(ComponentEvent e)
 			{
 				setEditingEnabled(false);
@@ -643,6 +656,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		// "Hide Structure"
 
 		structuresTable = new JTable(new StructuresTableModel(columnNames));
+		structuresTable.setAutoCreateRowSorter(true);
 		structuresTable.setBorder(BorderFactory.createTitledBorder(""));
 		structuresTable.setColumnSelectionAllowed(false);
 		structuresTable.setRowSelectionAllowed(true);
@@ -657,8 +671,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		structuresTable.addMouseListener(new TableMouseHandler());
 		structuresTable.getTableHeader().setReorderingAllowed(false);
 
-		structuresTable.addKeyListener(new KeyAdapter()
-		{
+		structuresTable.addKeyListener(new KeyAdapter() {
+			@Override
 			public void keyPressed(KeyEvent e)
 			{
 				int keyCode = e.getKeyCode();
@@ -739,14 +753,15 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			profileWindow.setSize(600, 400);
 			profileWindow.setVisible(false);
 
-			openProfilePlotButton.addActionListener(new ActionListener()
-			{
+			openProfilePlotButton.addActionListener(new ActionListener() {
+				@Override
 				public void actionPerformed(ActionEvent e)
 				{
 					profileWindow.setVisible(true);
 				}
 			});
-		} else
+		}
+		else
 		{
 			openProfilePlotButton.setVisible(false);
 		}
@@ -780,6 +795,46 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		fontSizeNFS.getLabelComponent().setPreferredSize(lineWidthNFS.getLabelComponent().getPreferredSize());
 
 		updateControlGui();
+
+		updateModelDisplay();
+	}
+
+
+	class StructuresLoadingTask extends SwingWorker<Void, Void>
+	{
+		File file;
+		boolean append;
+
+		public StructuresLoadingTask(File file, boolean append)
+		{
+			this.file = file;
+			this.append = append;
+		}
+
+		@Override
+		protected Void doInBackground() throws Exception
+		{
+			structureModel.loadModel(file, append, new ProgressListener() {
+				@Override
+				public void setProgress(int progress)
+				{
+					task.setProgress(progress);
+				}
+
+			});
+			structuresFileL.setText(file.getAbsolutePath());
+			structuresFile = file;
+			return null;
+		}
+
+		@Override
+		protected void done()
+		{
+			// TODO Auto-generated method stub
+			super.done();
+
+		}
+
 	}
 
 	@Override
@@ -902,7 +957,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	}
 
 	/**
-	 * Helper method to update the (selected) models to reflect the user selected font size.
+	 * Helper method to update the (selected) models to reflect the user selected
+	 * font size.
 	 */
 	private void doUpdateFontSize()
 	{
@@ -918,7 +974,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	}
 
 	/**
-	 * Helper method to update the specified structures to reflect the user selected line width.
+	 * Helper method to update the specified structures to reflect the user selected
+	 * line width.
 	 */
 	private void doUpdateLineWidth()
 	{
@@ -1032,30 +1089,9 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	{
 		if (Properties.MODEL_CHANGED.equals(evt.getPropertyName()))
 		{
-			updateStructureTable();
+    		((DefaultTableModel) structuresTable.getModel()).setRowCount(structureModel.getNumberOfStructures());
 
-			if (structureModel.supportsActivation())
-			{
-				int idx = structureModel.getActivatedStructureIndex();
-				if (idx >= 0)
-				{
-					pickManager.setPickMode(pickMode);
-					if (!editB.isSelected())
-						editB.setSelected(true);
-					structuresTable.setRowSelectionInterval(idx, idx);
-					structuresTable.setEnabled(false);
-				} else
-				{
-					// Don't change the picker if this tab is not in view since
-					// it's possible we could be in the middle of drawing other
-					// objects.
-					if (isVisible())
-						pickManager.setPickMode(PickManager.PickMode.DEFAULT);
-					if (editB.isSelected())
-						editB.setSelected(false);
-					structuresTable.setEnabled(true);
-				}
-			}
+			updateModelDisplay();
 		} else if (Properties.MODEL_PICKED.equals(evt.getPropertyName()))
 		{
 			// If we're editing, say, a path, return immediately.
@@ -1069,7 +1105,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			{
 				int idx = structureModel.getStructureIndexFromCellId(e.getPickedCellId(), e.getPickedProp());
 
-				if (Picker.isPopupTrigger(e.getMouseEvent()))
+                if (PickUtil.isPopupTrigger(e.getMouseEvent()))
 				{
 					// If the item right-clicked on is not selected, then deselect all the
 					// other items and select the item right-clicked on.
@@ -1123,28 +1159,59 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		}
 	}
 
+	private void updateModelDisplay()
+	{
+		updateStructureTable();
+
+		if (structureModel.supportsActivation())
+		{
+			int idx = structureModel.getActivatedStructureIndex();
+			if (idx >= 0)
+			{
+				pickManager.setPickMode(pickMode);
+				if (!editB.isSelected())
+					editB.setSelected(true);
+				structuresTable.setRowSelectionInterval(idx, idx);
+				structuresTable.setEnabled(false);
+			}
+			else
+			{
+				// Don't change the picker if this tab is not in view since
+				// it's possible we could be in the middle of drawing other
+				// objects.
+				if (isVisible())
+					pickManager.setPickMode(PickManager.PickMode.DEFAULT);
+				if (editB.isSelected())
+					editB.setSelected(false);
+				structuresTable.setEnabled(true);
+			}
+		}
+
+	}
+
 	private void updateStructureTable()
 	{
 		int numStructures = structureModel.getNumberOfStructures();
-
+        List<? extends SortKey> sortKeys = structuresTable.getRowSorter().getSortKeys();
 		((DefaultTableModel) structuresTable.getModel()).setRowCount(numStructures);
 		for (int i = 0; i < numStructures; ++i)
 		{
 			StructureModel.Structure structure = structureModel.getStructure(i);
 			int[] c = structure.getColor();
-			structuresTable.setValueAt(String.valueOf(structure.getId()), i, 0);
-			structuresTable.setValueAt(structure.getType(), i, 1);
-			structuresTable.setValueAt(structure.getName(), i, 2);
-			structuresTable.setValueAt(structure.getInfo(), i, 3);
-			structuresTable.setValueAt(new Color(c[0], c[1], c[2]), i, 4);
-			structuresTable.setValueAt(structure.getLabel(), i, 5);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(String.valueOf(structure.getId()), i, 0);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getType(), i, 1);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getName(), i, 2);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getInfo(), i, 3);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(new Color(c[0], c[1], c[2]), i, 4);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getLabel(), i, 5);
 			// structuresTable.setValueAt(structure.getLabelHidden(), i, 6);
 			// structuresTable.setValueAt(structure.getHidden(), i, 6);
 		}
-
+        structuresTable.getRowSorter().setSortKeys(sortKeys);
 		updateColoredButtons();
 	}
 
+	@Override
 	public void tableChanged(TableModelEvent e)
 	{
 		// Retrieve the model colum index
@@ -1155,7 +1222,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			int row = e.getFirstRow();
 			int col = e.getColumn();
 			StructureModel.Structure structure = structureModel.getStructure(row);
-			String name = (String) structuresTable.getValueAt(row, col);
+//            String name = (String) structuresTable.getValueAt(row, col);
+            String name = (String)((DefaultTableModel) structuresTable.getModel()).getValueAt(row, col);
 			if (name != null && !name.equals(structure.getName()))
 			{
 				structure.setName(name);
@@ -1166,7 +1234,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			int row = e.getFirstRow();
 			int col = e.getColumn();
 			StructureModel.Structure structure = structureModel.getStructure(row);
-			String label = (String) structuresTable.getValueAt(row, col);
+            String label = (String)((DefaultTableModel) structuresTable.getModel()).getValueAt(row, col);
+//            String label = (String) structuresTable.getValueAt(row, col);
 			if (label != null && !label.equals(structure.getLabel()))
 			{
 				structure.setLabel(label);
@@ -1188,6 +1257,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		 */
 	}
 
+	@Override
 	public void valueChanged(ListSelectionEvent e)
 	{
 		if (e.getValueIsAdjusting() == false)
@@ -1316,10 +1386,11 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			selectionForeground = defaults.getColor("Table.selectionForeground");
 		}
 
+		@Override
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
 		{
 			Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-
+            if (row >= structureModel.getNumberOfStructures()) return c;
 			if (structureModel.isStructureVisible(row) == false)
 			{
 				c.setForeground(Color.GRAY);
@@ -1345,10 +1416,11 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			selectionForeground = defaults.getColor("Table.selectionForeground");
 		}
 
+		@Override
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
 		{
 			Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-
+			if (row >= structureModel.getNumberOfStructures()) return c;
 			boolean isVisible = structureModel.isStructureVisible(row) && structureModel.isLabelVisible(row);
 			if (isVisible == false)
 				c.setForeground(Color.GRAY);
@@ -1371,6 +1443,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			setOpaque(true); // MUST do this for background to show up.
 		}
 
+		@Override
 		public Component getTableCellRendererComponent(JTable table, Object color, boolean isSelected, boolean hasFocus, int row, int column)
 		{
 			Color newColor = (Color) color;
@@ -1405,6 +1478,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			super(columnNames, 0);
 		}
 
+		@Override
 		public boolean isCellEditable(int row, int column)
 		{
 			if (column == 2 || column == 5) // || column ==6 || column ==7)
@@ -1413,6 +1487,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 				return false;
 		}
 
+		@Override
 		public Class<?> getColumnClass(int columnIndex)
 		{
 			if (columnIndex == 4)
@@ -1449,11 +1524,13 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			}
 		}
 
+		@Override
 		public void mousePressed(MouseEvent evt)
 		{
 			structuresTableMaybeShowPopup(evt);
 		}
 
+		@Override
 		public void mouseReleased(MouseEvent evt)
 		{
 			structuresTableMaybeShowPopup(evt);

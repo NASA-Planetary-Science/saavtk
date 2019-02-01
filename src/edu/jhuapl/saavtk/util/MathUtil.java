@@ -15,6 +15,7 @@ public class MathUtil
 {
     /**
      * Convert lat lon to cartesian coordinates.
+	 * 
      * @param latLon
      * @return xyz
      */
@@ -29,55 +30,60 @@ public class MathUtil
     }
 
     /**
-     * Convert cartesian coordinates to lat lon. Copied from spice's reclat function.
+	 * Convert cartesian coordinates to lat lon. Copied from spice's reclat
+	 * function.
+	 * 
      * @param xyz
      * @return latLon
      */
     static public LatLon reclat(double[] rectan)
     {
-        LatLon llr = new LatLon();
-
         //vmax = MaxAbs(  rectan[0], MaxAbs( rectan[1], rectan[2] )   );
         double vmax = Math.max(  Math.abs(rectan[0]), Math.max( Math.abs(rectan[1]), Math.abs(rectan[2]) ) );
+
+		double lat;
+		double lon;
+		double rad;
 
         if ( vmax > 0.)
         {
             double x1 = rectan[0] / vmax;
             double y1 = rectan[1] / vmax;
             double z1 = rectan[2] / vmax;
-            llr.rad   = vmax * Math.sqrt( x1*x1 + y1*y1 + z1*z1 );
-            llr.lat   = Math.atan2(z1, Math.sqrt( x1*x1 + y1*y1 ) );
+			rad = vmax * Math.sqrt(x1 * x1 + y1 * y1 + z1 * z1);
+			lat = Math.atan2(z1, Math.sqrt(x1 * x1 + y1 * y1));
 
             if ( x1 == 0. && y1 == 0.)
             {
-                llr.lon = 0.;
+				lon = 0.;
             }
             else
             {
-                llr.lon = Math.atan2(y1, x1);
+				lon = Math.atan2(y1, x1);
             }
         }
         else
         {
             // The vector is the zero vector.
 
-            llr.rad = 0.;
-            llr.lon = 0.;
-            llr.lat = 0.;
+			rad = 0.;
+			lon = 0.;
+			lat = 0.;
         }
 
-        return llr;
+		return new LatLon(lat, lon, rad);
     }
 
     /**
      * compute magnitude of 3D vector. Copied from SPICE
+	 * 
      * @param v1
      * @return
      */
     static public double vnorm(double[] v1)
     {
            /*
-           Local variables
+		 * Local variables
            */
            double                        normSqr;
            double                        tmp0;
@@ -86,16 +92,15 @@ public class MathUtil
            double                        v1max;
 
            /*
-           Determine the maximum component of the vector.
+		 * Determine the maximum component of the vector.
            */
            //v1max = MaxAbs(  v1[0],   MaxAbs( v1[1], v1[2] )   );
            v1max = Math.max(  Math.abs(v1[0]), Math.max( Math.abs(v1[1]), Math.abs(v1[2]) ) );
 
            /*
-           If the vector is zero, return zero; otherwise normalize first.
-           Normalizing helps in the cases where squaring would cause overflow
-           or underflow.  In the cases where such is not a problem it not worth
-           it to optimize further.
+		 * If the vector is zero, return zero; otherwise normalize first. Normalizing
+		 * helps in the cases where squaring would cause overflow or underflow. In the
+		 * cases where such is not a problem it not worth it to optimize further.
            */
 
            if ( v1max == 0.0 )
@@ -115,19 +120,19 @@ public class MathUtil
     }
 
     /**
-     * Compute magnitude of 3D vector vector and also normalize it.
-     * Copied from spice.
-     * Note unlike the original spice which takes a 3rd argument as output, here we return it from the function.
+	 * Compute magnitude of 3D vector vector and also normalize it. Copied from
+	 * spice. Note unlike the original spice which takes a 3rd argument as output,
+	 * here we return it from the function.
+	 * 
      * @param v1
      * @param vout resultant normalized vector
      * @return magnitude of v1
      */
-    static public double unorm(double[] v1,
-                               double[] vout)
+	static public double unorm(double[] v1, double[] vout)
     {
            /*
-           Obtain the magnitude of v1.  Note:  since vmage is a pointer, the
-           value of what vmag is pointing at is *vmag.
+		 * Obtain the magnitude of v1. Note: since vmage is a pointer, the value of what
+		 * vmag is pointing at is *vmag.
            */
 
            double vmag = vnorm( v1 );
@@ -135,11 +140,10 @@ public class MathUtil
 
 
            /*
-           If *vmag is nonzero, then normalize.  Note that this process is
-           numerically stable: overflow could only happen if vmag were small,
-           but this could only happen if each component of v1 were small.
-           In fact, the magnitude of any vector is never less than the
-           magnitude of any component.
+		 * If *vmag is nonzero, then normalize. Note that this process is numerically
+		 * stable: overflow could only happen if vmag were small, but this could only
+		 * happen if each component of v1 were small. In fact, the magnitude of any
+		 * vector is never less than the magnitude of any component.
            */
 
            if ( vmag > 0.0 )
@@ -159,8 +163,8 @@ public class MathUtil
     }
 
     /**
-     * Compute dot product of 2 3D vectors.
-     * Copied from spice
+	 * Compute dot product of 2 3D vectors. Copied from spice
+	 * 
      * @param v1
      * @param v2
      * @return
@@ -171,8 +175,8 @@ public class MathUtil
     }
 
     /**
-     * Compute angular separation between 2 3D vectors.
-     * Copied from spice
+	 * Compute angular separation between 2 3D vectors. Copied from spice
+	 * 
      * @param v1
      * @param v2
      * @return angular separation between 2 3D vectors in radians
@@ -180,13 +184,12 @@ public class MathUtil
     static public double vsep( double[] v1, double[] v2 )
     {
            /*
-           Local variables
-
-           The following declarations represent, respectively:
-
-           Magnitudes of v1, v2
-           Either of the difference vectors: v1-v2 or v1-(-v2)
-           Unit vectors parallel to v1 and v2
+		 * Local variables
+		 * 
+		 * The following declarations represent, respectively:
+		 * 
+		 * Magnitudes of v1, v2 Either of the difference vectors: v1-v2 or v1-(-v2) Unit
+		 * vectors parallel to v1 and v2
            */
 
            double     dmag1;
@@ -198,7 +201,7 @@ public class MathUtil
 
 
            /*
-           Calculate the magnitudes of v1 and v2; if either is 0, vsep = 0
+		 * Calculate the magnitudes of v1 and v2; if either is 0, vsep = 0
            */
 
            dmag1 = unorm ( v1, u1 );
@@ -246,30 +249,29 @@ public class MathUtil
     }
 
     /**
-     * Normalize a 3D vector
-     * Copied from spice
+	 * Normalize a 3D vector Copied from spice
+	 * 
      * @param v1
      * @param vout
      */
     static public void vhat( double[] v1, double[] vout )
     {
            /*
-           Local variables
+		 * Local variables
            */
            double                        vmag;
 
 
            /*
-           Obtain the magnitude of v1.
+		 * Obtain the magnitude of v1.
            */
            vmag = vnorm(v1);
 
            /*
-           If vmag is nonzero, then unitize.  Note that this process is
-           numerically stable: overflow could only happen if vmag were small,
-           but this could only happen if each component of v1 were small.
-           In fact, the magnitude of any vector is never less than the
-           magnitude of any component.
+		 * If vmag is nonzero, then unitize. Note that this process is numerically
+		 * stable: overflow could only happen if vmag were small, but this could only
+		 * happen if each component of v1 were small. In fact, the magnitude of any
+		 * vector is never less than the magnitude of any component.
            */
 
            if ( vmag > 0.0 )
@@ -323,7 +325,7 @@ public class MathUtil
     static public void vproj(double[] a, double[] b, double[] p)
     {
         /*
-      Local variables
+		 * Local variables
          */
 
         double     biga;
@@ -338,7 +340,7 @@ public class MathUtil
 
 
         /*
-      If a or b is zero, return the zero vector.
+		 * If a or b is zero, return the zero vector.
          */
 
         if ( biga == 0 || bigb == 0 )
@@ -363,21 +365,17 @@ public class MathUtil
       return  ( v[0] == 0. && v[1] == 0. && v[2] == 0.) ;
     }
 
-    static public void nplnpt ( double[]    linpt,
-            double[]    lindir,
-            double[]    point,
-            double[]    pnear,
-            double[]    dist)
+	static public void nplnpt(double[] linpt, double[] lindir, double[] point, double[] pnear, double[] dist)
     {
         /*
-      Local variables
+		 * Local variables
          */
         double[]             trans = new double[3];
 
 
 
         /*
-      We need a real direction vector to work with.
+		 * We need a real direction vector to work with.
          */
         if (  vzero (lindir)  )
         {
@@ -390,9 +388,9 @@ public class MathUtil
 
 
         /*
-      We translate line and input point so as to put the line through
-      the origin.  Then the nearest point on the translated line to the
-      translated point TRANS is the projection of TRANS onto the line.
+		 * We translate line and input point so as to put the line through the origin.
+		 * Then the nearest point on the translated line to the translated point TRANS
+		 * is the projection of TRANS onto the line.
          */
 
         vsub  ( point,  linpt,  trans );
@@ -403,11 +401,7 @@ public class MathUtil
 
     }
 
-    static public void vlcom(double a,
-            final double[] v1,
-            double b,
-            final double[] v2,
-            double[] sum)
+	static public void vlcom(double a, final double[] v1, double b, final double[] v2, double[] sum)
     {
         sum[0] = a*v1[0] + b*v2[0];
         sum[1] = a*v1[1] + b*v2[1];
@@ -423,17 +417,15 @@ public class MathUtil
 
 
     /**
-     * Similar to spice version but instead of using the plane datatype, use a normal
-     * vector to the plane and a point on the plane.
+	 * Similar to spice version but instead of using the plane datatype, use a
+	 * normal vector to the plane and a point on the plane.
+	 * 
      * @param vin
      * @param normalToPlane
      * @param pointOnPlane
      * @param vout
      */
-    static public void vprjp(final double[] vin,
-            final double[] normalToPlane,
-            final double[] pointOnPlane,
-            double[] vout)
+	static public void vprjp(final double[] vin, final double[] normalToPlane, final double[] pointOnPlane, double[] vout)
     {
         // First convert the normal and point to the normal and constant
         // representation of a plane. See nvp2pl_c.c from which the following
@@ -460,55 +452,43 @@ public class MathUtil
 
         // end of nvp2pl_c.c.
 
-
-        vlcom ( 1.0,
-                vin,
-                constant - vdot ( vin, normal ),
-                normal,
-                vout );
+		vlcom(1.0, vin, constant - vdot(vin, normal), normal, vout);
     }
 
 
     /**
      * Compute the distance between 2 3D points
+	 * 
      * @param pt1
      * @param pt2
      * @return
      */
     static public double distanceBetween(double[] pt1, double[] pt2)
     {
-        double[] vec = {
-                pt2[0]-pt1[0],
-                pt2[1]-pt1[1],
-                pt2[2]-pt1[2]
+		double[] vec = { pt2[0] - pt1[0], pt2[1] - pt1[1], pt2[2] - pt1[2]
         };
         return vnorm(vec);
     }
 
     /**
-     * The same as the previous function, but instead of using the slower,
-     * more accurate vnorm function, just take the square root directly
-     * of the sum of square of the components.
+	 * The same as the previous function, but instead of using the slower, more
+	 * accurate vnorm function, just take the square root directly of the sum of
+	 * square of the components.
+	 * 
      * @param pt1
      * @param pt2
      * @return
      */
     static public double distanceBetweenFast(double[] pt1, double[] pt2)
     {
-        double[] v = {
-                pt2[0]-pt1[0],
-                pt2[1]-pt1[1],
-                pt2[2]-pt1[2]
+		double[] v = { pt2[0] - pt1[0], pt2[1] - pt1[1], pt2[2] - pt1[2]
         };
         return Math.sqrt( v[0]*v[0] + v[1]*v[1] + v[2]*v[2] );
     }
 
     static public double distance2Between(double[] pt1, double[] pt2)
     {
-        double[] vec = {
-                pt2[0]-pt1[0],
-                pt2[1]-pt1[1],
-                pt2[2]-pt1[2]
+		double[] vec = { pt2[0] - pt1[0], pt2[1] - pt1[1], pt2[2] - pt1[2]
         };
         return vdot(vec, vec);
     }
@@ -523,6 +503,7 @@ public class MathUtil
 
     /**
      * Adapted from VTK's version
+	 * 
      * @param p1
      * @param p2
      * @param p3
@@ -536,8 +517,7 @@ public class MathUtil
         return (0.25* Math.sqrt(Math.abs(4.0*a*c - (a-b+c)*(a-b+c))));
     }
 
-    static public void triangleCenter(double[] p1, double[] p2,
-            double[] p3, double[] center)
+	static public void triangleCenter(double[] p1, double[] p2, double[] p3, double[] center)
     {
         center[0] = (p1[0]+p2[0]+p3[0]) / 3.0;
         center[1] = (p1[1]+p2[1]+p3[1]) / 3.0;
@@ -548,14 +528,17 @@ public class MathUtil
     /**
      * Adapted from VTK's version. Computes (unnormalized) triangle normal
      */
-    static public void triangleNormalDirection(double[] v1, double[] v2,
-            double[] v3, double[] n)
+	static public void triangleNormalDirection(double[] v1, double[] v2, double[] v3, double[] n)
     {
         double ax, ay, az, bx, by, bz;
 
         // order is important!!! maintain consistency with triangle vertex order
-        ax = v3[0] - v2[0]; ay = v3[1] - v2[1]; az = v3[2] - v2[2];
-        bx = v1[0] - v2[0]; by = v1[1] - v2[1]; bz = v1[2] - v2[2];
+		ax = v3[0] - v2[0];
+		ay = v3[1] - v2[1];
+		az = v3[2] - v2[2];
+		bx = v1[0] - v2[0];
+		by = v1[1] - v2[1];
+		bz = v1[2] - v2[2];
 
         n[0] = (ay * bz - az * by);
         n[1] = (az * bx - ax * bz);
@@ -565,8 +548,7 @@ public class MathUtil
     /**
      * Adapted from VTK's version. Computes (normalized) triangle normal.
      */
-    static public void triangleNormal(double[] v1, double[] v2,
-            double[] v3, double[] n)
+	static public void triangleNormal(double[] v1, double[] v2, double[] v3, double[] n)
     {
         double length;
 
@@ -598,14 +580,7 @@ public class MathUtil
         bcoords[2] = area3 / totalArea;
     }
 
-    static public double interpolateWithinTriangle(
-            double[] x,
-            double[] p1,
-            double[] p2,
-            double[] p3,
-            double v1,
-            double v2,
-            double v3)
+	static public double interpolateWithinTriangle(double[] x, double[] p1, double[] p2, double[] p3, double v1, double v2, double v3)
     {
         double[] bcoords = new double[3];
         barycentricCoords(x, p1, p2, p3, bcoords);
@@ -613,14 +588,8 @@ public class MathUtil
     }
 
     /** Vector version of previous function */
-    static public double[] interpolateWithinTriangle(
-            double[] x,
-            double[] p1,
-            double[] p2,
-            double[] p3,
-            double[] v1,
-            double[] v2,
-            double[] v3) {
+	static public double[] interpolateWithinTriangle(double[] x, double[] p1, double[] p2, double[] p3, double[] v1, double[] v2, double[] v3)
+	{
         double[] bcoords = new double[3];
         barycentricCoords(x, p1, p2, p3, bcoords);
         double[] interpolatedValue = new double[v1.length];
@@ -661,12 +630,12 @@ public class MathUtil
       long b7 = (value >> 48) & 0xff;
       long b8 = (value >> 56) & 0xff;
 
-      return b1 << 56 | b2 << 48 | b3 << 40 | b4 << 32 |
-             b5 << 24 | b6 << 16 | b7 <<  8 | b8 <<  0;
+		return b1 << 56 | b2 << 48 | b3 << 40 | b4 << 32 | b5 << 24 | b6 << 16 | b7 << 8 | b8 << 0;
     }
 
     /**
-     * Given 2 points (x0,y0) and (x1,y1) find y at x along line that connects the 2 points.
+	 * Given 2 points (x0,y0) and (x1,y1) find y at x along line that connects the 2
+	 * points.
      */
     static public double linearInterpolate2Points(double x0, double y0, double x1, double y1, double x)
     {

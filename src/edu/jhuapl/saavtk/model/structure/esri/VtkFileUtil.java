@@ -1,7 +1,9 @@
 package edu.jhuapl.saavtk.model.structure.esri;
 
 import java.nio.file.Path;
+import java.util.List;
 
+import edu.jhuapl.saavtk.util.ColorUtil;
 import vtk.vtkAppendPolyData;
 import vtk.vtkCellArray;
 import vtk.vtkFloatArray;
@@ -11,11 +13,6 @@ import vtk.vtkPoints;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataWriter;
 import vtk.vtkVertex;
-import java.util.List;
-
-import org.ietf.jgss.Oid;
-
-import edu.jhuapl.saavtk.util.ColorUtil;
 
 public final class VtkFileUtil {
 

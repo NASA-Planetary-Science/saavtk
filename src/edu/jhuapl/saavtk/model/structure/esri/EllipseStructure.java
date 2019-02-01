@@ -9,7 +9,6 @@ import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.EllipsePolygon;
-import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure.Parameters;
 import vtk.vtkCellArray;
 import vtk.vtkPoints;
 

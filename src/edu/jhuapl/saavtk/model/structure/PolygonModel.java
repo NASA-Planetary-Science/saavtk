@@ -142,7 +142,7 @@ public class PolygonModel extends LineModel
 			decimatedInteriorColors.SetNumberOfTuples(decimatedInteriorPolyData.GetNumberOfCells());
 			for (int i = 0; i < numberOfStructures; ++i)
 			{
-				int[] color = getPolygon(i).color;
+				int[] color = getPolygon(i).getColor();
 
 				if (Arrays.binarySearch(getSelectedStructures(), i) >= 0)
 					color = getCommonData().getSelectionColor();
@@ -331,7 +331,7 @@ public class PolygonModel extends LineModel
 			pol.setShowInterior(false);
 		}
 	}
-	
+
 	@Override
 	public FacetColoringData[] getPlateDataInsideStructure(int idx)
 	{
@@ -346,7 +346,7 @@ public class PolygonModel extends LineModel
 			pol.setShowInterior(true);
 
 			vtkPolyData polydata = getPolygon(idx).interiorPolyData;
-			FacetColoringData[] data =  smallBodyModel.getPlateDataInsidePolydata(polydata);
+			FacetColoringData[] data = smallBodyModel.getPlateDataInsidePolydata(polydata);
 			pol.setShowInterior(false);
 			return data;
 		}

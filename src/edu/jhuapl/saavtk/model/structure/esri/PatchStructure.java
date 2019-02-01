@@ -1,7 +1,5 @@
 package edu.jhuapl.saavtk.model.structure.esri;
 
-import java.util.Arrays;
-
 @Deprecated	// this has never really been used
 public class PatchStructure //implements Structure
 {

@@ -2,7 +2,6 @@ package edu.jhuapl.saavtk.model.structure;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
 import vtk.vtkCaptionActor2D;

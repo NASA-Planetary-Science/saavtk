@@ -15,7 +15,6 @@ import com.google.common.collect.Maps;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.model.StructureModel.Structure;
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.EllipsePolygon;
 import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.esri.LineSegment;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
@@ -24,11 +23,7 @@ import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
 import edu.jhuapl.saavtk.model.structure.esri.PointStyle;
 import edu.jhuapl.saavtk.model.structure.esri.ShapefileUtil;
 import edu.jhuapl.saavtk.model.structure.esri.VtkFileUtil;
-import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure.Parameters;
 import edu.jhuapl.saavtk.util.MathUtil;
-import vtk.vtkCellArray;
-import vtk.vtkPoints;
-import vtk.vtkPolyDataWriter;
 
 public class StructuresExporter
 {
@@ -181,9 +176,9 @@ public class StructuresExporter
 			
 			
 			List<Vector3D> controlPoints=Lists.newArrayList();
-			for (int j=0; j<line.controlPoints.size(); j++)
+			for (int j=0; j<line.getControlPoints().size(); j++)
 			{
-				controlPoints.add(new Vector3D(MathUtil.latrec(line.controlPoints.get(j))));
+				controlPoints.add(new Vector3D(MathUtil.latrec(line.getControlPoints().get(j))));
 			}
 			
 			LineStructure ls=new LineStructure(segments, controlPoints);

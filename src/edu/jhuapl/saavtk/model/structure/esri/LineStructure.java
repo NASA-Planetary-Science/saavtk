@@ -7,8 +7,8 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
 
-import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.model.structure.Line;
+import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.util.MathUtil;
 
 public class LineStructure implements Structure
@@ -111,7 +111,7 @@ public class LineStructure implements Structure
 
 			List<Vector3D> controlPoints = Lists.newArrayList();
 			for (int m = 0; m < controlPoints.size(); m++)
-				controlPoints.add(new Vector3D(MathUtil.latrec(poly.controlPoints.get(m))));
+				controlPoints.add(new Vector3D(MathUtil.latrec(poly.getControlPoints().get(m))));
 
 			LineStructure ls=new LineStructure(segments, controlPoints);
 			int[] c = poly.getColor();

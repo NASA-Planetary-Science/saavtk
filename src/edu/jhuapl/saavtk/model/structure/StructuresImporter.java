@@ -3,13 +3,7 @@ package edu.jhuapl.saavtk.model.structure;
 import java.awt.Color;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
-
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
-import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
@@ -19,8 +13,6 @@ import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
 import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
 import edu.jhuapl.saavtk.model.structure.esri.ShapefileUtil;
 import edu.jhuapl.saavtk.util.Point3D;
-import vtk.vtkAppendPolyData;
-import vtk.vtkPolyDataWriter;
 
 @Deprecated // ... for the moment... see AbstractStructureMappingControlPanel... nested class LoadEsriShapeFileAction
 public class StructuresImporter

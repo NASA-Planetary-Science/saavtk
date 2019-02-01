@@ -21,14 +21,14 @@ import org.apache.commons.io.FilenameUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import crucible.crust.metadata.api.Serializer;
+import crucible.crust.metadata.impl.gson.Serializers;
 import edu.jhuapl.saavtk.gui.OSXAdapter;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CameraDialog;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
 import edu.jhuapl.saavtk.gui.panel.AbstractStructureMappingControlPanel;
-import edu.jhuapl.saavtk.metadata.Serializer;
-import edu.jhuapl.saavtk.metadata.serialization.Serializers;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
@@ -392,8 +392,9 @@ public class FileMenu extends JMenu
 		@Override
 		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
-			int option = JOptionPane.showOptionDialog(frame, "Do you wish to clear your local data cache? \nIf you do, all remotely loaded data will need to be reloaded " + "from the server the next time you wish to view it. \nThis may take a few moments.", "Clear cache", 1, 3, null, null, null);
-			if (option == 0)
+			int option =
+					JOptionPane.showOptionDialog(frame, "Do you wish to clear your local data cache? \nIf you do, all remotely loaded data will need to be reloaded "
+							+ "from the server the next time you wish to view it. \nThis may take a few moments.", "Clear cache", 1, 3, null, null, null);			if (option == 0)
 			{
 				Configuration.clearCache();
 			} else
