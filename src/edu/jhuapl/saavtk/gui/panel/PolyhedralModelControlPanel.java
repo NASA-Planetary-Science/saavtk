@@ -48,7 +48,7 @@ import edu.jhuapl.saavtk.model.Graticule;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.pick.Picker;
+import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.Properties;
@@ -459,7 +459,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	public void itemStateChanged(ItemEvent e)
 	{
 
-		Picker.setPickingEnabled(false);
+		PickUtil.setPickingEnabled(false);
 
 		PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
 
@@ -558,7 +558,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			setCursor(Cursor.getDefaultCursor());
 		}
 
-		Picker.setPickingEnabled(true);
+		PickUtil.setPickingEnabled(true);
 	}
 
 	public void updateColoringOptions()

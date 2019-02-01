@@ -37,6 +37,7 @@ import javax.swing.JTable;
 import javax.swing.JToggleButton;
 import javax.swing.ListSelectionModel;
 import javax.swing.ProgressMonitor;
+import javax.swing.RowSorter.SortKey;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.UIDefaults;
@@ -72,7 +73,7 @@ import edu.jhuapl.saavtk.model.structure.geotools.LineStructure;
 import edu.jhuapl.saavtk.pick.PickEvent;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.pick.PickManager.PickMode;
-import edu.jhuapl.saavtk.pick.Picker;
+import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.popup.StructuresPopupMenu;
 import edu.jhuapl.saavtk.util.ColorIcon;
 import edu.jhuapl.saavtk.util.FileUtil;
@@ -181,6 +182,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		// "Hide Structure"
 
 		structuresTable = new JTable(new StructuresTableModel(columnNames));
+		structuresTable.setAutoCreateRowSorter(true);
 		structuresTable.setBorder(BorderFactory.createTitledBorder(""));
 		structuresTable.setColumnSelectionAllowed(false);
 		structuresTable.setRowSelectionAllowed(true);
@@ -694,6 +696,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	{
 		if (Properties.MODEL_CHANGED.equals(evt.getPropertyName()))
 		{
+    		((DefaultTableModel) structuresTable.getModel()).setRowCount(structureModel.getNumberOfStructures());
+
 			updateModelDisplay();
 		}
 		else if (Properties.MODEL_PICKED.equals(evt.getPropertyName()))
@@ -709,7 +713,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			{
 				int idx = structureModel.getStructureIndexFromCellId(e.getPickedCellId(), e.getPickedProp());
 
-				if (Picker.isPopupTrigger(e.getMouseEvent()))
+                if (PickUtil.isPopupTrigger(e.getMouseEvent()))
 				{
 					// If the item right-clicked on is not selected, then deselect all the
 					// other items and select the item right-clicked on.
@@ -822,22 +826,22 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	private void updateStructureTable()
 	{
 		int numStructures = structureModel.getNumberOfStructures();
-
+        List<? extends SortKey> sortKeys = structuresTable.getRowSorter().getSortKeys();
 		((DefaultTableModel) structuresTable.getModel()).setRowCount(numStructures);
 		for (int i = 0; i < numStructures; ++i)
 		{
 			StructureModel.Structure structure = structureModel.getStructure(i);
 			int[] c = structure.getColor();
-			structuresTable.setValueAt(String.valueOf(structure.getId()), i, 0);
-			structuresTable.setValueAt(structure.getType(), i, 1);
-			structuresTable.setValueAt(structure.getName(), i, 2);
-			structuresTable.setValueAt(structure.getInfo(), i, 3);
-			structuresTable.setValueAt(new Color(c[0], c[1], c[2]), i, 4);
-			structuresTable.setValueAt(structure.getLabel(), i, 5);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(String.valueOf(structure.getId()), i, 0);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getType(), i, 1);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getName(), i, 2);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getInfo(), i, 3);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(new Color(c[0], c[1], c[2]), i, 4);
+            ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getLabel(), i, 5);
 			//structuresTable.setValueAt(structure.getLabelHidden(), i, 6);
 			//structuresTable.setValueAt(structure.getHidden(), i, 6);
 		}
-
+        structuresTable.getRowSorter().setSortKeys(sortKeys);
 		updateColoredButtons();
 	}
 
@@ -852,7 +856,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			int row = e.getFirstRow();
 			int col = e.getColumn();
 			StructureModel.Structure structure = structureModel.getStructure(row);
-			String name = (String) structuresTable.getValueAt(row, col);
+//            String name = (String) structuresTable.getValueAt(row, col);
+            String name = (String)((DefaultTableModel) structuresTable.getModel()).getValueAt(row, col);
 			if (name != null && !name.equals(structure.getName()))
 			{
 				structure.setName(name);
@@ -863,7 +868,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			int row = e.getFirstRow();
 			int col = e.getColumn();
 			StructureModel.Structure structure = structureModel.getStructure(row);
-			String label = (String) structuresTable.getValueAt(row, col);
+            String label = (String)((DefaultTableModel) structuresTable.getModel()).getValueAt(row, col);
+//            String label = (String) structuresTable.getValueAt(row, col);
 			if (label != null && !label.equals(structure.getLabel()))
 			{
 				structure.setLabel(label);
@@ -1111,7 +1117,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
 		{
 			Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-
+            if (row >= structureModel.getNumberOfStructures()) return c;
 			if (structureModel.isStructureVisible(row) == false)
 			{
 				c.setForeground(Color.GRAY);
@@ -1142,7 +1148,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
 		{
 			Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-
+			if (row >= structureModel.getNumberOfStructures()) return c;
 			boolean isVisible = structureModel.isStructureVisible(row) && structureModel.isLabelVisible(row);
 			if (isVisible == false)
 				c.setForeground(Color.GRAY);
