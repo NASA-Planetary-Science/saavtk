@@ -19,7 +19,7 @@ import edu.jhuapl.saavtk.model.structure.EllipseModel;
 import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.model.structure.PointModel;
 import edu.jhuapl.saavtk.model.structure.PolygonModel;
-import edu.jhuapl.saavtk.pick.StructuresPickManager;
+import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.popup.StructuresPopupManager;
 
 /**
@@ -30,6 +30,11 @@ import edu.jhuapl.saavtk.popup.StructuresPopupManager;
  */
 public class ExampleView extends View
 {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	/**
 	 * By default a view should be created empty. Only when the user requests to
 	 * show a particular View, should the View's contents be created in order to
@@ -81,7 +86,6 @@ public class ExampleView extends View
 	protected void setupModelManager()
 	{
 		PolyhedralModel smallBodyModel = new ExamplePolyhedralModel(getConfig());
-		setModelManager(new ExampleModelManager(smallBodyModel));
 		Graticule graticule = new Graticule(smallBodyModel);
 
 		HashMap<ModelNames, Model> allModels = new HashMap<>();
@@ -103,7 +107,7 @@ public class ExampleView extends View
 		// allModels.put(ModelNames.TRACKS, new
 		// LidarSearchDataCollection(smallBodyModel));
 
-		setModels(allModels);
+		setModelManager(new ExampleModelManager(smallBodyModel, allModels));
 	}
 
 	@Override
@@ -157,7 +161,7 @@ public class ExampleView extends View
 	@Override
 	protected void setupPickManager()
 	{
-		setPickManager(new StructuresPickManager(getRenderer(), getStatusBar(), getModelManager(), getPopupManager()));
+		setPickManager(new PickManager(getRenderer(), getStatusBar(), getModelManager(), getPopupManager()));
 	}
 
 	@Override

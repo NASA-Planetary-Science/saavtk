@@ -8,6 +8,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.text.DecimalFormat;
 import java.util.List;
 
@@ -36,7 +38,7 @@ import edu.jhuapl.saavtk.util.Properties;
 /**
  * This is the picker normally in use by default.
  */
-public class DefaultPicker extends Picker
+public class DefaultPicker extends Picker implements PropertyChangeListener
 {
     private Renderer renderer;
     private vtkJoglPanelComponent renWin;
@@ -109,6 +111,18 @@ public class DefaultPicker extends Picker
             }
         });
     }
+    
+ 	protected final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
+
+ 	public void addPropertyChangeListener(PropertyChangeListener listener)
+ 	{
+ 		this.pcs.addPropertyChangeListener(listener);
+ 	}
+
+ 	public void removePropertyChangeListener(PropertyChangeListener listener)
+ 	{
+ 		this.pcs.removePropertyChangeListener(listener);
+ 	}
 
     public void setSuppressPopups(boolean b)
     {
@@ -248,7 +262,7 @@ public class DefaultPicker extends Picker
 
     private void maybeShowPopup(MouseEvent e)
     {
-        if (e.getClickCount() != 1 || !isPopupTrigger(e))
+        if (e.getClickCount() != 1 || !PickUtil.isPopupTrigger(e))
         {
             return;
         }
