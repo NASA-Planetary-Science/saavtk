@@ -86,11 +86,10 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
 				if (downloadProgress < fileInfo.getTotalByteCount() && needToDownload)
 				{
 					setLabelText("<html>Downloading " + name + "<br>" + PF.format(percentDownloaded) + " completed " + "  (" + DF.format(downloadedSoFarInMB) + " of " + DF.format(totalSizeInMB) + " MB)</html>");
-
 					// Call firePropertyChange rather than setProgess since the latter will
 					// only cause a property change if the percent downloaded (cast to an int)
 					// changes, whereas firePropertyChange always forces a property change.
-					firePropertyChange("progress", null, Math.min((int) percentDownloaded, 99));
+					firePropertyChange("progress", null, Math.min((int) (percentDownloaded*100), 99));
 				}
 				else if (unzipProgress < 100.0 && needToUnzip)
 				{
