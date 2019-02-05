@@ -182,7 +182,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		// "Hide Structure"
 
 		structuresTable = new JTable(new StructuresTableModel(columnNames));
-		structuresTable.setAutoCreateRowSorter(true);
+//		structuresTable.setAutoCreateRowSorter(true);
 		structuresTable.setBorder(BorderFactory.createTitledBorder(""));
 		structuresTable.setColumnSelectionAllowed(false);
 		structuresTable.setRowSelectionAllowed(true);
@@ -826,7 +826,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	private void updateStructureTable()
 	{
 		int numStructures = structureModel.getNumberOfStructures();
-        List<? extends SortKey> sortKeys = structuresTable.getRowSorter().getSortKeys();
+//        List<? extends SortKey> sortKeys = structuresTable.getRowSorter().getSortKeys();
 		((DefaultTableModel) structuresTable.getModel()).setRowCount(numStructures);
 		for (int i = 0; i < numStructures; ++i)
 		{
@@ -841,7 +841,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			//structuresTable.setValueAt(structure.getLabelHidden(), i, 6);
 			//structuresTable.setValueAt(structure.getHidden(), i, 6);
 		}
-        structuresTable.getRowSorter().setSortKeys(sortKeys);
+//        structuresTable.getRowSorter().setSortKeys(sortKeys);
 		updateColoredButtons();
 	}
 
