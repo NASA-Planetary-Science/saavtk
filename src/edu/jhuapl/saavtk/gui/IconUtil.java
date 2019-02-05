@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.icon;
+package edu.jhuapl.saavtk.gui;
 
 import java.net.URL;
 
@@ -21,16 +21,6 @@ public class IconUtil
 	public static ImageIcon loadIcon(URL aURL)
 	{
 		return new ImageIcon(aURL);
-	}
-
-	/**
-	 * Utility method to load an icon from the specified resource.
-	 * <P>
-	 * The resource must be located in the same package as ImageIcon.
-	 */
-	public static ImageIcon loadIconLocal(String aIconPath)
-	{
-		return loadIcon(IconUtil.class.getResource(aIconPath));
 	}
 
 }
