@@ -65,6 +65,7 @@ import org.opengis.feature.simple.SimpleFeature;
 
 import com.google.common.collect.Lists;
 
+import edu.jhuapl.saavtk.gui.ColorCellRenderer;
 import edu.jhuapl.saavtk.gui.GNumberFieldSlider;
 import edu.jhuapl.saavtk.gui.ProfilePlot;
 import edu.jhuapl.saavtk.gui.StatusBar;
@@ -656,14 +657,14 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		// "Hide Structure"
 
 		structuresTable = new JTable(new StructuresTableModel(columnNames));
-		structuresTable.setAutoCreateRowSorter(true);
+//		structuresTable.setAutoCreateRowSorter(true);
 		structuresTable.setBorder(BorderFactory.createTitledBorder(""));
 		structuresTable.setColumnSelectionAllowed(false);
 		structuresTable.setRowSelectionAllowed(true);
 		structuresTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		structuresTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		structuresTable.setDefaultRenderer(String.class, new StringRenderer());
-		structuresTable.setDefaultRenderer(Color.class, new ColorRenderer());
+		structuresTable.setDefaultRenderer(Color.class, new ColorCellRenderer(true));
 		structuresTable.getColumnModel().getColumn(5).setCellRenderer(new StructureLabelRenderer());
 		// structuresTable.getColumnModel().getColumn(0).setPreferredWidth(30);
 		structuresTable.getModel().addTableModelListener(this);
@@ -1192,7 +1193,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	private void updateStructureTable()
 	{
 		int numStructures = structureModel.getNumberOfStructures();
-        List<? extends SortKey> sortKeys = structuresTable.getRowSorter().getSortKeys();
+//        List<? extends SortKey> sortKeys = structuresTable.getRowSorter().getSortKeys();
 		((DefaultTableModel) structuresTable.getModel()).setRowCount(numStructures);
 		for (int i = 0; i < numStructures; ++i)
 		{
@@ -1207,7 +1208,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			// structuresTable.setValueAt(structure.getLabelHidden(), i, 6);
 			// structuresTable.setValueAt(structure.getHidden(), i, 6);
 		}
-        structuresTable.getRowSorter().setSortKeys(sortKeys);
+//        structuresTable.getRowSorter().setSortKeys(sortKeys);
 		updateColoredButtons();
 	}
 
@@ -1430,44 +1431,6 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 				c.setForeground(Color.BLACK);
 
 			return c;
-		}
-	}
-
-	class ColorRenderer extends JLabel implements TableCellRenderer
-	{
-		private Border unselectedBorder = null;
-		private Border selectedBorder = null;
-
-		public ColorRenderer()
-		{
-			setOpaque(true); // MUST do this for background to show up.
-		}
-
-		@Override
-		public Component getTableCellRendererComponent(JTable table, Object color, boolean isSelected, boolean hasFocus, int row, int column)
-		{
-			Color newColor = (Color) color;
-			setBackground(newColor);
-
-			if (isSelected)
-			{
-				if (selectedBorder == null)
-				{
-					selectedBorder = BorderFactory.createMatteBorder(2, 5, 2, 5, table.getSelectionBackground());
-				}
-				setBorder(selectedBorder);
-			} else
-			{
-				if (unselectedBorder == null)
-				{
-					unselectedBorder = BorderFactory.createMatteBorder(2, 5, 2, 5, table.getBackground());
-				}
-				setBorder(unselectedBorder);
-			}
-
-			setToolTipText("RGB value: " + newColor.getRed() + ", " + newColor.getGreen() + ", " + newColor.getBlue());
-
-			return this;
 		}
 	}
 

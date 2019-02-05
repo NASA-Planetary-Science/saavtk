@@ -6,6 +6,7 @@ import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
@@ -22,6 +23,17 @@ public class PickUtil
 {
 	// not sure if volatile is really needed, but just to be sure
 	protected static volatile boolean pickingEnabled = true;
+
+	/**
+	 * Utility method that will automatically setup a listener on aComponent that
+	 * deactivates the specified Picker when the aComponent is no longer showing.
+	 */
+	public static void autoDeactivatePickerWhenComponentHidden(PickManager aPickManager, Picker aPicker,
+			JComponent aComponent)
+	{
+		PickerHierarchyDeactivator tmpHandler = new PickerHierarchyDeactivator(aPickManager, aPicker, aComponent);
+		aComponent.addHierarchyListener(tmpHandler);
+	}
 
 	/**
 	 * Utility method that forms the default collection of non-default Pickers to

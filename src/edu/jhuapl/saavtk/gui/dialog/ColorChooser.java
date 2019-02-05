@@ -29,18 +29,28 @@ public class ColorChooser
 
     static public Color showColorChooser(Component parent)
     {
-        return showColorChooser(parent, null);
+        return showColorChooser(parent, (Color)null);
     }
 
-    static public Color showColorChooser(Component parent, int[] initialColor)
+    static public Color showColorChooser(Component parent, int[] aColorArr)
     {
-//        Color color = null;
-//        if (initialColor != null && initialColor.length >= 3)
-//            color = new Color(initialColor[0], initialColor[1], initialColor[2]);
-//        else if (lastColorChosen != null)
-//            color = lastColorChosen;
-//        else
-//            color = Color.MAGENTA;
+        Color tmpColor = null;
+        if (aColorArr != null && aColorArr.length >= 3)
+      	  tmpColor = new Color(aColorArr[0], aColorArr[1], aColorArr[2]);
+
+        // Delegate
+        return showColorChooser(parent, tmpColor);
+    }
+
+    static public Color showColorChooser(Component parent, Color aColor)
+    {
+        Color color = null;
+        if (aColor != null)
+            color = aColor;
+        else if (lastColorChosen != null)
+            color = lastColorChosen;
+        else
+            color = Color.MAGENTA;
 
         lastColorChosen = new ColorChooser(Color.blue).showColorDialog(parent);//JColorChooser.showDialog(parent, "Color Chooser Dialog", color);
 
