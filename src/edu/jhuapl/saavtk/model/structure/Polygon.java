@@ -24,7 +24,7 @@ public class Polygon extends Line
 
 	public Polygon(PolyhedralModel smallBodyModel, int id)
 	{
-		super(true, id);
+		super(id);
 
 		this.smallBodyModel = smallBodyModel;
 		interiorPolyData = new vtkPolyData();
@@ -126,4 +126,11 @@ public class Polygon extends Line
 		else
 			surfaceArea = 0.0;
 	}
+
+	@Override
+	protected boolean isClosed()
+	{
+		return true;
+	}
+
 }

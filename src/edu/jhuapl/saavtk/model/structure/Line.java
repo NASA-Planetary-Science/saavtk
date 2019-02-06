@@ -59,7 +59,6 @@ public class Line extends StructureModel.Structure
 	private static final int[] purpleColor = { 255, 0, 255, 255 }; // RGBA purple
 	protected static final DecimalFormat decimalFormatter = new DecimalFormat("#.###");
 
-	private boolean closed = false;
 	public vtkCaptionActor2D caption;
 	private static int maxId = 0;
 
@@ -74,10 +73,9 @@ public class Line extends StructureModel.Structure
 
 	private final Configuration<KeyValueCollection<SettableValue<?>>> configuration;
 
-	public Line(boolean closed, int id)
+	public Line(int id)
 	{
 		this.configuration = createConfiguration(id, purpleColor.clone());
-		this.closed = closed;
 	}
 
 	@Override
@@ -250,7 +248,7 @@ public class Line extends StructureModel.Structure
 			++count;
 		}
 
-		if (closed)
+		if (isClosed())
 		{
 			// In CLOSED mode need to add segment connecting final point to initial point
 			this.updateSegment(smallBodyModel, controlPointIds.size() - 1);
@@ -288,7 +286,7 @@ public class Line extends StructureModel.Structure
 			length += dist;
 		}
 
-		if (closed && size > 1)
+		if (isClosed() && size > 1)
 		{
 			double dist = xyzPointList.get(size - 1).distanceTo(xyzPointList.get(0));
 			length += dist;
@@ -441,4 +439,10 @@ public class Line extends StructureModel.Structure
 	{
 		return new Vector3D(xyzPointList.get(i).xyz);
 	}
+
+	protected boolean isClosed()
+	{
+		return false;
+	}
+
 }

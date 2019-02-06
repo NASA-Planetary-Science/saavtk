@@ -1357,7 +1357,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 	protected StructureModel.Structure createStructure(PolyhedralModel smallBodyModel)
 	{
-		return new Line(false, ++maxPolygonId);
+		return new Line(++maxPolygonId);
 	}
 
 	@Override
