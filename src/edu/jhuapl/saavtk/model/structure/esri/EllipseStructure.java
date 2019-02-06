@@ -1,13 +1,14 @@
-package edu.jhuapl.saavtk.model.structure.geotools;
+package edu.jhuapl.saavtk.model.structure.esri;
 
 import java.awt.Color;
 import java.util.List;
+
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.EllipsePolygon;
-import edu.jhuapl.saavtk.model.structure.geotools.EllipseStructure.Parameters;
 import vtk.vtkCellArray;
 import vtk.vtkPoints;
 
@@ -15,12 +16,12 @@ public class EllipseStructure extends LineStructure
 {
 	public static class Parameters
 	{
-		public double[] center;
+		public Vector3D center;
 		public double majorRadius;
 		public double flattening;
 		public double angle;
 		
-		public Parameters(double[] center, double majorRadius, double flattening, double angle)
+		public Parameters(Vector3D center, double majorRadius, double flattening, double angle)
 		{
 			super();
 			this.center = center;
@@ -33,25 +34,18 @@ public class EllipseStructure extends LineStructure
 	
 	Parameters params;
 
-	public EllipseStructure(LineSegment[] segments, LineStyle style, String label, Parameters params)
+	public EllipseStructure(List<LineSegment> segments, Parameters params)
 	{
-		super(segments, style, label);
+		super(segments);
 		this.params=params;
 	}
 	
 	public static List<EllipseStructure> fromSbmtStructure(AbstractEllipsePolygonModel crappySbmtStructureModel)
 	{
         List<EllipseStructure> structures = Lists.newArrayList();
-        int[] ids = crappySbmtStructureModel.getSelectedStructures();
-        if (ids.length == 0)
+        for (int i = 0; i < crappySbmtStructureModel.getNumberOfStructures(); i++)
         {
-            ids = new int[crappySbmtStructureModel.getNumberOfStructures()];
-            for (int i = 0; i < ids.length; i++)
-                ids[i] = i;
-        }
-        for (int i = 0; i < ids.length; i++)
-        {
-            EllipsePolygon poly = (EllipsePolygon) crappySbmtStructureModel.getStructure(ids[i]);
+            EllipsePolygon poly = (EllipsePolygon) crappySbmtStructureModel.getStructure(i);
             int[] c = poly.getColor();
             double w = crappySbmtStructureModel.getLineWidth();
             LineStyle style = new LineStyle(new Color(c[0], c[1], c[2]), w);
@@ -69,15 +63,15 @@ public class EllipseStructure extends LineStructure
                 {
                     double[] start=points.GetPoint(k);
                     double[] end=points.GetPoint(k+1);
-                    segments.add(new LineSegment(start, end));
+                    segments.add(new LineSegment(new Vector3D(start), new Vector3D(end)));
                 }
             }
-            LineSegment[] segmentArr=new LineSegment[segments.size()];
-            for (int j=0; j<segments.size(); j++)
-                segmentArr[j]=segments.get(j);
             
-            Parameters params=new Parameters(poly.center, poly.radius, poly.flattening, poly.angle);
-            structures.add(new EllipseStructure(segmentArr, style, label, params));
+            Parameters params=new Parameters(new Vector3D(poly.center), poly.radius, poly.flattening, poly.angle);
+            EllipseStructure es=new EllipseStructure(segments, params);
+            es.setLineStyle(style);
+            es.setLabel(label);
+            structures.add(es);
             
 
         }
@@ -85,18 +79,6 @@ public class EllipseStructure extends LineStructure
 	}
 	
 
-	public EllipseStructure(LineSegment[] segments, String label, Parameters params)
-	{
-		super(segments, label);
-		this.params=params;
-	}
-
-	public EllipseStructure(LineSegment[] segments, Parameters params)
-	{
-		super(segments);
-		this.params=params;
-	}
-	
 	public Parameters getParameters()
 	{
 		return params;

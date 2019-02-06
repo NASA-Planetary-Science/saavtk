@@ -32,10 +32,14 @@ public class ColoringData
 
 	static final Key<String> FILE_NAME = Key.of("File name");
 
-	// Note: the metadata associated with this key is not yet being used. The ELEMENT_NAMES are supposed to tell
-	// the load methods which columns to read from a CSV or FITS file, but there is not currently any way
-	// for calling code to know which columns are correct, since the coloring metadata is set up before the files
-	// are downloaded. If/when metadata is downloaded from the server, this key may be used.
+	// Note: the metadata associated with this key is not yet being used. The
+	// ELEMENT_NAMES are supposed to tell
+	// the load methods which columns to read from a CSV or FITS file, but there is
+	// not currently any way
+	// for calling code to know which columns are correct, since the coloring
+	// metadata is set up before the files
+	// are downloaded. If/when metadata is downloaded from the server, this key may
+	// be used.
 	static final Key<List<String>> ELEMENT_NAMES = Key.of("Element names"); // [ "Slope" ] or [ "G_x", "G_y", "G_z" ]
 	static final Key<List<?>> COLUMN_IDS = Key.of("Column identifiers"); // [ "Slope" ] or [ 5, 7, 9 ]
 	static final Key<String> UNITS = Key.of("Coloring units"); // deg or m/s^2
@@ -71,7 +75,8 @@ public class ColoringData
 		}
 		else
 		{
-			// Don't call getData for the last argument -- it throws if data are not loaded, but that is not a problem in this case.
+			// Don't call getData for the last argument -- it throws if data are not loaded,
+			// but that is not a problem in this case.
 			result = of(newColoringName, source.getFileName(), source.getElementNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls(), source.data);
 		}
 
@@ -89,7 +94,8 @@ public class ColoringData
 		}
 		else
 		{
-			// Don't call getData for the last argument -- it throws if data are not loaded, but that is not a problem in this case.
+			// Don't call getData for the last argument -- it throws if data are not loaded,
+			// but that is not a problem in this case.
 			result = of(source.getName(), newFileName, source.getElementNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls(), source.data);
 		}
 
@@ -128,9 +134,9 @@ public class ColoringData
 	private static FixedMetadata createMetadata(String name, String fileName, Iterable<String> elementNames, Iterable<?> columnIdentifiers, String units, int numberElements, boolean hasNulls)
 	{
 		Preconditions.checkNotNull(name);
-		//		Preconditions.checkNotNull(fileName); // This one may be null.
+		// Preconditions.checkNotNull(fileName); // This one may be null.
 		Preconditions.checkNotNull(elementNames);
-		//		Preconditions.checkNotNull(columnIdentifiers); // This one may be null.
+		// Preconditions.checkNotNull(columnIdentifiers); // This one may be null.
 		Preconditions.checkNotNull(units);
 
 		SettableMetadata metadata = SettableMetadata.of(COLORING_DATA_VERSION);
@@ -505,10 +511,7 @@ public class ColoringData
 
 	private enum FitsColumnId
 	{
-		SCALAR(4),
-		SCALAR_ERROR(5),
-		VECTOR(4, 6, 8),
-		VECTOR_ERROR(5, 7, 9);
+		SCALAR(4), SCALAR_ERROR(5), VECTOR(4, 6, 8), VECTOR_ERROR(5, 7, 9);
 		private final ImmutableList<Integer> columnNumbers;
 
 		private FitsColumnId(int columnNumber)
@@ -530,8 +533,7 @@ public class ColoringData
 
 	private enum CsvColumnId
 	{
-		SCALAR(0),
-		VECTOR(0, 1, 2),;
+		SCALAR(0), VECTOR(0, 1, 2),;
 		private final ImmutableList<Integer> columnNumbers;
 
 		private CsvColumnId(int columnNumber)

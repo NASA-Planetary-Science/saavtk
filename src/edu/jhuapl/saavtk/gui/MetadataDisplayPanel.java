@@ -150,7 +150,8 @@ public class MetadataDisplayPanel
 			// Add this row.
 			rowData.add(row);
 
-			// Update space needed for display. Need to be careful because there is no guarantee that rows (unpacked from metadata)
+			// Update space needed for display. Need to be careful because there is no
+			// guarantee that rows (unpacked from metadata)
 			// and dims (key label + value column labels) to have the same size.
 			int size = Math.min(row.size(), dims.size());
 			for (int index = 0; index < size; ++index)
@@ -172,15 +173,18 @@ public class MetadataDisplayPanel
 
 		// Put the table in a scroll pane.
 		JScrollPane jScrollPane = new JScrollPane(jTable);
-		Dimension maxInitialSize = new Dimension(800, 600 - 22); // 22 is the the amount of room a JFrame title bar typically occupies.
+		Dimension maxInitialSize = new Dimension(800, 600 - 22); // 22 is the the amount of room a JFrame title bar
+																	// typically occupies.
 
 		// Add the scroll pane to the panel.
 		GridBagConstraints gbc = new GridBagConstraints(-1, -1, 1, 1, 1., 1., GridBagConstraints.FIRST_LINE_START, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0);
 		jPanel.add(jScrollPane, gbc);
 		jPanel.setPreferredSize(getMinimum(tableDim, maxInitialSize));
-		// This may be safe but for now leaving it commented out until we establish that the line lengths really are perfect in all contexts.
-		// If the maximum size is set too small it may be really awkward or impossible to view a large table, and/or get rid of scroll bars.
-		//		jPanel.setMaximumSize(tableDim);
+		// This may be safe but for now leaving it commented out until we establish that
+		// the line lengths really are perfect in all contexts.
+		// If the maximum size is set too small it may be really awkward or impossible
+		// to view a large table, and/or get rid of scroll bars.
+		// jPanel.setMaximumSize(tableDim);
 		this.jPanel = jPanel;
 	}
 
@@ -308,9 +312,14 @@ public class MetadataDisplayPanel
 		metadata.put(keyOf("SIMPLE", list), Boolean.TRUE);
 		metadata.put(keyOf("NAXIS1", list), 0);
 		metadata.put(keyOf("DATE", list), ImmutableList.of("20180525", "/ Here's a fits comment", "Fictitious third element"));
-		//		metadata.put(keyOf("DATE long title should make the column wider", list), "20180525");
-		//		metadata.put(keyOf("DATE", list), "20180525 Sure and tis a very long string, to be sure, oh yes oy what else could I say to make it longer still?");
-		//		metadata.put(keyOf("DATE", list), "20180525 Sure and tis a very long string, to be sure, oh yes oy what else could I say to make it longer still? I mean so ridiculatloyl long that it exceeds the width of a normal labptop screeen  to ever even conceive of diplaying it without cutting off the dsmn table?");
+		// metadata.put(keyOf("DATE long title should make the column wider", list),
+		// "20180525");
+		// metadata.put(keyOf("DATE", list), "20180525 Sure and tis a very long string,
+		// to be sure, oh yes oy what else could I say to make it longer still?");
+		// metadata.put(keyOf("DATE", list), "20180525 Sure and tis a very long string,
+		// to be sure, oh yes oy what else could I say to make it longer still? I mean
+		// so ridiculatloyl long that it exceeds the width of a normal labptop screeen
+		// to ever even conceive of diplaying it without cutting off the dsmn table?");
 		metadata.put(keyOf("X", list), 0.5);
 		metadata.put(Key.of("DO NOT DISPLAY THIS!"), "This key isn't tracked, so it should not show up in the table");
 		for (int index = 0; index < 30; ++index)
@@ -319,7 +328,7 @@ public class MetadataDisplayPanel
 		}
 
 		// Uncomment this to confirm it makes the test fail to start.
-		//		list.add(Key.of("Illegal key not bound to metadata"));
+		// list.add(Key.of("Illegal key not bound to metadata"));
 
 		display(metadata, list, "Keyword", ImmutableList.of("Value", "Comment"));
 	}

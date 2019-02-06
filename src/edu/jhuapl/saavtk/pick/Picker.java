@@ -1,8 +1,6 @@
 package edu.jhuapl.saavtk.pick;
 
 import java.awt.Cursor;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -10,45 +8,35 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 
-import javax.swing.SwingUtilities;
-import javax.swing.Timer;
-
-import edu.jhuapl.saavtk.util.Configuration;
 import vtk.vtkCellPicker;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 /**
- * A picker is a class that listens on mouse events on the renderer and responds
- * appropriately. There can be more than 1 picker active at any given time. The
- * PickManager class (also a subclass of this) is responsible for initializing
- * and managing all the pickers.
+ * The Picker class responds to (mouse / keyboard) events on the renderer. There
+ * can be more than 1 picker active at any given time.
+ * <P>
+ * The PickManager class is responsible for managing all the Pickers.
  */
-public abstract class Picker implements MouseListener, MouseMotionListener, MouseWheelListener, KeyListener, PropertyChangeListener
+public abstract class Picker implements MouseListener, MouseMotionListener, MouseWheelListener, KeyListener
 {
-	protected final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
-
-	public void addPropertyChangeListener(PropertyChangeListener listener)
-	{
-		this.pcs.addPropertyChangeListener(listener);
-	}
-
-	public void removePropertyChangeListener(PropertyChangeListener listener)
-	{
-		this.pcs.removePropertyChangeListener(listener);
-	}
-
-	// not sure if volatile is really needed, but just to be sure
-	private static volatile boolean pickingEnabled = true;
-
+	// Constants
 	public static final double DEFAULT_PICK_TOLERANCE = 0.002;
 	public static final double MINIMUM_PICK_TOLERANCE = 0.0002;
 	public static final double MAXIMUM_PICK_TOLERANCE = 0.005;
 
+	// State vars
 	private double pickTolerance = DEFAULT_PICK_TOLERANCE;
+
+	/**
+	 * Method which returns the appropriate cursor to be used by this Picker.
+	 * <P>
+	 * The returned value may differ over time based on the state of the Picker.
+	 */
+	public int getCursorType()
+	{
+		return Cursor.DEFAULT_CURSOR;
+	}
 
 	public double getPickTolerance()
 	{
@@ -61,39 +49,15 @@ public abstract class Picker implements MouseListener, MouseMotionListener, Mous
 	}
 
 	/**
-	 * Unfortunately, crashes sometimes occur if the user drags around the mouse
-	 * during a long running operation (e.g. changing to a high resolution). To
-	 * prevent this, the following global function is provided to allow disabling of
-	 * picking during such operations. Note that if the picking is requested to be
-	 * enabled, a delay of half a second is made before enabling picking.
-	 *
-	 * TODO This is just a hack, investigate the cause of the crash more fully.
-	 *
-	 * @param b
+	 * Method that returns true whenever a Picker wants to have exclusive control of
+	 * the mouse events.
+	 * <P>
+	 * This typically occurs during some mutation action where if the ShapeModel was
+	 * mutated at the same time then the user's current edit would be messed up.
 	 */
-	public static void setPickingEnabled(boolean b)
+	public boolean isExclusiveMode()
 	{
-		if (b == false)
-		{
-			pickingEnabled = false;
-		}
-		else
-		{
-			// Delay half a second before enabling picking. This helps prevent some crashes.
-
-			int delay = 500; //milliseconds
-			ActionListener taskPerformer = new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent evt)
-				{
-					pickingEnabled = true;
-				}
-			};
-
-			Timer timer = new Timer(delay, taskPerformer);
-			timer.setRepeats(false);
-			timer.start();
-		}
+		return true;
 	}
 
 	@Override
@@ -140,21 +104,6 @@ public abstract class Picker implements MouseListener, MouseMotionListener, Mous
 	public void keyReleased(KeyEvent e)
 	{}
 
-	@Override
-	public void propertyChange(PropertyChangeEvent evt)
-	{}
-
-	/**
-	 * Get the default cursor to be used when this picker is active. Note this may
-	 * be different than the value of Cursor.DEFAULT_CURSOR or
-	 * Cursor.getDefaultCursor().
-	 *
-	 * @return
-	 */
-	public int getDefaultCursor()
-	{
-		return Cursor.DEFAULT_CURSOR;
-	}
 	/*
 	 * protected int doPick(MouseEvent e, vtkCellPicker picker, vtksbmtJoglCanvas
 	 * renWin) { if (pickingEnabled == false) return 0;
@@ -195,7 +144,7 @@ public abstract class Picker implements MouseListener, MouseMotionListener, Mous
 
 	protected int doPick(final long when, int x, int y, vtkCellPicker picker, vtkJoglPanelComponent renWin)
 	{
-		if (pickingEnabled == false)
+		if (PickUtil.pickingEnabled == false)
 			return 0;
 
 		// 2018-04-30 Peachey. Commenting out the elapsed time check below for now to address redmine #1165.
@@ -238,40 +187,6 @@ public abstract class Picker implements MouseListener, MouseMotionListener, Mous
 		renWin.getVTKLock().unlock();
 
 		return pickSucceeded;
-	}
-
-	// We do not rely on the OS for the popup trigger in the renderer (as explained in a comment
-	// in the DefaultPicker.mouseClicked function), we need to role out our own popup trigger logic.
-	// That's we why have the following complicated function. It's easier on non-macs. On macs
-	// we try to mimic the default behaviour where a Control + left mouse click is a popup trigger.
-	// Also for some reason, if you left mouse click while holding down the Command button, then
-	// SwingUtilities.isRightMouseButton() returns true. We therefore also prevent a popup from
-	// showing in this situation.
-	static public boolean isPopupTrigger(MouseEvent e)
-	{
-		if (Configuration.isMac())
-		{
-			if (e.getButton() == MouseEvent.BUTTON1 && e.isControlDown())
-			{
-				return true;
-			}
-
-			if (!(e.getButton() == MouseEvent.BUTTON1 && e.isMetaDown()) && SwingUtilities.isRightMouseButton(e))
-			{
-				return true;
-			}
-		}
-		else if (SwingUtilities.isRightMouseButton(e))
-		{
-			return true;
-		}
-
-		return false;
-	}
-
-	public boolean isPickingEnabled()
-	{
-		return pickingEnabled;
 	}
 
 }

@@ -21,6 +21,9 @@ import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.FacetColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
+import edu.jhuapl.saavtk.model.structure.LineModel;
+import edu.jhuapl.saavtk.model.structure.StructuresExporter;
+import edu.jhuapl.saavtk.model.structure.esri.VtkFileUtil;
 import edu.jhuapl.saavtk.util.MathUtil;
 import vtk.vtkCamera;
 import vtk.vtkProp;
@@ -131,8 +134,10 @@ abstract public class StructuresPopupMenu extends PopupMenu
 			displayInteriorMenuItem.setText("Display Interior");
 			this.add(displayInteriorMenuItem);
 		}
-	}
 
+	}
+	
+	
 	@Override
 	public void show(Component invoker, int x, int y)
 	{

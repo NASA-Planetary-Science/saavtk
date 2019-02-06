@@ -212,7 +212,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 				lin.fromXmlDomElement(el, shapeModelName, append);
 
 				this.lines.add(lin);
-				setStructureLabel(lines.size() - 1, lines.get(lines.size() - 1).label);
+				setStructureLabel(lines.size() - 1, lines.get(lines.size() - 1).getLabel());
 			}
 		}
 
@@ -235,7 +235,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		{
 			Line lin = this.lines.get(j);
 
-			int[] color = lin.color;
+			int[] color = lin.getColor();
 
 			if (Arrays.binarySearch(this.selectedStructures, j) >= 0)
 				color = getCommonData().getSelectionColor();
@@ -285,7 +285,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		{
 			Line lin = this.lines.get(j);
 
-			int[] color = lin.color;
+			int[] color = lin.getColor();
 
 			if (Arrays.binarySearch(this.selectedStructures, j) >= 0)
 				color = getCommonData().getSelectionColor();
@@ -338,19 +338,14 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		for (int j = 0; j < this.lines.size(); ++j)
 		{
 			Line lin = this.lines.get(j);
-			if (lin.label != null && !lin.labelHidden && !lin.hidden && lin.caption != null)
+			if (lin.getLabel() != null && !lin.labelHidden && !lin.hidden && lin.caption != null)
 			{
 				lin.caption.SetAttachmentPoint(lin.getCentroid());
 				actors.add(lin.caption);
 			}
 		}
-
-		lineActor.SetMapper(lineMapper);
-		((SaavtkLODActor) lineActor).setLODMapper(decimatedLineMapper);
-		lineActor.Modified();
-
+		
 	}
-
 	@Override
 	public List<vtkProp> getProps()
 	{
@@ -421,18 +416,24 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		int numberOfPoints = 0;
 		for (Line lin : this.lines)
 		{
-			numberOfPoints += lin.controlPoints.size();
+			numberOfPoints += lin.getControlPoints().size();
 		}
 		return numberOfPoints;
 	}
 
 	@Override
-	public void addNewStructure()
+	public Structure addNewStructure()
 	{
 		Line lin = (Line) createStructure(smallBodyModel);
 		lines.add(lin);
 		activateStructure(lines.size() - 1);
+		
+		lineActor.SetMapper(lineMapper);
+		((SaavtkLODActor) lineActor).setLODMapper(decimatedLineMapper);
+		lineActor.Modified();
+
 		this.pcs.firePropertyChange(Properties.STRUCTURE_ADDED, null, null);
+		return lin;
 	}
 
 	@Override
@@ -440,10 +441,10 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	{
 		Line lin = lines.get(activatedLine);
 
-		int numVertices = lin.controlPoints.size();
+		int numVertices = lin.getControlPoints().size();
 
 		LatLon ll = MathUtil.reclat(newPoint);
-		lin.controlPoints.set(vertexId, ll);
+		lin.setControlPoint(vertexId, ll);
 
 		// If we're modifying the last vertex
 		if (vertexId == numVertices - 1)
@@ -490,7 +491,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		LatLon ll = MathUtil.reclat(newPoint);
 
-		lin.controlPoints.add(currentLineVertex + 1, ll);
+		lin.addControlPoint(currentLineVertex + 1, ll);
 
 		// Remove points BETWEEN the 2 control points (If we're adding a point in the middle)
 		if (currentLineVertex < lin.controlPointIds.size() - 1)
@@ -557,7 +558,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		int vertexId = currentLineVertex;
 
-		lin.controlPoints.remove(vertexId);
+		lin.removeControlPoint(vertexId);
 
 		// If not in CLOSED mode:
 		// If one of the end points is being removed, then we only need to remove the line connecting the
@@ -954,7 +955,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 				lin.updateSegment(i);
 
 			if (mode == Mode.CLOSED)
-				lin.updateSegment(lin.controlPoints.size() - 1);
+				lin.updateSegment(lin.getControlPoints().size() - 1);
 		}
 
 		updatePolyData();
@@ -1380,7 +1381,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		// Create a caption if necessary
 		if (tmpStruct.caption == null)
-			tmpStruct.caption = formCaption(smallBodyModel, tmpStruct.getCentroid(), tmpStruct.name, aLabel);
+			tmpStruct.caption = formCaption(smallBodyModel, tmpStruct.getCentroid(), tmpStruct.getName(), aLabel);
 
 		// Update the caption and send out notification
 		tmpStruct.caption.SetCaption(aLabel);

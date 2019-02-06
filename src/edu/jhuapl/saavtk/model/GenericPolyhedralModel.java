@@ -146,7 +146,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	private vtkPolyDataMapper linesMapper;
 	private vtkActor linesActor;
 
-	// Heuristic to avoid computationally expensive paint operations when possible. 
+	// Heuristic to avoid computationally expensive paint operations when possible.
 	private Map<String, Object> paintingAttributes = null;
 
 	/**
@@ -292,16 +292,20 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			}
 		}
 
-		//		metadataFileName = SafePaths.getString(Configuration.getCacheDir(), metadataFileName);
-		//		try
-		//		{
-		//			Serializers.serialize(COLORING_METADATA_ID, coloringDataManager.getMetadataManager(false).store(), new File(metadataFileName));
-		//		}
-		//		catch (IOException e)
-		//		{
-		//			System.err.println("Exception when trying to save plate coloring metadata file");
-		//			e.printStackTrace();
-		//		}
+		// metadataFileName = SafePaths.getString(Configuration.getCacheDir(),
+		// metadataFileName);
+		// try
+		// {
+		// Serializers.serialize(COLORING_METADATA_ID,
+		// coloringDataManager.getMetadataManager(false).store(), new
+		// File(metadataFileName));
+		// }
+		// catch (IOException e)
+		// {
+		// System.err.println("Exception when trying to save plate coloring metadata
+		// file");
+		// e.printStackTrace();
+		// }
 	}
 
 	private static Format guessFormat(String baseFileName)
@@ -610,8 +614,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 			convertOldConfigFormatToNewVersion(configMap);
 
-			if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_UNITS)
-					&& configMap.containsKey(GenericPolyhedralModel.CELL_DATA_HAS_NULLS))
+			if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_UNITS) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_HAS_NULLS))
 			{
 				String[] cellDataFilenames = configMap.get(GenericPolyhedralModel.CELL_DATA_FILENAMES).split(",", -1);
 				String[] cellDataNames = configMap.get(GenericPolyhedralModel.CELL_DATA_NAMES).split(",", -1);
@@ -646,7 +649,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			}
 		}
 
-		// Now that we're done loading the custom colors, see if it's possible again to select the original selection.
+		// Now that we're done loading the custom colors, see if it's possible again to
+		// select the original selection.
 		coloringIndex = -1;
 		ImmutableList<String> names = coloringDataManager.getNames();
 		for (int index = 0; index < names.size(); ++index)
@@ -709,7 +713,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			}
 		}
 
-		// See if there's a Lidar datasource of the same name as previously shown and set it to that.
+		// See if there's a Lidar datasource of the same name as previously shown and
+		// set it to that.
 		lidarDatasourceIndex = -1;
 		for (int i = 0; i < lidarDatasourceInfo.size(); ++i)
 		{
@@ -744,8 +749,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		this.computeShapeModelStatistics();
 
-		//this.computeLargestSmallestEdgeLength();
-		//this.computeSurfaceArea();
+		// this.computeLargestSmallestEdgeLength();
+		// this.computeSurfaceArea();
 	}
 
 	private boolean defaultModelInitialized;
@@ -773,8 +778,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		this.computeShapeModelStatistics();
 
-		//this.computeLargestSmallestEdgeLength();
-		//this.computeSurfaceArea();
+		// this.computeLargestSmallestEdgeLength();
+		// this.computeSurfaceArea();
 
 		defaultModelInitialized = true;
 	}
@@ -792,8 +797,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		cellLocator.SetDataSet(smallBodyPolyData);
 		cellLocator.CacheCellBoundsOn();
 		cellLocator.AutomaticOn();
-		//cellLocator.SetMaxLevel(10);
-		//cellLocator.SetNumberOfCellsPerNode(5);
+		// cellLocator.SetMaxLevel(10);
+		// cellLocator.SetNumberOfCellsPerNode(5);
 		cellLocator.SetTolerance(1e-15);
 		cellLocator.BuildLocator();
 
@@ -873,8 +878,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			else
 			{
 				// Old way of determining cube size, most models still use this
-				double diagonalLength =
-						new BoundingBox(getLowResSmallBodyPolyData().GetBounds()).getDiagonalLength();
+				double diagonalLength = new BoundingBox(getLowResSmallBodyPolyData().GetBounds()).getDiagonalLength();
 				// The number 38.66056033363347 is used here so that the cube size
 				// comes out to 1 km for Eros (whose diagonaLength equals 38.6605...).
 				cubeSize = diagonalLength / 38.66056033363347;
@@ -1084,7 +1088,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		int[] subId = new int[1];
 		double[] dist2 = new double[1];
 
-		// Use FindClosestPoint rather the FindCell since not sure what tolerance to use in the latter.
+		// Use FindClosestPoint rather the FindCell since not sure what tolerance to use
+		// in the latter.
 		cellLocator.FindClosestPoint(pt, closestPoint, genericCell, cellId, subId, dist2);
 
 		return cellId[0];
@@ -1158,6 +1163,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public int computeRayIntersection(double[] origin, double[] direction, double[] intersectPoint)
 	{
 		double distance = MathUtil.vnorm(origin);
+		if (distance==0)
+			distance=getBoundingBoxDiagonalLength();
+		
 		double[] lookPt = new double[3];
 		lookPt[0] = origin[0] + 2.0 * distance * direction[0];
 		lookPt[1] = origin[1] + 2.0 * distance * direction[1];
@@ -1197,18 +1205,17 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			smallBodyMapper.SetLookupTable(lookupTable);
 			smallBodyMapper.UseLookupTableScalarRangeOn();
 
-			//smallBodyActor = new vtkActor();
+			// smallBodyActor = new vtkActor();
 			smallBodyActor = new SaavtkLODActor();
 			smallBodyActor.SetMapper(smallBodyMapper);
 
-			vtkPolyDataMapper decimatedMapper =
-					((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+			vtkPolyDataMapper decimatedMapper = ((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
 			decimatedMapper.SetLookupTable(lookupTable);
 			decimatedMapper.UseLookupTableScalarRangeOn();
 			vtkProperty smallBodyProperty = smallBodyActor.GetProperty();
 			smallBodyProperty.SetInterpolationToGouraud();
-			//smallBodyProperty.SetSpecular(.1);
-			//smallBodyProperty.SetSpecularPower(100);
+			// smallBodyProperty.SetSpecular(.1);
+			// smallBodyProperty.SetSpecularPower(100);
 
 			smallBodyActors.add(smallBodyActor);
 
@@ -1694,40 +1701,41 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 	}
 
-	//	private void invertLookupTableCharArray(vtkUnsignedCharArray table)
-	//	{
-	//		int numberOfValues = table.GetNumberOfTuples();
-	//		for (int i = 0; i < numberOfValues / 2; ++i)
-	//		{
-	//			double[] v1 = table.GetTuple4(i);
-	//			double[] v2 = table.GetTuple4(numberOfValues - i - 1);
-	//			table.SetTuple4(i, v2[0], v2[1], v2[2], v2[3]);
-	//			table.SetTuple4(numberOfValues - i - 1, v1[0], v1[1], v1[2], v1[3]);
-	//		}
-	//	}
+	// private void invertLookupTableCharArray(vtkUnsignedCharArray table)
+	// {
+	// int numberOfValues = table.GetNumberOfTuples();
+	// for (int i = 0; i < numberOfValues / 2; ++i)
+	// {
+	// double[] v1 = table.GetTuple4(i);
+	// double[] v2 = table.GetTuple4(numberOfValues - i - 1);
+	// table.SetTuple4(i, v2[0], v2[1], v2[2], v2[3]);
+	// table.SetTuple4(numberOfValues - i - 1, v1[0], v1[1], v1[2], v1[3]);
+	// }
+	// }
 	//
-	//	/**
-	//	 * Invert the lookup table so that red is high values and blue is low values
-	//	 * (rather than the reverse).
-	//	 */
-	//	private void invertLookupTable()
-	//	{
-	//		vtkLookupTable lookupTable = (vtkLookupTable) smallBodyMapper.GetLookupTable();
-	//		vtkUnsignedCharArray table = lookupTable.GetTable();
+	// /**
+	// * Invert the lookup table so that red is high values and blue is low values
+	// * (rather than the reverse).
+	// */
+	// private void invertLookupTable()
+	// {
+	// vtkLookupTable lookupTable = (vtkLookupTable)
+	// smallBodyMapper.GetLookupTable();
+	// vtkUnsignedCharArray table = lookupTable.GetTable();
 	//
-	//		invertLookupTableCharArray(table);
-	//		//        int numberOfValues = table.GetNumberOfTuples();
-	//		//        for (int i=0; i<numberOfValues/2; ++i)
-	//		//        {
-	//		//            double[] v1 = table.GetTuple4(i);
-	//		//            double[] v2 = table.GetTuple4(numberOfValues-i-1);
-	//		//            table.SetTuple4(i, v2[0], v2[1], v2[2], v2[3]);
-	//		//            table.SetTuple4(numberOfValues-i-1, v1[0], v1[1], v1[2], v1[3]);
-	//		//        }
+	// invertLookupTableCharArray(table);
+	// // int numberOfValues = table.GetNumberOfTuples();
+	// // for (int i=0; i<numberOfValues/2; ++i)
+	// // {
+	// // double[] v1 = table.GetTuple4(i);
+	// // double[] v2 = table.GetTuple4(numberOfValues-i-1);
+	// // table.SetTuple4(i, v2[0], v2[1], v2[2], v2[3]);
+	// // table.SetTuple4(numberOfValues-i-1, v1[0], v1[1], v1[2], v1[3]);
+	// // }
 	//
-	//		lookupTable.SetTable(table);
-	//		smallBodyMapper.Modified();
-	//	}
+	// lookupTable.SetTable(table);
+	// smallBodyMapper.Modified();
+	// }
 	//
 	@Override
 	public void setColoringIndex(int index) throws IOException
@@ -2255,8 +2263,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 					smallBodyMapper.SetLookupTable(colormap.getLookupTable());
 
-					vtkPolyDataMapper decimatedMapper =
-							((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+					vtkPolyDataMapper decimatedMapper = ((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
 					decimatedMapper.SetLookupTable(colormap.getLookupTable());
 					decimatedMapper.UseLookupTableScalarRangeOn();
 
@@ -2274,8 +2281,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				doPaint |= checkAndSave("contourLineWidth", contourLineWidth, newPaintingAttributes);
 				if (doPaint)
 				{
-					vtkPolyDataMapper decimatedMapper =
-							((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+					vtkPolyDataMapper decimatedMapper = ((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
 					decimatedMapper.ScalarVisibilityOff();
 					smallBodyMapper.ScalarVisibilityOff();
 
@@ -2292,7 +2298,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 						converter.SetInputData(smallBodyPolyData);
 						converter.PassCellDataOff();
 						converter.Update();
-						polyData = converter.GetPolyDataOutput(); // contour filter requires point data with one component
+						polyData = converter.GetPolyDataOutput(); // contour filter requires point data with one
+																	// component
 					}
 
 					vtkContourFilter contourFilter = new vtkContourFilter();
@@ -2300,8 +2307,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 					contourFilter.GenerateValues(colormap.getNumberOfLevels(), colormap.getRangeMin(), colormap.getRangeMax());
 					contourFilter.Update();
 
-					linesMapper =
-							((SaavtkLODActor) linesActor).setQuadricDecimatedLODMapper(contourFilter.GetOutput());
+					linesMapper = ((SaavtkLODActor) linesActor).setQuadricDecimatedLODMapper(contourFilter.GetOutput());
 
 					linesMapper.SetInputData(contourFilter.GetOutput());
 					linesMapper.ScalarVisibilityOn();
@@ -2348,8 +2354,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				}
 				else
 				{
-					vtkPolyDataMapper decimatedMapper =
-							((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+					vtkPolyDataMapper decimatedMapper = ((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
 					decimatedMapper.ScalarVisibilityOff();
 					smallBodyMapper.ScalarVisibilityOff();
 				}
@@ -2481,14 +2486,14 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			cellLocator.Delete();
 		if (pointLocator != null)
 			pointLocator.Delete();
-		//if (lowResPointLocator != null) lowResPointLocator.Delete();
+		// if (lowResPointLocator != null) lowResPointLocator.Delete();
 		if (genericCell != null)
 			genericCell.Delete();
 		if (scalarBarActor != null)
 			scalarBarActor.Delete();
 		if (smallBodyPolyData != null)
 			smallBodyPolyData.Delete();
-		//if (lowResSmallBodyPolyData != null) lowResSmallBodyPolyData.Delete();
+		// if (lowResSmallBodyPolyData != null) lowResSmallBodyPolyData.Delete();
 	}
 
 	private void setupScaleBar()

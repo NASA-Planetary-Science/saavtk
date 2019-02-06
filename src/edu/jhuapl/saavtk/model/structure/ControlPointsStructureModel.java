@@ -2,9 +2,8 @@ package edu.jhuapl.saavtk.model.structure;
 
 import java.io.File;
 
-import vtk.vtkActor;
-
 import edu.jhuapl.saavtk.model.StructureModel;
+import vtk.vtkActor;
 
 
 /**

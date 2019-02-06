@@ -75,7 +75,9 @@ public class RenderPanel extends vtkJoglPanelComponent implements ComponentListe
 	public RenderPanel()
 	{
 		getInteractorForwarder().setEventInterceptor(new Interceptor());
+
 		interactorStyle = new CustomInteractorStyle(getRenderWindowInteractor());
+		windowInteractor.SetInteractorStyle(interactorStyle);
 
 		propRenderer = getRenderer();
 
@@ -154,15 +156,12 @@ public class RenderPanel extends vtkJoglPanelComponent implements ComponentListe
 		getComponent().addComponentListener(this);
 	}
 
-	public void setInteractorStyleToDefault()
+	public void setInteractorEnableState(boolean aBool)
 	{
-
-		if (this.windowInteractor != null)
-		{
-			this.lock.lock();
-			this.windowInteractor.SetInteractorStyle(interactorStyle);
-			this.lock.unlock();
-		}
+		if (aBool == true)
+			windowInteractor.Enable();
+		else
+			windowInteractor.Disable();
 	}
 
 	public void mouseOff()
