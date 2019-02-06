@@ -56,8 +56,6 @@ public class Line extends StructureModel.Structure
 	public boolean hidden = false;
 	public boolean labelHidden = false;
 
-	private PolyhedralModel smallBodyModel;
-
 	private static final int[] purpleColor = { 255, 0, 255, 255 }; // RGBA purple
 	protected static final DecimalFormat decimalFormatter = new DecimalFormat("#.###");
 
@@ -76,10 +74,9 @@ public class Line extends StructureModel.Structure
 
 	private final Configuration<KeyValueCollection<SettableValue<?>>> configuration;
 
-	public Line(PolyhedralModel smallBodyModel, boolean closed, int id)
+	public Line(boolean closed, int id)
 	{
 		this.configuration = createConfiguration(id, purpleColor.clone());
-		this.smallBodyModel = smallBodyModel;
 		this.closed = closed;
 	}
 
@@ -205,7 +202,7 @@ public class Line extends StructureModel.Structure
 		return linEle;
 	}
 
-	public void fromXmlDomElement(Element element, String shapeModelName, boolean append)
+	public void fromXmlDomElement(PolyhedralModel smallBodyModel, Element element, String shapeModelName, boolean append)
 	{
 		controlPoints.clear();
 		controlPointIds.clear();
@@ -238,7 +235,7 @@ public class Line extends StructureModel.Structure
 			addControlPoint(count, new LatLon(lat, lon, rad));
 
 			if (shapeModelName == null || !shapeModelName.equals(smallBodyModel.getModelName()))
-				shiftPointOnPathToClosestPointOnAsteroid(count);
+				shiftPointOnPathToClosestPointOnAsteroid(smallBodyModel, count);
 
 			controlPointIds.add(xyzPointList.size());
 
@@ -248,7 +245,7 @@ public class Line extends StructureModel.Structure
 			xyzPointList.add(new Point3D(dummy));
 
 			if (count > 0)
-				this.updateSegment(count - 1);
+				this.updateSegment(smallBodyModel, count - 1);
 
 			++count;
 		}
@@ -256,7 +253,7 @@ public class Line extends StructureModel.Structure
 		if (closed)
 		{
 			// In CLOSED mode need to add segment connecting final point to initial point
-			this.updateSegment(controlPointIds.size() - 1);
+			this.updateSegment(smallBodyModel, controlPointIds.size() - 1);
 		}
 
 		tmp = element.getAttribute(COLOR.getId());
@@ -300,7 +297,7 @@ public class Line extends StructureModel.Structure
 		return length;
 	}
 
-	public void updateSegment(int segment)
+	public void updateSegment(PolyhedralModel smallBodyModel, int segment)
 	{
 		int nextSegment = segment + 1;
 		if (nextSegment == getControlPoints().size())
@@ -359,7 +356,7 @@ public class Line extends StructureModel.Structure
 
 	}
 
-	public void shiftPointOnPathToClosestPointOnAsteroid(int idx)
+	public void shiftPointOnPathToClosestPointOnAsteroid(PolyhedralModel smallBodyModel, int idx)
 	{
 		// When the resolution changes, the control points, might no longer
 		// be touching the asteroid. Therefore shift each control to the closest
@@ -371,7 +368,7 @@ public class Line extends StructureModel.Structure
 		setControlPoint(idx, ll);
 	}
 
-	public double[] getCentroid()
+	public double[] getCentroid(PolyhedralModel smallBodyModel)
 	{
 		int size = getControlPoints().size();
 
@@ -394,11 +391,11 @@ public class Line extends StructureModel.Structure
 		return closestPoint;
 	}
 
-	public double getSize()
+	public double getSize(PolyhedralModel smallBodyModel)
 	{
 		int size = getControlPoints().size();
 
-		double[] centroid = getCentroid();
+		double[] centroid = getCentroid(smallBodyModel);
 		double maxDistFromCentroid = 0.0;
 		for (int i = 0; i < size; ++i)
 		{

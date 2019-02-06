@@ -209,7 +209,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 				Line lin = (Line) createStructure(smallBodyModel);
 
-				lin.fromXmlDomElement(el, shapeModelName, append);
+				lin.fromXmlDomElement(smallBodyModel, el, shapeModelName, append);
 
 				this.lines.add(lin);
 				setStructureLabel(lines.size() - 1, lines.get(lines.size() - 1).getLabel());
@@ -340,12 +340,13 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 			Line lin = this.lines.get(j);
 			if (lin.getLabel() != null && !lin.labelHidden && !lin.hidden && lin.caption != null)
 			{
-				lin.caption.SetAttachmentPoint(lin.getCentroid());
+				lin.caption.SetAttachmentPoint(lin.getCentroid(smallBodyModel));
 				actors.add(lin.caption);
 			}
 		}
-		
+
 	}
+
 	@Override
 	public List<vtkProp> getProps()
 	{
@@ -427,7 +428,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		Line lin = (Line) createStructure(smallBodyModel);
 		lines.add(lin);
 		activateStructure(lines.size() - 1);
-		
+
 		lineActor.SetMapper(lineMapper);
 		((SaavtkLODActor) lineActor).setLODMapper(decimatedLineMapper);
 		lineActor.Modified();
@@ -449,22 +450,22 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		// If we're modifying the last vertex
 		if (vertexId == numVertices - 1)
 		{
-			lin.updateSegment(vertexId - 1);
+			lin.updateSegment(smallBodyModel, vertexId - 1);
 			if (mode == Mode.CLOSED)
-				lin.updateSegment(vertexId);
+				lin.updateSegment(smallBodyModel, vertexId);
 		}
 		// If we're modifying the first vertex
 		else if (vertexId == 0)
 		{
 			if (mode == Mode.CLOSED)
-				lin.updateSegment(numVertices - 1);
-			lin.updateSegment(vertexId);
+				lin.updateSegment(smallBodyModel, numVertices - 1);
+			lin.updateSegment(smallBodyModel, vertexId);
 		}
 		// If we're modifying a middle vertex
 		else
 		{
-			lin.updateSegment(vertexId - 1);
-			lin.updateSegment(vertexId);
+			lin.updateSegment(smallBodyModel, vertexId - 1);
+			lin.updateSegment(smallBodyModel, vertexId);
 		}
 
 		updatePolyData();
@@ -527,14 +528,14 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 			}
 			else if (currentLineVertex < lin.controlPointIds.size() - 2)
 			{
-				lin.updateSegment(currentLineVertex);
-				lin.updateSegment(currentLineVertex + 1);
+				lin.updateSegment(smallBodyModel, currentLineVertex);
+				lin.updateSegment(smallBodyModel, currentLineVertex + 1);
 			}
 			else
 			{
-				lin.updateSegment(currentLineVertex);
+				lin.updateSegment(smallBodyModel, currentLineVertex);
 				if (mode == Mode.CLOSED)
-					lin.updateSegment(currentLineVertex + 1);
+					lin.updateSegment(smallBodyModel, currentLineVertex + 1);
 			}
 		}
 
@@ -596,7 +597,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 					}
 
 					// redraw segment connecting last point to first
-					lin.updateSegment(lin.controlPointIds.size() - 1);
+					lin.updateSegment(smallBodyModel, lin.controlPointIds.size() - 1);
 				}
 			}
 			// Remove final point
@@ -625,7 +626,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 				if (mode == Mode.CLOSED)
 				{
 					// redraw segment connecting last point to first
-					lin.updateSegment(lin.controlPointIds.size() - 1);
+					lin.updateSegment(smallBodyModel, lin.controlPointIds.size() - 1);
 				}
 			}
 			// Remove a middle point
@@ -644,7 +645,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 				for (int i = vertexId; i < lin.controlPointIds.size(); ++i)
 					lin.controlPointIds.set(i, lin.controlPointIds.get(i) - numberPointsRemoved);
 
-				lin.updateSegment(vertexId - 1);
+				lin.updateSegment(smallBodyModel, vertexId - 1);
 			}
 		}
 		else if (lin.controlPointIds.size() == 1)
@@ -949,13 +950,13 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		for (Line lin : this.lines)
 		{
 			for (int i = 0; i < lin.controlPointIds.size(); ++i)
-				lin.shiftPointOnPathToClosestPointOnAsteroid(i);
+				lin.shiftPointOnPathToClosestPointOnAsteroid(smallBodyModel, i);
 
 			for (int i = 0; i < lin.controlPointIds.size() - 1; ++i)
-				lin.updateSegment(i);
+				lin.updateSegment(smallBodyModel, i);
 
 			if (mode == Mode.CLOSED)
-				lin.updateSegment(lin.getControlPoints().size() - 1);
+				lin.updateSegment(smallBodyModel, lin.getControlPoints().size() - 1);
 		}
 
 		updatePolyData();
@@ -1338,7 +1339,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public double[] getStructureCenter(int id)
 	{
-		return lines.get(id).getCentroid();
+		return lines.get(id).getCentroid(smallBodyModel);
 	}
 
 	@Override
@@ -1351,12 +1352,12 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public double getStructureSize(int id)
 	{
-		return lines.get(id).getSize();
+		return lines.get(id).getSize(smallBodyModel);
 	}
 
 	protected StructureModel.Structure createStructure(PolyhedralModel smallBodyModel)
 	{
-		return new Line(smallBodyModel, false, ++maxPolygonId);
+		return new Line(false, ++maxPolygonId);
 	}
 
 	@Override
@@ -1381,7 +1382,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		// Create a caption if necessary
 		if (tmpStruct.caption == null)
-			tmpStruct.caption = formCaption(smallBodyModel, tmpStruct.getCentroid(), tmpStruct.getName(), aLabel);
+			tmpStruct.caption = formCaption(smallBodyModel, tmpStruct.getCentroid(smallBodyModel), tmpStruct.getName(), aLabel);
 
 		// Update the caption and send out notification
 		tmpStruct.caption.SetCaption(aLabel);
