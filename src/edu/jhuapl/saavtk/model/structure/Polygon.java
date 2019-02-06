@@ -15,18 +15,16 @@ public class Polygon extends Line
 {
 	public vtkPolyData interiorPolyData;
 	public vtkPolyData decimatedInteriorPolyData;
-	private PolyhedralModel smallBodyModel;
 	private double surfaceArea = 0.0;
 	private boolean showInterior = false;
 
 	public static final String POLYGON = "polygon";
 	public static final String AREA = "area";
 
-	public Polygon(PolyhedralModel smallBodyModel, int id)
+	public Polygon(int id)
 	{
 		super(id);
 
-		this.smallBodyModel = smallBodyModel;
 		interiorPolyData = new vtkPolyData();
 		decimatedInteriorPolyData = new vtkPolyData();
 	}
@@ -49,7 +47,7 @@ public class Polygon extends Line
 		return "Polygon, Id = " + getId() + ", Length = " + decimalFormatter.format(getPathLength()) + " km" + ", Surface Area = " + decimalFormatter.format(surfaceArea) + " km^2" + ", Number of Vertices = " + getControlPoints().size();
 	}
 
-	public void setShowInterior(boolean showInterior)
+	public void setShowInterior(PolyhedralModel smallBodyModel, boolean showInterior)
 	{
 		this.showInterior = showInterior;
 
@@ -58,7 +56,7 @@ public class Polygon extends Line
 			//            smallBodyModel.drawPolygon(controlPoints, interiorPolyData, null);
 			//            surfaceArea = PolyDataUtil.computeSurfaceArea(interiorPolyData);
 
-			updateInteriorPolydata();
+			updateInteriorPolydata(smallBodyModel);
 
 			// Decimate interiorPolyData for LODs
 			vtkQuadricClustering decimator = new vtkQuadricClustering();
@@ -77,7 +75,7 @@ public class Polygon extends Line
 		}
 	}
 
-	protected void updateInteriorPolydata()
+	protected void updateInteriorPolydata(PolyhedralModel smallBodyModel)
 	{
 		if (!showInterior)
 			return;

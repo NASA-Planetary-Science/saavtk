@@ -62,7 +62,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		CLOSED
 	}
 
-	private List<Line> lines = new ArrayList<Line>();
+	private List<Line> lines = new ArrayList<>();
 
 	public List<Line> getLines()
 	{
@@ -73,7 +73,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	private vtkPolyData decimatedLinesPolyData;
 	private vtkPolyData activationPolyData;
 
-	private List<vtkProp> actors = new ArrayList<vtkProp>();
+	private List<vtkProp> actors = new ArrayList<>();
 	private vtkPolyDataMapper lineMapper;
 	private vtkPolyDataMapper decimatedLineMapper;
 	private vtkPolyDataMapper lineActivationMapper;
@@ -199,7 +199,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		if (element.hasAttribute(SHAPE_MODEL_NAME))
 			shapeModelName = element.getAttribute(SHAPE_MODEL_NAME);
 
-		Line dummyLine = (Line) createStructure(smallBodyModel);
+		Line dummyLine = (Line) createStructure();
 		NodeList nl = element.getElementsByTagName(dummyLine.getType());
 		if (nl != null && nl.getLength() > 0)
 		{
@@ -207,7 +207,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 			{
 				Element el = (Element) nl.item(i);
 
-				Line lin = (Line) createStructure(smallBodyModel);
+				Line lin = (Line) createStructure();
 
 				lin.fromXmlDomElement(smallBodyModel, el, shapeModelName, append);
 
@@ -354,7 +354,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	}
 
 	@Override
-	public String getClickStatusBarText(vtkProp prop, int cellId, double[] pickPosition)
+	public String getClickStatusBarText(vtkProp prop, int cellId, @SuppressWarnings("unused") double[] pickPosition)
 	{
 		if (prop == lineActor)
 		{
@@ -425,7 +425,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public Structure addNewStructure()
 	{
-		Line lin = (Line) createStructure(smallBodyModel);
+		Line lin = (Line) createStructure();
 		lines.add(lin);
 		activateStructure(lines.size() - 1);
 
@@ -1355,7 +1355,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		return lines.get(id).getSize(smallBodyModel);
 	}
 
-	protected StructureModel.Structure createStructure(PolyhedralModel smallBodyModel)
+	protected StructureModel.Structure createStructure()
 	{
 		return new Line(++maxPolygonId);
 	}
