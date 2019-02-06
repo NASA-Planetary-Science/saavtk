@@ -51,8 +51,8 @@ public class Line extends StructureModel.Structure
 
 	// Note xyzPointList is what's displayed. There will usually be more of these points than
 	// controlPoints in order to ensure the line is right above the surface of the asteroid.
-	public List<Point3D> xyzPointList = new ArrayList<Point3D>();
-	public List<Integer> controlPointIds = new ArrayList<Integer>();
+	public List<Point3D> xyzPointList = new ArrayList<>();
+	public List<Integer> controlPointIds = new ArrayList<>();
 	public boolean hidden = false;
 	public boolean labelHidden = false;
 
@@ -64,13 +64,13 @@ public class Line extends StructureModel.Structure
 	private static int maxId = 0;
 
 	public static final String PATH = "path";
+	public static final String LENGTH = "length";
+
 	public static final ContentKey<SettableValue<Integer>> ID = settableValues.key("id");
 	public static final ContentKey<SettableValue<String>> NAME = settableValues.key("name");
 	public static final ContentKey<SettableValue<String>> VERTICES = settableValues.key("vertices");
-	public static final String LENGTH = "length";
 	public static final ContentKey<SettableValue<int[]>> COLOR = settableValues.key("color");
 	public static final ContentKey<SettableValue<String>> LABEL = settableValues.key("label");
-	public static final String LABELCOLOR = "labelcolor";
 
 	private final Configuration<KeyValueCollection<SettableValue<?>>> configuration;
 
