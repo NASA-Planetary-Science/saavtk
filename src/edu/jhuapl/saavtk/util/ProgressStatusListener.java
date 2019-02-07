@@ -2,5 +2,5 @@ package edu.jhuapl.saavtk.util;
 
 public interface ProgressStatusListener
 {
-	public void setProgressStatus(String status);
+	public void setProgressStatus(String status, int progress);
 }
