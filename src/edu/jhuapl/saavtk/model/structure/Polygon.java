@@ -3,7 +3,10 @@ package edu.jhuapl.saavtk.model.structure;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import crucible.crust.metadata.api.Key;
+import crucible.crust.metadata.impl.InstanceGetter;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
 import vtk.vtkClipPolyData;
 import vtk.vtkPoints;
@@ -18,8 +21,8 @@ public class Polygon extends Line
 	private double surfaceArea = 0.0;
 	private boolean showInterior = false;
 
-	public static final String POLYGON = "polygon";
-	public static final String AREA = "area";
+	private static final String POLYGON = "polygon";
+	private static final String AREA = "area";
 
 	public Polygon(int id)
 	{
@@ -119,10 +122,8 @@ public class Polygon extends Line
 	public void fromXmlDomElement(PolyhedralModel smallBodyModel, Element element, String shapeModelName, boolean append)
 	{
 		super.fromXmlDomElement(smallBodyModel, element, shapeModelName, append);
-		if (element.hasAttribute(AREA))
-			surfaceArea = Double.parseDouble(element.getAttribute(AREA));
-		else
-			surfaceArea = 0.0;
+
+		updateInteriorPolydata(smallBodyModel);
 	}
 
 	@Override
@@ -131,4 +132,32 @@ public class Polygon extends Line
 		return true;
 	}
 
+	private static final Key<Polygon> POLYGON_STRUCTURE_PROXY_KEY = Key.of("Polygon");
+	private static boolean proxyInitialized = false;
+
+	public static void initializeSerializationProxy()
+	{
+		if (!proxyInitialized)
+		{
+			LatLon.initializeSerializationProxy();
+
+			InstanceGetter.defaultInstanceGetter().register(POLYGON_STRUCTURE_PROXY_KEY, source -> {
+				int id = source.get(Key.of(ID.getId()));
+
+				Polygon result = new Polygon(id);
+
+				unpackMetadata(source, result);
+
+				return result;
+			});
+
+			proxyInitialized = true;
+		}
+	}
+
+	@Override
+	public Key<Polygon> getKey()
+	{
+		return POLYGON_STRUCTURE_PROXY_KEY;
+	}
 }

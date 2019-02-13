@@ -29,6 +29,22 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import com.google.common.collect.ImmutableList;
+
+import crucible.crust.metadata.api.Key;
+import crucible.crust.metadata.api.Metadata;
+import crucible.crust.metadata.api.MetadataManager;
+import crucible.crust.settings.api.Configuration;
+import crucible.crust.settings.api.Content;
+import crucible.crust.settings.api.ContentKey;
+import crucible.crust.settings.api.KeyValueCollection;
+import crucible.crust.settings.api.Value;
+import crucible.crust.settings.api.Version;
+import crucible.crust.settings.impl.Configurations;
+import crucible.crust.settings.impl.KeyValueCollections;
+import crucible.crust.settings.impl.SettableValues;
+import crucible.crust.settings.impl.Utilities;
+import crucible.crust.settings.impl.Values;
 import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
@@ -53,7 +69,7 @@ import vtk.vtkUnsignedCharArray;
 /**
  * Model of line structures drawn on a body.
  */
-public class LineModel extends ControlPointsStructureModel implements PropertyChangeListener
+public class LineModel extends ControlPointsStructureModel implements PropertyChangeListener, MetadataManager
 {
 	public enum Mode
 	{
@@ -62,11 +78,12 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		CLOSED
 	}
 
-	private List<Line> lines = new ArrayList<>();
+	private final List<Line> lines = new ArrayList<>();
+	private final Configuration<KeyValueCollection<Content>> configuration;
 
-	public List<Line> getLines()
+	public ImmutableList<Line> getLines()
 	{
-		return lines;
+		return ImmutableList.copyOf(lines);
 	}
 
 	private vtkPolyData linesPolyData;
@@ -169,6 +186,8 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		lineActivationActor.Modified();
 
 		actors.add(lineActivationActor);
+
+		this.configuration = createConfiguration(lines);
 	}
 
 	protected String getType()
@@ -949,14 +968,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	{
 		for (Line lin : this.lines)
 		{
-			for (int i = 0; i < lin.controlPointIds.size(); ++i)
-				lin.shiftPointOnPathToClosestPointOnAsteroid(smallBodyModel, i);
-
-			for (int i = 0; i < lin.controlPointIds.size() - 1; ++i)
-				lin.updateSegment(smallBodyModel, i);
-
-			if (mode == Mode.CLOSED)
-				lin.updateSegment(smallBodyModel, lin.getControlPoints().size() - 1);
+			lin.updateAllSegments(smallBodyModel);
 		}
 
 		updatePolyData();
@@ -1405,6 +1417,46 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	protected vtkCaptionActor2D getCaption(int aIndex)
 	{
 		return lines.get(aIndex).caption;
+	}
+
+	private static final Version CONFIGURATION_VERSION = Version.of(1, 0);
+	private static final ContentKey<Value<List<Line>>> LINES_KEY = Values.fixedKey("lineStructures");
+
+	public static Configuration<KeyValueCollection<Content>> createConfiguration(List<Line> lines)
+	{
+		KeyValueCollections.Builder<Content> builder = KeyValueCollections.instance().builder();
+
+		builder.put(LINES_KEY, SettableValues.instance().of(lines));
+
+		return Configurations.instance().of(CONFIGURATION_VERSION, builder.build());
+	}
+
+	@Override
+	public Metadata store()
+	{
+		return Utilities.provide(configuration, MetadataManager.class).store();
+	}
+
+	@Override
+	public void retrieve(Metadata source)
+	{
+		List<Line> sourceLines = source.get(Key.of(LINES_KEY.getId()));
+		List<Line> lines = configuration.getContent().getValue(LINES_KEY).getValue();
+
+		removeAllStructures();
+
+		lines.addAll(sourceLines);
+		for (int index = 0; index < lines.size(); ++index)
+		{
+			Line line = lines.get(index);
+			setStructureLabel(index, line.getLabel());
+
+			line.updateAllSegments(smallBodyModel);
+		}
+
+		lineActor.SetMapper(lineMapper);
+		updatePolyData();
+		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 }

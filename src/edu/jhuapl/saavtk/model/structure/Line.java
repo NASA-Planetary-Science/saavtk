@@ -11,15 +11,23 @@ import org.w3c.dom.Element;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import crucible.crust.metadata.api.Key;
+import crucible.crust.metadata.api.Metadata;
+import crucible.crust.metadata.api.MetadataManager;
+import crucible.crust.metadata.api.StorableAsMetadata;
+import crucible.crust.metadata.impl.InstanceGetter;
 import crucible.crust.settings.api.Configuration;
+import crucible.crust.settings.api.Content;
 import crucible.crust.settings.api.ContentKey;
 import crucible.crust.settings.api.KeyValueCollection;
 import crucible.crust.settings.api.SettableValue;
+import crucible.crust.settings.api.Value;
 import crucible.crust.settings.api.Version;
 import crucible.crust.settings.impl.Configurations;
 import crucible.crust.settings.impl.KeyValueCollections;
 import crucible.crust.settings.impl.SettableValues;
 import crucible.crust.settings.impl.Utilities;
+import crucible.crust.settings.impl.Values;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -29,23 +37,8 @@ import vtk.vtkCaptionActor2D;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
 
-public class Line extends StructureModel.Structure
+public class Line extends StructureModel.Structure implements StorableAsMetadata<Line>
 {
-	private static final Version CONFIGURATION_VERSION = Version.of(1, 0);
-	private static final SettableValues settableValues = SettableValues.instance();
-
-	public static Configuration<KeyValueCollection<SettableValue<?>>> createConfiguration(int id, int[] color)
-	{
-		KeyValueCollections.Builder<SettableValue<?>> builder = KeyValueCollections.instance().builder(Utilities.getSpecificType(SettableValue.class));
-
-		builder.put(ID, settableValues.of(id));
-		builder.put(NAME, settableValues.of("default"));
-		builder.put(COLOR, settableValues.of(color));
-		builder.put(LABEL, settableValues.of(""));
-
-		return Configurations.instance().of(CONFIGURATION_VERSION, builder.build());
-	}
-
 	// Note that controlPoints is what gets stored in the saved file.
 	private final List<LatLon> controlPoints = new ArrayList<>();
 
@@ -65,17 +58,17 @@ public class Line extends StructureModel.Structure
 	public static final String PATH = "path";
 	public static final String LENGTH = "length";
 
-	public static final ContentKey<SettableValue<Integer>> ID = settableValues.key("id");
-	public static final ContentKey<SettableValue<String>> NAME = settableValues.key("name");
-	public static final ContentKey<SettableValue<String>> VERTICES = settableValues.key("vertices");
-	public static final ContentKey<SettableValue<int[]>> COLOR = settableValues.key("color");
-	public static final ContentKey<SettableValue<String>> LABEL = settableValues.key("label");
+	public static final ContentKey<SettableValue<Integer>> ID = SettableValues.key("id");
+	public static final ContentKey<SettableValue<String>> NAME = SettableValues.key("name");
+	public static final ContentKey<Value<List<LatLon>>> VERTICES = Values.fixedKey("vertices");
+	public static final ContentKey<SettableValue<int[]>> COLOR = SettableValues.key("color");
+	public static final ContentKey<SettableValue<String>> LABEL = SettableValues.key("label");
 
-	private final Configuration<KeyValueCollection<SettableValue<?>>> configuration;
+	private final Configuration<KeyValueCollection<Content>> configuration;
 
 	public Line(int id)
 	{
-		this.configuration = createConfiguration(id, purpleColor.clone());
+		this.configuration = createConfiguration(id, controlPoints, purpleColor.clone());
 	}
 
 	@Override
@@ -295,6 +288,36 @@ public class Line extends StructureModel.Structure
 		return length;
 	}
 
+	public void updateAllSegments(PolyhedralModel smallBodyModel)
+	{
+		controlPointIds.clear();
+		xyzPointList.clear();
+
+		int numberSegments = isClosed() ? controlPoints.size() : controlPoints.size();
+
+		for (int index = 0; index < numberSegments; ++index)
+		{
+			shiftPointOnPathToClosestPointOnAsteroid(smallBodyModel, index);
+
+			controlPointIds.add(xyzPointList.size());
+
+			// Note, this point will be replaced with the correct values
+			// when we call updateSegment
+			double[] dummy = { 0.0, 0.0, 0.0 };
+			xyzPointList.add(new Point3D(dummy));
+
+			if (index > 0)
+			{
+				updateSegment(smallBodyModel, index - 1);
+			}
+		}
+
+		if (isClosed())
+		{
+			updateSegment(smallBodyModel, controlPointIds.size() - 1);
+		}
+	}
+
 	public void updateSegment(PolyhedralModel smallBodyModel, int segment)
 	{
 		int nextSegment = segment + 1;
@@ -445,4 +468,73 @@ public class Line extends StructureModel.Structure
 		return false;
 	}
 
+	private static final Version CONFIGURATION_VERSION = Version.of(1, 0);
+	private static final SettableValues settableValues = SettableValues.instance();
+
+	public static Configuration<KeyValueCollection<Content>> createConfiguration(int id, List<LatLon> controlPoints, int[] color)
+	{
+		KeyValueCollections.Builder<Content> builder = KeyValueCollections.instance().builder();
+
+		builder.put(ID, settableValues.of(id));
+		builder.put(NAME, settableValues.of("default"));
+		// Note: it is correct to use settableValues to instantiate the setting for VERTICES. This is because
+		// the list of controlPoints is final but mutable. If one used just "Values", the set of vertices would
+		// not be saved in the file because it would not be considered "stateful".
+		builder.put(VERTICES, settableValues.of(controlPoints));
+		builder.put(COLOR, settableValues.of(color));
+		builder.put(LABEL, settableValues.of(""));
+
+		return Configurations.instance().of(CONFIGURATION_VERSION, builder.build());
+	}
+
+	private static final Key<Line> LINE_STRUCTURE_PROXY_KEY = Key.of("Line (structure)");
+	private static boolean proxyInitialized = false;
+
+	public static void initializeSerializationProxy()
+	{
+		if (!proxyInitialized)
+		{
+			LatLon.initializeSerializationProxy();
+
+			InstanceGetter.defaultInstanceGetter().register(LINE_STRUCTURE_PROXY_KEY, source -> {
+				int id = source.get(Key.of(ID.getId()));
+
+				Line result = new Line(id);
+
+				unpackMetadata(source, result);
+
+				return result;
+			});
+
+			proxyInitialized = true;
+		}
+	}
+
+	@Override
+	public Key<? extends Line> getKey()
+	{
+		return LINE_STRUCTURE_PROXY_KEY;
+	}
+
+	@Override
+	public Metadata store()
+	{
+		return Utilities.provide(configuration, MetadataManager.class).store();
+	}
+
+	protected static void unpackMetadata(Metadata source, Line line)
+	{
+		KeyValueCollection<Content> collection = line.configuration.getContent();
+
+		collection.getValue(NAME).setValue(source.get(Key.of(NAME.getId())));
+		collection.getValue(COLOR).setValue(source.get(Key.of(COLOR.getId())));
+
+		List<LatLon> sourceControlPoints = source.get(Key.of(VERTICES.getId()));
+		List<LatLon> controlPoints = collection.getValue(VERTICES).getValue();
+
+		controlPoints.addAll(sourceControlPoints);
+
+		collection.getValue(LABEL).setValue(source.get(Key.of(LABEL.getId())));
+
+	}
 }
