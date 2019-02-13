@@ -5,6 +5,7 @@ import java.awt.event.ComponentListener;
 
 import javax.swing.JTabbedPane;
 
+import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.pick.PickManager;
@@ -17,7 +18,6 @@ public class StructuresControlPanel extends JTabbedPane implements ComponentList
 	// State vars
 	private final ModelManager modelManager;
 	private final PickManager pickManager;
-	private final boolean supportsEsri;
 
 	// Gui vars
 	private AbstractStructureMappingControlPanel linePanel;
@@ -25,14 +25,15 @@ public class StructuresControlPanel extends JTabbedPane implements ComponentList
 	private AbstractStructureMappingControlPanel circlePanel;
 	private AbstractStructureMappingControlPanel ellipsePanel;
 	private AbstractStructureMappingControlPanel pointsPanel;
+	
+	private final StatusBar statusBar;
 
 	public StructuresControlPanel(final ModelManager modelManager, final PickManager pickManager,
-			final boolean supportsEsri)
+			final StatusBar statusBar)
 	{
 		this.modelManager = modelManager;
 		this.pickManager = pickManager;
-		this.supportsEsri = supportsEsri;
-
+		this.statusBar=statusBar;
 		// Register for events of interest
 		addComponentListener(this);
 	}
@@ -62,19 +63,19 @@ public class StructuresControlPanel extends JTabbedPane implements ComponentList
 			return;
 
 		linePanel = (new AbstractStructureMappingControlPanel(modelManager, ModelNames.LINE_STRUCTURES, pickManager,
-				PickManager.PickMode.LINE_DRAW, supportsEsri));
+				PickManager.PickMode.LINE_DRAW, statusBar));
 
 		polygonPanel = (new AbstractStructureMappingControlPanel(modelManager, ModelNames.POLYGON_STRUCTURES, pickManager,
-				PickManager.PickMode.POLYGON_DRAW, supportsEsri));
+				PickManager.PickMode.POLYGON_DRAW, statusBar));
 
 		circlePanel = (new AbstractStructureMappingControlPanel(modelManager, ModelNames.CIRCLE_STRUCTURES, pickManager,
-				PickManager.PickMode.CIRCLE_DRAW, supportsEsri));
+				PickManager.PickMode.CIRCLE_DRAW, statusBar));
 
 		ellipsePanel = (new AbstractStructureMappingControlPanel(modelManager, ModelNames.ELLIPSE_STRUCTURES, pickManager,
-				PickManager.PickMode.ELLIPSE_DRAW, supportsEsri));
+				PickManager.PickMode.ELLIPSE_DRAW, statusBar));
 
 		pointsPanel = (new AbstractStructureMappingControlPanel(modelManager, ModelNames.POINT_STRUCTURES, pickManager,
-				PickManager.PickMode.POINT_DRAW, supportsEsri));
+				PickManager.PickMode.POINT_DRAW, statusBar));
 
 		addTab("Paths", linePanel);
 		addTab("Polygons", polygonPanel);

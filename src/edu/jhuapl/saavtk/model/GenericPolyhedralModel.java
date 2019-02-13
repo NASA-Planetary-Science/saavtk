@@ -1163,6 +1163,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	public int computeRayIntersection(double[] origin, double[] direction, double[] intersectPoint)
 	{
 		double distance = MathUtil.vnorm(origin);
+		if (distance==0)
+			distance=getBoundingBoxDiagonalLength();
+		
 		double[] lookPt = new double[3];
 		lookPt[0] = origin[0] + 2.0 * distance * direction[0];
 		lookPt[1] = origin[1] + 2.0 * distance * direction[1];

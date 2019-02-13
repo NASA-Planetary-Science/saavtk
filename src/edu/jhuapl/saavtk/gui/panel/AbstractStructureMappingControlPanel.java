@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.gui.panel;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.MouseInfo;
@@ -17,6 +18,8 @@ import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 
@@ -25,6 +28,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JColorChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -36,8 +40,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JToggleButton;
 import javax.swing.ListSelectionModel;
-import javax.swing.ProgressMonitor;
 import javax.swing.RowSorter.SortKey;
+import javax.swing.ProgressMonitor;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.UIDefaults;
@@ -51,32 +55,51 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.geotools.feature.DefaultFeatureCollection;
+import org.geotools.feature.FeatureCollection;
+import org.geotools.feature.FeatureIterator;
+import org.opengis.feature.Feature;
 import org.opengis.feature.simple.SimpleFeature;
 
 import com.google.common.collect.Lists;
 
+import edu.jhuapl.saavtk.gui.ColorCellRenderer;
 import edu.jhuapl.saavtk.gui.GNumberFieldSlider;
 import edu.jhuapl.saavtk.gui.ProfilePlot;
+import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.dialog.ColorChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.NormalOffsetChangerDialog;
+import edu.jhuapl.saavtk.gui.funk.PopupButton;
+import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
+import edu.jhuapl.saavtk.model.structure.CircleModel;
+import edu.jhuapl.saavtk.model.structure.EllipseModel;
 import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.model.structure.PointModel;
-import edu.jhuapl.saavtk.model.structure.geotools.EllipseStructure;
-import edu.jhuapl.saavtk.model.structure.geotools.FeatureUtil;
-import edu.jhuapl.saavtk.model.structure.geotools.LineStructure;
+import edu.jhuapl.saavtk.model.structure.PolygonModel;
+import edu.jhuapl.saavtk.model.structure.StructuresExporter;
+import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
+import edu.jhuapl.saavtk.model.structure.esri.FeatureUtil;
+import edu.jhuapl.saavtk.model.structure.esri.LineSegment;
+import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
+import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
 import edu.jhuapl.saavtk.pick.PickEvent;
 import edu.jhuapl.saavtk.pick.PickManager;
+import edu.jhuapl.saavtk.pick.Picker;
 import edu.jhuapl.saavtk.pick.PickManager.PickMode;
 import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.popup.StructuresPopupMenu;
 import edu.jhuapl.saavtk.util.ColorIcon;
 import edu.jhuapl.saavtk.util.FileUtil;
+import edu.jhuapl.saavtk.util.LatLon;
+import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.ProgressListener;
 import edu.jhuapl.saavtk.util.Properties;
 import net.miginfocom.swing.MigLayout;
@@ -92,13 +115,9 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	private StructureModel structureModel;
 	private PickManager pickManager;
 	private PickManager.PickMode pickMode;
-	private boolean supportsEsri = false;
 
 	// GUI vars
-	private JButton loadStructuresButton;
 	private JLabel structuresFileL;
-	// private JButton saveStructuresButton;
-	private JButton saveAsStructuresButton;
 	private JTable structuresTable;
 	private StructuresPopupMenu structuresPopupMenu;
 	private JFrame profileWindow;
@@ -115,24 +134,500 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	private GNumberFieldSlider fontSizeNFS;
 	private GNumberFieldSlider lineWidthNFS;
 
-	private JPopupMenu saveAsPopupMenu = new JPopupMenu();
-	private PopupListener saveAsPopupListener = new PopupListener(saveAsPopupMenu);
-
 	private StructuresLoadingTask task;
 	private ProgressMonitor structuresLoadingProgressMonitor;
 
-	public AbstractStructureMappingControlPanel(final ModelManager modelManager, ModelNames aModelType, final PickManager pickManager, final PickManager.PickMode pickMode, boolean supportsEsri)
+	private PopupButton saveB;
+	private PopupButton loadB;
+
+	public static StructureModel loadStructuresFromFile(File file, ModelNames name, PolyhedralModel body) throws Exception
+	{
+		StructureModel model = null;
+		switch (name)
+		{
+		case CIRCLE_STRUCTURES:
+			model = new CircleModel(body);
+			break;
+		case ELLIPSE_STRUCTURES:
+			model = new EllipseModel(body);
+			break;
+		case POINT_STRUCTURES:
+			model = new PointModel(body);
+			break;
+		case POLYGON_STRUCTURES:
+			model = new PolygonModel(body);
+			break;
+		case LINE_STRUCTURES:
+			model = new LineModel(body);
+			break;
+		default:
+			throw new Error(name.name() + " is not a valid structures type");
+		}
+
+		model.loadModel(file, false, null);
+		if (model.getNumberOfStructures()==0)
+			throw new Exception("No valid "+name.name()+" found");
+		return model;
+	}
+
+	class LoadSbmtStructuresFileAction extends AbstractAction
+	{
+		public LoadSbmtStructuresFileAction()
+		{
+			super("SBMT Structures File...");
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+
+			File file = CustomFileChooser.showOpenDialog(AbstractStructureMappingControlPanel.this, "Select File");
+
+			if (file != null)
+			{
+				try
+				{
+					// If there are already structures, ask user if they want to
+					// append or overwrite them
+					boolean append = false;
+					if (structureModel.getNumberOfStructures() > 0)
+					{
+						Object[] options = { "Append", "Replace" };
+						int n = JOptionPane.showOptionDialog(AbstractStructureMappingControlPanel.this, "Would you like to append to or replace the existing structures?", "Append or Replace?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+						append = (n == 0 ? true : false);
+					}
+					List<String> lines = FileUtil.getFileLinesAsStringList(file.getAbsolutePath());
+					structuresLoadingProgressMonitor = new ProgressMonitor(null, "Loading Structures...", "", 0, 100);
+					structuresLoadingProgressMonitor.setProgress(0);
+
+					task = new StructuresLoadingTask(file, append);
+					task.addPropertyChangeListener(AbstractStructureMappingControlPanel.this);
+					task.execute();
+
+				} catch (Exception ex)
+				{
+					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(AbstractStructureMappingControlPanel.this), "There was an error reading the file.", "Error", JOptionPane.ERROR_MESSAGE);
+
+					ex.printStackTrace();
+				}
+			}
+		}
+	}
+
+	class SaveSbmtStructuresFileAction extends AbstractAction
+	{
+		public SaveSbmtStructuresFileAction()
+		{
+			super("SBMT Structures File...");
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			File file = structuresFile;
+			if (file != null)
+			{
+				// File already exists, use it as the default filename
+				file = CustomFileChooser.showSaveDialog(AbstractStructureMappingControlPanel.this, "Select File", file.getName());
+			} else
+			{
+				// We don't have a default filename to provide
+				file = CustomFileChooser.showSaveDialog(AbstractStructureMappingControlPanel.this, "Select File");
+			}
+
+			if (file != null)
+			{
+				try
+				{
+					structureModel.saveModel(file);
+					structuresFileL.setText(file.getAbsolutePath());
+					structuresFile = file;
+				} catch (Exception ex)
+				{
+					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(AbstractStructureMappingControlPanel.this), "There was an error saving the file.", "Error", JOptionPane.ERROR_MESSAGE);
+
+					ex.printStackTrace();
+				}
+			}
+
+		}
+	}
+
+	class SaveEsriShapeFileAction extends AbstractAction
+	{
+		public SaveEsriShapeFileAction()
+		{
+			super("ESRI Shapefile Datastore...");
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			String fileMenuTitle = null;
+			if (structureModel instanceof PointModel)
+				fileMenuTitle = "Export points to ESRI shapefile...";
+			else if (structureModel instanceof LineModel)
+				fileMenuTitle = "Export paths as ESRI lines...";
+			else if (structureModel instanceof PolygonModel)
+				fileMenuTitle = "Export polygons to ESRI shapefile...";
+			else if (structureModel instanceof EllipseModel)
+				fileMenuTitle = "Export ellipses as ESRI polygons...";
+			else if (structureModel instanceof CircleModel)
+				fileMenuTitle = "Export circles as ESRI polygons...";
+			else
+				fileMenuTitle = "Datastore filename";
+			File file = CustomFileChooser.showSaveDialog(AbstractStructureMappingControlPanel.this, fileMenuTitle, "myDataStore", "shp");
+			if (file == null)
+				return;
+			if (!file.getName().endsWith(".shp"))
+				file = new File(file.getName() + ".shp");
+
+			if (structureModel == modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES))
+			{
+				List<EllipseStructure> ellipses = EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES));
+				DefaultFeatureCollection ellipseFeatures = new DefaultFeatureCollection();
+				for (int i = 0; i < ellipses.size(); i++)
+					ellipseFeatures.add(FeatureUtil.createFeatureFrom(ellipses.get(i)));
+				BennuStructuresEsriIO.write(file.toPath(), ellipseFeatures, FeatureUtil.ellipseType);
+			} else if (structureModel == modelManager.getModel(ModelNames.CIRCLE_STRUCTURES))
+			{
+				List<EllipseStructure> circles = EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) modelManager.getModel(ModelNames.CIRCLE_STRUCTURES));
+				DefaultFeatureCollection circleFeatures = new DefaultFeatureCollection();
+				for (int i = 0; i < circles.size(); i++)
+					circleFeatures.add(FeatureUtil.createFeatureFrom(circles.get(i)));
+				BennuStructuresEsriIO.write(file.toPath(), circleFeatures, FeatureUtil.ellipseType);
+			} else if (structureModel == modelManager.getModel(ModelNames.POINT_STRUCTURES))
+			{
+				List<EllipseStructure> ellipseRepresentations = EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) modelManager.getModel(ModelNames.POINT_STRUCTURES));
+				DefaultFeatureCollection pointFeatures = new DefaultFeatureCollection();
+				for (int i = 0; i < ellipseRepresentations.size(); i++)
+				{
+					pointFeatures.add(FeatureUtil.createFeatureFrom(new PointStructure(ellipseRepresentations.get(i).getCentroid())));
+					// System.out.println(ellipseRepresentations.get(i).getCentroid());
+				}
+				BennuStructuresEsriIO.write(file.toPath(), pointFeatures, FeatureUtil.pointType);
+
+			} else if (structureModel == modelManager.getModel(ModelNames.LINE_STRUCTURES))
+			{
+				List<LineStructure> lines = LineStructure.fromSbmtStructure((LineModel) modelManager.getModel(ModelNames.LINE_STRUCTURES));
+
+				DefaultFeatureCollection lineFeatures = new DefaultFeatureCollection();
+				for (int i = 0; i < lines.size(); i++)
+					lineFeatures.add(FeatureUtil.createFeatureFrom(lines.get(i)));
+				BennuStructuresEsriIO.write(file.toPath(), lineFeatures, FeatureUtil.lineType);
+
+				/*
+				 * DefaultFeatureCollection controlPointLineFeatures = new
+				 * DefaultFeatureCollection(); for (int i = 0; i < lines.size(); i++) {
+				 * List<LineSegment> segments = Lists.newArrayList(); for (int j = 0; j <
+				 * lines.get(i).getNumberOfControlPoints() - 1; j++) { double[] p1 =
+				 * lines.get(i).getControlPoint(j).toArray(); double[] p2 =
+				 * lines.get(i).getControlPoint(j + 1).toArray(); segments.add(new
+				 * LineSegment(p1, p2)); }
+				 * controlPointLineFeatures.add(FeatureUtil.createFeatureFrom(new
+				 * LineStructure(segments))); } BennuStructuresEsriIO.write(Paths.get(prefix +
+				 * ".paths-ctrlpts.shp"), controlPointLineFeatures, FeatureUtil.lineType);
+				 */
+
+			} else if (structureModel == modelManager.getModel(ModelNames.POLYGON_STRUCTURES))
+			{
+				List<LineStructure> lines = LineStructure.fromSbmtStructure((PolygonModel) modelManager.getModel(ModelNames.POLYGON_STRUCTURES));
+
+				DefaultFeatureCollection lineFeatures = new DefaultFeatureCollection();
+				for (int i = 0; i < lines.size(); i++)
+					lineFeatures.add(FeatureUtil.createFeatureFrom(lines.get(i)));
+				BennuStructuresEsriIO.write(file.toPath(), lineFeatures, FeatureUtil.lineType);
+
+				/*
+				 * DefaultFeatureCollection controlPointLineFeatures = new
+				 * DefaultFeatureCollection(); for (int i = 0; i < lines.size(); i++) {
+				 * List<LineSegment> segments = Lists.newArrayList(); for (int j = 0; j <
+				 * lines.get(i).getNumberOfControlPoints(); j++) { if (j <
+				 * lines.get(i).getNumberOfControlPoints() - 1) { double[] p1 =
+				 * lines.get(i).getControlPoint(j).toArray(); double[] p2 =
+				 * lines.get(i).getControlPoint(j + 1).toArray(); segments.add(new
+				 * LineSegment(p1, p2)); } else { double[] p1 =
+				 * lines.get(i).getControlPoint(j).toArray(); double[] p2 =
+				 * lines.get(i).getControlPoint(0).toArray(); segments.add(new LineSegment(p1,
+				 * p2));
+				 * 
+				 * } } controlPointLineFeatures.add(FeatureUtil.createFeatureFrom(new
+				 * LineStructure(segments))); } BennuStructuresEsriIO.write(Paths.get(prefix +
+				 * ".polygons-ctrlpts.shp"), controlPointLineFeatures, FeatureUtil.lineType);
+				 */
+
+			}
+
+		}
+	}
+
+	protected class SaveVtkFileAction extends AbstractAction
+	{
+
+		public SaveVtkFileAction()
+		{
+			super("VTK Polydata...");
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			JCheckBox multipleFileCB = new JCheckBox("Save as multiple files");
+			JPanel panel = new JPanel(new BorderLayout());
+			panel.add(multipleFileCB, BorderLayout.EAST);
+			File file = CustomFileChooser.showSaveDialogWithCustomSouthComponent(null, "Save Structure (VTK)", "structures.vtk", "vtk", panel);
+			if (file != null)
+			{
+				try
+				{
+					StructuresExporter.exportToVtkFile((LineModel) structureModel, file.toPath(), multipleFileCB.isSelected());
+				} catch (Exception e1)
+				{
+					JOptionPane.showMessageDialog(null, "Unable to save file to " + file.getAbsolutePath(), "Error Saving File", JOptionPane.ERROR_MESSAGE);
+					e1.printStackTrace();
+				}
+			}
+		}
+
+	}
+
+	class LoadEsriShapeFileAction extends AbstractAction
+	{
+		public LoadEsriShapeFileAction()
+		{
+			super("ESRI Shapefile Datastore...");
+		}
+
+		protected void updateStatusBar(Feature f, int m, int mtot)
+		{
+			statusBar.setLeftText("Loading " + f.getDefaultGeometryProperty().getClass().getSimpleName() + " [" + (m + 1) + "/" + mtot + "]");
+			statusBar.repaint();
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			String fileMenuTitle = null;
+			if (structureModel instanceof PointModel)
+				fileMenuTitle = "Points from shapefile...";
+			else if (structureModel instanceof LineModel)
+				fileMenuTitle = "Path from shapefile...";
+			else if (structureModel instanceof PolygonModel)
+				fileMenuTitle = "Polygon from shapefile...";
+			else
+				fileMenuTitle = "Datastore filename";
+			File[] files = CustomFileChooser.showOpenDialog(AbstractStructureMappingControlPanel.this, fileMenuTitle, Lists.newArrayList("shp"), true);
+			if (files == null)
+				return;
+
+			for (int p = 0; p < files.length; p++)
+			{
+				File file = files[p];
+				if (file == null)
+				{
+					System.out.println("No file selected, or file not found");
+					return;
+				}
+				Path filePath = file.toPath().toAbsolutePath();
+				//            //String prefix = FilenameUtils.getFullPath(file.toString()) + FilenameUtils.getBaseName(file.toString());
+				//            String prefix = FilenameUtils.getFullPath(file.toString()) + FilenameUtils.getName(file.toString());
+				//            //System.out.println(prefix);
+				//            int idx1 = prefix.lastIndexOf('.');
+				//            prefix = prefix.substring(0, idx1);
+				//            int idx2 = prefix.lastIndexOf('.');
+				//            if (idx2<0)
+				//                {
+				//                     int result=JOptionPane.showConfirmDialog(null, "The file \""+file.toString()+"\" does not conform to the SBMT shapefile naming convention.\nOpen file-renaming tool?");
+				//                     if (result==JOptionPane.YES_OPTION)
+				//                     {
+				//                         SBMTShapefileRenamer renamingPanel=new SBMTShapefileRenamer(file.getAbsolutePath());
+				//                         result=JOptionPane.showConfirmDialog(null, renamingPanel, "Non-conforming shapefile name", JOptionPane.OK_CANCEL_OPTION);
+				//                         if (result==JOptionPane.OK_OPTION)
+				//                         {
+				//                             prefix=renamingPanel.rename();
+				//                             System.out.println(prefix);
+				//                             idx1 = prefix.lastIndexOf('.');
+				//                             prefix = prefix.substring(0, idx1);
+				//                             idx2 = prefix.lastIndexOf('.');
+				//                         }
+				//                         else
+				//                             return;
+				//                     }
+				//                     else
+				//                         return;
+				//                };
+				//            prefix = prefix.substring(0, idx2);
+				//            //System.out.println("prefix=" +prefix);
+
+				//            if (structureModel == modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES))
+				//            { 
+				//                if (filePath.toFile().exists())
+				//                {
+				//                    FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.ellipseType);
+				//                    FeatureIterator<Feature> it = features.features();
+				//                    while (it.hasNext())
+				//                    {
+				//                        Feature f = it.next();
+				//                        EllipseStructure es = FeatureUtil.createEllipseStructureFrom((SimpleFeature) f, (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
+				//                        EllipseModel model = (EllipseModel) modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES);
+				//                        model.addNewStructure(es.getCentroid(), es.getParameters().majorRadius, es.getParameters().flattening, es.getParameters().angle);
+				//                    }
+				//                    it.close();
+				//                }
+				//            }
+				//            else if (structureModel == modelManager.getModel(ModelNames.CIRCLE_STRUCTURES))
+				//            {
+				//                if (filePath.toFile().exists())
+				//                {
+				//
+				//                    FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.ellipseType);
+				//                    FeatureIterator<Feature> it = features.features();
+				//                    while (it.hasNext())
+				//                    {
+				//                        Feature f = it.next();
+				//                        EllipseStructure es = FeatureUtil.createEllipseStructureFrom((SimpleFeature) f, (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
+				//                        CircleModel model = (CircleModel) modelManager.getModel(ModelNames.CIRCLE_STRUCTURES);
+				//                        model.addNewStructure(es.getCentroid(), es.getParameters().majorRadius, es.getParameters().flattening, es.getParameters().angle);
+				//                    }
+				//                    it.close();
+				//                }
+				//            }
+				if (structureModel == modelManager.getModel(ModelNames.POINT_STRUCTURES))
+				{
+					if (filePath.toFile().exists())
+					{
+						PointModel model = (PointModel) modelManager.getModel(ModelNames.POINT_STRUCTURES);
+						FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.pointType);
+						FeatureIterator<Feature> it = features.features();
+						List<Feature> flist = Lists.newArrayList();
+						while (it.hasNext())
+						{
+							flist.add(it.next());
+						}
+						it.close();
+						for (int m = 0; m < flist.size(); m++)
+						{
+							Feature f = flist.get(m);
+							updateStatusBar(f, m, flist.size());
+							PointStructure ps = FeatureUtil.createPointStructureFrom((SimpleFeature) flist.get(m), (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
+							model.addNewStructure(ps.getCentroid().toArray());
+						}
+						model.activateStructure(-1);
+					}
+				} else if (structureModel == modelManager.getModel(ModelNames.LINE_STRUCTURES))
+				{
+					if (filePath.toFile().exists())
+					{
+						LineModel model = (LineModel) modelManager.getModel(ModelNames.LINE_STRUCTURES);
+						FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.lineType);
+						FeatureIterator<Feature> it = features.features();
+						List<Feature> flist = Lists.newArrayList();
+						while (it.hasNext())
+						{
+							flist.add(it.next());
+						}
+						it.close();
+						for (int m = 0; m < flist.size(); m++)
+						{
+							Feature f = flist.get(m);
+							updateStatusBar(f, m, flist.size());
+							// System.out.println("reading line structure: "+f);
+							LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f, (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
+							model.addNewStructure();
+							model.activateStructure(model.getNumberOfStructures() - 1);
+							for (int i = 0; i <= ls.getNumberOfSegments(); i++)
+							{
+								// subdivide segment
+
+								double[] pt;
+								if (i == ls.getNumberOfSegments())
+									pt = ls.getSegment(i - 1).getEnd().toArray();
+								else
+									pt = ls.getSegment(i).getStart().toArray();
+								LatLon latlon = MathUtil.reclat(pt);
+								// System.out.println(latlon.lat + " " + latlon.lon);
+								GenericPolyhedralModel body = (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY);
+								double[] intersectPoint = new double[3];
+								body.getPointAndCellIdFromLatLon(latlon.lat, latlon.lon, intersectPoint);
+								model.insertVertexIntoActivatedStructure(intersectPoint);
+							}
+
+						}
+						it.close();
+						model.activateStructure(-1);
+					}
+				} else if (structureModel == modelManager.getModel(ModelNames.POLYGON_STRUCTURES))
+				{
+					// System.out.println(filePath+" "+filePath.toFile().exists());
+					if (filePath.toFile().exists())
+					{
+						PolygonModel model = (PolygonModel) modelManager.getModel(ModelNames.POLYGON_STRUCTURES);
+						FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.lineType);
+						FeatureIterator<Feature> it = features.features();
+						List<Feature> flist = Lists.newArrayList();
+						while (it.hasNext())
+						{
+							flist.add(it.next());
+						}
+						it.close();
+						for (int m = 0; m < flist.size(); m++)
+						{
+							Feature f = flist.get(m);
+							updateStatusBar(f, m, flist.size());
+							LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f, (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY));
+							model.addNewStructure();
+							model.activateStructure(model.getNumberOfStructures() - 1);
+							for (int i = 0; i < ls.getNumberOfSegments(); i++)
+							{
+								double[] pt;
+								if (i == ls.getNumberOfSegments())
+									pt = ls.getSegment(i - 1).getEnd().toArray();
+								else
+									pt = ls.getSegment(i).getStart().toArray();
+								LatLon latlon = MathUtil.reclat(pt);
+								GenericPolyhedralModel body = (GenericPolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY);
+								double[] intersectPoint = new double[3];
+								body.getPointAndCellIdFromLatLon(latlon.lat, latlon.lon, intersectPoint);
+								model.insertVertexIntoActivatedStructure(intersectPoint);
+							}
+
+						}
+						it.close();
+						model.activateStructure(-1);
+
+					}
+				}
+			}
+		}
+	}
+
+	StatusBar statusBar;
+
+	public AbstractStructureMappingControlPanel(final ModelManager modelManager, ModelNames aModelType, final PickManager pickManager, final PickManager.PickMode pickMode, final StatusBar statusBar)
 	{
 		this.modelManager = modelManager;
 		structureModel = (StructureModel) modelManager.getModel(aModelType);
 		this.pickManager = pickManager;
 		this.pickMode = pickMode;
 		structuresPopupMenu = (StructuresPopupMenu) pickManager.getPopupManager().getPopup(structureModel);
-		this.supportsEsri = supportsEsri;
+		this.statusBar = statusBar;
 
 		changeOffsetDialog = null;
-		saveAsPopupMenu.add(new JMenuItem(new SaveSbmtStructuresFileAction()));
-		saveAsPopupMenu.add(new JMenuItem(new SaveEsriShapeFileAction()));
+
+		loadB = new PopupButton("Load...");
+		saveB = new PopupButton("Save...");
+
+		loadB.getPopup().add(new JMenuItem(new LoadSbmtStructuresFileAction()));
+		JMenuItem esriLoadMI = loadB.getPopup().add(new JMenuItem(new LoadEsriShapeFileAction()));
+		if (!(structureModel instanceof PointModel) && !(structureModel instanceof LineModel)) // don't let user import esri shapes as ellipses or circles; these require extra information in order to be upgraded (downgraded?) to "SBMT" structures ... instead they can use the polygons tab
+		{
+			esriLoadMI.setEnabled(false);
+			esriLoadMI.setToolTipText("ESRI circles and ellipses can be imported using the Polygons tab");
+		}
+
+		saveB.getPopup().add(new JMenuItem(new SaveSbmtStructuresFileAction()));
+		saveB.getPopup().add(new JMenuItem(new SaveEsriShapeFileAction()));
+		saveB.getPopup().add(new JMenuItem(new SaveVtkFileAction()));
 
 		structureModel.addPropertyChangeListener(this);
 		this.addComponentListener(new ComponentAdapter() {
@@ -147,26 +642,6 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 
 		setLayout(new MigLayout("", "", "[]"));
 
-		loadStructuresButton = new JButton("Load...");
-		loadStructuresButton.addActionListener(this);
-
-		// twupy1: Getting rid of "Save" feature at request of Carolyn since we don't
-		// have an undo button yet
-		// this.saveStructuresButton= new JButton("Save");
-		// this.saveStructuresButton.setEnabled(true);
-		// this.saveStructuresButton.addActionListener(this);
-
-		if (supportsEsri)
-		{
-			saveAsStructuresButton = new JButton(new SaveAsPopupAction());
-			saveAsStructuresButton.addMouseListener(saveAsPopupListener);
-		}
-		else
-		{
-			saveAsStructuresButton = new JButton("Save...");
-			saveAsStructuresButton.addActionListener(this);
-		}
-
 		JLabel fileNameL = new JLabel("File: ");
 		structuresFileL = new JLabel("<no file loaded>");
 		add(fileNameL, "span,split");
@@ -174,22 +649,22 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 
 		JLabel tableHeadL = new JLabel(" Structures");
 		add(tableHeadL, "span,split,growx,pushx");
-		add(loadStructuresButton, "sg g0");
-		add(saveAsStructuresButton, "sg g0,wrap");
+		add(loadB, "sg g0");
+		add(saveB, "sg g0,wrap");
 
 		String[] columnNames = { "Id", "Type", "Name", "Details", "Color", "Label" };
 		// "Hide Label",
 		// "Hide Structure"
 
 		structuresTable = new JTable(new StructuresTableModel(columnNames));
-		structuresTable.setAutoCreateRowSorter(true);
+//		structuresTable.setAutoCreateRowSorter(true);
 		structuresTable.setBorder(BorderFactory.createTitledBorder(""));
 		structuresTable.setColumnSelectionAllowed(false);
 		structuresTable.setRowSelectionAllowed(true);
 		structuresTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		structuresTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		structuresTable.setDefaultRenderer(String.class, new StringRenderer());
-		structuresTable.setDefaultRenderer(Color.class, new ColorRenderer());
+		structuresTable.setDefaultRenderer(Color.class, new ColorCellRenderer(true));
 		structuresTable.getColumnModel().getColumn(5).setCellRenderer(new StructureLabelRenderer());
 		// structuresTable.getColumnModel().getColumn(0).setPreferredWidth(30);
 		structuresTable.getModel().addTableModelListener(this);
@@ -325,6 +800,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		updateModelDisplay();
 	}
 
+
 	class StructuresLoadingTask extends SwingWorker<Void, Void>
 	{
 		File file;
@@ -357,7 +833,6 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		{
 			// TODO Auto-generated method stub
 			super.done();
-
 		}
 
 	}
@@ -367,77 +842,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	{
 		Object source = actionEvent.getSource();
 
-		if (source == this.loadStructuresButton)
-		{
-			File file = CustomFileChooser.showOpenDialog(this, "Select File");
-
-			if (file != null)
-			{
-				try
-				{
-					// If there are already structures, ask user if they want to
-					// append or overwrite them
-					boolean append = false;
-					if (structureModel.getNumberOfStructures() > 0)
-					{
-						Object[] options = { "Append", "Replace" };
-						int n = JOptionPane.showOptionDialog(this, "Would you like to append to or replace the existing structures?", "Append or Replace?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-						append = (n == 0 ? true : false);
-					}
-					List<String> lines = FileUtil.getFileLinesAsStringList(file.getAbsolutePath());
-					structuresLoadingProgressMonitor = new ProgressMonitor(null, "Loading Structures...", "", 0, 100);
-					structuresLoadingProgressMonitor.setProgress(0);
-
-					task = new StructuresLoadingTask(file, append);
-					task.addPropertyChangeListener(this);
-					task.execute();
-
-					//					structureModel.loadModel(file, append);
-					//					structuresFileL.setText(file.getAbsolutePath());
-					//					structuresFile = file;
-				}
-				catch (Exception e)
-				{
-					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this), "There was an error reading the file.", "Error", JOptionPane.ERROR_MESSAGE);
-
-					e.printStackTrace();
-				}
-			}
-		}
-		else if (/* source == this.saveStructuresButton || */source == this.saveAsStructuresButton && !supportsEsri)
-		{
-			File file = structuresFile;
-			if (structuresFile == null || source == this.saveAsStructuresButton)
-			{
-				if (file != null)
-				{
-					// File already exists, use it as the default filename
-					file = CustomFileChooser.showSaveDialog(this, "Select File", file.getName());
-				}
-				else
-				{
-					// We don't have a default filename to provide
-					file = CustomFileChooser.showSaveDialog(this, "Select File");
-				}
-			}
-
-			if (file != null)
-			{
-				try
-				{
-					structureModel.saveModel(file);
-					structuresFileL.setText(file.getAbsolutePath());
-					structuresFile = file;
-				}
-				catch (Exception e)
-				{
-					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this), "There was an error saving the file.", "Error", JOptionPane.ERROR_MESSAGE);
-
-					e.printStackTrace();
-				}
-			}
-		}
-		else if (source == createB)
+		if (source == createB)
 		{
 			// Ensure all structures are visible (in case any are hidden)
 			structureModel.setVisible(true);
@@ -450,27 +855,22 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			int numStructures = structuresTable.getRowCount();
 			if (numStructures > 0)
 				structuresTable.setRowSelectionInterval(numStructures - 1, numStructures - 1);
-		}
-		else if (source == editB)
+		} else if (source == editB)
 		{
 			setEditingEnabled(editB.isSelected());
-		}
-		else if (source == selectAllB)
+		} else if (source == selectAllB)
 		{
 			int numRows = structuresTable.getRowCount();
 			if (numRows == 0)
 				return;
 			structuresTable.setRowSelectionInterval(0, numRows - 1);
-		}
-		else if (source == selectNoneB)
+		} else if (source == selectNoneB)
 		{
 			structuresTable.clearSelection();
-		}
-		else if (source == deleteB)
+		} else if (source == deleteB)
 		{
 			doDeleteSelectedStructures();
-		}
-		else if (source == labelColorB)
+		} else if (source == labelColorB)
 		{
 			int[] idxArr = structuresTable.getSelectedRows();
 
@@ -480,18 +880,15 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 				return;
 
 			structureModel.setLabelColor(idxArr, tmpColor);
-		}
-		else if (source == labelHideB)
+		} else if (source == labelHideB)
 		{
 			int[] idxArr = structuresTable.getSelectedRows();
 			structureModel.setLabelVisible(idxArr, false);
-		}
-		else if (source == labelShowB)
+		} else if (source == labelShowB)
 		{
 			int[] idxArr = structuresTable.getSelectedRows();
 			structureModel.setLabelVisible(idxArr, true);
-		}
-		else if (source == structColorB)
+		} else if (source == structColorB)
 		{
 			int[] idxArr = structuresTable.getSelectedRows();
 
@@ -501,18 +898,15 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 				return;
 
 			structureModel.setStructureColor(idxArr, tmpColor);
-		}
-		else if (source == structHideB)
+		} else if (source == structHideB)
 		{
 			int[] idxArr = structuresTable.getSelectedRows();
 			structureModel.setStructureVisible(idxArr, false);
-		}
-		else if (source == structShowB)
+		} else if (source == structShowB)
 		{
 			int[] idxArr = structuresTable.getSelectedRows();
 			structureModel.setStructureVisible(idxArr, true);
-		}
-		else if (source == changeOffsetB)
+		} else if (source == changeOffsetB)
 		{
 			// Lazy init
 			if (changeOffsetDialog == null)
@@ -522,12 +916,10 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			}
 
 			changeOffsetDialog.setVisible(true);
-		}
-		else if (source == fontSizeNFS)
+		} else if (source == fontSizeNFS)
 		{
 			doUpdateFontSize();
-		}
-		else if (source == lineWidthNFS)
+		} else if (source == lineWidthNFS)
 		{
 			doUpdateLineWidth();
 		}
@@ -593,7 +985,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		// Retrieve the lineWidth
 		int lineWidth = (int) lineWidthNFS.getValue();
 
-		// TODO: Currently individual (sub)structures can not have different line widths from
+		// TODO: Currently individual (sub)structures can not have different line widths
+		// from
 		// TODO: their parent (super) structure. In the future that may be a request
 		// Update the relevant structures
 		//		int[] idxArr = structuresTable.getSelectedRows();
@@ -699,8 +1092,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
     		((DefaultTableModel) structuresTable.getModel()).setRowCount(structureModel.getNumberOfStructures());
 
 			updateModelDisplay();
-		}
-		else if (Properties.MODEL_PICKED.equals(evt.getPropertyName()))
+		} else if (Properties.MODEL_PICKED.equals(evt.getPropertyName()))
 		{
 			// If we're editing, say, a path, return immediately.
 			if (structureModel.supportsActivation() && editB.isSelected())
@@ -721,8 +1113,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 					{
 						structuresTable.setRowSelectionInterval(idx, idx);
 					}
-				}
-				else
+				} else
 				{
 					int keyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 					if (((e.getMouseEvent().getModifiers() & InputEvent.SHIFT_MASK) == InputEvent.SHIFT_MASK) || ((e.getMouseEvent().getModifiers() & keyMask) == keyMask))
@@ -732,21 +1123,18 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 				}
 
 				structuresTable.scrollRectToVisible(structuresTable.getCellRect(idx, 0, true));
-			}
-			else
+			} else
 			{
 				int count = structuresTable.getRowCount();
 				if (count > 0)
 					structuresTable.removeRowSelectionInterval(0, count - 1);
 			}
-		}
-		else if (Properties.STRUCTURE_ADDED.equals(evt.getPropertyName()))
+		} else if (Properties.STRUCTURE_ADDED.equals(evt.getPropertyName()))
 		{
 			int idx = structureModel.getNumberOfStructures() - 1;
 			structuresTable.setRowSelectionInterval(idx, idx);
 			structuresTable.scrollRectToVisible(structuresTable.getCellRect(idx, 0, true));
-		}
-		else if (Properties.STRUCTURE_REMOVED.equals(evt.getPropertyName()))
+		} else if (Properties.STRUCTURE_REMOVED.equals(evt.getPropertyName()))
 		{
 			int idx = (Integer) evt.getNewValue();
 
@@ -759,15 +1147,13 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 				{
 					structuresTable.setRowSelectionInterval(numStructures - 1, numStructures - 1);
 					structuresTable.scrollRectToVisible(structuresTable.getCellRect(numStructures - 1, 0, true));
-				}
-				else
+				} else
 				{
 					structuresTable.setRowSelectionInterval(idx, idx);
 					structuresTable.scrollRectToVisible(structuresTable.getCellRect(idx, 0, true));
 				}
 			}
-		}
-		else if (Properties.ALL_STRUCTURES_REMOVED.equals(evt.getPropertyName()) || Properties.COLOR_CHANGED.equals(evt.getPropertyName()))
+		} else if (Properties.ALL_STRUCTURES_REMOVED.equals(evt.getPropertyName()) || Properties.COLOR_CHANGED.equals(evt.getPropertyName()))
 		{
 			updateStructureTable();
 		}
@@ -786,10 +1172,13 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 				}
 				else
 				{
+//					System.out.println("AbstractStructureMappingControlPanel: propertyChange: task done");
+					structureModel.setVisible(true);
+//					updateModelDisplay();
 					//                    taskOutput.append("Task completed.\n");
 				}
 			}
-			//            this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+//			AbstractStructureMappingControlPanel.this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 		}
 	}
 
@@ -826,7 +1215,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	private void updateStructureTable()
 	{
 		int numStructures = structureModel.getNumberOfStructures();
-        List<? extends SortKey> sortKeys = structuresTable.getRowSorter().getSortKeys();
+//        List<? extends SortKey> sortKeys = structuresTable.getRowSorter().getSortKeys();
 		((DefaultTableModel) structuresTable.getModel()).setRowCount(numStructures);
 		for (int i = 0; i < numStructures; ++i)
 		{
@@ -838,10 +1227,10 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
             ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getInfo(), i, 3);
             ((DefaultTableModel) structuresTable.getModel()).setValueAt(new Color(c[0], c[1], c[2]), i, 4);
             ((DefaultTableModel) structuresTable.getModel()).setValueAt(structure.getLabel(), i, 5);
-			//structuresTable.setValueAt(structure.getLabelHidden(), i, 6);
-			//structuresTable.setValueAt(structure.getHidden(), i, 6);
+			// structuresTable.setValueAt(structure.getLabelHidden(), i, 6);
+			// structuresTable.setValueAt(structure.getHidden(), i, 6);
 		}
-        structuresTable.getRowSorter().setSortKeys(sortKeys);
+//        structuresTable.getRowSorter().setSortKeys(sortKeys);
 		updateColoredButtons();
 	}
 
@@ -896,7 +1285,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	{
 		if (e.getValueIsAdjusting() == false)
 		{
-			//        		if (structuresTable.getSelectedRows().length == 0) structuresTable.clearSelection();
+			if (structuresTable.getSelectedRows().length == 0)
+				structuresTable.clearSelection();
 			structureModel.selectStructures(structuresTable.getSelectedRows());
 			updateControlGui();
 		}
@@ -910,8 +1300,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 
 			if (!editB.isSelected())
 				editB.setSelected(true);
-		}
-		else
+		} else
 		{
 			if (editB.isSelected())
 				editB.setSelected(false);
@@ -927,13 +1316,11 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 				{
 					pickManager.setPickMode(pickMode);
 					structureModel.activateStructure(idx);
-				}
-				else
+				} else
 				{
 					editB.setSelected(false);
 				}
-			}
-			else
+			} else
 			{
 				pickManager.setPickMode(PickManager.PickMode.DEFAULT);
 				structureModel.activateStructure(-1);
@@ -943,14 +1330,12 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			int numStructures = structuresTable.getRowCount();
 			if (idx >= 0 && idx < numStructures)
 				structuresTable.setRowSelectionInterval(idx, idx);
-		}
-		else
+		} else
 		{
 			if (enable)
 			{
 				pickManager.setPickMode(pickMode);
-			}
-			else
+			} else
 			{
 				pickManager.setPickMode(PickManager.PickMode.DEFAULT);
 			}
@@ -979,11 +1364,11 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		}
 	}
 
-	class PopupListener extends MouseAdapter // only if esri support is enabled
+	class FileIOButtonListener extends MouseAdapter
 	{
 		JPopupMenu menu;
 
-		public PopupListener(JPopupMenu menu)
+		public FileIOButtonListener(JPopupMenu menu)
 		{
 			this.menu = menu;
 		}
@@ -1009,97 +1394,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 
 		private void maybeShowPopup(MouseEvent e)
 		{
-			if (e.isPopupTrigger())
-				menu.show(e.getComponent(), e.getX(), e.getY());
-		}
-	}
-
-	class SaveAsPopupAction extends AbstractAction // only if esri support is enabled
-	{
-		public SaveAsPopupAction()
-		{
-			super("Save as...");
-		}
-
-		@Override
-		public void actionPerformed(ActionEvent e) // convert the button press into a mouse event so popup is properly shown
-		{
-			Point p = MouseInfo.getPointerInfo().getLocation();
-			SwingUtilities.convertPointFromScreen(p, (Component) e.getSource());
-			saveAsPopupListener.mousePressed(new MouseEvent(AbstractStructureMappingControlPanel.this, MouseEvent.MOUSE_PRESSED, e.getWhen(), e.getModifiers(), p.x, p.y, 1, true));
-		}
-	}
-
-	class SaveSbmtStructuresFileAction extends AbstractAction // only if esri support is enabled
-	{
-		public SaveSbmtStructuresFileAction()
-		{
-			super("SBMT Structures File...");
-		}
-
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{
-			File file = structuresFile;
-			if (file != null)
-			{
-				// File already exists, use it as the default filename
-				file = CustomFileChooser.showSaveDialog(AbstractStructureMappingControlPanel.this, "Select File", file.getName());
-			}
-			else
-			{
-				// We don't have a default filename to provide
-				file = CustomFileChooser.showSaveDialog(AbstractStructureMappingControlPanel.this, "Select File");
-			}
-
-			if (file != null)
-			{
-				try
-				{
-					structureModel.saveModel(file);
-					structuresFileL.setText(file.getAbsolutePath());
-					structuresFile = file;
-				}
-				catch (Exception ex)
-				{
-					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(AbstractStructureMappingControlPanel.this), "There was an error saving the file.", "Error", JOptionPane.ERROR_MESSAGE);
-
-					ex.printStackTrace();
-				}
-			}
-
-		}
-	}
-
-	class SaveEsriShapeFileAction extends AbstractAction // only if esri support is enabled
-	{
-		public SaveEsriShapeFileAction()
-		{
-			super("ESRI Shapefile Datastore...");
-		}
-
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{
-			List<SimpleFeature> features = Lists.newArrayList();
-			List<EllipseStructure> ellipses = EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES));
-			List<EllipseStructure> circles = EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) modelManager.getModel(ModelNames.CIRCLE_STRUCTURES));
-			List<EllipseStructure> points = EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) modelManager.getModel(ModelNames.POINT_STRUCTURES));
-			List<LineStructure> polygons = LineStructure.fromSbmtStructure((LineModel) modelManager.getModel(ModelNames.POLYGON_STRUCTURES));
-			List<LineStructure> lines = LineStructure.fromSbmtStructure((LineModel) modelManager.getModel(ModelNames.LINE_STRUCTURES));
-			for (int i = 0; i < ellipses.size(); i++)
-				features.add(FeatureUtil.createFeatureFrom(ellipses.get(i)));
-			for (int i = 0; i < circles.size(); i++)
-				features.add(FeatureUtil.createFeatureFrom(circles.get(i)));
-			for (int i = 0; i < points.size(); i++)
-				features.add(FeatureUtil.createFeatureFrom(points.get(i)));
-			for (int i = 0; i < polygons.size(); i++)
-				features.add(FeatureUtil.createFeatureFrom(polygons.get(i)));
-			for (int i = 0; i < lines.size(); i++)
-				features.add(FeatureUtil.createFeatureFrom(lines.get(i)));
-			File file = CustomFileChooser.showSaveDialog(AbstractStructureMappingControlPanel.this, "Datastore filename", "myDataStore.shp", "shp");
-			if (file != null)
-				new HeterogeneousShapefileDatastoreDumper(features).write(file.toPath());
+			// if (e.isPopupTrigger())
+			menu.show(e.getComponent(), e.getX(), e.getY());
 		}
 	}
 
@@ -1121,8 +1417,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			if (structureModel.isStructureVisible(row) == false)
 			{
 				c.setForeground(Color.GRAY);
-			}
-			else
+			} else
 			{
 				if (isSelected)
 					c.setForeground(selectionForeground);
@@ -1161,45 +1456,6 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		}
 	}
 
-	class ColorRenderer extends JLabel implements TableCellRenderer
-	{
-		private Border unselectedBorder = null;
-		private Border selectedBorder = null;
-
-		public ColorRenderer()
-		{
-			setOpaque(true); //MUST do this for background to show up.
-		}
-
-		@Override
-		public Component getTableCellRendererComponent(JTable table, Object color, boolean isSelected, boolean hasFocus, int row, int column)
-		{
-			Color newColor = (Color) color;
-			setBackground(newColor);
-
-			if (isSelected)
-			{
-				if (selectedBorder == null)
-				{
-					selectedBorder = BorderFactory.createMatteBorder(2, 5, 2, 5, table.getSelectionBackground());
-				}
-				setBorder(selectedBorder);
-			}
-			else
-			{
-				if (unselectedBorder == null)
-				{
-					unselectedBorder = BorderFactory.createMatteBorder(2, 5, 2, 5, table.getBackground());
-				}
-				setBorder(unselectedBorder);
-			}
-
-			setToolTipText("RGB value: " + newColor.getRed() + ", " + newColor.getGreen() + ", " + newColor.getBlue());
-
-			return this;
-		}
-	}
-
 	class StructuresTableModel extends DefaultTableModel
 	{
 		public StructuresTableModel(String[] columnNames)
@@ -1210,7 +1466,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		@Override
 		public boolean isCellEditable(int row, int column)
 		{
-			if (column == 2 || column == 5) //|| column ==6 || column ==7)
+			if (column == 2 || column == 5) // || column ==6 || column ==7)
 				return true;
 			else
 				return false;
@@ -1221,8 +1477,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		{
 			if (columnIndex == 4)
 				return Color.class;
-			//else if(columnIndex == 6||columnIndex == 7)
-			//   return Boolean.class;
+			// else if(columnIndex == 6||columnIndex == 7)
+			// return Boolean.class;
 			else
 				return String.class;
 		}

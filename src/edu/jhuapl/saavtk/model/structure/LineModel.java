@@ -215,7 +215,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 				setStructureLabel(lines.size() - 1, lines.get(lines.size() - 1).getLabel());
 			}
 		}
-
+		lineActor.SetMapper(lineMapper);
 		updatePolyData();
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
@@ -344,13 +344,8 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 				actors.add(lin.caption);
 			}
 		}
-
-		lineActor.SetMapper(lineMapper);
-		((SaavtkLODActor) lineActor).setLODMapper(decimatedLineMapper);
-		lineActor.Modified();
-
+		
 	}
-
 	@Override
 	public List<vtkProp> getProps()
 	{
@@ -427,12 +422,18 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	}
 
 	@Override
-	public void addNewStructure()
+	public Structure addNewStructure()
 	{
 		Line lin = (Line) createStructure(smallBodyModel);
 		lines.add(lin);
 		activateStructure(lines.size() - 1);
+		
+		lineActor.SetMapper(lineMapper);
+		((SaavtkLODActor) lineActor).setLODMapper(decimatedLineMapper);
+		lineActor.Modified();
+
 		this.pcs.firePropertyChange(Properties.STRUCTURE_ADDED, null, null);
+		return lin;
 	}
 
 	@Override

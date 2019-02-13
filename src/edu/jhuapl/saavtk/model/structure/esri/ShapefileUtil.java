@@ -1,70 +1,34 @@
-package edu.jhuapl.saavtk.model.structure.geotools;
+package edu.jhuapl.saavtk.model.structure.esri;
 
-import java.awt.Color;
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.geotools.data.DefaultTransaction;
-import org.geotools.data.FeatureReader;
 import org.geotools.data.FileDataStore;
 import org.geotools.data.Transaction;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.shapefile.ShapefileDataStoreFactory;
-import org.geotools.data.shapefile.ShapefileDumper;
-import org.geotools.data.shapefile.shp.ShapefileReader;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.data.simple.SimpleFeatureStore;
 import org.geotools.feature.DefaultFeatureCollection;
-import org.geotools.feature.DefaultFeatureCollections;
-import org.geotools.feature.FeatureCollection;
-import org.geotools.feature.FeatureTypes;
-import org.geotools.referencing.CRS;
-import org.geotools.referencing.crs.DefaultEngineeringCRS;
-import org.geotools.referencing.crs.DefaultGeographicCRS;
-import org.geotools.referencing.crs.DefaultProjectedCRS;
-import org.geotools.referencing.operation.builder.ProjectiveTransformBuilder;
-import org.geotools.referencing.operation.projection.EquidistantCylindrical;
-import org.geotools.renderer.Renderer;
-import org.opengis.feature.Feature;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.FeatureType;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.crs.GeographicCRS;
-import org.opengis.referencing.cs.EllipsoidalCS;
-import org.opengis.referencing.operation.MathTransform;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.CoordinateArrays;
-import com.vividsolutions.jts.geom.CoordinateSequence;
-import com.vividsolutions.jts.geom.CoordinateSequenceFactory;
-import com.vividsolutions.jts.geom.CoordinateSequences;
-import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
-import com.vividsolutions.jts.geom.impl.CoordinateArraySequenceFactory;
-import com.vividsolutions.jts.math.Vector3D;
 
-import vtk.vtkCellArray;
+import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import vtk.vtkExtractEdges;
-import vtk.vtkFeatureEdges;
-import vtk.vtkIdList;
 import vtk.vtkNativeLibrary;
 import vtk.vtkOBJReader;
 import vtk.vtkPoints;
@@ -74,6 +38,7 @@ import vtk.vtkTriangleFilter;
 
 public class ShapefileUtil
 {
+	
 	public static void write(Collection<SimpleFeature> features, Path shapeFile) throws IOException
 	{
 	
@@ -132,6 +97,7 @@ public class ShapefileUtil
 		while (fit.hasNext())
 			fl.add(fit.next());
 		fit.close();
+		dataStore.dispose();
 		return fl;
 	}
 
@@ -139,8 +105,8 @@ public class ShapefileUtil
 	{
 		Collection<SimpleFeature> sfc = read(shapeFile);
 		Set<PointStructure> ps = Sets.newHashSet();
-		for (SimpleFeature sf : sfc)
-			ps.add(FeatureUtil.createPointStructureFrom(sf));
+//		for (SimpleFeature sf : sfc)
+//			ps.add(FeatureUtil.createPointStructureFrom(sf, body));
 		return ps;
 	}
 
@@ -150,18 +116,18 @@ public class ShapefileUtil
 		Set<LineStructure> ls = Sets.newHashSet();
 		for (SimpleFeature sf : sfc)
 		{
-			LineStructure s=FeatureUtil.createLineStructureFrom(sf);
-			ls.add(s);
+//			LineStructure s=FeatureUtil.createLineStructureFrom(sf);
+//			ls.add(s);
 		}
 		return ls;
 	}
 
-	public static Collection<EllipseStructure> readEllipseStructures(Path shapeFile) throws IOException
+	public static Collection<EllipseStructure> readEllipseStructures(Path shapeFile, GenericPolyhedralModel body) throws IOException
 	{
 		Collection<SimpleFeature> sfc = read(shapeFile);
 		Set<EllipseStructure> ls = Sets.newHashSet();
 		for (SimpleFeature sf : sfc)
-			ls.add(FeatureUtil.createEllipseStructureFrom(sf));
+			ls.add(FeatureUtil.createEllipseStructureFrom(sf, body));
 		return ls;
 	}
 
@@ -223,24 +189,23 @@ public class ShapefileUtil
 		List<PointStructure> points = Lists.newArrayList();
 		int nPoints = 10;
 		for (int i = 0; i < nPoints; i++)
-			points.add(new PointStructure(StructureUtil.random()));
+			points.add(new PointStructure(StructureUtil.randomVector3D()));
 
 		List<LineStructure> lines = Lists.newArrayList();
 		int nLines = 10;
-		int nPointsPerLine = 5;
+//		int nPointsPerLine = 5;
 		for (int i = 0; i < nLines; i++)
 		{
-			double[] start=StructureUtil.random();
-			double[] end=StructureUtil.random();
-			LineSegment[] segments=new LineSegment[]{new LineSegment(start,end)};
-			lines.add(new LineStructure(segments));
+			Vector3D start=StructureUtil.randomVector3D();
+			Vector3D end=StructureUtil.randomVector3D();
+			lines.add(new LineStructure(Lists.newArrayList(new LineSegment(start, end))));
 		}
 
-		List<PatchStructure> patches = Lists.newArrayList();
-		int nPolygons = 10;
-		int nPointsPerPolygon = 5;
-		for (int i = 0; i < nPolygons; i++)
-			patches.add(new PatchStructure(StructureUtil.random(nPointsPerPolygon)));
+//		List<PatchStructure> patches = Lists.newArrayList();
+//		int nPolygons = 10;
+//		int nPointsPerPolygon = 5;
+//		for (int i = 0; i < nPolygons; i++)
+//			patches.add(new PatchStructure(StructureUtil.random(nPointsPerPolygon)));
 
 		try
 		{
@@ -283,7 +248,11 @@ public class ShapefileUtil
 		
 		List<PointStructure> points=Lists.newArrayList();
 		for (int i=0; i<polyData.GetNumberOfPoints(); i++)
-			points.add(new PointStructure(polyData.GetPoint(i),"p"+i));
+		{
+			PointStructure ps=new PointStructure(new Vector3D(polyData.GetPoint(i)));
+			ps.setLabel("p"+i);
+			points.add(ps);
+		}
 		
 		vtkExtractEdges edgeFilter=new vtkExtractEdges();
 		edgeFilter.SetInputData(polyData);
@@ -302,13 +271,16 @@ public class ShapefileUtil
 			vtkPoints edgePoints=edgePolyData.GetCell(i).GetPoints();
 			if (edgePoints.GetNumberOfPoints()<2)
 				continue;
-			LineSegment[] segments=new LineSegment[edgePoints.GetNumberOfPoints()-1];
+			List<LineSegment> segments=Lists.newArrayList();
 			for (int j=0; j<edgePoints.GetNumberOfPoints()-1; j++)
-				segments[j]=new LineSegment(edgePoints.GetPoint(j), edgePoints.GetPoint(j+1));
-			lines.add(new LineStructure(segments,"l"+i));
+				segments.add(new LineSegment(new Vector3D(edgePoints.GetPoint(j)), new Vector3D(edgePoints.GetPoint(j+1))));
+			
+			LineStructure ls=new LineStructure(segments);
+			ls.setLabel("l"+i);
+			lines.add(ls);
 		}
 		
-		List<PatchStructure> patches=Lists.newArrayList();
+/*		List<PatchStructure> patches=Lists.newArrayList();
 		for (int i=0; i<polyData.GetNumberOfCells(); i++)
 		{
 			vtkPoints triPoints=polyData.GetCell(i).GetPoints();
@@ -317,7 +289,7 @@ public class ShapefileUtil
 				pts[j]=triPoints.GetPoint(j);
 			patches.add(new PatchStructure(pts,"P"+i));
 		}
-
+*/
 	
 		try
 		{

@@ -8,6 +8,8 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import javax.swing.JComponent;
@@ -47,7 +49,6 @@ public class PickManager
 		CIRCLE_DRAW,
 		ELLIPSE_DRAW,
 		POINT_DRAW,
-		LIDAR_SHIFT
 	}
 
 	// Ref vars
@@ -56,11 +57,13 @@ public class PickManager
 	private PopupManager refPopupManager;
 
 	// State vars
+	private List<PickManagerListener> listenerL;
 	private Map<PickMode, Picker> nondefaultPickers;
 	private Picker activePicker;
 	private DefaultPicker defaultPicker;
 	private PickMode pickMode;
 	private boolean currExclusiveMode;
+	private double pickTolerance;
 
 	public PickManager(Renderer aRenderer, PopupManager aPopupManager, Map<PickMode, Picker> aNonDefaultPickers,
 			DefaultPicker aDefaultPicker)
@@ -69,11 +72,13 @@ public class PickManager
 		refRenWin = aRenderer.getRenderWindowPanel();
 		refPopupManager = aPopupManager;
 
+		listenerL = new ArrayList<>();
 		nondefaultPickers = aNonDefaultPickers;
 		activePicker = NonePicker.Instance;
 		defaultPicker = aDefaultPicker;
 		pickMode = PickMode.DEFAULT;
 		currExclusiveMode = false;
+		pickTolerance = Picker.DEFAULT_PICK_TOLERANCE;
 
 		// Set the pick tolerance to the default value
 		double tmpPickTolerance = Preferences.getInstance().getAsDouble(Preferences.PICK_TOLERANCE,
@@ -91,10 +96,42 @@ public class PickManager
 	}
 
 	/**
+	 * Registers a listener with this PickManager
+	 */
+	public synchronized void addListener(PickManagerListener aListener)
+	{
+		listenerL.add(aListener);
+	}
+
+	/**
+	 * Deregisters a listener with this PickManager
+	 */
+	public synchronized void delListener(PickManagerListener aListener)
+	{
+		listenerL.remove(aListener);
+	}
+
+	/**
+	 * Returns the Picker that corresponds to the specified PickMode
+	 * <P>
+	 * Method to support the transition away from a shared (coupled) Picker system
+	 * to a decoupled Picker system.
+	 */
+	@Deprecated
+	public Picker getPickerForPickMode(PickMode aPickMode)
+	{
+		return nondefaultPickers.get(aPickMode);
+	}
+
+	/**
 	 * Sets the PickMode which will activate the corresponding (non-default) Picker.
+	 * <P>
+	 * This method will eventually go away. Please use
+	 * {@link #setActivePicker(Picker)}
 	 * 
 	 * @param aMode
 	 */
+	@Deprecated
 	public void setPickMode(PickMode aMode)
 	{
 		// Bail if the PickMode has not changed
@@ -102,8 +139,36 @@ public class PickManager
 			return;
 		pickMode = aMode;
 
+		// Delegate
+		setActivePicker(nondefaultPickers.get(pickMode));
+	}
+
+	/**
+	 * Returns the active Picker
+	 */
+	public Picker getActivePicker()
+	{
+		return activePicker;
+	}
+
+	/**
+	 * Sets the active Picker.
+	 * <P>
+	 * If null is specified a no-operation Picker will be installed.
+	 */
+	public void setActivePicker(Picker aPicker)
+	{
+		// Bail if the Picker has not changed
+		if (aPicker == activePicker)
+			return;
+
+		// Bail if the Picker would default to the NonePicker and already is
+		// the NonePicker
+		if (aPicker == null && activePicker == NonePicker.Instance)
+			return;
+
 		// Switch to the proper activePicker
-		activePicker = nondefaultPickers.get(pickMode);
+		activePicker = aPicker;
 		if (activePicker == null)
 			activePicker = NonePicker.Instance;
 
@@ -111,6 +176,11 @@ public class PickManager
 		int targCursorType = activePicker.getCursorType();
 		if (refRenWin.getComponent().getCursor().getType() != targCursorType)
 			refRenWin.getComponent().setCursor(new Cursor(targCursorType));
+
+		// TODO: This is a poor design and should be passed in via the event handlers
+		activePicker.setPickTolerance(pickTolerance);
+
+		notifyListeners();
 	}
 
 	public DefaultPicker getDefaultPicker()
@@ -125,11 +195,13 @@ public class PickManager
 		return defaultPicker.getPickTolerance();
 	}
 
-	public void setPickTolerance(double pickTolerance)
+	public void setPickTolerance(double aPickTolerance)
 	{
-		defaultPicker.setPickTolerance(pickTolerance);
+		pickTolerance = aPickTolerance;
+
+		defaultPicker.setPickTolerance(aPickTolerance);
 		for (PickMode pm : nondefaultPickers.keySet())
-			nondefaultPickers.get(pm).setPickTolerance(pickTolerance);
+			nondefaultPickers.get(pm).setPickTolerance(aPickTolerance);
 	}
 
 	public PopupManager getPopupManager()
@@ -208,6 +280,20 @@ public class PickManager
 		// Make the corresponding component focusable and request the focus
 		tmpComp.setFocusable(true);
 		tmpComp.requestFocusInWindow();
+	}
+
+	/**
+	 * Helper method to send out notification to the listeners.
+	 */
+	private void notifyListeners()
+	{
+		List<PickManagerListener> tmpL;
+		synchronized (this)
+		{
+			tmpL = new ArrayList<>(listenerL);
+		}
+		for (PickManagerListener aListener : tmpL)
+			aListener.pickerChanged();
 	}
 
 	/**
