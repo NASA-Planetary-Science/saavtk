@@ -833,7 +833,6 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		{
 			// TODO Auto-generated method stub
 			super.done();
-
 		}
 
 	}
@@ -1157,6 +1156,29 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		} else if (Properties.ALL_STRUCTURES_REMOVED.equals(evt.getPropertyName()) || Properties.COLOR_CHANGED.equals(evt.getPropertyName()))
 		{
 			updateStructureTable();
+		}
+		else if ("progress" == evt.getPropertyName())
+		{
+			int progress = (Integer) evt.getNewValue();
+			structuresLoadingProgressMonitor.setProgress(progress);
+			String message =
+					String.format("Completed %d%%.\n", progress);
+			structuresLoadingProgressMonitor.setNote(message);
+			if (structuresLoadingProgressMonitor.isCanceled() || task.isDone())
+			{
+				if (structuresLoadingProgressMonitor.isCanceled())
+				{
+					task.cancel(true);
+				}
+				else
+				{
+//					System.out.println("AbstractStructureMappingControlPanel: propertyChange: task done");
+					structureModel.setVisible(true);
+//					updateModelDisplay();
+					//                    taskOutput.append("Task completed.\n");
+				}
+			}
+//			AbstractStructureMappingControlPanel.this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 		}
 	}
 
