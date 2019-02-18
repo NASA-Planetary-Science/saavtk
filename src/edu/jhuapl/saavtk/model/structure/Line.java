@@ -14,7 +14,6 @@ import com.google.common.collect.ImmutableList;
 import crucible.crust.metadata.api.Key;
 import crucible.crust.metadata.api.Metadata;
 import crucible.crust.metadata.api.MetadataManager;
-import crucible.crust.metadata.api.StorableAsMetadata;
 import crucible.crust.metadata.impl.InstanceGetter;
 import crucible.crust.settings.api.Configuration;
 import crucible.crust.settings.api.Content;
@@ -37,7 +36,7 @@ import vtk.vtkCaptionActor2D;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
 
-public class Line extends StructureModel.Structure implements StorableAsMetadata<Line>
+public class Line extends StructureModel.Structure
 {
 	// Note that controlPoints is what gets stored in the saved file.
 	private final List<LatLon> controlPoints = new ArrayList<>();
@@ -69,6 +68,11 @@ public class Line extends StructureModel.Structure implements StorableAsMetadata
 	public Line(int id)
 	{
 		this.configuration = createConfiguration(id, controlPoints, purpleColor.clone());
+	}
+
+	protected Configuration<KeyValueCollection<Content>> getConfiguration()
+	{
+		return configuration;
 	}
 
 	@Override
@@ -504,22 +508,12 @@ public class Line extends StructureModel.Structure implements StorableAsMetadata
 				unpackMetadata(source, result);
 
 				return result;
+			}, Line.class, line -> {
+				return Utilities.provide(line.configuration, MetadataManager.class).store();
 			});
 
 			proxyInitialized = true;
 		}
-	}
-
-	@Override
-	public Key<? extends Line> getKey()
-	{
-		return LINE_STRUCTURE_PROXY_KEY;
-	}
-
-	@Override
-	public Metadata store()
-	{
-		return Utilities.provide(configuration, MetadataManager.class).store();
 	}
 
 	protected static void unpackMetadata(Metadata source, Line line)

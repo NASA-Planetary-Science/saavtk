@@ -4,7 +4,9 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import crucible.crust.metadata.api.Key;
+import crucible.crust.metadata.api.MetadataManager;
 import crucible.crust.metadata.impl.InstanceGetter;
+import crucible.crust.settings.impl.Utilities;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
@@ -149,15 +151,11 @@ public class Polygon extends Line
 				unpackMetadata(source, result);
 
 				return result;
+			}, Polygon.class, polygon -> {
+				return Utilities.provide(polygon.getConfiguration(), MetadataManager.class).store();
 			});
 
 			proxyInitialized = true;
 		}
-	}
-
-	@Override
-	public Key<Polygon> getKey()
-	{
-		return POLYGON_STRUCTURE_PROXY_KEY;
 	}
 }

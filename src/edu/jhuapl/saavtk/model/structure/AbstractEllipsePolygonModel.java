@@ -19,7 +19,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import crucible.crust.metadata.api.Key;
 import crucible.crust.metadata.api.Metadata;
 import crucible.crust.metadata.api.MetadataManager;
-import crucible.crust.metadata.api.StorableAsMetadata;
 import crucible.crust.metadata.api.Version;
 import crucible.crust.metadata.impl.InstanceGetter;
 import crucible.crust.metadata.impl.SettableMetadata;
@@ -102,7 +101,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 
 	private Mode mode;
 
-	public static class EllipsePolygon extends StructureModel.Structure implements StorableAsMetadata<EllipsePolygon>
+	public static class EllipsePolygon extends StructureModel.Structure
 	{
 		public String name = "default";
 		public final int id;
@@ -323,37 +322,29 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 				result.labelHidden = source.get(LABEL_HIDDEN_KEY);
 
 				return result;
+			}, EllipsePolygon.class, polygon -> {
+				SettableMetadata result = SettableMetadata.of(Version.of(1, 0));
+
+				result.put(NUMBER_SIDES_KEY, polygon.numberOfSides);
+				result.put(TYPE_KEY, polygon.type);
+				result.put(COLOR_KEY, polygon.color);
+				result.put(MODE_KEY, polygon.mode.name());
+				result.put(ID_KEY, polygon.id);
+				result.put(LABEL_KEY, polygon.label);
+
+				result.put(NAME_KEY, polygon.name);
+				result.put(CENTER_KEY, polygon.center);
+				result.put(RADIUS_KEY, polygon.radius);
+				result.put(FLATTENING_KEY, polygon.flattening);
+				result.put(ANGLE_KEY, polygon.angle);
+				result.put(HIDDEN_KEY, polygon.hidden);
+				result.put(LABEL_HIDDEN_KEY, polygon.labelHidden);
+
+				return result;
+
 			});
 		}
 
-		@Override
-		public Key<EllipsePolygon> getKey()
-		{
-			return ELLIPSE_POLYGON_KEY;
-		}
-
-		@Override
-		public Metadata store()
-		{
-			SettableMetadata result = SettableMetadata.of(Version.of(1, 0));
-
-			result.put(NUMBER_SIDES_KEY, numberOfSides);
-			result.put(TYPE_KEY, type);
-			result.put(COLOR_KEY, color);
-			result.put(MODE_KEY, mode.name());
-			result.put(ID_KEY, id);
-			result.put(LABEL_KEY, label);
-
-			result.put(NAME_KEY, name);
-			result.put(CENTER_KEY, center);
-			result.put(RADIUS_KEY, radius);
-			result.put(FLATTENING_KEY, flattening);
-			result.put(ANGLE_KEY, angle);
-			result.put(HIDDEN_KEY, hidden);
-			result.put(LABEL_HIDDEN_KEY, labelHidden);
-
-			return result;
-		}
 	}
 
 	public AbstractEllipsePolygonModel(PolyhedralModel smallBodyModel, int numberOfSides, Mode mode, String type)
@@ -757,8 +748,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	{
 		EllipsePolygon pol = polygons.get(polygonId);
 		double newRadius =
-				Math.sqrt((pol.center[0] - newPointOnPerimeter[0]) * (pol.center[0] - newPointOnPerimeter[0]) + (pol.center[1] - newPointOnPerimeter[1]) * (pol.center[1] - newPointOnPerimeter[1])
-						+ (pol.center[2] - newPointOnPerimeter[2]) * (pol.center[2] - newPointOnPerimeter[2]));
+				Math.sqrt((pol.center[0] - newPointOnPerimeter[0]) * (pol.center[0] - newPointOnPerimeter[0]) + (pol.center[1] - newPointOnPerimeter[1]) * (pol.center[1] - newPointOnPerimeter[1]) + (pol.center[2] - newPointOnPerimeter[2]) * (pol.center[2] - newPointOnPerimeter[2]));
 		if (newRadius > maxRadius)
 			newRadius = maxRadius;
 
