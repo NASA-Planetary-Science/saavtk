@@ -1,7 +1,6 @@
 package edu.jhuapl.saavtk.model.structure;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 
 
 /**

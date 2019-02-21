@@ -110,6 +110,7 @@ public class PolygonModel extends LineModel
 			for (int i = 0; i < numberOfStructures; ++i)
 			{
 				Polygon polygon = getPolygon(i);
+				polygon.updateInteriorPolydata();
 				vtkPolyData poly = polygon.interiorPolyData;
 				vtkPolyData decimatedPoly = polygon.decimatedInteriorPolyData;
 

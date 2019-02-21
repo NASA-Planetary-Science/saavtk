@@ -636,9 +636,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	}
 
 	@Override
-	public void addNewStructure()
+	public Structure addNewStructure()
 	{
-		// do nothing
+		return null;
 	}
 
 	public void addNewStructure(double[] pos, double radius, double flattening, double angle)
