@@ -148,13 +148,20 @@ public class Console
 			@Override
 			public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
 			{
-				if (CONSOLE.consoleFrame.isVisible())
+				if (isEnabled())
 				{
-					hideConsole();
+					if (CONSOLE.consoleFrame.isVisible())
+					{
+						hideConsole();
+					}
+					else
+					{
+						showConsole();
+					}
 				}
 				else
 				{
-					showConsole();
+					reportConsoleDisabled();
 				}
 			}
 		});
