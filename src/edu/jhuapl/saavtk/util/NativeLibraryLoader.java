@@ -63,5 +63,9 @@ public class NativeLibraryLoader
             }
         }
     }
+    
+	static public void loadSpiceLibraries() {
+		System.loadLibrary("JNISpice");
+	}
 
 }
