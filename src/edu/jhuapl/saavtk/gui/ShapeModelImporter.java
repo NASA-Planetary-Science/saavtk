@@ -304,7 +304,8 @@ public class ShapeModelImporter
 
     public void setModelPath(String modelPath)
     {
-        this.modelPath = modelPath;
+    	if (modelPath.startsWith("file://")) this.modelPath = modelPath.substring(6);
+    	else this.modelPath = modelPath;
     }
 
     public void setFormat(FormatType format)

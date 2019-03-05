@@ -138,7 +138,7 @@ public abstract class View extends JPanel
 
 	protected abstract void setupTabs();
 
-	public void initialize()
+	protected void initialize()
 	{
 		if (initialized)
 			return;
@@ -186,24 +186,23 @@ public abstract class View extends JPanel
 		controlPanel.setSelectedIndex(tabIndex); // load default tab (which is 0 if not specified in favorite tabs file)
 
 		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, controlPanel, renderer);
-		splitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, 
-		    new PropertyChangeListener() {
-		        @Override
-		        public void propertyChange(PropertyChangeEvent pce) 
-		        {
-		        	LinkedHashMap<String, String> map = new LinkedHashMap<>();
-		        	map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
-					map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
-					Preferences.getInstance().put(map);
-		        }
+		splitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, new PropertyChangeListener() {
+			@Override
+			public void propertyChange(PropertyChangeEvent pce)
+			{
+				LinkedHashMap<String, String> map = new LinkedHashMap<>();
+				map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
+				map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
+				Preferences.getInstance().put(map);
+			}
 		});
 		splitPane.setOneTouchExpandable(true);
 
 		if (!initializedPanelSizing)
 		{
-			int splitLocation = (int)Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
+			int splitLocation = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
 			int rendererWidth = splitPane.getWidth() - splitLocation;
-			
+
 			int width = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_WIDTH, 800L);
 			int height = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_HEIGHT, 800L);
 
@@ -237,7 +236,7 @@ public abstract class View extends JPanel
 		{
 			int splitLocation = Integer.parseInt(Preferences.getInstance().get(Preferences.CONTROL_PANEL_WIDTH));
 			int rendererWidth = splitPane.getWidth() - splitLocation;
-			
+
 			renderer.setMinimumSize(new Dimension(100, 100));
 			renderer.setPreferredSize(new Dimension(rendererWidth, 800));
 			controlPanel.setMinimumSize(new Dimension(320, 100));
@@ -368,9 +367,9 @@ public abstract class View extends JPanel
 		Renderer renderer = new Renderer(manager);
 		renderer.addPropertyChangeListener(manager);
 		setRenderer(renderer);
-		
-        // Force the renderer's camera to the "reset" default view
-        renderer.getCamera().reset();
+
+		// Force the renderer's camera to the "reset" default view
+		renderer.getCamera().reset();
 	}
 
 	protected abstract void setupPickManager();

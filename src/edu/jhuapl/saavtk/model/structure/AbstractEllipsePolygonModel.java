@@ -1365,55 +1365,71 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		}
 
 		// Get all the coloring values interpolated at the center of the polygon.
-		double[] allValues = smallBodyModel.getAllColoringValues(pol.center);
-		if (mode != Mode.POINT_MODE)
+		double[] allValues;
+
+		try
 		{
-			// Replace slope and/or elevation central values with the average over the rim
-			// of the circle.
-			if (slopeIndex != -1 || elevationIndex != -1)
+			allValues = smallBodyModel.getAllColoringValues(pol.center);
+			if (mode != Mode.POINT_MODE)
 			{
-				if (slopeIndex != -1)
-					allValues[slopeIndex] = 0.; // Accumulate weighted sum in situ.
-				if (elevationIndex != -1)
-					allValues[elevationIndex] = 0.; // Accumulate weighted sum in situ.
-
-				vtkCellArray lines = pol.boundaryPolyData.GetLines();
-				vtkPoints points = pol.boundaryPolyData.GetPoints();
-
-				vtkIdTypeArray idArray = lines.GetData();
-				int size = idArray.GetNumberOfTuples();
-
-				double totalLength = 0.0;
-				double[] midpoint = new double[3];
-				for (int i = 0; i < size; i += 3)
+				// Replace slope and/or elevation central values with the average over the rim
+				// of the circle.
+				if (slopeIndex != -1 || elevationIndex != -1)
 				{
-					if (idArray.GetValue(i) != 2)
+					if (slopeIndex != -1)
+						allValues[slopeIndex] = 0.; // Accumulate weighted sum in situ.
+					if (elevationIndex != -1)
+						allValues[elevationIndex] = 0.; // Accumulate weighted sum in situ.
+
+					vtkCellArray lines = pol.boundaryPolyData.GetLines();
+					vtkPoints points = pol.boundaryPolyData.GetPoints();
+
+					vtkIdTypeArray idArray = lines.GetData();
+					int size = idArray.GetNumberOfTuples();
+
+					double totalLength = 0.0;
+					double[] midpoint = new double[3];
+					for (int i = 0; i < size; i += 3)
 					{
-						System.out.println("Big problem: polydata corrupted");
-						return standardValues;
+						if (idArray.GetValue(i) != 2)
+						{
+							System.out.println("Big problem: polydata corrupted");
+							return standardValues;
+						}
+
+						double[] pt1 = points.GetPoint(idArray.GetValue(i + 1));
+						double[] pt2 = points.GetPoint(idArray.GetValue(i + 2));
+
+						MathUtil.midpointBetween(pt1, pt2, midpoint);
+						double dist = MathUtil.distanceBetween(pt1, pt2);
+						totalLength += dist;
+
+						double[] valuesAtMidpoint = smallBodyModel.getAllColoringValues(midpoint);
+
+						// Accumulate sums weighted by the length of this polygon segment.
+						if (slopeIndex != -1)
+							allValues[slopeIndex] += valuesAtMidpoint[slopeIndex] * dist;
+						if (elevationIndex != -1)
+							allValues[elevationIndex] += valuesAtMidpoint[elevationIndex] * dist;
 					}
 
-					double[] pt1 = points.GetPoint(idArray.GetValue(i + 1));
-					double[] pt2 = points.GetPoint(idArray.GetValue(i + 2));
-
-					MathUtil.midpointBetween(pt1, pt2, midpoint);
-					double dist = MathUtil.distanceBetween(pt1, pt2);
-					totalLength += dist;
-
-					double[] valuesAtMidpoint = smallBodyModel.getAllColoringValues(midpoint);
-
-					// Accumulate sums weighted by the length of this polygon segment.
+					// Normalize by the total (perimeter).
 					if (slopeIndex != -1)
-						allValues[slopeIndex] += valuesAtMidpoint[slopeIndex] * dist;
+						allValues[slopeIndex] /= totalLength;
 					if (elevationIndex != -1)
-						allValues[elevationIndex] += valuesAtMidpoint[elevationIndex] * dist;
+						allValues[elevationIndex] /= totalLength;
 				}
+			}
+		}
+		catch (Exception e)
+		{
+			System.err.println("Warning: plate coloring values were not available; omitting them from structures file.");
+			System.err.println("Exception thrown was " + e.getMessage());
 
-				// Normalize by the total (perimeter).
-				if (slopeIndex != -1)
-					allValues[slopeIndex] /= totalLength;
-				if (elevationIndex != -1)
-					allValues[elevationIndex] /= totalLength;
+			allValues = new double[coloringDataList.size()];
+			for (int index = 0; index < allValues.length; ++index)
+			{
+				allValues[index] = Double.NaN;
 			}
 		}
 
