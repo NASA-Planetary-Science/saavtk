@@ -42,8 +42,8 @@ import crucible.crust.settings.api.Version;
 import crucible.crust.settings.impl.Configurations;
 import crucible.crust.settings.impl.KeyValueCollections;
 import crucible.crust.settings.impl.SettableValues;
-import crucible.crust.settings.impl.Utilities;
 import crucible.crust.settings.impl.Values;
+import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
 import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
@@ -1433,7 +1433,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public Metadata store()
 	{
-		return Utilities.provide(configuration, MetadataManager.class).store();
+		return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration.getCollection()).store();
 	}
 
 	@Override

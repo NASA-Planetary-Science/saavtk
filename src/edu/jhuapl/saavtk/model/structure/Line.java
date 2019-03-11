@@ -13,7 +13,6 @@ import com.google.common.collect.ImmutableList;
 
 import crucible.crust.metadata.api.Key;
 import crucible.crust.metadata.api.Metadata;
-import crucible.crust.metadata.api.MetadataManager;
 import crucible.crust.metadata.impl.InstanceGetter;
 import crucible.crust.settings.api.Configuration;
 import crucible.crust.settings.api.Content;
@@ -25,8 +24,8 @@ import crucible.crust.settings.api.Version;
 import crucible.crust.settings.impl.Configurations;
 import crucible.crust.settings.impl.KeyValueCollections;
 import crucible.crust.settings.impl.SettableValues;
-import crucible.crust.settings.impl.Utilities;
 import crucible.crust.settings.impl.Values;
+import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -509,7 +508,7 @@ public class Line extends StructureModel.Structure
 
 				return result;
 			}, Line.class, line -> {
-				return Utilities.provide(line.configuration, MetadataManager.class).store();
+				return KeyValueCollectionMetadataManager.of(line.configuration.getVersion(), line.configuration.getCollection()).store();
 			});
 
 			proxyInitialized = true;
