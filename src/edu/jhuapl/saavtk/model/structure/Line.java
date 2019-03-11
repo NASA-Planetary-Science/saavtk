@@ -508,7 +508,8 @@ public class Line extends StructureModel.Structure
 
 				return result;
 			}, Line.class, line -> {
-				return KeyValueCollectionMetadataManager.of(line.configuration.getVersion(), line.configuration.getCollection()).store();
+				Configuration configuration = line.configuration;
+				return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration.getCollection()).store();
 			});
 
 			proxyInitialized = true;
