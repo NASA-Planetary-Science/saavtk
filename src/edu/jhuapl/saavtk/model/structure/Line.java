@@ -63,14 +63,14 @@ public class Line extends StructureModel.Structure
 	public static final ContentKey<SettableValue<int[]>> COLOR = SettableValues.key("color");
 	public static final ContentKey<SettableValue<String>> LABEL = SettableValues.key("label");
 
-	private final Configuration<KeyValueCollection<Content>> configuration;
+	private final Configuration configuration;
 
 	public Line(int id)
 	{
 		this.configuration = createConfiguration(id, controlPoints, purpleColor.clone());
 	}
 
-	protected Configuration<KeyValueCollection<Content>> getConfiguration()
+	protected Configuration getConfiguration()
 	{
 		return configuration;
 	}
@@ -78,36 +78,36 @@ public class Line extends StructureModel.Structure
 	@Override
 	public int getId()
 	{
-		return configuration.getContent().getValue(ID).getValue();
+		return configuration.getCollection().getValue(ID).getValue();
 	}
 
 	private void setId(int id)
 	{
-		configuration.getContent().getValue(ID).setValue(id);
+		configuration.getCollection().getValue(ID).setValue(id);
 	}
 
 	@Override
 	public String getLabel()
 	{
-		return configuration.getContent().getValue(LABEL).getValue();
+		return configuration.getCollection().getValue(LABEL).getValue();
 	}
 
 	@Override
 	public void setLabel(String label)
 	{
-		configuration.getContent().getValue(LABEL).setValue(label);
+		configuration.getCollection().getValue(LABEL).setValue(label);
 	}
 
 	@Override
 	public String getName()
 	{
-		return configuration.getContent().getValue(NAME).getValue();
+		return configuration.getCollection().getValue(NAME).getValue();
 	}
 
 	@Override
 	public void setName(String name)
 	{
-		configuration.getContent().getValue(NAME).setValue(name);
+		configuration.getCollection().getValue(NAME).setValue(name);
 	}
 
 	@Override
@@ -125,13 +125,13 @@ public class Line extends StructureModel.Structure
 	@Override
 	public int[] getColor()
 	{
-		return configuration.getContent().getValue(COLOR).getValue().clone();
+		return configuration.getCollection().getValue(COLOR).getValue().clone();
 	}
 
 	@Override
 	public void setColor(int[] color)
 	{
-		configuration.getContent().getValue(COLOR).setValue(color.clone());
+		configuration.getCollection().getValue(COLOR).setValue(color.clone());
 	}
 
 	public ImmutableList<LatLon> getControlPoints()
@@ -475,7 +475,7 @@ public class Line extends StructureModel.Structure
 	private static final Version CONFIGURATION_VERSION = Version.of(1, 0);
 	private static final SettableValues settableValues = SettableValues.instance();
 
-	public static Configuration<KeyValueCollection<Content>> createConfiguration(int id, List<LatLon> controlPoints, int[] color)
+	public static Configuration createConfiguration(int id, List<LatLon> controlPoints, int[] color)
 	{
 		KeyValueCollections.Builder<Content> builder = KeyValueCollections.instance().builder();
 
@@ -518,7 +518,7 @@ public class Line extends StructureModel.Structure
 
 	protected static void unpackMetadata(Metadata source, Line line)
 	{
-		KeyValueCollection<Content> collection = line.configuration.getContent();
+		KeyValueCollection<Content> collection = line.configuration.getCollection();
 
 		collection.getValue(NAME).setValue(source.get(Key.of(NAME.getId())));
 		collection.getValue(COLOR).setValue(source.get(Key.of(COLOR.getId())));

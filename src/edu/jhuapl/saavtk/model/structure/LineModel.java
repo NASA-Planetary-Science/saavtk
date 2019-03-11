@@ -37,7 +37,6 @@ import crucible.crust.metadata.api.MetadataManager;
 import crucible.crust.settings.api.Configuration;
 import crucible.crust.settings.api.Content;
 import crucible.crust.settings.api.ContentKey;
-import crucible.crust.settings.api.KeyValueCollection;
 import crucible.crust.settings.api.Value;
 import crucible.crust.settings.api.Version;
 import crucible.crust.settings.impl.Configurations;
@@ -79,7 +78,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	}
 
 	private final List<Line> lines = new ArrayList<>();
-	private final Configuration<KeyValueCollection<Content>> configuration;
+	private final Configuration configuration;
 
 	public ImmutableList<Line> getLines()
 	{
@@ -1422,7 +1421,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	private static final Version CONFIGURATION_VERSION = Version.of(1, 0);
 	private static final ContentKey<Value<List<Line>>> LINES_KEY = Values.fixedKey("lineStructures");
 
-	public static Configuration<KeyValueCollection<Content>> createConfiguration(List<Line> lines)
+	public static Configuration createConfiguration(List<Line> lines)
 	{
 		KeyValueCollections.Builder<Content> builder = KeyValueCollections.instance().builder();
 
@@ -1441,7 +1440,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	public void retrieve(Metadata source)
 	{
 		List<Line> sourceLines = source.get(Key.of(LINES_KEY.getId()));
-		List<Line> lines = configuration.getContent().getValue(LINES_KEY).getValue();
+		List<Line> lines = configuration.getCollection().getValue(LINES_KEY).getValue();
 
 		removeAllStructures();
 
