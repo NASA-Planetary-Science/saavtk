@@ -215,7 +215,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 				setStructureLabel(lines.size() - 1, lines.get(lines.size() - 1).getLabel());
 			}
 		}
-
+		lineActor.SetMapper(lineMapper);
 		updatePolyData();
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}

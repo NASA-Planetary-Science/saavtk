@@ -44,7 +44,7 @@ public abstract class MainWindow extends JFrame
 	 *            not saved into the custom application folder and will not be
 	 *            available unless explicitely imported.
 	 */
-	public MainWindow(String tempCustomShapeModelPath, boolean editableLeftStatusLabel)
+	protected MainWindow(String tempCustomShapeModelPath, boolean editableLeftStatusLabel)
 	{
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -61,7 +61,6 @@ public abstract class MainWindow extends JFrame
 		ImageIcon icon = createImageIcon();
 
 		setIconImage(icon.getImage());
-		pack();
 
 		//        // Center the application on the screen.
 		//        Dimension prefSize = this.getPreferredSize();
@@ -74,7 +73,7 @@ public abstract class MainWindow extends JFrame
 		//        this.setResizable(true);
 	}
 
-	public MainWindow(String tempCustomShapeModelPath)
+	protected MainWindow(String tempCustomShapeModelPath)
 	{
 		this(tempCustomShapeModelPath, true);
 	}
