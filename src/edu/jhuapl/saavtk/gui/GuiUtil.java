@@ -7,6 +7,7 @@ import java.awt.Image;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.swing.Icon;
@@ -14,6 +15,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JTable;
 import javax.swing.JToggleButton;
+import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 /**
@@ -94,7 +96,7 @@ public class GuiUtil
 		for (int aId : aTable.getSelectedRows())
 			oldSet.add(aId);
 
-		aTable.getSelectionModel().addListSelectionListener(aIgnoreListener);
+		aTable.getSelectionModel().removeListSelectionListener(aIgnoreListener);
 		aTable.clearSelection();
 		for (int aId = 0; aId < aTable.getRowCount(); aId++)
 		{
@@ -104,6 +106,31 @@ public class GuiUtil
 
 			aTable.addRowSelectionInterval(aId, aId);
 		}
+		aTable.getSelectionModel().addListSelectionListener(aIgnoreListener);
+
+		// Send out a single event of the change
+		aIgnoreListener.valueChanged(new ListSelectionEvent(aTable, 0, aTable.getRowCount() - 1, false));
+	}
+
+	/**
+	 * Utility method to select the rows at the specified indexes. The selection
+	 * will be updated with the specified ListSelectionListener being ignored.
+	 * 
+	 * @param aTable          The table for which the selection should be updated.
+	 * @param aIgnoreListener An ListSelectionListener that will not receive any
+	 *                        intermediate events. It is important that this
+	 *                        listener be registered with the table's selection
+	 *                        model as it will be deregistered and then later
+	 *                        registered.
+	 * @param aRowL           A list of indexes corresponding to the rows that are
+	 *                        to be selected. All other rows will be unselected.
+	 */
+	public static void setSelection(JTable aTable, ListSelectionListener aIgnoreListener, List<Integer> aRowL)
+	{
+		aTable.getSelectionModel().removeListSelectionListener(aIgnoreListener);
+		aTable.clearSelection();
+		for (int aRow : aRowL)
+			aTable.addRowSelectionInterval(aRow, aRow);
 		aTable.getSelectionModel().addListSelectionListener(aIgnoreListener);
 	}
 
