@@ -96,7 +96,8 @@ public class PickUtil
 				return true;
 			}
 
-			if (!(e.getButton() == MouseEvent.BUTTON1 && e.isMetaDown()) && SwingUtilities.isRightMouseButton(e))
+//			if (!(e.getButton() == MouseEvent.BUTTON1 && e.isMetaDown()) && SwingUtilities.isRightMouseButton(e))
+			if (e.getButton() == MouseEvent.BUTTON3)
 			{
 				return true;
 			}
