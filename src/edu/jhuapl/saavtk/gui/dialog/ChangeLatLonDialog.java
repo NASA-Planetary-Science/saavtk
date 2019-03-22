@@ -93,7 +93,7 @@ public class ChangeLatLonDialog extends JDialog implements ActionListener
 
 					((AbstractEllipsePolygonModel) structureModel).movePolygon(structureIndex, (Math.PI / 180.0) * latitude, (Math.PI / 180.0) * longitude);
 
-					double[] center = ((EllipsePolygon) structureModel.getStructure(structureIndex)).center;
+					double[] center = ((EllipsePolygon) structureModel.getStructure(structureIndex)).getCenter();
 
 					LatLon ll = MathUtil.reclat(center);
 
@@ -123,7 +123,7 @@ public class ChangeLatLonDialog extends JDialog implements ActionListener
 	@Override
 	public void setVisible(boolean b)
 	{
-		double[] center = ((EllipsePolygon) structureModel.getStructure(structureIndex)).center;
+		double[] center = ((EllipsePolygon) structureModel.getStructure(structureIndex)).getCenter();
 
 		LatLon ll = MathUtil.reclat(center);
 

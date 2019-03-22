@@ -67,7 +67,7 @@ public class EllipseStructure extends LineStructure
                 }
             }
             
-            Parameters params=new Parameters(new Vector3D(poly.center), poly.radius, poly.flattening, poly.angle);
+            Parameters params=new Parameters(new Vector3D(poly.getCenter()), poly.radius, poly.flattening, poly.angle);
             EllipseStructure es=new EllipseStructure(segments, params);
             es.setLineStyle(style);
             es.setLabel(label);

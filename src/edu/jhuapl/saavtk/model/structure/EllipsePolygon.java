@@ -16,12 +16,12 @@ import vtk.vtkQuadricClustering;
 
 public class EllipsePolygon extends StructureModel.Structure
 {
-	public String name = "default";
+	private String name = "default";
 	public final int id;
-	public String label = "";
+	private String label = "";
 	public vtkCaptionActor2D caption;
 
-	public double[] center;
+	private double[] center;
 	public double radius; // or semimajor axis
 	public double flattening; // ratio of semiminor axis to semimajor axis
 	public double angle;
@@ -50,7 +50,7 @@ public class EllipsePolygon extends StructureModel.Structure
 		this.type = type;
 		this.color = color.clone();
 		this.mode = mode;
-		this.label = label;
+		this.label = label != null ? label : "";
 	}
 
 	@Override
@@ -68,7 +68,7 @@ public class EllipsePolygon extends StructureModel.Structure
 	@Override
 	public void setName(String name)
 	{
-		this.name = name;
+		this.name = name != null ? name : "";
 	}
 
 	@Override
@@ -102,6 +102,16 @@ public class EllipsePolygon extends StructureModel.Structure
 		this.color = color.clone();
 	}
 
+	public double[] getCenter()
+	{
+		return center;
+	}
+
+	public void setCenter(double[] center)
+	{
+		this.center = center;
+	}
+
 	public vtkPolyData getBoundaryPolyData()
 	{
 		return boundaryPolyData;
@@ -114,7 +124,7 @@ public class EllipsePolygon extends StructureModel.Structure
 
 	public void updatePolygon(PolyhedralModel sbModel, double[] center, double radius, double flattening, double angle)
 	{
-		this.center = center;
+		this.setCenter(center);
 		this.radius = radius;
 		this.flattening = flattening;
 		this.angle = angle;
@@ -166,7 +176,7 @@ public class EllipsePolygon extends StructureModel.Structure
 	@Override
 	public void setLabel(String label)
 	{
-		this.label = label;
+		this.label = label != null ? label : "";
 	}
 
 	@Override
@@ -226,8 +236,8 @@ public class EllipsePolygon extends StructureModel.Structure
 
 			EllipsePolygon result = new EllipsePolygon(numberSides, type, color, mode, id, label);
 
-			result.name = source.get(NAME_KEY);
-			result.center = source.get(CENTER_KEY);
+			result.setName(source.get(NAME_KEY));
+			result.setCenter(source.get(CENTER_KEY));
 			result.radius = source.get(RADIUS_KEY);
 			result.flattening = source.get(FLATTENING_KEY);
 			result.angle = source.get(ANGLE_KEY);
@@ -243,10 +253,10 @@ public class EllipsePolygon extends StructureModel.Structure
 			result.put(COLOR_KEY, polygon.color);
 			result.put(MODE_KEY, polygon.mode.name());
 			result.put(ID_KEY, polygon.id);
-			result.put(LABEL_KEY, polygon.label);
+			result.put(LABEL_KEY, polygon.getLabel());
 
-			result.put(NAME_KEY, polygon.name);
-			result.put(CENTER_KEY, polygon.center);
+			result.put(NAME_KEY, polygon.getName());
+			result.put(CENTER_KEY, polygon.getCenter());
 			result.put(RADIUS_KEY, polygon.radius);
 			result.put(FLATTENING_KEY, polygon.flattening);
 			result.put(ANGLE_KEY, polygon.angle);
