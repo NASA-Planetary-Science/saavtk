@@ -50,7 +50,7 @@ public class Line extends StructureModel.Structure
 	private static final int[] purpleColor = { 255, 0, 255, 255 }; // RGBA purple
 	protected static final DecimalFormat decimalFormatter = new DecimalFormat("#.###");
 
-	public vtkCaptionActor2D caption;
+	private vtkCaptionActor2D caption;
 	private static int maxId = 0;
 
 	public static final String PATH = "path";
@@ -392,6 +392,7 @@ public class Line extends StructureModel.Structure
 		setControlPoint(idx, ll);
 	}
 
+	@Override
 	public double[] getCentroid(PolyhedralModel smallBodyModel)
 	{
 		int size = getControlPoints().size();
@@ -469,6 +470,18 @@ public class Line extends StructureModel.Structure
 	protected boolean isClosed()
 	{
 		return false;
+	}
+
+	@Override
+	public vtkCaptionActor2D getCaption()
+	{
+		return caption;
+	}
+
+	@Override
+	public void setCaption(vtkCaptionActor2D caption)
+	{
+		this.caption = caption;
 	}
 
 	private static final Version CONFIGURATION_VERSION = Version.of(1, 0);

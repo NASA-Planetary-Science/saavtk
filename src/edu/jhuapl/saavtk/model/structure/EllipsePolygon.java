@@ -19,7 +19,7 @@ public class EllipsePolygon extends StructureModel.Structure
 	private String name = "default";
 	public final int id;
 	private String label = "";
-	public vtkCaptionActor2D caption;
+	private vtkCaptionActor2D caption;
 
 	private double[] center;
 	public double radius; // or semimajor axis
@@ -207,6 +207,24 @@ public class EllipsePolygon extends StructureModel.Structure
 	public void setLabelHidden(boolean b)
 	{
 		labelHidden = b;
+	}
+
+	@Override
+	public double[] getCentroid(PolyhedralModel smallBodyModel)
+	{
+		return smallBodyModel.findClosestPoint(getCenter());
+	}
+
+	@Override
+	public vtkCaptionActor2D getCaption()
+	{
+		return caption;
+	}
+
+	@Override
+	public void setCaption(vtkCaptionActor2D caption)
+	{
+		this.caption = caption;
 	}
 
 	private static final Key<EllipsePolygon> ELLIPSE_POLYGON_KEY = Key.of("ellipsePolygon");

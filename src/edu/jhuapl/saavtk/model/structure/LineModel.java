@@ -355,14 +355,12 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		for (int j = 0; j < this.lines.size(); ++j)
 		{
-			Line lin = this.lines.get(j);
-			if (lin.getLabel() != null && !lin.labelHidden && !lin.hidden && lin.caption != null)
+			vtkCaptionActor2D caption = updateStructure(lines.get(j));
+			if (caption != null)
 			{
-				lin.caption.SetAttachmentPoint(lin.getCentroid(smallBodyModel));
-				actors.add(lin.caption);
+				actors.add(caption);
 			}
 		}
-
 	}
 
 	@Override
@@ -687,9 +685,9 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public void removeStructure(int cellId)
 	{
-		if (lines.get(cellId).caption != null)
-			lines.get(cellId).caption.VisibilityOff();
-		lines.get(cellId).caption = null;
+		Structure structure = lines.get(cellId);
+		structure.setHidden(true);
+		updateStructure(structure);
 
 		lines.remove(cellId);
 
@@ -715,10 +713,12 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		Arrays.sort(indices);
 		for (int i = indices.length - 1; i >= 0; --i)
 		{
-			if (lines.get(indices[i]).caption != null)
-				lines.get(indices[i]).caption.VisibilityOff();
-			lines.get(indices[i]).caption = null;
+			Structure structure = lines.get(indices[i]);
+			structure.setHidden(true);
+			updateStructure(structure);
+
 			lines.remove(indices[i]);
+
 			this.pcs.firePropertyChange(Properties.STRUCTURE_REMOVED, null, indices[i]);
 		}
 
@@ -736,11 +736,10 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public void removeAllStructures()
 	{
-		for (int i = 0; i < lines.size(); i++)
+		for (Structure structure : lines)
 		{
-			if (lines.get(i).caption != null)
-				lines.get(i).caption.VisibilityOff();
-			lines.get(i).caption = null;
+			structure.setHidden(true);
+			updateStructure(structure);
 		}
 		lines.clear();
 
@@ -752,6 +751,12 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		activateStructure(-1);
 
 		this.pcs.firePropertyChange(Properties.ALL_STRUCTURES_REMOVED, null, null);
+	}
+
+	@Override
+	public PolyhedralModel getPolyhedralModel()
+	{
+		return smallBodyModel;
 	}
 
 	@Override
@@ -1271,15 +1276,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 			if (line.hidden == b)
 			{
 				line.hidden = !b;
-				if (line.caption != null && line.hidden == true)
-					line.caption.VisibilityOff();
-				else if (line.caption != null && line.hidden == false)
-				{
-					if (line.labelHidden)
-						line.caption.VisibilityOff();
-					else
-						line.caption.VisibilityOn();
-				}
+				updateStructure(line);
 				needToUpdate = true;
 			}
 		}
@@ -1301,10 +1298,9 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	{
 		for (int aIdx : aIdxArr)
 		{
-			Line tmpStruct = lines.get(aIdx);
-			tmpStruct.labelHidden = !aIsVisible;
-			if (tmpStruct.caption != null)
-				tmpStruct.caption.SetVisibility(aIsVisible ? 1 : 0);
+			Structure tmpStruct = lines.get(aIdx);
+			tmpStruct.setLabelHidden(!aIsVisible);
+			updateStructure(tmpStruct);
 		}
 
 		updatePolyData();
@@ -1374,29 +1370,13 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public void setStructureLabel(int aIdx, String aLabel)
 	{
-		Line tmpStruct = lines.get(aIdx);
+		Structure tmpStruct = lines.get(aIdx);
 		tmpStruct.setLabel(aLabel);
 
 		// Clear the caption if the string is empty or null
-		if (aLabel == null || aLabel.equals(""))
-		{
-			if (tmpStruct.caption == null)
-				return;
+		tmpStruct.setLabelHidden(aLabel == null || aLabel.equals(""));
+		updateStructure(tmpStruct);
 
-			tmpStruct.caption.VisibilityOff();
-			tmpStruct.caption = null;
-
-			updatePolyData();
-			pcs.firePropertyChange(Properties.MODEL_CHANGED, null, aIdx);
-			return;
-		}
-
-		// Create a caption if necessary
-		if (tmpStruct.caption == null)
-			tmpStruct.caption = formCaption(smallBodyModel, tmpStruct.getCentroid(smallBodyModel), tmpStruct.getName(), aLabel);
-
-		// Update the caption and send out notification
-		tmpStruct.caption.SetCaption(aLabel);
 		updatePolyData();
 		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, aIdx);
 	}
@@ -1406,8 +1386,11 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	{
 		for (int index : selectedStructures)
 		{
-			vtkCaptionActor2D v = lines.get(index).caption;
-			v.SetBorder(1 - v.GetBorder());
+			vtkCaptionActor2D v = updateStructure(lines.get(index));
+			if (v != null)
+			{
+				v.SetBorder(1 - v.GetBorder());
+			}
 		}
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
@@ -1415,7 +1398,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	protected vtkCaptionActor2D getCaption(int aIndex)
 	{
-		return lines.get(aIndex).caption;
+		return updateStructure(lines.get(aIndex));
 	}
 
 	private static final Version CONFIGURATION_VERSION = Version.of(1, 0);

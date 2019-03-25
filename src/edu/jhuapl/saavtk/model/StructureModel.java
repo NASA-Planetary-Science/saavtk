@@ -48,6 +48,12 @@ public abstract class StructureModel extends AbstractModel
 		public abstract void setHidden(boolean b);
 
 		public abstract void setLabelHidden(boolean b);
+
+		public abstract double[] getCentroid(PolyhedralModel smallBodyModel);
+
+		public abstract vtkCaptionActor2D getCaption();
+
+		public abstract void setCaption(vtkCaptionActor2D caption);
 	}
 
 	@Override
@@ -284,6 +290,44 @@ public abstract class StructureModel extends AbstractModel
 	public abstract double getStructureSize(int id);
 
 	public abstract double[] getStructureNormal(int id);
+
+	public abstract PolyhedralModel getPolyhedralModel();
+
+	protected vtkCaptionActor2D updateStructure(Structure structure)
+	{
+		if (structure.getHidden() || structure.getLabelHidden())
+		{
+			if (structure.getCaption() != null)
+			{
+				structure.getCaption().VisibilityOff();
+				structure.setCaption(null);
+			}
+		}
+		else
+		{
+			double[] center = structure.getCentroid(getPolyhedralModel());
+			if (center != null)
+			{
+				vtkCaptionActor2D caption = structure.getCaption();
+
+				if (caption == null)
+				{
+					caption = formCaption(getPolyhedralModel(), center, structure.getName(), structure.getLabel());
+					caption.GetCaptionTextProperty().SetJustificationToLeft();
+					structure.setCaption(caption);
+				}
+				else
+				{
+					caption.SetCaption(structure.getLabel());
+					caption.SetAttachmentPoint(center);
+				}
+
+				caption.VisibilityOn();
+			}
+		}
+
+		return structure.getCaption();
+	}
 
 	/**
 	 * Returns the caption associated with the specified index.

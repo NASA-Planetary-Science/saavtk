@@ -230,7 +230,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 			}
 			for (int j = 0; j < polygons.size(); ++j)
 			{
-				vtkCaptionActor2D caption = updateEllipsePolygon(polygons.get(j));
+				vtkCaptionActor2D caption = updateStructure(polygons.get(j));
 				if (caption != null)
 				{
 					actors.add(caption);
@@ -332,42 +332,6 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		interiorActor.Modified();
 	}
 
-	private vtkCaptionActor2D updateEllipsePolygon(EllipsePolygon polygon)
-	{
-		if (polygon.getHidden() || polygon.getLabelHidden())
-		{
-			if (polygon.caption != null)
-			{
-				polygon.caption.VisibilityOff();
-				polygon.caption = null;
-			}
-		}
-		else
-		{
-			double[] center = polygon.getCenter();
-			if (center != null)
-			{
-				vtkCaptionActor2D caption = polygon.caption;
-
-				if (caption == null)
-				{
-					caption = formCaption(smallBodyModel, center, polygon.getName(), polygon.getLabel());
-					caption.GetCaptionTextProperty().SetJustificationToLeft();
-					polygon.caption = caption;
-				}
-				else
-				{
-					caption.SetCaption(polygon.getLabel());
-					caption.SetAttachmentPoint(polygon.getCenter());
-				}
-
-				caption.VisibilityOn();
-			}
-		}
-
-		return polygon.caption;
-	}
-
 	@Override
 	public List<vtkProp> getProps()
 	{
@@ -439,9 +403,10 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	@Override
 	public void removeStructure(int polygonId)
 	{
-		EllipsePolygon polygon = polygons.get(polygonId);
-		polygon.setHidden(true);
-		updateEllipsePolygon(polygon);
+		Structure structure = polygons.get(polygonId);
+		structure.setHidden(true);
+		updateStructure(structure);
+
 		polygons.remove(polygonId);
 
 		updatePolyData();
@@ -459,9 +424,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		Arrays.sort(polygonIds);
 		for (int i = polygonIds.length - 1; i >= 0; --i)
 		{
-			EllipsePolygon polygon = polygons.get(polygonIds[i]);
-			polygon.setHidden(true);
-			updateEllipsePolygon(polygon);
+			Structure structure = polygons.get(polygonIds[i]);
+			structure.setHidden(true);
+			updateStructure(structure);
 
 			polygons.remove(polygonIds[i]);
 
@@ -476,10 +441,10 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	@Override
 	public void removeAllStructures()
 	{
-		for (EllipsePolygon polygon : polygons)
+		for (Structure structures : polygons)
 		{
-			polygon.setHidden(true);
-			updateEllipsePolygon(polygon);
+			structures.setHidden(true);
+			updateStructure(structures);
 		}
 		polygons.clear();
 
@@ -487,6 +452,12 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 		this.pcs.firePropertyChange(Properties.ALL_STRUCTURES_REMOVED, null, null);
+	}
+
+	@Override
+	public PolyhedralModel getPolyhedralModel()
+	{
+		return smallBodyModel;
 	}
 
 	public void movePolygon(int polygonId, double[] newCenter)
@@ -1357,7 +1328,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 			if (pol.hidden == b)
 			{
 				pol.hidden = !b;
-				updateEllipsePolygon(pol);
+				updateStructure(pol);
 				pol.updatePolygon(smallBodyModel, pol.getCenter(), pol.radius, pol.flattening, pol.angle);
 				needToUpdate = true;
 			}
@@ -1380,9 +1351,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	{
 		for (int aIdx : aIdxArr)
 		{
-			EllipsePolygon tmpStruct = polygons.get(aIdx);
-			tmpStruct.labelHidden = !aIsVisible;
-			updateEllipsePolygon(tmpStruct);
+			Structure tmpStruct = polygons.get(aIdx);
+			tmpStruct.setLabelHidden(!aIsVisible);
+			updateStructure(tmpStruct);
 		}
 
 		updatePolyData();
@@ -1463,12 +1434,13 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	@Override
 	public void setStructureLabel(int aIdx, String aLabel)
 	{
-		EllipsePolygon tmpStruct = polygons.get(aIdx);
+		Structure tmpStruct = polygons.get(aIdx);
 		tmpStruct.setLabel(aLabel);
 
 		// Clear the caption if the string is empty or null
 		tmpStruct.setLabelHidden(aLabel == null || aLabel.equals(""));
-		updateEllipsePolygon(tmpStruct);
+		updateStructure(tmpStruct);
+
 		updatePolyData();
 		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, aIdx);
 	}
@@ -1478,7 +1450,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	{
 		for (int index : selectedStructures)
 		{
-			vtkCaptionActor2D v = updateEllipsePolygon(polygons.get(index));
+			vtkCaptionActor2D v = updateStructure(polygons.get(index));
 			if (v != null)
 			{
 				v.SetBorder(1 - v.GetBorder());
@@ -1490,7 +1462,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	@Override
 	protected vtkCaptionActor2D getCaption(int aIndex)
 	{
-		return updateEllipsePolygon(polygons.get(aIndex));
+		return updateStructure(polygons.get(aIndex));
 	}
 
 	private static final Key<List<EllipsePolygon>> ELLIPSE_POLYGON_KEY = Key.of("ellipses");
