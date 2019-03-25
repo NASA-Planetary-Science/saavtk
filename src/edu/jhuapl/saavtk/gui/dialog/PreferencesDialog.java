@@ -176,9 +176,10 @@ public class PreferencesDialog extends javax.swing.JDialog {
             color = getColorFromLabel(backgroundColorLabel);
             renderer.setBackgroundColor(color);
 
-            RenderPanel renderPanel=(RenderPanel)viewManager.getCurrentView().getRenderer().getRenderWindowPanel();
+            RenderPanel renderPanel = (RenderPanel)v.getRenderer().getRenderWindowPanel();
             AxesPanel axesPanel=renderPanel.getAxesPanel();
             axesPanel.getRenderer().SetBackground(color[0] / 255.0, color[1] / 255.0, color[2] / 255.0);
+            axesPanel.Render();
 
 /*            axesPanel.setxColor(getColorInstanceFromLabel(xAxisColorLabel));
             axesPanel.setyColor(getColorInstanceFromLabel(yAxisColorLabel));
