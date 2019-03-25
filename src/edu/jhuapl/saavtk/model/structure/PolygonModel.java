@@ -114,7 +114,7 @@ public class PolygonModel extends LineModel
 				vtkPolyData poly = polygon.interiorPolyData;
 				vtkPolyData decimatedPoly = polygon.decimatedInteriorPolyData;
 
-				if (polygon.hidden)
+				if (polygon.getHidden())
 				{
 					poly = emptyPolyData;
 					decimatedPoly = emptyPolyData;

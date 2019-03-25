@@ -271,7 +271,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 					startId = c;
 
 				points.InsertNextPoint(lin.xyzPointList.get(i).xyz);
-				if (lin.hidden)
+				if (lin.getHidden())
 					idList.SetId(i, 0); // set to degenerate line if hidden
 				else
 					idList.SetId(i, c);
@@ -280,7 +280,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 			if (mode == Mode.CLOSED && size > 2)
 			{
-				if (lin.hidden)
+				if (lin.getHidden())
 					idList.SetId(size, 0);
 				else
 					idList.SetId(size, startId);
@@ -322,7 +322,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 					startId = c;
 
 				decimatedPoints.InsertNextPoint(lin.xyzPointList.get(lin.controlPointIds.get(i)).xyz);
-				if (lin.hidden)
+				if (lin.getHidden())
 					decimatedIdList.SetId(i, 0); // set to degenerate line if hidden
 				else
 					decimatedIdList.SetId(i, c);
@@ -331,7 +331,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 			if (mode == Mode.CLOSED && size > 2)
 			{
-				if (lin.hidden)
+				if (lin.getHidden())
 					decimatedIdList.SetId(size, 0);
 				else
 					decimatedIdList.SetId(size, startId);
@@ -1273,9 +1273,9 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		boolean needToUpdate = false;
 		for (Line line : lines)
 		{
-			if (line.hidden == b)
+			if (line.getHidden() == b)
 			{
-				line.hidden = !b;
+				line.setHidden(!b);
 				updateStructure(line);
 				needToUpdate = true;
 			}
@@ -1290,7 +1290,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public boolean isLabelVisible(int aIdx)
 	{
-		return !lines.get(aIdx).labelHidden;
+		return !lines.get(aIdx).getLabelHidden();
 	}
 
 	@Override
@@ -1327,7 +1327,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public boolean isStructureVisible(int aIdx)
 	{
-		return !lines.get(aIdx).hidden;
+		return !lines.get(aIdx).getHidden();
 	}
 
 	@Override
@@ -1336,7 +1336,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		for (int aIdx : aIdxArr)
 		{
 			Line tmpStruct = lines.get(aIdx);
-			tmpStruct.hidden = !aIsVisible;
+			tmpStruct.setHidden(!aIsVisible);
 		}
 
 		updatePolyData();

@@ -44,8 +44,6 @@ public class Line extends StructureModel.Structure
 	// controlPoints in order to ensure the line is right above the surface of the asteroid.
 	public List<Point3D> xyzPointList = new ArrayList<>();
 	public List<Integer> controlPointIds = new ArrayList<>();
-	public boolean hidden = false;
-	public boolean labelHidden = false;
 
 	private static final int[] purpleColor = { 255, 0, 255, 255 }; // RGBA purple
 	protected static final DecimalFormat decimalFormatter = new DecimalFormat("#.###");
@@ -61,6 +59,8 @@ public class Line extends StructureModel.Structure
 	public static final ContentKey<Value<List<LatLon>>> VERTICES = Values.fixedKey("vertices");
 	public static final ContentKey<SettableValue<int[]>> COLOR = SettableValues.key("color");
 	public static final ContentKey<SettableValue<String>> LABEL = SettableValues.key("label");
+	public static final ContentKey<SettableValue<Boolean>> HIDDEN = SettableValues.key("hidden");
+	public static final ContentKey<SettableValue<Boolean>> LABEL_HIDDEN = SettableValues.key("labelHidden");
 
 	private final Configuration configuration;
 
@@ -436,25 +436,25 @@ public class Line extends StructureModel.Structure
 	@Override
 	public boolean getHidden()
 	{
-		return hidden;
+		return configuration.getCollection().getValue(HIDDEN).getValue();
 	}
 
 	@Override
 	public boolean getLabelHidden()
 	{
-		return labelHidden;
+		return configuration.getCollection().getValue(LABEL_HIDDEN).getValue();
 	}
 
 	@Override
 	public void setHidden(boolean b)
 	{
-		hidden = b;
+		configuration.getCollection().getValue(HIDDEN).setValue(b);
 	}
 
 	@Override
 	public void setLabelHidden(boolean b)
 	{
-		labelHidden = b;
+		configuration.getCollection().getValue(LABEL_HIDDEN).setValue(b);
 	}
 
 	public int getNumberOfPoints()
@@ -499,6 +499,8 @@ public class Line extends StructureModel.Structure
 		builder.put(VERTICES, settableValues.of(controlPoints));
 		builder.put(COLOR, settableValues.of(color));
 		builder.put(LABEL, settableValues.of(""));
+		builder.put(HIDDEN, settableValues.of(false));
+		builder.put(LABEL_HIDDEN, settableValues.of(false));
 
 		return Configurations.instance().of(CONFIGURATION_VERSION, builder.build());
 	}
@@ -542,6 +544,8 @@ public class Line extends StructureModel.Structure
 		controlPoints.addAll(sourceControlPoints);
 
 		collection.getValue(LABEL).setValue(source.get(Key.of(LABEL.getId())));
+		collection.getValue(HIDDEN).setValue(source.get(Key.of(HIDDEN.getId())));
+		collection.getValue(LABEL_HIDDEN).setValue(source.get(Key.of(LABEL_HIDDEN.getId())));
 
 	}
 }
