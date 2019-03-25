@@ -729,8 +729,8 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		if (Arrays.binarySearch(indices, activatedLine) < 0)
 			activateStructure(-1);
-		else
-			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+
+		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	@Override
