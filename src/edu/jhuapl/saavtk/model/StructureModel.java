@@ -21,6 +21,8 @@ public abstract class StructureModel extends AbstractModel
 
 	public static abstract class Structure
 	{
+		protected static final int[] BLACK_INT_ARRAY = new int[] { Color.BLACK.getRed(), Color.BLACK.getGreen(), Color.BLACK.getBlue() };
+
 		public abstract String getClickStatusBarText();
 
 		public abstract int getId();
@@ -44,6 +46,10 @@ public abstract class StructureModel extends AbstractModel
 		public abstract boolean getHidden();
 
 		public abstract boolean getLabelHidden();
+
+		public abstract int[] getLabelColor();
+
+		public abstract void setLabelColor(int[] color);
 
 		public abstract void setHidden(boolean b);
 
@@ -105,12 +111,8 @@ public abstract class StructureModel extends AbstractModel
 	 */
 	public Color getLabelColor(int aIdx)
 	{
-		vtkCaptionActor2D tmpCaption = getCaption(aIdx);
-		if (tmpCaption == null)
-			return null;
-
-		double[] rgbArr = tmpCaption.GetCaptionTextProperty().GetColor();
-		return new Color((float) rgbArr[0], (float) rgbArr[1], (float) rgbArr[2]);
+		int[] color = getStructure(aIdx).getLabelColor();
+		return new Color(color[0], color[1], color[2]);
 	}
 
 	/**
@@ -123,14 +125,10 @@ public abstract class StructureModel extends AbstractModel
 	 */
 	public void setLabelColor(int[] aIdxArr, Color aColor)
 	{
-		double[] rgbArr = { aColor.getRed() / 255.0, aColor.getGreen() / 255.0, aColor.getBlue() / 255.0 };
+		int[] rgbArr = { aColor.getRed(), aColor.getGreen(), aColor.getBlue() };
 		for (int aIdx : aIdxArr)
 		{
-			vtkCaptionActor2D tmpCaption = getCaption(aIdx);
-			if (tmpCaption == null)
-				continue;
-
-			tmpCaption.GetCaptionTextProperty().SetColor(rgbArr);
+			getStructure(aIdx).setLabelColor(rgbArr);
 		}
 
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
@@ -256,12 +254,12 @@ public abstract class StructureModel extends AbstractModel
 	 */
 	public abstract void setStructureVisible(int[] aIdxArr, boolean aIsVisible);
 
-	public void savePlateDataInsideStructure(int idx, File file) throws IOException
+	public void savePlateDataInsideStructure(@SuppressWarnings("unused") int idx, @SuppressWarnings("unused") File file) throws IOException
 	{
 		// do nothing by default. Only structures that have an inside need to implement this.
 	}
 
-	public FacetColoringData[] getPlateDataInsideStructure(int idx)
+	public FacetColoringData[] getPlateDataInsideStructure(@SuppressWarnings("unused") int idx)
 	{
 		// do nothing by default. Only structures that have an inside need to implement this.
 		return null;
@@ -270,12 +268,12 @@ public abstract class StructureModel extends AbstractModel
 	// For polygons which take a long time to draw, implement this function
 	// to only show interior when explicitly told. If not reimplemented, then interiod
 	// is always shown.
-	public void setShowStructuresInterior(int[] indices, boolean show)
+	public void setShowStructuresInterior(@SuppressWarnings("unused") int[] indices, @SuppressWarnings("unused") boolean show)
 	{
 		// by default do nothing
 	}
 
-	public boolean isShowStructureInterior(int id)
+	public boolean isShowStructureInterior(@SuppressWarnings("unused") int id)
 	{
 		return false;
 	}
@@ -321,7 +319,8 @@ public abstract class StructureModel extends AbstractModel
 					caption.SetCaption(structure.getLabel());
 					caption.SetAttachmentPoint(center);
 				}
-
+				int[] labelColor = structure.getLabelColor();
+				caption.GetCaptionTextProperty().SetColor(labelColor[0] / 255., labelColor[1] / 255., labelColor[2] / 255.);
 				caption.VisibilityOn();
 			}
 		}

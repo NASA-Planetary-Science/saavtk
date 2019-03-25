@@ -59,6 +59,7 @@ public class Line extends StructureModel.Structure
 	public static final ContentKey<Value<List<LatLon>>> VERTICES = Values.fixedKey("vertices");
 	public static final ContentKey<SettableValue<int[]>> COLOR = SettableValues.key("color");
 	public static final ContentKey<SettableValue<String>> LABEL = SettableValues.key("label");
+	public static final ContentKey<SettableValue<int[]>> LABEL_COLOR = SettableValues.key("labelColor");
 	public static final ContentKey<SettableValue<Boolean>> HIDDEN = SettableValues.key("hidden");
 	public static final ContentKey<SettableValue<Boolean>> LABEL_HIDDEN = SettableValues.key("labelHidden");
 
@@ -95,6 +96,18 @@ public class Line extends StructureModel.Structure
 	public void setLabel(String label)
 	{
 		configuration.getCollection().getValue(LABEL).setValue(label);
+	}
+
+	@Override
+	public int[] getLabelColor()
+	{
+		return configuration.getCollection().getValue(LABEL_COLOR).getValue();
+	}
+
+	@Override
+	public void setLabelColor(int[] labelColor)
+	{
+		configuration.getCollection().getValue(LABEL_COLOR).setValue(labelColor);
 	}
 
 	@Override
@@ -499,6 +512,7 @@ public class Line extends StructureModel.Structure
 		builder.put(VERTICES, settableValues.of(controlPoints));
 		builder.put(COLOR, settableValues.of(color));
 		builder.put(LABEL, settableValues.of(""));
+		builder.put(LABEL_COLOR, settableValues.of(BLACK_INT_ARRAY.clone()));
 		builder.put(HIDDEN, settableValues.of(false));
 		builder.put(LABEL_HIDDEN, settableValues.of(false));
 
@@ -544,6 +558,7 @@ public class Line extends StructureModel.Structure
 		controlPoints.addAll(sourceControlPoints);
 
 		collection.getValue(LABEL).setValue(source.get(Key.of(LABEL.getId())));
+		collection.getValue(LABEL_COLOR).setValue(source.get(Key.of(LABEL_COLOR.getId())));
 		collection.getValue(HIDDEN).setValue(source.get(Key.of(HIDDEN.getId())));
 		collection.getValue(LABEL_HIDDEN).setValue(source.get(Key.of(LABEL_HIDDEN.getId())));
 

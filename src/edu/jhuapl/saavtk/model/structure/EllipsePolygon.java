@@ -35,6 +35,7 @@ public class EllipsePolygon extends StructureModel.Structure
 	public int numberOfSides;
 	public String type;
 	public int[] color;
+	private int[] labelColor;
 	private Mode mode;
 
 	private static final DecimalFormat DF = new DecimalFormat("#.#####");
@@ -51,6 +52,7 @@ public class EllipsePolygon extends StructureModel.Structure
 		this.color = color.clone();
 		this.mode = mode;
 		this.label = label != null ? label : "";
+		this.labelColor = BLACK_INT_ARRAY.clone();
 	}
 
 	@Override
@@ -183,6 +185,18 @@ public class EllipsePolygon extends StructureModel.Structure
 	public String getLabel()
 	{
 		return label;
+	}
+
+	@Override
+	public int[] getLabelColor()
+	{
+		return labelColor;
+	}
+
+	@Override
+	public void setLabelColor(int[] labelColor)
+	{
+		this.labelColor = labelColor.clone();
 	}
 
 	@Override
