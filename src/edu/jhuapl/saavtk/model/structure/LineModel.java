@@ -698,10 +698,9 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		if (cellId == activatedLine)
 			activateStructure(-1);
-		else
-			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 
 		this.pcs.firePropertyChange(Properties.STRUCTURE_REMOVED, null, cellId);
+		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	@Override
