@@ -60,6 +60,7 @@ public class Line extends StructureModel.Structure
 	public static final ContentKey<SettableValue<int[]>> COLOR = SettableValues.key("color");
 	public static final ContentKey<SettableValue<String>> LABEL = SettableValues.key("label");
 	public static final ContentKey<SettableValue<int[]>> LABEL_COLOR = SettableValues.key("labelColor");
+	public static final ContentKey<SettableValue<Integer>> LABEL_FONT_SIZE = SettableValues.key("labelFontSize");
 	public static final ContentKey<SettableValue<Boolean>> HIDDEN = SettableValues.key("hidden");
 	public static final ContentKey<SettableValue<Boolean>> LABEL_HIDDEN = SettableValues.key("labelHidden");
 
@@ -108,6 +109,18 @@ public class Line extends StructureModel.Structure
 	public void setLabelColor(int[] labelColor)
 	{
 		configuration.getCollection().getValue(LABEL_COLOR).setValue(labelColor);
+	}
+
+	@Override
+	public int getLabelFontSize()
+	{
+		return configuration.getCollection().getValue(LABEL_FONT_SIZE).getValue();
+	}
+
+	@Override
+	public void setLabelFontSize(int fontSize)
+	{
+		configuration.getCollection().getValue(LABEL_FONT_SIZE).setValue(fontSize);
 	}
 
 	@Override
@@ -513,6 +526,7 @@ public class Line extends StructureModel.Structure
 		builder.put(COLOR, settableValues.of(color));
 		builder.put(LABEL, settableValues.of(""));
 		builder.put(LABEL_COLOR, settableValues.of(BLACK_INT_ARRAY.clone()));
+		builder.put(LABEL_FONT_SIZE, settableValues.of(16));
 		builder.put(HIDDEN, settableValues.of(false));
 		builder.put(LABEL_HIDDEN, settableValues.of(false));
 
@@ -559,6 +573,7 @@ public class Line extends StructureModel.Structure
 
 		collection.getValue(LABEL).setValue(source.get(Key.of(LABEL.getId())));
 		collection.getValue(LABEL_COLOR).setValue(source.get(Key.of(LABEL_COLOR.getId())));
+		collection.getValue(LABEL_FONT_SIZE).setValue(source.get(Key.of(LABEL_FONT_SIZE.getId())));
 		collection.getValue(HIDDEN).setValue(source.get(Key.of(HIDDEN.getId())));
 		collection.getValue(LABEL_HIDDEN).setValue(source.get(Key.of(LABEL_HIDDEN.getId())));
 

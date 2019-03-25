@@ -51,6 +51,10 @@ public abstract class StructureModel extends AbstractModel
 
 		public abstract void setLabelColor(int[] color);
 
+		public abstract int getLabelFontSize();
+
+		public abstract void setLabelFontSize(int fontSize);
+
 		public abstract void setHidden(boolean b);
 
 		public abstract void setLabelHidden(boolean b);
@@ -128,7 +132,10 @@ public abstract class StructureModel extends AbstractModel
 		int[] rgbArr = { aColor.getRed(), aColor.getGreen(), aColor.getBlue() };
 		for (int aIdx : aIdxArr)
 		{
-			getStructure(aIdx).setLabelColor(rgbArr);
+			Structure structure = getStructure(aIdx);
+			structure.setLabelColor(rgbArr);
+			updateStructure(structure);
+
 		}
 
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
@@ -140,11 +147,7 @@ public abstract class StructureModel extends AbstractModel
 	 */
 	public int getLabelFontSize(int aIndex)
 	{
-		vtkCaptionActor2D tmpCaption = getCaption(aIndex);
-		if (tmpCaption == null)
-			return defFontSize;
-
-		return tmpCaption.GetCaptionTextProperty().GetFontSize();
+		return getStructure(aIndex).getLabelFontSize();
 	}
 
 	/**
@@ -163,10 +166,9 @@ public abstract class StructureModel extends AbstractModel
 		// Update the font size
 		for (int aIdx : aIdxArr)
 		{
-			vtkCaptionActor2D tmpCaption = getCaption(aIdx);
-			if (tmpCaption == null)
-				continue;
-			tmpCaption.GetCaptionTextProperty().SetFontSize(aFontSize);
+			Structure structure = getStructure(aIdx);
+			structure.setLabelFontSize(aFontSize);
+			updateStructure(structure);
 		}
 
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
@@ -319,8 +321,10 @@ public abstract class StructureModel extends AbstractModel
 					caption.SetCaption(structure.getLabel());
 					caption.SetAttachmentPoint(center);
 				}
+
 				int[] labelColor = structure.getLabelColor();
 				caption.GetCaptionTextProperty().SetColor(labelColor[0] / 255., labelColor[1] / 255., labelColor[2] / 255.);
+				caption.GetCaptionTextProperty().SetFontSize(structure.getLabelFontSize());
 				caption.VisibilityOn();
 			}
 		}

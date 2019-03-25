@@ -36,6 +36,7 @@ public class EllipsePolygon extends StructureModel.Structure
 	public String type;
 	public int[] color;
 	private int[] labelColor;
+	private int labelFontSize;
 	private Mode mode;
 
 	private static final DecimalFormat DF = new DecimalFormat("#.#####");
@@ -53,6 +54,7 @@ public class EllipsePolygon extends StructureModel.Structure
 		this.mode = mode;
 		this.label = label != null ? label : "";
 		this.labelColor = BLACK_INT_ARRAY.clone();
+		this.labelFontSize = 16;
 	}
 
 	@Override
@@ -200,6 +202,18 @@ public class EllipsePolygon extends StructureModel.Structure
 	}
 
 	@Override
+	public int getLabelFontSize()
+	{
+		return labelFontSize;
+	}
+
+	@Override
+	public void setLabelFontSize(int fontSize)
+	{
+		this.labelFontSize = fontSize;
+	}
+
+	@Override
 	public boolean getHidden()
 	{
 		return hidden;
@@ -248,6 +262,8 @@ public class EllipsePolygon extends StructureModel.Structure
 	private static final Key<String> MODE_KEY = Key.of("mode");
 	private static final Key<Integer> ID_KEY = Key.of("id");
 	private static final Key<String> LABEL_KEY = Key.of("label");
+	private static final Key<int[]> LABEL_COLOR_KEY = Key.of("labelColor");
+	private static final Key<Integer> LABEL_FONT_SIZE_KEY = Key.of("labelFontSize");
 	private static final Key<String> NAME_KEY = Key.of("name");
 	private static final Key<double[]> CENTER_KEY = Key.of("center");
 	private static final Key<Double> RADIUS_KEY = Key.of("radius");
@@ -275,6 +291,8 @@ public class EllipsePolygon extends StructureModel.Structure
 			result.angle = source.get(ANGLE_KEY);
 			result.hidden = source.get(HIDDEN_KEY);
 			result.labelHidden = source.get(LABEL_HIDDEN_KEY);
+			result.labelColor = source.get(LABEL_COLOR_KEY);
+			result.labelFontSize = source.get(LABEL_FONT_SIZE_KEY);
 
 			return result;
 		}, EllipsePolygon.class, polygon -> {
@@ -294,6 +312,8 @@ public class EllipsePolygon extends StructureModel.Structure
 			result.put(ANGLE_KEY, polygon.angle);
 			result.put(HIDDEN_KEY, polygon.hidden);
 			result.put(LABEL_HIDDEN_KEY, polygon.labelHidden);
+			result.put(LABEL_COLOR_KEY, polygon.getLabelColor());
+			result.put(LABEL_FONT_SIZE_KEY, polygon.getLabelFontSize());
 
 			return result;
 
