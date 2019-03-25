@@ -1430,8 +1430,6 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		for (int index = 0; index < lines.size(); ++index)
 		{
 			Line line = lines.get(index);
-			setStructureLabel(index, line.getLabel());
-
 			line.updateAllSegments(smallBodyModel);
 		}
 
