@@ -20,6 +20,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JEditorPane;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -27,6 +28,7 @@ import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JSpinner;
+import javax.swing.JTabbedPane;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -41,6 +43,7 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.jhuapl.saavtk.colormap.ContourPanel;
 import edu.jhuapl.saavtk.colormap.StandardPlatePanel;
+import edu.jhuapl.saavtk.gui.MetadataDisplay;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomPlateDataDialog;
 import edu.jhuapl.saavtk.model.ColoringDataManager;
@@ -51,6 +54,7 @@ import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
+import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.Properties;
 import net.miginfocom.swing.MigLayout;
 
@@ -70,6 +74,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	private JRadioButton rgbColoringButton;
 	private ButtonGroup coloringButtonGroup;
 	private JComboBoxWithItemState<String> coloringComboBox;
+	private JButton showColoringProperties;
 	private JComboBoxWithItemState<String> customColorRedComboBox;
 	private JComboBoxWithItemState<String> customColorGreenComboBox;
 	private JComboBoxWithItemState<String> customColorBlueComboBox;
@@ -230,6 +235,12 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
 		coloringComboBox = new JComboBoxWithItemState<>();
 
+		showColoringProperties = new JButton("Properties");
+		showColoringProperties.setEnabled(false);
+		showColoringProperties.addActionListener(e -> {
+			showColoringProperties();
+		});
+
 		noColoringButton = new JRadioButton(NO_COLORING);
 
 		standardColoringButton = new JRadioButton(STANDARD_COLORING);
@@ -368,8 +379,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		{
 			panel.add(coloringLabel, "wrap");
 			panel.add(noColoringButton, "wrap, gapleft 25");
-			panel.add(standardColoringButton, "split 2, gapleft 25");
-			panel.add(coloringComboBox, "width 200!, wrap");
+			panel.add(standardColoringButton, "split 3, gapleft 25");
+			panel.add(coloringComboBox, "width 200!");
+			panel.add(showColoringProperties, "gapleft 25, wrap");
 			panel.add(colormapController);
 
 			ItemListener listener = (e) -> {
@@ -571,6 +583,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 	{
 		boolean selected = standardColoringButton.isSelected();
 		coloringComboBox.setEnabled(selected);
+		showColoringProperties.setEnabled(coloringComboBox.isEnabled() && coloringComboBox.getSelectedIndex() >= 0);
 		colormapController.setEnabled(selected);
 
 		selected = rgbColoringButton.isSelected();
@@ -594,6 +607,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 				int selectedIndex = coloringComboBox.getSelectedIndex() - 1;
 				if (selectedIndex < 0)
 				{
+					showColoringProperties.setEnabled(false);
 					smallBodyModel.setColoringIndex(-1);
 					return;
 				}
@@ -638,6 +652,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 			else if (standardColoringButton.isSelected())
 			{
 				box = coloringComboBox;
+				showColoringProperties.setEnabled(coloringComboBox.isEnabled() && coloringComboBox.getSelectedIndex() >= 0);
 			}
 			if (box != null)
 			{
@@ -647,6 +662,37 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		finally
 		{
 			setCursor(Cursor.getDefaultCursor());
+		}
+	}
+
+	protected void showColoringProperties()
+	{
+		PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
+		int index = smallBodyModel.getColoringIndex();
+		File file = FileCache.getFileFromServer(smallBodyModel.getAllColoringData().get(index).getFileName());
+
+		try
+		{
+			JTabbedPane jTabbedPane = MetadataDisplay.summary(file);
+			int tabCount = jTabbedPane.getTabCount();
+			if (tabCount > 0)
+			{
+				JFrame jFrame = new JFrame("Coloring File Properties");
+
+				jFrame.add(jTabbedPane);
+				jFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+				jFrame.pack();
+				jFrame.setVisible(true);
+			}
+			else
+			{
+				JOptionPane.showMessageDialog(null, "No properties available for file " + file, "Coloring File Properties", JOptionPane.INFORMATION_MESSAGE);
+			}
+		}
+		catch (IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 
@@ -663,6 +709,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 		updateColoringComboBox(customColorRedComboBox, coloringDataManager, numberElements);
 		updateColoringComboBox(customColorGreenComboBox, coloringDataManager, numberElements);
 		updateColoringComboBox(customColorBlueComboBox, coloringDataManager, numberElements);
+		showColoringProperties.setEnabled(coloringComboBox.isEnabled() && coloringComboBox.getSelectedIndex() >= 0);
 	}
 
 	protected void updateColoringComboBox(JComboBoxWithItemState<String> box, ColoringDataManager coloringDataManager, int numberElements)
