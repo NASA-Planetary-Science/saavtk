@@ -352,7 +352,7 @@ public abstract class StructureModel extends AbstractModel
 	 * @param aName A string value used to reference this caption.
 	 * @param aLabel The text that will be shown in the caption.
 	 */
-	protected vtkCaptionActor2D formCaption(PolyhedralModel aSmallBodyModel, double[] aCenterPoint, String aName, String aLabel)
+	private vtkCaptionActor2D formCaption(PolyhedralModel aSmallBodyModel, double[] aCenterPoint, String aName, String aLabel)
 	{
 		vtkCaptionActor2D retCaption;
 
