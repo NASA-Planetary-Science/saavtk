@@ -150,8 +150,8 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		if (changeLatLonAction != null)
 			changeLatLonAction.setEnabled(exactlyOne);
 
-		if (exportPlateDataAction != null)
-			exportPlateDataAction.setEnabled(exactlyOne);
+//		if (exportPlateDataAction != null)
+//			exportPlateDataAction.setEnabled(exactlyOne);
 
 		if (centerStructureMenuItem != null)
 			centerStructureMenuItem.setEnabled(exactlyOne);
@@ -347,8 +347,9 @@ abstract public class StructuresPopupMenu extends PopupMenu
 				try
 				{
 					int[] selectedStructures = model.getSelectedStructures();
-					if (selectedStructures.length == 1)
-						model.savePlateDataInsideStructure(selectedStructures[0], file);
+					model.savePlateDataInsideStructure(selectedStructures, file);
+//					if (selectedStructures.length == 1)
+//						model.savePlateDataInsideStructure(selectedStructures[0], file);
 				}
 				catch (Exception e1)
 				{
@@ -359,6 +360,7 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		}
 	}
 	
+	
 	protected class ShowPlateStatisticsInfo extends AbstractAction
 	{
 
@@ -366,9 +368,9 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		public void actionPerformed(ActionEvent e) 
 		{
 			int[] selectedStructures = model.getSelectedStructures();
-			if (selectedStructures.length == 1)
-			{
-				FacetColoringData[] data = model.getPlateDataInsideStructure(selectedStructures[0]);
+//			if (selectedStructures.length == 1)
+//			{
+				FacetColoringData[] data = model.getPlateDataInsideStructure(selectedStructures);
 				try 
 				{
 					ColoringInfoWindow window = new ColoringInfoWindow(data);
@@ -379,7 +381,7 @@ abstract public class StructuresPopupMenu extends PopupMenu
 					e1.printStackTrace();
 				}
 			}
-		}
+//		}
 		
 	}
 

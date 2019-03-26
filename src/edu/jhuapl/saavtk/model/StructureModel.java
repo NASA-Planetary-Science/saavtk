@@ -242,8 +242,16 @@ public abstract class StructureModel extends AbstractModel
     {
         // do nothing by default. Only structures that have an inside need to implement this.
     }
+	  
+    public void savePlateDataInsideStructure(int[] idx, File file) throws IOException {}
     
     public FacetColoringData[] getPlateDataInsideStructure(int idx)
+    {
+        // do nothing by default. Only structures that have an inside need to implement this.
+    	return null;
+    }
+    
+    public FacetColoringData[] getPlateDataInsideStructure(int[] idx)
     {
         // do nothing by default. Only structures that have an inside need to implement this.
     	return null;
