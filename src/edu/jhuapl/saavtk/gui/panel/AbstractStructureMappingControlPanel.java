@@ -1117,6 +1117,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			((DefaultTableModel) structuresTable.getModel()).setRowCount(structureModel.getNumberOfStructures());
 
 			updateModelDisplay();
+			updateControlGui();
 		}
 		else if (Properties.MODEL_PICKED.equals(evt.getPropertyName()))
 		{
