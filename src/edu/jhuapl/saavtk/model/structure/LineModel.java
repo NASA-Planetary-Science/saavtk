@@ -37,6 +37,8 @@ import crucible.crust.metadata.api.MetadataManager;
 import crucible.crust.settings.api.Configuration;
 import crucible.crust.settings.api.Content;
 import crucible.crust.settings.api.ContentKey;
+import crucible.crust.settings.api.KeyValueCollection;
+import crucible.crust.settings.api.SettableValue;
 import crucible.crust.settings.api.Value;
 import crucible.crust.settings.api.Version;
 import crucible.crust.settings.impl.Configurations;
@@ -108,8 +110,6 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 	private Mode mode = Mode.DEFAULT;
 
-	private double offset;
-
 	private static final String LINES = "lines";
 	private static final String SHAPE_MODEL_NAME = "shapemodel";
 	private static final int[] redColor = { 255, 0, 0, 255 }; // RGBA red
@@ -130,8 +130,6 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	{
 		this.smallBodyModel = smallBodyModel;
 		this.mode = mode;
-
-		this.offset = getDefaultOffset();
 
 		if (hasProfileMode())
 			setMaximumVerticesPerLine(2);
@@ -187,6 +185,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		actors.add(lineActivationActor);
 
 		this.configuration = createConfiguration(lines);
+		this.configuration.getCollection().getValue(OFFSET_KEY).setValue(getDefaultOffset());
 	}
 
 	protected String getType()
@@ -342,6 +341,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		}
 
 		// Setup mapper, actor, etc.
+		double offset = getOffset();
 		smallBodyModel.shiftPolyLineInNormalDirection(linesPolyData, offset);
 		smallBodyModel.shiftPolyLineInNormalDirection(decimatedLinesPolyData, offset);
 
@@ -838,7 +838,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 					colors.InsertNextTuple4(redColor[0], redColor[1], redColor[2], redColor[3]);
 			}
 
-			smallBodyModel.shiftPolyLineInNormalDirection(activationPolyData, offset);
+			smallBodyModel.shiftPolyLineInNormalDirection(activationPolyData, getOffset());
 
 			if (!actors.contains(lineActivationActor))
 				actors.add(lineActivationActor);
@@ -1084,7 +1084,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public void setOffset(double offset)
 	{
-		this.offset = offset;
+		configuration.getCollection().getValue(OFFSET_KEY).setValue(offset);
 
 		updatePolyData();
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
@@ -1093,7 +1093,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public double getOffset()
 	{
-		return offset;
+		return configuration.getCollection().getValue(OFFSET_KEY).getValue();
 	}
 
 	public void generateProfile(List<Point3D> xyzPointList, List<Double> profileValues, List<Double> profileDistances, int coloringIndex) throws Exception
@@ -1251,8 +1251,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public double getLineWidth()
 	{
-		vtkProperty lineProperty = lineActor.GetProperty();
-		return lineProperty.GetLineWidth();
+		return configuration.getCollection().getValue(LINE_WIDTH_KEY).getValue();
 	}
 
 	@Override
@@ -1262,6 +1261,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		{
 			vtkProperty lineProperty = lineActor.GetProperty();
 			lineProperty.SetLineWidth(width);
+			configuration.getCollection().getValue(LINE_WIDTH_KEY).setValue(lineProperty.GetLineWidth());
 			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 		}
 	}
@@ -1401,12 +1401,16 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	}
 
 	private static final Version CONFIGURATION_VERSION = Version.of(1, 0);
+	private static final ContentKey<SettableValue<Double>> OFFSET_KEY = SettableValues.key("offset");
+	private static final ContentKey<SettableValue<Double>> LINE_WIDTH_KEY = SettableValues.key("lineWidth");
 	private static final ContentKey<Value<List<Line>>> LINES_KEY = Values.fixedKey("lineStructures");
 
 	public static Configuration createConfiguration(List<Line> lines)
 	{
 		KeyValueCollections.Builder<Content> builder = KeyValueCollections.instance().builder();
 
+		builder.put(LINE_WIDTH_KEY, SettableValues.instance().of(2.));
+		builder.put(OFFSET_KEY, SettableValues.instance().of(Double.class, null));
 		builder.put(LINES_KEY, SettableValues.instance().of(lines));
 
 		return Configurations.instance().of(CONFIGURATION_VERSION, builder.build());
@@ -1421,8 +1425,13 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public void retrieve(Metadata source)
 	{
+		KeyValueCollection<Content> collection = configuration.getCollection();
+
+		double lineWidth = source.get(Key.of(LINE_WIDTH_KEY.getId()));
+		double offset = source.get(Key.of(OFFSET_KEY.getId()));
+
 		List<Line> sourceLines = source.get(Key.of(LINES_KEY.getId()));
-		List<Line> lines = configuration.getCollection().getValue(LINES_KEY).getValue();
+		List<Line> lines = collection.getValue(LINES_KEY).getValue();
 
 		removeAllStructures();
 
@@ -1431,7 +1440,11 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		{
 			Line line = lines.get(index);
 			line.updateAllSegments(smallBodyModel);
+
 		}
+
+		setLineWidth(lineWidth);
+		setOffset(offset);
 
 		lineActor.SetMapper(lineMapper);
 		updatePolyData();

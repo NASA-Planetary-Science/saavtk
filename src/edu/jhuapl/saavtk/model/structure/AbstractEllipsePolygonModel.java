@@ -90,6 +90,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	private int[] selectedStructures = {};
 	private int maxPolygonId = 0;
 	private double offset;
+	private double lineWidth;
 
 	public enum Mode
 	{
@@ -136,7 +137,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		boundaryActor = new SaavtkLODActor();
 		vtkProperty boundaryProperty = boundaryActor.GetProperty();
 		boundaryProperty.LightingOff();
-		boundaryProperty.SetLineWidth(2.0);
+		lineWidth = 2.;
+		boundaryProperty.SetLineWidth(lineWidth);
 
 		actors.add(boundaryActor);
 
@@ -506,7 +508,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		EllipsePolygon pol = polygons.get(polygonId);
 		double[] center = pol.getCenter();
 		double newRadius =
-				Math.sqrt((center[0] - newPointOnPerimeter[0]) * (center[0] - newPointOnPerimeter[0]) + (center[1] - newPointOnPerimeter[1]) * (center[1] - newPointOnPerimeter[1]) + (center[2] - newPointOnPerimeter[2]) * (center[2] - newPointOnPerimeter[2]));
+				Math.sqrt((center[0] - newPointOnPerimeter[0]) * (center[0] - newPointOnPerimeter[0]) + (center[1] - newPointOnPerimeter[1]) * (center[1] - newPointOnPerimeter[1])
+						+ (center[2] - newPointOnPerimeter[2]) * (center[2] - newPointOnPerimeter[2]));
 		if (newRadius > maxRadius)
 			newRadius = maxRadius;
 
@@ -1304,8 +1307,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	@Override
 	public double getLineWidth()
 	{
-		vtkProperty boundaryProperty = boundaryActor.GetProperty();
-		return boundaryProperty.GetLineWidth();
+		return lineWidth;
 	}
 
 	@Override
@@ -1313,6 +1315,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	{
 		if (width >= 1.0)
 		{
+			this.lineWidth = width;
 			vtkProperty boundaryProperty = boundaryActor.GetProperty();
 			boundaryProperty.SetLineWidth(width);
 			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
@@ -1470,6 +1473,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	private static final Key<int[]> DEFAULT_COLOR_KEY = Key.of("defaultColor");
 	private static final Key<Double> INTERIOR_OPACITY_KEY = Key.of("interiorOpacity");
 	private static final Key<int[]> SELECTED_STRUCTURES_KEY = Key.of("selectedStructures");
+	private static final Key<Double> LINE_WIDTH_KEY = Key.of("lineWidth");
 	private static final Key<Double> OFFSET_KEY = Key.of("offset");
 
 	@Override
@@ -1482,6 +1486,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		result.put(DEFAULT_COLOR_KEY, defaultColor);
 		result.put(INTERIOR_OPACITY_KEY, interiorOpacity);
 		result.put(SELECTED_STRUCTURES_KEY, selectedStructures);
+		result.put(LINE_WIDTH_KEY, lineWidth);
 		result.put(OFFSET_KEY, offset);
 
 		return result;
@@ -1497,6 +1502,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		int[] defaultColor = source.get(DEFAULT_COLOR_KEY);
 		double interiorOpacity = source.get(INTERIOR_OPACITY_KEY);
 		int[] selectedStructures = source.get(SELECTED_STRUCTURES_KEY);
+		double lineWidth = source.get(LINE_WIDTH_KEY);
 		double offset = source.get(OFFSET_KEY);
 		List<EllipsePolygon> restoredPolygons = source.get(ELLIPSE_POLYGON_KEY);
 
@@ -1523,6 +1529,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 
 		// Sync everything up.
 		updatePolyData();
+		setLineWidth(lineWidth);
 
 		AbstractEllipsePolygonModel.this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
