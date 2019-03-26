@@ -2,6 +2,8 @@ package edu.jhuapl.saavtk.pick;
 
 import java.util.List;
 
+import com.google.common.collect.Lists;
+
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import vtk.vtkActor;
 import vtk.vtkCellPicker;
@@ -37,7 +39,7 @@ public class PickUtilEx
 
 	/**
 	 * Utility method to form a vtkCellPicker suitable for picking targets
-	 * corresponding to the actual structural models.
+	 * corresponding to the specified vtkActor.
 	 */
 	public static vtkCellPicker formStructurePicker(vtkActor aActor)
 	{
@@ -48,6 +50,28 @@ public class PickUtilEx
 		vtkPropCollection vPropCollection = retCellPicker.GetPickList();
 		vPropCollection.RemoveAllItems();
 		retCellPicker.AddPickList(aActor);
+
+		return retCellPicker;
+	}
+
+	/**
+	 * Utility method to form a vtkCellPicker suitable for picking targets
+	 * corresponding to the specified list of vtkActors.
+	 */
+	public static vtkCellPicker formStructurePicker(List<vtkProp> aActorL)
+	{
+		vtkCellPicker retCellPicker = new vtkCellPicker();
+		retCellPicker.PickFromListOn();
+		retCellPicker.InitializePickList();
+
+		// Utilize the reverse ordering so that items drawn on top will
+		// be picked before items on bottom
+		aActorL = Lists.reverse(aActorL);
+
+		vtkPropCollection vPropCollection = retCellPicker.GetPickList();
+		vPropCollection.RemoveAllItems();
+		for (vtkProp aActor : aActorL)
+			retCellPicker.AddPickList(aActor);
 
 		return retCellPicker;
 	}
