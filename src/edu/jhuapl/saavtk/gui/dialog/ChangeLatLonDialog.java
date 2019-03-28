@@ -15,6 +15,7 @@ import javax.swing.JPanel;
 
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
+import edu.jhuapl.saavtk.model.structure.EllipsePolygon;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import net.miginfocom.swing.MigLayout;
@@ -92,7 +93,7 @@ public class ChangeLatLonDialog extends JDialog implements ActionListener
 
 					((AbstractEllipsePolygonModel) structureModel).movePolygon(structureIndex, (Math.PI / 180.0) * latitude, (Math.PI / 180.0) * longitude);
 
-					double[] center = ((AbstractEllipsePolygonModel.EllipsePolygon) structureModel.getStructure(structureIndex)).center;
+					double[] center = ((EllipsePolygon) structureModel.getStructure(structureIndex)).getCenter();
 
 					LatLon ll = MathUtil.reclat(center);
 
@@ -122,7 +123,7 @@ public class ChangeLatLonDialog extends JDialog implements ActionListener
 	@Override
 	public void setVisible(boolean b)
 	{
-		double[] center = ((AbstractEllipsePolygonModel.EllipsePolygon) structureModel.getStructure(structureIndex)).center;
+		double[] center = ((EllipsePolygon) structureModel.getStructure(structureIndex)).getCenter();
 
 		LatLon ll = MathUtil.reclat(center);
 

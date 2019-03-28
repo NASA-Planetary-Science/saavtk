@@ -768,10 +768,4 @@ public final class FileCache
 		}
 	}
 
-	public static void main(String[] args) throws MalformedURLException
-	{
-		Debug.setEnabled(true);
-		File file = getFileFromServer("file://Users/peachjm1/jhuapl/dev/sbmt/bennu/bennu-simulated-v4/coloring/Elevation0.fits.gz");
-		System.err.println("File " + file + " exists? " + file.exists());
-	}
 }
