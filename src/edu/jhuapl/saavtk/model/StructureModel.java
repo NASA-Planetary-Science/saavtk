@@ -11,7 +11,6 @@ import edu.jhuapl.saavtk.util.Properties;
 import vtk.vtkCaptionActor2D;
 import vtk.vtkProp;
 
-
 /**
  * Model of structures drawn on a body such as lines and circles.
  */
@@ -22,24 +21,53 @@ public abstract class StructureModel extends AbstractModel
 
 	public static abstract class Structure
 	{
+		protected static final int[] BLACK_INT_ARRAY = new int[] { Color.BLACK.getRed(), Color.BLACK.getGreen(), Color.BLACK.getBlue() };
+
 		public abstract String getClickStatusBarText();
+
 		public abstract int getId();
+
 		public abstract String getName();
+
 		public abstract void setName(String name);
+
 		public abstract String getType();
+
 		public abstract String getInfo();
+
 		public abstract int[] getColor();
+
 		public abstract void setColor(int[] color);
+
 		public abstract void setLabel(String label);
+
 		public abstract String getLabel();
+
 		public abstract boolean getHidden();
+
 		public abstract boolean getLabelHidden();
+
+		public abstract int[] getLabelColor();
+
+		public abstract void setLabelColor(int[] color);
+
+		public abstract int getLabelFontSize();
+
+		public abstract void setLabelFontSize(int fontSize);
+
 		public abstract void setHidden(boolean b);
+
 		public abstract void setLabelHidden(boolean b);
+
+		public abstract double[] getCentroid(PolyhedralModel smallBodyModel);
+
+		public abstract vtkCaptionActor2D getCaption();
+
+		public abstract void setCaption(vtkCaptionActor2D caption);
 	}
 
 	@Override
-    public abstract List<vtkProp> getProps();
+	public abstract List<vtkProp> getProps();
 
 	public abstract Structure addNewStructure();
 
@@ -87,12 +115,8 @@ public abstract class StructureModel extends AbstractModel
 	 */
 	public Color getLabelColor(int aIdx)
 	{
-		vtkCaptionActor2D tmpCaption = getCaption(aIdx);
-		if (tmpCaption == null)
-			return null;
-
-		double[] rgbArr = tmpCaption.GetCaptionTextProperty().GetColor();
-		return new Color((float) rgbArr[0], (float) rgbArr[1], (float) rgbArr[2]);
+		int[] color = getStructure(aIdx).getLabelColor();
+		return new Color(color[0], color[1], color[2]);
 	}
 
 	/**
@@ -100,19 +124,18 @@ public abstract class StructureModel extends AbstractModel
 	 * specified indexes.
 	 * 
 	 * @param aIdxArr An array which holds the indexes corresponding to the
-	 *                (sub)structures to change
-	 * @param aColor  The color that the labels will be changed to.
+	 *            (sub)structures to change
+	 * @param aColor The color that the labels will be changed to.
 	 */
 	public void setLabelColor(int[] aIdxArr, Color aColor)
 	{
-		double[] rgbArr = { aColor.getRed() / 255.0, aColor.getGreen() / 255.0, aColor.getBlue() / 255.0 };
+		int[] rgbArr = { aColor.getRed(), aColor.getGreen(), aColor.getBlue() };
 		for (int aIdx : aIdxArr)
 		{
-			vtkCaptionActor2D tmpCaption = getCaption(aIdx);
-			if (tmpCaption == null)
-				continue;
+			Structure structure = getStructure(aIdx);
+			structure.setLabelColor(rgbArr);
+			updateStructure(structure);
 
-			tmpCaption.GetCaptionTextProperty().SetColor(rgbArr);
 		}
 
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
@@ -124,19 +147,15 @@ public abstract class StructureModel extends AbstractModel
 	 */
 	public int getLabelFontSize(int aIndex)
 	{
-		vtkCaptionActor2D tmpCaption = getCaption(aIndex);
-		if (tmpCaption == null)
-			return defFontSize;
-
-		return tmpCaption.GetCaptionTextProperty().GetFontSize();
+		return getStructure(aIndex).getLabelFontSize();
 	}
 
 	/**
 	 * Sets the font size of the labels associated with the (sub)structure at the
 	 * specified indexes.
 	 * 
-	 * @param aIdxArr   An array which holds the indexes corresponding to the
-	 *                  (sub)structures to change
+	 * @param aIdxArr An array which holds the indexes corresponding to the
+	 *            (sub)structures to change
 	 * @param aFontSize
 	 */
 	public void setLabelFontSize(int[] aIdxArr, int aFontSize)
@@ -147,10 +166,9 @@ public abstract class StructureModel extends AbstractModel
 		// Update the font size
 		for (int aIdx : aIdxArr)
 		{
-			vtkCaptionActor2D tmpCaption = getCaption(aIdx);
-			if (tmpCaption == null)
-				continue;
-			tmpCaption.GetCaptionTextProperty().SetFontSize(aFontSize);
+			Structure structure = getStructure(aIdx);
+			structure.setLabelFontSize(aFontSize);
+			updateStructure(structure);
 		}
 
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
@@ -160,8 +178,8 @@ public abstract class StructureModel extends AbstractModel
 	 * Sets the font family of the label associated with the (sub)structure at the
 	 * specified index.
 	 * 
-	 * @param aIdxArr     An array which holds the indexes corresponding to the
-	 *                    (sub)structures to change
+	 * @param aIdxArr An array which holds the indexes corresponding to the
+	 *            (sub)structures to change
 	 * @param aFontFamily The font family to switch to. Currently the only supported
 	 *            families are: [Times, Arial, Courier]. A {@link RuntimeException}
 	 *            will be thrown if not supported.
@@ -201,8 +219,8 @@ public abstract class StructureModel extends AbstractModel
 	 * Sets the visibility of the labels associated with the (sub)structures at the
 	 * specified indexes.
 	 * 
-	 * @param aIdxArr    An array which holds the indexes corresponding to the
-	 *                   (sub)structures to change
+	 * @param aIdxArr An array which holds the indexes corresponding to the
+	 *            (sub)structures to change
 	 * @param aIsVisible Flag which defines whether to show the labels or not.
 	 */
 	public abstract void setLabelVisible(int[] aIdxArr, boolean aIsVisible);
@@ -216,8 +234,8 @@ public abstract class StructureModel extends AbstractModel
 	 * Sets the color of the (sub)structures at the specified indexes.
 	 * 
 	 * @param aIdxArr An array which holds the indexes corresponding to the
-	 *                (sub)structures to change
-	 * @param aColor  The color that the (sub)structures will be changed to.
+	 *            (sub)structures to change
+	 * @param aColor The color that the (sub)structures will be changed to.
 	 */
 	public abstract void setStructureColor(int[] aIdxArr, Color aColor);
 
@@ -232,46 +250,87 @@ public abstract class StructureModel extends AbstractModel
 	 * Sets the visibility of the (sub)structures associated with the specified
 	 * indexes.
 	 * 
-	 * @param aIdxArr    An array which holds the indexes corresponding to the
-	 *                   (sub)structures to change
+	 * @param aIdxArr An array which holds the indexes corresponding to the
+	 *            (sub)structures to change
 	 * @param aIsVisible Flag which defines whether to show the labels or not.
 	 */
 	public abstract void setStructureVisible(int[] aIdxArr, boolean aIsVisible);
 
-	  public void savePlateDataInsideStructure(int idx, File file) throws IOException
-    {
-        // do nothing by default. Only structures that have an inside need to implement this.
-    }
-    
-    public FacetColoringData[] getPlateDataInsideStructure(int idx)
-    {
-        // do nothing by default. Only structures that have an inside need to implement this.
-    	return null;
-    }
+	public void savePlateDataInsideStructure(@SuppressWarnings("unused") int idx, @SuppressWarnings("unused") File file) throws IOException
+	{
+		// do nothing by default. Only structures that have an inside need to implement this.
+	}
 
-    // For polygons which take a long time to draw, implement this function
-    // to only show interior when explicitly told. If not reimplemented, then interiod
-    // is always shown.
-    public void setShowStructuresInterior(int[] indices, boolean show)
-    {
-        // by default do nothing
-    }
+	public FacetColoringData[] getPlateDataInsideStructure(@SuppressWarnings("unused") int idx)
+	{
+		// do nothing by default. Only structures that have an inside need to implement this.
+		return null;
+	}
 
-    public boolean isShowStructureInterior(int id)
-    {
-        return false;
-    }
+	// For polygons which take a long time to draw, implement this function
+	// to only show interior when explicitly told. If not reimplemented, then interiod
+	// is always shown.
+	public void setShowStructuresInterior(@SuppressWarnings("unused") int[] indices, @SuppressWarnings("unused") boolean show)
+	{
+		// by default do nothing
+	}
 
-    // Get the center of the structure. For ellipses and points, this is obvious.
-    // For paths and polygons, this is the mean of the control points.
-    public abstract double[] getStructureCenter(int id);
+	public boolean isShowStructureInterior(@SuppressWarnings("unused") int id)
+	{
+		return false;
+	}
 
-    // Get a measure of the size of the structure. For ellipses and points, this is the diameter.
-    // For paths and polygons, this is twice the distance from the centroid to the farthers point
-    // from the centroid.
-    public abstract double getStructureSize(int id);
+	// Get the center of the structure. For ellipses and points, this is obvious.
+	// For paths and polygons, this is the mean of the control points.
+	public abstract double[] getStructureCenter(int id);
 
-    public abstract double[] getStructureNormal(int id);
+	// Get a measure of the size of the structure. For ellipses and points, this is the diameter.
+	// For paths and polygons, this is twice the distance from the centroid to the farthers point
+	// from the centroid.
+	public abstract double getStructureSize(int id);
+
+	public abstract double[] getStructureNormal(int id);
+
+	public abstract PolyhedralModel getPolyhedralModel();
+
+	protected vtkCaptionActor2D updateStructure(Structure structure)
+	{
+		if (structure.getHidden() || structure.getLabelHidden())
+		{
+			if (structure.getCaption() != null)
+			{
+				structure.getCaption().VisibilityOff();
+				structure.setCaption(null);
+			}
+		}
+		else
+		{
+			double[] center = structure.getCentroid(getPolyhedralModel());
+			if (center != null)
+			{
+				vtkCaptionActor2D caption = structure.getCaption();
+
+				if (caption == null)
+				{
+					caption = formCaption(getPolyhedralModel(), center, structure.getName(), structure.getLabel());
+					caption.GetCaptionTextProperty().SetJustificationToLeft();
+					structure.setCaption(caption);
+				}
+				else
+				{
+					caption.SetCaption(structure.getLabel());
+					caption.SetAttachmentPoint(center);
+				}
+
+				int[] labelColor = structure.getLabelColor();
+				caption.GetCaptionTextProperty().SetColor(labelColor[0] / 255., labelColor[1] / 255., labelColor[2] / 255.);
+				caption.GetCaptionTextProperty().SetFontSize(structure.getLabelFontSize());
+				caption.VisibilityOn();
+			}
+		}
+
+		return structure.getCaption();
+	}
 
 	/**
 	 * Returns the caption associated with the specified index.
@@ -289,11 +348,11 @@ public abstract class StructureModel extends AbstractModel
 	 * Helper method to create a VTK caption.
 	 * 
 	 * @param aSmallBodyModel
-	 * @param aCenterPoint    The point where the caption will be placed.
-	 * @param aName           A string value used to reference this caption.
-	 * @param aLabel          The text that will be shown in the caption.
+	 * @param aCenterPoint The point where the caption will be placed.
+	 * @param aName A string value used to reference this caption.
+	 * @param aLabel The text that will be shown in the caption.
 	 */
-	protected vtkCaptionActor2D formCaption(PolyhedralModel aSmallBodyModel, double[] aCenterPoint, String aName, String aLabel)
+	private vtkCaptionActor2D formCaption(PolyhedralModel aSmallBodyModel, double[] aCenterPoint, String aName, String aLabel)
 	{
 		vtkCaptionActor2D retCaption;
 

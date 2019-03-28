@@ -176,8 +176,10 @@ public class PreferencesDialog extends javax.swing.JDialog {
             color = getColorFromLabel(backgroundColorLabel);
             renderer.setBackgroundColor(color);
 
-            RenderPanel renderPanel=(RenderPanel)viewManager.getCurrentView().getRenderer().getRenderWindowPanel();
+            RenderPanel renderPanel = (RenderPanel)v.getRenderer().getRenderWindowPanel();
             AxesPanel axesPanel=renderPanel.getAxesPanel();
+            axesPanel.getRenderer().SetBackground(color[0] / 255.0, color[1] / 255.0, color[2] / 255.0);
+            axesPanel.Render();
 
 /*            axesPanel.setxColor(getColorInstanceFromLabel(xAxisColorLabel));
             axesPanel.setyColor(getColorInstanceFromLabel(yAxisColorLabel));
@@ -316,14 +318,14 @@ public class PreferencesDialog extends javax.swing.JDialog {
         backgroundColorLabel = new javax.swing.JLabel();
         backgroundColorButton = new javax.swing.JButton();
         jLabel20 = new javax.swing.JLabel();
-        xAxisColorButton = new javax.swing.JButton();
+//        xAxisColorButton = new javax.swing.JButton();
         jLabel21 = new javax.swing.JLabel();
         jLabel22 = new javax.swing.JLabel();
-        yAxisColorButton = new javax.swing.JButton();
-        zAxisColorButton = new javax.swing.JButton();
-        xAxisColorLabel = new javax.swing.JLabel();
-        yAxisColorLabel = new javax.swing.JLabel();
-        zAxisColorLabel = new javax.swing.JLabel();
+//        yAxisColorButton = new javax.swing.JButton();
+//        zAxisColorButton = new javax.swing.JButton();
+//        xAxisColorLabel = new javax.swing.JLabel();
+//        yAxisColorLabel = new javax.swing.JLabel();
+//        zAxisColorLabel = new javax.swing.JLabel();
         jLabel15 = new javax.swing.JLabel();
         axesSizeSpinner = new javax.swing.JSpinner();
         jLabel16 = new javax.swing.JLabel();
@@ -1062,15 +1064,15 @@ public class PreferencesDialog extends javax.swing.JDialog {
 //        preferencesMap.put(Preferences.MOUSE_WHEEL_MOTION_FACTOR, ((Double)mouseWheelMotionFactorSpinner.getValue()).toString());
         preferencesMap.put(Preferences.SELECTION_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(selectionColorLabel))));
         preferencesMap.put(Preferences.BACKGROUND_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(backgroundColorLabel))));
-        preferencesMap.put(Preferences.AXES_XAXIS_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(xAxisColorLabel))));
-        preferencesMap.put(Preferences.AXES_YAXIS_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(yAxisColorLabel))));
-        preferencesMap.put(Preferences.AXES_ZAXIS_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(zAxisColorLabel))));
-        preferencesMap.put(Preferences.AXES_CONE_LENGTH, ((Double)axesConeLengthSpinner.getValue()).toString());
-        preferencesMap.put(Preferences.AXES_CONE_RADIUS, ((Double)axesConeRadiusSpinner.getValue()).toString());
-        preferencesMap.put(Preferences.AXES_FONT_SIZE, ((Integer)axesFontSpinner.getValue()).toString());
-        preferencesMap.put(Preferences.AXES_FONT_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(fontColorLabel))));
-        preferencesMap.put(Preferences.AXES_LINE_WIDTH, ((Double)axesLineWidthSpinner.getValue()).toString());
-        preferencesMap.put(Preferences.AXES_SIZE, ((Double)axesSizeSpinner.getValue()).toString());
+//        preferencesMap.put(Preferences.AXES_XAXIS_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(xAxisColorLabel))));
+//        preferencesMap.put(Preferences.AXES_YAXIS_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(yAxisColorLabel))));
+//        preferencesMap.put(Preferences.AXES_ZAXIS_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(zAxisColorLabel))));
+//        preferencesMap.put(Preferences.AXES_CONE_LENGTH, ((Integer)axesConeLengthSpinner.getValue()).toString());
+//        preferencesMap.put(Preferences.AXES_CONE_RADIUS, ((Integer)axesConeRadiusSpinner.getValue()).toString());
+//        preferencesMap.put(Preferences.AXES_FONT_SIZE, ((Integer)axesFontSpinner.getValue()).toString());
+//        preferencesMap.put(Preferences.AXES_FONT_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(fontColorLabel))));
+//        preferencesMap.put(Preferences.AXES_LINE_WIDTH, ((Integer)axesLineWidthSpinner.getValue()).toString());
+//        preferencesMap.put(Preferences.AXES_SIZE, ((Integer)axesSizeSpinner.getValue()).toString());
         Preferences.getInstance().put(preferencesMap);
     }//GEN-LAST:event_applyToAllButtonActionPerformed
 
@@ -1098,17 +1100,17 @@ public class PreferencesDialog extends javax.swing.JDialog {
         showColorChooser(backgroundColorLabel);
     }//GEN-LAST:event_backgroundColorButtonActionPerformed
 
-    private void xAxisColorButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_xAxisColorButtonActionPerformed
-        showColorChooser(xAxisColorLabel);
-    }//GEN-LAST:event_xAxisColorButtonActionPerformed
-
-    private void yAxisColorButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_yAxisColorButtonActionPerformed
-        showColorChooser(yAxisColorLabel);
-    }//GEN-LAST:event_yAxisColorButtonActionPerformed
-
-    private void zAxisColorButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_zAxisColorButtonActionPerformed
-        showColorChooser(zAxisColorLabel);
-    }//GEN-LAST:event_zAxisColorButtonActionPerformed
+//    private void xAxisColorButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_xAxisColorButtonActionPerformed
+//        showColorChooser(xAxisColorLabel);
+//    }//GEN-LAST:event_xAxisColorButtonActionPerformed
+//
+//    private void yAxisColorButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_yAxisColorButtonActionPerformed
+//        showColorChooser(yAxisColorLabel);
+//    }//GEN-LAST:event_yAxisColorButtonActionPerformed
+//
+//    private void zAxisColorButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_zAxisColorButtonActionPerformed
+//        showColorChooser(zAxisColorLabel);
+//    }//GEN-LAST:event_zAxisColorButtonActionPerformed
 
     private void fontColorButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fontColorButtonActionPerformed
         showColorChooser(fontColorLabel);
@@ -1189,11 +1191,11 @@ public class PreferencesDialog extends javax.swing.JDialog {
 //    private javax.swing.JCheckBox showAxesCheckBox;
     private javax.swing.JCheckBox showScaleBarCheckBox;
     private javax.swing.JRadioButton trackballRadioButton;
-    private javax.swing.JButton xAxisColorButton;
-    private javax.swing.JLabel xAxisColorLabel;
-    private javax.swing.JButton yAxisColorButton;
-    private javax.swing.JLabel yAxisColorLabel;
-    private javax.swing.JButton zAxisColorButton;
-    private javax.swing.JLabel zAxisColorLabel;
+//    private javax.swing.JButton xAxisColorButton;
+//    private javax.swing.JLabel xAxisColorLabel;
+//    private javax.swing.JButton yAxisColorButton;
+//    private javax.swing.JLabel yAxisColorLabel;
+//    private javax.swing.JButton zAxisColorButton;
+//    private javax.swing.JLabel zAxisColorLabel;
     // End of variables declaration//GEN-END:variables
 }

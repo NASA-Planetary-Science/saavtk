@@ -60,6 +60,26 @@ public class PickUtil
 		return retMap;
 	}
 
+	/**
+	 * Returns true if the specified MouseEvent has the "primary" modifier key
+	 * activated.
+	 * <P>
+	 * For Linux and Windows systems the primary modifier key is defined as control
+	 * key (Ctrl) button.
+	 * <P>
+	 * For Apple systems the primary modifier key is defined as the meta key
+	 * (Command) button.
+	 */
+	public static boolean isModifyKey(MouseEvent aEvent)
+	{
+		if (Configuration.isMac() == true && aEvent.isMetaDown() == true)
+			return true;
+		else if (Configuration.isMac() == false && aEvent.isControlDown() == true)
+			return true;
+
+		return false;
+	}
+
 	// We do not rely on the OS for the popup trigger in the renderer (as explained in a comment
 	// in the DefaultPicker.mouseClicked function), we need to role out our own popup trigger logic.
 	// That's we why have the following complicated function. It's easier on non-macs. On macs
@@ -76,7 +96,8 @@ public class PickUtil
 				return true;
 			}
 
-			if (!(e.getButton() == MouseEvent.BUTTON1 && e.isMetaDown()) && SwingUtilities.isRightMouseButton(e))
+//			if (!(e.getButton() == MouseEvent.BUTTON1 && e.isMetaDown()) && SwingUtilities.isRightMouseButton(e))
+			if (e.getButton() == MouseEvent.BUTTON3)
 			{
 				return true;
 			}
