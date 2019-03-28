@@ -8,7 +8,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.EllipsePolygon;
+import edu.jhuapl.saavtk.model.structure.EllipsePolygon;
 import vtk.vtkCellArray;
 import vtk.vtkPoints;
 
@@ -67,7 +67,7 @@ public class EllipseStructure extends LineStructure
                 }
             }
             
-            Parameters params=new Parameters(new Vector3D(poly.center), poly.radius, poly.flattening, poly.angle);
+            Parameters params=new Parameters(new Vector3D(poly.getCenter()), poly.radius, poly.flattening, poly.angle);
             EllipseStructure es=new EllipseStructure(segments, params);
             es.setLineStyle(style);
             es.setLabel(label);

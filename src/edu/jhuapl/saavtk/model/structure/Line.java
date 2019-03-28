@@ -11,15 +11,21 @@ import org.w3c.dom.Element;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import crucible.crust.metadata.api.Key;
+import crucible.crust.metadata.api.Metadata;
+import crucible.crust.metadata.impl.InstanceGetter;
 import crucible.crust.settings.api.Configuration;
+import crucible.crust.settings.api.Content;
 import crucible.crust.settings.api.ContentKey;
 import crucible.crust.settings.api.KeyValueCollection;
 import crucible.crust.settings.api.SettableValue;
+import crucible.crust.settings.api.Value;
 import crucible.crust.settings.api.Version;
 import crucible.crust.settings.impl.Configurations;
 import crucible.crust.settings.impl.KeyValueCollections;
 import crucible.crust.settings.impl.SettableValues;
-import crucible.crust.settings.impl.Utilities;
+import crucible.crust.settings.impl.Values;
+import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -31,91 +37,102 @@ import vtk.vtkPolyData;
 
 public class Line extends StructureModel.Structure
 {
-	private static final Version CONFIGURATION_VERSION = Version.of(1, 0);
-	private static final SettableValues settableValues = SettableValues.instance();
-
-	public static Configuration<KeyValueCollection<SettableValue<?>>> createConfiguration(int id, int[] color)
-	{
-		KeyValueCollections.Builder<SettableValue<?>> builder = KeyValueCollections.instance().builder(Utilities.getSpecificType(SettableValue.class));
-
-		builder.put(ID, settableValues.of(id));
-		builder.put(NAME, settableValues.of("default"));
-		builder.put(COLOR, settableValues.of(color));
-		builder.put(LABEL, settableValues.of(""));
-
-		return Configurations.instance().of(CONFIGURATION_VERSION, builder.build());
-	}
-
 	// Note that controlPoints is what gets stored in the saved file.
 	private final List<LatLon> controlPoints = new ArrayList<>();
 
 	// Note xyzPointList is what's displayed. There will usually be more of these points than
 	// controlPoints in order to ensure the line is right above the surface of the asteroid.
-	public List<Point3D> xyzPointList = new ArrayList<Point3D>();
-	public List<Integer> controlPointIds = new ArrayList<Integer>();
-	public boolean hidden = false;
-	public boolean labelHidden = false;
-
-	private PolyhedralModel smallBodyModel;
+	public List<Point3D> xyzPointList = new ArrayList<>();
+	public List<Integer> controlPointIds = new ArrayList<>();
 
 	private static final int[] purpleColor = { 255, 0, 255, 255 }; // RGBA purple
 	protected static final DecimalFormat decimalFormatter = new DecimalFormat("#.###");
 
-	private boolean closed = false;
-	public vtkCaptionActor2D caption;
+	private vtkCaptionActor2D caption;
 	private static int maxId = 0;
 
 	public static final String PATH = "path";
-	public static final ContentKey<SettableValue<Integer>> ID = settableValues.key("id");
-	public static final ContentKey<SettableValue<String>> NAME = settableValues.key("name");
-	public static final ContentKey<SettableValue<String>> VERTICES = settableValues.key("vertices");
 	public static final String LENGTH = "length";
-	public static final ContentKey<SettableValue<int[]>> COLOR = settableValues.key("color");
-	public static final ContentKey<SettableValue<String>> LABEL = settableValues.key("label");
-	public static final String LABELCOLOR = "labelcolor";
 
-	private final Configuration<KeyValueCollection<SettableValue<?>>> configuration;
+	public static final ContentKey<SettableValue<Integer>> ID = SettableValues.key("id");
+	public static final ContentKey<SettableValue<String>> NAME = SettableValues.key("name");
+	public static final ContentKey<Value<List<LatLon>>> VERTICES = Values.fixedKey("vertices");
+	public static final ContentKey<SettableValue<int[]>> COLOR = SettableValues.key("color");
+	public static final ContentKey<SettableValue<String>> LABEL = SettableValues.key("label");
+	public static final ContentKey<SettableValue<int[]>> LABEL_COLOR = SettableValues.key("labelColor");
+	public static final ContentKey<SettableValue<Integer>> LABEL_FONT_SIZE = SettableValues.key("labelFontSize");
+	public static final ContentKey<SettableValue<Boolean>> HIDDEN = SettableValues.key("hidden");
+	public static final ContentKey<SettableValue<Boolean>> LABEL_HIDDEN = SettableValues.key("labelHidden");
 
-	public Line(PolyhedralModel smallBodyModel, boolean closed, int id)
+	private final Configuration configuration;
+
+	public Line(int id)
 	{
-		this.configuration = createConfiguration(id, purpleColor.clone());
-		this.smallBodyModel = smallBodyModel;
-		this.closed = closed;
+		this.configuration = createConfiguration(id, controlPoints, purpleColor.clone());
+	}
+
+	protected Configuration getConfiguration()
+	{
+		return configuration;
 	}
 
 	@Override
 	public int getId()
 	{
-		return configuration.getContent().getValue(ID).getValue();
+		return configuration.getCollection().getValue(ID).getValue();
 	}
 
 	private void setId(int id)
 	{
-		configuration.getContent().getValue(ID).setValue(id);
+		configuration.getCollection().getValue(ID).setValue(id);
 	}
 
 	@Override
 	public String getLabel()
 	{
-		return configuration.getContent().getValue(LABEL).getValue();
+		return configuration.getCollection().getValue(LABEL).getValue();
 	}
 
 	@Override
 	public void setLabel(String label)
 	{
-		configuration.getContent().getValue(LABEL).setValue(label);
+		configuration.getCollection().getValue(LABEL).setValue(label);
+	}
+
+	@Override
+	public int[] getLabelColor()
+	{
+		return configuration.getCollection().getValue(LABEL_COLOR).getValue();
+	}
+
+	@Override
+	public void setLabelColor(int[] labelColor)
+	{
+		configuration.getCollection().getValue(LABEL_COLOR).setValue(labelColor);
+	}
+
+	@Override
+	public int getLabelFontSize()
+	{
+		return configuration.getCollection().getValue(LABEL_FONT_SIZE).getValue();
+	}
+
+	@Override
+	public void setLabelFontSize(int fontSize)
+	{
+		configuration.getCollection().getValue(LABEL_FONT_SIZE).setValue(fontSize);
 	}
 
 	@Override
 	public String getName()
 	{
-		return configuration.getContent().getValue(NAME).getValue();
+		return configuration.getCollection().getValue(NAME).getValue();
 	}
 
 	@Override
 	public void setName(String name)
 	{
-		configuration.getContent().getValue(NAME).setValue(name);
+		configuration.getCollection().getValue(NAME).setValue(name);
 	}
 
 	@Override
@@ -133,13 +150,13 @@ public class Line extends StructureModel.Structure
 	@Override
 	public int[] getColor()
 	{
-		return configuration.getContent().getValue(COLOR).getValue().clone();
+		return configuration.getCollection().getValue(COLOR).getValue().clone();
 	}
 
 	@Override
 	public void setColor(int[] color)
 	{
-		configuration.getContent().getValue(COLOR).setValue(color.clone());
+		configuration.getCollection().getValue(COLOR).setValue(color.clone());
 	}
 
 	public ImmutableList<LatLon> getControlPoints()
@@ -205,7 +222,7 @@ public class Line extends StructureModel.Structure
 		return linEle;
 	}
 
-	public void fromXmlDomElement(Element element, String shapeModelName, boolean append)
+	public void fromXmlDomElement(PolyhedralModel smallBodyModel, Element element, String shapeModelName, boolean append)
 	{
 		controlPoints.clear();
 		controlPointIds.clear();
@@ -238,7 +255,7 @@ public class Line extends StructureModel.Structure
 			addControlPoint(count, new LatLon(lat, lon, rad));
 
 			if (shapeModelName == null || !shapeModelName.equals(smallBodyModel.getModelName()))
-				shiftPointOnPathToClosestPointOnAsteroid(count);
+				shiftPointOnPathToClosestPointOnAsteroid(smallBodyModel, count);
 
 			controlPointIds.add(xyzPointList.size());
 
@@ -248,15 +265,15 @@ public class Line extends StructureModel.Structure
 			xyzPointList.add(new Point3D(dummy));
 
 			if (count > 0)
-				this.updateSegment(count - 1);
+				this.updateSegment(smallBodyModel, count - 1);
 
 			++count;
 		}
 
-		if (closed)
+		if (isClosed())
 		{
 			// In CLOSED mode need to add segment connecting final point to initial point
-			this.updateSegment(controlPointIds.size() - 1);
+			this.updateSegment(smallBodyModel, controlPointIds.size() - 1);
 		}
 
 		tmp = element.getAttribute(COLOR.getId());
@@ -291,7 +308,7 @@ public class Line extends StructureModel.Structure
 			length += dist;
 		}
 
-		if (closed && size > 1)
+		if (isClosed() && size > 1)
 		{
 			double dist = xyzPointList.get(size - 1).distanceTo(xyzPointList.get(0));
 			length += dist;
@@ -300,7 +317,37 @@ public class Line extends StructureModel.Structure
 		return length;
 	}
 
-	public void updateSegment(int segment)
+	public void updateAllSegments(PolyhedralModel smallBodyModel)
+	{
+		controlPointIds.clear();
+		xyzPointList.clear();
+
+		int numberSegments = isClosed() ? controlPoints.size() : controlPoints.size();
+
+		for (int index = 0; index < numberSegments; ++index)
+		{
+			shiftPointOnPathToClosestPointOnAsteroid(smallBodyModel, index);
+
+			controlPointIds.add(xyzPointList.size());
+
+			// Note, this point will be replaced with the correct values
+			// when we call updateSegment
+			double[] dummy = { 0.0, 0.0, 0.0 };
+			xyzPointList.add(new Point3D(dummy));
+
+			if (index > 0)
+			{
+				updateSegment(smallBodyModel, index - 1);
+			}
+		}
+
+		if (isClosed())
+		{
+			updateSegment(smallBodyModel, controlPointIds.size() - 1);
+		}
+	}
+
+	public void updateSegment(PolyhedralModel smallBodyModel, int segment)
 	{
 		int nextSegment = segment + 1;
 		if (nextSegment == getControlPoints().size())
@@ -359,7 +406,7 @@ public class Line extends StructureModel.Structure
 
 	}
 
-	public void shiftPointOnPathToClosestPointOnAsteroid(int idx)
+	public void shiftPointOnPathToClosestPointOnAsteroid(PolyhedralModel smallBodyModel, int idx)
 	{
 		// When the resolution changes, the control points, might no longer
 		// be touching the asteroid. Therefore shift each control to the closest
@@ -371,7 +418,8 @@ public class Line extends StructureModel.Structure
 		setControlPoint(idx, ll);
 	}
 
-	public double[] getCentroid()
+	@Override
+	public double[] getCentroid(PolyhedralModel smallBodyModel)
 	{
 		int size = getControlPoints().size();
 
@@ -394,11 +442,11 @@ public class Line extends StructureModel.Structure
 		return closestPoint;
 	}
 
-	public double getSize()
+	public double getSize(PolyhedralModel smallBodyModel)
 	{
 		int size = getControlPoints().size();
 
-		double[] centroid = getCentroid();
+		double[] centroid = getCentroid(smallBodyModel);
 		double maxDistFromCentroid = 0.0;
 		for (int i = 0; i < size; ++i)
 		{
@@ -414,25 +462,25 @@ public class Line extends StructureModel.Structure
 	@Override
 	public boolean getHidden()
 	{
-		return hidden;
+		return configuration.getCollection().getValue(HIDDEN).getValue();
 	}
 
 	@Override
 	public boolean getLabelHidden()
 	{
-		return labelHidden;
+		return configuration.getCollection().getValue(LABEL_HIDDEN).getValue();
 	}
 
 	@Override
 	public void setHidden(boolean b)
 	{
-		hidden = b;
+		configuration.getCollection().getValue(HIDDEN).setValue(b);
 	}
 
 	@Override
 	public void setLabelHidden(boolean b)
 	{
-		labelHidden = b;
+		configuration.getCollection().getValue(LABEL_HIDDEN).setValue(b);
 	}
 
 	public int getNumberOfPoints()
@@ -443,5 +491,91 @@ public class Line extends StructureModel.Structure
 	public Vector3D getPoint(int i)
 	{
 		return new Vector3D(xyzPointList.get(i).xyz);
+	}
+
+	protected boolean isClosed()
+	{
+		return false;
+	}
+
+	@Override
+	public vtkCaptionActor2D getCaption()
+	{
+		return caption;
+	}
+
+	@Override
+	public void setCaption(vtkCaptionActor2D caption)
+	{
+		this.caption = caption;
+	}
+
+	private static final Version CONFIGURATION_VERSION = Version.of(1, 0);
+	private static final SettableValues settableValues = SettableValues.instance();
+
+	public static Configuration createConfiguration(int id, List<LatLon> controlPoints, int[] color)
+	{
+		KeyValueCollections.Builder<Content> builder = KeyValueCollections.instance().builder();
+
+		builder.put(ID, settableValues.of(id));
+		builder.put(NAME, settableValues.of("default"));
+		// Note: it is correct to use settableValues to instantiate the setting for VERTICES. This is because
+		// the list of controlPoints is final but mutable. If one used just "Values", the set of vertices would
+		// not be saved in the file because it would not be considered "stateful".
+		builder.put(VERTICES, settableValues.of(controlPoints));
+		builder.put(COLOR, settableValues.of(color));
+		builder.put(LABEL, settableValues.of(""));
+		builder.put(LABEL_COLOR, settableValues.of(BLACK_INT_ARRAY.clone()));
+		builder.put(LABEL_FONT_SIZE, settableValues.of(16));
+		builder.put(HIDDEN, settableValues.of(false));
+		builder.put(LABEL_HIDDEN, settableValues.of(false));
+
+		return Configurations.instance().of(CONFIGURATION_VERSION, builder.build());
+	}
+
+	private static final Key<Line> LINE_STRUCTURE_PROXY_KEY = Key.of("Line (structure)");
+	private static boolean proxyInitialized = false;
+
+	public static void initializeSerializationProxy()
+	{
+		if (!proxyInitialized)
+		{
+			LatLon.initializeSerializationProxy();
+
+			InstanceGetter.defaultInstanceGetter().register(LINE_STRUCTURE_PROXY_KEY, source -> {
+				int id = source.get(Key.of(ID.getId()));
+
+				Line result = new Line(id);
+
+				unpackMetadata(source, result);
+
+				return result;
+			}, Line.class, line -> {
+				Configuration configuration = line.configuration;
+				return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration.getCollection()).store();
+			});
+
+			proxyInitialized = true;
+		}
+	}
+
+	protected static void unpackMetadata(Metadata source, Line line)
+	{
+		KeyValueCollection<Content> collection = line.configuration.getCollection();
+
+		collection.getValue(NAME).setValue(source.get(Key.of(NAME.getId())));
+		collection.getValue(COLOR).setValue(source.get(Key.of(COLOR.getId())));
+
+		List<LatLon> sourceControlPoints = source.get(Key.of(VERTICES.getId()));
+		List<LatLon> controlPoints = collection.getValue(VERTICES).getValue();
+
+		controlPoints.addAll(sourceControlPoints);
+
+		collection.getValue(LABEL).setValue(source.get(Key.of(LABEL.getId())));
+		collection.getValue(LABEL_COLOR).setValue(source.get(Key.of(LABEL_COLOR.getId())));
+		collection.getValue(LABEL_FONT_SIZE).setValue(source.get(Key.of(LABEL_FONT_SIZE.getId())));
+		collection.getValue(HIDDEN).setValue(source.get(Key.of(HIDDEN.getId())));
+		collection.getValue(LABEL_HIDDEN).setValue(source.get(Key.of(LABEL_HIDDEN.getId())));
+
 	}
 }

@@ -33,10 +33,11 @@ public class MetadataDisplay
 				{
 					keyField = fields.get(0);
 					fields = fields.subList(1, fields.size());
+
+					MetadataDisplayPanel panel = MetadataDisplayPanel.of(description.getAsMetadata(), keyField, fields);
+					jTabbedPane.add(dataObjectInfo.getTitle(), panel.getPanel());
 				}
 
-				MetadataDisplayPanel panel = MetadataDisplayPanel.of(description.getAsMetadata(), keyField, fields);
-				jTabbedPane.add(dataObjectInfo.getTitle(), panel.getPanel());
 			}
 			return jTabbedPane;
 		}
