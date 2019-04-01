@@ -13,6 +13,7 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
 	private static final DecimalFormat DF = new DecimalFormat("0.00");
 	private static final DecimalFormat PF = new DecimalFormat("0%");
 	private final String filename;
+	Runnable completionBlock;
 
 	public FileDownloadSwingWorker(Component c, String title, String filename)
 	{
@@ -78,6 +79,7 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
 			while (downloadThread.isAlive() && !isCancelled())
 			{
 				long downloadProgress = fileInfo.getByteCount();
+
 				double percentDownloaded = fileInfo.getPercentDownloaded();
 				double downloadedSoFarInMB = downloadProgress / 1048576.0;
 				double totalSizeInMB = fileInfo.getTotalByteCount() / 1048576.0;
@@ -110,10 +112,11 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
 					computedTimeEstimate = true;
 				}
 			}
+			if (completionBlock != null) completionBlock.run();
 		}
 		catch (@SuppressWarnings("unused") InterruptedException ignore)
 		{
-			//ignore.printStackTrace();
+			ignore.printStackTrace();
 		}
 
 		if (isCancelled())
@@ -130,5 +133,10 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
 	protected String getFileDownloaded()
 	{
 		return filename;
+	}
+
+	public void setCompletionBlock(Runnable completionBlock)
+	{
+		this.completionBlock = completionBlock;
 	}
 }
