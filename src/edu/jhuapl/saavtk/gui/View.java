@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,7 +13,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 import javax.swing.BorderFactory;
-import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -130,7 +130,7 @@ public abstract class View extends JPanel
 		this.config = config;
 	}
 
-	protected void addTab(String name, JComponent component)
+	protected void addTab(String name, Component component)
 	{
 		controlPanel.addTab(name, component);
 	}
