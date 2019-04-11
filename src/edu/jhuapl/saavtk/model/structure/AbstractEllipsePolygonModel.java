@@ -1407,12 +1407,32 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		vtkPolyData polydata = polygons.get(idx).interiorPolyData;
 		smallBodyModel.savePlateDataInsidePolydata(polydata, file);
 	}
+	
+	public void savePlateDataInsideStructure(int[] idx, File file) throws IOException
+	{
+		vtkAppendPolyData appendFilter = new vtkAppendPolyData();
+		for (int i = 0; i < idx.length; i++)
+			appendFilter.AddInputData(polygons.get(idx[i]).interiorPolyData);
+		appendFilter.Update();
+		//vtkPolyData polydata = polygons.get(idx).interiorPolyData;
+		smallBodyModel.savePlateDataInsidePolydata(appendFilter.GetOutput(), file);
+	}
 
 	@Override
 	public FacetColoringData[] getPlateDataInsideStructure(int idx)
 	{
 		vtkPolyData polydata = polygons.get(idx).interiorPolyData;
 		return smallBodyModel.getPlateDataInsidePolydata(polydata);
+	}
+	
+	@Override
+	public FacetColoringData[] getPlateDataInsideStructure(int[] idx)
+	{
+		vtkAppendPolyData appendFilter = new vtkAppendPolyData();
+		for (int i = 0; i < idx.length; i++)
+			appendFilter.AddInputData(polygons.get(idx[i]).interiorPolyData);
+		appendFilter.Update();
+		return smallBodyModel.getPlateDataInsidePolydata(appendFilter.GetOutput());
 	}
 
 	@Override
