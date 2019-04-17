@@ -18,6 +18,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.io.input.CountingInputStream;
@@ -409,75 +412,101 @@ public final class FileCache
 		// Local file must be gunzipped, so need the full FileInfo no matter where the URL points.
 		File file = SAFE_URL_PATHS.get(Configuration.getCacheDir(), ungzippedPath).toFile();
 
-		FileInfo info = INFO_MAP.get(file);
-		if (info == null && file.isDirectory())
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		executor.execute(() -> {
+			FileInfo info = INFO_MAP.get(file);
+			if (info == null && file.isDirectory())
+			{
+				info = new FileInfo(url, file, YesOrNo.YES, YesOrNo.YES, 0);
+			}
+
+			if (info == null || info.isURLAccessAuthorized() != YesOrNo.YES)
+			{
+				info = getFileInfo(url, file);
+			}
+
+			INFO_MAP.put(file, info);
+		});
+
+		try
 		{
-			info = new FileInfo(url, file, YesOrNo.YES, YesOrNo.YES, 0);
+			executor.shutdown();
+			boolean status = executor.awaitTermination(5, TimeUnit.SECONDS);
+			if (!status)
+			{
+				INFO_MAP.put(file, new FileInfo(url, file, YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0));
+			}
 		}
-		if (info == null || info.isURLAccessAuthorized() != YesOrNo.YES)
+		catch (InterruptedException e)
 		{
-			// This code is based on code from stacktrace. The stacktrace code
-			// specifically included disabling redirects, but that leads to
-			// spurious 301 errors, so leaving these in here commented out.
-			//                  HttpURLConnection.setFollowRedirects(false);
-			YesOrNo authorized = YesOrNo.UNKNOWN;
-			YesOrNo urlExists = YesOrNo.UNKNOWN;
-			long lastModified = 0;
-			try
+			e.printStackTrace();
+			INFO_MAP.put(file, new FileInfo(url, file, YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0));
+		}
+
+		return INFO_MAP.get(file);
+	}
+
+	private static FileInfo getFileInfo(URL url, File file)
+	{
+		// This code is based on code from stacktrace. The stacktrace code
+		// specifically included disabling redirects, but that leads to
+		// spurious 301 errors, so leaving these in here commented out.
+		//                  HttpURLConnection.setFollowRedirects(false);
+		YesOrNo authorized = YesOrNo.UNKNOWN;
+		YesOrNo urlExists = YesOrNo.UNKNOWN;
+		long lastModified = 0;
+		try
+		{
+			final URLConnection connection = url.openConnection();
+			Debug.out().println("Opened connection for info to " + url);
+			if (!Debug.isEnabled() && showDotsForFiles)
 			{
-				final URLConnection connection = url.openConnection();
-				Debug.out().println("Opened connection for info to " + url);
-				if (!Debug.isEnabled() && showDotsForFiles)
-				{
-					System.out.print('.');
-				}
-
-				// These two properties seem to be still necessary as of 2017-12-19.
-				connection.setRequestProperty("User-Agent", "Mozilla/4.0");
-				connection.setRequestProperty("Accept", "*/*");
-				if (connection instanceof HttpURLConnection)
-				{
-					HttpURLConnection httpConnection = (HttpURLConnection) connection;
-
-					httpConnection.setRequestMethod("HEAD");
-
-					int code = httpConnection.getResponseCode();
-
-					if (code == HttpURLConnection.HTTP_OK)
-					{
-						authorized = YesOrNo.YES;
-						urlExists = YesOrNo.YES;
-					}
-					else if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN)
-					{
-						authorized = YesOrNo.NO;
-					}
-					else if (code == HttpURLConnection.HTTP_NOT_FOUND)
-					{
-						authorized = YesOrNo.YES;
-						urlExists = YesOrNo.NO;
-					}
-				}
-				lastModified = connection.getLastModified();
+				System.out.print('.');
 			}
-			catch (UnknownHostException e)
+
+			// These two properties seem to be still necessary as of 2017-12-19.
+			connection.setRequestProperty("User-Agent", "Mozilla/4.0");
+			connection.setRequestProperty("Accept", "*/*");
+			if (connection instanceof HttpURLConnection)
 			{
-				throw new NoInternetAccessException(e, url);
-			}
-			catch (Exception e)
-			{
-				String message = e.getMessage();
-				if (message != null && (message.contains("401") || message.contains("403")))
+				HttpURLConnection httpConnection = (HttpURLConnection) connection;
+
+				httpConnection.setRequestMethod("HEAD");
+
+				int code = httpConnection.getResponseCode();
+
+				if (code == HttpURLConnection.HTTP_OK)
 				{
-					e.printStackTrace();
+					authorized = YesOrNo.YES;
+					urlExists = YesOrNo.YES;
+				}
+				else if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN)
+				{
 					authorized = YesOrNo.NO;
 				}
+				else if (code == HttpURLConnection.HTTP_NOT_FOUND)
+				{
+					authorized = YesOrNo.YES;
+					urlExists = YesOrNo.NO;
+				}
 			}
-
-			info = new FileInfo(url, file, authorized, urlExists, lastModified);
-			INFO_MAP.put(file, info);
+			lastModified = connection.getLastModified();
 		}
-		return info;
+		catch (UnknownHostException e)
+		{
+			throw new NoInternetAccessException(e, url);
+		}
+		catch (Exception e)
+		{
+			String message = e.getMessage();
+			if (message != null && (message.contains("401") || message.contains("403")))
+			{
+				e.printStackTrace();
+				authorized = YesOrNo.NO;
+			}
+		}
+
+		return new FileInfo(url, file, authorized, urlExists, lastModified);
 	}
 
 	public static boolean isFileInCustomData(String urlOrPathSegment)
