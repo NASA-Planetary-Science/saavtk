@@ -463,6 +463,7 @@ public final class FileCache
                 httpConnection.setRequestMethod("HEAD");
 
                 httpConnection.setConnectTimeout(5000);
+                httpConnection.setReadTimeout(5000);
 
                 int code = httpConnection.getResponseCode();
 
@@ -497,7 +498,7 @@ public final class FileCache
             }
             else if (e instanceof SocketTimeoutException)
             {
-                authorized = YesOrNo.NO;
+                authorized = YesOrNo.UNKNOWN;
             }
         }
 
