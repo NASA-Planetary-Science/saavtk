@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
@@ -18,9 +19,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.io.input.CountingInputStream;
@@ -414,8 +412,8 @@ public final class FileCache
         // URL points.
         File file = SAFE_URL_PATHS.get(Configuration.getCacheDir(), ungzippedPath).toFile();
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
+        try
+        {
             FileInfo info = INFO_MAP.get(file);
             if (info == null && file.isDirectory())
             {
@@ -428,21 +426,10 @@ public final class FileCache
             }
 
             INFO_MAP.put(file, info);
-        });
-
-        try
-        {
-            executor.shutdown();
-            boolean status = executor.awaitTermination(5, TimeUnit.SECONDS);
-            if (!status)
-            {
-                INFO_MAP.put(file, new FileInfo(url, file, YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0));
-            }
         }
-        catch (InterruptedException e)
+        finally
         {
-            e.printStackTrace();
-            INFO_MAP.put(file, new FileInfo(url, file, YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0));
+            INFO_MAP.putIfAbsent(file, new FileInfo(url, file, YesOrNo.UNKNOWN, YesOrNo.UNKNOWN, 0));
         }
 
         return INFO_MAP.get(file);
@@ -475,6 +462,8 @@ public final class FileCache
 
                 httpConnection.setRequestMethod("HEAD");
 
+                httpConnection.setConnectTimeout(5000);
+
                 int code = httpConnection.getResponseCode();
 
                 if (code == HttpURLConnection.HTTP_OK)
@@ -504,6 +493,10 @@ public final class FileCache
             if (message != null && (message.contains("401") || message.contains("403")))
             {
                 e.printStackTrace();
+                authorized = YesOrNo.NO;
+            }
+            else if (e instanceof SocketTimeoutException)
+            {
                 authorized = YesOrNo.NO;
             }
         }
