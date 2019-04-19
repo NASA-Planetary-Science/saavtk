@@ -1,10 +1,8 @@
 package edu.jhuapl.saavtk.util;
 
-import java.awt.EventQueue;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -25,8 +23,6 @@ import javax.swing.JTextField;
 
 import org.apache.commons.io.FileUtils;
 
-import com.google.common.base.Preconditions;
-
 import edu.jhuapl.saavtk.util.FileCache.FileInfo;
 import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
 
@@ -42,7 +38,7 @@ public class Configuration
 			"<html>The Small Body Mapping Tool will work without a password, but data for some models is restricted.<br>If you have credentials to access restricted models, enter them here.</html>";
 
 	static private String webURL = "http://sbmt.jhuapl.edu";
-	static private URL rootURL = createUrl(webURL + "/sbmt/prod");
+	static private String rootURL = webURL + "/sbmt/prod";
 	static private URL dataRootURL = createUrl(rootURL + "/data");
 	static private String helpURL = webURL;
 
@@ -73,25 +69,6 @@ public class Configuration
 	//        if (rootURLProperty != null)
 	//            rootURL = rootURLProperty;
 	//    }
-
-	public static void runOnEDT(Runnable runnable) throws InvocationTargetException, InterruptedException
-	{
-		Preconditions.checkNotNull(runnable);
-		EventQueue.invokeLater(runnable);
-	}
-
-	public static void runOnEDTASAP(Runnable runnable) throws InvocationTargetException, InterruptedException
-	{
-		Preconditions.checkNotNull(runnable);
-		if (EventQueue.isDispatchThread())
-		{
-			runnable.run();
-		}
-		else
-		{
-			EventQueue.invokeAndWait(runnable);
-		}
-	}
 
 	public static void setupPasswordAuthentication(final URL restrictedAccessRoot, final String restrictedFileName, final Iterable<Path> passwordFilesToTry)
 	{
@@ -374,14 +351,14 @@ public class Configuration
 		return cacheDir;
 	}
 
-	public static URL getRootURL()
+	public static String getRootURL()
 	{
 		return rootURL;
 	}
 
 	public static void setRootURL(String rootURL)
 	{
-		Configuration.rootURL = createUrl(rootURL);
+		Configuration.rootURL = rootURL;
 		Configuration.dataRootURL = createUrl(SAFE_URL_PATHS.getString(rootURL, "data"));
 	}
 
