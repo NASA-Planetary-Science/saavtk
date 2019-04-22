@@ -2,7 +2,6 @@ package edu.jhuapl.saavtk.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.Window;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -17,14 +16,14 @@ import edu.jhuapl.saavtk.gui.menu.FileMenu;
  */
 public abstract class MainWindow extends JFrame
 {
-    private static Window mainWindow = null;
+    private static MainWindow mainWindow = null;
 
-    public static Window getMainWindow()
+    public static MainWindow getMainWindow()
     {
         return mainWindow;
     }
 
-    public static void setMainWindow(Window window)
+    public static void setMainWindow(MainWindow window)
     {
         if (mainWindow != null)
         {
