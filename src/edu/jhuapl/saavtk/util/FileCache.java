@@ -365,7 +365,7 @@ public final class FileCache
      *            object
      * @return the file information object
      */
-    public static FileInfo getFileInfoFromServer(final URL url, String pathSegment)
+    private static FileInfo getFileInfoFromServer(final URL url, String pathSegment)
     {
         Preconditions.checkNotNull(url);
         Preconditions.checkNotNull(pathSegment);
@@ -444,21 +444,26 @@ public final class FileCache
         YesOrNo authorized = YesOrNo.UNKNOWN;
         YesOrNo urlExists = YesOrNo.UNKNOWN;
         long lastModified = 0;
+        HttpURLConnection httpConnection = null;
         try
         {
-            final URLConnection connection = url.openConnection();
+            URL uncachedUrl = new URL(url.toString() + "?cacheFrom=" + System.currentTimeMillis());
+            URLConnection connection = uncachedUrl.openConnection();
+
             Debug.out().println("Opened connection for info to " + url);
             if (!Debug.isEnabled() && showDotsForFiles)
             {
                 System.out.print('.');
             }
 
+            connection.setUseCaches(false);
+
             // These two properties seem to be still necessary as of 2017-12-19.
             connection.setRequestProperty("User-Agent", "Mozilla/4.0");
             connection.setRequestProperty("Accept", "*/*");
             if (connection instanceof HttpURLConnection)
             {
-                HttpURLConnection httpConnection = (HttpURLConnection) connection;
+                httpConnection = (HttpURLConnection) connection;
 
                 httpConnection.setRequestMethod("HEAD");
 
@@ -499,6 +504,13 @@ public final class FileCache
             else if (e instanceof SocketTimeoutException)
             {
                 authorized = YesOrNo.UNKNOWN;
+            }
+        }
+        finally
+        {
+            if (httpConnection != null)
+            {
+                httpConnection.disconnect();
             }
         }
 
