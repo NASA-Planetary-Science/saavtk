@@ -2569,8 +2569,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 
 		scaleBarWidthInKm = scaleBarWidthInPixels * pixelSizeInKm;
-		System.out.println("GenericPolyhedralModel: updateScaleBarValue: pixel size " + pixelSizeInKm + " scale bar width in pixels " + scaleBarWidthInPixels + " in km " + scaleBarWidthInKm);
-//		System.out.println("GenericPolyhedralModel: updateScaleBarValue: show scale bar " + showScaleBar);
 		
 		if (pixelSizeInKm > 0.0 && showScaleBar)
 		{
@@ -2589,7 +2587,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				scaleBarTextActor.SetInput(String.format("%.2f m", 1000.0 * scaleBarWidthInKm));
 			else
 				scaleBarTextActor.SetInput(String.format("%.2f km", scaleBarWidthInKm));
-			}
+		}
 
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 
