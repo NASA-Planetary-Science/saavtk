@@ -33,8 +33,7 @@ public class ColorCellRenderer extends JLabel implements TableCellRenderer
 	}
 
 	@Override
-	public Component getTableCellRendererComponent(JTable table, Object color, boolean isSelected, boolean hasFocus,
-			int row, int column)
+	public Component getTableCellRendererComponent(JTable table, Object color, boolean isSelected, boolean hasFocus, int row, int column)
 	{
 		Color newColor = (Color) color;
 		setBackground(newColor);
@@ -53,7 +52,7 @@ public class ColorCellRenderer extends JLabel implements TableCellRenderer
 		}
 
 		String toolTipStr = null;
-		if (showToolTips == true)
+		if (showToolTips == true && newColor != null)
 			toolTipStr = "RGB value: " + newColor.getRed() + ", " + newColor.getGreen() + ", " + newColor.getBlue();
 		setToolTipText(toolTipStr);
 

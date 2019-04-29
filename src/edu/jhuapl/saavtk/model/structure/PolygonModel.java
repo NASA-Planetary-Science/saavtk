@@ -377,7 +377,7 @@ public class PolygonModel extends LineModel
 	@Override
 	protected StructureModel.Structure createStructure()
 	{
-		return new Polygon(++maxPolygonId);
+		return Polygon.of(++maxPolygonId);
 	}
 
 	private Polygon getPolygon(int i)

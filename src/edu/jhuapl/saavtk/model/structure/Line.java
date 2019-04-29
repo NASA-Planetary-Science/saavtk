@@ -35,10 +35,26 @@ import vtk.vtkCaptionActor2D;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
 
-public class Line extends StructureModel.Structure
+public abstract class Line extends StructureModel.Structure
 {
+	public static Line of(int id)
+	{
+		final ArrayList<LatLon> controlPoints = new ArrayList<>();
+		final Configuration configuration = createConfiguration(id, controlPoints);
+
+		return new Line(controlPoints) {
+
+			@Override
+			public Configuration getConfiguration()
+			{
+				return configuration;
+			}
+
+		};
+	}
+
 	// Note that controlPoints is what gets stored in the saved file.
-	private final List<LatLon> controlPoints = new ArrayList<>();
+	private final List<LatLon> controlPoints;
 
 	// Note xyzPointList is what's displayed. There will usually be more of these points than
 	// controlPoints in order to ensure the line is right above the surface of the asteroid.
@@ -64,75 +80,73 @@ public class Line extends StructureModel.Structure
 	public static final ContentKey<SettableValue<Boolean>> HIDDEN = SettableValues.key("hidden");
 	public static final ContentKey<SettableValue<Boolean>> LABEL_HIDDEN = SettableValues.key("labelHidden");
 
-	private final Configuration configuration;
-
-	public Line(int id)
+	protected Line(List<LatLon> controlPoints)
 	{
-		this.configuration = createConfiguration(id, controlPoints, purpleColor.clone());
+		this.controlPoints = controlPoints;
 	}
 
-	protected Configuration getConfiguration()
+	public <C extends Content> C getContent(ContentKey<C> key)
 	{
-		return configuration;
+		return getConfiguration().getCollection().getValue(key);
 	}
 
 	@Override
 	public int getId()
 	{
-		return configuration.getCollection().getValue(ID).getValue();
+		return getContent(ID).getValue();
 	}
 
 	private void setId(int id)
 	{
-		configuration.getCollection().getValue(ID).setValue(id);
+		getContent(ID).setValue(id);
 	}
 
 	@Override
 	public String getLabel()
 	{
-		return configuration.getCollection().getValue(LABEL).getValue();
+		return getContent(LABEL).getValue();
 	}
 
 	@Override
 	public void setLabel(String label)
 	{
-		configuration.getCollection().getValue(LABEL).setValue(label);
+		getContent(LABEL).setValue(label);
 	}
 
 	@Override
 	public int[] getLabelColor()
 	{
-		return configuration.getCollection().getValue(LABEL_COLOR).getValue();
+		return getContent(LABEL_COLOR).getValue();
 	}
 
 	@Override
 	public void setLabelColor(int[] labelColor)
 	{
-		configuration.getCollection().getValue(LABEL_COLOR).setValue(labelColor);
+		getContent(LABEL_COLOR).setValue(labelColor);
 	}
 
 	@Override
 	public int getLabelFontSize()
 	{
-		return configuration.getCollection().getValue(LABEL_FONT_SIZE).getValue();
+		return getContent(LABEL_FONT_SIZE).getValue();
 	}
 
 	@Override
 	public void setLabelFontSize(int fontSize)
 	{
-		configuration.getCollection().getValue(LABEL_FONT_SIZE).setValue(fontSize);
+		getContent(LABEL_FONT_SIZE).setValue(fontSize);
 	}
 
 	@Override
 	public String getName()
 	{
-		return configuration.getCollection().getValue(NAME).getValue();
+		return getContent(NAME).getValue();
 	}
 
 	@Override
 	public void setName(String name)
 	{
-		configuration.getCollection().getValue(NAME).setValue(name);
+		getContent(NAME).setValue(name);
 	}
 
 	@Override
@@ -150,13 +164,13 @@ public class Line extends StructureModel.Structure
 	@Override
 	public int[] getColor()
 	{
-		return configuration.getCollection().getValue(COLOR).getValue().clone();
+		return getContent(COLOR).getValue().clone();
 	}
 
 	@Override
 	public void setColor(int[] color)
 	{
-		configuration.getCollection().getValue(COLOR).setValue(color.clone());
+		getContent(COLOR).setValue(color.clone());
 	}
 
 	public ImmutableList<LatLon> getControlPoints()
@@ -462,25 +476,25 @@ public class Line extends StructureModel.Structure
 	@Override
 	public boolean getHidden()
 	{
-		return configuration.getCollection().getValue(HIDDEN).getValue();
+		return getContent(HIDDEN).getValue();
 	}
 
 	@Override
 	public boolean getLabelHidden()
 	{
-		return configuration.getCollection().getValue(LABEL_HIDDEN).getValue();
+		return getContent(LABEL_HIDDEN).getValue();
 	}
 
 	@Override
 	public void setHidden(boolean b)
 	{
-		configuration.getCollection().getValue(HIDDEN).setValue(b);
+		getContent(HIDDEN).setValue(b);
 	}
 
 	@Override
 	public void setLabelHidden(boolean b)
 	{
-		configuration.getCollection().getValue(LABEL_HIDDEN).setValue(b);
+		getContent(LABEL_HIDDEN).setValue(b);
 	}
 
 	public int getNumberOfPoints()
@@ -510,10 +524,12 @@ public class Line extends StructureModel.Structure
 		this.caption = caption;
 	}
 
+	protected abstract Configuration getConfiguration();
+
 	private static final Version CONFIGURATION_VERSION = Version.of(1, 0);
 	private static final SettableValues settableValues = SettableValues.instance();
 
-	public static Configuration createConfiguration(int id, List<LatLon> controlPoints, int[] color)
+	protected static Configuration createConfiguration(int id, List<LatLon> controlPoints)
 	{
 		KeyValueCollections.Builder<Content> builder = KeyValueCollections.instance().builder();
 
@@ -523,7 +539,7 @@ public class Line extends StructureModel.Structure
 		// the list of controlPoints is final but mutable. If one used just "Values", the set of vertices would
 		// not be saved in the file because it would not be considered "stateful".
 		builder.put(VERTICES, settableValues.of(controlPoints));
-		builder.put(COLOR, settableValues.of(color));
+		builder.put(COLOR, settableValues.of(purpleColor.clone()));
 		builder.put(LABEL, settableValues.of(""));
 		builder.put(LABEL_COLOR, settableValues.of(BLACK_INT_ARRAY.clone()));
 		builder.put(LABEL_FONT_SIZE, settableValues.of(16));
@@ -544,14 +560,12 @@ public class Line extends StructureModel.Structure
 
 			InstanceGetter.defaultInstanceGetter().register(LINE_STRUCTURE_PROXY_KEY, source -> {
 				int id = source.get(Key.of(ID.getId()));
-
-				Line result = new Line(id);
-
+				Line result = of(id);
 				unpackMetadata(source, result);
 
 				return result;
 			}, Line.class, line -> {
-				Configuration configuration = line.configuration;
+				Configuration configuration = line.getConfiguration();
 				return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration.getCollection()).store();
 			});
 
@@ -561,7 +575,7 @@ public class Line extends StructureModel.Structure
 
 	protected static void unpackMetadata(Metadata source, Line line)
 	{
-		KeyValueCollection<Content> collection = line.configuration.getCollection();
+		KeyValueCollection<Content> collection = line.getConfiguration().getCollection();
 
 		collection.getValue(NAME).setValue(source.get(Key.of(NAME.getId())));
 		collection.getValue(COLOR).setValue(source.get(Key.of(COLOR.getId())));
