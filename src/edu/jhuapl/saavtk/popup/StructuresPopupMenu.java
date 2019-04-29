@@ -21,6 +21,9 @@ import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.FacetColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
+import edu.jhuapl.saavtk.model.structure.LineModel;
+import edu.jhuapl.saavtk.model.structure.StructuresExporter;
+import edu.jhuapl.saavtk.model.structure.esri.VtkFileUtil;
 import edu.jhuapl.saavtk.util.MathUtil;
 import vtk.vtkCamera;
 import vtk.vtkProp;
@@ -131,8 +134,10 @@ abstract public class StructuresPopupMenu extends PopupMenu
 			displayInteriorMenuItem.setText("Display Interior");
 			this.add(displayInteriorMenuItem);
 		}
-	}
 
+	}
+	
+	
 	@Override
 	public void show(Component invoker, int x, int y)
 	{
@@ -145,8 +150,8 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		if (changeLatLonAction != null)
 			changeLatLonAction.setEnabled(exactlyOne);
 
-		if (exportPlateDataAction != null)
-			exportPlateDataAction.setEnabled(exactlyOne);
+//		if (exportPlateDataAction != null)
+//			exportPlateDataAction.setEnabled(exactlyOne);
 
 		if (centerStructureMenuItem != null)
 			centerStructureMenuItem.setEnabled(exactlyOne);
@@ -342,8 +347,9 @@ abstract public class StructuresPopupMenu extends PopupMenu
 				try
 				{
 					int[] selectedStructures = model.getSelectedStructures();
-					if (selectedStructures.length == 1)
-						model.savePlateDataInsideStructure(selectedStructures[0], file);
+					model.savePlateDataInsideStructure(selectedStructures, file);
+//					if (selectedStructures.length == 1)
+//						model.savePlateDataInsideStructure(selectedStructures[0], file);
 				}
 				catch (Exception e1)
 				{
@@ -354,6 +360,7 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		}
 	}
 	
+	
 	protected class ShowPlateStatisticsInfo extends AbstractAction
 	{
 
@@ -361,9 +368,9 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		public void actionPerformed(ActionEvent e) 
 		{
 			int[] selectedStructures = model.getSelectedStructures();
-			if (selectedStructures.length == 1)
-			{
-				FacetColoringData[] data = model.getPlateDataInsideStructure(selectedStructures[0]);
+//			if (selectedStructures.length == 1)
+//			{
+				FacetColoringData[] data = model.getPlateDataInsideStructure(selectedStructures);
 				try 
 				{
 					ColoringInfoWindow window = new ColoringInfoWindow(data);
@@ -374,7 +381,7 @@ abstract public class StructuresPopupMenu extends PopupMenu
 					e1.printStackTrace();
 				}
 			}
-		}
+//		}
 		
 	}
 

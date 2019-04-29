@@ -1,13 +1,20 @@
 package edu.jhuapl.saavtk.gui.dialog;
 
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.FileDialog;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.swing.JComponent;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import edu.jhuapl.saavtk.gui.FileChooserBase;
 
@@ -135,14 +142,12 @@ public class CustomFileChooser extends FileChooserBase
 			if (multiSelectionEnabled)
 			{
 				return fc.getFiles();
-			}
-			else
+			} else
 			{
 				File file = new File(fc.getDirectory(), fc.getFile());
 				return new File[] { file };
 			}
-		}
-		else
+		} else
 		{
 			return null;
 		}
@@ -195,11 +200,57 @@ public class CustomFileChooser extends FileChooserBase
 			// }
 
 			return file;
-		}
-		else
+		} else
 		{
 			return null;
 		}
+
+	}
+
+	public static File showSaveDialogWithCustomSouthComponent(Component parent, String title, String defaultFilename, String extension, JComponent component)
+	{
+		JFileChooser fc = new JFileChooser();
+
+		
+		// fc.setAcceptAllFileFilterUsed(true);
+		if (extension != null)
+			fc.setFileFilter(new FileNameExtensionFilter("." + extension + " files", extension));
+		if (getLastDirectory() != null)
+			fc.setCurrentDirectory(getLastDirectory());
+		//if (defaultFilename != null)
+		//	fc.setSelectedFile(new File(defaultFilename));
+
+		fc.setAccessory(component);
+		int status = fc.showSaveDialog(parent);
+		if (status == JFileChooser.APPROVE_OPTION)
+		{
+
+			File returnedFile = fc.getSelectedFile();
+			if (returnedFile != null)
+			{
+				setLastDirectory(fc.getCurrentDirectory());
+
+				String filename = returnedFile.getAbsolutePath();
+				if (extension != null && !extension.isEmpty())
+				{
+					if (!filename.toLowerCase().endsWith("." + extension))
+						filename += "." + extension;
+				}
+				return new File(filename);
+
+				// if (file.exists())
+				// {
+				// int response = JOptionPane.showConfirmDialog
+				// (JOptionPane.getFrameForComponent(parent),
+				// "Overwrite existing file?","Confirm Overwrite",
+				// JOptionPane.OK_CANCEL_OPTION,
+				// JOptionPane.QUESTION_MESSAGE);
+				// if (response == JOptionPane.CANCEL_OPTION)
+				// return null;
+				// }
+			}
+		}
+		return null;
 
 	}
 

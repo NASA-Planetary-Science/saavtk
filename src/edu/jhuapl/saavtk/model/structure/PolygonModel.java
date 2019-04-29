@@ -40,7 +40,7 @@ public class PolygonModel extends LineModel
 	private vtkUnsignedCharArray interiorColors;
 	private vtkUnsignedCharArray decimatedInteriorColors;
 
-	private List<vtkProp> actors = new ArrayList<vtkProp>();
+	private List<vtkProp> actors = new ArrayList<>();
 
 	private PolyhedralModel smallBodyModel;
 
@@ -110,10 +110,11 @@ public class PolygonModel extends LineModel
 			for (int i = 0; i < numberOfStructures; ++i)
 			{
 				Polygon polygon = getPolygon(i);
+				polygon.updateInteriorPolydata(smallBodyModel);
 				vtkPolyData poly = polygon.interiorPolyData;
 				vtkPolyData decimatedPoly = polygon.decimatedInteriorPolyData;
 
-				if (polygon.hidden)
+				if (polygon.getHidden())
 				{
 					poly = emptyPolyData;
 					decimatedPoly = emptyPolyData;
@@ -141,7 +142,7 @@ public class PolygonModel extends LineModel
 			decimatedInteriorColors.SetNumberOfTuples(decimatedInteriorPolyData.GetNumberOfCells());
 			for (int i = 0; i < numberOfStructures; ++i)
 			{
-				int[] color = getPolygon(i).color;
+				int[] color = getPolygon(i).getColor();
 
 				if (Arrays.binarySearch(getSelectedStructures(), i) >= 0)
 					color = getCommonData().getSelectionColor();
@@ -185,13 +186,13 @@ public class PolygonModel extends LineModel
 	@Override
 	public List<vtkProp> getProps()
 	{
-		List<vtkProp> allActors = new ArrayList<vtkProp>(actors);
+		List<vtkProp> allActors = new ArrayList<>(actors);
 		allActors.addAll(super.getProps());
 		return allActors;
 	}
 
 	@Override
-	public String getClickStatusBarText(vtkProp prop, int cellId, double[] pickPosition)
+	public String getClickStatusBarText(vtkProp prop, int cellId, @SuppressWarnings("unused") double[] pickPosition)
 	{
 		int polygonId = -1;
 		if (prop == super.getStructureActor())
@@ -223,7 +224,7 @@ public class PolygonModel extends LineModel
 	public void updateActivatedStructureVertex(int vertexId, double[] newPoint)
 	{
 		Polygon pol = getActivatedPolygon();
-		pol.setShowInterior(false);
+		pol.setShowInterior(smallBodyModel, false);
 
 		super.updateActivatedStructureVertex(vertexId, newPoint);
 	}
@@ -232,7 +233,7 @@ public class PolygonModel extends LineModel
 	public void insertVertexIntoActivatedStructure(double[] newPoint)
 	{
 		Polygon pol = getActivatedPolygon();
-		pol.setShowInterior(false);
+		pol.setShowInterior(smallBodyModel, false);
 
 		super.insertVertexIntoActivatedStructure(newPoint);
 	}
@@ -241,7 +242,7 @@ public class PolygonModel extends LineModel
 	public void removeCurrentStructureVertex()
 	{
 		Polygon pol = getActivatedPolygon();
-		pol.setShowInterior(false);
+		pol.setShowInterior(smallBodyModel, false);
 
 		super.removeCurrentStructureVertex();
 	}
@@ -322,15 +323,15 @@ public class PolygonModel extends LineModel
 		}
 		else
 		{
-			pol.setShowInterior(true);
+			pol.setShowInterior(smallBodyModel, true);
 
 			vtkPolyData polydata = getPolygon(idx).interiorPolyData;
 			smallBodyModel.savePlateDataInsidePolydata(polydata, file);
 
-			pol.setShowInterior(false);
+			pol.setShowInterior(smallBodyModel, false);
 		}
 	}
-	
+
 	@Override
 	public FacetColoringData[] getPlateDataInsideStructure(int idx)
 	{
@@ -342,11 +343,11 @@ public class PolygonModel extends LineModel
 		}
 		else
 		{
-			pol.setShowInterior(true);
+			pol.setShowInterior(smallBodyModel, true);
 
 			vtkPolyData polydata = getPolygon(idx).interiorPolyData;
-			FacetColoringData[] data =  smallBodyModel.getPlateDataInsidePolydata(polydata);
-			pol.setShowInterior(false);
+			FacetColoringData[] data = smallBodyModel.getPlateDataInsidePolydata(polydata);
+			pol.setShowInterior(smallBodyModel, false);
 			return data;
 		}
 	}
@@ -359,7 +360,7 @@ public class PolygonModel extends LineModel
 			Polygon pol = getPolygon(polygonIds[i]);
 			if (pol.isShowInterior() != show)
 			{
-				pol.setShowInterior(show);
+				pol.setShowInterior(smallBodyModel, show);
 			}
 		}
 
@@ -374,9 +375,9 @@ public class PolygonModel extends LineModel
 	}
 
 	@Override
-	protected StructureModel.Structure createStructure(PolyhedralModel smallBodyModel)
+	protected StructureModel.Structure createStructure()
 	{
-		return new Polygon(smallBodyModel, ++maxPolygonId);
+		return Polygon.of(++maxPolygonId);
 	}
 
 	private Polygon getPolygon(int i)

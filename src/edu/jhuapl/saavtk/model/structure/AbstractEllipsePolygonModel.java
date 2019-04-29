@@ -7,7 +7,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -16,13 +15,11 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.metadata.InstanceGetter;
-import edu.jhuapl.saavtk.metadata.Key;
-import edu.jhuapl.saavtk.metadata.Metadata;
-import edu.jhuapl.saavtk.metadata.MetadataManager;
-import edu.jhuapl.saavtk.metadata.SettableMetadata;
-import edu.jhuapl.saavtk.metadata.StorableAsMetadata;
-import edu.jhuapl.saavtk.metadata.Version;
+import crucible.crust.metadata.api.Key;
+import crucible.crust.metadata.api.Metadata;
+import crucible.crust.metadata.api.MetadataManager;
+import crucible.crust.metadata.api.Version;
+import crucible.crust.metadata.impl.SettableMetadata;
 import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.CommonData;
 import edu.jhuapl.saavtk.model.FacetColoringData;
@@ -47,7 +44,6 @@ import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
 import vtk.vtkProp;
 import vtk.vtkProperty;
-import vtk.vtkQuadricClustering;
 import vtk.vtkTransform;
 import vtk.vtkUnsignedCharArray;
 
@@ -55,7 +51,7 @@ import vtk.vtkUnsignedCharArray;
  * Model of regular polygon structures drawn on a body.
  */
 
-abstract public class AbstractEllipsePolygonModel extends StructureModel implements PropertyChangeListener
+abstract public class AbstractEllipsePolygonModel extends StructureModel implements PropertyChangeListener, MetadataManager
 {
 	private final List<EllipsePolygon> polygons = new ArrayList<>();
 	private final List<vtkProp> actors = new ArrayList<>();
@@ -87,276 +83,21 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	private final double maxRadius;
 	private final int numberOfSides;
 	private int[] defaultColor = { 0, 191, 255 };
-	//    private int[] defaultBoundaryColor = {0, 191, 255};
-	//    private int[] defaultInteriorColor = {0, 191, 255};
+	// private int[] defaultBoundaryColor = {0, 191, 255};
+	// private int[] defaultInteriorColor = {0, 191, 255};
 	private double interiorOpacity = 0.3;
 	private final String type;
 	private int[] selectedStructures = {};
 	private int maxPolygonId = 0;
 	private double offset;
+	private double lineWidth;
 
 	public enum Mode
 	{
-		POINT_MODE,
-		CIRCLE_MODE,
-		ELLIPSE_MODE
+		POINT_MODE, CIRCLE_MODE, ELLIPSE_MODE
 	}
 
 	private Mode mode;
-
-	public static class EllipsePolygon extends StructureModel.Structure implements StorableAsMetadata<EllipsePolygon>
-	{
-		public String name = "default";
-		public final int id;
-		public String label = "";
-		public vtkCaptionActor2D caption;
-
-		public double[] center;
-		public double radius; // or semimajor axis
-		public double flattening; // ratio of semiminor axis to semimajor axis
-		public double angle;
-		public boolean hidden = false;
-		public boolean labelHidden = false;
-
-		public vtkPolyData boundaryPolyData;
-		public vtkPolyData decimatedBoundaryPolyData;
-		public vtkPolyData interiorPolyData;
-		public vtkPolyData decimatedInteriorPolyData;
-		public int numberOfSides;
-		public String type;
-		public int[] color;
-		private Mode mode;
-
-		private static final DecimalFormat DF = new DecimalFormat("#.#####");
-
-		public EllipsePolygon(int numberOfSides, String type, int[] color, Mode mode, int id, String label)
-		{
-			this.id = id;
-			boundaryPolyData = new vtkPolyData();
-			decimatedBoundaryPolyData = new vtkPolyData();
-			interiorPolyData = new vtkPolyData();
-			decimatedInteriorPolyData = new vtkPolyData();
-			this.numberOfSides = numberOfSides;
-			this.type = type;
-			this.color = color.clone();
-			this.mode = mode;
-			this.label = label;
-		}
-
-		@Override
-		public int getId()
-		{
-			return id;
-		}
-
-		@Override
-		public String getName()
-		{
-			return name;
-		}
-
-		@Override
-		public void setName(String name)
-		{
-			this.name = name;
-		}
-
-		@Override
-		public String getType()
-		{
-			return type;
-		}
-
-		@Override
-		public String getInfo()
-		{
-			String str = "Diameter = " + DF.format(2.0 * radius) + " km";
-			if (mode == Mode.ELLIPSE_MODE)
-			{
-				str += ", Flattening = " + DF.format(flattening);
-				str += ", Angle = " + DF.format(angle);
-			}
-
-			return str;
-		}
-
-		@Override
-		public int[] getColor()
-		{
-			return color;
-		}
-
-		@Override
-		public void setColor(int[] color)
-		{
-			this.color = color.clone();
-		}
-
-		public vtkPolyData getBoundaryPolyData()
-		{
-			return boundaryPolyData;
-		}
-
-		public vtkPolyData getInteriorPolyData()
-		{
-			return interiorPolyData;
-		}
-
-		public void updatePolygon(PolyhedralModel sbModel, double[] center, double radius, double flattening, double angle)
-		{
-			this.center = center;
-			this.radius = radius;
-			this.flattening = flattening;
-			this.angle = angle;
-
-			if (!hidden)
-			{
-				sbModel.drawEllipticalPolygon(center, radius, flattening, angle, numberOfSides, interiorPolyData, boundaryPolyData);
-
-				//                LatLon ll=MathUtil.reclat(center);
-				//                System.out.println(Math.toDegrees(ll.lat)+" "+Math.toDegrees(ll.lon));
-
-				// Setup decimator
-				vtkQuadricClustering decimator = new vtkQuadricClustering();
-
-				// Decimate interior
-				decimator.SetInputData(interiorPolyData);
-				decimator.AutoAdjustNumberOfDivisionsOn();
-				decimator.CopyCellDataOn();
-				decimator.Update();
-				decimatedInteriorPolyData.DeepCopy(decimator.GetOutput());
-
-				// Decimate boundary
-				decimator.SetInputData(boundaryPolyData);
-				decimator.SetNumberOfXDivisions(2);
-				decimator.SetNumberOfYDivisions(2);
-				decimator.SetNumberOfZDivisions(2);
-				decimator.CopyCellDataOn();
-				decimator.Update();
-				decimatedBoundaryPolyData.DeepCopy(decimator.GetOutput());
-
-				// Destroy decimator
-				decimator.Delete();
-			}
-			else
-			{
-				PolyDataUtil.clearPolyData(interiorPolyData);
-				PolyDataUtil.clearPolyData(decimatedInteriorPolyData);
-				PolyDataUtil.clearPolyData(boundaryPolyData);
-				PolyDataUtil.clearPolyData(decimatedBoundaryPolyData);
-			}
-		}
-
-		@Override
-		public String getClickStatusBarText()
-		{
-			return type + ", Id = " + id + ", Diameter = " + 2.0 * radius + " km";
-		}
-
-		@Override
-		public void setLabel(String label)
-		{
-			this.label = label;
-		}
-
-		@Override
-		public String getLabel()
-		{
-			return label;
-		}
-
-		@Override
-		public boolean getHidden()
-		{
-			return hidden;
-		}
-
-		@Override
-		public boolean getLabelHidden()
-		{
-			return labelHidden;
-		}
-
-		@Override
-		public void setHidden(boolean b)
-		{
-			hidden = b;
-		}
-
-		@Override
-		public void setLabelHidden(boolean b)
-		{
-			labelHidden = b;
-		}
-
-		private static final Key<EllipsePolygon> ELLIPSE_POLYGON_KEY = Key.of("ellipsePolygon");
-		private static final Key<Integer> NUMBER_SIDES_KEY = Key.of("numberSides");
-		private static final Key<String> TYPE_KEY = Key.of("type");
-		private static final Key<int[]> COLOR_KEY = Key.of("color");
-		private static final Key<String> MODE_KEY = Key.of("mode");
-		private static final Key<Integer> ID_KEY = Key.of("id");
-		private static final Key<String> LABEL_KEY = Key.of("label");
-		private static final Key<String> NAME_KEY = Key.of("name");
-		private static final Key<double[]> CENTER_KEY = Key.of("center");
-		private static final Key<Double> RADIUS_KEY = Key.of("radius");
-		private static final Key<Double> FLATTENING_KEY = Key.of("flattening");
-		private static final Key<Double> ANGLE_KEY = Key.of("angle");
-		private static final Key<Boolean> HIDDEN_KEY = Key.of("hidden");
-		private static final Key<Boolean> LABEL_HIDDEN_KEY = Key.of("labelHidden");
-
-		public static void initializeSerializationProxy()
-		{
-			InstanceGetter.defaultInstanceGetter().register(ELLIPSE_POLYGON_KEY, (source) -> {
-				int numberSides = source.get(NUMBER_SIDES_KEY);
-				String type = source.get(TYPE_KEY);
-				int[] color = source.get(COLOR_KEY);
-				Mode mode = Mode.valueOf(source.get(MODE_KEY));
-				int id = source.get(ID_KEY);
-				String label = source.get(LABEL_KEY);
-
-				EllipsePolygon result = new EllipsePolygon(numberSides, type, color, mode, id, label);
-
-				result.name = source.get(NAME_KEY);
-				result.center = source.get(CENTER_KEY);
-				result.radius = source.get(RADIUS_KEY);
-				result.flattening = source.get(FLATTENING_KEY);
-				result.angle = source.get(ANGLE_KEY);
-				result.hidden = source.get(HIDDEN_KEY);
-				result.labelHidden = source.get(LABEL_HIDDEN_KEY);
-
-				return result;
-			});
-		}
-
-		@Override
-		public Key<EllipsePolygon> getKey()
-		{
-			return ELLIPSE_POLYGON_KEY;
-		}
-
-		@Override
-		public Metadata store()
-		{
-			SettableMetadata result = SettableMetadata.of(Version.of(1, 0));
-
-			result.put(NUMBER_SIDES_KEY, numberOfSides);
-			result.put(TYPE_KEY, type);
-			result.put(COLOR_KEY, color);
-			result.put(MODE_KEY, mode.name());
-			result.put(ID_KEY, id);
-			result.put(LABEL_KEY, label);
-
-			result.put(NAME_KEY, name);
-			result.put(CENTER_KEY, center);
-			result.put(RADIUS_KEY, radius);
-			result.put(FLATTENING_KEY, flattening);
-			result.put(ANGLE_KEY, angle);
-			result.put(HIDDEN_KEY, hidden);
-			result.put(LABEL_HIDDEN_KEY, labelHidden);
-
-			return result;
-		}
-	}
 
 	public AbstractEllipsePolygonModel(PolyhedralModel smallBodyModel, int numberOfSides, Mode mode, String type)
 	{
@@ -396,7 +137,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		boundaryActor = new SaavtkLODActor();
 		vtkProperty boundaryProperty = boundaryActor.GetProperty();
 		boundaryProperty.LightingOff();
-		boundaryProperty.SetLineWidth(2.0);
+		lineWidth = 2.;
+		boundaryProperty.SetLineWidth(lineWidth);
 
 		actors.add(boundaryActor);
 
@@ -412,7 +154,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		vtkProperty interiorProperty = interiorActor.GetProperty();
 		interiorProperty.LightingOff();
 		interiorProperty.SetOpacity(interiorOpacity);
-		//interiorProperty.SetLineWidth(2.0);
+		// interiorProperty.SetLineWidth(2.0);
 
 		actors.add(interiorActor);
 	}
@@ -490,11 +232,10 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 			}
 			for (int j = 0; j < polygons.size(); ++j)
 			{
-				EllipsePolygon lin = polygons.get(j);
-				if (lin.label != null && !lin.labelHidden && !lin.hidden && lin.caption != null)
+				vtkCaptionActor2D caption = updateStructure(polygons.get(j));
+				if (caption != null)
 				{
-					lin.caption.SetAttachmentPoint(lin.center);
-					actors.add(lin.caption);
+					actors.add(caption);
 				}
 			}
 
@@ -638,9 +379,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	}
 
 	@Override
-	public void addNewStructure()
+	public Structure addNewStructure()
 	{
-		// do nothing
+		return null;
 	}
 
 	public void addNewStructure(double[] pos, double radius, double flattening, double angle)
@@ -664,9 +405,10 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	@Override
 	public void removeStructure(int polygonId)
 	{
-		if (polygons.get(polygonId).caption != null)
-			polygons.get(polygonId).caption.VisibilityOff();
-		polygons.get(polygonId).caption = null;
+		Structure structure = polygons.get(polygonId);
+		structure.setHidden(true);
+		updateStructure(structure);
+
 		polygons.remove(polygonId);
 
 		updatePolyData();
@@ -684,10 +426,12 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		Arrays.sort(polygonIds);
 		for (int i = polygonIds.length - 1; i >= 0; --i)
 		{
-			if (polygons.get(polygonIds[i]).caption != null)
-				polygons.get(polygonIds[i]).caption.VisibilityOff();
-			polygons.get(polygonIds[i]).caption = null;
+			Structure structure = polygons.get(polygonIds[i]);
+			structure.setHidden(true);
+			updateStructure(structure);
+
 			polygons.remove(polygonIds[i]);
+
 			this.pcs.firePropertyChange(Properties.STRUCTURE_REMOVED, null, polygonIds[i]);
 		}
 
@@ -699,12 +443,10 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	@Override
 	public void removeAllStructures()
 	{
-		for (int i = 0; i < polygons.size(); i++)
+		for (Structure structures : polygons)
 		{
-			if (polygons.get(i).caption != null)
-				polygons.get(i).caption.VisibilityOff();
-			polygons.get(i).caption = null;
-
+			structures.setHidden(true);
+			updateStructure(structures);
 		}
 		polygons.clear();
 
@@ -712,6 +454,12 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 		this.pcs.firePropertyChange(Properties.ALL_STRUCTURES_REMOVED, null, null);
+	}
+
+	@Override
+	public PolyhedralModel getPolyhedralModel()
+	{
+		return smallBodyModel;
 	}
 
 	public void movePolygon(int polygonId, double[] newCenter)
@@ -738,24 +486,34 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 
 		Vector3D centerVec = new Vector3D(center);
 		Vector3D newCenterVec = new Vector3D(newCenter);
-		newCenterVec = newCenterVec.scalarMultiply(centerVec.getNorm() / newCenterVec.getNorm());// there is sometimes a radial offset (parallel to both center and newCenter) that needs to be corrected
+		newCenterVec = newCenterVec.scalarMultiply(centerVec.getNorm() / newCenterVec.getNorm());// there is sometimes a
+																									// radial offset
+																									// (parallel to both
+																									// center and
+																									// newCenter) that
+																									// needs to be
+																									// corrected
 
-		//    System.out.println(newCenterVec+" "+centerVec+" "+newCenterVec.crossProduct(centerVec));
-		//        LatLon ll=MathUtil.reclat(centerVec.toArray());
-		//        LatLon ll2=MathUtil.reclat(newCenterVec.toArray());
-		//        System.out.println(Math.toDegrees(ll.lat)+" "+Math.toDegrees(ll.lon)+" "+Math.toDegrees(ll2.lat)+" "+Math.toDegrees(ll2.lon));
+		// System.out.println(newCenterVec+" "+centerVec+"
+		// "+newCenterVec.crossProduct(centerVec));
+		// LatLon ll=MathUtil.reclat(centerVec.toArray());
+		// LatLon ll2=MathUtil.reclat(newCenterVec.toArray());
+		// System.out.println(Math.toDegrees(ll.lat)+" "+Math.toDegrees(ll.lon)+"
+		// "+Math.toDegrees(ll2.lat)+" "+Math.toDegrees(ll2.lon));
 		movePolygon(polygonId, newCenterVec.toArray());
 	}
 
 	public void changeRadiusOfPolygon(int polygonId, double[] newPointOnPerimeter)
 	{
 		EllipsePolygon pol = polygons.get(polygonId);
+		double[] center = pol.getCenter();
 		double newRadius =
-				Math.sqrt((pol.center[0] - newPointOnPerimeter[0]) * (pol.center[0] - newPointOnPerimeter[0]) + (pol.center[1] - newPointOnPerimeter[1]) * (pol.center[1] - newPointOnPerimeter[1]) + (pol.center[2] - newPointOnPerimeter[2]) * (pol.center[2] - newPointOnPerimeter[2]));
+				Math.sqrt((center[0] - newPointOnPerimeter[0]) * (center[0] - newPointOnPerimeter[0]) + (center[1] - newPointOnPerimeter[1]) * (center[1] - newPointOnPerimeter[1])
+						+ (center[2] - newPointOnPerimeter[2]) * (center[2] - newPointOnPerimeter[2]));
 		if (newRadius > maxRadius)
 			newRadius = maxRadius;
 
-		pol.updatePolygon(smallBodyModel, pol.center, newRadius, pol.flattening, pol.angle);
+		pol.updatePolygon(smallBodyModel, center, newRadius, pol.flattening, pol.angle);
 		updatePolyData();
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
@@ -818,9 +576,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	{
 		EllipsePolygon pol = polygons.get(polygonId);
 
-		double newFlattening = computeFlatteningOfPolygon(pol.center, pol.radius, pol.angle, newPointOnPerimeter);
+		double newFlattening = computeFlatteningOfPolygon(pol.getCenter(), pol.radius, pol.angle, newPointOnPerimeter);
 
-		pol.updatePolygon(smallBodyModel, pol.center, pol.radius, newFlattening, pol.angle);
+		pol.updatePolygon(smallBodyModel, pol.getCenter(), pol.radius, newFlattening, pol.angle);
 
 		updatePolyData();
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
@@ -881,9 +639,10 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	{
 		EllipsePolygon pol = polygons.get(polygonId);
 
-		double newAngle = computeAngleOfPolygon(pol.center, newPointOnPerimeter);
+		double[] center = pol.getCenter();
+		double newAngle = computeAngleOfPolygon(center, newPointOnPerimeter);
 
-		pol.updatePolygon(smallBodyModel, pol.center, pol.radius, pol.flattening, newAngle);
+		pol.updatePolygon(smallBodyModel, center, pol.radius, pol.flattening, newAngle);
 		updatePolyData();
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
@@ -892,7 +651,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	{
 		for (EllipsePolygon pol : this.polygons)
 		{
-			pol.updatePolygon(smallBodyModel, pol.center, newRadius, pol.flattening, pol.angle);
+			pol.updatePolygon(smallBodyModel, pol.getCenter(), newRadius, pol.flattening, pol.angle);
 		}
 
 		updatePolyData();
@@ -981,39 +740,47 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		List<String> lines = FileUtil.getFileLinesAsStringList(file.getAbsolutePath());
 		List<String> labels = new ArrayList<>();
 		List<EllipsePolygon> newPolygons = new ArrayList<>();
-//		int maxPolygonId = append ? this.maxPolygonId : 0;
+		// int maxPolygonId = append ? this.maxPolygonId : 0;
 		for (int i = 0; i < lines.size(); ++i)
 		{
-			if (listener != null) listener.setProgress(i*100/lines.size());
-//			String[] words = lines.get(i).trim().split("\\s+");
-			List<String> list = new ArrayList<String>();
+			if (listener != null)
+				listener.setProgress(i * 100 / lines.size());
+			// String[] words = lines.get(i).trim().split("\\s+");
+			List<String> list = new ArrayList<>();
 			Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(lines.get(i));
 			while (m.find())
-			    list.add(m.group(1));
+				list.add(m.group(1));
 			String[] words = new String[list.size()];
 			list.toArray(words);
-			// The latest version of this file format has 16 columns. The previous version had
-			// 10 columns for circles and 13 columns for points. We still want to support loading
+			// The latest version of this file format has 16 columns. The previous version
+			// had
+			// 10 columns for circles and 13 columns for points. We still want to support
+			// loading
 			// both versions, so look at how many columns are in the line.
 			EllipsePolygon pol = new EllipsePolygon(numberOfSides, type, defaultColor, mode, Integer.parseInt(words[0]), "");
-//			maxPolygonId = Integer.parseInt(words[0]) + 1;
-			pol.center = new double[3];
+			// maxPolygonId = Integer.parseInt(words[0]) + 1;
 
 			// The first 8 columns are the same in both the old and new formats.
-			pol.name = words[1];
-			pol.center[0] = Double.parseDouble(words[2]);
-			pol.center[1] = Double.parseDouble(words[3]);
-			pol.center[2] = Double.parseDouble(words[4]);
+			pol.setName(words[1]);
+
+			double[] center = new double[3];
+			center[0] = Double.parseDouble(words[2]);
+			center[1] = Double.parseDouble(words[3]);
+			center[2] = Double.parseDouble(words[4]);
+			pol.setCenter(center);
 
 			if (pol.id > maxPolygonId)
 				maxPolygonId = pol.id;
 
-			// Note the next 3 words in the line (the point in spherical coordinates) are not used
+			// Note the next 3 words in the line (the point in spherical coordinates) are
+			// not used
 
-			//          LatLon latLon=MathUtil.reclat(pol.center);
-			//            System.out.println(words[5]+" "+(360-Double.parseDouble(words[6]))+" "+Math.toDegrees(latLon.lat)+" "+Math.toDegrees(latLon.lon));
+			// LatLon latLon=MathUtil.reclat(pol.center);
+			// System.out.println(words[5]+" "+(360-Double.parseDouble(words[6]))+"
+			// "+Math.toDegrees(latLon.lat)+" "+Math.toDegrees(latLon.lon));
 
-			// For the new format and the points file in the old format, the next 4 columns (slope,
+			// For the new format and the points file in the old format, the next 4 columns
+			// (slope,
 			// elevation, acceleration, and potential) are not used.
 			if (words.length == 18)
 			{
@@ -1036,19 +803,20 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 					pol.color[1] = Integer.parseInt(colorStr[1]);
 					pol.color[2] = Integer.parseInt(colorStr[2]);
 				}
-				pol.updatePolygon(smallBodyModel, pol.center, pol.radius, pol.flattening, pol.angle);
+				pol.updatePolygon(smallBodyModel, pol.getCenter(), pol.radius, pol.flattening, pol.angle);
 				newPolygons.add(pol);
-				
+
 				if (words[words.length - 1].startsWith("\"")) // labels in quotations
 				{
-					pol.label = words[words.length - 1];
-					pol.label = pol.label.substring(1, pol.label.length() - 1);
-					labels.add(pol.label);
+					String label = words[words.length - 1];
+					label = label.substring(1, label.length() - 1);
+					pol.setLabel(label);
+					labels.add(pol.getLabel());
 				}
 			}
 			else
 			{
-			
+
 				if (words.length < 16)
 				{
 					// OLD VERSION of file
@@ -1062,7 +830,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 					// NEW VERSION of file
 					pol.radius = Double.parseDouble(words[12]) / 2.0; // read in diameter not radius
 				}
-	
+
 				if (mode == Mode.ELLIPSE_MODE && words.length >= 16)
 				{
 					pol.flattening = Double.parseDouble(words[13]);
@@ -1073,15 +841,16 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 					pol.flattening = 1.0;
 					pol.angle = 0.0;
 				}
-	
-				// If there are 9 or more columns in the file, the last column is the color in both
+
+				// If there are 9 or more columns in the file, the last column is the color in
+				// both
 				// the new and old formats.
 				if (words.length > 9)
 				{
 					int colorIdx = words.length - 3;
 					if (words.length == 17)
 						colorIdx = 15;
-	
+
 					String[] colorStr = words[colorIdx].split(",");
 					if (colorStr.length == 3)
 					{
@@ -1090,44 +859,46 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 						pol.color[2] = Integer.parseInt(colorStr[2]);
 					}
 				}
-	
-				pol.updatePolygon(smallBodyModel, pol.center, pol.radius, pol.flattening, pol.angle);
+
+				pol.updatePolygon(smallBodyModel, pol.getCenter(), pol.radius, pol.flattening, pol.angle);
 				newPolygons.add(pol);
 
-				//            System.out.println(pol.name+" "+Arrays.toString(pol.center));
-	
-				//Second to last word is the label, last string is the color
+				// System.out.println(pol.name+" "+Arrays.toString(pol.center));
+
+				// Second to last word is the label, last string is the color
 				if (words[words.length - 2].substring(0, 2).equals("l:"))
 				{
-					pol.label = words[words.length - 2].substring(2);
-					labels.add(pol.label);
+					pol.setLabel(words[words.length - 2].substring(2));
+					labels.add(pol.getLabel());
 				}
 				// new format means no color
 				else if (words[words.length - 1].startsWith("\"")) // labels in quotations
 				{
-					pol.label = words[words.length - 1];
-					pol.label = pol.label.substring(1, pol.label.length() - 1);
-					labels.add(pol.label);
+					String label = words[words.length - 1];
+					label = label.substring(1, label.length() - 1);
+					pol.setLabel(label);
+					labels.add(pol.getLabel());
 				}
-				//            else
-				//            {
-				//                pol.label = words[words.length-1];
-				//                labels.add(pol.label);
-				//            }
-	
-				//            if(words[words.length-1].substring(0, 3).equals("lc:"))
-				//            {
-				//                double[] labelcoloradd = {1.0,1.0,1.0};
-				//                String[] labelColors=words[words.length-1].substring(3).split(",");
-				//                labelcoloradd[0] = Double.parseDouble(labelColors[0]);
-				//                labelcoloradd[1] = Double.parseDouble(labelColors[1]);
-				//                labelcoloradd[2] = Double.parseDouble(labelColors[2]);
-				//                pol.labelcolor=labelcoloradd;
-				//                colors.add(labelcoloradd);
-				//            }
+				// else
+				// {
+				// pol.label = words[words.length-1];
+				// labels.add(pol.label);
+				// }
+
+				// if(words[words.length-1].substring(0, 3).equals("lc:"))
+				// {
+				// double[] labelcoloradd = {1.0,1.0,1.0};
+				// String[] labelColors=words[words.length-1].substring(3).split(",");
+				// labelcoloradd[0] = Double.parseDouble(labelColors[0]);
+				// labelcoloradd[1] = Double.parseDouble(labelColors[1]);
+				// labelcoloradd[2] = Double.parseDouble(labelColors[2]);
+				// pol.labelcolor=labelcoloradd;
+				// colors.add(labelcoloradd);
+				// }
 			}
 		}
-		if (listener != null) listener.setProgress(100);
+		if (listener != null)
+			listener.setProgress(100);
 		// Only if we reach here and no exception is thrown do we modify this class
 		if (append)
 		{
@@ -1136,14 +907,11 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 
 			for (int i = init; i < init + labels.size(); i++)
 			{
-				if (polygons.get(i).label != null)
-				{
-					setStructureLabel(i, labels.get(i - init));
-					//                    if(polygons.get(i).labelcolor!=null)
-					//                    {
-					//                        colorLabel(i,colors.get((i-init)));
-					//                    }
-				}
+				setStructureLabel(i, labels.get(i - init));
+				// if(polygons.get(i).labelcolor!=null)
+				// {
+				// colorLabel(i,colors.get((i-init)));
+				// }
 			}
 		}
 		else
@@ -1152,14 +920,11 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 			polygons.addAll(newPolygons);
 			for (int i = 0; i < labels.size(); i++)
 			{
-				if (polygons.get(i).label != null)
-				{
-					setStructureLabel(i, labels.get(i));
-					//                    if(polygons.get(i).labelcolor!=null)
-					//                    {
-					//                        colorLabel(i,colors.get(i));
-					//                    }
-				}
+				setStructureLabel(i, labels.get(i));
+				// if(polygons.get(i).labelcolor!=null)
+				// {
+				// colorLabel(i,colors.get(i));
+				// }
 			}
 		}
 
@@ -1176,21 +941,20 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 
 		for (EllipsePolygon pol : polygons)
 		{
-			String name = pol.name;
+			String name = pol.getName();
 			if (name.length() == 0)
 				name = "default";
 
 			// Since tab is used as the delimiter, replace any tabs in the name with spaces.
 			name = name.replace('\t', ' ');
 
-			LatLon llr = MathUtil.reclat(pol.center);
+			LatLon llr = MathUtil.reclat(pol.getCenter());
 			double lat = llr.lat * 180.0 / Math.PI;
 			double lon = llr.lon * 180.0 / Math.PI;
 			if (lon < 0.0)
 				lon += 360.0;
 
-			String str =
-					pol.id + "\t" + name + "\t" + pol.center[0] + "\t" + pol.center[1] + "\t" + pol.center[2] + "\t" + lat + "\t" + lon + "\t" + llr.rad;
+			String str = pol.id + "\t" + name + "\t" + pol.getCenter()[0] + "\t" + pol.getCenter()[1] + "\t" + pol.getCenter()[2] + "\t" + lat + "\t" + lon + "\t" + llr.rad;
 
 			str += "\t";
 
@@ -1217,10 +981,11 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 					str += "\t" + "NA";
 			}
 
-			str += "\t" + "\"" + pol.label + "\"";
+			str += "\t" + "\"" + pol.getLabel() + "\"";
 
-			//            String labelcolorStr="\tlc:"+pol.labelcolor[0] + "," + pol.labelcolor[1] + "," + pol.labelcolor[2];
-			//            str+=labelcolorStr;
+			// String labelcolorStr="\tlc:"+pol.labelcolor[0] + "," + pol.labelcolor[1] +
+			// "," + pol.labelcolor[2];
+			// str+=labelcolorStr;
 
 			str += "\n";
 
@@ -1286,7 +1051,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	{
 		for (EllipsePolygon pol : this.polygons)
 		{
-			pol.updatePolygon(smallBodyModel, pol.center, pol.radius, pol.flattening, pol.angle);
+			pol.updatePolygon(smallBodyModel, pol.getCenter(), pol.radius, pol.flattening, pol.angle);
 		}
 
 		updatePolyData();
@@ -1313,7 +1078,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 
 	private double[] getStandardColoringValuesAtPolygon(EllipsePolygon pol) throws IOException
 	{
-		// Output array of 4 standard colorings (Slope, Elevation, GravAccel, GravPotential).
+		// Output array of 4 standard colorings (Slope, Elevation, GravAccel,
+		// GravPotential).
 		// Assume at the outset that none of the standard colorings are available.
 		final double[] standardValues = new double[] { Double.NaN, Double.NaN, Double.NaN, Double.NaN };
 
@@ -1325,8 +1091,10 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		int accelerationIndex = -1;
 		int potentialIndex = -1;
 
-		// Locate any of the 4 standard plate colorings in the list of all colorings available for this resolution.
-		// Usually the standard colorings are first in the list, so the loop could terminate after all
+		// Locate any of the 4 standard plate colorings in the list of all colorings
+		// available for this resolution.
+		// Usually the standard colorings are first in the list, so the loop could
+		// terminate after all
 		// 4 are >= 0, but omitting this check for brevity and readability.
 		List<ColoringData> coloringDataList = smallBodyModel.getAllColoringData();
 		for (int index = 0; index < coloringDataList.size(); ++index)
@@ -1344,7 +1112,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 			{
 				accelerationIndex = index;
 			}
-			// This is a hack -- unfortunately, in at least OREx's case, this vector is given a different name.
+			// This is a hack -- unfortunately, in at least OREx's case, this vector is
+			// given a different name.
 			else if (name.equalsIgnoreCase("Gravitational Magnitude"))
 			{
 				accelerationIndex = index;
@@ -1356,58 +1125,76 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		}
 
 		// Get all the coloring values interpolated at the center of the polygon.
-		double[] allValues = smallBodyModel.getAllColoringValues(pol.center);
-		if (mode != Mode.POINT_MODE)
+		double[] allValues;
+
+		try
 		{
-			// Replace slope and/or elevation central values with the average over the rim of the circle.
-			if (slopeIndex != -1 || elevationIndex != -1)
+			allValues = smallBodyModel.getAllColoringValues(pol.getCenter());
+			if (mode != Mode.POINT_MODE)
 			{
-				if (slopeIndex != -1)
-					allValues[slopeIndex] = 0.; // Accumulate weighted sum in situ.
-				if (elevationIndex != -1)
-					allValues[elevationIndex] = 0.; // Accumulate weighted sum in situ.
-
-				vtkCellArray lines = pol.boundaryPolyData.GetLines();
-				vtkPoints points = pol.boundaryPolyData.GetPoints();
-
-				vtkIdTypeArray idArray = lines.GetData();
-				int size = idArray.GetNumberOfTuples();
-
-				double totalLength = 0.0;
-				double[] midpoint = new double[3];
-				for (int i = 0; i < size; i += 3)
+				// Replace slope and/or elevation central values with the average over the rim
+				// of the circle.
+				if (slopeIndex != -1 || elevationIndex != -1)
 				{
-					if (idArray.GetValue(i) != 2)
+					if (slopeIndex != -1)
+						allValues[slopeIndex] = 0.; // Accumulate weighted sum in situ.
+					if (elevationIndex != -1)
+						allValues[elevationIndex] = 0.; // Accumulate weighted sum in situ.
+
+					vtkCellArray lines = pol.boundaryPolyData.GetLines();
+					vtkPoints points = pol.boundaryPolyData.GetPoints();
+
+					vtkIdTypeArray idArray = lines.GetData();
+					int size = idArray.GetNumberOfTuples();
+
+					double totalLength = 0.0;
+					double[] midpoint = new double[3];
+					for (int i = 0; i < size; i += 3)
 					{
-						System.out.println("Big problem: polydata corrupted");
-						return standardValues;
+						if (idArray.GetValue(i) != 2)
+						{
+							System.out.println("Big problem: polydata corrupted");
+							return standardValues;
+						}
+
+						double[] pt1 = points.GetPoint(idArray.GetValue(i + 1));
+						double[] pt2 = points.GetPoint(idArray.GetValue(i + 2));
+
+						MathUtil.midpointBetween(pt1, pt2, midpoint);
+						double dist = MathUtil.distanceBetween(pt1, pt2);
+						totalLength += dist;
+
+						double[] valuesAtMidpoint = smallBodyModel.getAllColoringValues(midpoint);
+
+						// Accumulate sums weighted by the length of this polygon segment.
+						if (slopeIndex != -1)
+							allValues[slopeIndex] += valuesAtMidpoint[slopeIndex] * dist;
+						if (elevationIndex != -1)
+							allValues[elevationIndex] += valuesAtMidpoint[elevationIndex] * dist;
 					}
 
-					double[] pt1 = points.GetPoint(idArray.GetValue(i + 1));
-					double[] pt2 = points.GetPoint(idArray.GetValue(i + 2));
-
-					MathUtil.midpointBetween(pt1, pt2, midpoint);
-					double dist = MathUtil.distanceBetween(pt1, pt2);
-					totalLength += dist;
-
-					double[] valuesAtMidpoint = smallBodyModel.getAllColoringValues(midpoint);
-
-					// Accumulate sums weighted by the length of this polygon segment.
+					// Normalize by the total (perimeter).
 					if (slopeIndex != -1)
-						allValues[slopeIndex] += valuesAtMidpoint[slopeIndex] * dist;
+						allValues[slopeIndex] /= totalLength;
 					if (elevationIndex != -1)
-						allValues[elevationIndex] += valuesAtMidpoint[elevationIndex] * dist;
+						allValues[elevationIndex] /= totalLength;
 				}
+			}
+		}
+		catch (Exception e)
+		{
+			System.err.println("Warning: plate coloring values were not available; omitting them from structures file.");
+			System.err.println("Exception thrown was " + e.getMessage());
 
-				// Normalize by the total (perimeter).
-				if (slopeIndex != -1)
-					allValues[slopeIndex] /= totalLength;
-				if (elevationIndex != -1)
-					allValues[elevationIndex] /= totalLength;
+			allValues = new double[coloringDataList.size()];
+			for (int index = 0; index < allValues.length; ++index)
+			{
+				allValues[index] = Double.NaN;
 			}
 		}
 
-		// Use whichever standard coloring values are present to populate the output array.
+		// Use whichever standard coloring values are present to populate the output
+		// array.
 		if (slopeIndex != -1)
 			standardValues[0] = allValues[slopeIndex];
 		if (elevationIndex != -1)
@@ -1422,13 +1209,13 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 
 	private Double getEllipseAngleRelativeToGravityVector(EllipsePolygon pol)
 	{
-		double[] gravityVector = smallBodyModel.getGravityVector(pol.center);
+		double[] gravityVector = smallBodyModel.getGravityVector(pol.getCenter());
 		if (gravityVector == null)
 			return null;
 		MathUtil.vhat(gravityVector, gravityVector);
 
 		// First compute cross product of normal and z axis
-		double[] normal = smallBodyModel.getNormalAtPoint(pol.center);
+		double[] normal = smallBodyModel.getNormalAtPoint(pol.getCenter());
 		double[] zaxis = { 0.0, 0.0, 1.0 };
 		double[] cross = new double[3];
 		MathUtil.vcrss(zaxis, normal, cross);
@@ -1441,11 +1228,10 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		transform.RotateWXYZ(sepAngle, cross);
 
 		gravityVector = transform.TransformDoubleVector(gravityVector);
-		double[] center = transform.TransformDoublePoint(pol.center);
+		double[] center = transform.TransformDoublePoint(pol.getCenter());
 
 		// project gravity into xy plane
-		double[] gravityPoint = { center[0] + gravityVector[0], center[1] + gravityVector[1], center[2] + gravityVector[2],
-		};
+		double[] gravityPoint = { center[0] + gravityVector[0], center[1] + gravityVector[1], center[2] + gravityVector[2], };
 		double[] projGravityPoint = new double[3];
 		MathUtil.vprjp(gravityPoint, zaxis, center, projGravityPoint);
 		double[] projGravityVector = new double[3];
@@ -1482,7 +1268,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 			smaxisangle2 += 360.0;
 
 		// Compute angular separations between semimajor axes and gravity vector.
-		// The smaller one is the one we want, which should be between 0 and 180 degrees.
+		// The smaller one is the one we want, which should be between 0 and 180
+		// degrees.
 		double sepAngle1 = smaxisangle1 - gravAngle;
 		if (sepAngle1 < 0.0)
 			sepAngle1 += 360.0;
@@ -1520,8 +1307,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	@Override
 	public double getLineWidth()
 	{
-		vtkProperty boundaryProperty = boundaryActor.GetProperty();
-		return boundaryProperty.GetLineWidth();
+		return lineWidth;
 	}
 
 	@Override
@@ -1529,6 +1315,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	{
 		if (width >= 1.0)
 		{
+			this.lineWidth = width;
 			vtkProperty boundaryProperty = boundaryActor.GetProperty();
 			boundaryProperty.SetLineWidth(width);
 			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
@@ -1544,16 +1331,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 			if (pol.hidden == b)
 			{
 				pol.hidden = !b;
-				if (pol.caption != null && pol.hidden == true)
-					pol.caption.VisibilityOff();
-				else if (pol.caption != null && pol.hidden == false)
-				{
-					if (pol.labelHidden)
-						pol.caption.VisibilityOff();
-					else
-						pol.caption.VisibilityOn();
-				}
-				pol.updatePolygon(smallBodyModel, pol.center, pol.radius, pol.flattening, pol.angle);
+				updateStructure(pol);
+				pol.updatePolygon(smallBodyModel, pol.getCenter(), pol.radius, pol.flattening, pol.angle);
 				needToUpdate = true;
 			}
 		}
@@ -1575,10 +1354,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	{
 		for (int aIdx : aIdxArr)
 		{
-			EllipsePolygon tmpStruct = polygons.get(aIdx);
-			tmpStruct.labelHidden = !aIsVisible;
-			if (tmpStruct.caption != null)
-				tmpStruct.caption.SetVisibility(aIsVisible ? 1 : 0);
+			Structure tmpStruct = polygons.get(aIdx);
+			tmpStruct.setLabelHidden(!aIsVisible);
+			updateStructure(tmpStruct);
 		}
 
 		updatePolyData();
@@ -1616,7 +1394,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 			EllipsePolygon tmpStruct = polygons.get(aIdx);
 			tmpStruct.hidden = !aIsVisible;
 
-			tmpStruct.updatePolygon(smallBodyModel, tmpStruct.center, tmpStruct.radius, tmpStruct.flattening, tmpStruct.angle);
+			tmpStruct.updatePolygon(smallBodyModel, tmpStruct.getCenter(), tmpStruct.radius, tmpStruct.flattening, tmpStruct.angle);
 		}
 
 		updatePolyData();
@@ -1629,6 +1407,16 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		vtkPolyData polydata = polygons.get(idx).interiorPolyData;
 		smallBodyModel.savePlateDataInsidePolydata(polydata, file);
 	}
+	
+	public void savePlateDataInsideStructure(int[] idx, File file) throws IOException
+	{
+		vtkAppendPolyData appendFilter = new vtkAppendPolyData();
+		for (int i = 0; i < idx.length; i++)
+			appendFilter.AddInputData(polygons.get(idx[i]).interiorPolyData);
+		appendFilter.Update();
+		//vtkPolyData polydata = polygons.get(idx).interiorPolyData;
+		smallBodyModel.savePlateDataInsidePolydata(appendFilter.GetOutput(), file);
+	}
 
 	@Override
 	public FacetColoringData[] getPlateDataInsideStructure(int idx)
@@ -1636,11 +1424,21 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		vtkPolyData polydata = polygons.get(idx).interiorPolyData;
 		return smallBodyModel.getPlateDataInsidePolydata(polydata);
 	}
+	
+	@Override
+	public FacetColoringData[] getPlateDataInsideStructure(int[] idx)
+	{
+		vtkAppendPolyData appendFilter = new vtkAppendPolyData();
+		for (int i = 0; i < idx.length; i++)
+			appendFilter.AddInputData(polygons.get(idx[i]).interiorPolyData);
+		appendFilter.Update();
+		return smallBodyModel.getPlateDataInsidePolydata(appendFilter.GetOutput());
+	}
 
 	@Override
 	public double[] getStructureCenter(int id)
 	{
-		return polygons.get(id).center;
+		return polygons.get(id).getCenter();
 	}
 
 	@Override
@@ -1659,33 +1457,13 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	@Override
 	public void setStructureLabel(int aIdx, String aLabel)
 	{
-		EllipsePolygon tmpStruct = polygons.get(aIdx);
+		Structure tmpStruct = polygons.get(aIdx);
 		tmpStruct.setLabel(aLabel);
 
 		// Clear the caption if the string is empty or null
-		if (aLabel == null || aLabel.equals(""))
-		{
-			if (tmpStruct.caption == null)
-				return;
+		tmpStruct.setLabelHidden(aLabel == null || aLabel.equals(""));
+		updateStructure(tmpStruct);
 
-			tmpStruct.caption.VisibilityOff();
-			tmpStruct.caption = null;
-
-			updatePolyData();
-			pcs.firePropertyChange(Properties.MODEL_CHANGED, null, aIdx);
-			return;
-		}
-
-		// Create a caption if necessary
-		if (tmpStruct.caption == null)
-		{
-			vtkCaptionActor2D tmpCaption = formCaption(smallBodyModel, tmpStruct.center, tmpStruct.name, aLabel);
-			tmpCaption.GetCaptionTextProperty().SetJustificationToLeft();
-			tmpStruct.caption = tmpCaption;
-		}
-
-		// Update the caption and send out notification
-		tmpStruct.caption.SetCaption(aLabel);
 		updatePolyData();
 		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, aIdx);
 	}
@@ -1695,8 +1473,11 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	{
 		for (int index : selectedStructures)
 		{
-			vtkCaptionActor2D v = polygons.get(index).caption;
-			v.SetBorder(1 - v.GetBorder());
+			vtkCaptionActor2D v = updateStructure(polygons.get(index));
+			if (v != null)
+			{
+				v.SetBorder(1 - v.GetBorder());
+			}
 		}
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
@@ -1704,7 +1485,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	@Override
 	protected vtkCaptionActor2D getCaption(int aIndex)
 	{
-		return polygons.get(aIndex).caption;
+		return updateStructure(polygons.get(aIndex));
 	}
 
 	private static final Key<List<EllipsePolygon>> ELLIPSE_POLYGON_KEY = Key.of("ellipses");
@@ -1712,51 +1493,65 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 	private static final Key<int[]> DEFAULT_COLOR_KEY = Key.of("defaultColor");
 	private static final Key<Double> INTERIOR_OPACITY_KEY = Key.of("interiorOpacity");
 	private static final Key<int[]> SELECTED_STRUCTURES_KEY = Key.of("selectedStructures");
+	private static final Key<Double> LINE_WIDTH_KEY = Key.of("lineWidth");
 	private static final Key<Double> OFFSET_KEY = Key.of("offset");
 
-	public MetadataManager getMetadataManager()
+	@Override
+	public Metadata store()
 	{
-		return new MetadataManager() {
+		SettableMetadata result = SettableMetadata.of(Version.of(1, 0));
 
-			@Override
-			public Metadata store()
-			{
-				SettableMetadata result = SettableMetadata.of(Version.of(1, 0));
+		result.put(ELLIPSE_POLYGON_KEY, polygons);
+		result.put(DEFAULT_RADIUS_KEY, defaultRadius);
+		result.put(DEFAULT_COLOR_KEY, defaultColor);
+		result.put(INTERIOR_OPACITY_KEY, interiorOpacity);
+		result.put(SELECTED_STRUCTURES_KEY, selectedStructures);
+		result.put(LINE_WIDTH_KEY, lineWidth);
+		result.put(OFFSET_KEY, offset);
 
-				result.put(ELLIPSE_POLYGON_KEY, polygons);
-				result.put(DEFAULT_RADIUS_KEY, defaultRadius);
-				result.put(DEFAULT_COLOR_KEY, defaultColor);
-				result.put(INTERIOR_OPACITY_KEY, interiorOpacity);
-				result.put(SELECTED_STRUCTURES_KEY, selectedStructures);
-				result.put(OFFSET_KEY, offset);
-
-				return result;
-			}
-
-			@Override
-			public void retrieve(Metadata source)
-			{
-				defaultRadius = source.get(DEFAULT_RADIUS_KEY);
-				defaultColor = source.get(DEFAULT_COLOR_KEY);
-				interiorOpacity = source.get(INTERIOR_OPACITY_KEY);
-				selectedStructures = source.get(SELECTED_STRUCTURES_KEY);
-				offset = source.get(OFFSET_KEY);
-				List<EllipsePolygon> restoredPolygons = source.get(ELLIPSE_POLYGON_KEY);
-				for (EllipsePolygon polygon : restoredPolygons)
-				{
-					polygon.updatePolygon(smallBodyModel, polygon.center, polygon.radius, polygon.flattening, polygon.angle);
-				}
-				removeAllStructures();
-				maxPolygonId = 0;
-				polygons.addAll(restoredPolygons);
-
-				updatePolyData();
-
-				AbstractEllipsePolygonModel.this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-				AbstractEllipsePolygonModel.this.pcs.firePropertyChange(Properties.STRUCTURE_ADDED, null, null);
-
-			}
-
-		};
+		return result;
 	}
+
+	@Override
+	public void retrieve(Metadata source)
+	{
+		// The order of these operations is significant to try to keep the object state consistent.
+		// First get everything from the metadata into local variables. Don't touch the model yet
+		// in case there's a problem.
+		double defaultRadius = source.get(DEFAULT_RADIUS_KEY);
+		int[] defaultColor = source.get(DEFAULT_COLOR_KEY);
+		double interiorOpacity = source.get(INTERIOR_OPACITY_KEY);
+		int[] selectedStructures = source.get(SELECTED_STRUCTURES_KEY);
+		double lineWidth = source.get(LINE_WIDTH_KEY);
+		double offset = source.get(OFFSET_KEY);
+		List<EllipsePolygon> restoredPolygons = source.get(ELLIPSE_POLYGON_KEY);
+
+		// Now set the state of the individual restored polygons, again without directly changing the model.
+		// TODO Note that the smallBodyModel is changed here though -- need to make sure this doesn't cause
+		// problems if something throws before the whole retrieve operation is done.
+		for (EllipsePolygon polygon : restoredPolygons)
+		{
+			polygon.updatePolygon(smallBodyModel, polygon.getCenter(), polygon.radius, polygon.flattening, polygon.angle);
+		}
+
+		// Now we're committed. Get rid of whatever's currently in this model and then add the restored polygons.
+		polygons.clear();
+
+		// Finally, change the rest of the fields.
+		this.defaultRadius = defaultRadius;
+		this.defaultColor = defaultColor;
+		this.interiorOpacity = interiorOpacity;
+		this.selectedStructures = selectedStructures;
+		this.offset = offset;
+
+		// Put the restored polygons in the list.
+		polygons.addAll(restoredPolygons);
+
+		// Sync everything up.
+		updatePolyData();
+		setLineWidth(lineWidth);
+
+		AbstractEllipsePolygonModel.this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+	}
+
 }

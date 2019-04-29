@@ -29,6 +29,23 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import com.google.common.collect.ImmutableList;
+
+import crucible.crust.metadata.api.Key;
+import crucible.crust.metadata.api.Metadata;
+import crucible.crust.metadata.api.MetadataManager;
+import crucible.crust.settings.api.Configuration;
+import crucible.crust.settings.api.Content;
+import crucible.crust.settings.api.ContentKey;
+import crucible.crust.settings.api.KeyValueCollection;
+import crucible.crust.settings.api.SettableValue;
+import crucible.crust.settings.api.Value;
+import crucible.crust.settings.api.Version;
+import crucible.crust.settings.impl.Configurations;
+import crucible.crust.settings.impl.KeyValueCollections;
+import crucible.crust.settings.impl.SettableValues;
+import crucible.crust.settings.impl.Values;
+import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
 import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.StructureModel;
@@ -53,7 +70,7 @@ import vtk.vtkUnsignedCharArray;
 /**
  * Model of line structures drawn on a body.
  */
-public class LineModel extends ControlPointsStructureModel implements PropertyChangeListener
+public class LineModel extends ControlPointsStructureModel implements PropertyChangeListener, MetadataManager
 {
 	public enum Mode
 	{
@@ -62,18 +79,19 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		CLOSED
 	}
 
-	private List<Line> lines = new ArrayList<Line>();
+	private final List<Line> lines = new ArrayList<>();
+	private final Configuration configuration;
 
-	public List<Line> getLines()
+	public ImmutableList<Line> getLines()
 	{
-		return lines;
+		return ImmutableList.copyOf(lines);
 	}
 
 	private vtkPolyData linesPolyData;
 	private vtkPolyData decimatedLinesPolyData;
 	private vtkPolyData activationPolyData;
 
-	private List<vtkProp> actors = new ArrayList<vtkProp>();
+	private List<vtkProp> actors = new ArrayList<>();
 	private vtkPolyDataMapper lineMapper;
 	private vtkPolyDataMapper decimatedLineMapper;
 	private vtkPolyDataMapper lineActivationMapper;
@@ -91,8 +109,6 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	private vtkPolyData emptyPolyData;
 
 	private Mode mode = Mode.DEFAULT;
-
-	private double offset;
 
 	private static final String LINES = "lines";
 	private static final String SHAPE_MODEL_NAME = "shapemodel";
@@ -114,8 +130,6 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	{
 		this.smallBodyModel = smallBodyModel;
 		this.mode = mode;
-
-		this.offset = getDefaultOffset();
 
 		if (hasProfileMode())
 			setMaximumVerticesPerLine(2);
@@ -169,6 +183,9 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		lineActivationActor.Modified();
 
 		actors.add(lineActivationActor);
+
+		this.configuration = createConfiguration(lines);
+		this.configuration.getCollection().getValue(OFFSET_KEY).setValue(getDefaultOffset());
 	}
 
 	protected String getType()
@@ -199,7 +216,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		if (element.hasAttribute(SHAPE_MODEL_NAME))
 			shapeModelName = element.getAttribute(SHAPE_MODEL_NAME);
 
-		Line dummyLine = (Line) createStructure(smallBodyModel);
+		Line dummyLine = (Line) createStructure();
 		NodeList nl = element.getElementsByTagName(dummyLine.getType());
 		if (nl != null && nl.getLength() > 0)
 		{
@@ -207,15 +224,15 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 			{
 				Element el = (Element) nl.item(i);
 
-				Line lin = (Line) createStructure(smallBodyModel);
+				Line lin = (Line) createStructure();
 
-				lin.fromXmlDomElement(el, shapeModelName, append);
+				lin.fromXmlDomElement(smallBodyModel, el, shapeModelName, append);
 
 				this.lines.add(lin);
-				setStructureLabel(lines.size() - 1, lines.get(lines.size() - 1).label);
+				setStructureLabel(lines.size() - 1, lines.get(lines.size() - 1).getLabel());
 			}
 		}
-
+		lineActor.SetMapper(lineMapper);
 		updatePolyData();
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
@@ -235,7 +252,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		{
 			Line lin = this.lines.get(j);
 
-			int[] color = lin.color;
+			int[] color = lin.getColor();
 
 			if (Arrays.binarySearch(this.selectedStructures, j) >= 0)
 				color = getCommonData().getSelectionColor();
@@ -253,7 +270,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 					startId = c;
 
 				points.InsertNextPoint(lin.xyzPointList.get(i).xyz);
-				if (lin.hidden)
+				if (lin.getHidden())
 					idList.SetId(i, 0); // set to degenerate line if hidden
 				else
 					idList.SetId(i, c);
@@ -262,7 +279,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 			if (mode == Mode.CLOSED && size > 2)
 			{
-				if (lin.hidden)
+				if (lin.getHidden())
 					idList.SetId(size, 0);
 				else
 					idList.SetId(size, startId);
@@ -285,7 +302,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		{
 			Line lin = this.lines.get(j);
 
-			int[] color = lin.color;
+			int[] color = lin.getColor();
 
 			if (Arrays.binarySearch(this.selectedStructures, j) >= 0)
 				color = getCommonData().getSelectionColor();
@@ -304,7 +321,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 					startId = c;
 
 				decimatedPoints.InsertNextPoint(lin.xyzPointList.get(lin.controlPointIds.get(i)).xyz);
-				if (lin.hidden)
+				if (lin.getHidden())
 					decimatedIdList.SetId(i, 0); // set to degenerate line if hidden
 				else
 					decimatedIdList.SetId(i, c);
@@ -313,7 +330,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 			if (mode == Mode.CLOSED && size > 2)
 			{
-				if (lin.hidden)
+				if (lin.getHidden())
 					decimatedIdList.SetId(size, 0);
 				else
 					decimatedIdList.SetId(size, startId);
@@ -324,6 +341,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		}
 
 		// Setup mapper, actor, etc.
+		double offset = getOffset();
 		smallBodyModel.shiftPolyLineInNormalDirection(linesPolyData, offset);
 		smallBodyModel.shiftPolyLineInNormalDirection(decimatedLinesPolyData, offset);
 
@@ -337,18 +355,12 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		for (int j = 0; j < this.lines.size(); ++j)
 		{
-			Line lin = this.lines.get(j);
-			if (lin.label != null && !lin.labelHidden && !lin.hidden && lin.caption != null)
+			vtkCaptionActor2D caption = updateStructure(lines.get(j));
+			if (caption != null)
 			{
-				lin.caption.SetAttachmentPoint(lin.getCentroid());
-				actors.add(lin.caption);
+				actors.add(caption);
 			}
 		}
-
-		lineActor.SetMapper(lineMapper);
-		((SaavtkLODActor) lineActor).setLODMapper(decimatedLineMapper);
-		lineActor.Modified();
-
 	}
 
 	@Override
@@ -358,7 +370,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	}
 
 	@Override
-	public String getClickStatusBarText(vtkProp prop, int cellId, double[] pickPosition)
+	public String getClickStatusBarText(vtkProp prop, int cellId, @SuppressWarnings("unused") double[] pickPosition)
 	{
 		if (prop == lineActor)
 		{
@@ -421,18 +433,24 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		int numberOfPoints = 0;
 		for (Line lin : this.lines)
 		{
-			numberOfPoints += lin.controlPoints.size();
+			numberOfPoints += lin.getControlPoints().size();
 		}
 		return numberOfPoints;
 	}
 
 	@Override
-	public void addNewStructure()
+	public Structure addNewStructure()
 	{
-		Line lin = (Line) createStructure(smallBodyModel);
+		Line lin = (Line) createStructure();
 		lines.add(lin);
 		activateStructure(lines.size() - 1);
+
+		lineActor.SetMapper(lineMapper);
+		((SaavtkLODActor) lineActor).setLODMapper(decimatedLineMapper);
+		lineActor.Modified();
+
 		this.pcs.firePropertyChange(Properties.STRUCTURE_ADDED, null, null);
+		return lin;
 	}
 
 	@Override
@@ -440,30 +458,30 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	{
 		Line lin = lines.get(activatedLine);
 
-		int numVertices = lin.controlPoints.size();
+		int numVertices = lin.getControlPoints().size();
 
 		LatLon ll = MathUtil.reclat(newPoint);
-		lin.controlPoints.set(vertexId, ll);
+		lin.setControlPoint(vertexId, ll);
 
 		// If we're modifying the last vertex
 		if (vertexId == numVertices - 1)
 		{
-			lin.updateSegment(vertexId - 1);
+			lin.updateSegment(smallBodyModel, vertexId - 1);
 			if (mode == Mode.CLOSED)
-				lin.updateSegment(vertexId);
+				lin.updateSegment(smallBodyModel, vertexId);
 		}
 		// If we're modifying the first vertex
 		else if (vertexId == 0)
 		{
 			if (mode == Mode.CLOSED)
-				lin.updateSegment(numVertices - 1);
-			lin.updateSegment(vertexId);
+				lin.updateSegment(smallBodyModel, numVertices - 1);
+			lin.updateSegment(smallBodyModel, vertexId);
 		}
 		// If we're modifying a middle vertex
 		else
 		{
-			lin.updateSegment(vertexId - 1);
-			lin.updateSegment(vertexId);
+			lin.updateSegment(smallBodyModel, vertexId - 1);
+			lin.updateSegment(smallBodyModel, vertexId);
 		}
 
 		updatePolyData();
@@ -490,7 +508,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		LatLon ll = MathUtil.reclat(newPoint);
 
-		lin.controlPoints.add(currentLineVertex + 1, ll);
+		lin.addControlPoint(currentLineVertex + 1, ll);
 
 		// Remove points BETWEEN the 2 control points (If we're adding a point in the middle)
 		if (currentLineVertex < lin.controlPointIds.size() - 1)
@@ -526,14 +544,14 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 			}
 			else if (currentLineVertex < lin.controlPointIds.size() - 2)
 			{
-				lin.updateSegment(currentLineVertex);
-				lin.updateSegment(currentLineVertex + 1);
+				lin.updateSegment(smallBodyModel, currentLineVertex);
+				lin.updateSegment(smallBodyModel, currentLineVertex + 1);
 			}
 			else
 			{
-				lin.updateSegment(currentLineVertex);
+				lin.updateSegment(smallBodyModel, currentLineVertex);
 				if (mode == Mode.CLOSED)
-					lin.updateSegment(currentLineVertex + 1);
+					lin.updateSegment(smallBodyModel, currentLineVertex + 1);
 			}
 		}
 
@@ -557,7 +575,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		int vertexId = currentLineVertex;
 
-		lin.controlPoints.remove(vertexId);
+		lin.removeControlPoint(vertexId);
 
 		// If not in CLOSED mode:
 		// If one of the end points is being removed, then we only need to remove the line connecting the
@@ -595,7 +613,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 					}
 
 					// redraw segment connecting last point to first
-					lin.updateSegment(lin.controlPointIds.size() - 1);
+					lin.updateSegment(smallBodyModel, lin.controlPointIds.size() - 1);
 				}
 			}
 			// Remove final point
@@ -624,7 +642,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 				if (mode == Mode.CLOSED)
 				{
 					// redraw segment connecting last point to first
-					lin.updateSegment(lin.controlPointIds.size() - 1);
+					lin.updateSegment(smallBodyModel, lin.controlPointIds.size() - 1);
 				}
 			}
 			// Remove a middle point
@@ -643,7 +661,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 				for (int i = vertexId; i < lin.controlPointIds.size(); ++i)
 					lin.controlPointIds.set(i, lin.controlPointIds.get(i) - numberPointsRemoved);
 
-				lin.updateSegment(vertexId - 1);
+				lin.updateSegment(smallBodyModel, vertexId - 1);
 			}
 		}
 		else if (lin.controlPointIds.size() == 1)
@@ -667,9 +685,9 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public void removeStructure(int cellId)
 	{
-		if (lines.get(cellId).caption != null)
-			lines.get(cellId).caption.VisibilityOff();
-		lines.get(cellId).caption = null;
+		Structure structure = lines.get(cellId);
+		structure.setHidden(true);
+		updateStructure(structure);
 
 		lines.remove(cellId);
 
@@ -680,10 +698,9 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		if (cellId == activatedLine)
 			activateStructure(-1);
-		else
-			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 
 		this.pcs.firePropertyChange(Properties.STRUCTURE_REMOVED, null, cellId);
+		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	@Override
@@ -695,10 +712,12 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		Arrays.sort(indices);
 		for (int i = indices.length - 1; i >= 0; --i)
 		{
-			if (lines.get(indices[i]).caption != null)
-				lines.get(indices[i]).caption.VisibilityOff();
-			lines.get(indices[i]).caption = null;
+			Structure structure = lines.get(indices[i]);
+			structure.setHidden(true);
+			updateStructure(structure);
+
 			lines.remove(indices[i]);
+
 			this.pcs.firePropertyChange(Properties.STRUCTURE_REMOVED, null, indices[i]);
 		}
 
@@ -709,18 +728,17 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		if (Arrays.binarySearch(indices, activatedLine) < 0)
 			activateStructure(-1);
-		else
-			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+
+		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	@Override
 	public void removeAllStructures()
 	{
-		for (int i = 0; i < lines.size(); i++)
+		for (Structure structure : lines)
 		{
-			if (lines.get(i).caption != null)
-				lines.get(i).caption.VisibilityOff();
-			lines.get(i).caption = null;
+			structure.setHidden(true);
+			updateStructure(structure);
 		}
 		lines.clear();
 
@@ -732,6 +750,12 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		activateStructure(-1);
 
 		this.pcs.firePropertyChange(Properties.ALL_STRUCTURES_REMOVED, null, null);
+	}
+
+	@Override
+	public PolyhedralModel getPolyhedralModel()
+	{
+		return smallBodyModel;
 	}
 
 	@Override
@@ -814,7 +838,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 					colors.InsertNextTuple4(redColor[0], redColor[1], redColor[2], redColor[3]);
 			}
 
-			smallBodyModel.shiftPolyLineInNormalDirection(activationPolyData, offset);
+			smallBodyModel.shiftPolyLineInNormalDirection(activationPolyData, getOffset());
 
 			if (!actors.contains(lineActivationActor))
 				actors.add(lineActivationActor);
@@ -947,14 +971,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	{
 		for (Line lin : this.lines)
 		{
-			for (int i = 0; i < lin.controlPointIds.size(); ++i)
-				lin.shiftPointOnPathToClosestPointOnAsteroid(i);
-
-			for (int i = 0; i < lin.controlPointIds.size() - 1; ++i)
-				lin.updateSegment(i);
-
-			if (mode == Mode.CLOSED)
-				lin.updateSegment(lin.controlPoints.size() - 1);
+			lin.updateAllSegments(smallBodyModel);
 		}
 
 		updatePolyData();
@@ -1067,7 +1084,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public void setOffset(double offset)
 	{
-		this.offset = offset;
+		configuration.getCollection().getValue(OFFSET_KEY).setValue(offset);
 
 		updatePolyData();
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
@@ -1076,7 +1093,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public double getOffset()
 	{
-		return offset;
+		return configuration.getCollection().getValue(OFFSET_KEY).getValue();
 	}
 
 	public void generateProfile(List<Point3D> xyzPointList, List<Double> profileValues, List<Double> profileDistances, int coloringIndex) throws Exception
@@ -1234,8 +1251,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public double getLineWidth()
 	{
-		vtkProperty lineProperty = lineActor.GetProperty();
-		return lineProperty.GetLineWidth();
+		return configuration.getCollection().getValue(LINE_WIDTH_KEY).getValue();
 	}
 
 	@Override
@@ -1245,6 +1261,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		{
 			vtkProperty lineProperty = lineActor.GetProperty();
 			lineProperty.SetLineWidth(width);
+			configuration.getCollection().getValue(LINE_WIDTH_KEY).setValue(lineProperty.GetLineWidth());
 			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 		}
 	}
@@ -1255,18 +1272,10 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		boolean needToUpdate = false;
 		for (Line line : lines)
 		{
-			if (line.hidden == b)
+			if (line.getHidden() == b)
 			{
-				line.hidden = !b;
-				if (line.caption != null && line.hidden == true)
-					line.caption.VisibilityOff();
-				else if (line.caption != null && line.hidden == false)
-				{
-					if (line.labelHidden)
-						line.caption.VisibilityOff();
-					else
-						line.caption.VisibilityOn();
-				}
+				line.setHidden(!b);
+				updateStructure(line);
 				needToUpdate = true;
 			}
 		}
@@ -1280,7 +1289,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public boolean isLabelVisible(int aIdx)
 	{
-		return !lines.get(aIdx).labelHidden;
+		return !lines.get(aIdx).getLabelHidden();
 	}
 
 	@Override
@@ -1288,10 +1297,9 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	{
 		for (int aIdx : aIdxArr)
 		{
-			Line tmpStruct = lines.get(aIdx);
-			tmpStruct.labelHidden = !aIsVisible;
-			if (tmpStruct.caption != null)
-				tmpStruct.caption.SetVisibility(aIsVisible ? 1 : 0);
+			Structure tmpStruct = lines.get(aIdx);
+			tmpStruct.setLabelHidden(!aIsVisible);
+			updateStructure(tmpStruct);
 		}
 
 		updatePolyData();
@@ -1318,7 +1326,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public boolean isStructureVisible(int aIdx)
 	{
-		return !lines.get(aIdx).hidden;
+		return !lines.get(aIdx).getHidden();
 	}
 
 	@Override
@@ -1327,7 +1335,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		for (int aIdx : aIdxArr)
 		{
 			Line tmpStruct = lines.get(aIdx);
-			tmpStruct.hidden = !aIsVisible;
+			tmpStruct.setHidden(!aIsVisible);
 		}
 
 		updatePolyData();
@@ -1337,7 +1345,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public double[] getStructureCenter(int id)
 	{
-		return lines.get(id).getCentroid();
+		return lines.get(id).getCentroid(smallBodyModel);
 	}
 
 	@Override
@@ -1350,40 +1358,24 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public double getStructureSize(int id)
 	{
-		return lines.get(id).getSize();
+		return lines.get(id).getSize(smallBodyModel);
 	}
 
-	protected StructureModel.Structure createStructure(PolyhedralModel smallBodyModel)
+	protected StructureModel.Structure createStructure()
 	{
-		return new Line(smallBodyModel, false, ++maxPolygonId);
+		return Line.of(++maxPolygonId);
 	}
 
 	@Override
 	public void setStructureLabel(int aIdx, String aLabel)
 	{
-		Line tmpStruct = lines.get(aIdx);
+		Structure tmpStruct = lines.get(aIdx);
 		tmpStruct.setLabel(aLabel);
 
 		// Clear the caption if the string is empty or null
-		if (aLabel == null || aLabel.equals(""))
-		{
-			if (tmpStruct.caption == null)
-				return;
+		tmpStruct.setLabelHidden(aLabel == null || aLabel.equals(""));
+		updateStructure(tmpStruct);
 
-			tmpStruct.caption.VisibilityOff();
-			tmpStruct.caption = null;
-
-			updatePolyData();
-			pcs.firePropertyChange(Properties.MODEL_CHANGED, null, aIdx);
-			return;
-		}
-
-		// Create a caption if necessary
-		if (tmpStruct.caption == null)
-			tmpStruct.caption = formCaption(smallBodyModel, tmpStruct.getCentroid(), tmpStruct.name, aLabel);
-
-		// Update the caption and send out notification
-		tmpStruct.caption.SetCaption(aLabel);
 		updatePolyData();
 		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, aIdx);
 	}
@@ -1393,8 +1385,11 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	{
 		for (int index : selectedStructures)
 		{
-			vtkCaptionActor2D v = lines.get(index).caption;
-			v.SetBorder(1 - v.GetBorder());
+			vtkCaptionActor2D v = updateStructure(lines.get(index));
+			if (v != null)
+			{
+				v.SetBorder(1 - v.GetBorder());
+			}
 		}
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
@@ -1402,7 +1397,62 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	protected vtkCaptionActor2D getCaption(int aIndex)
 	{
-		return lines.get(aIndex).caption;
+		return updateStructure(lines.get(aIndex));
+	}
+
+	private static final Version CONFIGURATION_VERSION = Version.of(1, 0);
+	private static final ContentKey<SettableValue<Double>> OFFSET_KEY = SettableValues.key("offset");
+	private static final ContentKey<SettableValue<Double>> LINE_WIDTH_KEY = SettableValues.key("lineWidth");
+	private static final ContentKey<Value<List<Line>>> LINES_KEY = Values.fixedKey("lineStructures");
+
+	public static Configuration createConfiguration(List<Line> lines)
+	{
+		KeyValueCollections.Builder<Content> builder = KeyValueCollections.instance().builder();
+
+		builder.put(LINE_WIDTH_KEY, SettableValues.instance().of(2.));
+		builder.put(OFFSET_KEY, SettableValues.instance().of(Double.class, null));
+		builder.put(LINES_KEY, SettableValues.instance().of(lines));
+
+		return Configurations.instance().of(CONFIGURATION_VERSION, builder.build());
+	}
+
+	@Override
+	public Metadata store()
+	{
+		return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration.getCollection()).store();
+	}
+
+	@Override
+	public void retrieve(Metadata source)
+	{
+		KeyValueCollection<Content> collection = configuration.getCollection();
+
+		double lineWidth = source.get(Key.of(LINE_WIDTH_KEY.getId()));
+		double offset = source.get(Key.of(OFFSET_KEY.getId()));
+
+		List<Line> sourceLines = source.get(Key.of(LINES_KEY.getId()));
+		List<Line> lines = collection.getValue(LINES_KEY).getValue();
+
+		removeAllStructures();
+
+		lines.addAll(sourceLines);
+		for (int index = 0; index < lines.size(); ++index)
+		{
+			Line line = lines.get(index);
+			line.updateAllSegments(smallBodyModel);
+			if (line instanceof Polygon)
+			{
+				Polygon polygon = (Polygon) line;
+				polygon.setShowInterior(smallBodyModel, polygon.getContent(Polygon.SHOW_INTERIOR_KEY).getValue());
+			}
+		}
+
+		setLineWidth(lineWidth);
+		setOffset(offset);
+
+		lineActor.SetMapper(lineMapper);
+		updatePolyData();
+		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 }

@@ -1,5 +1,8 @@
 package edu.jhuapl.saavtk.model.structure;
 
+import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.util.MathUtil;
+import edu.jhuapl.saavtk.util.Properties;
 import vtk.vtkActor;
 import vtk.vtkCellArray;
 import vtk.vtkIdList;
@@ -7,11 +10,6 @@ import vtk.vtkPoints;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
 import vtk.vtkProperty;
-
-import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
-import edu.jhuapl.saavtk.util.MathUtil;
-import edu.jhuapl.saavtk.util.Properties;
 
 public class EllipseModel extends AbstractEllipsePolygonModel
 {

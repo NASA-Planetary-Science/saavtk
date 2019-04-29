@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,7 +13,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 import javax.swing.BorderFactory;
-import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -49,7 +49,6 @@ public abstract class View extends JPanel
 	private StatusBar statusBar;
 	private boolean initialized = false;
 	private ViewConfig config;
-	static private boolean initializedPanelSizing = false;
 
 	// accessor methods
 
@@ -131,14 +130,14 @@ public abstract class View extends JPanel
 		this.config = config;
 	}
 
-	protected void addTab(String name, JComponent component)
+	protected void addTab(String name, Component component)
 	{
 		controlPanel.addTab(name, component);
 	}
 
 	protected abstract void setupTabs();
 
-	public void initialize()
+	protected void initialize()
 	{
 		if (initialized)
 			return;
@@ -186,63 +185,44 @@ public abstract class View extends JPanel
 		controlPanel.setSelectedIndex(tabIndex); // load default tab (which is 0 if not specified in favorite tabs file)
 
 		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, controlPanel, renderer);
-		splitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, 
-		    new PropertyChangeListener() {
-		        @Override
-		        public void propertyChange(PropertyChangeEvent pce) 
-		        {
-		        	LinkedHashMap<String, String> map = new LinkedHashMap<>();
-		        	map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
-					map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
-					Preferences.getInstance().put(map);
-		        }
-		});
+
 		splitPane.setOneTouchExpandable(true);
 
-		if (!initializedPanelSizing)
-		{
-			int splitLocation = (int)Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
-			int rendererWidth = splitPane.getWidth() - splitLocation;
-			
-			int width = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_WIDTH, 800L);
-			int height = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_HEIGHT, 800L);
+		int splitLocation = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
+		splitPane.setDividerLocation(splitLocation);
 
-			renderer.setMinimumSize(new Dimension(100, 100));
-			renderer.setPreferredSize(new Dimension(rendererWidth, height));
+		splitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, new PropertyChangeListener() {
+			@Override
+			public void propertyChange(@SuppressWarnings("unused") PropertyChangeEvent pce)
+			{
+				LinkedHashMap<String, String> map = new LinkedHashMap<>();
+				map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
+				map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
+				Preferences.getInstance().put(map);
+			}
+		});
+		int rendererWidth = splitPane.getWidth() - splitLocation;
 
-			width = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
-			height = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_HEIGHT, 800L);
+		int height = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_HEIGHT, 800L);
+		renderer.setMinimumSize(new Dimension(100, 100));
+		controlPanel.setMinimumSize(new Dimension(320, 100));
 
-			controlPanel.setMinimumSize(new Dimension(320, 100));
-			controlPanel.setPreferredSize(new Dimension(splitLocation, height));
+		renderer.setPreferredSize(new Dimension(rendererWidth, height));
+		controlPanel.setPreferredSize(new Dimension(splitLocation, height));
 
-			// Save out the size of the control panel and renderer when the tool exits
-			Runtime.getRuntime().addShutdownHook(new Thread() {
-				private LinkedHashMap<String, String> map = new LinkedHashMap<>();
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			private LinkedHashMap<String, String> map = new LinkedHashMap<>();
 
-				@Override
-				public void run()
-				{
-					map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
-					map.put(Preferences.RENDERER_PANEL_HEIGHT, new Long(renderer.getHeight()).toString());
-					map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
-					map.put(Preferences.CONTROL_PANEL_HEIGHT, new Long(controlPanel.getHeight()).toString());
-					Preferences.getInstance().put(map);
-				}
-			});
-
-			initializedPanelSizing = true;
-		}
-		else
-		{
-			int splitLocation = Integer.parseInt(Preferences.getInstance().get(Preferences.CONTROL_PANEL_WIDTH));
-			int rendererWidth = splitPane.getWidth() - splitLocation;
-			
-			renderer.setMinimumSize(new Dimension(100, 100));
-			renderer.setPreferredSize(new Dimension(rendererWidth, 800));
-			controlPanel.setMinimumSize(new Dimension(320, 100));
-			controlPanel.setPreferredSize(new Dimension(splitLocation, 800));
-		}
+			@Override
+			public void run()
+			{
+				map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
+				map.put(Preferences.RENDERER_PANEL_HEIGHT, new Long(renderer.getHeight()).toString());
+				map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
+				map.put(Preferences.CONTROL_PANEL_HEIGHT, new Long(controlPanel.getHeight()).toString());
+				Preferences.getInstance().put(map);
+			}
+		});
 
 		this.add(splitPane, BorderLayout.CENTER);
 
@@ -368,9 +348,9 @@ public abstract class View extends JPanel
 		Renderer renderer = new Renderer(manager);
 		renderer.addPropertyChangeListener(manager);
 		setRenderer(renderer);
-		
-        // Force the renderer's camera to the "reset" default view
-        renderer.getCamera().reset();
+
+		// Force the renderer's camera to the "reset" default view
+		renderer.getCamera().reset();
 	}
 
 	protected abstract void setupPickManager();

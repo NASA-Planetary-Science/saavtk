@@ -3,14 +3,8 @@ package edu.jhuapl.saavtk.pick;
 import java.awt.Cursor;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
-import java.util.List;
 
-import vtk.vtkActor;
-import vtk.vtkCellPicker;
-import vtk.vtkProp;
-import vtk.vtkPropCollection;
-import vtk.rendering.jogl.vtkJoglPanelComponent;
-import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
+import edu.jhuapl.saavtk.gui.GuiUtil;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
@@ -18,6 +12,9 @@ import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.ControlPointsStructureModel;
 import edu.jhuapl.saavtk.model.structure.Line;
+import vtk.vtkActor;
+import vtk.vtkCellPicker;
+import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 /**
  * Picker for editing control point based structures such as Paths and Polygons.
@@ -29,223 +26,213 @@ import edu.jhuapl.saavtk.model.structure.Line;
  */
 public class ControlPointsStructurePicker extends Picker
 {
-    private ModelManager modelManager;
-    private vtkJoglPanelComponent renWin;
-    private PolyhedralModel smallBodyModel;
-    private ControlPointsStructureModel structureModel;
+	// Reference vars
+	private ModelManager refModelManager;
+	private PolyhedralModel refSmallBodyModel;
+	private ControlPointsStructureModel refStructureModel;
+	private vtkJoglPanelComponent refRenWin;
 
-    private vtkCellPicker smallBodyPicker;
-    private vtkCellPicker structureActivationPicker;
+	// VTK vars
+	private vtkCellPicker smallBodyPicker;
+	private vtkCellPicker structurePicker;
 
-    private int vertexIdBeingEdited = -1;
+	// State vars
+	private EditMode currEditMode;
+	private int currVertexId;
+	private boolean profileMode;
 
-    private boolean profileMode = false;
+	private double[] lastDragPosition;
 
-    // There are 2 types of editing possible:
-    //   1. Dragging an existing vertex to a new locations
-    //   2. Extending a structure by adding new vertices
-    public enum EditMode
-    {
-        VERTEX_DRAG_OR_DELETE,
-        VERTEX_ADD
-    }
+	public ControlPointsStructurePicker(Renderer renderer, ModelManager modelManager, ModelNames structureName)
+	{
+		refModelManager = modelManager;
+		refSmallBodyModel = (PolyhedralModel) modelManager.getPolyhedralModel();
+		refStructureModel = (ControlPointsStructureModel) modelManager.getModel(structureName);
+		refRenWin = renderer.getRenderWindowPanel();
 
-    private EditMode currentEditMode = EditMode.VERTEX_ADD;
+		smallBodyPicker = PickUtilEx.formSmallBodyPicker(refSmallBodyModel);
+		structurePicker = PickUtilEx.formStructurePicker(refStructureModel.getActivationActor());
 
-    private double[] lastDragPosition;
+		currEditMode = EditMode.CLICKABLE;
+		currVertexId = -1;
+		profileMode = refStructureModel.hasProfileMode();
+		lastDragPosition = null;
+	}
 
-    public ControlPointsStructurePicker(
-            Renderer renderer,
-            ModelManager modelManager,
-            ModelNames structureName
-            )
-    {
-        this.renWin = renderer.getRenderWindowPanel();
-        this.modelManager = modelManager;
-        this.structureModel = (ControlPointsStructureModel)modelManager.getModel(structureName);
+   @Override
+   public int getCursorType()
+   {
+		if (currEditMode == EditMode.DRAGGABLE)
+			return Cursor.HAND_CURSOR;
 
-        profileMode = structureModel.hasProfileMode();
+		return Cursor.CROSSHAIR_CURSOR;
+   }
 
-        smallBodyPicker = new vtkCellPicker();
-        smallBodyPicker.PickFromListOn();
-        smallBodyPicker.InitializePickList();
-        smallBodyModel = (PolyhedralModel)modelManager.getPolyhedralModel();
-        List<vtkProp> actors = smallBodyModel.getProps();
-        vtkPropCollection smallBodyPickList = smallBodyPicker.GetPickList();
-        smallBodyPickList.RemoveAllItems();
-        for (vtkProp act : actors)
-        {
-            smallBodyPicker.AddPickList(act);
-        }
-        smallBodyPicker.AddLocator(smallBodyModel.getCellLocator());
+	@Override
+	public boolean isExclusiveMode()
+	{
+		if (currVertexId >= 0)
+			return true;
 
-        structureActivationPicker = new vtkCellPicker();
-        structureActivationPicker.PickFromListOn();
-        structureActivationPicker.InitializePickList();
-        vtkPropCollection structureActivationPickList = structureActivationPicker.GetPickList();
-        structureActivationPickList.RemoveAllItems();
-        structureActivationPicker.AddPickList(structureModel.getActivationActor());
-    }
+		return false;
+	}
 
-    public void mousePressed(MouseEvent e)
+	@Override
+	public void mouseClicked(MouseEvent aEvent)
+	{
+		// We respond only if we are adding points
+		if (currEditMode != EditMode.CLICKABLE)
+			return;
+
+		// Bail if the 1st mouse button is not pressed
+		if (aEvent.getButton() != MouseEvent.BUTTON1)
+			return;
+
+		// Bail if a valid point was not picked
+		int pickSucceeded = doPick(aEvent, smallBodyPicker, refRenWin);
+		if (pickSucceeded != 1)
+			return;
+
+		vtkActor pickedActor = smallBodyPicker.GetActor();
+		Model model = refModelManager.getModel(pickedActor);
+		if (model == refSmallBodyModel)
+		{
+			double[] pos = smallBodyPicker.GetPickPosition();
+			// TODO: Is this conditional really necessary?
+			if (aEvent.getClickCount() == 1)
+			{
+				refStructureModel.insertVertexIntoActivatedStructure(pos);
+			}
+		}
+	}
+
+	@Override
+    public void mousePressed(MouseEvent aEvent)
     {
         // If we pressed a vertex of an existing structure, begin dragging that vertex.
         // If we pressed a point on the body, begin adding a new control point.
 
 
-        vertexIdBeingEdited = -1;
+        currVertexId = -1;
         lastDragPosition = null;
+        
+  		// Bail if we are not ready to do a drag operation
+  		if (currEditMode != EditMode.DRAGGABLE)
+  			return;
 
-        if (this.currentEditMode == EditMode.VERTEX_DRAG_OR_DELETE)
-        {
-            if (e.getButton() != MouseEvent.BUTTON1 && e.getButton() != MouseEvent.BUTTON3)
-                return;
+  		// Bail if either mouse button 1 or button 3 are not pressed
+  		if (aEvent.getButton() != MouseEvent.BUTTON1 && aEvent.getButton() != MouseEvent.BUTTON3)
+  			return;
+  		
+		// Bail if we failed to pick something
+		int pickSucceeded = doPick(aEvent, structurePicker, refRenWin);
+		if (pickSucceeded != 1)
+			return;
 
-            int pickSucceeded = doPick(e, structureActivationPicker, renWin);
-            if (pickSucceeded == 1)
-            {
-                vtkActor pickedActor = structureActivationPicker.GetActor();
+		// Determine what was picked
+		vtkActor pickedActor = structurePicker.GetActor();
+		if (pickedActor == refStructureModel.getActivationActor())
+		{
+			if (aEvent.getButton() == MouseEvent.BUTTON1)
+			{
+				currVertexId = structurePicker.GetCellId();
 
-                if (pickedActor == structureModel.getActivationActor())
-                {
-                    if (e.getButton() == MouseEvent.BUTTON1)
-                    {
-                        vertexIdBeingEdited = structureActivationPicker.GetCellId();
+				if (profileMode)
+				{
+					int lineId = refStructureModel.getStructureIdFromActivationCellId(currVertexId);
+					refStructureModel.activateStructure(lineId);
+				}
 
-                        if (profileMode)
-                        {
-                            int lineId = structureModel.getStructureIdFromActivationCellId(vertexIdBeingEdited);
-                            structureModel.activateStructure(lineId);
-                        }
-
-                        structureModel.selectCurrentStructureVertex(vertexIdBeingEdited);
-                    }
-                    else
-                    {
-                        vertexIdBeingEdited = -1;
-                        if (profileMode)
-                            structureModel.activateStructure(-1);
-                    }
-                }
-            }
-        }
-        else if (this.currentEditMode == EditMode.VERTEX_ADD)
-        {
-            if (e.getButton() != MouseEvent.BUTTON1)
-                return;
-
-            int pickSucceeded = doPick(e, smallBodyPicker, renWin);
-
-            if (pickSucceeded == 1)
-            {
-                vtkActor pickedActor = smallBodyPicker.GetActor();
-                Model model = modelManager.getModel(pickedActor);
-
-                if (model == smallBodyModel)
-                {
-                    double[] pos = smallBodyPicker.GetPickPosition();
-                    if (e.getClickCount() == 1)
-                    {
-                        structureModel.insertVertexIntoActivatedStructure(pos);
-                    }
-                }
-            }
-        }
+				refStructureModel.selectCurrentStructureVertex(currVertexId);
+			}
+			else
+			{
+				currVertexId = -1;
+				if (profileMode)
+					refStructureModel.activateStructure(-1);
+			}
+		}
     }
 
-    public void mouseReleased(MouseEvent e)
-    {
-        if (this.currentEditMode == EditMode.VERTEX_DRAG_OR_DELETE &&
-                vertexIdBeingEdited >= 0 &&
-                lastDragPosition != null)
-        {
-            int vertexId = vertexIdBeingEdited;
+	@Override
+	public void mouseReleased(MouseEvent aEvent)
+	{
+		if (this.currEditMode == EditMode.DRAGGABLE && currVertexId >= 0 && lastDragPosition != null)
+		{
+			int vertexId = currVertexId;
+			if (profileMode)
+				vertexId = refStructureModel.getVertexIdFromActivationCellId(currVertexId);
 
-            if (profileMode)
-                vertexId = structureModel.getVertexIdFromActivationCellId(vertexIdBeingEdited);
+			refStructureModel.updateActivatedStructureVertex(vertexId, lastDragPosition);
+		}
 
-            structureModel.updateActivatedStructureVertex(vertexId, lastDragPosition);
-        }
+		currVertexId = -1;
+	}
 
-        vertexIdBeingEdited = -1;
-    }
+	@Override
+	public void mouseDragged(MouseEvent aEvent)
+	{
+		// Bail if we are not in the proper edit mode or there is no vertex being edited
+		if (currEditMode != EditMode.DRAGGABLE || currVertexId < 0)
+			return;
 
-    public void mouseDragged(MouseEvent e)
-    {
-        //if (e.getButton() != MouseEvent.BUTTON1)
-        //    return;
+		// Bail if the left button is not pressed
+// 		if (e.getButton() != MouseEvent.BUTTON1)
+// 			return;
 
+		// Bail if we failed to pick something
+		int pickSucceeded = doPick(aEvent, smallBodyPicker, refRenWin);
+		if (pickSucceeded != 1)
+			return;
 
-        if (this.currentEditMode == EditMode.VERTEX_DRAG_OR_DELETE &&
-            vertexIdBeingEdited >= 0)
-        {
-            int pickSucceeded = doPick(e, smallBodyPicker, renWin);
-            if (pickSucceeded == 1)
-            {
-                vtkActor pickedActor = smallBodyPicker.GetActor();
-                Model model = modelManager.getModel(pickedActor);
+		vtkActor pickedActor = smallBodyPicker.GetActor();
+		Model model = refModelManager.getModel(pickedActor);
 
-                if (model == smallBodyModel)
-                {
-                    lastDragPosition = smallBodyPicker.GetPickPosition();
+		if (model == refSmallBodyModel)
+		{
+			lastDragPosition = smallBodyPicker.GetPickPosition();
 
-                    structureModel.moveActivationVertex(vertexIdBeingEdited, lastDragPosition);
-                }
-            }
-        }
-    }
+			refStructureModel.moveActivationVertex(currVertexId, lastDragPosition);
+		}
+	}
 
+	@Override
+	public void mouseMoved(MouseEvent aEvent)
+	{
+		int pickSucceeded = doPick(aEvent, structurePicker, refRenWin);
 
-    public void mouseMoved(MouseEvent e)
-    {
-        int pickSucceeded = doPick(e, structureActivationPicker, renWin);
+		// If we're in profile mode, then do not allow dragging of a vertex if we're
+		// in the middle of creating a new profile. We can determine if we're in the
+		// middle of creating one if the last line in the LineModel has fewer than 2
+		// vertices.
+		boolean profileModeOkToDrag = true;
+		if (profileMode)
+		{
+			int lineId = refStructureModel.getNumberOfStructures() - 1;
+			if (lineId >= 0)
+			{
+				Line line = (Line) refStructureModel.getStructure(lineId);
+				if (line.controlPointIds.size() < 2)
+					profileModeOkToDrag = false;
+			}
+		}
 
-        // If we're in profile mode, then do not allow dragging of a vertex if we're
-        // in the middle of creating a new profile. We can determine if we're in the
-        // middle of creating one if the last line in the LineModel has fewer than 2
-        // vertices.
-        boolean profileModeOkToDrag = true;
-        if (profileMode)
-        {
-            int lineId = structureModel.getNumberOfStructures() - 1;
-            if (lineId >= 0)
-            {
-                Line line = (Line)structureModel.getStructure(lineId);
-                if (line.controlPointIds.size() < 2)
-                    profileModeOkToDrag = false;
-            }
-        }
+		if (pickSucceeded == 1 && structurePicker.GetActor() == refStructureModel.getActivationActor()
+				&& profileModeOkToDrag)
+			currEditMode = EditMode.DRAGGABLE;
+		else
+			currEditMode = EditMode.CLICKABLE;
 
-        if (pickSucceeded == 1 &&
-            structureActivationPicker.GetActor() == structureModel.getActivationActor() &&
-            profileModeOkToDrag)
-        {
-            if (renWin.getComponent().getCursor().getType() != Cursor.HAND_CURSOR)
-                renWin.getComponent().setCursor(new Cursor(Cursor.HAND_CURSOR));
+		GuiUtil.updateCursor(refRenWin.getComponent(), getCursorType());
+	}
 
-            currentEditMode = EditMode.VERTEX_DRAG_OR_DELETE;
-        }
-        else
-        {
-            if (renWin.getComponent().getCursor().getType() != getDefaultCursor())
-                renWin.getComponent().setCursor(new Cursor(getDefaultCursor()));
-
-            currentEditMode = EditMode.VERTEX_ADD;
-        }
-    }
-
-    @Override
-    public int getDefaultCursor()
-    {
-        return Cursor.CROSSHAIR_CURSOR;
-    }
-
-    public void keyPressed(KeyEvent e)
-    {
-        int keyCode = e.getKeyCode();
-        if (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE)
-        {
-            structureModel.removeCurrentStructureVertex();
-        }
-    }
+	@Override
+	public void keyPressed(KeyEvent aEvent)
+	{
+		int keyCode = aEvent.getKeyCode();
+		if (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE)
+		{
+			refStructureModel.removeCurrentStructureVertex();
+		}
+	}
 }

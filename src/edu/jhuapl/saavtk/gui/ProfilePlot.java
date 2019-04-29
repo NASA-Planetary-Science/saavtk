@@ -81,7 +81,7 @@ public class ProfilePlot implements ChartMouseListener, PropertyChangeListener
 	private void setSeriesColor(int lineId)
 	{
 		Line line = (Line) lineModel.getStructure(lineId);
-		int[] c = line.color;
+		int[] c = line.getColor();
 		((XYPlot) chartPanel.getChart().getPlot()).getRenderer().setSeriesPaint(lineId, new Color(c[0], c[1], c[2], c[3]));
 	}
 
@@ -105,7 +105,7 @@ public class ProfilePlot implements ChartMouseListener, PropertyChangeListener
 		List<Double> distance = new ArrayList<Double>();
 		try
 		{
-			if (!line.hidden && line.controlPoints.size() == 2)
+			if (!line.getHidden() && line.getControlPoints().size() == 2)
 			{
 				if (coloringIndex >= 0 && coloringIndex < smallBodyModel.getNumberOfColors())
 				{
