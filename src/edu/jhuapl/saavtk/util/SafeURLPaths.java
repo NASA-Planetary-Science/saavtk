@@ -166,7 +166,7 @@ public class SafeURLPaths
             // Assume string is a file path. Convert it to canonical form and replace backslashes with forward slashes.
             try
             {
-                string = new File(string).getCanonicalPath().replace("\\", "/");
+                string = new File(string).getCanonicalPath();
             }
             catch (IOException e)
             {
@@ -178,7 +178,8 @@ public class SafeURLPaths
             // Create a file:///absolute/url out of the string with exactly 3 slashes after file: no matter what OS.
             string = "file:///" + string.replaceFirst("^/", "");
         }
-        return string;
+
+        return string.replace("\\", "/");
     }
 
     /**
