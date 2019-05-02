@@ -29,7 +29,6 @@ import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.ColoringDataManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.FileCache;
-import edu.jhuapl.saavtk.util.FileCache.FileInfo;
 import edu.jhuapl.saavtk.util.SafeURLPaths;
 import edu.jhuapl.saavtk.util.file.DataFileReader;
 import edu.jhuapl.saavtk.util.file.DataFileReader.FileFormatException;
@@ -302,9 +301,9 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
         String fileName = null;
         if (urlString != null)
         {
-            FileInfo fileInfo = FileCache.getFileInfoFromServer(urlString);
-            fileName = fileInfo.getFile().getPath();
+            fileName = FileCache.getDownloadFile(urlString).toString();
         }
+
         return fileName;
     }
 
