@@ -284,6 +284,87 @@ public final class FileCache
     private static boolean offlineMode;
     private static String offlineModeRootFolder;
 
+    private static final UrlAccessManager urlAccessManager = createUrlAccessManager();
+
+    private static final FileCacheManager fileCacheManager = createFileCacheManager();
+
+    public static Path getDownloadPath(String urlString)
+    {
+        return urlAccessManager.getDownloadPath(urlString);
+    }
+
+    public static File getDownloadFile(String urlString)
+    {
+        Path downloadPath = getDownloadPath(urlString);
+        return fileCacheManager.getFile(downloadPath.toString());
+    }
+
+    public static UrlInfo getUrlInfo(String urlString)
+    {
+        return urlAccessManager.getInfo(urlString, false);
+    }
+
+    public static UrlInfo refreshUrlInfo(String urlString)
+    {
+        return urlAccessManager.getInfo(urlString, true);
+    }
+
+    public static File refreshDownload(String urlString) throws IOException, InterruptedException
+    {
+        URL url = urlAccessManager.getUrl(urlString);
+        File file = getDownloadFile(urlString);
+
+        urlAccessManager.updateDownloadedFile(url, file);
+
+        return file;
+    }
+
+    private static UrlAccessManager createUrlAccessManager()
+    {
+        UrlAccessManager result = null;
+        try
+        {
+            result = UrlAccessManager.of(Configuration.getDataRootURL());
+        }
+        catch (@SuppressWarnings("unused") UnknownHostException e)
+        {
+            // This is interpreted to mean that there is no internet connection just now.
+            setOfflineMode(true);
+
+            // Still need a valid access manager in case internet connection comes back.
+            UrlAccessManager.setEnableServerAccess(false);
+            try
+            {
+                result = UrlAccessManager.of(Configuration.getDataRootURL());
+            }
+            catch (IOException e1)
+            {
+                throw new AssertionError(e1);
+            }
+        }
+        catch (IOException e)
+        {
+            throw new AssertionError(e);
+        }
+
+        return result;
+    }
+
+    private static FileCacheManager createFileCacheManager()
+    {
+        FileCacheManager result = null;
+        try
+        {
+            result = FileCacheManager.of(new File(Configuration.getCacheDir()));
+        }
+        catch (IOException e)
+        {
+            throw new AssertionError(e);
+        }
+
+        return result;
+    }
+
     /**
      * Get information about the resource identified by the provided URL string or
      * path segment. If the argument specifies a lexically valid URL string, it is
@@ -535,19 +616,32 @@ public final class FileCache
      *             error is encountered when attempting to access the server for the
      *             remote file
      */
-    public static boolean isFileGettable(String urlOrPathSegment) throws NoInternetAccessException
+    public static boolean isFileGettable(String urlOrPathSegment)
     {
-        FileInfo fileInfo = getFileInfoFromServer(urlOrPathSegment);
-        if (fileInfo.isExistsLocally() || (!offlineMode && fileInfo.isExistsOnServer() == YesOrNo.YES))
+        boolean result = false;
+
+        Path downloadPath = urlAccessManager.getDownloadPath(urlOrPathSegment);
+
+        if (fileCacheManager.isAccessible(downloadPath.toString()))
         {
-            return true;
+            result = true;
         }
-        else if (fileInfo.isURLAccessAuthorized() == YesOrNo.NO)
+        else
         {
-            URL url = fileInfo.getURL();
-            throw new UnauthorizedAccessException("Cannot access information about restricted URL: " + url, url);
+            UrlInfo urlInfo = urlAccessManager.getInfo(urlOrPathSegment, false);
+            switch (urlInfo.getStatus())
+            {
+            case ACCESSIBLE:
+                result = true;
+                break;
+            case NOT_AUTHORIZED:
+                throw new UnauthorizedAccessException("Cannot access information about restricted URL: ", urlAccessManager.getUrl(urlOrPathSegment));
+            default:
+                break;
+            }
         }
-        return false;
+
+        return result;
     }
 
     /**
