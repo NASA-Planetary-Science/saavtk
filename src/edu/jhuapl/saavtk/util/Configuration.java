@@ -27,9 +27,6 @@ import org.apache.commons.io.FileUtils;
 
 import com.google.common.base.Preconditions;
 
-import edu.jhuapl.saavtk.util.FileCache.FileInfo;
-import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
-
 /**
  * Static class containing general settings needed by any application.
  */
@@ -114,9 +111,10 @@ public class Configuration
 
         String restrictedAccessUrl = SAFE_URL_PATHS.getString(restrictedAccessRoot.toString(), restrictedFileName);
 
-        // First confirm queries for information at least work. If not, don't try to update credentials.
-        FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessUrl);
-        if (!info.isURLAccessAuthorized().equals(YesOrNo.NO))
+        // The only condition that can be addressed here is if the user is not
+        // authorized. If that's not the "problem", don't do anything.
+        UrlInfo info = FileCache.refreshUrlInfo(restrictedAccessUrl);
+        if (info.getStatus() != UrlInfo.UrlStatus.NOT_AUTHORIZED)
         {
             return;
         }
@@ -140,8 +138,8 @@ public class Configuration
                             {
                                 foundCredentials = true;
                                 setupPasswordAuthentication(userName, password, maximumNumberTries);
-                                info = FileCache.getFileInfoFromServer(restrictedAccessUrl);
-                                if (info.isURLAccessAuthorized().equals(YesOrNo.YES))
+                                info = FileCache.refreshUrlInfo(restrictedAccessUrl);
+                                if (info.getStatus() == UrlInfo.UrlStatus.ACCESSIBLE)
                                 {
                                     userPasswordAccepted = true;
                                     break;
@@ -214,7 +212,8 @@ public class Configuration
             {
                 if (name.isEmpty())
                 {
-                    // Blank password is acceptable, but is not considered "valid" in the sense of this method.
+                    // Blank password is acceptable, but is not considered "valid" in the sense of
+                    // this method.
                     name = null;
                     password = null;
                 }
@@ -222,11 +221,19 @@ public class Configuration
                 {
                     // Attempt authentication.
                     setupPasswordAuthentication(name, password, maximumNumberTries);
-                    FileInfo info = FileCache.getFileInfoFromServer(restrictedAccessUrl);
-                    if (!info.isURLAccessAuthorized().equals(YesOrNo.YES))
+                    UrlInfo info = FileCache.refreshUrlInfo(restrictedAccessUrl);
+                    UrlInfo.UrlStatus status = info.getStatus();
+                    if (status == UrlInfo.UrlStatus.NOT_AUTHORIZED)
                     {
                         // Try again.
                         promptLabel.setText("<html>Invalid user name or password. Try again, or click \"Cancel\" to continue without password. Some models may not be available.</html>");
+                        repromptUser = true;
+                        continue;
+                    }
+                    else if (status != UrlInfo.UrlStatus.ACCESSIBLE)
+                    {
+                        // Try again.
+                        promptLabel.setText("<html>Server problem. Try again, or click \"Cancel\" to continue without password. If this persists, contact sbmt.jhuapl.edu. Some models may not be available without a password.</html>");
                         repromptUser = true;
                         continue;
                     }
