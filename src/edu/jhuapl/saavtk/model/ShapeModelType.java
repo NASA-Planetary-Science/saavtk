@@ -77,6 +77,7 @@ public final class ShapeModelType
     public static final ShapeModelType ALTWG_SPC_v20190121 = create("ALTWG-SPC-v20190121");
     public static final ShapeModelType ALTWG_SPC_v20190207a = create("ALTWG-SPC-v20190207a");
     public static final ShapeModelType ALTWG_SPC_v20190207b = create("ALTWG-SPC-v20190207b");
+    public static final ShapeModelType ALTWG_SPC_v20190414 = create("ALTWG-SPC-v20190414");
     public static final ShapeModelType MU69_TEST5H_1_FINAL_ORIENTED = create("mu69_test5h_1_final_oriented");
 
     private final String identifier;
