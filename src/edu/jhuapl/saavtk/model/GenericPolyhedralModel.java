@@ -2373,6 +2373,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 			this.smallBodyPolyData.Modified();
 
+
 			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 		}
 	}
@@ -2574,7 +2575,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 
 		scaleBarWidthInKm = scaleBarWidthInPixels * pixelSizeInKm;
-
+		
 		if (pixelSizeInKm > 0.0 && showScaleBar)
 		{
 			scaleBarActor.VisibilityOn();
@@ -2595,6 +2596,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+
 	}
 
 	@Override
