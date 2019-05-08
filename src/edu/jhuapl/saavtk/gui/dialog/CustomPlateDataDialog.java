@@ -77,7 +77,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 	private String getConfigFilename()
 	{
-		return modelManager.getPolyhedralModel().getConfigFilename();
+		return modelManager.getPolyhedralModel().getPlateConfigFilename();
 	}
 
 	private void updateConfigFile()

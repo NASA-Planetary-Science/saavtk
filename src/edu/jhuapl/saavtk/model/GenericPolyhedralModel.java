@@ -569,6 +569,12 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	{
 		return getCustomDataFolder() + File.separator + "config.txt";
 	}
+	
+	@Override
+	public String getPlateConfigFilename()
+	{
+		return getCustomDataFolder() + File.separator + "plateConfig.txt";
+	}
 
 	@Override
 	public String getDEMConfigFilename()
@@ -605,13 +611,13 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		{
 			// Assume this just means metadata have not been saved before now.
 			// Fall through to the old way of loading metadata.
-			String configFilename = getConfigFilename();
+			String configFilename = getPlateConfigFilename();
 
 			if (!(new File(configFilename).exists()))
 				return;
-
+			
 			MapUtil configMap = new MapUtil(configFilename);
-
+			
 			convertOldConfigFormatToNewVersion(configMap);
 
 			if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_UNITS) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_HAS_NULLS))
@@ -2367,6 +2373,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 			this.smallBodyPolyData.Modified();
 
+
 			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 		}
 	}
@@ -2568,7 +2575,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 
 		scaleBarWidthInKm = scaleBarWidthInPixels * pixelSizeInKm;
-
+		
 		if (pixelSizeInKm > 0.0 && showScaleBar)
 		{
 			scaleBarActor.VisibilityOn();
@@ -2589,6 +2596,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+
 	}
 
 	@Override

@@ -331,6 +331,22 @@ public class PolygonModel extends LineModel
 			pol.setShowInterior(smallBodyModel, false);
 		}
 	}
+	
+	@Override
+	public void savePlateDataInsideStructure(int[] idx, File file) throws IOException
+	{
+		
+		vtkAppendPolyData appendFilter = new vtkAppendPolyData();
+		for (int i = 0; i < idx.length; i++)
+		{
+			Polygon pol = getPolygon(idx[i]);
+			pol.setShowInterior(smallBodyModel, true);
+			appendFilter.AddInputData(pol.interiorPolyData);
+			appendFilter.Update();
+			pol.setShowInterior(smallBodyModel, false);
+		}
+		smallBodyModel.savePlateDataInsidePolydata(appendFilter.GetOutput(), file);
+	}
 
 	@Override
 	public FacetColoringData[] getPlateDataInsideStructure(int idx)
@@ -350,6 +366,23 @@ public class PolygonModel extends LineModel
 			pol.setShowInterior(smallBodyModel, false);
 			return data;
 		}
+	}
+	
+	@Override
+	public FacetColoringData[] getPlateDataInsideStructure(int[] idx)
+	{
+		vtkAppendPolyData appendFilter = new vtkAppendPolyData();
+		for (int i = 0; i < idx.length; i++)
+		{
+			Polygon pol = getPolygon(idx[i]);
+			pol.setShowInterior(smallBodyModel, true);
+			appendFilter.AddInputData(pol.interiorPolyData);
+			appendFilter.Update();
+			pol.setShowInterior(smallBodyModel, false);
+		}
+		
+		FacetColoringData[] data = smallBodyModel.getPlateDataInsidePolydata(appendFilter.GetOutput());
+		return data;
 	}
 
 	@Override
