@@ -42,17 +42,6 @@ public class FileCacheManager
 
     public File getFile(String fileIdentifier)
     {
-//        Path path = SAFE_URL_PATHS.get(fileIdentifier);
-//        Path absolutePath = path.toAbsolutePath();
-//
-//        if (!path.equals(absolutePath))
-//        {
-//            // The argument supplied a relative path. Resolve it against the
-//            // root directory of the cache.
-//            path = cacheRoot.resolve(fileIdentifier);
-//        }
-//
-//        return path.toFile();
         Path filePath = SAFE_URL_PATHS.get(cacheRoot.toString(), fileIdentifier);
 
         return filePath.toFile();
