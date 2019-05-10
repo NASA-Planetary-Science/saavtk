@@ -2576,27 +2576,32 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		scaleBarWidthInKm = scaleBarWidthInPixels * pixelSizeInKm;
 		
-		if (pixelSizeInKm > 0.0 && showScaleBar)
-		{
-			scaleBarActor.VisibilityOn();
-			scaleBarTextActor.VisibilityOn();
-		}
-		else
-		{
-			scaleBarActor.VisibilityOff();
-			scaleBarTextActor.VisibilityOff();
-		}
+//		if (pixelSizeInKm > 0.0 && showScaleBar)
+//		{
+//			scaleBarActor.VisibilityOn();
+//			scaleBarTextActor.VisibilityOn();
+//		}
+//		else
+//		{
+//			scaleBarActor.VisibilityOff();
+//			scaleBarTextActor.VisibilityOff();
+//		}
+//
+//		if (pixelSizeInKm > 0.0)
+//		{
+//			if (scaleBarWidthInKm < 1.0)
+//				scaleBarTextActor.SetInput(String.format("%.2f m", 1000.0 * scaleBarWidthInKm));
+//			else
+//				scaleBarTextActor.SetInput(String.format("%.2f km", scaleBarWidthInKm));
+//		}
 
-		if (pixelSizeInKm > 0.0)
-		{
-			if (scaleBarWidthInKm < 1.0)
-				scaleBarTextActor.SetInput(String.format("%.2f m", 1000.0 * scaleBarWidthInKm));
-			else
-				scaleBarTextActor.SetInput(String.format("%.2f km", scaleBarWidthInKm));
-		}
+//		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-
+	}
+	
+	public double getScaleBarWidthInKm()
+	{
+		return scaleBarWidthInKm;
 	}
 
 	@Override

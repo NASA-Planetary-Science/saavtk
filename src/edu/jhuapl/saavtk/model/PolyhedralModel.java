@@ -289,6 +289,8 @@ public abstract class PolyhedralModel extends AbstractModel
 
 	public abstract void drawPolygon(List<LatLon> controlPoints, vtkPolyData outputInterior, vtkPolyData outputBoundary);
 	
+	public abstract double getScaleBarWidthInKm();
+	
 	/**
 	 * Method that returns the average surface normal over the the entire
 	 * PolyhedralModel.
