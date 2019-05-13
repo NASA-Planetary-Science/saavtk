@@ -18,21 +18,21 @@ public class CloseableUrlConnection implements Closeable
         HEAD
     }
 
-    public static CloseableUrlConnection of(URL url, UrlInfo urlInfo, HttpRequestMethod method) throws IOException
+    public static CloseableUrlConnection of(UrlInfo urlInfo, HttpRequestMethod method) throws IOException
     {
-        Preconditions.checkNotNull(url);
         Preconditions.checkNotNull(urlInfo);
         Preconditions.checkNotNull(method);
 
-        return new CloseableUrlConnection(url, urlInfo, method);
+        return new CloseableUrlConnection(urlInfo, method);
     }
 
     private final String description;
     private final URLConnection connection;
 
-    protected CloseableUrlConnection(URL url, UrlInfo urlInfo, HttpRequestMethod method) throws IOException
+    protected CloseableUrlConnection(UrlInfo urlInfo, HttpRequestMethod method) throws IOException
     {
         this.description = "Connection with method \"" + method + "\" from " + urlInfo.toString();
+        URL url = urlInfo.getState().getUrl();
         this.connection = open(url, urlInfo, method);
     }
 
@@ -101,9 +101,9 @@ public class CloseableUrlConnection implements Closeable
 
     private static class MyConnection extends CloseableUrlConnection
     {
-        MyConnection(URL url, UrlInfo urlInfo, HttpRequestMethod method) throws IOException
+        MyConnection(UrlInfo urlInfo, HttpRequestMethod method) throws IOException
         {
-            super(url, urlInfo, method);
+            super(urlInfo, method);
         }
 
         @Override
@@ -118,15 +118,23 @@ public class CloseableUrlConnection implements Closeable
 
     public static void main(String[] args)
     {
-        try (CloseableUrlConnection connection = new MyConnection(new URL("http://spud.com"), UrlInfo.of(), HttpRequestMethod.HEAD))
+        try
         {
-            System.err.println(connection);
+            UrlInfo urlInfo = UrlInfo.of(new URL("http://spud.com"));
+            try (CloseableUrlConnection connection = new MyConnection(urlInfo, HttpRequestMethod.HEAD))
+            {
+                System.err.println(connection);
 
-            System.err.println(new URL("http://MyCaseSensie/c:\\url\\foRMed\\file.txt").getPath());
+                System.err.println(new URL("http://MyCaseSensie/c:\\url\\foRMed\\file.txt").getPath());
+            }
+            catch (IOException e)
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
         }
-        catch (IOException e)
+        catch (MalformedURLException e)
         {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }

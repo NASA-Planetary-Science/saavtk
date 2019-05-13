@@ -76,7 +76,7 @@ public class UrlAccessManager
 
         if (isServerAccessEnabled())
         {
-            try (CloseableUrlConnection connection = CloseableUrlConnection.of(rootUrl, rootInfo, HttpRequestMethod.HEAD))
+            try (CloseableUrlConnection connection = CloseableUrlConnection.of(rootInfo, HttpRequestMethod.HEAD))
             {
                 rootInfo.update(connection.getConnection());
             }
@@ -305,7 +305,7 @@ public class UrlAccessManager
         {
             if (result.getState().getStatus() == UrlStatus.UNKNOWN || forceUpdate)
             {
-                try (CloseableUrlConnection connection = CloseableUrlConnection.of(url, result, HttpRequestMethod.HEAD))
+                try (CloseableUrlConnection connection = CloseableUrlConnection.of(result, HttpRequestMethod.HEAD))
                 {
                     result.update(connection.getConnection());
                 }

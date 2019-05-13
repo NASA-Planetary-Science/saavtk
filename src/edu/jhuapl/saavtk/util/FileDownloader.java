@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.util;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,7 +9,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.DecimalFormat;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 
 import javax.swing.SwingWorker;
@@ -17,39 +22,150 @@ import com.google.common.base.Preconditions;
 import com.google.common.io.CountingInputStream;
 
 import edu.jhuapl.saavtk.util.CloseableUrlConnection.HttpRequestMethod;
+import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
-public class UrlDownloader extends SwingWorker<Void, Void>
+public class FileDownloader extends SwingWorker<Void, Void>
 {
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
+    protected static final DecimalFormat PF = new DecimalFormat("0%");
+    private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
 
-    public static UrlDownloader of(UrlInfo urlInfo, File file)
+    public static final String PROGRESS_PROPERTY = "downloadProgress";
+    public static final String DONE_PROPERTY = "downloadDone";
+    public static final String CANCELED_PROPERTY = "downloadCanceled";
+
+    protected enum ByteScale
+    {
+        TBYTES("TB", 1.e12),
+        GBYTES("GB", 1.e9),
+        MBTYES("MB", 1.e6), //
+        KBYTES("kB", 1.e3), //
+        ;
+
+        protected static final DecimalFormat DF = new DecimalFormat("0.0");
+
+        public static String describe(double numberOfBytes)
+        {
+            for (ByteScale scale : values())
+            {
+                if (numberOfBytes > scale.multiplier)
+                {
+                    return DF.format(numberOfBytes / scale.multiplier) + " " + scale.description;
+                }
+            }
+
+            return numberOfBytes + " Bytes";
+        }
+
+        private final String description;
+        private final double multiplier;
+
+        private ByteScale(String name, double scale)
+        {
+            this.description = name;
+            this.multiplier = scale;
+        }
+
+    }
+
+    public static FileDownloader of(UrlInfo urlInfo, FileInfo fileInfo, boolean forceDownload)
     {
         Preconditions.checkNotNull(urlInfo);
-        Preconditions.checkNotNull(file);
+        Preconditions.checkNotNull(fileInfo);
 
-        return new UrlDownloader(urlInfo, file);
+        return new FileDownloader(urlInfo, fileInfo, forceDownload);
     }
 
     private final UrlInfo urlInfo;
     private final File file;
+    private final FileInfo fileInfo;
+    private final boolean forceDownload;
+    private volatile Boolean unzipping;
 
-    protected UrlDownloader(UrlInfo urlInfo, File file)
+    protected FileDownloader(UrlInfo urlInfo, FileInfo fileInfo, boolean forceDownload)
     {
         this.urlInfo = urlInfo;
-        this.file = file;
+        this.file = fileInfo.getState().getFile();
+        this.fileInfo = fileInfo;
+        this.forceDownload = forceDownload;
+        this.unzipping = Boolean.FALSE;
+    }
+
+    public UrlInfo getUrlInfo()
+    {
+        return urlInfo;
+    }
+
+    public FileInfo getFileInfo()
+    {
+        return fileInfo;
+    }
+
+    public String createProgressMessage()
+    {
+        if (unzipping)
+        {
+            return createProgressMessage("Unzipping " + file.getName(), FileUtil.getDecompressedSize());
+        }
+        else
+        {
+            return createProgressMessage("Downloading " + file.getName(), urlInfo.getState().getContentLength());
+        }
+    }
+
+    public void downloadInBackground()
+    {
+        THREAD_POOL.execute(this);
+    }
+
+    @Override
+    public void done()
+    {
+        fileInfo.update();
+
+        firePropertyChange(isCancelled() ? CANCELED_PROPERTY : DONE_PROPERTY, null, fileInfo);
     }
 
     @Override
     protected Void doInBackground() throws Exception
     {
-        download();
+        downloadIfNecessary();
+        unzipIfNecessary();
+
         return null;
+    }
+
+    protected void downloadIfNecessary() throws IOException, InterruptedException
+    {
+        if (forceDownload || isFileOutOfDate())
+        {
+            download();
+        }
+        else if (urlInfo.getState().getStatus() == UrlStatus.UNKNOWN)
+        {
+            try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.GET))
+            {
+                downloadIfNecessary(closeableConnection);
+            }
+        }
+    }
+
+    protected void downloadIfNecessary(CloseableUrlConnection closeableConnection) throws IOException, InterruptedException
+    {
+        urlInfo.update(closeableConnection.getConnection());
+
+        if (forceDownload || isFileOutOfDate())
+        {
+            download(closeableConnection);
+        }
     }
 
     protected void download() throws IOException, InterruptedException
     {
         try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.GET))
         {
+            urlInfo.update(closeableConnection.getConnection());
+
             download(closeableConnection);
         }
     }
@@ -58,8 +174,6 @@ public class UrlDownloader extends SwingWorker<Void, Void>
     {
         URLConnection connection = closeableConnection.getConnection();
 
-        urlInfo.update(connection);
-
         URL url = connection.getURL();
         boolean gunzip = url.getPath().toLowerCase().endsWith(".gz");
 
@@ -67,7 +181,7 @@ public class UrlDownloader extends SwingWorker<Void, Void>
         long lastModifiedTime = connection.getLastModified();
 
         File parentFile = file.getParentFile();
-        Path tmpFilePath = SAFE_URL_PATHS.get(parentFile.getPath(), UUID.randomUUID().toString());
+        Path tmpFilePath = SAFE_URL_PATHS.get(file.toPath() + "-" + UUID.randomUUID().toString());
 
         // Don't use try with resources because there are two references to the same
         // underlying stream.
@@ -76,6 +190,7 @@ public class UrlDownloader extends SwingWorker<Void, Void>
 
         try
         {
+            unzipping = Boolean.FALSE;
             // Count characters that were read based on the connection's original stream,
             // i.e.,
             // before any unzipping is performed.
@@ -94,10 +209,14 @@ public class UrlDownloader extends SwingWorker<Void, Void>
                     final int bufferSize = inputStream.available();
                     byte[] buff = new byte[bufferSize];
                     int len;
+                    double progress = 0;
                     while ((len = inputStream.read(buff)) > 0 && !isCancelled())
                     {
                         os.write(buff, 0, len);
-                        setProgress((int) (100. * countingInputStream.getCount() / totalByteCount));
+                        double oldProgress = progress;
+                        progress = Math.min(100. * countingInputStream.getCount() / totalByteCount, 99.);
+                        setProgress((int) progress);
+                        firePropertyChange(PROGRESS_PROPERTY, (int) oldProgress, (int) progress);
                     }
 
                     if (isCancelled())
@@ -105,7 +224,8 @@ public class UrlDownloader extends SwingWorker<Void, Void>
                         throw new InterruptedException();
                     }
 
-                    setProgress(100);
+                    setProgress(99);
+                    firePropertyChange(PROGRESS_PROPERTY, progress, 99);
                 }
             }
         }
@@ -129,7 +249,7 @@ public class UrlDownloader extends SwingWorker<Void, Void>
             }
         }
 
-        // Okay, now rename the file to the real name.
+        // Rename the temporary file to the real name.
         File tmpFile = tmpFilePath.toFile();
         if (tmpFile.exists())
         {
@@ -144,6 +264,81 @@ public class UrlDownloader extends SwingWorker<Void, Void>
             if (lastModifiedTime > 0)
                 file.setLastModified(lastModifiedTime);
         }
+    }
+
+    protected boolean isFileOutOfDate()
+    {
+        return !file.exists() || urlInfo.getState().getLastModified() > file.lastModified();
+    }
+
+    protected void unzipIfNecessary() throws IOException, InterruptedException
+    {
+        String filePath = file.getAbsolutePath();
+        if (filePath.matches("^.*\\.[Zz][Ii][Pp]$"))
+        {
+            File zipRootFolder = new File(filePath.substring(0, filePath.length() - ".zip".length()));
+            if (!zipRootFolder.isDirectory())
+            {
+                if (!file.exists())
+                {
+                    throw new FileNotFoundException("Cannot unzip file " + filePath);
+                }
+                unzip();
+            }
+        }
+    }
+
+    protected void unzip() throws InterruptedException
+    {
+        AtomicBoolean done = new AtomicBoolean(false);
+        Runnable runnable = () -> {
+            try
+            {
+                FileUtil.unzipFile(file);
+            }
+            finally
+            {
+                done.set(true);
+            }
+        };
+
+        int oldProgress = getProgress();
+
+        try
+        {
+            unzipping = Boolean.TRUE;
+
+            THREAD_POOL.execute(runnable);
+
+            while (!done.get())
+            {
+                int progress = Math.min((int) FileUtil.getUnzipProgress(), 99);
+                setProgress(progress);
+                firePropertyChange(PROGRESS_PROPERTY, oldProgress, progress);
+                oldProgress = progress;
+
+                if (isCancelled())
+                {
+                    throw new InterruptedException();
+                }
+
+                Thread.sleep(333);
+            }
+        }
+        finally
+        {
+            setProgress(99);
+            firePropertyChange(PROGRESS_PROPERTY, oldProgress, 99);
+        }
+    }
+
+    protected String createProgressMessage(String prefix, long contentLength)
+    {
+        double percentDownloaded = getProgress() / 100.;
+        long progressInBytes = (long) (percentDownloaded * contentLength);
+
+        return "<html>" + prefix + "<br>" + PF.format(percentDownloaded) + " complete (" + //
+                ByteScale.describe(progressInBytes) + " of " + ByteScale.describe(contentLength) + ")</html>";
     }
 
 }
