@@ -6,7 +6,6 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.file.Paths;
 
 import com.google.common.base.Preconditions;
 
@@ -19,21 +18,22 @@ public class CloseableUrlConnection implements Closeable
         HEAD
     }
 
-    public static CloseableUrlConnection of(UrlInfo urlInfo, HttpRequestMethod method) throws IOException
+    public static CloseableUrlConnection of(URL url, UrlInfo urlInfo, HttpRequestMethod method) throws IOException
     {
+        Preconditions.checkNotNull(url);
         Preconditions.checkNotNull(urlInfo);
         Preconditions.checkNotNull(method);
 
-        return new CloseableUrlConnection(urlInfo, method);
+        return new CloseableUrlConnection(url, urlInfo, method);
     }
 
-    private final String desciption;
+    private final String description;
     private final URLConnection connection;
 
-    protected CloseableUrlConnection(UrlInfo urlInfo, HttpRequestMethod method) throws IOException
+    protected CloseableUrlConnection(URL url, UrlInfo urlInfo, HttpRequestMethod method) throws IOException
     {
-        this.desciption = "Connection with method \"" + method + "\" from " + urlInfo.toString();
-        this.connection = open(urlInfo, method);
+        this.description = "Connection with method \"" + method + "\" from " + urlInfo.toString();
+        this.connection = open(url, urlInfo, method);
     }
 
     public URLConnection getConnection()
@@ -43,16 +43,18 @@ public class CloseableUrlConnection implements Closeable
 
     /**
      * Careful overriding this; it is called in the base class constructor. In
-     * particular, don't call getConnection().
+     * particular, don't call getConnection() from any implementation, as this
+     * method is used to create the connection field.
      * 
+     * @param url TODO
      * @param urlInfo
      * @param method
+     * 
      * @return
      * @throws IOException
      */
-    protected URLConnection open(UrlInfo urlInfo, HttpRequestMethod method) throws IOException
+    protected URLConnection open(URL url, UrlInfo urlInfo, HttpRequestMethod method) throws IOException
     {
-        URL url = urlInfo.getUrl();
         URL uncachedUrl;
         try
         {
@@ -94,18 +96,18 @@ public class CloseableUrlConnection implements Closeable
     @Override
     public String toString()
     {
-        return desciption;
+        return description;
     }
 
     private static class MyConnection extends CloseableUrlConnection
     {
-        MyConnection(UrlInfo urlInfo, HttpRequestMethod method) throws IOException
+        MyConnection(URL url, UrlInfo urlInfo, HttpRequestMethod method) throws IOException
         {
-            super(urlInfo, method);
+            super(url, urlInfo, method);
         }
 
         @Override
-        protected URLConnection open(@SuppressWarnings("unused") UrlInfo urlInfo, @SuppressWarnings("unused") HttpRequestMethod method) throws IOException
+        protected URLConnection open(@SuppressWarnings("unused") URL url, @SuppressWarnings("unused") UrlInfo urlInfo, @SuppressWarnings("unused") HttpRequestMethod method) throws IOException
         {
             System.err.println("bleh!");
 
@@ -116,7 +118,7 @@ public class CloseableUrlConnection implements Closeable
 
     public static void main(String[] args)
     {
-        try (CloseableUrlConnection connection = new MyConnection(UrlInfo.of(new URL("http://spud.com"), Paths.get("")), HttpRequestMethod.HEAD))
+        try (CloseableUrlConnection connection = new MyConnection(new URL("http://spud.com"), UrlInfo.of(), HttpRequestMethod.HEAD))
         {
             System.err.println(connection);
 
