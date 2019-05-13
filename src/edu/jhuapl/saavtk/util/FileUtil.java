@@ -29,6 +29,7 @@ public class FileUtil
 {
     private static volatile boolean abortUnzip = false;
     private static volatile double unzipProgress = 0.0;
+    private static volatile long totalDecompressedSize = 0;
 
     /**
      * The function takes a file and returns its contents as a list of strings, one
@@ -320,35 +321,35 @@ public class FileUtil
         out.close();
     }
 
-    static public float readFloatAndSwap(DataInputStream is) throws IOException
+    public static float readFloatAndSwap(DataInputStream is) throws IOException
     {
         int intValue = is.readInt();
         intValue = MathUtil.swap(intValue);
         return Float.intBitsToFloat(intValue);
     }
 
-    static public double readDoubleAndSwap(DataInputStream is) throws IOException
+    public static double readDoubleAndSwap(DataInputStream is) throws IOException
     {
         long longValue = is.readLong();
         longValue = MathUtil.swap(longValue);
         return Double.longBitsToDouble(longValue);
     }
 
-    static public void writesFloatAndSwap(DataOutputStream os, float value) throws IOException
+    public static void writesFloatAndSwap(DataOutputStream os, float value) throws IOException
     {
         int intValue = Float.floatToRawIntBits(value);
         intValue = MathUtil.swap(intValue);
         os.writeInt(intValue);
     }
 
-    static public void writeDoubleAndSwap(DataOutputStream os, double value) throws IOException
+    public static void writeDoubleAndSwap(DataOutputStream os, double value) throws IOException
     {
         long longValue = Double.doubleToRawLongBits(value);
         longValue = MathUtil.swap(longValue);
         os.writeLong(longValue);
     }
 
-    static public String getTemporarySuffix()
+    public static String getTemporarySuffix()
     {
         return ".saavtk";
     }
@@ -381,8 +382,7 @@ public class FileUtil
 
             zipFile = new ZipFile(file);
 
-            // First compute the decompressed size by summing over all entries
-            long totalDecompressedSize = 0;
+            totalDecompressedSize = 0;
             entries = zipFile.entries();
             while (entries.hasMoreElements())
                 totalDecompressedSize += ((ZipEntry) entries.nextElement()).getSize();
@@ -441,18 +441,24 @@ public class FileUtil
         }
     }
 
-    static public void abortUnzip()
+    public static void abortUnzip()
     {
         abortUnzip = true;
     }
 
-    static public double getUnzipProgress()
+    public static double getUnzipProgress()
     {
         return unzipProgress;
     }
 
-    static public void resetUnzipProgress()
+    public static void resetUnzipProgress()
     {
         unzipProgress = 0.0;
     }
+
+    public static long getDecompressedSize()
+    {
+        return totalDecompressedSize;
+    }
+
 }
