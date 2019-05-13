@@ -70,7 +70,7 @@ public class UrlAccessManager
     {
         Preconditions.checkNotNull(rootUrl);
 
-        UrlInfo rootInfo = UrlInfo.of();
+        UrlInfo rootInfo = UrlInfo.of(rootUrl);
 
         UrlAccessManager result = new UrlAccessManager(rootUrl);
 
@@ -104,7 +104,7 @@ public class UrlAccessManager
         this.rootUrl = rootUrl;
         this.urlInfoCache = new ConcurrentHashMap<>();
 
-        this.urlInfoCache.put(rootUrl, new UrlInfo());
+        this.urlInfoCache.put(rootUrl, new UrlInfo(rootUrl));
     }
 
     public URL getRootUrl()
@@ -244,11 +244,13 @@ public class UrlAccessManager
      */
     public UrlInfo getInfo(URL url)
     {
+        Preconditions.checkNotNull(url);
+
         // Retrieve a cached URLInfo object, or else add one to the cache.
         UrlInfo result = urlInfoCache.get(url);
         if (result == null)
         {
-            result = UrlInfo.of();
+            result = UrlInfo.of(url);
             urlInfoCache.put(url, result);
         }
 
@@ -317,46 +319,10 @@ public class UrlAccessManager
         return result;
     }
 
-    /**
-     * Create a {@link FileDownloader} object that may be used to download a file
-     * from the URL given by the first argument to the file specified by the second
-     * argument.
-     * 
-     * @param url
-     * @param file
-     * @return
-     * @throws IOException
-     */
-    public FileDownloader getDownloader(URL url, File file) throws IOException
-    {
-        Preconditions.checkNotNull(url);
-        Preconditions.checkNotNull(file);
-
-        UrlInfo urlInfo = getInfo(url);
-
-        return FileDownloader.of(url, urlInfo, file);
-    }
-
-    public void updateDownloadedFile(URL url, File file) throws IOException, InterruptedException
-    {
-        Preconditions.checkNotNull(url);
-        Preconditions.checkNotNull(file);
-
-        if (isServerAccessEnabled())
-        {
-            UrlInfo urlInfo = getInfo(url);
-
-            if (!file.exists() || urlInfo.getState().getLastModified() > file.lastModified())
-            {
-                FileDownloader.of(url, urlInfo, file).download();
-            }
-        }
-    }
-
     @Override
     public String toString()
     {
-        return "UrlInfoCache(" + rootUrl + ")";
+        return "UrlAccessManager(" + rootUrl + ")";
     }
 
     public static void main(String[] args)

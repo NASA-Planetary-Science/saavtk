@@ -17,6 +17,8 @@ import com.google.common.base.Preconditions;
  */
 public class UrlInfo
 {
+    public static String STATE_PROPERTY = "urlInfoState";
+
     public enum UrlStatus
     {
         ACCESSIBLE, // Connection made, resource is accessible. Future access likely to succeed.
@@ -28,9 +30,17 @@ public class UrlInfo
 
     public static class UrlState
     {
-        public static UrlState of()
+        public static UrlState of(URL url)
         {
-            return new UrlState(null, UrlStatus.UNKNOWN, -1, 0);
+            return of(url, UrlStatus.UNKNOWN, -1, 0);
+        }
+
+        public static UrlState of(URL url, UrlStatus status, long contentLength, long lastModified)
+        {
+            Preconditions.checkNotNull(url);
+            Preconditions.checkNotNull(status);
+
+            return new UrlState(url, status, contentLength, lastModified);
         }
 
         private final URL url;
@@ -38,7 +48,7 @@ public class UrlInfo
         private final long contentLength;
         private final long lastModified;
 
-        public UrlState(URL url, UrlStatus status, long contentLength, long lastModified)
+        protected UrlState(URL url, UrlStatus status, long contentLength, long lastModified)
         {
             this.url = url;
             this.status = status;
@@ -105,23 +115,25 @@ public class UrlInfo
         @Override
         public String toString()
         {
-            return "UrlState [" + (url != null ? "url=" + url + ", " : "") + "status=" + status + ", contentLength=" + contentLength + ", lastModified=" + lastModified + "]";
+            return "UrlState [" + (url != null ? "url=" + url + ", " : "") + //
+                    "status=" + status + ", contentLength=" + contentLength + //
+                    ", lastModified=" + lastModified + "]";
         }
 
     }
 
-    public static UrlInfo of()
+    public static UrlInfo of(URL url)
     {
-        return new UrlInfo();
+        return new UrlInfo(url);
     }
 
     private final PropertyChangeSupport pcs;
     private volatile UrlState state;
 
-    protected UrlInfo()
+    protected UrlInfo(URL url)
     {
         this.pcs = new PropertyChangeSupport(this);
-        this.state = UrlState.of();
+        this.state = UrlState.of(url);
     }
 
     public UrlState getState()
@@ -129,13 +141,13 @@ public class UrlInfo
         return state;
     }
 
-    public void update(URL url, UrlStatus status, long contentLength, long lastModified)
+    public void update(UrlStatus status, long contentLength, long lastModified)
     {
         Preconditions.checkNotNull(status);
 
-        state = new UrlState(url, status, contentLength, lastModified);
+        state = UrlState.of(state.getUrl(), status, contentLength, lastModified);
 
-        pcs.firePropertyChange("state", null, state);
+        pcs.firePropertyChange(STATE_PROPERTY, null, state);
     }
 
     public void update(URLConnection connection) throws IOException
@@ -195,7 +207,7 @@ public class UrlInfo
             status = UrlStatus.ACCESSIBLE;
         }
 
-        update(connection.getURL(), status, contentLength, lastModified);
+        update(status, contentLength, lastModified);
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener)
