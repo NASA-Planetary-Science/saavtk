@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentMap;
 import com.google.common.base.Preconditions;
 
 import edu.jhuapl.saavtk.util.CloseableUrlConnection.HttpRequestMethod;
+import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
 /**
@@ -69,13 +70,13 @@ public class UrlAccessManager
     {
         Preconditions.checkNotNull(rootUrl);
 
-        UrlInfo rootInfo = UrlInfo.of(rootUrl, SAFE_URL_PATHS.get(""));
+        UrlInfo rootInfo = UrlInfo.of();
 
-        UrlAccessManager result = new UrlAccessManager(rootInfo);
+        UrlAccessManager result = new UrlAccessManager(rootUrl);
 
         if (isServerAccessEnabled())
         {
-            try (CloseableUrlConnection connection = CloseableUrlConnection.of(rootInfo, HttpRequestMethod.HEAD))
+            try (CloseableUrlConnection connection = CloseableUrlConnection.of(rootUrl, rootInfo, HttpRequestMethod.HEAD))
             {
                 rootInfo.update(connection.getConnection());
             }
@@ -95,20 +96,20 @@ public class UrlAccessManager
         return result;
     }
 
-    private final UrlInfo rootUrl;
+    private final URL rootUrl;
     private final ConcurrentMap<URL, UrlInfo> urlInfoCache;
 
-    protected UrlAccessManager(UrlInfo rootUrlInfo)
+    protected UrlAccessManager(URL rootUrl)
     {
-        this.rootUrl = rootUrlInfo;
+        this.rootUrl = rootUrl;
         this.urlInfoCache = new ConcurrentHashMap<>();
 
-        this.urlInfoCache.put(rootUrlInfo.getUrl(), rootUrlInfo);
+        this.urlInfoCache.put(rootUrl, new UrlInfo());
     }
 
     public URL getRootUrl()
     {
-        return rootUrl.getUrl();
+        return rootUrl;
     }
 
     /**
@@ -129,7 +130,8 @@ public class UrlAccessManager
      * 
      * @param urlString URL string, either absolute or relative to the root URL
      * @return the URL object
-     * @throws IllegalArgumentException if the URL string argument is malformed
+     * @throws IllegalArgumentException if the constructed URL string argument is
+     *             malformed
      */
     public URL getUrl(String urlString)
     {
@@ -137,7 +139,19 @@ public class UrlAccessManager
 
         try
         {
-            return lookUpOrCreateInfo(urlString).getUrl();
+            // Create the URL object. If the provided string has a protocol, use it as-is.
+            URL url;
+            if (SAFE_URL_PATHS.hasProtocol(urlString))
+            {
+                url = new URL(urlString);
+            }
+            else
+            {
+                // No protocol: assume this URL is relative to the root URL.
+                url = new URL(SAFE_URL_PATHS.getUrl(SAFE_URL_PATHS.getString(rootUrl.toString(), urlString)));
+            }
+
+            return url;
         }
         catch (MalformedURLException e)
         {
@@ -174,142 +188,18 @@ public class UrlAccessManager
      */
     public Path getDownloadPath(String urlString)
     {
-        Preconditions.checkNotNull(urlString);
-
-        try
-        {
-            return lookUpOrCreateInfo(urlString).getRelativePath();
-        }
-        catch (MalformedURLException e)
-        {
-            throw new IllegalArgumentException(e);
-        }
+        return getDownloadPath(getUrl(urlString));
     }
 
-    /**
-     * Return information associated with the URL identified by the first argument.
-     * The argument is first converted to a URL object in the same way as described
-     * in the getUrl(...) method. Then a connection *may* be opened to the URL to
-     * obtain the necessary information. This can take a long time to run and/or
-     * time-out, so be careful calling this method from a thread where this can
-     * impact performance.
-     * <p>
-     * More specifically, this method attempts to open a connection and obtain
-     * information if server access is enabled (see the setServerAccessEnabled(...)
-     * method) AND one of the following two conditions holds:
-     * <p>
-     * 1. This method has not already successfully opened a connection to the URL
-     * identified by the URL string argument in the currently running instance,
-     * and/or:
-     * <p>
-     * 2. The forceServerCheck argument is true.
-     * <p>
-     * The information obtained from a successful connection is cached so that
-     * subsequent calls will run more quickly (though the information is not
-     * refreshed in that case).
-     * <p>
-     * No connections are made whenever server access is disabled. See the
-     * {@link UrlInfo} class for more details about the information it provides when
-     * there is no server access.
-     * 
-     * @param urlString URL string, either absolute or relative to the root URL
-     * @param forceServerCheck if true, the server will be queried and the cached
-     *            information updated. If false, this will only happen the first
-     *            time for each URL.
-     * @return the information object
-     * @throws IllegalArgumentException if the URL string argument is malformed
-     */
-    public UrlInfo getInfo(String urlString, boolean forceServerCheck)
-    {
-        Preconditions.checkNotNull(urlString);
-
-        UrlInfo urlInfo;
-        try
-        {
-            urlInfo = lookUpOrCreateInfo(urlString);
-        }
-        catch (MalformedURLException e)
-        {
-            throw new IllegalArgumentException(e);
-        }
-
-        if (isServerAccessEnabled())
-        {
-            if (urlInfo.getStatus() == UrlStatus.UNKNOWN || forceServerCheck)
-            {
-                try (CloseableUrlConnection connection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.GET))
-                {
-                    urlInfo.update(connection.getConnection());
-                }
-                catch (@SuppressWarnings("unused") IOException e)
-                {
-                    // Ignore the exception; urlInfo is in a valid state.
-                }
-            }
-        }
-
-        return urlInfo;
-    }
-
-    /**
-     * Create a {@link UrlDownloader} object that may be used to download a file
-     * from the URL given by the first argument to the file specified by the second
-     * argument.
-     * 
-     * @param url
-     * @param file
-     * @return
-     * @throws IOException
-     */
-    public UrlDownloader getDownloader(URL url, File file) throws IOException
+    public Path getDownloadPath(URL url)
     {
         Preconditions.checkNotNull(url);
-        Preconditions.checkNotNull(file);
 
-        UrlInfo urlInfo = lookUpOrCreateInfo(url.toString());
-
-        return UrlDownloader.of(urlInfo, file);
-    }
-
-    public void updateDownloadedFile(URL url, File file) throws IOException, InterruptedException
-    {
-        Preconditions.checkNotNull(url);
-        Preconditions.checkNotNull(file);
-
-        if (isServerAccessEnabled())
-        {
-            UrlInfo urlInfo = lookUpOrCreateInfo(url.toString());
-
-            if (!file.exists() || urlInfo.getLastModified() > file.lastModified())
-            {
-                UrlDownloader.of(urlInfo, file).download();
-            }
-        }
-    }
-
-    @Override
-    public String toString()
-    {
-        return "UrlInfoCache(" + rootUrl + ")";
-    }
-
-    protected UrlInfo lookUpOrCreateInfo(String urlString) throws MalformedURLException
-    {
-        // Create the URL object. If the provided string has a protocol, use it as-is.
-        URL url;
-        if (SAFE_URL_PATHS.hasProtocol(urlString))
-        {
-            url = new URL(urlString);
-        }
-        else
-        {
-            // No protocol: assume this URL is relative to the root URL.
-            url = new URL(SAFE_URL_PATHS.getUrl(SAFE_URL_PATHS.getString(rootUrl.getUrl().toString(), urlString)));
-        }
+        URL rootUrl = getRootUrl();
 
         // Get the root path from the root URL, and the current URL's path from the
         // newly-constructed URL.
-        String rootPathString = SAFE_URL_PATHS.getString(rootUrl.getUrl().toString());
+        String rootPathString = SAFE_URL_PATHS.getString(rootUrl.toString());
         String pathString = SAFE_URL_PATHS.getString(url.toString());
 
         // Construct the relative path by removing the root path from front of the URL
@@ -337,54 +227,136 @@ public class UrlAccessManager
         // this code to that (current) implementation detail.
         relativePathString = relativePathString.replaceFirst("\\.[gG][zZ]$", "");
 
+        return SAFE_URL_PATHS.get(relativePathString);
+    }
+
+    public UrlInfo getInfo(String urlString)
+    {
+        return getInfo(getUrl(urlString));
+    }
+
+    /**
+     * Looks up available information but does not query the server.
+     * 
+     * @param url
+     * @return
+     * @throws MalformedURLException
+     */
+    public UrlInfo getInfo(URL url)
+    {
         // Retrieve a cached URLInfo object, or else add one to the cache.
         UrlInfo result = urlInfoCache.get(url);
         if (result == null)
         {
-            result = UrlInfo.of(url, SAFE_URL_PATHS.get(relativePathString));
+            result = UrlInfo.of();
             urlInfoCache.put(url, result);
         }
 
         return result;
     }
 
-    protected UrlInfo lookUpOrCreateInfoOrig(String urlString) throws MalformedURLException
+    /**
+     * Return information associated with the URL identified by the first argument.
+     * The argument is first converted to a URL object in the same way as described
+     * in the getUrl(...) method. Then a connection *may* be opened to the URL to
+     * obtain the necessary information. This can take a long time to run and/or
+     * time-out, so be careful calling this method from a thread where this can
+     * impact performance.
+     * <p>
+     * More specifically, this method attempts to open a connection and obtain
+     * information if server access is enabled (see the setServerAccessEnabled(...)
+     * method) AND one of the following two conditions holds:
+     * <p>
+     * 1. This method has not already successfully opened a connection to the URL
+     * identified by the URL string argument in the currently running instance,
+     * and/or:
+     * <p>
+     * 2. The forceUpdate argument is true.
+     * <p>
+     * The information obtained from a successful connection is cached so that
+     * subsequent calls will run more quickly (though the information is not
+     * refreshed in that case).
+     * <p>
+     * No connections are made whenever server access is disabled. See the
+     * {@link UrlInfo} class for more details about the information it provides when
+     * there is no server access.
+     * 
+     * @param urlString URL string, either absolute or relative to the root URL
+     * @param forceUpdate if true, the server will be queried and the cached
+     *            information updated. If false, this will only happen the first
+     *            time for each URL.
+     * @return the information object
+     * @throws IllegalArgumentException if the URL string argument is malformed
+     */
+    public UrlInfo queryServer(String urlString, boolean forceUpdate)
     {
-        // Create a URL object using the root url as needed.
-        URL url;
-        String relativePathString;
-        try
+        return queryServer(getUrl(urlString), forceUpdate);
+    }
+
+    public UrlInfo queryServer(URL url, boolean forceUpdate)
+    {
+        Preconditions.checkNotNull(url);
+
+        UrlInfo result = getInfo(url);
+
+        if (isServerAccessEnabled())
         {
-            // Try to interpret the string as a complete URL.
-            url = new URL(urlString);
-            relativePathString = url.getPath();
-        }
-        catch (@SuppressWarnings("unused") MalformedURLException e)
-        {
-            url = new URL(SAFE_URL_PATHS.getUrl(SAFE_URL_PATHS.getString(rootUrl.getUrl().toString(), urlString)));
-            relativePathString = urlString;
-        }
-
-        // Trim off leading slash or backslash to relativize this path.
-        relativePathString = relativePathString.replaceFirst("^[/\\\\]+", "");
-
-        // Deal with the colon in Windows paths.
-        relativePathString = relativePathString.replaceFirst("^\\w:[/\\\\]*", "");
-
-        // This is not ideal. UrlDownloader automatically
-        // gunzips files if they end with .gz, but it would be better not to couple
-        // this code to that (current) implementation detail.
-        relativePathString = relativePathString.replaceFirst("\\.[gG][zZ]$", "");
-
-        // Retrieve a cached URLInfo object, or else add one to the cache.
-        UrlInfo result = urlInfoCache.get(url);
-        if (result == null)
-        {
-            result = UrlInfo.of(url, SAFE_URL_PATHS.get(relativePathString));
-            urlInfoCache.put(url, result);
+            if (result.getState().getStatus() == UrlStatus.UNKNOWN || forceUpdate)
+            {
+                try (CloseableUrlConnection connection = CloseableUrlConnection.of(url, result, HttpRequestMethod.HEAD))
+                {
+                    result.update(connection.getConnection());
+                }
+                catch (@SuppressWarnings("unused") IOException e)
+                {
+                    // Ignore the exception; urlInfo is in a valid state.
+                }
+            }
         }
 
         return result;
+    }
+
+    /**
+     * Create a {@link FileDownloader} object that may be used to download a file
+     * from the URL given by the first argument to the file specified by the second
+     * argument.
+     * 
+     * @param url
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public FileDownloader getDownloader(URL url, File file) throws IOException
+    {
+        Preconditions.checkNotNull(url);
+        Preconditions.checkNotNull(file);
+
+        UrlInfo urlInfo = getInfo(url);
+
+        return FileDownloader.of(url, urlInfo, file);
+    }
+
+    public void updateDownloadedFile(URL url, File file) throws IOException, InterruptedException
+    {
+        Preconditions.checkNotNull(url);
+        Preconditions.checkNotNull(file);
+
+        if (isServerAccessEnabled())
+        {
+            UrlInfo urlInfo = getInfo(url);
+
+            if (!file.exists() || urlInfo.getState().getLastModified() > file.lastModified())
+            {
+                FileDownloader.of(url, urlInfo, file).download();
+            }
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "UrlInfoCache(" + rootUrl + ")";
     }
 
     public static void main(String[] args)
@@ -397,15 +369,15 @@ public class UrlAccessManager
             try
             {
                 UrlAccessManager manager = UrlAccessManager.of(new URL("http://spud.com"));
-                System.err.println(manager.lookUpOrCreateInfo("/absolute/looking/path").getRelativePath());
-                System.err.println(manager.lookUpOrCreateInfo("\\absolute\\looking\\hinky\\windows\\path").getRelativePath());
-                System.err.println(manager.lookUpOrCreateInfo("c:\\absolute\\looking\\windows\\path").getRelativePath());
-                System.err.println(manager.lookUpOrCreateInfo("relative/looking/path").getRelativePath());
-                System.err.println(manager.lookUpOrCreateInfo("relative\\looking\\windows\\path").getRelativePath());
-                System.err.println(manager.lookUpOrCreateInfo("file://spud.com/complete/url/path").getRelativePath());
-                System.err.println(manager.lookUpOrCreateInfo("http://spUD.com/complete/url/path").getRelativePath());
-                System.err.println(manager.lookUpOrCreateInfo("http://spud.com/c:/windows/url/path").getRelativePath());
-                System.err.println(manager.lookUpOrCreateInfo("http://spud.com/c:\\windows\\native\\path").getRelativePath());
+                System.err.println(manager.getDownloadPath("/absolute/looking/path"));
+                System.err.println(manager.getDownloadPath("\\absolute\\looking\\hinky\\windows\\path"));
+                System.err.println(manager.getDownloadPath("c:\\absolute\\looking\\windows\\path"));
+                System.err.println(manager.getDownloadPath("relative/looking/path"));
+                System.err.println(manager.getDownloadPath("relative\\looking\\windows\\path"));
+                System.err.println(manager.getDownloadPath("file://spud.com/complete/url/path"));
+                System.err.println(manager.getDownloadPath("http://spUD.com/complete/url/path"));
+                System.err.println(manager.getDownloadPath("http://spud.com/c:/windows/url/path"));
+                System.err.println(manager.getDownloadPath("http://spud.com/c:\\windows\\native\\path"));
             }
             catch (IOException e)
             {
@@ -530,15 +502,15 @@ public class UrlAccessManager
     {
         try
         {
-            UrlInfo info = getInfo(urlString, false);
+            UrlState info = queryServer(urlString, false).getState();
 
             if (info.getStatus() != expectedStatus)
             {
-                System.err.println("testInfo FAILED for " + info.getUrl() + ": got status " + info.getStatus() + ", not " + expectedStatus);
+                System.err.println("testInfo FAILED for " + urlString + ": got status " + info.getStatus() + ", not " + expectedStatus);
             }
             if (expectedModificationTime != null && !expectedModificationTime.equals(info.getLastModified()))
             {
-                System.err.println("testInfo FAILED for " + info.getUrl() + ": got modification time " + info.getLastModified() + ", not " + expectedModificationTime);
+                System.err.println("testInfo FAILED for " + urlString + ": got modification time " + info.getLastModified() + ", not " + expectedModificationTime);
             }
         }
         catch (Exception e)
