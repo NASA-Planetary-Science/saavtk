@@ -11,50 +11,50 @@ import edu.jhuapl.saavtk.model.ShapeModelType;
 public class ExampleViewConfig extends ViewConfig
 {
 
-	static public ExampleViewConfig getExampleConfig(ShapeModelBody name, ShapeModelType author)
-	{
-		return (ExampleViewConfig) getConfig(name, author, null);
-	}
+    static public ExampleViewConfig getExampleConfig(ShapeModelBody name, ShapeModelType author)
+    {
+        return (ExampleViewConfig) getConfig(name, author, null);
+    }
 
-	static public ExampleViewConfig getExampleConfig(ShapeModelBody name, ShapeModelType author, String version)
-	{
-		return (ExampleViewConfig) getConfig(name, author, version);
-	}
+    static public ExampleViewConfig getExampleConfig(ShapeModelBody name, ShapeModelType author, String version)
+    {
+        return (ExampleViewConfig) getConfig(name, author, version);
+    }
 
-	public static void initialize()
-	{
-		List<ViewConfig> configArray = getBuiltInConfigs();
+    public static void initialize()
+    {
+        List<ViewConfig> configArray = getBuiltInConfigs();
 
-		ExampleViewConfig config = new ExampleViewConfig();
-		config.modelLabel = "data/brain.obj";
-		config.customTemporary = true;
-		config.author = ShapeModelType.CUSTOM;
-		configArray.add(config);
+        ExampleViewConfig config = new ExampleViewConfig();
+        config.modelLabel = "data/brain.obj";
+        config.customTemporary = true;
+        config.author = ShapeModelType.CUSTOM;
+        configArray.add(config);
 
-		config = new ExampleViewConfig();
-		config.modelLabel = "data/left-lung.obj";
-		config.customTemporary = true;
-		config.author = ShapeModelType.CUSTOM;
-		configArray.add(config);
-	}
+        config = new ExampleViewConfig();
+        config.modelLabel = "data/left-lung.obj";
+        config.customTemporary = true;
+        config.author = ShapeModelType.CUSTOM;
+        configArray.add(config);
+    }
 
-	protected ExampleViewConfig()
-	{
-		super(ImmutableList.of(), ImmutableList.of());
-	}
+    protected ExampleViewConfig()
+    {
+        super(ImmutableList.of(), ImmutableList.of());
+    }
 
-	@Override
-	public ExampleViewConfig clone() // throws CloneNotSupportedException
-	{
-		ExampleViewConfig c = (ExampleViewConfig) super.clone();
+    @Override
+    public ExampleViewConfig clone() // throws CloneNotSupportedException
+    {
+        ExampleViewConfig c = (ExampleViewConfig) super.clone();
 
-		return c;
-	}
+        return c;
+    }
 
-	@Override
-	public boolean isAccessible()
-	{
-		return true;
-	}
+    @Override
+    public boolean isAccessible()
+    {
+        return true;
+    }
 
 }
