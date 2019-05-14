@@ -200,7 +200,7 @@ public class FileDownloader extends SwingWorker<Void, Void>
 
                 try (FileOutputStream os = new FileOutputStream(tmpFile))
                 {
-                    final int bufferSize = inputStream.available();
+                    final int bufferSize = 8192;
                     byte[] buff = new byte[bufferSize];
                     int len;
                     double progress = 0;
