@@ -33,4 +33,11 @@ public class Debug
     {
         throw new AssertionError();
     }
+
+    @Override
+    public String toString()
+    {
+        return "Debug enabled=" + enabled;
+    }
+
 }
