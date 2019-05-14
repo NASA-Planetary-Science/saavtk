@@ -197,37 +197,57 @@ public class UrlAccessManager
 
         URL rootUrl = getRootUrl();
 
-        // Get the root path from the root URL, and the current URL's path from the
-        // newly-constructed URL.
-        String rootPathString = SAFE_URL_PATHS.getString(rootUrl.toString());
-        String pathString = SAFE_URL_PATHS.getString(url.toString());
+        // Get the root path from the root URL, and the other path from the supplied
+        // URL. Include an extra slash in the root URL to be sure it ends with slash.
+        // SafeUrlPaths will remove duplicate slashes.
+        String rootPathString = SAFE_URL_PATHS.getString(rootUrl.toString() + "/");
+        String urlPathString = SAFE_URL_PATHS.getString(url.toString());
 
         // Construct the relative path by removing the root path from front of the URL
         // path if it matches.
-        String relativePathString;
+        String pathString;
+        boolean relativize = false;
         int rootLength = rootPathString.length();
-        if (pathString.length() >= rootLength && pathString.substring(0, rootLength).equalsIgnoreCase(rootPathString))
+        if (urlPathString.length() >= rootLength && urlPathString.substring(0, rootLength).equalsIgnoreCase(rootPathString))
         {
-            relativePathString = pathString.substring(rootLength);
+            pathString = urlPathString.substring(rootLength);
+            relativize = true;
         }
         else
         {
-            relativePathString = pathString;
+            // The supplied URL is not under the root URL hierarchy, so extract the full
+            // path from the url.
+            pathString = SAFE_URL_PATHS.getString(url.getPath().toString());
+
+            // File protocol URLs may need special handling.
+            if (SAFE_URL_PATHS.hasFileProtocol(urlPathString))
+            {
+                // Files that are (g)zipped will need to be (g)unzipped without messing with the
+                // original file or its parent, so treat these as relative paths.
+                if (pathString.matches(".*\\.[([gG][zZ])([zZ][iI][pP])]$"))
+                {
+                    relativize = true;
+                }
+            }
         }
 
-        // Clean up the relative path.
-        // Trim off leading slash or backslash to relativize this path.
-        relativePathString = relativePathString.replaceFirst("^[/\\\\]+", "");
+        if (relativize)
+        {
+            // Clean up the relative path.
+            // Trim off leading slash or backslash to relativize this path.
+            pathString = pathString.replaceFirst("^[/\\\\]+", "");
 
-        // Deal with the colon in Windows paths.
-        relativePathString = relativePathString.replaceFirst("^\\w:[/\\\\]*", "");
+            // Deal with the colon in Windows paths.
+            pathString = pathString.replaceFirst("^(\\w):[/\\\\]*", "\1/");
 
-        // This is not ideal. UrlDownloader automatically
-        // gunzips files if they end with .gz, but it would be better not to couple
-        // this code to that (current) implementation detail.
-        relativePathString = relativePathString.replaceFirst("\\.[gG][zZ]$", "");
+            // This is not ideal. UrlDownloader automatically
+            // gunzips files if they end with .gz, but it would be better not to couple
+            // this code to that (current) implementation detail. Zip files are unzipped
+            // after download, so don't strip the .zip suffix here.
+            pathString = pathString.replaceFirst("\\.[gG][zZ]$", "");
+        }
 
-        return SAFE_URL_PATHS.get(relativePathString);
+        return SAFE_URL_PATHS.get(pathString);
     }
 
     public UrlInfo getInfo(String urlString)
@@ -307,6 +327,7 @@ public class UrlAccessManager
             {
                 try (CloseableUrlConnection connection = CloseableUrlConnection.of(result, HttpRequestMethod.HEAD))
                 {
+                    Debug.out().println("Opened connection for info about " + url);
                     result.update(connection.getConnection());
                 }
                 catch (@SuppressWarnings("unused") IOException e)

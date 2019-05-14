@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.io.CountingInputStream;
 
 import edu.jhuapl.saavtk.util.CloseableUrlConnection.HttpRequestMethod;
+import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
 public class FileDownloader extends SwingWorker<Void, Void>
@@ -113,6 +114,32 @@ public class FileDownloader extends SwingWorker<Void, Void>
         }
     }
 
+    public void download() throws IOException, InterruptedException
+    {
+        // Do nothing if the URL really is just a pointer to a local file.
+        String urlPath = urlInfo.getState().getUrl().getPath();
+        if (SAFE_URL_PATHS.hasFileProtocol(urlPath) && urlPath.equals(fileInfo.getState().getFile().getAbsolutePath()))
+        {
+            return;
+        }
+
+        if (forceDownload || isFileOutOfDate() || urlInfo.getState().getStatus() == UrlStatus.UNKNOWN || fileInfo.getState().getStatus() == FileStatus.UNKNOWN)
+        {
+            fileInfo.update();
+
+            try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.GET))
+            {
+                urlInfo.update(closeableConnection.getConnection());
+
+                if (forceDownload || isFileOutOfDate())
+                {
+                    download(closeableConnection);
+                }
+            }
+        }
+
+    }
+
     public void downloadInBackground()
     {
         THREAD_POOL.execute(this);
@@ -129,49 +156,16 @@ public class FileDownloader extends SwingWorker<Void, Void>
     @Override
     protected Void doInBackground() throws Exception
     {
-        downloadIfNecessary();
+        download();
         unzipIfNecessary();
 
         return null;
     }
 
-    protected void downloadIfNecessary() throws IOException, InterruptedException
-    {
-        if (forceDownload || isFileOutOfDate())
-        {
-            download();
-        }
-        else if (urlInfo.getState().getStatus() == UrlStatus.UNKNOWN)
-        {
-            try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.GET))
-            {
-                downloadIfNecessary(closeableConnection);
-            }
-        }
-    }
-
-    protected void downloadIfNecessary(CloseableUrlConnection closeableConnection) throws IOException, InterruptedException
-    {
-        urlInfo.update(closeableConnection.getConnection());
-
-        if (forceDownload || isFileOutOfDate())
-        {
-            download(closeableConnection);
-        }
-    }
-
-    protected void download() throws IOException, InterruptedException
-    {
-        try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.GET))
-        {
-            urlInfo.update(closeableConnection.getConnection());
-
-            download(closeableConnection);
-        }
-    }
-
     protected void download(CloseableUrlConnection closeableConnection) throws IOException, InterruptedException
     {
+        Debug.out().println("Opened connection to download " + urlInfo.getState().getUrl());
+
         URLConnection connection = closeableConnection.getConnection();
 
         URL url = connection.getURL();

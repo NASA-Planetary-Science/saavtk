@@ -56,32 +56,9 @@ public class FileAccessManager
     {
         Preconditions.checkNotNull(pathString);
 
-        // Most likely the file is located relative to the root directory.
-        File file = SAFE_URL_PATHS.get(getRootDirectory().getPath(), pathString).toFile().getAbsoluteFile();
+        Path path = SAFE_URL_PATHS.get(pathString);
 
-        // However, if the supplied string already includes the root, need to prevent
-        // appending it again.
-        File rootDirectory = getRootDirectory();
-        if (pathString.startsWith(rootDirectory.toString()))
-        {
-            // The path string must start out like a canonical absolute path since it
-            // started with the root directory.
-            File absoluteFile = new File(pathString).getAbsoluteFile();
-
-            // Make sure the root directory really is an ancestor, i.e., that there wasn't
-            // just some partial lexical match.
-            File parent = absoluteFile;
-            while (parent != null && !rootDirectory.equals(parent))
-            {
-                parent = parent.getParentFile();
-            }
-            if (rootDirectory.equals(parent))
-            {
-                file = absoluteFile;
-            }
-        }
-
-        return file;
+        return path.isAbsolute() ? path.toFile() : SAFE_URL_PATHS.get(rootDirectory.getAbsolutePath(), pathString).toFile();
     }
 
     public FileInfo getInfo(Path path)

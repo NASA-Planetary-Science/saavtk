@@ -70,8 +70,6 @@ public class CloseableUrlConnection implements Closeable
 
         URLConnection connection = uncachedUrl.openConnection();
 
-        Debug.out().println("Opened connection " + (method == HttpRequestMethod.HEAD ? "for info to " : "to download ") + url);
-
         if (connection instanceof HttpURLConnection)
         {
             ((HttpURLConnection) connection).setRequestMethod(method.toString());
