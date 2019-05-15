@@ -2576,17 +2576,17 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		scaleBarWidthInKm = scaleBarWidthInPixels * pixelSizeInKm;
 		
-//		if (pixelSizeInKm > 0.0 && showScaleBar)
-//		{
-//			scaleBarActor.VisibilityOn();
-//			scaleBarTextActor.VisibilityOn();
-//		}
-//		else
-//		{
-//			scaleBarActor.VisibilityOff();
-//			scaleBarTextActor.VisibilityOff();
-//		}
-//
+		if (pixelSizeInKm > 0.0 && showScaleBar)
+		{
+			scaleBarActor.VisibilityOn();
+			scaleBarTextActor.VisibilityOn();
+		}
+		else
+		{
+			scaleBarActor.VisibilityOff();
+			scaleBarTextActor.VisibilityOff();
+		}
+
 //		if (pixelSizeInKm > 0.0)
 //		{
 //			if (scaleBarWidthInKm < 1.0)
@@ -2595,7 +2595,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 //				scaleBarTextActor.SetInput(String.format("%.2f km", scaleBarWidthInKm));
 //		}
 
-//		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 
 	}
 	
