@@ -1363,7 +1363,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 	protected StructureModel.Structure createStructure()
 	{
-		return new Line(++maxPolygonId);
+		return Line.of(++maxPolygonId);
 	}
 
 	@Override
@@ -1440,7 +1440,11 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		{
 			Line line = lines.get(index);
 			line.updateAllSegments(smallBodyModel);
-
+			if (line instanceof Polygon)
+			{
+				Polygon polygon = (Polygon) line;
+				polygon.setShowInterior(smallBodyModel, polygon.getContent(Polygon.SHOW_INTERIOR_KEY).getValue());
+			}
 		}
 
 		setLineWidth(lineWidth);

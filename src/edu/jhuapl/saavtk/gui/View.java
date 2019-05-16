@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,7 +13,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 import javax.swing.BorderFactory;
-import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -49,7 +49,6 @@ public abstract class View extends JPanel
 	private StatusBar statusBar;
 	private boolean initialized = false;
 	private ViewConfig config;
-	static private boolean initializedPanelSizing = false;
 
 	// accessor methods
 
@@ -131,7 +130,7 @@ public abstract class View extends JPanel
 		this.config = config;
 	}
 
-	protected void addTab(String name, JComponent component)
+	protected void addTab(String name, Component component)
 	{
 		controlPanel.addTab(name, component);
 	}
@@ -188,13 +187,13 @@ public abstract class View extends JPanel
 		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, controlPanel, renderer);
 
 		splitPane.setOneTouchExpandable(true);
-		
+
 		int splitLocation = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
 		splitPane.setDividerLocation(splitLocation);
-		
+
 		splitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, new PropertyChangeListener() {
 			@Override
-			public void propertyChange(PropertyChangeEvent pce)
+			public void propertyChange(@SuppressWarnings("unused") PropertyChangeEvent pce)
 			{
 				LinkedHashMap<String, String> map = new LinkedHashMap<>();
 				map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
@@ -204,14 +203,13 @@ public abstract class View extends JPanel
 		});
 		int rendererWidth = splitPane.getWidth() - splitLocation;
 
-		int width = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_WIDTH, 800L);
 		int height = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_HEIGHT, 800L);
 		renderer.setMinimumSize(new Dimension(100, 100));
 		controlPanel.setMinimumSize(new Dimension(320, 100));
 
 		renderer.setPreferredSize(new Dimension(rendererWidth, height));
 		controlPanel.setPreferredSize(new Dimension(splitLocation, height));
-				
+
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			private LinkedHashMap<String, String> map = new LinkedHashMap<>();
 
@@ -225,7 +223,6 @@ public abstract class View extends JPanel
 				Preferences.getInstance().put(map);
 			}
 		});
-
 
 		this.add(splitPane, BorderLayout.CENTER);
 

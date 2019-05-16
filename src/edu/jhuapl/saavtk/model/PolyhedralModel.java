@@ -94,6 +94,8 @@ public abstract class PolyhedralModel extends AbstractModel
 	public abstract String getCustomDataFolder();
 
 	public abstract String getConfigFilename();
+	
+	public abstract String getPlateConfigFilename();
 
 	public abstract vtkDataArray getGravityVectorData();
 
