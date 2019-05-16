@@ -32,6 +32,7 @@ public class DownloadableFileManager
     private final ConcurrentMap<URL, DownloadableFileInfo> downloadInfoCache;
     private final ExecutorService accessMonitor;
     private volatile Boolean enableMonitor;
+    private volatile long sleepInterval;
 
     protected DownloadableFileManager(UrlAccessManager urlManager, FileAccessManager fileManager)
     {
@@ -40,6 +41,7 @@ public class DownloadableFileManager
         this.downloadInfoCache = new ConcurrentHashMap<>();
         this.accessMonitor = Executors.newSingleThreadExecutor();
         this.enableMonitor = Boolean.FALSE;
+        this.sleepInterval = 5000;
     }
 
     public synchronized void startAccessMonitor()
@@ -57,7 +59,7 @@ public class DownloadableFileManager
                         {
                             query(url.toString(), false);
                         }
-                        Thread.sleep(5000);
+                        Thread.sleep(sleepInterval);
                     }
                     catch (@SuppressWarnings("unused") InterruptedException ignored)
                     {
@@ -122,20 +124,58 @@ public class DownloadableFileManager
         return result;
     }
 
+    public FileAccessQuerier getQuerier(String urlString, boolean forceUpdate)
+    {
+        Preconditions.checkNotNull(urlString);
+
+        DownloadableFileInfo downloadableInfo = getInfo(urlString);
+
+        UrlInfo urlInfo = urlManager.getInfo(urlString);
+
+        File file = downloadableInfo.getState().getFileState().getFile();
+        FileInfo fileInfo = fileManager.getInfo(file);
+
+        return FileAccessQuerier.of(urlInfo, fileInfo, forceUpdate);
+    }
+
     public DownloadableFileInfo query(String urlString, boolean forceUpdate)
     {
         Preconditions.checkNotNull(urlString);
 
         DownloadableFileInfo result = getInfo(urlString);
-
-        UrlInfo urlInfo = urlManager.queryServer(urlString, forceUpdate);
-
-        File file = result.getState().getFileState().getFile();
-        FileInfo fileInfo = fileManager.queryFileSystem(file, forceUpdate);
-
-        result.update(urlInfo.getState(), fileInfo.getState());
+        FileAccessQuerier querier = getQuerier(urlString, forceUpdate);
+        try
+        {
+            querier.query();
+            result.update(querier.getUrlInfo().getState(), querier.getFileInfo().getState());
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
 
         return result;
+    }
+
+    public void query(String urlString, StateListener whenFinished, boolean forceUpdate)
+    {
+        Preconditions.checkNotNull(urlString);
+        Preconditions.checkNotNull(whenFinished);
+
+        FileAccessQuerier querier = getQuerier(urlString, forceUpdate);
+
+        DownloadableFileInfo info = getInfo(urlString);
+
+        querier.addPropertyChangeListener(e -> {
+            String propertyName = e.getPropertyName();
+            if (propertyName.equals(FileAccessQuerier.DONE_PROPERTY) || propertyName.equals(FileAccessQuerier.CANCELED_PROPERTY))
+            {
+                info.update(querier.getUrlInfo().getState(), querier.getFileInfo().getState());
+                whenFinished.respond(info.getState());
+            }
+        });
+
+        querier.queryInBackground();
     }
 
     public FileDownloader getDownloader(String urlString, boolean forceDownload)
