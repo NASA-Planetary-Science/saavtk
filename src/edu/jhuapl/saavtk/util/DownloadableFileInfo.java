@@ -70,6 +70,11 @@ public class DownloadableFileInfo
             return urlState.getStatus() == UrlStatus.NOT_AUTHORIZED;
         }
 
+        public boolean isURLNotFound()
+        {
+            return urlState.getStatus() == UrlStatus.NOT_FOUND;
+        }
+
         public boolean isDownloadMayBePossible()
         {
             UrlStatus urlStatus = urlState.getStatus();
