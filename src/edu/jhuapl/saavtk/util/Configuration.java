@@ -27,6 +27,9 @@ import org.apache.commons.io.FileUtils;
 
 import com.google.common.base.Preconditions;
 
+import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
+import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
+
 /**
  * Static class containing general settings needed by any application.
  */
@@ -113,8 +116,8 @@ public class Configuration
 
         // The only condition that can be addressed here is if the user is not
         // authorized. If that's not the "problem", don't do anything.
-        UrlInfo info = FileCache.refreshUrlInfo(restrictedAccessUrl);
-        if (info.getStatus() != UrlInfo.UrlStatus.NOT_AUTHORIZED)
+        UrlInfo info = FileCache.getUrlInfo(restrictedAccessUrl);
+        if (info.getState().getStatus() != UrlStatus.NOT_AUTHORIZED)
         {
             return;
         }
@@ -139,7 +142,7 @@ public class Configuration
                                 foundCredentials = true;
                                 setupPasswordAuthentication(userName, password, maximumNumberTries);
                                 info = FileCache.refreshUrlInfo(restrictedAccessUrl);
-                                if (info.getStatus() == UrlInfo.UrlStatus.ACCESSIBLE)
+                                if (info.getState().getStatus() == UrlStatus.ACCESSIBLE)
                                 {
                                     userPasswordAccepted = true;
                                     break;
@@ -221,16 +224,16 @@ public class Configuration
                 {
                     // Attempt authentication.
                     setupPasswordAuthentication(name, password, maximumNumberTries);
-                    UrlInfo info = FileCache.refreshUrlInfo(restrictedAccessUrl);
-                    UrlInfo.UrlStatus status = info.getStatus();
-                    if (status == UrlInfo.UrlStatus.NOT_AUTHORIZED)
+                    UrlState state = FileCache.refreshUrlInfo(restrictedAccessUrl).getState();
+                    UrlStatus status = state.getStatus();
+                    if (status == UrlStatus.NOT_AUTHORIZED)
                     {
                         // Try again.
                         promptLabel.setText("<html>Invalid user name or password. Try again, or click \"Cancel\" to continue without password. Some models may not be available.</html>");
                         repromptUser = true;
                         continue;
                     }
-                    else if (status != UrlInfo.UrlStatus.ACCESSIBLE)
+                    else if (status != UrlStatus.ACCESSIBLE)
                     {
                         // Try again.
                         promptLabel.setText("<html>Server problem. Try again, or click \"Cancel\" to continue without password. If this persists, contact sbmt.jhuapl.edu. Some models may not be available without a password.</html>");
