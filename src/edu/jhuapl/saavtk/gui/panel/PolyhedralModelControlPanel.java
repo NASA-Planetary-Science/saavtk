@@ -191,10 +191,13 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                 builder.put(label, i);
                 JRadioButton resButton = new JRadioButton(label);
                 resButton.setActionCommand(label);
-                resButton.setEnabled(smallBodyModel.isResolutionLevelAvailable(i));
                 resButton.setToolTipText("<html>Click here to show a model of " + bodyName + " <br />" + "containing " + plateCount.get(i) + " plates</html>");
                 resButton.addActionListener(listener);
                 resModelButtons.add(resButton);
+
+                FileCache.instance().addStateListener(smallBodyModel.getModelFileNames().get(i), state -> {
+                    resButton.setEnabled(state.isAccessible());
+                });
 
                 resolutionButtonGroup.add(resButton);
                 if (i == 0)
@@ -718,7 +721,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
     {
         // Store the current selection and number of items in the combo box.
         int previousSelection = box.getSelectedIndex();
-        int previousNumberColorings = box.getItemCount();
 
         // Clear the current content.
         box.setSelectedIndex(-1);
@@ -734,6 +736,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             {
                 // This coloring is not available at this resolution. List it but grey it out.
                 box.setEnabled(name, false);
+            }
+            else
+            {
+                box.setEnabled(name, FileCache.instance().isAccessible(coloringDataManager.get(name, numberElements).getFileName()));
             }
         }
 

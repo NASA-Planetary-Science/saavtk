@@ -64,10 +64,9 @@ public class FavoritesMenu extends JMenu
         {
             View defaultToLoad = manager.getView(manager.getDefaultBodyToLoad());
             JMenuItem menuItem = new FavoritesMenuItem(defaultToLoad);
-            if (!defaultToLoad.getConfig().isAccessible())
-            {
-                menuItem.setEnabled(false);
-            }
+            defaultToLoad.getConfig().addModelAccessibilityListener(state -> {
+                menuItem.setEnabled(state.isAccessible());
+            });
             add(menuItem);
 
         }
