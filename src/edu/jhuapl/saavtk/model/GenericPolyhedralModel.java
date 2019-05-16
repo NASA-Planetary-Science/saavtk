@@ -242,7 +242,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
         String metadataFileName = BasicColoringDataManager.getMetadataFileName(Serializers.of().getVersion());
         metadataFileName = SAFE_URL_PATHS.getString(SAFE_URL_PATHS.get(coloringFiles[0]).toFile().getParent(), metadataFileName);
-        if (FileCache.isFileGettable(metadataFileName))
+        if (FileCache.instance().isAccessible(metadataFileName))
         {
             File metadataFile = FileCache.getFileFromServer(metadataFileName);
             if (metadataFile.exists())
@@ -315,6 +315,12 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         {
             fileFormat = baseFileName.matches(".*\\.[Ff][Ii][Tt][Ss]?\\.[Gg][Zz]$") ? Format.FIT : baseFileName.matches(".*//.[Tt][Xx][Tt]\\.[Gg][Zz]$") ? Format.TXT : Format.UNKNOWN;
         }
+
+        if (fileFormat == Format.UNKNOWN)
+        {
+            fileFormat = Format.TXT;
+        }
+ 
         return fileFormat;
     }
 
@@ -1566,8 +1572,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     {
         if (resolutionLevel >= 0 && resolutionLevel < modelFiles.length)
         {
-            return FileCache.isFileGettable(modelFiles[resolutionLevel]);
+            return FileCache.instance().isAccessible(modelFiles[resolutionLevel]);
         }
+
         return false;
     }
 
@@ -1580,6 +1587,12 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
             return modelNames[resolutionLevel];
         else
             return null;
+    }
+
+    @Override
+    public List<String> getModelFileNames()
+    {
+        return ImmutableList.copyOf(modelFiles);
     }
 
     @Override
