@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +26,10 @@ import org.apache.commons.io.input.CountingInputStream;
 
 import com.google.common.base.Preconditions;
 
+import edu.jhuapl.saavtk.util.DownloadableFileInfo.DownloadableFileState;
 import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
+import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
+import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
 public final class FileCache
 {
@@ -107,7 +111,10 @@ public final class FileCache
      * Class encapsulating what is known about files in the FileCache and the URLs
      * whence they were downloaded. There is also dynamically updated information
      * about file downloads in progress.
+     * 
+     * Use {@link UrlInfo} instead.
      */
+    @Deprecated
     public static final class FileInfo
     {
         // TODO move this somewhere?
@@ -286,35 +293,118 @@ public final class FileCache
 
     private static final UrlAccessManager urlAccessManager = createUrlAccessManager();
 
-    private static final FileCacheManager fileCacheManager = createFileCacheManager();
+    private static final FileAccessManager fileCacheManager = createFileCacheManager();
 
-    public static Path getDownloadPath(String urlString)
+    private static final DownloadableFileManager downloadableManager = createDownloadManager();
+
+    public static DownloadableFileManager instance()
     {
-        return urlAccessManager.getDownloadPath(urlString);
+        return downloadableManager;
     }
 
-    public static File getDownloadFile(String urlString)
+    public static URL getURL(String urlString)
     {
-        Path downloadPath = getDownloadPath(urlString);
-        return fileCacheManager.getFile(downloadPath.toString());
+        return urlAccessManager.getUrl(urlString);
     }
 
     public static UrlInfo getUrlInfo(String urlString)
     {
-        return urlAccessManager.getInfo(urlString, false);
+        return urlAccessManager.queryServer(urlString, false);
     }
 
     public static UrlInfo refreshUrlInfo(String urlString)
     {
-        return urlAccessManager.getInfo(urlString, true);
+        return urlAccessManager.queryServer(urlString, true);
     }
 
-    public static File refreshDownload(String urlString) throws IOException, InterruptedException
+    public static boolean isDownloadNeeded(String urlString)
     {
-        URL url = urlAccessManager.getUrl(urlString);
         File file = getDownloadFile(urlString);
+        return !file.exists() || getUrlInfo(urlString).getState().getLastModified() > file.lastModified();
+    }
 
-        urlAccessManager.updateDownloadedFile(url, file);
+    public static DownloadableFileState refreshDownload(String urlString) throws IOException, InterruptedException
+    {
+        return instance().getDownloadedFile(urlString, false);
+    }
+
+    public static FileDownloader getDownloader(String urlString)
+    {
+        return instance().getDownloader(urlString, false);
+    }
+
+    /**
+     * Return a File object representing the fully qualified location in the cache
+     * where the supplied URL was or would be downloaded. This method does not
+     * download the file, nor query the server for any information about the URL.
+     * Thus this method implies nothing about whether File.exists() will return true
+     * or false.
+     * 
+     * @param urlString the URL
+     * @return the File object
+     */
+    public static File getDownloadFile(String urlString)
+    {
+        return downloadableManager.getInfo(urlString).getState().getFileState().getFile();
+    }
+
+    /**
+     * 
+     * @param urlString
+     * @return
+     */
+    public static File getFileFromServer(String urlString)
+    {
+        Preconditions.checkNotNull(urlString);
+
+        DownloadableFileInfo fileInfo = instance().getInfo(urlString);
+        DownloadableFileState state = fileInfo.getState();
+        URL url = state.getUrlState().getUrl();
+
+        File file = state.getFileState().getFile();
+        RuntimeException exception = null;
+        try
+        {
+            DownloadableFileState fileState = downloadableManager.getDownloadedFile(urlString, false);
+            file = fileState.getFileState().getFile();
+        }
+        catch (FileNotFoundException e)
+        {
+            exception = new NonexistentRemoteFile(e, url);
+        }
+        catch (UnknownHostException e)
+        {
+            exception = new NoInternetAccessException(e, url);
+        }
+        catch (Exception e)
+        {
+            exception = new RuntimeException(e);
+        }
+
+        if (file.exists())
+        {
+            if (exception != null)
+            {
+                System.err.println("Cached file exists, but unable to update cache from URL: " + url);
+                System.err.println("Ignored the following exception:");
+                exception.printStackTrace();
+            }
+        }
+        else
+        {
+            if (exception == null)
+            {
+                if (fileInfo.getState().getUrlState().getStatus() == UrlStatus.NOT_AUTHORIZED)
+                {
+                    exception = new UnauthorizedAccessException("Cannot get file: access is restricted to URL: " + url, url);
+                }
+                else
+                {
+                    exception = new RuntimeException("Unknown problem trying to update file from URL: " + url);
+                }
+            }
+            throw exception;
+        }
 
         return file;
     }
@@ -350,17 +440,25 @@ public final class FileCache
         return result;
     }
 
-    private static FileCacheManager createFileCacheManager()
+    private static FileAccessManager createFileCacheManager()
     {
-        FileCacheManager result = null;
+        FileAccessManager result = null;
         try
         {
-            result = FileCacheManager.of(new File(Configuration.getCacheDir()));
+            result = FileAccessManager.of(new File(Configuration.getCacheDir()));
         }
         catch (IOException e)
         {
             throw new AssertionError(e);
         }
+
+        return result;
+    }
+
+    private static DownloadableFileManager createDownloadManager()
+    {
+        DownloadableFileManager result = DownloadableFileManager.of(urlAccessManager, fileCacheManager);
+        result.startAccessMonitor();
 
         return result;
     }
@@ -393,7 +491,10 @@ public final class FileCache
      * 
      * @param urlOrPathSegment the input URL string or path segment
      * @return the file/URL information
+     * 
+     *         DEPRECATED: use getUrlInfo()/refreshUrlInfo() instead.
      */
+    @Deprecated
     public static FileInfo getFileInfoFromServer(String urlOrPathSegment)
     {
         Preconditions.checkNotNull(urlOrPathSegment);
@@ -445,7 +546,11 @@ public final class FileCache
      * @param pathSegment the path relative to the data cache top for the local
      *            object
      * @return the file information object
+     * 
+     *         DEPRECATED: this is a utility method superseded by
+     *         UrlInfo/UrlAccessManager.
      */
+    @Deprecated
     private static FileInfo getFileInfoFromServer(final URL url, String pathSegment)
     {
         Preconditions.checkNotNull(url);
@@ -516,6 +621,10 @@ public final class FileCache
         return INFO_MAP.get(file);
     }
 
+    /**
+     * DEPRECATED: this is a utility method superseded by UrlInfo/UrlAccessManager.
+     */
+    @Deprecated
     private static FileInfo getFileInfo(URL url, File file)
     {
         // This code is based on code from stacktrace. The stacktrace code
@@ -598,11 +707,6 @@ public final class FileCache
         return new FileInfo(url, file, authorized, urlExists, lastModified);
     }
 
-    public static boolean isFileInCustomData(String urlOrPathSegment)
-    {
-        return new File(urlOrPathSegment).exists();
-    }
-
     /**
      * Determine if it appears that the provided data object identifier could be
      * downloaded and/or accessed. (See getFileInfoFromServer method for more
@@ -618,18 +722,20 @@ public final class FileCache
      */
     public static boolean isFileGettable(String urlOrPathSegment)
     {
+        Preconditions.checkNotNull(urlOrPathSegment);
+
         boolean result = false;
 
         Path downloadPath = urlAccessManager.getDownloadPath(urlOrPathSegment);
-
-        if (fileCacheManager.isAccessible(downloadPath.toString()))
+        edu.jhuapl.saavtk.util.FileInfo fileInfo = fileCacheManager.queryFileSystem(downloadPath.toString(), false);
+        if (fileInfo.getState().getStatus() == FileStatus.ACCESSIBLE)
         {
             result = true;
         }
         else
         {
-            UrlInfo urlInfo = urlAccessManager.getInfo(urlOrPathSegment, false);
-            switch (urlInfo.getStatus())
+            UrlInfo urlInfo = urlAccessManager.queryServer(urlOrPathSegment, false);
+            switch (urlInfo.getState().getStatus())
             {
             case ACCESSIBLE:
                 result = true;
@@ -659,8 +765,14 @@ public final class FileCache
      * @throws NoInternetAccessException if a 401 (Unauthorized) error is
      *             encountered when attempting to access the server for the remote
      *             file.
+     * 
+     *             DEPRECATED: this was the original workhorse method for getting
+     *             files out of the cache. It's been superseded by the capabilities
+     *             of UrlInfo, UrlAccessManager and FileCacheManager. Leaving it
+     *             here just for reference as nothing calls it nor should call it.
      */
-    public static File getFileFromServer(String urlOrPathSegment) throws NoInternetAccessException
+    @Deprecated
+    public static File getFileFromServerOrig(String urlOrPathSegment) throws NoInternetAccessException
     {
         FileInfo fileInfo = getFileInfoFromServer(urlOrPathSegment);
         URL url = fileInfo.getURL();
@@ -810,6 +922,8 @@ public final class FileCache
         }
         FileCache.offlineMode = offlineMode;
         FileCache.offlineModeRootFolder = offlineModeRootFolder;
+
+        UrlAccessManager.setEnableServerAccess(!offlineMode);
     }
 
     /**
