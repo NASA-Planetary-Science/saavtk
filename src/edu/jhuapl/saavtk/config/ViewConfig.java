@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.model.ShapeModelBody;
 import edu.jhuapl.saavtk.model.ShapeModelType;
+import edu.jhuapl.saavtk.util.DownloadableFileManager;
 
 /**
  * A Config is a class for storing models should be instantiated together for a
@@ -117,6 +118,8 @@ public abstract class ViewConfig implements Cloneable
             return "DefaultName" + ver;
         }
     }
+
+    public abstract void addModelAccessibilityListener(DownloadableFileManager.StateListener listener);
 
     public boolean isEnabled()
     {

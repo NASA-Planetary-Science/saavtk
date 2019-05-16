@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableList;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.model.ShapeModelBody;
 import edu.jhuapl.saavtk.model.ShapeModelType;
+import edu.jhuapl.saavtk.util.DownloadableFileManager.StateListener;
 
 public class ExampleViewConfig extends ViewConfig
 {
@@ -55,6 +56,12 @@ public class ExampleViewConfig extends ViewConfig
     public boolean isAccessible()
     {
         return true;
+    }
+
+    @Override
+    public void addModelAccessibilityListener(@SuppressWarnings("unused") StateListener listener)
+    {
+
     }
 
 }
