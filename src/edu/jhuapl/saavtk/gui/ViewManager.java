@@ -358,7 +358,7 @@ public abstract class ViewManager extends JPanel
             view.initialize();
 
             if (currentView != null)
-                currentView.renderer.viewDeactivating();
+                currentView.getRenderer().viewDeactivating();
 
             CardLayout cardLayout = (CardLayout) (getLayout());
             cardLayout.show(this, view.getUniqueName());
@@ -369,7 +369,7 @@ public abstract class ViewManager extends JPanel
 
             currentView = view;
 
-            currentView.renderer.viewActivating();
+            currentView.getRenderer().viewActivating();
 
             updateRecents();
             frame.setTitle(view.getPathRepresentation());
