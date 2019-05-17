@@ -1,12 +1,14 @@
 package edu.jhuapl.saavtk.gui;
 
 import java.awt.Component;
+import java.awt.EventQueue;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -74,16 +76,26 @@ public class Console
         this.out = out;
     }
 
-    public static void configure(boolean enable)
+    public static void configure(boolean enable) throws InvocationTargetException, InterruptedException
     {
         configure(enable, null);
     }
 
-    public static void configure(boolean enable, PrintStream outputFile)
+    public static void configure(boolean enable, PrintStream outputFile) throws InvocationTargetException, InterruptedException
     {
-        if (CONSOLE != null)
-            throw new UnsupportedOperationException("Console may only be configured once.");
-        CONSOLE = new Console(enable, outputFile);
+        Runnable runnable = () -> {
+            if (CONSOLE != null)
+                throw new UnsupportedOperationException("Console may only be configured once.");
+            CONSOLE = new Console(enable, outputFile);
+        };
+        if (EventQueue.isDispatchThread())
+        {
+            runnable.run();
+        }
+        else
+        {
+            EventQueue.invokeAndWait(runnable);
+        }
     }
 
     public static boolean isConfigured()
