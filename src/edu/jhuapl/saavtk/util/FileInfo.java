@@ -160,7 +160,7 @@ public class FileInfo
             lastModified = this.state.getLastModified();
         }
 
-        status = file.isFile() ? FileStatus.ACCESSIBLE : FileStatus.INACCESSIBLE;
+        status = file.exists() ? FileStatus.ACCESSIBLE : FileStatus.INACCESSIBLE;
         length = file.length();
         lastModified = file.lastModified();
 
