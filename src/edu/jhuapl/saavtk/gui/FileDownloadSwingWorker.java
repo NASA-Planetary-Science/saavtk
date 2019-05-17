@@ -8,6 +8,10 @@ import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.FileCache.FileInfo;
 import edu.jhuapl.saavtk.util.FileUtil;
 
+/**
+ * Use FileDownloader/FileDownloadProgressMonitor instead.
+ */
+@Deprecated
 public class FileDownloadSwingWorker extends ProgressBarSwingWorker
 {
     private static final DecimalFormat DF = new DecimalFormat("0.00");
