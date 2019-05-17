@@ -98,6 +98,7 @@ public class FileAccessManager
         FileState state = result.getState();
         if (state.getStatus() == FileStatus.UNKNOWN || forceUpdate)
         {
+            Debug.out().println("Querying FS about " + file);
             result.update();
         }
 

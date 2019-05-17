@@ -288,14 +288,13 @@ public final class FileCache
 
     private static final ConcurrentHashMap<File, FileInfo> INFO_MAP = new ConcurrentHashMap<>();
     private static boolean showDotsForFiles = false;
-    private static boolean offlineMode;
     private static String offlineModeRootFolder;
 
-    private static final UrlAccessManager urlAccessManager = createUrlAccessManager();
-
-    private static final FileAccessManager fileCacheManager = createFileCacheManager();
-
     private static final DownloadableFileManager downloadableManager = createDownloadManager();
+
+    private static final UrlAccessManager urlAccessManager = downloadableManager.getUrlManager();
+
+    private static final FileAccessManager fileCacheManager = downloadableManager.getFileManager();
 
     public static DownloadableFileManager instance()
     {
@@ -409,55 +408,10 @@ public final class FileCache
         return file;
     }
 
-    private static UrlAccessManager createUrlAccessManager()
-    {
-        UrlAccessManager result = null;
-        try
-        {
-            result = UrlAccessManager.of(Configuration.getDataRootURL());
-        }
-        catch (@SuppressWarnings("unused") UnknownHostException e)
-        {
-            // This is interpreted to mean that there is no internet connection just now.
-            setOfflineMode(true);
-
-            // Still need a valid access manager in case internet connection comes back.
-            UrlAccessManager.setEnableServerAccess(false);
-            try
-            {
-                result = UrlAccessManager.of(Configuration.getDataRootURL());
-            }
-            catch (IOException e1)
-            {
-                throw new AssertionError(e1);
-            }
-        }
-        catch (IOException e)
-        {
-            throw new AssertionError(e);
-        }
-
-        return result;
-    }
-
-    private static FileAccessManager createFileCacheManager()
-    {
-        FileAccessManager result = null;
-        try
-        {
-            result = FileAccessManager.of(new File(Configuration.getCacheDir()));
-        }
-        catch (IOException e)
-        {
-            throw new AssertionError(e);
-        }
-
-        return result;
-    }
-
     private static DownloadableFileManager createDownloadManager()
     {
-        DownloadableFileManager result = DownloadableFileManager.of(urlAccessManager, fileCacheManager);
+        DownloadableFileManager result = DownloadableFileManager.of(Configuration.getDataRootURL(), new File(Configuration.getCacheDir()));
+
         result.startAccessMonitor();
 
         return result;
@@ -563,7 +517,7 @@ public final class FileCache
 
         final String ungzippedPath = pathSegment.toLowerCase().endsWith(".gz") ? pathSegment.substring(0, pathSegment.length() - 3) : pathSegment;
 
-        if (offlineMode)
+        if (getOfflineMode())
         {
             // It's possible there is information about this file already from a previous
             // query
@@ -789,7 +743,7 @@ public final class FileCache
                 throw new NonexistentRemoteFile("File pointed to does not exist: " + url, url);
             }
 
-            if (offlineMode)
+            if (getOfflineMode())
             {
                 throw new NoInternetAccessException("Offline mode; unable to retrieve " + url, url);
             }
@@ -897,7 +851,7 @@ public final class FileCache
 
     public static boolean getOfflineMode()
     {
-        return offlineMode;
+        return !downloadableManager.isServerAccessEnabled();
     }
 
     public static void setOfflineMode(boolean offlineMode)
@@ -920,10 +874,9 @@ public final class FileCache
         {
             Preconditions.checkNotNull(offlineModeRootFolder);
         }
-        FileCache.offlineMode = offlineMode;
         FileCache.offlineModeRootFolder = offlineModeRootFolder;
 
-        UrlAccessManager.setEnableServerAccess(!offlineMode);
+        downloadableManager.setEnableServerAccess(!offlineMode);
     }
 
     /**

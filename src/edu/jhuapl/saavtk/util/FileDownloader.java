@@ -125,6 +125,7 @@ public class FileDownloader extends SwingWorker<Void, Void>
 
         if (forceDownload || isFileOutOfDate() || urlInfo.getState().getStatus() == UrlStatus.UNKNOWN || fileInfo.getState().getStatus() == FileStatus.UNKNOWN)
         {
+            Debug.out().println("Querying FS and server before maybe downloading " + urlInfo.getState().getUrl());
             fileInfo.update();
 
             try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.GET))
@@ -148,6 +149,7 @@ public class FileDownloader extends SwingWorker<Void, Void>
     @Override
     public void done()
     {
+        Debug.out().println("Querying FS following download of " + urlInfo.getState().getUrl());
         fileInfo.update();
 
         firePropertyChange(isCancelled() ? CANCELED_PROPERTY : DONE_PROPERTY, null, fileInfo);
@@ -164,7 +166,7 @@ public class FileDownloader extends SwingWorker<Void, Void>
 
     protected void download(CloseableUrlConnection closeableConnection) throws IOException, InterruptedException
     {
-        Debug.out().println("Opened connection to download " + urlInfo.getState().getUrl());
+        System.out.println("Downloading " + urlInfo.getState().getUrl());
 
         URLConnection connection = closeableConnection.getConnection();
 

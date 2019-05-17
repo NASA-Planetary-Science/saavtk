@@ -30,18 +30,7 @@ public class UrlAccessManager
 {
     protected static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
 
-    private static volatile boolean enableServerAccess = true;
     private static volatile boolean showDotsForFiles = false;
-
-    public static boolean isServerAccessEnabled()
-    {
-        return enableServerAccess;
-    }
-
-    public static void setEnableServerAccess(boolean enableServerAccess)
-    {
-        UrlAccessManager.enableServerAccess = enableServerAccess;
-    }
 
     public static boolean isShowDotsForFiles()
     {
@@ -61,12 +50,8 @@ public class UrlAccessManager
      * 
      * @param rootUrl the root level of the server
      * @return the manager
-     * @throws FileNotFoundException if such an exception was thrown while
-     *             opening/querying the connection
-     * @throws UnknownHostException if such an exception was thrown while
-     *             opening/querying the connection
      */
-    public static UrlAccessManager of(URL rootUrl) throws IOException
+    public static UrlAccessManager of(URL rootUrl)
     {
         Preconditions.checkNotNull(rootUrl);
 
@@ -74,23 +59,23 @@ public class UrlAccessManager
 
         UrlAccessManager result = new UrlAccessManager(rootUrl);
 
-        if (isServerAccessEnabled())
+        try (CloseableUrlConnection connection = CloseableUrlConnection.of(rootInfo, HttpRequestMethod.HEAD))
         {
-            try (CloseableUrlConnection connection = CloseableUrlConnection.of(rootInfo, HttpRequestMethod.HEAD))
-            {
-                rootInfo.update(connection.getConnection());
-            }
-            catch (FileNotFoundException | UnknownHostException e)
-            {
-                // Serious problem: just re-throw.
-                throw e;
-            }
-            catch (Exception e)
-            {
-                // Any other exception (e.g. SocketTimeoutException) most likely indicates
-                // a transient problem, so report it but continue.
-                e.printStackTrace();
-            }
+            Debug.out().println("Querying server about root URL " + rootUrl);
+            rootInfo.update(connection.getConnection());
+        }
+        catch (FileNotFoundException | UnknownHostException e)
+        {
+            // Serious problem. Disable server access pending resolution.
+            System.err.println("Problem connecting to server. Disabling server access for now");
+            e.printStackTrace();
+            result.setEnableServerAccess(false);
+        }
+        catch (Exception e)
+        {
+            // Any other exception (e.g. SocketTimeoutException) most likely indicates
+            // a transient problem, so report it but do not disable access.
+            e.printStackTrace();
         }
 
         return result;
@@ -98,13 +83,25 @@ public class UrlAccessManager
 
     private final URL rootUrl;
     private final ConcurrentMap<URL, UrlInfo> urlInfoCache;
+    private volatile boolean enableServerAccess;
 
     protected UrlAccessManager(URL rootUrl)
     {
         this.rootUrl = rootUrl;
         this.urlInfoCache = new ConcurrentHashMap<>();
+        this.enableServerAccess = true;
 
         this.urlInfoCache.put(rootUrl, new UrlInfo(rootUrl));
+    }
+
+    public boolean isServerAccessEnabled()
+    {
+        return enableServerAccess;
+    }
+
+    public void setEnableServerAccess(boolean enableServerAccess)
+    {
+        this.enableServerAccess = enableServerAccess;
     }
 
     public URL getRootUrl()
@@ -327,7 +324,7 @@ public class UrlAccessManager
             {
                 try (CloseableUrlConnection connection = CloseableUrlConnection.of(result, HttpRequestMethod.HEAD))
                 {
-                    Debug.out().println("Opened connection for info about " + url);
+                    Debug.out().println("Querying server about " + url);
                     result.update(connection.getConnection());
                 }
                 catch (@SuppressWarnings("unused") IOException e)
@@ -352,10 +349,10 @@ public class UrlAccessManager
         boolean checkStuff = false;
         if (checkStuff)
         {
-            setEnableServerAccess(false);
+            UrlAccessManager manager;
             try
             {
-                UrlAccessManager manager = UrlAccessManager.of(new URL("http://spud.com"));
+                manager = UrlAccessManager.of(new URL("http://spud.com"));
                 System.err.println(manager.getDownloadPath("/absolute/looking/path"));
                 System.err.println(manager.getDownloadPath("\\absolute\\looking\\hinky\\windows\\path"));
                 System.err.println(manager.getDownloadPath("c:\\absolute\\looking\\windows\\path"));
@@ -366,7 +363,7 @@ public class UrlAccessManager
                 System.err.println(manager.getDownloadPath("http://spud.com/c:/windows/url/path"));
                 System.err.println(manager.getDownloadPath("http://spud.com/c:\\windows\\native\\path"));
             }
-            catch (IOException e)
+            catch (MalformedURLException e)
             {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -382,29 +379,14 @@ public class UrlAccessManager
             runRemoteTests(remoteTestCache);
 
             System.out.println("\nRunning remote tests the second time with server access disabled (should see no connections)");
-            UrlAccessManager.setEnableServerAccess(false);
+            remoteTestCache.setEnableServerAccess(false);
             runRemoteTests(remoteTestCache);
-            UrlAccessManager.setEnableServerAccess(true);
+            remoteTestCache.setEnableServerAccess(true);
 
             System.out.println("\nRunning remote tests the third time (should see one connection)");
             runRemoteTests(remoteTestCache);
 
             System.out.println("\nTry setting up a manager using an invalid root url");
-// UrlAccessManager.setEnableServerAccess(false);
-            try
-            {
-                UrlAccessManager.of(new URL("http://sbmt.jhuBOZOapl.edu"));
-                System.err.println("Creating a URLInfoCache using a bogus serer didn't throw an exception");
-            }
-            catch (MalformedURLException e)
-            {
-                throw new AssertionError("Problem with the test itself!", e);
-            }
-            catch (@SuppressWarnings("unused") FileNotFoundException | UnknownHostException e)
-            {
-                // Expected this.
-            }
-// UrlAccessManager.setEnableServerAccess(true);
 
             System.out.println("\nSetting up a manager for a local file URL");
             String cacheDir = Configuration.getCacheDir();

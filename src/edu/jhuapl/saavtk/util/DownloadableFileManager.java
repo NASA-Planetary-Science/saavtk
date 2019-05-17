@@ -22,6 +22,17 @@ public class DownloadableFileManager
         void respond(DownloadableFileState fileState);
     }
 
+    public static DownloadableFileManager of(URL rootUrl, File cacheDir)
+    {
+        Preconditions.checkNotNull(rootUrl);
+        Preconditions.checkNotNull(cacheDir);
+
+        UrlAccessManager urlManager = UrlAccessManager.of(rootUrl);
+        FileAccessManager fileManager = createFileCacheManager(cacheDir);
+
+        return new DownloadableFileManager(urlManager, fileManager);
+    }
+
     public static DownloadableFileManager of(UrlAccessManager urlManager, FileAccessManager fileManager)
     {
         return new DownloadableFileManager(urlManager, fileManager);
@@ -80,6 +91,26 @@ public class DownloadableFileManager
         enableMonitor = false;
     }
 
+    public boolean isServerAccessEnabled()
+    {
+        return urlManager.isServerAccessEnabled();
+    }
+
+    public void setEnableServerAccess(boolean enableServerAccess)
+    {
+        urlManager.setEnableServerAccess(enableServerAccess);
+    }
+
+    public UrlAccessManager getUrlManager()
+    {
+        return urlManager;
+    }
+
+    public FileAccessManager getFileManager()
+    {
+        return fileManager;
+    }
+
     public boolean isAccessible(String urlString)
     {
         return query(urlString, false).getState().isAccessible();
@@ -135,7 +166,7 @@ public class DownloadableFileManager
         File file = downloadableInfo.getState().getFileState().getFile();
         FileInfo fileInfo = fileManager.getInfo(file);
 
-        return FileAccessQuerier.of(urlInfo, fileInfo, forceUpdate);
+        return FileAccessQuerier.of(urlInfo, fileInfo, forceUpdate, isServerAccessEnabled());
     }
 
     public DownloadableFileInfo query(String urlString, boolean forceUpdate)
@@ -195,7 +226,7 @@ public class DownloadableFileManager
     {
         DownloadableFileState fileState = getInfo(urlString).getState();
 
-        if (UrlAccessManager.isServerAccessEnabled() && (forceDownload || (fileState.isDownloadMayBePossible() && fileState.isDownloadNecessary())))
+        if (urlManager.isServerAccessEnabled() && (forceDownload || (fileState.isDownloadMayBePossible() && fileState.isDownloadNecessary())))
         {
             FileDownloader downloader = getDownloader(urlString, forceDownload);
             downloader.download();
@@ -209,7 +240,7 @@ public class DownloadableFileManager
     {
         DownloadableFileState fileState = getInfo(urlString).getState();
 
-        if (UrlAccessManager.isServerAccessEnabled() && (forceDownload || (fileState.isDownloadMayBePossible() && fileState.isDownloadNecessary())))
+        if (urlManager.isServerAccessEnabled() && (forceDownload || (fileState.isDownloadMayBePossible() && fileState.isDownloadNecessary())))
         {
             FileDownloader downloader = getDownloader(urlString, forceDownload);
 
@@ -252,6 +283,21 @@ public class DownloadableFileManager
                 listener.respond((DownloadableFileState) e.getNewValue());
             }
         });
+    }
+
+    private static FileAccessManager createFileCacheManager(File cacheDir)
+    {
+        FileAccessManager result = null;
+        try
+        {
+            result = FileAccessManager.of(cacheDir);
+        }
+        catch (IOException e)
+        {
+            throw new AssertionError(e);
+        }
+
+        return result;
     }
 
 }
