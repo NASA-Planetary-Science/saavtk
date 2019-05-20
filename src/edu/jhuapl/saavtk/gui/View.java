@@ -9,8 +9,10 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.BorderFactory;
 import javax.swing.JMenuItem;
@@ -27,6 +29,7 @@ import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.popup.PopupMenu;
+import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.Preferences;
 
 /**
@@ -47,7 +50,7 @@ public abstract class View extends JPanel
     private WindowManager infoPanelManager;
     private WindowManager spectrumPanelManager;
     private StatusBar statusBar;
-    private boolean initialized = false;
+    private final AtomicBoolean initialized = new AtomicBoolean(false);
     private ViewConfig config;
 
     // accessor methods
@@ -137,105 +140,127 @@ public abstract class View extends JPanel
 
     protected abstract void setupTabs();
 
-    protected void initialize()
+    protected void initialize() throws InvocationTargetException, InterruptedException
     {
-        if (initialized)
-            return;
+        synchronized (initialized)
+        {
+            if (initialized.get())
+                return;
 
-        setupModelManager();
+            Configuration.runAndWaitOnEDT(() -> {
+                setupModelManager();
+            });
 
-        setupInfoPanelManager();
+            Configuration.runAndWaitOnEDT(() -> {
+                setupInfoPanelManager();
+            });
 
-        setupSpectrumPanelManager();
+            Configuration.runAndWaitOnEDT(() -> {
+                setupSpectrumPanelManager();
+            });
 
-        setupRenderer();
+            Configuration.runAndWaitOnEDT(() -> {
+                setupRenderer();
+            });
 
-        setupPopupManager();
+            Configuration.runAndWaitOnEDT(() -> {
+                setupPopupManager();
+            });
 
-        setupPickManager();
+            Configuration.runAndWaitOnEDT(() -> {
+                setupPickManager();
+            });
 
-        controlPanel = new JTabbedPane();
-        controlPanel.setBorder(BorderFactory.createEmptyBorder());
+            Configuration.runAndWaitOnEDT(() -> {
+                controlPanel = new JTabbedPane();
+                controlPanel.setBorder(BorderFactory.createEmptyBorder());
 
-        setupTabs();
+                setupTabs();
+            });
 
-        // add capability to right click on tab title regions and set as default tab to
-        // load
-        controlPanel.addMouseListener(new MouseAdapter() {
+            Configuration.runAndWaitOnEDT(() -> {
+                // add capability to right click on tab title regions and set as default tab to
+                // load
+                controlPanel.addMouseListener(new MouseAdapter() {
 
-            @Override
-            public void mouseReleased(MouseEvent e)
-            {
-                showDefaultTabSelectionPopup(e);
-            }
+                    @Override
+                    public void mouseReleased(MouseEvent e)
+                    {
+                        showDefaultTabSelectionPopup(e);
+                    }
 
-            @Override
-            public void mousePressed(MouseEvent e)
-            {
-                showDefaultTabSelectionPopup(e);
-            }
+                    @Override
+                    public void mousePressed(MouseEvent e)
+                    {
+                        showDefaultTabSelectionPopup(e);
+                    }
 
-            @Override
-            public void mouseClicked(MouseEvent e)
-            {
-                showDefaultTabSelectionPopup(e);
-            }
-        });
-        int tabIndex = FavoriteTabsFile.getInstance().getFavoriteTab(config.getUniqueName());
-        controlPanel.setSelectedIndex(tabIndex); // load default tab (which is 0 if not specified in favorite tabs file)
+                    @Override
+                    public void mouseClicked(MouseEvent e)
+                    {
+                        showDefaultTabSelectionPopup(e);
+                    }
+                });
+                int tabIndex = FavoriteTabsFile.getInstance().getFavoriteTab(config.getUniqueName());
+                controlPanel.setSelectedIndex(tabIndex); // load default tab (which is 0 if not specified in favorite tabs file)
 
-        splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, controlPanel, renderer);
+                splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, controlPanel, renderer);
 
-        splitPane.setOneTouchExpandable(true);
+                splitPane.setOneTouchExpandable(true);
 
-        int splitLocation = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
-        splitPane.setDividerLocation(splitLocation);
+                int splitLocation = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
+                splitPane.setDividerLocation(splitLocation);
 
-        splitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, new PropertyChangeListener() {
-            @Override
-            public void propertyChange(@SuppressWarnings("unused") PropertyChangeEvent pce)
-            {
-                LinkedHashMap<String, String> map = new LinkedHashMap<>();
-                map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
-                map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
-                Preferences.getInstance().put(map);
-            }
-        });
-        int rendererWidth = splitPane.getWidth() - splitLocation;
+                splitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, new PropertyChangeListener() {
+                    @Override
+                    public void propertyChange(@SuppressWarnings("unused") PropertyChangeEvent pce)
+                    {
+                        LinkedHashMap<String, String> map = new LinkedHashMap<>();
+                        map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
+                        map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
+                        Preferences.getInstance().put(map);
+                    }
+                });
+                int rendererWidth = splitPane.getWidth() - splitLocation;
 
-        int height = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_HEIGHT, 800L);
-        renderer.setMinimumSize(new Dimension(100, 100));
-        controlPanel.setMinimumSize(new Dimension(320, 100));
+                int height = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_HEIGHT, 800L);
+                renderer.setMinimumSize(new Dimension(100, 100));
+                controlPanel.setMinimumSize(new Dimension(320, 100));
 
-        renderer.setPreferredSize(new Dimension(rendererWidth, height));
-        controlPanel.setPreferredSize(new Dimension(splitLocation, height));
+                renderer.setPreferredSize(new Dimension(rendererWidth, height));
+                controlPanel.setPreferredSize(new Dimension(splitLocation, height));
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            private LinkedHashMap<String, String> map = new LinkedHashMap<>();
+                Runtime.getRuntime().addShutdownHook(new Thread() {
+                    private LinkedHashMap<String, String> map = new LinkedHashMap<>();
 
-            @Override
-            public void run()
-            {
-                map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
-                map.put(Preferences.RENDERER_PANEL_HEIGHT, new Long(renderer.getHeight()).toString());
-                map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
-                map.put(Preferences.CONTROL_PANEL_HEIGHT, new Long(controlPanel.getHeight()).toString());
-                Preferences.getInstance().put(map);
-            }
-        });
+                    @Override
+                    public void run()
+                    {
+                        map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
+                        map.put(Preferences.RENDERER_PANEL_HEIGHT, new Long(renderer.getHeight()).toString());
+                        map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
+                        map.put(Preferences.CONTROL_PANEL_HEIGHT, new Long(controlPanel.getHeight()).toString());
+                        Preferences.getInstance().put(map);
+                    }
+                });
 
-        this.add(splitPane, BorderLayout.CENTER);
+                this.add(splitPane, BorderLayout.CENTER);
 
-        renderer.getRenderWindowPanel().resetCamera();
+                renderer.getRenderWindowPanel().resetCamera();
 
-        initializeStateManager();
+                initializeStateManager();
 
-        initialized = true;
+                initialized.set(true);
+            });
+        }
     }
 
     protected final boolean isInitialized()
     {
-        return initialized;
+        synchronized (initialized)
+        {
+            return initialized.get();
+        }
     }
 
     private void showDefaultTabSelectionPopup(MouseEvent e)

@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
@@ -74,15 +75,17 @@ public class Configuration
     //            rootURL = rootURLProperty;
     //    }
 
-    public static void runOnEDT(Runnable runnable) throws InvocationTargetException, InterruptedException
+    public static void runOnEDT(Runnable runnable)
     {
         Preconditions.checkNotNull(runnable);
+
         EventQueue.invokeLater(runnable);
     }
 
-    public static void runOnEDTASAP(Runnable runnable) throws InvocationTargetException, InterruptedException
+    public static void runAndWaitOnEDT(Runnable runnable) throws InvocationTargetException, InterruptedException
     {
         Preconditions.checkNotNull(runnable);
+
         if (EventQueue.isDispatchThread())
         {
             runnable.run();
@@ -175,97 +178,109 @@ public class Configuration
 
     private static boolean promptUserForPassword(final String restrictedAccessUrl, final Path passwordFile, final boolean updateMode)
     {
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        JLabel promptLabel = new JLabel(INITIAL_MESSAGE);
-        JLabel requestAccess = new JLabel("<html><br>(Email sbmt@jhuapl.edu to request access)</html>@");
+        AtomicBoolean validPasswordEntered = new AtomicBoolean(false);
 
-        JPanel namePanel = new JPanel();
-        namePanel.setLayout(new BoxLayout(namePanel, BoxLayout.X_AXIS));
-        namePanel.add(new JLabel("Username:"));
-        JTextField nameField = new JTextField(15);
-        namePanel.add(nameField);
-
-        JPanel passwordPanel = new JPanel();
-        passwordPanel.setLayout(new BoxLayout(passwordPanel, BoxLayout.X_AXIS));
-        passwordPanel.add(new JLabel("Password:"));
-        JPasswordField passwordField = new JPasswordField(15);
-        passwordPanel.add(passwordField);
-
-        JCheckBox rememberPasswordCheckBox = new JCheckBox("Do not prompt for a password in the future (save/clear credentials).");
-        rememberPasswordCheckBox.setSelected(true);
-
-        mainPanel.add(promptLabel);
-        mainPanel.add(requestAccess);
-        mainPanel.add(namePanel);
-        mainPanel.add(passwordPanel);
-        mainPanel.add(rememberPasswordCheckBox);
-
-        boolean repromptUser = false;
-        boolean validPasswordEntered = false;
-        final int maximumNumberTries = 1;
-        do
+        try
         {
-            repromptUser = false;
-            int selection = JOptionPane.showConfirmDialog(null, mainPanel, "Small Body Mapping Tool: Optional Password", JOptionPane.OK_CANCEL_OPTION);
-            boolean rememberPassword = rememberPasswordCheckBox.isSelected();
-            String name = nameField.getText().trim();
-            char[] password = passwordField.getPassword();
-            if (selection == JOptionPane.OK_OPTION)
-            {
-                if (name.isEmpty())
+            runAndWaitOnEDT(() -> {
+                JPanel mainPanel = new JPanel();
+                mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+                JLabel promptLabel = new JLabel(INITIAL_MESSAGE);
+                JLabel requestAccess = new JLabel("<html><br>(Email sbmt@jhuapl.edu to request access)</html>@");
+
+                JPanel namePanel = new JPanel();
+                namePanel.setLayout(new BoxLayout(namePanel, BoxLayout.X_AXIS));
+                namePanel.add(new JLabel("Username:"));
+                JTextField nameField = new JTextField(15);
+                namePanel.add(nameField);
+
+                JPanel passwordPanel = new JPanel();
+                passwordPanel.setLayout(new BoxLayout(passwordPanel, BoxLayout.X_AXIS));
+                passwordPanel.add(new JLabel("Password:"));
+                JPasswordField passwordField = new JPasswordField(15);
+                passwordPanel.add(passwordField);
+
+                JCheckBox rememberPasswordCheckBox = new JCheckBox("Do not prompt for a password in the future (save/clear credentials).");
+                rememberPasswordCheckBox.setSelected(true);
+
+                mainPanel.add(promptLabel);
+                mainPanel.add(requestAccess);
+                mainPanel.add(namePanel);
+                mainPanel.add(passwordPanel);
+                mainPanel.add(rememberPasswordCheckBox);
+
+                boolean repromptUser = false;
+                final int maximumNumberTries = 1;
+                do
                 {
-                    // Blank password is acceptable, but is not considered "valid" in the sense of
-                    // this method.
-                    name = null;
-                    password = null;
+                    repromptUser = false;
+                    int selection = JOptionPane.showConfirmDialog(null, mainPanel, "Small Body Mapping Tool: Optional Password", JOptionPane.OK_CANCEL_OPTION);
+                    boolean rememberPassword = rememberPasswordCheckBox.isSelected();
+                    String name = nameField.getText().trim();
+                    char[] password = passwordField.getPassword();
+                    if (selection == JOptionPane.OK_OPTION)
+                    {
+                        if (name.isEmpty())
+                        {
+                            // Blank password is acceptable, but is not considered "valid" in the sense of
+                            // this method.
+                            name = null;
+                            password = null;
+                        }
+                        else
+                        {
+                            // Attempt authentication.
+                            setupPasswordAuthentication(name, password, maximumNumberTries);
+                            UrlState state = FileCache.refreshUrlInfo(restrictedAccessUrl).getState();
+                            UrlStatus status = state.getStatus();
+                            if (status == UrlStatus.NOT_AUTHORIZED)
+                            {
+                                // Try again.
+                                promptLabel.setText("<html>Invalid user name or password. Try again, or click \"Cancel\" to continue without password. Some models may not be available.</html>");
+                                repromptUser = true;
+                                continue;
+                            }
+                            else if (status != UrlStatus.ACCESSIBLE)
+                            {
+                                // Try again.
+                                promptLabel.setText("<html>Server problem. Try again, or click \"Cancel\" to continue without password. If this persists, contact sbmt.jhuapl.edu. Some models may not be available without a password.</html>");
+                                repromptUser = true;
+                                continue;
+                            }
+                            validPasswordEntered.set(true);
+                        }
+                        try
+                        {
+                            if (rememberPassword)
+                            {
+                                writePasswordFile(passwordFile, name, password);
+                            }
+                            else
+                            {
+                                deleteFile(passwordFile);
+                            }
+                            if (updateMode)
+                            {
+                                JOptionPane.showMessageDialog(null, "You must restart the tool for this change to take effect.", "Password changes saved", JOptionPane.INFORMATION_MESSAGE);
+                            }
+                        }
+                        catch (IOException e)
+                        {
+                            e.printStackTrace();
+                            JOptionPane.showMessageDialog(null, "Unable to update password. See console for more details.", "Failed to save password", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
                 }
-                else
-                {
-                    // Attempt authentication.
-                    setupPasswordAuthentication(name, password, maximumNumberTries);
-                    UrlState state = FileCache.refreshUrlInfo(restrictedAccessUrl).getState();
-                    UrlStatus status = state.getStatus();
-                    if (status == UrlStatus.NOT_AUTHORIZED)
-                    {
-                        // Try again.
-                        promptLabel.setText("<html>Invalid user name or password. Try again, or click \"Cancel\" to continue without password. Some models may not be available.</html>");
-                        repromptUser = true;
-                        continue;
-                    }
-                    else if (status != UrlStatus.ACCESSIBLE)
-                    {
-                        // Try again.
-                        promptLabel.setText("<html>Server problem. Try again, or click \"Cancel\" to continue without password. If this persists, contact sbmt.jhuapl.edu. Some models may not be available without a password.</html>");
-                        repromptUser = true;
-                        continue;
-                    }
-                    validPasswordEntered = true;
-                }
-                try
-                {
-                    if (rememberPassword)
-                    {
-                        writePasswordFile(passwordFile, name, password);
-                    }
-                    else
-                    {
-                        deleteFile(passwordFile);
-                    }
-                    if (updateMode)
-                    {
-                        JOptionPane.showMessageDialog(null, "You must restart the tool for this change to take effect.", "Password changes saved", JOptionPane.INFORMATION_MESSAGE);
-                    }
-                }
-                catch (IOException e)
-                {
-                    e.printStackTrace();
-                    JOptionPane.showMessageDialog(null, "Unable to update password. See console for more details.", "Failed to save password", JOptionPane.ERROR_MESSAGE);
-                }
-            }
+                while (repromptUser);
+
+            });
         }
-        while (repromptUser);
-        return validPasswordEntered;
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        return validPasswordEntered.get();
     }
 
     public static void setupPasswordAuthentication(final String username, final char[] password)

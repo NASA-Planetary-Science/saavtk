@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.gui;
 
 import java.awt.CardLayout;
+import java.awt.EventQueue;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -20,6 +21,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
+import javax.swing.SwingWorker;
 
 import com.google.common.base.Preconditions;
 
@@ -353,37 +355,55 @@ public abstract class ViewManager extends JPanel
             return;
         }
 
-        try
-        {
-            view.initialize();
+        SwingWorker<Boolean, Void> initializer = new SwingWorker<Boolean, Void>() {
 
-            if (currentView != null)
-                currentView.getRenderer().viewDeactivating();
+            @Override
+            protected Boolean doInBackground() throws Exception
+            {
+                try
+                {
+                    view.initialize();
+                }
+                catch (UnauthorizedAccessException e)
+                {
+                    e.printStackTrace();
+                    EventQueue.invokeLater(() -> JOptionPane.showMessageDialog(null, "Access to this model is restricted. Please email sbmt@jhuapl.edu to request access.", "Access not authorized", JOptionPane.ERROR_MESSAGE));
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                    EventQueue.invokeLater(() -> JOptionPane.showMessageDialog(null, "Unable to switch to model " + view.getUniqueName() + ". See console for more information", "Problem initializing model", JOptionPane.ERROR_MESSAGE));
+                }
 
-            CardLayout cardLayout = (CardLayout) (getLayout());
-            cardLayout.show(this, view.getUniqueName());
+                return null;
+            }
 
-            // defer initialization of View until we show it.
-            repaint();
-            validate();
+            @Override
+            protected void done()
+            {
+                if (!isCancelled())
+                {                    
+                    if (currentView != null)
+                        currentView.getRenderer().viewDeactivating();
+                    
+                    CardLayout cardLayout = (CardLayout) (getLayout());
+                    cardLayout.show(ViewManager.this, view.getUniqueName());
+                    
+                    // defer initialization of View until we show it.
+                    repaint();
+                    validate();
+                    
+                    currentView = view;
+                    
+                    currentView.getRenderer().viewActivating();
+                    
+                    updateRecents();
+                    frame.setTitle(view.getPathRepresentation());
+                }
+            }
+        };
 
-            currentView = view;
-
-            currentView.getRenderer().viewActivating();
-
-            updateRecents();
-            frame.setTitle(view.getPathRepresentation());
-        }
-        catch (UnauthorizedAccessException e)
-        {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Access to this model is restricted. Please email sbmt@jhuapl.edu to request access.", "Access not authorized", JOptionPane.ERROR_MESSAGE);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Unable to switch to model " + view.getUniqueName() + ". See console for more information", "Problem initializing model", JOptionPane.ERROR_MESSAGE);
-        }
+        initializer.execute();
     }
 
     public View getBuiltInView(int i)
