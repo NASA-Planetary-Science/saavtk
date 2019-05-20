@@ -23,6 +23,7 @@ import com.google.common.io.CountingInputStream;
 
 import edu.jhuapl.saavtk.util.CloseableUrlConnection.HttpRequestMethod;
 import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
+import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
 public class FileDownloader extends SwingWorker<Void, Void>
@@ -117,15 +118,16 @@ public class FileDownloader extends SwingWorker<Void, Void>
     public void download() throws IOException, InterruptedException
     {
         // Do nothing if the URL really is just a pointer to a local file.
-        String urlPath = urlInfo.getState().getUrl().getPath();
+        UrlState state = urlInfo.getState();
+        String urlPath = state.getUrl().getPath();
         if (SAFE_URL_PATHS.hasFileProtocol(urlPath) && urlPath.equals(fileInfo.getState().getFile().getAbsolutePath()))
         {
             return;
         }
 
-        if (forceDownload || isFileOutOfDate() || urlInfo.getState().getStatus() == UrlStatus.UNKNOWN || fileInfo.getState().getStatus() == FileStatus.UNKNOWN)
+        if (forceDownload || isFileOutOfDate() || state.getStatus() == UrlStatus.UNKNOWN || fileInfo.getState().getStatus() == FileStatus.UNKNOWN)
         {
-            Debug.out().println("Querying FS and server before maybe downloading " + urlInfo.getState().getUrl());
+            Debug.out().println("Querying FS and server before maybe downloading " + state.getUrl());
             fileInfo.update();
 
             try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.GET))
