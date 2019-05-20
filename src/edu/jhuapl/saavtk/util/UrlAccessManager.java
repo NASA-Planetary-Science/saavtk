@@ -320,16 +320,21 @@ public class UrlAccessManager
 
         if (isServerAccessEnabled())
         {
-            if (result.getState().getStatus() == UrlStatus.UNKNOWN || forceUpdate)
+            UrlState state = result.getState();
+            if (state.getStatus() == UrlStatus.UNKNOWN || forceUpdate)
             {
                 try (CloseableUrlConnection connection = CloseableUrlConnection.of(result, HttpRequestMethod.HEAD))
                 {
                     Debug.out().println("Querying server about " + url);
                     result.update(connection.getConnection());
                 }
-                catch (@SuppressWarnings("unused") IOException e)
+                catch (@SuppressWarnings("unused") FileNotFoundException e)
                 {
-                    // Ignore the exception; urlInfo is in a valid state.
+                    result.update(UrlStatus.NOT_FOUND, state.getContentLength(), state.getLastModified());
+                }
+                catch (@SuppressWarnings("unused") IOException ignored)
+                {
+                    // Ignore the exception -- leave the info object in its previous state.
                 }
             }
         }
