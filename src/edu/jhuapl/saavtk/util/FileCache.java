@@ -377,7 +377,7 @@ public final class FileCache
         }
         catch (Exception e)
         {
-            exception = new RuntimeException(e);
+            exception = new RuntimeException("Getting file " + url, e);
         }
 
         if (file.exists())
