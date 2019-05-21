@@ -64,19 +64,22 @@ public class DownloadableFileManager
             accessMonitor.execute(() -> {
                 while (enableMonitor)
                 {
-                    try
+                    for (URL url : downloadInfoCache.keySet())
                     {
-                        for (URL url : downloadInfoCache.keySet())
+                        try
                         {
                             query(url.toString(), false);
                         }
+                        catch (@SuppressWarnings("unused") Exception e)
+                        {
+                            System.err.println("Exception querying server about " + url);
+                        }
+                    }
+                    try
+                    {
                         Thread.sleep(sleepInterval);
                     }
                     catch (@SuppressWarnings("unused") InterruptedException ignored)
-                    {
-
-                    }
-                    finally
                     {
 
                     }
@@ -113,7 +116,7 @@ public class DownloadableFileManager
 
     public boolean isAccessible(String urlString)
     {
-        return query(urlString, false).getState().isAccessible();
+        return query(urlString).getState().isAccessible();
     }
 
     public DownloadableFileInfo getInfo(String urlString)
@@ -169,21 +172,29 @@ public class DownloadableFileManager
         return FileAccessQuerier.of(urlInfo, fileInfo, forceUpdate, isServerAccessEnabled());
     }
 
-    public DownloadableFileInfo query(String urlString, boolean forceUpdate)
+    public DownloadableFileInfo query(String urlString)
+    {
+        try
+        {
+            return query(urlString, false);
+        }
+        catch (Exception e)
+        {
+            System.err.println("Problem querying server about " + urlString);
+            e.printStackTrace();
+        }
+
+        return getInfo(urlString);
+    }
+
+    public DownloadableFileInfo query(String urlString, boolean forceUpdate) throws IOException, InterruptedException
     {
         Preconditions.checkNotNull(urlString);
 
         DownloadableFileInfo result = getInfo(urlString);
         FileAccessQuerier querier = getQuerier(urlString, forceUpdate);
-        try
-        {
-            querier.query();
-            result.update(querier.getUrlInfo().getState(), querier.getFileInfo().getState());
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
+        querier.query();
+        result.update(querier.getUrlInfo().getState(), querier.getFileInfo().getState());
 
         return result;
     }
