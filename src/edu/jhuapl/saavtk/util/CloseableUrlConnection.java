@@ -77,7 +77,7 @@ public class CloseableUrlConnection implements Closeable
 
         connection.setUseCaches(false);
         connection.setConnectTimeout(5000);
-        connection.setReadTimeout(5000);
+        connection.setReadTimeout(10000);
 
         return connection;
     }

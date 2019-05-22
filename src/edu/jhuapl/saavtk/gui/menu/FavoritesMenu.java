@@ -48,16 +48,17 @@ public class FavoritesMenu extends JMenu
         List<View> favoriteViews = favoritesFile.getAllFavorites();
         for (View view : favoriteViews)
         {
-            JMenuItem menuItem = new FavoritesMenuItem(view);
             if (!view.getUniqueName().equals(manager.getDefaultBodyToLoad()))
+            {
+                JMenuItem menuItem = new FavoritesMenuItem(view);
                 add(menuItem);
+            }
         }
 
         // show default to load
         if (!favoriteViews.isEmpty())
             add(new JSeparator());
         JMenuItem defaultItem = new JMenuItem("Default model:");
-        defaultItem.setEnabled(false);
         add(defaultItem);
 
         try
