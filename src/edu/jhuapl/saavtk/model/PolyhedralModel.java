@@ -70,6 +70,8 @@ public abstract class PolyhedralModel extends AbstractModel
 	}
 
 	public abstract void updateScaleBarValue(double pixelSizeInKm);
+	
+	public abstract void updateScaleBarValue(double pixelSizeInKm, Runnable completionBlock);
 
 	public abstract void updateScaleBarPosition(int windowWidth, int windowHeight);
 

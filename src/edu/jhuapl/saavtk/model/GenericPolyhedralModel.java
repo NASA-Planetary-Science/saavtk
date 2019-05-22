@@ -2565,6 +2565,14 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
+	
+	@Override
+	public void updateScaleBarValue(double pixelSizeInKm, Runnable completionBlock)
+	{
+		updateScaleBarValue(pixelSizeInKm);
+		completionBlock.run();
+		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+	}
 
 	@Override
 	public void updateScaleBarValue(double pixelSizeInKm)
@@ -2586,7 +2594,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			scaleBarActor.VisibilityOff();
 			scaleBarTextActor.VisibilityOff();
 		}
-
 //		if (pixelSizeInKm > 0.0)
 //		{
 //			if (scaleBarWidthInKm < 1.0)
