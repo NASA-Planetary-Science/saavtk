@@ -145,9 +145,7 @@ public class UrlInfo
     {
         Preconditions.checkNotNull(status);
 
-        state = UrlState.of(state.getUrl(), status, contentLength, lastModified);
-
-        pcs.firePropertyChange(STATE_PROPERTY, null, state);
+        update(UrlState.of(state.getUrl(), status, contentLength, lastModified));
     }
 
     public void update(URLConnection connection) throws IOException
@@ -208,6 +206,15 @@ public class UrlInfo
         }
 
         update(status, contentLength, lastModified);
+    }
+
+    public void update(UrlState state)
+    {
+        Preconditions.checkNotNull(state);
+
+        this.state = state;
+
+        pcs.firePropertyChange(STATE_PROPERTY, null, state);
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener)
