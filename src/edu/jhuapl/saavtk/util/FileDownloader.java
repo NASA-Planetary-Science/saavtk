@@ -117,7 +117,7 @@ public class FileDownloader extends SwingWorker<Void, Void>
 
     public void download() throws IOException, InterruptedException
     {
-        // Do nothing if the URL really is just a pointer to a local file.
+        // Do nothing if the URL already points to the cached file.
         UrlState state = urlInfo.getState();
         String urlPath = state.getUrl().getPath();
         if (SAFE_URL_PATHS.hasFileProtocol(urlPath) && urlPath.equals(fileInfo.getState().getFile().getAbsolutePath()))
