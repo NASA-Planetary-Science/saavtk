@@ -182,21 +182,29 @@ public class DownloadableFileManager
         return FileAccessQuerier.of(urlInfo, fileInfo, forceUpdate, urlManager.isServerAvailable());
     }
 
-    public DownloadableFileInfo query(String urlString, boolean forceUpdate)
+    public DownloadableFileInfo query(String urlString)
+    {
+        try
+        {
+            return query(urlString, false);
+        }
+        catch (Exception e)
+        {
+            System.err.println("Problem querying server about " + urlString);
+            e.printStackTrace();
+        }
+
+        return getInfo(urlString);
+    }
+
+    public DownloadableFileInfo query(String urlString, boolean forceUpdate) throws IOException, InterruptedException
     {
         Preconditions.checkNotNull(urlString);
 
         DownloadableFileInfo result = getInfo(urlString);
         FileAccessQuerier querier = getQuerier(urlString, forceUpdate);
-        try
-        {
-            querier.query();
-            result.update(querier.getUrlInfo().getState(), querier.getFileInfo().getState());
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
+        querier.query();
+        result.update(querier.getUrlInfo().getState(), querier.getFileInfo().getState());
 
         return result;
     }
