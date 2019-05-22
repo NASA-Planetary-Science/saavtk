@@ -55,10 +55,9 @@ public class UrlAccessManager
     {
         Preconditions.checkNotNull(rootUrl);
 
-        UrlInfo rootInfo = UrlInfo.of(rootUrl);
-
         UrlAccessManager result = new UrlAccessManager(rootUrl);
 
+        UrlInfo rootInfo = result.getInfo(rootUrl);
         try (CloseableUrlConnection connection = CloseableUrlConnection.of(rootInfo, HttpRequestMethod.HEAD))
         {
             Debug.out().println("Querying server about root URL " + rootUrl);
@@ -90,8 +89,6 @@ public class UrlAccessManager
         this.rootUrl = rootUrl;
         this.urlInfoCache = new ConcurrentHashMap<>();
         this.enableServerAccess = true;
-
-        this.urlInfoCache.put(rootUrl, new UrlInfo(rootUrl));
     }
 
     public boolean isServerAccessEnabled()
