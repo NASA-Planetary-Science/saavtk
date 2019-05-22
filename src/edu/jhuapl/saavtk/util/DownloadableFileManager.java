@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.util;
 
+import java.awt.EventQueue;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -64,19 +65,27 @@ public class DownloadableFileManager
             accessMonitor.execute(() -> {
                 while (enableMonitor)
                 {
-                    try
+                    boolean initialServerAvailable = urlManager.isServerAvailable();
+                    urlManager.queryServer(urlManager.getRootUrl(), true);
+                    boolean forceUpdate = initialServerAvailable != urlManager.isServerAvailable();
+
+                    for (URL url : downloadInfoCache.keySet())
                     {
-                        for (URL url : downloadInfoCache.keySet())
+                        try
                         {
                             query(url.toString(), false);
                         }
+                        catch (@SuppressWarnings("unused") Exception e)
+                        {
+                            System.err.println("Exception querying server about " + url);
+                        }
+                    }
+
+                    try
+                    {
                         Thread.sleep(sleepInterval);
                     }
                     catch (@SuppressWarnings("unused") InterruptedException ignored)
-                    {
-
-                    }
-                    finally
                     {
 
                     }
@@ -113,7 +122,7 @@ public class DownloadableFileManager
 
     public boolean isAccessible(String urlString)
     {
-        return query(urlString, false).getState().isAccessible();
+        return query(urlString).getState().isAccessible();
     }
 
     public DownloadableFileInfo getInfo(String urlString)
@@ -134,16 +143,20 @@ public class DownloadableFileManager
             final DownloadableFileInfo downloadableInfo = DownloadableFileInfo.of(url, file);
 
             urlInfo.addPropertyChangeListener(e -> {
-                if (e.getPropertyName().equals(DownloadableFileInfo.STATE_PROPERTY))
+                if (e.getPropertyName().equals(UrlInfo.STATE_PROPERTY))
                 {
-                    downloadableInfo.update((UrlState) e.getNewValue());
+                    EventQueue.invokeLater(() -> {
+                        downloadableInfo.update((UrlState) e.getNewValue());
+                    });
                 }
             });
 
             fileInfo.addPropertyChangeListener(e -> {
-                if (e.getPropertyName().equals(DownloadableFileInfo.STATE_PROPERTY))
+                if (e.getPropertyName().equals(FileInfo.STATE_PROPERTY))
                 {
-                    downloadableInfo.update((FileState) e.getNewValue());
+                    EventQueue.invokeLater(() -> {
+                        downloadableInfo.update((FileState) e.getNewValue());
+                    });
                 }
             });
 
@@ -166,7 +179,7 @@ public class DownloadableFileManager
         File file = downloadableInfo.getState().getFileState().getFile();
         FileInfo fileInfo = fileManager.getInfo(file);
 
-        return FileAccessQuerier.of(urlInfo, fileInfo, forceUpdate, isServerAccessEnabled());
+        return FileAccessQuerier.of(urlInfo, fileInfo, forceUpdate, urlManager.isServerAvailable());
     }
 
     public DownloadableFileInfo query(String urlString, boolean forceUpdate)
@@ -226,7 +239,7 @@ public class DownloadableFileManager
     {
         DownloadableFileState fileState = getInfo(urlString).getState();
 
-        if (urlManager.isServerAccessEnabled() && (forceDownload || (fileState.isDownloadMayBePossible() && fileState.isDownloadNecessary())))
+        if (urlManager.isServerAvailable() && (forceDownload || (fileState.isDownloadMayBePossible() && fileState.isDownloadNecessary())))
         {
             FileDownloader downloader = getDownloader(urlString, forceDownload);
             downloader.download();
@@ -240,7 +253,7 @@ public class DownloadableFileManager
     {
         DownloadableFileState fileState = getInfo(urlString).getState();
 
-        if (urlManager.isServerAccessEnabled() && (forceDownload || (fileState.isDownloadMayBePossible() && fileState.isDownloadNecessary())))
+        if (urlManager.isServerAvailable() && (forceDownload || (fileState.isDownloadMayBePossible() && fileState.isDownloadNecessary())))
         {
             FileDownloader downloader = getDownloader(urlString, forceDownload);
 
@@ -267,7 +280,9 @@ public class DownloadableFileManager
         getInfo(urlString).addPropertyChangeListener(e -> {
             if (e.getPropertyName().equals(DownloadableFileInfo.STATE_PROPERTY))
             {
-                listener.respond((DownloadableFileState) e.getNewValue());
+                EventQueue.invokeLater(() -> {
+                    listener.respond((DownloadableFileState) e.getNewValue());
+                });
             }
         });
     }

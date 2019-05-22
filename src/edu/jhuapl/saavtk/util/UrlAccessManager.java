@@ -3,6 +3,7 @@ package edu.jhuapl.saavtk.util;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -55,21 +56,20 @@ public class UrlAccessManager
     {
         Preconditions.checkNotNull(rootUrl);
 
-        UrlInfo rootInfo = UrlInfo.of(rootUrl);
-
         UrlAccessManager result = new UrlAccessManager(rootUrl);
 
+        UrlInfo rootInfo = result.getInfo(rootUrl);
         try (CloseableUrlConnection connection = CloseableUrlConnection.of(rootInfo, HttpRequestMethod.HEAD))
         {
             Debug.out().println("Querying server about root URL " + rootUrl);
             rootInfo.update(connection.getConnection());
         }
-        catch (FileNotFoundException | UnknownHostException e)
+        catch (FileNotFoundException | ConnectException | UnknownHostException e)
         {
             // Serious problem. Disable server access pending resolution.
             System.err.println("Problem connecting to server. Disabling server access for now");
             e.printStackTrace();
-            result.setEnableServerAccess(false);
+            result.hostInaccessible = true;
         }
         catch (Exception e)
         {
@@ -84,14 +84,21 @@ public class UrlAccessManager
     private final URL rootUrl;
     private final ConcurrentMap<URL, UrlInfo> urlInfoCache;
     private volatile boolean enableServerAccess;
+    private volatile boolean hostInaccessible;
 
     protected UrlAccessManager(URL rootUrl)
     {
         this.rootUrl = rootUrl;
         this.urlInfoCache = new ConcurrentHashMap<>();
         this.enableServerAccess = true;
+        this.hostInaccessible = false;
 
         this.urlInfoCache.put(rootUrl, new UrlInfo(rootUrl));
+    }
+
+    public boolean isServerAvailable()
+    {
+        return enableServerAccess && !hostInaccessible;
     }
 
     public boolean isServerAccessEnabled()
@@ -321,8 +328,9 @@ public class UrlAccessManager
         if (isServerAccessEnabled())
         {
             UrlState state = result.getState();
-            if (state.getStatus() == UrlStatus.UNKNOWN || forceUpdate)
+            if ((state.getStatus() == UrlStatus.UNKNOWN && !hostInaccessible) || forceUpdate)
             {
+                hostInaccessible = false;
                 try (CloseableUrlConnection connection = CloseableUrlConnection.of(result, HttpRequestMethod.HEAD))
                 {
                     Debug.out().println("Querying server about " + url);
@@ -331,6 +339,10 @@ public class UrlAccessManager
                 catch (@SuppressWarnings("unused") FileNotFoundException e)
                 {
                     result.update(UrlStatus.NOT_FOUND, state.getContentLength(), state.getLastModified());
+                }
+                catch (@SuppressWarnings("unused") ConnectException | UnknownHostException e)
+                {
+                    hostInaccessible = true;
                 }
                 catch (@SuppressWarnings("unused") IOException ignored)
                 {

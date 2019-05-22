@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
@@ -371,13 +372,13 @@ public final class FileCache
         {
             exception = new NonexistentRemoteFile(e, url);
         }
-        catch (UnknownHostException e)
+        catch (ConnectException | UnknownHostException e)
         {
             exception = new NoInternetAccessException(e, url);
         }
         catch (Exception e)
         {
-            exception = new RuntimeException(e);
+            exception = new RuntimeException("Getting file " + url, e);
         }
 
         if (file.exists())
@@ -633,7 +634,7 @@ public final class FileCache
             }
             lastModified = connection.getLastModified();
         }
-        catch (UnknownHostException e)
+        catch (ConnectException | UnknownHostException e)
         {
             throw new NoInternetAccessException(e, url);
         }
