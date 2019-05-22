@@ -71,6 +71,8 @@ public abstract class PolyhedralModel extends AbstractModel
 
     public abstract void updateScaleBarValue(double pixelSizeInKm);
 
+    public abstract void updateScaleBarValue(double pixelSizeInKm, Runnable completionBlock);
+
     public abstract void updateScaleBarPosition(int windowWidth, int windowHeight);
 
     public abstract vtksbCellLocator getCellLocator();
@@ -290,6 +292,8 @@ public abstract class PolyhedralModel extends AbstractModel
     public abstract double[] getClosestNormal(double[] point);
 
     public abstract void drawPolygon(List<LatLon> controlPoints, vtkPolyData outputInterior, vtkPolyData outputBoundary);
+
+    public abstract double getScaleBarWidthInKm();
 
     /**
      * Method that returns the average surface normal over the the entire

@@ -626,7 +626,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
             convertOldConfigFormatToNewVersion(configMap);
 
-            if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_UNITS) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_HAS_NULLS))
+            if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_UNITS)
+                    && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_HAS_NULLS))
             {
                 String[] cellDataFilenames = configMap.get(GenericPolyhedralModel.CELL_DATA_FILENAMES).split(",", -1);
                 String[] cellDataNames = configMap.get(GenericPolyhedralModel.CELL_DATA_NAMES).split(",", -1);
@@ -2579,6 +2580,14 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     }
 
     @Override
+    public void updateScaleBarValue(double pixelSizeInKm, Runnable completionBlock)
+    {
+        updateScaleBarValue(pixelSizeInKm);
+        completionBlock.run();
+        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+    }
+
+    @Override
     public void updateScaleBarValue(double pixelSizeInKm)
     {
         if (scaleBarWidthInPixels <= 0 || scaleBarWidthInKm == scaleBarWidthInPixels * pixelSizeInKm)
@@ -2598,17 +2607,22 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
             scaleBarActor.VisibilityOff();
             scaleBarTextActor.VisibilityOff();
         }
-
-        if (pixelSizeInKm > 0.0)
-        {
-            if (scaleBarWidthInKm < 1.0)
-                scaleBarTextActor.SetInput(String.format("%.2f m", 1000.0 * scaleBarWidthInKm));
-            else
-                scaleBarTextActor.SetInput(String.format("%.2f km", scaleBarWidthInKm));
-        }
+//		if (pixelSizeInKm > 0.0)
+//		{
+//			if (scaleBarWidthInKm < 1.0)
+//				scaleBarTextActor.SetInput(String.format("%.2f m", 1000.0 * scaleBarWidthInKm));
+//			else
+//				scaleBarTextActor.SetInput(String.format("%.2f km", scaleBarWidthInKm));
+//		}
 
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 
+    }
+
+    @Override
+    public double getScaleBarWidthInKm()
+    {
+        return scaleBarWidthInKm;
     }
 
     @Override
