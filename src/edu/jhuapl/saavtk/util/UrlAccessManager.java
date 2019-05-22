@@ -69,7 +69,7 @@ public class UrlAccessManager
             // Serious problem. Disable server access pending resolution.
             System.err.println("Problem connecting to server. Disabling server access for now");
             e.printStackTrace();
-            result.hostInaccessible = true;
+            result.setEnableServerAccess(false);
         }
         catch (Exception e)
         {
@@ -84,21 +84,12 @@ public class UrlAccessManager
     private final URL rootUrl;
     private final ConcurrentMap<URL, UrlInfo> urlInfoCache;
     private volatile boolean enableServerAccess;
-    private volatile boolean hostInaccessible;
 
     protected UrlAccessManager(URL rootUrl)
     {
         this.rootUrl = rootUrl;
         this.urlInfoCache = new ConcurrentHashMap<>();
         this.enableServerAccess = true;
-        this.hostInaccessible = false;
-
-        this.urlInfoCache.put(rootUrl, new UrlInfo(rootUrl));
-    }
-
-    public boolean isServerAvailable()
-    {
-        return enableServerAccess && !hostInaccessible;
     }
 
     public boolean isServerAccessEnabled()
@@ -328,21 +319,16 @@ public class UrlAccessManager
         if (isServerAccessEnabled())
         {
             UrlState state = result.getState();
-            if ((state.getStatus() == UrlStatus.UNKNOWN && !hostInaccessible) || forceUpdate)
+            if (state.getStatus() == UrlStatus.UNKNOWN || forceUpdate)
             {
-                hostInaccessible = false;
                 try (CloseableUrlConnection connection = CloseableUrlConnection.of(result, HttpRequestMethod.HEAD))
                 {
                     Debug.out().println("Querying server about " + url);
                     result.update(connection.getConnection());
                 }
-                catch (@SuppressWarnings("unused") FileNotFoundException e)
+                catch (@SuppressWarnings("unused") ConnectException | UnknownHostException | FileNotFoundException e)
                 {
                     result.update(UrlStatus.NOT_FOUND, state.getContentLength(), state.getLastModified());
-                }
-                catch (@SuppressWarnings("unused") ConnectException | UnknownHostException e)
-                {
-                    hostInaccessible = true;
                 }
                 catch (@SuppressWarnings("unused") IOException ignored)
                 {

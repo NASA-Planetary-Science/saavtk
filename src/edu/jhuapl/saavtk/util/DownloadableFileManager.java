@@ -65,10 +65,6 @@ public class DownloadableFileManager
             accessMonitor.execute(() -> {
                 while (enableMonitor)
                 {
-                    boolean initialServerAvailable = urlManager.isServerAvailable();
-                    urlManager.queryServer(urlManager.getRootUrl(), true);
-                    boolean forceUpdate = initialServerAvailable != urlManager.isServerAvailable();
-
                     for (URL url : downloadInfoCache.keySet())
                     {
                         try
@@ -179,7 +175,7 @@ public class DownloadableFileManager
         File file = downloadableInfo.getState().getFileState().getFile();
         FileInfo fileInfo = fileManager.getInfo(file);
 
-        return FileAccessQuerier.of(urlInfo, fileInfo, forceUpdate, urlManager.isServerAvailable());
+        return FileAccessQuerier.of(urlInfo, fileInfo, forceUpdate, urlManager.isServerAccessEnabled());
     }
 
     public DownloadableFileInfo query(String urlString)
@@ -247,7 +243,7 @@ public class DownloadableFileManager
     {
         DownloadableFileState fileState = getInfo(urlString).getState();
 
-        if (urlManager.isServerAvailable() && (forceDownload || (fileState.isDownloadMayBePossible() && fileState.isDownloadNecessary())))
+        if (urlManager.isServerAccessEnabled() && (forceDownload || (fileState.isDownloadMayBePossible() && fileState.isDownloadNecessary())))
         {
             FileDownloader downloader = getDownloader(urlString, forceDownload);
             downloader.download();
@@ -261,7 +257,7 @@ public class DownloadableFileManager
     {
         DownloadableFileState fileState = getInfo(urlString).getState();
 
-        if (urlManager.isServerAvailable() && (forceDownload || (fileState.isDownloadMayBePossible() && fileState.isDownloadNecessary())))
+        if (urlManager.isServerAccessEnabled() && (forceDownload || (fileState.isDownloadMayBePossible() && fileState.isDownloadNecessary())))
         {
             FileDownloader downloader = getDownloader(urlString, forceDownload);
 

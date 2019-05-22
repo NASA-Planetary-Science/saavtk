@@ -163,14 +163,6 @@ public class DownloadableFileInfo
     {
         this.pcs = new PropertyChangeSupport(this);
         this.state = DownloadableFileState.of(url, file);
-        pcs.addPropertyChangeListener(e -> {
-            PropertyChangeSupport spud = pcs;
-            Object value = e.getPropertyName();
-            if (value == Boolean.FALSE)
-            {
-                System.err.println("ping");
-            }
-        });
     }
 
     public DownloadableFileState getState()
