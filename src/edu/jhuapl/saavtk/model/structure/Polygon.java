@@ -21,6 +21,7 @@ import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
+import vtk.vtkCleanPolyData;
 import vtk.vtkClipPolyData;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
@@ -116,8 +117,14 @@ public abstract class Polygon extends Line
                 pts.InsertNextPoint(xyzPointList.get(i).xyz);
             }
 
+            // Clean the poly data here before selecting the interior facets.
+            vtkCleanPolyData cleanPoly = new vtkCleanPolyData();
+            cleanPoly.SetInputData(smallBodyModel.getSmallBodyPolyData());
+            cleanPoly.Update();
+            vtkPolyData cleanPolyData = cleanPoly.GetOutput();
+
             vtkSelectPolyData loop = new vtkSelectPolyData();
-            loop.SetInputData(smallBodyModel.getSmallBodyPolyData());
+            loop.SetInputData(cleanPolyData);
             loop.SetLoop(pts);
             loop.GenerateSelectionScalarsOn();
             loop.SetSelectionModeToSmallestRegion();
