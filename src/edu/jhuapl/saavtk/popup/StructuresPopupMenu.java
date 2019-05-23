@@ -168,6 +168,16 @@ abstract public class StructuresPopupMenu extends PopupMenu
             }
         }
 
+        boolean havePlateData = smallBodyModel.isColoringDataAvailable();
+        if (exportPlateDataAction != null)
+        {
+            exportPlateDataAction.setEnabled(havePlateData);
+        }
+        if (plateStatisticsAction != null)
+        {
+            plateStatisticsAction.setEnabled(havePlateData);
+        }
+
         /*
          * hideLabelButton.setSelected(true); for (int i=0; i<selectedStructures.length;
          * ++i) { if (!model.isLabelHidden(selectedStructures[i])) {
