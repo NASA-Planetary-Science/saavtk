@@ -80,27 +80,23 @@ public class PickUtil
 		return false;
 	}
 
-	// We do not rely on the OS for the popup trigger in the renderer (as explained in a comment
-	// in the DefaultPicker.mouseClicked function), we need to role out our own popup trigger logic.
-	// That's we why have the following complicated function. It's easier on non-macs. On macs
-	// we try to mimic the default behaviour where a Control + left mouse click is a popup trigger.
-	// Also for some reason, if you left mouse click while holding down the Command button, then
-	// SwingUtilities.isRightMouseButton() returns true. We therefore also prevent a popup from
-	// showing in this situation.
+	// We do not rely on the OS for the popup trigger in the renderer (as explained
+	// in a comment in the DefaultPicker.mouseClicked function), we need to role out
+	// our own popup trigger logic. That's we why have the following complicated
+	// function. It's easier on non-macs. On macs we try to mimic the default
+	// behaviour where a Control + left mouse click is a popup trigger. Also for
+	// some reason, if you left mouse click while holding down the Command button,
+	// then SwingUtilities.isRightMouseButton() returns true. We therefore also
+	// prevent a popup from showing in this situation.
 	public static boolean isPopupTrigger(MouseEvent e)
 	{
 		if (Configuration.isMac())
 		{
 			if (e.getButton() == MouseEvent.BUTTON1 && e.isControlDown())
-			{
 				return true;
-			}
 
-//			if (!(e.getButton() == MouseEvent.BUTTON1 && e.isMetaDown()) && SwingUtilities.isRightMouseButton(e))
 			if (e.getButton() == MouseEvent.BUTTON3)
-			{
 				return true;
-			}
 		}
 		else if (SwingUtilities.isRightMouseButton(e))
 		{
@@ -131,7 +127,7 @@ public class PickUtil
 		{
 			// Delay half a second before enabling picking. This helps prevent some crashes.
 
-			int delay = 500; //milliseconds
+			int delay = 500; // milliseconds
 			ActionListener taskPerformer = new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent evt)
