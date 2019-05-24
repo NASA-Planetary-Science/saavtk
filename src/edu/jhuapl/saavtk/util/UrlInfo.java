@@ -211,6 +211,7 @@ public class UrlInfo
     public void update(UrlState state)
     {
         Preconditions.checkNotNull(state);
+        Preconditions.checkArgument(this.state.getUrl().equals(state.getUrl()));
 
         this.state = state;
 
