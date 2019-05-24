@@ -83,12 +83,19 @@ public class FileAccessQuerier extends SwingWorker<Void, Void>
         }
         // End DEBUG message.
 
-        if (serverAccessEnabled && (forceUpdate || urlState.getStatus() == UrlStatus.UNKNOWN))
+        if (serverAccessEnabled)
         {
-            try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.HEAD))
+            if (forceUpdate || urlState.getStatus() == UrlStatus.UNKNOWN)
             {
-                urlInfo.update(closeableConnection.getConnection());
+                try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.HEAD))
+                {
+                    urlInfo.update(closeableConnection.getConnection());
+                }
             }
+        }
+        else
+        {
+            urlInfo.update(UrlState.of(urlState.getUrl()));
         }
     }
 
