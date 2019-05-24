@@ -413,7 +413,7 @@ public final class FileCache
     {
         DownloadableFileManager result = DownloadableFileManager.of(Configuration.getDataRootURL(), new File(Configuration.getCacheDir()));
 
-        result.startAccessMonitor();
+//        result.startAccessMonitor();
 
         return result;
     }
