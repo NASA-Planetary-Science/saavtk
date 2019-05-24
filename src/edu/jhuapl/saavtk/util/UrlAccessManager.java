@@ -58,27 +58,7 @@ public class UrlAccessManager
 
         UrlAccessManager result = new UrlAccessManager(rootUrl);
 
-        UrlInfo rootInfo = result.getInfo(rootUrl);
-        try (CloseableUrlConnection connection = CloseableUrlConnection.of(rootInfo, HttpRequestMethod.HEAD))
-        {
-            Debug.out().println("Querying server about root URL " + rootUrl);
-            rootInfo.update(connection.getConnection());
-        }
-        catch (FileNotFoundException | ConnectException | UnknownHostException e)
-        {
-            // Serious problem. Disable server access pending resolution.
-            System.err.println("Problem connecting to server. Disabling server access for now");
-            e.printStackTrace();
-            result.setEnableServerAccess(false);
-            rootInfo.update(UrlState.of(rootUrl));
-        }
-        catch (Exception e)
-        {
-            // Any other exception (e.g. SocketTimeoutException) most likely indicates
-            // a transient problem, so report it but do not disable access.
-            e.printStackTrace();
-            rootInfo.update(UrlState.of(rootUrl));
-        }
+        result.queryRootUrl();
 
         return result;
     }
@@ -272,6 +252,35 @@ public class UrlAccessManager
         }
 
         return result;
+    }
+
+    public UrlInfo queryRootUrl()
+    {
+        UrlInfo rootInfo = getInfo(rootUrl);
+        try (CloseableUrlConnection connection = CloseableUrlConnection.of(rootInfo, HttpRequestMethod.HEAD))
+        {
+            Debug.out().println("Querying server about root URL " + rootUrl);
+            rootInfo.update(connection.getConnection());
+            setEnableServerAccess(true);
+        }
+        catch (FileNotFoundException | ConnectException | UnknownHostException e)
+        {
+            // Serious problem. Disable server access pending resolution.
+            System.err.println("Problem connecting to server. Disabling server access for now");
+            e.printStackTrace();
+            setEnableServerAccess(false);
+            rootInfo.update(UrlState.of(rootUrl));
+        }
+        catch (Exception e)
+        {
+            // Any other exception (e.g. SocketTimeoutException) most likely indicates
+            // a transient problem, so report it but do not disable access.
+            e.printStackTrace();
+            rootInfo.update(UrlState.of(rootUrl));
+            setEnableServerAccess(true);
+        }
+
+        return rootInfo;
     }
 
     /**
