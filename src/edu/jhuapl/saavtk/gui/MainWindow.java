@@ -79,8 +79,7 @@ public abstract class MainWindow extends JFrame
 
     public boolean isReady()
     {
-        View view = rootPanel.getCurrentView();
-        return view != null && view.isInitialized();
+        return rootPanel.isReady();
     }
 
     protected ImageIcon createImageIcon()

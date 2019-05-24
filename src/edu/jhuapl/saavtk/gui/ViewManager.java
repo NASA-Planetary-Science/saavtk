@@ -23,8 +23,6 @@ import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.SwingWorker;
 
-import com.google.common.base.Preconditions;
-
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
 import edu.jhuapl.saavtk.gui.menu.FileMenu;
@@ -50,6 +48,7 @@ public abstract class ViewManager extends JPanel
     protected HelpMenu helpMenu = null;
     protected FavoritesMenu favoritesMenu = null;
     protected RecentlyViewed recentsMenu = null;
+    private volatile boolean initialViewSet;
 
     /**
      * The top level frame is required so that the title can be updated when the
@@ -71,6 +70,7 @@ public abstract class ViewManager extends JPanel
         this.statusBar = statusBar;
         this.frame = frame;
         this.tempCustomShapeModelPath = tempCustomShapeModelPath;
+        this.initialViewSet = false;
 
         // Subclass constructors should call this. It should not be called here because
         // it is not final.
@@ -205,10 +205,12 @@ public abstract class ViewManager extends JPanel
 
         }
 
-        if (initialView != null)
-        {
-            setCurrentView(initialView);
-        }
+        setCurrentView(initialView);
+    }
+
+    public boolean isReady()
+    {
+        return initialViewSet && (currentView == null || currentView.isInitialized());
     }
 
     public void setDefaultBodyToLoad(String uniqueName)
@@ -347,11 +349,11 @@ public abstract class ViewManager extends JPanel
 
     public void setCurrentView(View view)
     {
-        Preconditions.checkNotNull(view);
-
         initializeStateManager(); // Call this here for insurance, even if it is called elsewhere.
+
         if (view == currentView)
         {
+            initialViewSet = true;
             return;
         }
 
@@ -360,19 +362,24 @@ public abstract class ViewManager extends JPanel
             @Override
             protected Boolean doInBackground() throws Exception
             {
-                try
+                if (view != null)
                 {
-                    view.initialize();
-                }
-                catch (UnauthorizedAccessException e)
-                {
-                    e.printStackTrace();
-                    EventQueue.invokeLater(() -> JOptionPane.showMessageDialog(null, "Access to this model is restricted. Please email sbmt@jhuapl.edu to request access.", "Access not authorized", JOptionPane.ERROR_MESSAGE));
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                    EventQueue.invokeLater(() -> JOptionPane.showMessageDialog(null, "Unable to switch to model " + view.getUniqueName() + ". See console for more information", "Problem initializing model", JOptionPane.ERROR_MESSAGE));
+                    try
+                    {
+                        view.initialize();
+                    }
+                    catch (UnauthorizedAccessException e)
+                    {
+                        e.printStackTrace();
+                        EventQueue.invokeLater(() -> JOptionPane.showMessageDialog(null, "Access to this model is restricted. Please email sbmt@jhuapl.edu to request access.", "Access not authorized", JOptionPane.ERROR_MESSAGE));
+                        cancel(true);
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                        EventQueue.invokeLater(() -> JOptionPane.showMessageDialog(null, "Unable to switch to model " + view.getUniqueName() + ". See console for more information", "Problem initializing model", JOptionPane.ERROR_MESSAGE));
+                        cancel(true);
+                    }
                 }
 
                 return null;
@@ -382,24 +389,32 @@ public abstract class ViewManager extends JPanel
             protected void done()
             {
                 if (!isCancelled())
-                {                    
+                {
                     if (currentView != null)
                         currentView.getRenderer().viewDeactivating();
-                    
-                    CardLayout cardLayout = (CardLayout) (getLayout());
-                    cardLayout.show(ViewManager.this, view.getUniqueName());
-                    
+
+                    if (view != null)
+                    {
+                        CardLayout cardLayout = (CardLayout) (getLayout());
+                        cardLayout.show(ViewManager.this, view.getUniqueName());
+                    }
+
                     // defer initialization of View until we show it.
                     repaint();
                     validate();
-                    
+
                     currentView = view;
-                    
-                    currentView.getRenderer().viewActivating();
-                    
+
+                    if (currentView != null)
+                    {
+                        currentView.getRenderer().viewActivating();
+                    }
+
                     updateRecents();
                     frame.setTitle(view.getPathRepresentation());
                 }
+
+                initialViewSet = true;
             }
         };
 
