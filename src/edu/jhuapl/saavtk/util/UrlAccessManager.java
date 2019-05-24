@@ -70,12 +70,14 @@ public class UrlAccessManager
             System.err.println("Problem connecting to server. Disabling server access for now");
             e.printStackTrace();
             result.setEnableServerAccess(false);
+            rootInfo.update(UrlState.of(rootUrl));
         }
         catch (Exception e)
         {
             // Any other exception (e.g. SocketTimeoutException) most likely indicates
             // a transient problem, so report it but do not disable access.
             e.printStackTrace();
+            rootInfo.update(UrlState.of(rootUrl));
         }
 
         return result;
@@ -326,13 +328,9 @@ public class UrlAccessManager
                     Debug.out().println("Querying server about " + url);
                     result.update(connection.getConnection());
                 }
-                catch (@SuppressWarnings("unused") ConnectException | UnknownHostException | FileNotFoundException e)
+                catch (@SuppressWarnings("unused") Exception ignored)
                 {
-                    result.update(UrlStatus.NOT_FOUND, state.getContentLength(), state.getLastModified());
-                }
-                catch (@SuppressWarnings("unused") IOException ignored)
-                {
-                    // Ignore the exception -- leave the info object in its previous state.
+                    result.update(UrlState.of(url));
                 }
             }
         }
