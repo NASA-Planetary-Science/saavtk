@@ -3,6 +3,7 @@ package edu.jhuapl.saavtk.util;
 import java.awt.EventQueue;
 import java.io.File;
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,9 +72,14 @@ public class DownloadableFileManager
                         {
                             query(url.toString(), false);
                         }
-                        catch (@SuppressWarnings("unused") Exception e)
+                        catch (@SuppressWarnings("unused") SocketTimeoutException ignored)
                         {
-                            System.err.println("Exception querying server about " + url);
+                            // Hit a time-out. Likely the rest will also, so break now and come back to this
+                            // later.
+                            break;
+                        }
+                        catch (@SuppressWarnings("unused") Exception ignored)
+                        {
                         }
                     }
 
