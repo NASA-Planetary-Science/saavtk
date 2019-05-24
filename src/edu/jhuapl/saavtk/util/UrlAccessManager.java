@@ -318,7 +318,7 @@ public class UrlAccessManager
 
         UrlInfo result = getInfo(url);
 
-        if (isServerAccessEnabled())
+        if (isServerAccessEnabled() || forceUpdate)
         {
             UrlState state = result.getState();
             if (state.getStatus() == UrlStatus.UNKNOWN || forceUpdate)
