@@ -75,11 +75,15 @@ public class FileAccessManager
     {
         Preconditions.checkNotNull(file);
 
-        FileInfo result = fileInfoCache.get(file);
-        if (result == null)
+        FileInfo result;
+        synchronized (this.fileInfoCache)
         {
-            result = FileInfo.of(file);
-            fileInfoCache.put(file, result);
+            result = fileInfoCache.get(file);
+            if (result == null)
+            {
+                result = FileInfo.of(file);
+                fileInfoCache.put(file, result);
+            }
         }
 
         return result;

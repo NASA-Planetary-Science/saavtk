@@ -243,12 +243,16 @@ public class UrlAccessManager
     {
         Preconditions.checkNotNull(url);
 
-        // Retrieve a cached URLInfo object, or else add one to the cache.
-        UrlInfo result = urlInfoCache.get(url);
-        if (result == null)
+        UrlInfo result;
+        synchronized (this.urlInfoCache)
         {
-            result = UrlInfo.of(url);
-            urlInfoCache.put(url, result);
+            // Retrieve a cached URLInfo object, or else add one to the cache.
+            result = urlInfoCache.get(url);
+            if (result == null)
+            {
+                result = UrlInfo.of(url);
+                urlInfoCache.put(url, result);
+            }
         }
 
         return result;

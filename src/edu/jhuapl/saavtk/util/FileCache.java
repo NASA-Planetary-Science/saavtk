@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.util;
 
+import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
@@ -293,10 +294,6 @@ public final class FileCache
 
     private static final DownloadableFileManager downloadableManager = createDownloadManager();
 
-    private static final UrlAccessManager urlAccessManager = downloadableManager.getUrlManager();
-
-    private static final FileAccessManager fileCacheManager = downloadableManager.getFileManager();
-
     public static DownloadableFileManager instance()
     {
         return downloadableManager;
@@ -304,23 +301,26 @@ public final class FileCache
 
     public static URL getURL(String urlString)
     {
-        return urlAccessManager.getUrl(urlString);
+        return downloadableManager.getState(urlString).getUrlState().getUrl();
     }
 
-    public static UrlInfo getUrlInfo(String urlString)
+    public static DownloadableFileState getState(String urlString)
     {
-        return urlAccessManager.queryServer(urlString, false);
+        return downloadableManager.query(urlString, false);
     }
 
-    public static UrlInfo refreshUrlInfo(String urlString)
+    public static DownloadableFileState refreshStateInfo(String urlString)
     {
-        return urlAccessManager.queryServer(urlString, true);
+        return downloadableManager.query(urlString, true);
     }
 
     public static boolean isDownloadNeeded(String urlString)
     {
-        File file = getDownloadFile(urlString);
-        return !file.exists() || getUrlInfo(urlString).getState().getLastModified() > file.lastModified();
+        DownloadableFileState state = getState(urlString);
+
+        File file = state.getFileState().getFile();
+
+        return !file.exists() || state.getUrlState().getLastModified() > file.lastModified();
     }
 
     public static DownloadableFileState refreshDownload(String urlString) throws IOException, InterruptedException
@@ -345,7 +345,7 @@ public final class FileCache
      */
     public static File getDownloadFile(String urlString)
     {
-        return downloadableManager.getInfo(urlString).getState().getFileState().getFile();
+        return getState(urlString).getFileState().getFile();
     }
 
     /**
@@ -357,16 +357,14 @@ public final class FileCache
     {
         Preconditions.checkNotNull(urlString);
 
-        DownloadableFileInfo fileInfo = instance().getInfo(urlString);
-        DownloadableFileState state = fileInfo.getState();
-        URL url = state.getUrlState().getUrl();
+        DownloadableFileState fileState = instance().getState(urlString);
+        URL url = fileState.getUrlState().getUrl();
+        File file = fileState.getFileState().getFile();
 
-        File file = state.getFileState().getFile();
         RuntimeException exception = null;
         try
         {
-            DownloadableFileState fileState = downloadableManager.getDownloadedFile(urlString, false);
-            file = fileState.getFileState().getFile();
+            fileState = downloadableManager.getDownloadedFile(urlString, false);
         }
         catch (FileNotFoundException e)
         {
@@ -394,7 +392,7 @@ public final class FileCache
         {
             if (exception == null)
             {
-                if (fileInfo.getState().getUrlState().getStatus() == UrlStatus.NOT_AUTHORIZED)
+                if (fileState.getUrlState().getStatus() == UrlStatus.NOT_AUTHORIZED)
                 {
                     exception = new UnauthorizedAccessException("Cannot get file: access is restricted to URL: " + url, url);
                 }
@@ -403,6 +401,7 @@ public final class FileCache
                     exception = new RuntimeException("Unknown problem trying to update file from URL: " + url);
                 }
             }
+
             throw exception;
         }
 
@@ -681,22 +680,21 @@ public final class FileCache
 
         boolean result = false;
 
-        Path downloadPath = urlAccessManager.getDownloadPath(urlOrPathSegment);
-        edu.jhuapl.saavtk.util.FileInfo fileInfo = fileCacheManager.queryFileSystem(downloadPath.toString(), false);
-        if (fileInfo.getState().getStatus() == FileStatus.ACCESSIBLE)
+        DownloadableFileState state = getState(urlOrPathSegment);
+
+        if (state.getFileState().getStatus() == FileStatus.ACCESSIBLE)
         {
             result = true;
         }
         else
         {
-            UrlInfo urlInfo = urlAccessManager.queryServer(urlOrPathSegment, false);
-            switch (urlInfo.getState().getStatus())
+            switch (state.getUrlState().getStatus())
             {
             case ACCESSIBLE:
                 result = true;
                 break;
             case NOT_AUTHORIZED:
-                throw new UnauthorizedAccessException("Cannot access information about restricted URL: ", urlAccessManager.getUrl(urlOrPathSegment));
+                throw new UnauthorizedAccessException("Cannot access information about restricted URL: ", state.getUrlState().getUrl());
             default:
                 break;
             }
@@ -878,6 +876,12 @@ public final class FileCache
         FileCache.offlineModeRootFolder = offlineModeRootFolder;
 
         downloadableManager.setEnableServerAccess(!offlineMode);
+    }
+
+    public static void addServerUrlPropertyChangeListener(PropertyChangeListener listener)
+    {
+        DownloadableFileInfo rootInfo = instance().getRootInfo();
+        rootInfo.addPropertyChangeListener(listener);
     }
 
     /**

@@ -7,6 +7,7 @@ import java.net.HttpURLConnection;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Preconditions;
 
@@ -128,92 +129,103 @@ public class UrlInfo
     }
 
     private final PropertyChangeSupport pcs;
-    private volatile UrlState state;
+    private final AtomicReference<UrlState> state;
 
     protected UrlInfo(URL url)
     {
         this.pcs = new PropertyChangeSupport(this);
-        this.state = UrlState.of(url);
+        this.state = new AtomicReference<>(UrlState.of(url));
     }
 
     public UrlState getState()
     {
-        return state;
+        synchronized (this.state)
+        {
+            return state.get();
+        }
     }
 
     public void update(UrlStatus status, long contentLength, long lastModified)
     {
         Preconditions.checkNotNull(status);
 
-        update(UrlState.of(state.getUrl(), status, contentLength, lastModified));
+        URL url;
+        synchronized (this.state)
+        {
+            url = state.get().getUrl();
+            update(UrlState.of(url, status, contentLength, lastModified));
+        }
+
     }
 
     public void update(URLConnection connection) throws IOException
     {
         Preconditions.checkNotNull(connection);
 
-        UrlStatus status;
-        long contentLength;
-        long lastModified;
-
         synchronized (this.state)
         {
-            status = this.state.getStatus();
-            contentLength = this.state.getContentLength();
-            lastModified = this.state.getLastModified();
-        }
+            UrlState state = this.state.get();
 
-        if (connection instanceof HttpURLConnection)
-        {
-            HttpURLConnection httpConnection = (HttpURLConnection) connection;
-            try
+            UrlStatus status = state.getStatus();
+            long contentLength = state.getContentLength();
+            long lastModified = state.getLastModified();
+
+            if (connection instanceof HttpURLConnection)
             {
-                int code = httpConnection.getResponseCode();
+                HttpURLConnection httpConnection = (HttpURLConnection) connection;
+                try
+                {
+                    int code = httpConnection.getResponseCode();
 
-                // Codes in the 200 series are generally "ok" so treat any of them as
-                // successful.
-                if (code >= HttpURLConnection.HTTP_OK && code < HttpURLConnection.HTTP_MULT_CHOICE)
-                {
-                    status = UrlStatus.ACCESSIBLE;
-                    contentLength = httpConnection.getContentLengthLong();
-                    lastModified = httpConnection.getLastModified();
+                    // Codes in the 200 series are generally "ok" so treat any of them as
+                    // successful.
+                    if (code >= HttpURLConnection.HTTP_OK && code < HttpURLConnection.HTTP_MULT_CHOICE)
+                    {
+                        status = UrlStatus.ACCESSIBLE;
+                        contentLength = httpConnection.getContentLengthLong();
+                        lastModified = httpConnection.getLastModified();
+                    }
+                    else if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN)
+                    {
+                        status = UrlStatus.NOT_AUTHORIZED;
+                    }
+                    else if (code == HttpURLConnection.HTTP_NOT_FOUND)
+                    {
+                        status = UrlStatus.NOT_FOUND;
+                    }
+                    else
+                    {
+                        Debug.err().println("Received response code " + code + " for URL " + connection.getURL());
+                        status = UrlStatus.HTTP_ERROR;
+                    }
                 }
-                else if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN)
+                catch (ProtocolException e)
                 {
-                    status = UrlStatus.NOT_AUTHORIZED;
-                }
-                else if (code == HttpURLConnection.HTTP_NOT_FOUND)
-                {
-                    status = UrlStatus.NOT_FOUND;
-                }
-                else
-                {
-                    Debug.err().println("Received response code " + code + " for URL " + connection.getURL());
-                    status = UrlStatus.HTTP_ERROR;
+                    // This indicates the request method isn't supported. That should not happen.
+                    throw new AssertionError(e);
                 }
             }
-            catch (ProtocolException e)
+            else
             {
-                // This indicates the request method isn't supported. That should not happen.
-                throw new AssertionError(e);
+                // Probably this is a file-type URL. May need to add access checks for that, but
+                // for now, be optimistic and assume it's accessible.
+                status = UrlStatus.ACCESSIBLE;
             }
-        }
-        else
-        {
-            // Probably this is a file-type URL. May need to add access checks for that, but
-            // for now, be optimistic and assume it's accessible.
-            status = UrlStatus.ACCESSIBLE;
-        }
 
-        update(status, contentLength, lastModified);
+            update(status, contentLength, lastModified);
+        }
     }
 
     public void update(UrlState state)
     {
         Preconditions.checkNotNull(state);
-        Preconditions.checkArgument(this.state.getUrl().equals(state.getUrl()));
 
-        this.state = state;
+        synchronized (this.state)
+        {
+            Preconditions.checkArgument(this.state.get().getUrl().equals(state.getUrl()));
+
+            this.state.set(state);
+        }
 
         pcs.firePropertyChange(STATE_PROPERTY, null, state);
     }
@@ -231,7 +243,10 @@ public class UrlInfo
     @Override
     public String toString()
     {
-        return state.toString();
+        synchronized (this.state)
+        {
+            return state.toString();
+        }
     }
 
 }

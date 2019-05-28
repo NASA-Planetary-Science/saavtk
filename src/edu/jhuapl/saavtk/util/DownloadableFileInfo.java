@@ -4,6 +4,7 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.net.URL;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Preconditions;
 
@@ -157,35 +158,44 @@ public class DownloadableFileInfo
     }
 
     private final PropertyChangeSupport pcs;
-    private volatile DownloadableFileState state;
+    private final AtomicReference<DownloadableFileState> state;
 
     protected DownloadableFileInfo(URL url, File file)
     {
         this.pcs = new PropertyChangeSupport(this);
-        this.state = DownloadableFileState.of(url, file);
+        this.state = new AtomicReference<>(DownloadableFileState.of(url, file));
     }
 
     public DownloadableFileState getState()
     {
-        return state;
+        synchronized (this.state)
+        {
+            return state.get();
+        }
     }
 
     public void update(UrlState urlState)
     {
         Preconditions.checkNotNull(urlState);
 
-        state = DownloadableFileState.of(urlState, state.getFileState());
-
-        pcs.firePropertyChange(STATE_PROPERTY, null, state);
+        FileState fileState;
+        synchronized (this.state)
+        {
+            fileState = state.get().getFileState();
+            update(urlState, fileState);
+        }
     }
 
     public void update(FileState fileState)
     {
         Preconditions.checkNotNull(fileState);
 
-        state = DownloadableFileState.of(state.getUrlState(), fileState);
-
-        pcs.firePropertyChange(STATE_PROPERTY, null, state);
+        UrlState urlState;
+        synchronized (this.state)
+        {
+            urlState = state.get().getUrlState();
+            update(urlState, fileState);
+        }
     }
 
     public void update(UrlState urlState, FileState fileState)
@@ -193,7 +203,12 @@ public class DownloadableFileInfo
         Preconditions.checkNotNull(urlState);
         Preconditions.checkNotNull(fileState);
 
-        state = DownloadableFileState.of(urlState, fileState);
+        DownloadableFileState state = DownloadableFileState.of(urlState, fileState);
+
+        synchronized (this.state)
+        {
+            this.state.set(state);
+        }
 
         pcs.firePropertyChange(STATE_PROPERTY, null, state);
     }
@@ -211,7 +226,10 @@ public class DownloadableFileInfo
     @Override
     public String toString()
     {
-        return state.toString();
+        synchronized (this.state)
+        {
+            return state.toString();
+        }
     }
 
 }

@@ -3,6 +3,7 @@ package edu.jhuapl.saavtk.util;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Preconditions;
 
@@ -123,48 +124,51 @@ public class FileInfo
     }
 
     private final PropertyChangeSupport pcs;
-    private volatile FileState state;
+    private final AtomicReference<FileState> state;
 
     protected FileInfo(File file)
     {
         this.pcs = new PropertyChangeSupport(this);
-        this.state = FileState.of(file);
+        this.state = new AtomicReference<>(FileState.of(file));
     }
 
     public FileState getState()
     {
-        return state;
+        synchronized (this.state)
+        {
+            return state.get();
+        }
     }
 
     public void update(FileStatus status, long length, long lastModified)
     {
         Preconditions.checkNotNull(status);
 
-        state = FileState.of(state.getFile(), status, length, lastModified);
+        FileState state;
+        synchronized (this.state)
+        {
+            File file = this.state.get().getFile();
+            state = FileState.of(file, status, length, lastModified);
+            this.state.set(state);
+        }
 
         pcs.firePropertyChange(STATE_PROPERTY, null, state);
     }
 
     public void update()
     {
-        File file = state.getFile();
-
-        FileStatus status;
-        long length;
-        long lastModified;
-
+        File file;
         synchronized (this.state)
         {
-            status = this.state.getStatus();
-            length = this.state.getLength();
-            lastModified = this.state.getLastModified();
+            file = state.get().getFile();
+
+            FileStatus status = file.exists() ? FileStatus.ACCESSIBLE : FileStatus.INACCESSIBLE;
+            long length = file.length();
+            long lastModified = file.lastModified();
+
+            update(status, length, lastModified);
         }
 
-        status = file.exists() ? FileStatus.ACCESSIBLE : FileStatus.INACCESSIBLE;
-        length = file.length();
-        lastModified = file.lastModified();
-
-        update(status, length, lastModified);
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener)
@@ -180,7 +184,10 @@ public class FileInfo
     @Override
     public String toString()
     {
-        return state.toString();
+        synchronized (this.state)
+        {
+            return state.toString();
+        }
     }
 
 }

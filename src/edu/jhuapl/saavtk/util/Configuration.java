@@ -28,7 +28,7 @@ import org.apache.commons.io.FileUtils;
 
 import com.google.common.base.Preconditions;
 
-import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
+import edu.jhuapl.saavtk.util.DownloadableFileInfo.DownloadableFileState;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
 /**
@@ -63,17 +63,18 @@ public class Configuration
     private static String restrictedFileName = null;
     private static Iterable<Path> passwordFilesToTry = null;
 
-    // Uncomment the following to enable the startup script (which can be changed by the user)
+    // Uncomment the following to enable the startup script (which can be changed by
+    // the user)
     // to specify the web server URL:
     //
-    //    static
-    //    {
-    //        // If the user sets the sbmt.root.url property then use that
-    //        // as the root URL. Otherwise use the default.
-    //        String rootURLProperty = System.getProperty("sbmt.root.url");
-    //        if (rootURLProperty != null)
-    //            rootURL = rootURLProperty;
-    //    }
+    // static
+    // {
+    // // If the user sets the sbmt.root.url property then use that
+    // // as the root URL. Otherwise use the default.
+    // String rootURLProperty = System.getProperty("sbmt.root.url");
+    // if (rootURLProperty != null)
+    // rootURL = rootURLProperty;
+    // }
 
     public static void runOnEDT(Runnable runnable)
     {
@@ -119,8 +120,8 @@ public class Configuration
 
         // The only condition that can be addressed here is if the user is not
         // authorized. If that's not the "problem", don't do anything.
-        UrlInfo info = FileCache.getUrlInfo(restrictedAccessUrl);
-        if (info.getState().getStatus() != UrlStatus.NOT_AUTHORIZED)
+        DownloadableFileState info = FileCache.getState(restrictedAccessUrl);
+        if (info.getUrlState().getStatus() != UrlStatus.NOT_AUTHORIZED)
         {
             return;
         }
@@ -144,8 +145,8 @@ public class Configuration
                             {
                                 foundCredentials = true;
                                 setupPasswordAuthentication(userName, password, maximumNumberTries);
-                                info = FileCache.refreshUrlInfo(restrictedAccessUrl);
-                                if (info.getState().getStatus() == UrlStatus.ACCESSIBLE)
+                                info = FileCache.refreshStateInfo(restrictedAccessUrl);
+                                if (info.getUrlState().getStatus() == UrlStatus.ACCESSIBLE)
                                 {
                                     userPasswordAccepted = true;
                                     break;
@@ -231,8 +232,8 @@ public class Configuration
                         {
                             // Attempt authentication.
                             setupPasswordAuthentication(name, password, maximumNumberTries);
-                            UrlState state = FileCache.refreshUrlInfo(restrictedAccessUrl).getState();
-                            UrlStatus status = state.getStatus();
+                            DownloadableFileState state = FileCache.refreshStateInfo(restrictedAccessUrl);
+                            UrlStatus status = state.getUrlState().getStatus();
                             if (status == UrlStatus.NOT_AUTHORIZED)
                             {
                                 // Try again.
@@ -313,11 +314,15 @@ public class Configuration
                         triedCount.put(url, count + 1);
                         return new java.net.PasswordAuthentication(username, password);
                     }
-                    // Oddly enough, this does the trick to prevent repeatedly trying a wrong password,
-                    // while throwing a RuntimeException doesn't work. It appears that null is interpreted
-                    // as meaning the user failed to provide credentials, so it just returns an appropriate
+                    // Oddly enough, this does the trick to prevent repeatedly trying a wrong
+                    // password,
+                    // while throwing a RuntimeException doesn't work. It appears that null is
+                    // interpreted
+                    // as meaning the user failed to provide credentials, so it just returns an
+                    // appropriate
                     // HTTP code back up the stack. Nice!
-                    // By contrast, the RuntimeException was not catchable because the authorization attempt
+                    // By contrast, the RuntimeException was not catchable because the authorization
+                    // attempt
                     // occurred in a different thread.
                     return null;
                 }
