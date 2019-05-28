@@ -54,6 +54,7 @@ import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
+import edu.jhuapl.saavtk.util.DownloadableFileInfo;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.Properties;
 import net.miginfocom.swing.MigLayout;
@@ -438,6 +439,13 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         scrollPane.setViewportView(panel);
 
         add(scrollPane, BorderLayout.CENTER);
+
+        FileCache.addServerUrlPropertyChangeListener(e -> {
+            if (e.getPropertyName().equals(DownloadableFileInfo.STATE_PROPERTY))
+            {
+                updateColoringOptions();
+            }
+        });
     }
 
     private void updateModelResolution(String actionCommand)
