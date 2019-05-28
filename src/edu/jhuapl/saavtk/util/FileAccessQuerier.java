@@ -76,26 +76,26 @@ public class FileAccessQuerier extends SwingWorker<Void, Void>
             Debug.out().println((serverAccessEnabled ? "Querying server " : "NOT querying server (access disabled) ") + //
                     "for info about " + urlState.getUrl());
         }
+        // End DEBUG message.
 
         if (forceUpdate || fileState.getStatus() == FileStatus.UNKNOWN)
         {
             fileInfo.update();
         }
-        // End DEBUG message.
 
-        if (serverAccessEnabled)
+        if (forceUpdate || urlState.getStatus() == UrlStatus.UNKNOWN)
         {
-            if (forceUpdate || urlState.getStatus() == UrlStatus.UNKNOWN)
+            if (serverAccessEnabled)
             {
                 try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.HEAD))
                 {
                     urlInfo.update(closeableConnection.getConnection());
                 }
             }
-        }
-        else
-        {
-            urlInfo.update(UrlState.of(urlState.getUrl()));
+            else
+            {
+                urlInfo.update(UrlState.of(urlState.getUrl()));
+            }
         }
     }
 
