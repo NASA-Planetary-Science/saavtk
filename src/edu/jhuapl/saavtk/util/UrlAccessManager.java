@@ -272,8 +272,8 @@ public class UrlAccessManager
             // Serious problem. Disable server access pending resolution.
             System.err.println("Problem connecting to server. Disabling server access for now");
             e.printStackTrace();
-            setEnableServerAccess(false);
             rootInfo.update(UrlState.of(rootUrl));
+            setEnableServerAccess(false);
         }
         catch (Exception e)
         {
