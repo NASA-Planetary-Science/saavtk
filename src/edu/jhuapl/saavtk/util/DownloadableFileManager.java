@@ -71,7 +71,7 @@ public class DownloadableFileManager
                 while (enableMonitor)
                 {
                     boolean initiallyEnabled = urlManager.isServerAccessEnabled();
-                    urlManager.queryRootUrl();
+                    URL rootUrl = urlManager.queryRootUrl().getState().getUrl();
                     boolean currentlyEnabled = urlManager.isServerAccessEnabled();
 
                     boolean forceUpdate = initiallyEnabled != currentlyEnabled;
@@ -84,6 +84,11 @@ public class DownloadableFileManager
 
                     for (URL url : urlSet)
                     {
+                        if (url.equals(rootUrl))
+                        {
+                            // This was just checked above -- don't do a redundant check here.
+                            continue;
+                        }
                         try
                         {
                             doQuery(url, forceUpdate);
