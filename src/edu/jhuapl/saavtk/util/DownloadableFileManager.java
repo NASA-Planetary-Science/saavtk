@@ -49,7 +49,7 @@ public class DownloadableFileManager
 
     private final UrlAccessManager urlManager;
     private final FileAccessManager fileManager;
-    private final ConcurrentMap<URL, DownloadableFileInfo> downloadInfoCache;
+    private final ConcurrentMap<String, DownloadableFileInfo> downloadInfoCache;
     private final Map<String, Map<StateListener, PropertyChangeListener>> listenerMap;
     private final ExecutorService accessMonitor;
     private volatile Boolean enableMonitor;
@@ -77,37 +77,39 @@ public class DownloadableFileManager
                 {
                     boolean initiallyEnabled = urlManager.isServerAccessEnabled();
                     URL rootUrl = urlManager.queryRootUrl().getState().getUrl();
+                    String rootUrlString = rootUrl.toString();
                     boolean currentlyEnabled = urlManager.isServerAccessEnabled();
 
                     boolean forceUpdate = initiallyEnabled != currentlyEnabled;
 
-                    Set<URL> urlSet;
+                    Set<String> urlSet;
                     synchronized (downloadInfoCache)
                     {
                         urlSet = ImmutableSet.copyOf(downloadInfoCache.keySet());
                     }
 
-                    for (URL url : urlSet)
+                    for (String urlString : urlSet)
                     {
-                        if (url.equals(rootUrl))
+                        if (urlString.equals(rootUrlString))
                         {
                             // This was just checked above -- don't do a redundant check here.
                             continue;
                         }
                         try
                         {
+                            URL url = urlManager.getUrl(urlString);
                             doQuery(url, forceUpdate);
                         }
                         catch (@SuppressWarnings("unused") SocketTimeoutException ignored)
                         {
                             // Hit a time-out. Likely the rest will also, so break now and come back to this
                             // later.
-                            Debug.err().println("Timeout on " + url);
+                            Debug.err().println("Timeout on " + urlString);
                             break;
                         }
                         catch (@SuppressWarnings("unused") ConnectException | UnknownHostException ignored)
                         {
-                            Debug.err().println("Unknown host exception on " + url);
+                            Debug.err().println("Unknown host exception on " + urlString);
                             break;
                         }
                         catch (Exception e)
@@ -332,9 +334,10 @@ public class DownloadableFileManager
     protected DownloadableFileInfo getInfo(URL url)
     {
         DownloadableFileInfo result;
+        String urlString = url.toString();
         synchronized (this.downloadInfoCache)
         {
-            result = downloadInfoCache.get(url);
+            result = downloadInfoCache.get(urlString);
             if (result == null)
             {
                 UrlInfo urlInfo = urlManager.getInfo(url);
@@ -365,7 +368,7 @@ public class DownloadableFileManager
 
                 result = downloadableInfo;
 
-                downloadInfoCache.put(url, result);
+                downloadInfoCache.put(urlString, result);
             }
         }
 
