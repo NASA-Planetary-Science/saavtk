@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.util;
 
 import java.awt.EventQueue;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
@@ -8,6 +9,8 @@ import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -47,6 +50,7 @@ public class DownloadableFileManager
     private final UrlAccessManager urlManager;
     private final FileAccessManager fileManager;
     private final ConcurrentMap<URL, DownloadableFileInfo> downloadInfoCache;
+    private final Map<String, Map<StateListener, PropertyChangeListener>> listenerMap;
     private final ExecutorService accessMonitor;
     private volatile Boolean enableMonitor;
     private volatile long sleepInterval;
@@ -56,6 +60,7 @@ public class DownloadableFileManager
         this.urlManager = urlManager;
         this.fileManager = fileManager;
         this.downloadInfoCache = new ConcurrentHashMap<>();
+        this.listenerMap = new HashMap<>();
         this.accessMonitor = Executors.newSingleThreadExecutor();
         this.enableMonitor = Boolean.FALSE;
         this.sleepInterval = 5000;
@@ -258,16 +263,42 @@ public class DownloadableFileManager
 
     public void addStateListener(String urlString, StateListener listener)
     {
+        Preconditions.checkNotNull(urlString);
         Preconditions.checkNotNull(listener);
 
-        getInfo(urlManager.getUrl(urlString)).addPropertyChangeListener(e -> {
-            if (e.getPropertyName().equals(DownloadableFileInfo.STATE_PROPERTY))
+        URL url = urlManager.getUrl(urlString);
+
+        // Reset the string so that it has a canonically consistent value no matter how
+        // messy the supplied argument was.
+        urlString = url.toString();
+
+        DownloadableFileInfo info = getInfo(url);
+
+        synchronized (this.listenerMap)
+        {
+            Map<StateListener, PropertyChangeListener> propertyListenerMap = listenerMap.get(urlString);
+            if (propertyListenerMap == null)
             {
-                EventQueue.invokeLater(() -> {
-                    listener.respond((DownloadableFileState) e.getNewValue());
-                });
+                propertyListenerMap = new HashMap<>();
+                listenerMap.put(urlString, propertyListenerMap);
             }
-        });
+
+            if (!propertyListenerMap.containsKey(listener))
+            {
+                PropertyChangeListener propertyListener = e -> {
+                    if (e.getPropertyName().equals(DownloadableFileInfo.STATE_PROPERTY))
+                    {
+                        EventQueue.invokeLater(() -> {
+                            listener.respond((DownloadableFileState) e.getNewValue());
+                        });
+                    }
+                };
+                propertyListenerMap.put(listener, propertyListener);
+                info.addPropertyChangeListener(propertyListener);
+            }
+
+        }
+
     }
 
     public void removeStateListener(String urlString, StateListener listener)
@@ -275,7 +306,27 @@ public class DownloadableFileManager
         Preconditions.checkNotNull(urlString);
         Preconditions.checkNotNull(listener);
 
-        // TODO: write this.
+        URL url = urlManager.getUrl(urlString);
+
+        // Reset the string so that it has a canonically consistent value no matter how
+        // messy the supplied argument was.
+        urlString = url.toString();
+
+        DownloadableFileInfo info = getInfo(url);
+
+        synchronized (this.listenerMap)
+        {
+            Map<StateListener, PropertyChangeListener> propertyListenerMap = listenerMap.get(urlString);
+            if (propertyListenerMap != null)
+            {
+                PropertyChangeListener propertyListener = propertyListenerMap.get(listener);
+                if (propertyListener != null)
+                {
+                    info.removePropertyChangeListener(propertyListener);
+                    propertyListenerMap.remove(listener);
+                }
+            }
+        }
     }
 
     protected DownloadableFileInfo getInfo(URL url)
