@@ -111,7 +111,7 @@ public class DownloadableFileInfo
         }
 
         @Override
-        public int hashCode()
+        public final int hashCode()
         {
             final int prime = 31;
             int result = 1;
@@ -123,7 +123,7 @@ public class DownloadableFileInfo
         }
 
         @Override
-        public boolean equals(Object other)
+        public final boolean equals(Object other)
         {
             if (this == other)
                 return true;
@@ -205,22 +205,39 @@ public class DownloadableFileInfo
 
         DownloadableFileState state = DownloadableFileState.of(urlState, fileState);
 
+        boolean changed = false;
         synchronized (this.state)
         {
-            this.state.set(state);
+            if (!this.state.get().equals(state))
+            {
+                this.state.set(state);
+                changed = true;
+            }
         }
 
-        pcs.firePropertyChange(STATE_PROPERTY, null, state);
+        if (changed)
+        {
+            synchronized (this.pcs)
+            {
+                pcs.firePropertyChange(STATE_PROPERTY, null, state);
+            }
+        }
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener)
     {
-        pcs.addPropertyChangeListener(listener);
+        synchronized (this.pcs)
+        {
+            pcs.addPropertyChangeListener(listener);
+        }
     }
 
     public void removePropertyChangeListener(PropertyChangeListener listener)
     {
-        pcs.removePropertyChangeListener(listener);
+        synchronized (this.pcs)
+        {
+            pcs.removePropertyChangeListener(listener);
+        }
     }
 
     @Override

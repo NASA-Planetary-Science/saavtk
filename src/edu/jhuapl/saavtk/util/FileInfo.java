@@ -73,7 +73,7 @@ public class FileInfo
         }
 
         @Override
-        public int hashCode()
+        public final int hashCode()
         {
             final int prime = 31;
             int result = 1;
@@ -87,7 +87,7 @@ public class FileInfo
         }
 
         @Override
-        public boolean equals(Object other)
+        public final boolean equals(Object other)
         {
             if (this == other)
                 return true;
@@ -144,15 +144,26 @@ public class FileInfo
     {
         Preconditions.checkNotNull(status);
 
+        boolean changed = false;
         FileState state;
         synchronized (this.state)
         {
             File file = this.state.get().getFile();
             state = FileState.of(file, status, length, lastModified);
-            this.state.set(state);
+            if (!this.state.get().equals(state))
+            {
+                this.state.set(state);
+                changed = true;
+            }
         }
 
-        pcs.firePropertyChange(STATE_PROPERTY, null, state);
+        if (changed)
+        {
+            synchronized (this.pcs)
+            {
+                pcs.firePropertyChange(STATE_PROPERTY, null, state);
+            }
+        }
     }
 
     public void update()
@@ -173,12 +184,18 @@ public class FileInfo
 
     public void addPropertyChangeListener(PropertyChangeListener listener)
     {
-        pcs.addPropertyChangeListener(listener);
+        synchronized (this.pcs)
+        {
+            pcs.addPropertyChangeListener(listener);
+        }
     }
 
     public void removePropertyChangeListener(PropertyChangeListener listener)
     {
-        pcs.removePropertyChangeListener(listener);
+        synchronized (this.pcs)
+        {
+            pcs.removePropertyChangeListener(listener);
+        }
     }
 
     @Override
