@@ -199,6 +199,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                 resButton.addActionListener(listener);
                 resModelButtons.add(resButton);
 
+                resButton.setEnabled(FileCache.instance().isAccessible(smallBodyModel.getModelFileNames().get(i)));
+
                 FileCache.instance().addStateListener(smallBodyModel.getModelFileNames().get(i), state -> {
                     resButton.setEnabled(state.isAccessible());
                 });
@@ -769,7 +771,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                         box.setEnabled(name, e.isAccessible());
                     };
                     boxListeners.put(urlString, listener);
-                    FileCache.instance().addStateListener(urlString, listener);
                     FileCache.instance().addStateListener(urlString, listener);
                 }
             }
