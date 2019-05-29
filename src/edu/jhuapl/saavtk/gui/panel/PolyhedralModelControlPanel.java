@@ -12,7 +12,10 @@ import java.awt.event.ItemListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.swing.AbstractAction;
 import javax.swing.ButtonGroup;
@@ -54,7 +57,7 @@ import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
-import edu.jhuapl.saavtk.util.DownloadableFileInfo;
+import edu.jhuapl.saavtk.util.DownloadableFileManager.StateListener;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.Properties;
 import net.miginfocom.swing.MigLayout;
@@ -439,13 +442,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         scrollPane.setViewportView(panel);
 
         add(scrollPane, BorderLayout.CENTER);
-
-        FileCache.addServerUrlPropertyChangeListener(e -> {
-            if (e.getPropertyName().equals(DownloadableFileInfo.STATE_PROPERTY))
-            {
-                updateColoringOptions();
-            }
-        });
     }
 
     private void updateModelResolution(String actionCommand)
@@ -725,6 +721,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         showColoringProperties.setEnabled(coloringComboBox.isEnabled() && coloringComboBox.getSelectedIndex() >= 0);
     }
 
+    protected final Map<JComboBoxWithItemState<?>, Map<String, StateListener>> stateListeners = new HashMap<>();
+
     protected void updateColoringComboBox(JComboBoxWithItemState<String> box, ColoringDataManager coloringDataManager, int numberElements)
     {
         // Store the current selection and number of items in the combo box.
@@ -734,32 +732,58 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         box.setSelectedIndex(-1);
         box.removeAllItems();
 
-        // Add one item for blank (no coloring).
-        box.addItem("");
-        for (String name : coloringDataManager.getNames())
+        synchronized (this.stateListeners)
         {
-            // Re-add the current colorings.
-            box.addItem(name);
-            if (!coloringDataManager.has(name, numberElements))
+            // Get rid of current file access state listeners.
+            Map<String, StateListener> boxListeners = stateListeners.get(box);
+            if (boxListeners != null)
             {
-                // This coloring is not available at this resolution. List it but grey it out.
-                box.setEnabled(name, false);
+                for (Entry<String, StateListener> entry : boxListeners.entrySet())
+                {
+                    FileCache.instance().removeStateListener(entry.getKey(), entry.getValue());
+                }
+                boxListeners.clear();
             }
             else
             {
-                box.setEnabled(name, FileCache.instance().isAccessible(coloringDataManager.get(name, numberElements).getFileName()));
+                boxListeners = new HashMap<>();
+                stateListeners.put(box, boxListeners);
             }
-        }
 
-        int numberColorings = box.getItemCount();
-        int selection = 0;
-        if (previousSelection < numberColorings)
-        {
-            // A coloring was replaced/edited. Re-select the current selection.
-            selection = previousSelection;
-        }
+            // Add one item for blank (no coloring).
+            box.addItem("");
+            for (String name : coloringDataManager.getNames())
+            {
+                // Re-add the current colorings.
+                box.addItem(name);
+                if (!coloringDataManager.has(name, numberElements))
+                {
+                    // This coloring is not available at this resolution. List it but grey it out.
+                    box.setEnabled(name, false);
+                }
+                else
+                {
+                    String urlString = coloringDataManager.get(name, numberElements).getFileName();
+                    box.setEnabled(name, FileCache.instance().isAccessible(urlString));
+                    StateListener listener = e -> {
+                        box.setEnabled(name, e.isAccessible());
+                    };
+                    boxListeners.put(urlString, listener);
+                    FileCache.instance().addStateListener(urlString, listener);
+                    FileCache.instance().addStateListener(urlString, listener);
+                }
+            }
 
-        box.setSelectedIndex(selection);
+            int numberColorings = box.getItemCount();
+            int selection = 0;
+            if (previousSelection < numberColorings)
+            {
+                // A coloring was replaced/edited. Re-select the current selection.
+                selection = previousSelection;
+            }
+
+            box.setSelectedIndex(selection);
+        }
     }
 
     protected void setStatisticsLabel()
