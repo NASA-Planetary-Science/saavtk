@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.swing.AbstractAction;
 import javax.swing.ButtonGroup;
@@ -59,6 +58,7 @@ import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.DownloadableFileManager.StateListener;
 import edu.jhuapl.saavtk.util.FileCache;
+import edu.jhuapl.saavtk.util.FileStateListenerTracker;
 import edu.jhuapl.saavtk.util.Properties;
 import net.miginfocom.swing.MigLayout;
 
@@ -723,7 +723,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         showColoringProperties.setEnabled(coloringComboBox.isEnabled() && coloringComboBox.getSelectedIndex() >= 0);
     }
 
-    protected final Map<JComboBoxWithItemState<?>, Map<String, StateListener>> stateListeners = new HashMap<>();
+    protected final Map<JComboBoxWithItemState<?>, FileStateListenerTracker> listenerTrackers = new HashMap<>();
 
     protected void updateColoringComboBox(JComboBoxWithItemState<String> box, ColoringDataManager coloringDataManager, int numberElements)
     {
@@ -734,22 +734,18 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         box.setSelectedIndex(-1);
         box.removeAllItems();
 
-        synchronized (this.stateListeners)
+        synchronized (this.listenerTrackers)
         {
             // Get rid of current file access state listeners.
-            Map<String, StateListener> boxListeners = stateListeners.get(box);
-            if (boxListeners != null)
+            FileStateListenerTracker boxListeners = listenerTrackers.get(box);
+            if (boxListeners == null)
             {
-                for (Entry<String, StateListener> entry : boxListeners.entrySet())
-                {
-                    FileCache.instance().removeStateListener(entry.getKey(), entry.getValue());
-                }
-                boxListeners.clear();
+                boxListeners = FileStateListenerTracker.of(FileCache.instance());
+                listenerTrackers.put(box, boxListeners);
             }
             else
             {
-                boxListeners = new HashMap<>();
-                stateListeners.put(box, boxListeners);
+                boxListeners.removeAllStateChangeListeners();
             }
 
             // Add one item for blank (no coloring).
@@ -768,10 +764,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                     String urlString = coloringDataManager.get(name, numberElements).getFileName();
                     box.setEnabled(name, FileCache.instance().isAccessible(urlString));
                     StateListener listener = e -> {
+//                        System.err.println("Updating access for " + urlString);
                         box.setEnabled(name, e.isAccessible());
                     };
-                    boxListeners.put(urlString, listener);
-                    FileCache.instance().addStateListener(urlString, listener);
+                    boxListeners.addStateChangeListener(urlString, listener);
                 }
             }
 
