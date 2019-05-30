@@ -64,7 +64,7 @@ public class UrlAccessManager
     }
 
     private final URL rootUrl;
-    private final ConcurrentMap<URL, UrlInfo> urlInfoCache;
+    private final ConcurrentMap<String, UrlInfo> urlInfoCache;
     private volatile boolean enableServerAccess;
 
     protected UrlAccessManager(URL rootUrl)
@@ -244,14 +244,16 @@ public class UrlAccessManager
         Preconditions.checkNotNull(url);
 
         UrlInfo result;
+        String urlString = url.toString();
+
         synchronized (this.urlInfoCache)
         {
             // Retrieve a cached URLInfo object, or else add one to the cache.
-            result = urlInfoCache.get(url);
+            result = urlInfoCache.get(urlString);
             if (result == null)
             {
                 result = UrlInfo.of(url);
-                urlInfoCache.put(url, result);
+                urlInfoCache.put(urlString, result);
             }
         }
 

@@ -302,16 +302,17 @@ public class Configuration
         try
         {
             java.net.Authenticator.setDefault(new java.net.Authenticator() {
-                final Map<URL, Integer> triedCount = new HashMap<>();
+                final Map<String, Integer> triedCount = new HashMap<>();
 
                 @Override
                 protected java.net.PasswordAuthentication getPasswordAuthentication()
                 {
                     final URL url = getRequestingURL();
-                    int count = triedCount.containsKey(url) ? triedCount.get(url) : 0;
+                    final String urlString = url.toString();
+                    int count = triedCount.containsKey(urlString) ? triedCount.get(urlString) : 0;
                     if (count < maximumNumberTries)
                     {
-                        triedCount.put(url, count + 1);
+                        triedCount.put(urlString, count + 1);
                         return new java.net.PasswordAuthentication(username, password);
                     }
                     // Oddly enough, this does the trick to prevent repeatedly trying a wrong

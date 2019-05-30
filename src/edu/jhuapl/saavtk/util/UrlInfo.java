@@ -82,7 +82,10 @@ public class UrlInfo
         {
             final int prime = 31;
             int result = 1;
-            result = prime * result + url.hashCode();
+            // Work around a bug in Java: under some circumstances, URL.hashCode() gives
+            // different results depending on whether there was an internet connection when
+            // the URL was instantiated.
+            result = prime * result + url.toString().hashCode();
             result = prime * result + (int) (contentLength ^ (contentLength >>> 32));
             result = prime * result + (int) (lastModified ^ (lastModified >>> 32));
             result = prime * result + status.hashCode();
