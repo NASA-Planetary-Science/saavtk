@@ -311,13 +311,13 @@ public class DownloadableFileManager
                 };
                 propertyListenerMap.put(listener, propertyListener);
                 info.addPropertyChangeListener(propertyListener);
-                accessMonitor.execute(() -> {
-                    info.fireStateChange();
+
+                // Immediately "fire" just the newly added listener.
+                EventQueue.invokeLater(() -> {
+                    listener.respond(info.getState());
                 });
             }
-
         }
-
     }
 
     public void removeStateListener(String urlString, StateListener listener)
