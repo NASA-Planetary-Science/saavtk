@@ -217,10 +217,7 @@ public class DownloadableFileInfo
 
         if (changed)
         {
-            synchronized (this.pcs)
-            {
-                pcs.firePropertyChange(STATE_PROPERTY, null, state);
-            }
+            fireStateChange();
         }
     }
 
@@ -246,6 +243,14 @@ public class DownloadableFileInfo
         synchronized (this.state)
         {
             return state.toString();
+        }
+    }
+
+    protected void fireStateChange()
+    {
+        synchronized (this.pcs)
+        {
+            pcs.firePropertyChange(STATE_PROPERTY, null, state.get());
         }
     }
 

@@ -61,7 +61,7 @@ public class DownloadableFileManager
         this.fileManager = fileManager;
         this.downloadInfoCache = new ConcurrentHashMap<>();
         this.listenerMap = new HashMap<>();
-        this.accessMonitor = Executors.newSingleThreadExecutor();
+        this.accessMonitor = Executors.newCachedThreadPool();
         this.enableMonitor = Boolean.FALSE;
         this.sleepInterval = 5000;
     }
@@ -76,48 +76,12 @@ public class DownloadableFileManager
                 while (enableMonitor)
                 {
                     boolean initiallyEnabled = urlManager.isServerAccessEnabled();
-                    URL rootUrl = urlManager.queryRootUrl().getState().getUrl();
-                    String rootUrlString = rootUrl.toString();
+                    urlManager.queryRootUrl().getState().getUrl();
                     boolean currentlyEnabled = urlManager.isServerAccessEnabled();
 
                     boolean forceUpdate = initiallyEnabled != currentlyEnabled;
 
-                    Set<String> urlSet;
-                    synchronized (downloadInfoCache)
-                    {
-                        urlSet = ImmutableSet.copyOf(downloadInfoCache.keySet());
-                    }
-
-                    for (String urlString : urlSet)
-                    {
-                        if (urlString.equals(rootUrlString))
-                        {
-                            // This was just checked above -- don't do a redundant check here.
-                            continue;
-                        }
-                        try
-                        {
-                            URL url = urlManager.getUrl(urlString);
-                            doQuery(url, forceUpdate);
-                        }
-                        catch (@SuppressWarnings("unused") SocketTimeoutException ignored)
-                        {
-                            // Hit a time-out. Likely the rest will also, so break now and come back to this
-                            // later.
-                            Debug.err().println("Timeout on " + urlString);
-                            break;
-                        }
-                        catch (@SuppressWarnings("unused") ConnectException | UnknownHostException ignored)
-                        {
-                            Debug.err().println("Unknown host exception on " + urlString);
-                            break;
-                        }
-                        catch (Exception e)
-                        {
-                            e.printStackTrace(Debug.err());
-                            continue;
-                        }
-                    }
+                    queryAll(forceUpdate);
 
                     try
                     {
@@ -212,6 +176,56 @@ public class DownloadableFileManager
         querier.queryInBackground();
     }
 
+    public void queryAll(boolean forceUpdate)
+    {
+        URL rootUrl = urlManager.getRootUrl();
+        String rootUrlString = rootUrl.toString();
+
+        Set<String> urlSet;
+        synchronized (this.downloadInfoCache)
+        {
+            urlSet = ImmutableSet.copyOf(downloadInfoCache.keySet());
+        }
+
+        for (String urlString : urlSet)
+        {
+            if (urlString.equals(rootUrlString))
+            {
+                // Do not check the root URL itself.
+                continue;
+            }
+            try
+            {
+                URL url = urlManager.getUrl(urlString);
+                doQuery(url, forceUpdate);
+            }
+            catch (@SuppressWarnings("unused") SocketTimeoutException ignored)
+            {
+                // Hit a time-out. Likely the rest will also, so break now and come back to this
+                // later.
+                Debug.err().println("Timeout on " + urlString);
+                break;
+            }
+            catch (@SuppressWarnings("unused") ConnectException | UnknownHostException ignored)
+            {
+                Debug.err().println("Unknown host exception on " + urlString);
+                break;
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace(Debug.err());
+                continue;
+            }
+        }
+    }
+
+    public void queryAllInBackground(boolean forceUpdate)
+    {
+        accessMonitor.execute(() -> {
+            queryAll(forceUpdate);
+        });
+    }
+
     public FileDownloader getDownloader(String urlString, boolean forceDownload)
     {
         Preconditions.checkNotNull(urlString);
@@ -297,6 +311,9 @@ public class DownloadableFileManager
                 };
                 propertyListenerMap.put(listener, propertyListener);
                 info.addPropertyChangeListener(propertyListener);
+                accessMonitor.execute(() -> {
+                    info.fireStateChange();
+                });
             }
 
         }
