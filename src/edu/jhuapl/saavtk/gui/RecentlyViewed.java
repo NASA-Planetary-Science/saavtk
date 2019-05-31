@@ -15,6 +15,8 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 
 import edu.jhuapl.saavtk.util.Configuration;
+import edu.jhuapl.saavtk.util.FileCache;
+import edu.jhuapl.saavtk.util.FileStateListenerTracker;
 import edu.jhuapl.saavtk.util.SafeURLPaths;
 
 public class RecentlyViewed extends JMenu
@@ -24,6 +26,7 @@ public class RecentlyViewed extends JMenu
     private final List<View> recentViews;
     private final File recentsFile;
     private final JMenuItem clearAllMenuItem;
+    private final FileStateListenerTracker fileStateTracker;
 
     public RecentlyViewed(ViewManager manager)
     {
@@ -32,6 +35,8 @@ public class RecentlyViewed extends JMenu
         this.recentViews = new ArrayList<>();
         this.recentsFile = new File(SafeURLPaths.instance().getString(Configuration.getApplicationDataDir(), "recents.txt"));
         this.clearAllMenuItem = createClearAllMenuItem();
+        this.fileStateTracker = FileStateListenerTracker.of(FileCache.instance());
+
         if (this.recentsFile.exists())
         {
             // Read recents file and figure out which models it refers to.
@@ -47,7 +52,6 @@ public class RecentlyViewed extends JMenu
                         {
                             recentViews.add(view);
                             JMenuItem menuItem = createMenuItem(view);
-                            menuItem.setEnabled(view.isEnabled());
                             add(menuItem);
                             break;
                         }
@@ -85,6 +89,7 @@ public class RecentlyViewed extends JMenu
         {
             if (recentViews.get(index) == view)
             {
+                removeListeners(view);
                 recentViews.remove(index);
                 remove(index);
                 break;
@@ -102,7 +107,10 @@ public class RecentlyViewed extends JMenu
         if (recentViews.size() > NUMBER_RECENTS_MAXIMUM)
         {
             int lastViewIndex = recentViews.size() - 1;
-            recentViews.remove(lastViewIndex);
+
+            View lastView = recentViews.remove(lastViewIndex);
+            removeListeners(lastView);
+
             remove(lastViewIndex);
         }
 
@@ -135,6 +143,12 @@ public class RecentlyViewed extends JMenu
                 manager.setCurrentView(view);
             }
         });
+
+        String urlString = view.getConfig().getShapeModelFileNames()[0];
+        fileStateTracker.addStateChangeListener(urlString, state -> {
+            item.setEnabled(state.isAccessible());
+        });
+
         return item;
     }
 
@@ -156,6 +170,7 @@ public class RecentlyViewed extends JMenu
                         e.printStackTrace();
                     }
                 }
+                fileStateTracker.removeAllStateChangeListeners();
                 recentViews.clear();
                 removeAll();
                 clearAllMenuItem.setEnabled(false);
@@ -163,5 +178,10 @@ public class RecentlyViewed extends JMenu
             }
         });
         return item;
+    }
+
+    protected void removeListeners(View view)
+    {
+        fileStateTracker.removeStateChangeListeners(view.getConfig().getShapeModelFileNames()[0]);
     }
 }
