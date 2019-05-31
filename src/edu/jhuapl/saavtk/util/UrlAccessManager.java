@@ -46,7 +46,16 @@ public class UrlAccessManager
 
         UrlAccessManager result = new UrlAccessManager(rootUrl);
 
-        result.queryRootUrl();
+        try
+        {
+            result.queryRootUrl();
+            System.out.println("Connected to server at " + rootUrl);
+        }
+        catch (Exception e)
+        {
+            System.err.println("Unable to connect to server. Disabling online access.");
+            e.printStackTrace();
+        }
 
         return result;
     }
@@ -248,30 +257,28 @@ public class UrlAccessManager
         return result;
     }
 
-    public UrlInfo queryRootUrl()
+    public UrlInfo queryRootUrl() throws Exception
     {
         UrlInfo rootInfo = getInfo(rootUrl);
         try (CloseableUrlConnection connection = CloseableUrlConnection.of(rootInfo, HttpRequestMethod.HEAD))
         {
-            Debug.out().println("Querying server about root URL " + rootUrl);
             rootInfo.update(connection.getConnection());
             setEnableServerAccess(true);
         }
         catch (FileNotFoundException | ConnectException | UnknownHostException e)
         {
             // Serious problem. Disable server access pending resolution.
-            System.err.println("Problem connecting to server. Disabling server access for now");
-            e.printStackTrace();
             rootInfo.update(UrlState.of(rootUrl));
             setEnableServerAccess(false);
+            throw e;
         }
         catch (Exception e)
         {
             // Any other exception (e.g. SocketTimeoutException) most likely indicates
             // a transient problem, so report it but do not disable access.
-            e.printStackTrace();
             rootInfo.update(UrlState.of(rootUrl));
             setEnableServerAccess(true);
+            throw e;
         }
 
         return rootInfo;

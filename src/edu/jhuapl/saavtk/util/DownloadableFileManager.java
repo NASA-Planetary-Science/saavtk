@@ -31,6 +31,13 @@ public class DownloadableFileManager
         void respond(DownloadableFileState fileState);
     }
 
+    private static volatile boolean showDotsForFiles = false;
+
+    public static void setShowDotsForFiles(boolean showDotsForFiles)
+    {
+        DownloadableFileManager.showDotsForFiles = showDotsForFiles;
+    }
+
     public static DownloadableFileManager of(URL rootUrl, File cacheDir)
     {
         Preconditions.checkNotNull(rootUrl);
@@ -76,10 +83,30 @@ public class DownloadableFileManager
                 while (enableMonitor)
                 {
                     boolean initiallyEnabled = urlManager.isServerAccessEnabled();
-                    urlManager.queryRootUrl().getState().getUrl();
+                    Exception exception = null;
+                    try
+                    {
+                        urlManager.queryRootUrl().getState().getUrl();
+                    }
+                    catch (Exception e)
+                    {
+                        exception = e;
+                    }
+
                     boolean currentlyEnabled = urlManager.isServerAccessEnabled();
 
                     boolean forceUpdate = initiallyEnabled != currentlyEnabled;
+
+                    if (forceUpdate)
+                    {
+                        System.out.println(currentlyEnabled ? //
+                        "Connected to server. Re-enabling online access." : //
+                        "Failed to connect to server. Disabling online access for now.");
+                        if (exception != null)
+                        {
+                            exception.printStackTrace(Debug.err());
+                        }
+                    }
 
                     queryAll(forceUpdate);
 
@@ -230,6 +257,11 @@ public class DownloadableFileManager
     {
         Preconditions.checkNotNull(urlString);
 
+        if (!Debug.isEnabled() && showDotsForFiles)
+        {
+            System.out.print(".");
+        }
+
         URL url = urlManager.getUrl(urlString);
         UrlInfo urlInfo = urlManager.getInfo(urlString);
         Path downloadPath = urlManager.getDownloadPath(url);
@@ -241,9 +273,16 @@ public class DownloadableFileManager
 
     public DownloadableFileState getDownloadedFile(String urlString, boolean forceDownload) throws IOException, InterruptedException
     {
+        Preconditions.checkNotNull(urlString);
+
+        if (!Debug.isEnabled() && showDotsForFiles)
+        {
+            System.out.print(".");
+        }
+
         DownloadableFileState fileState = getState(urlString);
 
-        if (urlManager.isServerAccessEnabled() && (forceDownload || (fileState.isDownloadMayBePossible() && fileState.isDownloadNecessary())))
+        if (urlManager.isServerAccessEnabled())
         {
             FileDownloader downloader = getDownloader(urlString, forceDownload);
             downloader.download();
@@ -255,9 +294,17 @@ public class DownloadableFileManager
 
     public void getDownloadedFile(String urlString, StateListener whenFinished, boolean forceDownload)
     {
+        Preconditions.checkNotNull(urlString);
+        Preconditions.checkNotNull(whenFinished);
+
+        if (!Debug.isEnabled() && showDotsForFiles)
+        {
+            System.out.print(".");
+        }
+
         DownloadableFileState fileState = getState(urlString);
 
-        if (urlManager.isServerAccessEnabled() && (forceDownload || (fileState.isDownloadMayBePossible() && fileState.isDownloadNecessary())))
+        if (urlManager.isServerAccessEnabled())
         {
             FileDownloader downloader = getDownloader(urlString, forceDownload);
 
