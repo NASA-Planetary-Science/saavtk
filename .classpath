@@ -134,5 +134,8 @@
 	<classpathentry kind="lib" path="lib/geotools/jt-zonalstats-1.4.0.jar"/>
 	<classpathentry kind="lib" path="lib/geotools/jts-1.13.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/rtree-0.8-RC10.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/guava-mini-0.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/rxjava-1.1.4.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/rxjava-extras-0.7.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
