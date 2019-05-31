@@ -10,23 +10,29 @@ import javax.swing.JSeparator;
 
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
+import edu.jhuapl.saavtk.util.FileCache;
+import edu.jhuapl.saavtk.util.FileStateListenerTracker;
 
 public class FavoritesMenu extends JMenu
 {
-    FavoritesFile favoritesFile;
-    ViewManager manager;
+    private final FavoritesFile favoritesFile;
+    private final ViewManager manager;
+    private final FileStateListenerTracker fileStateTracker;
 
     public FavoritesMenu(ViewManager manager)
     {
         super("Favorites");
         this.favoritesFile = new FavoritesFile(manager);
         this.manager = manager;
+        this.fileStateTracker = FileStateListenerTracker.of(FileCache.instance());
         rebuild();
     }
 
     private final void rebuild()
     {
         removeAll();
+        fileStateTracker.removeAllStateChangeListeners();
+
         //
         JMenuItem add = new JMenuItem();
         JMenuItem rem = new JMenuItem();
@@ -51,6 +57,10 @@ public class FavoritesMenu extends JMenu
             if (!view.getUniqueName().equals(manager.getDefaultBodyToLoad()))
             {
                 JMenuItem menuItem = new FavoritesMenuItem(view);
+                String urlString = view.getConfig().getShapeModelFileNames()[0];
+                fileStateTracker.addStateChangeListener(urlString, state -> {
+                    menuItem.setEnabled(state.isAccessible());
+                });
                 add(menuItem);
             }
         }
@@ -65,7 +75,8 @@ public class FavoritesMenu extends JMenu
         {
             View defaultToLoad = manager.getView(manager.getDefaultBodyToLoad());
             JMenuItem menuItem = new FavoritesMenuItem(defaultToLoad);
-            defaultToLoad.getConfig().addModelAccessibilityListener(state -> {
+            String urlString = defaultToLoad.getConfig().getShapeModelFileNames()[0];
+            fileStateTracker.addStateChangeListener(urlString, state -> {
                 menuItem.setEnabled(state.isAccessible());
             });
             add(menuItem);

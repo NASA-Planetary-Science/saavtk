@@ -59,9 +59,9 @@ public class ExampleViewConfig extends ViewConfig
     }
 
     @Override
-    public void addModelAccessibilityListener(@SuppressWarnings("unused") StateListener listener)
+    public String[] getShapeModelFileNames()
     {
-
+        return new String[] { modelLabel };
     }
 
 }

@@ -119,7 +119,7 @@ public abstract class ViewConfig implements Cloneable
         }
     }
 
-    public abstract void addModelAccessibilityListener(DownloadableFileManager.StateListener listener);
+    public abstract String[] getShapeModelFileNames();
 
     public boolean isEnabled()
     {
