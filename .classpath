@@ -133,5 +133,6 @@
 	<classpathentry kind="lib" path="lib/geotools/jt-zonal-1.0.9.jar"/>
 	<classpathentry kind="lib" path="lib/geotools/jt-zonalstats-1.4.0.jar"/>
 	<classpathentry kind="lib" path="lib/geotools/jts-1.13.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/rtree-0.8-RC10.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
