@@ -31,18 +31,6 @@ public class UrlAccessManager
 {
     protected static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
 
-    private static volatile boolean showDotsForFiles = false;
-
-    public static boolean isShowDotsForFiles()
-    {
-        return showDotsForFiles;
-    }
-
-    public static void setShowDotsForFiles(boolean showDotsForFiles)
-    {
-        UrlAccessManager.showDotsForFiles = showDotsForFiles;
-    }
-
     /**
      * Create a new UrlAccessManager using the arguments as the root level URL for
      * relative path queries. If server access is enabled, this method attempts to
