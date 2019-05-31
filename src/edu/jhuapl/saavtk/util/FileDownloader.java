@@ -151,7 +151,7 @@ public class FileDownloader extends SwingWorker<Void, Void>
     @Override
     public void done()
     {
-        Debug.out().println("Querying FS following download of " + urlInfo.getState().getUrl());
+//        Debug.out().println("Querying FS following download of " + urlInfo.getState().getUrl());
         fileInfo.update();
 
         firePropertyChange(isCancelled() ? CANCELED_PROPERTY : DONE_PROPERTY, null, fileInfo);
