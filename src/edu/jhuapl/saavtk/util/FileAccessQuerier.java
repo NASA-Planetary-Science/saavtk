@@ -61,21 +61,21 @@ public class FileAccessQuerier extends SwingWorker<Void, Void>
         UrlState urlState = urlInfo.getState();
 
         // Begin DEBUG message.
-        if (forceUpdate)
-        {
-            Debug.out().println("Querying FS and server (forced) for info about " + urlState.getUrl());
-        }
-        else if (fileState.getStatus() == FileStatus.UNKNOWN)
-        {
-            Debug.out().println("Querying FS " + //
-                    (urlState.getStatus() == UrlStatus.UNKNOWN ? (serverAccessEnabled ? "and server " : "ONLY (server access disabled) ") : "") + //
-                    "for info about " + urlState.getUrl());
-        }
-        else if (urlState.getStatus() == UrlStatus.UNKNOWN)
-        {
-            Debug.out().println((serverAccessEnabled ? "Querying server " : "NOT querying server (access disabled) ") + //
-                    "for info about " + urlState.getUrl());
-        }
+//        if (forceUpdate)
+//        {
+//            Debug.out().println("Querying FS and server (forced) for info about " + urlState.getUrl());
+//        }
+//        else if (fileState.getStatus() == FileStatus.UNKNOWN)
+//        {
+//            Debug.out().println("Querying FS " + //
+//                    (urlState.getStatus() == UrlStatus.UNKNOWN ? (serverAccessEnabled ? "and server " : "ONLY (server access disabled) ") : "") + //
+//                    "for info about " + urlState.getUrl());
+//        }
+//        else if (urlState.getStatus() == UrlStatus.UNKNOWN)
+//        {
+//            Debug.out().println((serverAccessEnabled ? "Querying server " : "NOT querying server (access disabled) ") + //
+//                    "for info about " + urlState.getUrl());
+//        }
         // End DEBUG message.
 
         if (forceUpdate || fileState.getStatus() == FileStatus.UNKNOWN)
