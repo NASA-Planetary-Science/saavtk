@@ -70,6 +70,8 @@ public abstract class PolyhedralModel extends AbstractModel
 	}
 
 	public abstract void updateScaleBarValue(double pixelSizeInKm);
+	
+	public abstract void updateScaleBarValue(double pixelSizeInKm, Runnable completionBlock);
 
 	public abstract void updateScaleBarPosition(int windowWidth, int windowHeight);
 
@@ -99,17 +101,7 @@ public abstract class PolyhedralModel extends AbstractModel
 
 	public abstract vtkDataArray getGravityVectorData();
 
-	public abstract List<LidarDatasourceInfo> getLidarDasourceInfoList();
-
-	public abstract int getLidarDatasourceIndex();
-
-	public abstract void setLidarDatasourceIndex(int index);
-
-	public abstract String getLidarDatasourceName(int i);
-
-	public abstract String getLidarDatasourcePath(int i);
-
-	public abstract int getNumberOfLidarDatasources();
+	public abstract List<LidarDataSource> getLidarDataSourceList();
 
 	public abstract int getModelResolution();
 
@@ -117,13 +109,13 @@ public abstract class PolyhedralModel extends AbstractModel
 
 	public abstract TreeSet<Integer> getIntersectingCubes(BoundingBox bb);
 
-	public abstract void addCustomLidarDatasource(LidarDatasourceInfo info) throws IOException;
+	public abstract void addCustomLidarDataSource(LidarDataSource info) throws IOException;
 
-	public abstract void setCustomLidarDatasource(int index, LidarDatasourceInfo info) throws IOException;
+	public abstract void setCustomLidarDataSource(int index, LidarDataSource info) throws IOException;
 
-	public abstract void loadCustomLidarDatasourceInfo();
+	public abstract void loadCustomLidarDataSource();
 
-	public abstract void removeCustomLidarDatasource(int index) throws IOException;
+	public abstract void removeCustomLidarDataSource(int index) throws IOException;
 
 	public abstract CustomizableColoringDataManager getColoringDataManager();
 
@@ -288,6 +280,8 @@ public abstract class PolyhedralModel extends AbstractModel
 	public abstract double[] getClosestNormal(double[] point);
 
 	public abstract void drawPolygon(List<LatLon> controlPoints, vtkPolyData outputInterior, vtkPolyData outputBoundary);
+	
+	public abstract double getScaleBarWidthInKm();
 	
 	/**
 	 * Method that returns the average surface normal over the the entire
