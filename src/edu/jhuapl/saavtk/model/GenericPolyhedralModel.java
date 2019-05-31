@@ -1687,12 +1687,12 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         {
         case TXT:
             fileName = baseFileName + ".txt.gz";
-// if (FileCache.isFileGettable(fileName))
-// {
-            return fileName;
-// }
-// fileName = baseFileName + ".fits.gz";
-// break;
+            if (FileCache.isFileGettable(fileName))
+            {
+                return fileName;
+            }
+            fileName = baseFileName + ".fits.gz";
+            break;
         case FIT:
         case UNKNOWN:
             fileName = baseFileName + ".fits.gz";
