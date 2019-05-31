@@ -22,9 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.io.CountingInputStream;
 
 import edu.jhuapl.saavtk.util.CloseableUrlConnection.HttpRequestMethod;
-import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
 public class FileDownloader extends SwingWorker<Void, Void>
 {
@@ -78,17 +76,11 @@ public class FileDownloader extends SwingWorker<Void, Void>
         return new FileDownloader(urlInfo, fileInfo, forceDownload);
     }
 
-    public static void setShowDotsForFileChecks(boolean showDotsForFiles)
-    {
-        FileDownloader.showDotsForFiles = showDotsForFiles;
-    }
-
     private final UrlInfo urlInfo;
     private final File file;
     private final FileInfo fileInfo;
     private final boolean forceDownload;
     private volatile Boolean unzipping;
-    private static volatile boolean showDotsForFiles = false;
 
     protected FileDownloader(UrlInfo urlInfo, FileInfo fileInfo, boolean forceDownload)
     {
@@ -131,28 +123,19 @@ public class FileDownloader extends SwingWorker<Void, Void>
             return;
         }
 
-        if (forceDownload || isFileOutOfDate() || state.getStatus() == UrlStatus.UNKNOWN || fileInfo.getState().getStatus() == FileStatus.UNKNOWN)
+        Debug.out().println("Querying FS and server before maybe downloading " + state.getUrl());
+
+        fileInfo.update();
+
+        try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.GET))
         {
-            Debug.out().println("Querying FS and server before maybe downloading " + state.getUrl());
+            urlInfo.update(closeableConnection.getConnection());
 
-            if (!Debug.isEnabled() && showDotsForFiles)
+            if (forceDownload || isFileOutOfDate())
             {
-                System.out.print(".");
-            }
-
-            fileInfo.update();
-
-            try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.GET))
-            {
-                urlInfo.update(closeableConnection.getConnection());
-
-                if (forceDownload || isFileOutOfDate())
-                {
-                    download(closeableConnection);
-                }
+                download(closeableConnection);
             }
         }
-
     }
 
     public void downloadInBackground()
