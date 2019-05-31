@@ -78,11 +78,17 @@ public class FileDownloader extends SwingWorker<Void, Void>
         return new FileDownloader(urlInfo, fileInfo, forceDownload);
     }
 
+    public static void setShowDotsForFileChecks(boolean showDotsForFiles)
+    {
+        FileDownloader.showDotsForFiles = showDotsForFiles;
+    }
+
     private final UrlInfo urlInfo;
     private final File file;
     private final FileInfo fileInfo;
     private final boolean forceDownload;
     private volatile Boolean unzipping;
+    private static volatile boolean showDotsForFiles = false;
 
     protected FileDownloader(UrlInfo urlInfo, FileInfo fileInfo, boolean forceDownload)
     {
@@ -128,6 +134,12 @@ public class FileDownloader extends SwingWorker<Void, Void>
         if (forceDownload || isFileOutOfDate() || state.getStatus() == UrlStatus.UNKNOWN || fileInfo.getState().getStatus() == FileStatus.UNKNOWN)
         {
             Debug.out().println("Querying FS and server before maybe downloading " + state.getUrl());
+
+            if (!Debug.isEnabled() && showDotsForFiles)
+            {
+                System.out.print(".");
+            }
+
             fileInfo.update();
 
             try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.GET))

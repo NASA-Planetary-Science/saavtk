@@ -893,6 +893,7 @@ public final class FileCache
     public static void showDotsForFiles(boolean enable)
     {
         showDotsForFiles = enable;
+        FileDownloader.setShowDotsForFileChecks(enable);
     }
 
     private static String toUrlSegment(String firstSegment, String... pathSegments)
