@@ -88,8 +88,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	private int blueFalseColor = -1; // blue channel for false coloring
 	private vtkUnsignedCharArray falseColorArray;
 
-	private List<LidarDatasourceInfo> lidarDatasourceInfo = new ArrayList<>();
-	private int lidarDatasourceIndex = -1;
+	private List<LidarDataSource> lidarDataSourceL = new ArrayList<>();
 
 	private vtkPolyData smallBodyPolyData;
 	private vtkPolyData lowResSmallBodyPolyData;
@@ -669,27 +668,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 		}
 	}
 
-	private void clearCustomLidarDatasourceInfo()
-	{
-		for (int i = lidarDatasourceInfo.size() - 1; i >= 0; --i)
-		{
-			lidarDatasourceInfo.remove(i);
-		}
-		lidarDatasourceIndex = -1;
-	}
-
 	@Override
-	public void loadCustomLidarDatasourceInfo()
+	public void loadCustomLidarDataSource()
 	{
-		String prevLidarDatasourceName = null;
-		lidarDatasourceInfo = new ArrayList<>();
-
-		if (lidarDatasourceIndex >= 0 && lidarDatasourceIndex < lidarDatasourceInfo.size())
-		{
-			prevLidarDatasourceName = lidarDatasourceInfo.get(lidarDatasourceIndex).name;
-		}
-
-		clearCustomLidarDatasourceInfo();
+		lidarDataSourceL = new ArrayList<>();
 
 		String configFilename = getConfigFilename();
 
@@ -702,32 +684,13 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		if (configMap.containsKey(GenericPolyhedralModel.LIDAR_DATASOURCE_NAMES) && configMap.containsKey(GenericPolyhedralModel.LIDAR_DATASOURCE_NAMES))
 		{
-			String[] lidarDatasourceNames = configMap.get(GenericPolyhedralModel.LIDAR_DATASOURCE_NAMES).split(",", -1);
-			String[] lidarDatasourcePaths = configMap.get(GenericPolyhedralModel.LIDAR_DATASOURCE_PATHS).split(",", -1);
+			String[] nameArr = configMap.get(GenericPolyhedralModel.LIDAR_DATASOURCE_NAMES).split(",", -1);
+			String[] pathArr = configMap.get(GenericPolyhedralModel.LIDAR_DATASOURCE_PATHS).split(",", -1);
 
-			for (int i = 0; i < lidarDatasourceNames.length; ++i)
+			for (int i = 0; i < nameArr.length; ++i)
 			{
-				LidarDatasourceInfo info = new LidarDatasourceInfo();
-				info.name = lidarDatasourceNames[i];
-				info.path = lidarDatasourcePaths[i];
-				if (!info.path.trim().isEmpty() && !info.name.trim().isEmpty())
-				{
-					info.name = lidarDatasourceNames[i];
-					info.path = lidarDatasourcePaths[i];
-				}
-				lidarDatasourceInfo.add(info);
-			}
-		}
-
-		// See if there's a Lidar datasource of the same name as previously shown and
-		// set it to that.
-		lidarDatasourceIndex = -1;
-		for (int i = 0; i < lidarDatasourceInfo.size(); ++i)
-		{
-			if (prevLidarDatasourceName != null && prevLidarDatasourceName.equals(lidarDatasourceInfo.get(i).name))
-			{
-				lidarDatasourceIndex = i;
-				break;
+				LidarDataSource info = new LidarDataSource(nameArr[i], pathArr[i]);
+				lidarDataSourceL.add(info);
 			}
 		}
 	}
@@ -740,7 +703,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			if (!getConfig().customTemporary)
 			{
 				loadCustomColoringInfo();
-				loadCustomLidarDatasourceInfo();
+				loadCustomLidarDataSource();
 			}
 
 			smallBodyPolyData.ShallowCopy(PolyDataUtil.loadShapeModel(modelFile.getAbsolutePath()));
@@ -1582,49 +1545,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			return null;
 	}
 
-	@Override
-	public String getLidarDatasourceName(int i)
-	{
-		if (i < 0)
-			return "Default";
-		if (i < lidarDatasourceInfo.size())
-			return lidarDatasourceInfo.get(i).name;
-		else
-			return null;
-	}
-
-	@Override
-	public String getLidarDatasourcePath(int i)
-	{
-		if (i < 0)
-			return "/NLR/cubes";
-		if (i < lidarDatasourceInfo.size())
-			return lidarDatasourceInfo.get(i).path;
-		else
-			return null;
-	}
-
-	@Override
-	public int getLidarDatasourceIndex()
-	{
-		return lidarDatasourceIndex;
-	}
-
-	@Override
-	public void setLidarDatasourceIndex(int index)
-	{
-		if (lidarDatasourceIndex != index)
-		{
-			lidarDatasourceIndex = index;
-		}
-	}
-
-	@Override
-	public int getNumberOfLidarDatasources()
-	{
-		return lidarDatasourceInfo.size();
-	}
-
 	/**
 	 * Load just the current plate coloring identified by coloringIndex.
 	 * 
@@ -2373,7 +2293,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 			this.smallBodyPolyData.Modified();
 
-
 			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 		}
 	}
@@ -2565,6 +2484,14 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
+	
+	@Override
+	public void updateScaleBarValue(double pixelSizeInKm, Runnable completionBlock)
+	{
+		updateScaleBarValue(pixelSizeInKm);
+		completionBlock.run();
+		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+	}
 
 	@Override
 	public void updateScaleBarValue(double pixelSizeInKm)
@@ -2586,17 +2513,21 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 			scaleBarActor.VisibilityOff();
 			scaleBarTextActor.VisibilityOff();
 		}
-
-		if (pixelSizeInKm > 0.0)
-		{
-			if (scaleBarWidthInKm < 1.0)
-				scaleBarTextActor.SetInput(String.format("%.2f m", 1000.0 * scaleBarWidthInKm));
-			else
-				scaleBarTextActor.SetInput(String.format("%.2f km", scaleBarWidthInKm));
-		}
+//		if (pixelSizeInKm > 0.0)
+//		{
+//			if (scaleBarWidthInKm < 1.0)
+//				scaleBarTextActor.SetInput(String.format("%.2f m", 1000.0 * scaleBarWidthInKm));
+//			else
+//				scaleBarTextActor.SetInput(String.format("%.2f km", scaleBarWidthInKm));
+//		}
 
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 
+	}
+	
+	public double getScaleBarWidthInKm()
+	{
+		return scaleBarWidthInKm;
 	}
 
 	@Override
@@ -2908,43 +2839,27 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	}
 
 	@Override
-	public void addCustomLidarDatasource(LidarDatasourceInfo info) throws IOException
+	public void addCustomLidarDataSource(LidarDataSource info) throws IOException
 	{
-		lidarDatasourceInfo.add(info);
+		lidarDataSourceL.add(info);
 	}
 
 	@Override
-	public void setCustomLidarDatasource(int index, LidarDatasourceInfo info) throws IOException
+	public void setCustomLidarDataSource(int index, LidarDataSource info) throws IOException
 	{
-		lidarDatasourceInfo.set(index, info);
+		lidarDataSourceL.set(index, info);
 	}
 
 	@Override
-	public void removeCustomLidarDatasource(int index) throws IOException
+	public void removeCustomLidarDataSource(int index) throws IOException
 	{
-		lidarDatasourceInfo.remove(index);
-
-		if (lidarDatasourceIndex == index)
-			lidarDatasourceIndex = -1;
-		else if (lidarDatasourceIndex > index)
-			--lidarDatasourceIndex;
-	}
-
-	public void reloadLidarDatasources() throws IOException
-	{
-		for (LidarDatasourceInfo info : lidarDatasourceInfo)
-		{
-			info.name = null;
-			info.path = null;
-		}
-
-		loadLidarDatasourceData();
+		lidarDataSourceL.remove(index);
 	}
 
 	@Override
-	public List<LidarDatasourceInfo> getLidarDasourceInfoList()
+	public List<LidarDataSource> getLidarDataSourceList()
 	{
-		return lidarDatasourceInfo;
+		return lidarDataSourceL;
 	}
 
 	private void savePlateData(Indexable<Integer> indexable, File file) throws IOException

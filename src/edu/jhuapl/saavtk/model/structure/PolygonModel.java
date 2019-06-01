@@ -29,398 +29,398 @@ import vtk.vtkUnsignedCharArray;
  */
 public class PolygonModel extends LineModel
 {
-	private vtkPolyData interiorPolyData;
-	private vtkPolyData decimatedInteriorPolyData;
-	private vtkAppendPolyData interiorAppendFilter;
-	private vtkAppendPolyData decimatedInteriorAppendFilter;
-	private vtkPolyDataMapper interiorMapper;
-	private vtkPolyDataMapper decimatedInteriorMapper;
-	private vtkActor interiorActor;
+    private vtkPolyData interiorPolyData;
+    private vtkPolyData decimatedInteriorPolyData;
+    private vtkAppendPolyData interiorAppendFilter;
+    private vtkAppendPolyData decimatedInteriorAppendFilter;
+    private vtkPolyDataMapper interiorMapper;
+    private vtkPolyDataMapper decimatedInteriorMapper;
+    private vtkActor interiorActor;
 
-	private vtkUnsignedCharArray interiorColors;
-	private vtkUnsignedCharArray decimatedInteriorColors;
+    private vtkUnsignedCharArray interiorColors;
+    private vtkUnsignedCharArray decimatedInteriorColors;
 
-	private List<vtkProp> actors = new ArrayList<>();
+    private List<vtkProp> actors = new ArrayList<>();
 
-	private PolyhedralModel smallBodyModel;
+    private PolyhedralModel smallBodyModel;
 
-	private double interiorOpacity = 0.3;
-	private int maxPolygonId = 0;
+    private double interiorOpacity = 0.3;
+    private int maxPolygonId = 0;
 
-	private vtkPolyData emptyPolyData;
+    private vtkPolyData emptyPolyData;
 
-	private static final String POLYGONS = "polygons";
+    private static final String POLYGONS = "polygons";
 
-	public PolygonModel(PolyhedralModel smallBodyModel)
-	{
-		super(smallBodyModel, Mode.CLOSED);
+    public PolygonModel(PolyhedralModel smallBodyModel)
+    {
+        super(smallBodyModel, Mode.CLOSED);
 
-		this.smallBodyModel = smallBodyModel;
+        this.smallBodyModel = smallBodyModel;
 
-		interiorColors = new vtkUnsignedCharArray();
-		decimatedInteriorColors = new vtkUnsignedCharArray();
-		interiorColors.SetNumberOfComponents(3);
-		decimatedInteriorColors.SetNumberOfComponents(3);
+        interiorColors = new vtkUnsignedCharArray();
+        decimatedInteriorColors = new vtkUnsignedCharArray();
+        interiorColors.SetNumberOfComponents(3);
+        decimatedInteriorColors.SetNumberOfComponents(3);
 
-		interiorPolyData = new vtkPolyData();
-		decimatedInteriorPolyData = new vtkPolyData();
-		interiorAppendFilter = new vtkAppendPolyData();
-		decimatedInteriorAppendFilter = new vtkAppendPolyData();
-		interiorAppendFilter.UserManagedInputsOn();
-		decimatedInteriorAppendFilter.UserManagedInputsOn();
-		interiorMapper = new vtkPolyDataMapper();
-		decimatedInteriorMapper = new vtkPolyDataMapper();
-		interiorActor = new SaavtkLODActor();
-		vtkProperty interiorProperty = interiorActor.GetProperty();
-		interiorProperty.LightingOff();
-		interiorProperty.SetOpacity(interiorOpacity);
+        interiorPolyData = new vtkPolyData();
+        decimatedInteriorPolyData = new vtkPolyData();
+        interiorAppendFilter = new vtkAppendPolyData();
+        decimatedInteriorAppendFilter = new vtkAppendPolyData();
+        interiorAppendFilter.UserManagedInputsOn();
+        decimatedInteriorAppendFilter.UserManagedInputsOn();
+        interiorMapper = new vtkPolyDataMapper();
+        decimatedInteriorMapper = new vtkPolyDataMapper();
+        interiorActor = new SaavtkLODActor();
+        vtkProperty interiorProperty = interiorActor.GetProperty();
+        interiorProperty.LightingOff();
+        interiorProperty.SetOpacity(interiorOpacity);
 
-		actors.add(interiorActor);
+        actors.add(interiorActor);
 
-		// Initialize an empty polydata for resetting
-		emptyPolyData = new vtkPolyData();
-		vtkPoints points = new vtkPoints();
-		vtkCellArray cells = new vtkCellArray();
-		vtkUnsignedCharArray colors = new vtkUnsignedCharArray();
-		colors.SetNumberOfComponents(4);
-		emptyPolyData.SetPoints(points);
-		emptyPolyData.SetLines(cells);
-		emptyPolyData.SetVerts(cells);
-		vtkCellData cellData = emptyPolyData.GetCellData();
-		cellData.SetScalars(colors);
-	}
+        // Initialize an empty polydata for resetting
+        emptyPolyData = new vtkPolyData();
+        vtkPoints points = new vtkPoints();
+        vtkCellArray cells = new vtkCellArray();
+        vtkUnsignedCharArray colors = new vtkUnsignedCharArray();
+        colors.SetNumberOfComponents(4);
+        emptyPolyData.SetPoints(points);
+        emptyPolyData.SetLines(cells);
+        emptyPolyData.SetVerts(cells);
+        vtkCellData cellData = emptyPolyData.GetCellData();
+        cellData.SetScalars(colors);
+    }
 
-	@Override
-	protected String getType()
-	{
-		return POLYGONS;
-	}
+    @Override
+    protected String getType()
+    {
+        return POLYGONS;
+    }
 
-	@Override
-	protected void updatePolyData()
-	{
-		super.updatePolyData();
+    @Override
+    protected void updatePolyData()
+    {
+        super.updatePolyData();
 
-		int numberOfStructures = getNumberOfStructures();
-		if (numberOfStructures > 0)
-		{
-			interiorAppendFilter.SetNumberOfInputs(numberOfStructures);
-			decimatedInteriorAppendFilter.SetNumberOfInputs(numberOfStructures);
+        int numberOfStructures = getNumberOfStructures();
+        if (numberOfStructures > 0)
+        {
+            interiorAppendFilter.SetNumberOfInputs(numberOfStructures);
+            decimatedInteriorAppendFilter.SetNumberOfInputs(numberOfStructures);
 
-			for (int i = 0; i < numberOfStructures; ++i)
-			{
-				Polygon polygon = getPolygon(i);
-				polygon.updateInteriorPolydata(smallBodyModel);
-				vtkPolyData poly = polygon.interiorPolyData;
-				vtkPolyData decimatedPoly = polygon.decimatedInteriorPolyData;
+            for (int i = 0; i < numberOfStructures; ++i)
+            {
+                Polygon polygon = getPolygon(i);
+                polygon.updateInteriorPolydata(smallBodyModel);
+                vtkPolyData poly = polygon.interiorPolyData;
+                vtkPolyData decimatedPoly = polygon.decimatedInteriorPolyData;
 
-				if (polygon.getHidden())
-				{
-					poly = emptyPolyData;
-					decimatedPoly = emptyPolyData;
-				}
+                if (polygon.getHidden())
+                {
+                    poly = emptyPolyData;
+                    decimatedPoly = emptyPolyData;
+                }
 
-				if (poly != null)
-					interiorAppendFilter.SetInputDataByNumber(i, poly);
+                if (poly != null)
+                    interiorAppendFilter.SetInputDataByNumber(i, poly);
 
-				if (decimatedPoly != null)
-					decimatedInteriorAppendFilter.SetInputDataByNumber(i, decimatedPoly);
-			}
+                if (decimatedPoly != null)
+                    decimatedInteriorAppendFilter.SetInputDataByNumber(i, decimatedPoly);
+            }
 
-			interiorAppendFilter.Update();
-			decimatedInteriorAppendFilter.Update();
+            interiorAppendFilter.Update();
+            decimatedInteriorAppendFilter.Update();
 
-			vtkPolyData interiorAppendFilterOutput = interiorAppendFilter.GetOutput();
-			vtkPolyData decimatedInteriorAppendFilterOutput = decimatedInteriorAppendFilter.GetOutput();
-			interiorPolyData.DeepCopy(interiorAppendFilterOutput);
-			decimatedInteriorPolyData.DeepCopy(decimatedInteriorAppendFilterOutput);
+            vtkPolyData interiorAppendFilterOutput = interiorAppendFilter.GetOutput();
+            vtkPolyData decimatedInteriorAppendFilterOutput = decimatedInteriorAppendFilter.GetOutput();
+            interiorPolyData.DeepCopy(interiorAppendFilterOutput);
+            decimatedInteriorPolyData.DeepCopy(decimatedInteriorAppendFilterOutput);
 
-			PolyDataUtil.shiftPolyDataInNormalDirection(interiorPolyData, getOffset());
-			PolyDataUtil.shiftPolyDataInNormalDirection(decimatedInteriorPolyData, getOffset());
+            PolyDataUtil.shiftPolyDataInNormalDirection(interiorPolyData, getOffset());
+            PolyDataUtil.shiftPolyDataInNormalDirection(decimatedInteriorPolyData, getOffset());
 
-			interiorColors.SetNumberOfTuples(interiorPolyData.GetNumberOfCells());
-			decimatedInteriorColors.SetNumberOfTuples(decimatedInteriorPolyData.GetNumberOfCells());
-			for (int i = 0; i < numberOfStructures; ++i)
-			{
-				int[] color = getPolygon(i).getColor();
+            interiorColors.SetNumberOfTuples(interiorPolyData.GetNumberOfCells());
+            decimatedInteriorColors.SetNumberOfTuples(decimatedInteriorPolyData.GetNumberOfCells());
+            for (int i = 0; i < numberOfStructures; ++i)
+            {
+                int[] color = getPolygon(i).getColor();
 
-				if (Arrays.binarySearch(getSelectedStructures(), i) >= 0)
-					color = getCommonData().getSelectionColor();
+                if (Arrays.binarySearch(getSelectedStructures(), i) >= 0)
+                    color = getCommonData().getSelectionColor();
 
-				IdPair range = this.getCellIdRangeOfPolygon(i);
-				for (int j = range.id1; j < range.id2; ++j)
-					interiorColors.SetTuple3(j, color[0], color[1], color[2]);
+                IdPair range = this.getCellIdRangeOfPolygon(i);
+                for (int j = range.id1; j < range.id2; ++j)
+                    interiorColors.SetTuple3(j, color[0], color[1], color[2]);
 
-				range = this.getCellIdRangeOfDecimatedPolygon(i);
-				for (int j = range.id1; j < range.id2; ++j)
-					decimatedInteriorColors.SetTuple3(j, color[0], color[1], color[2]);
-			}
-			vtkCellData interiorCellData = interiorPolyData.GetCellData();
-			vtkCellData decimatedInteriorCellData = decimatedInteriorPolyData.GetCellData();
+                range = this.getCellIdRangeOfDecimatedPolygon(i);
+                for (int j = range.id1; j < range.id2; ++j)
+                    decimatedInteriorColors.SetTuple3(j, color[0], color[1], color[2]);
+            }
+            vtkCellData interiorCellData = interiorPolyData.GetCellData();
+            vtkCellData decimatedInteriorCellData = decimatedInteriorPolyData.GetCellData();
 
-			interiorCellData.SetScalars(interiorColors);
-			decimatedInteriorCellData.SetScalars(decimatedInteriorColors);
+            interiorCellData.SetScalars(interiorColors);
+            decimatedInteriorCellData.SetScalars(decimatedInteriorColors);
 
-			interiorAppendFilterOutput.Delete();
-			decimatedInteriorAppendFilterOutput.Delete();
-			interiorCellData.Delete();
-			decimatedInteriorCellData.Delete();
-		}
-		else
-		{
-			interiorPolyData.DeepCopy(emptyPolyData);
-			decimatedInteriorPolyData.DeepCopy(emptyPolyData);
-		}
+            interiorAppendFilterOutput.Delete();
+            decimatedInteriorAppendFilterOutput.Delete();
+            interiorCellData.Delete();
+            decimatedInteriorCellData.Delete();
+        }
+        else
+        {
+            interiorPolyData.DeepCopy(emptyPolyData);
+            decimatedInteriorPolyData.DeepCopy(emptyPolyData);
+        }
 
-		interiorMapper.SetInputData(interiorPolyData);
-		interiorMapper.Update();
+        interiorMapper.SetInputData(interiorPolyData);
+        interiorMapper.Update();
 
-		decimatedInteriorMapper.SetInputData(decimatedInteriorPolyData);
-		decimatedInteriorMapper.Update();
+        decimatedInteriorMapper.SetInputData(decimatedInteriorPolyData);
+        decimatedInteriorMapper.Update();
 
-		interiorActor.SetMapper(interiorMapper);
-		((SaavtkLODActor) interiorActor).setLODMapper(decimatedInteriorMapper);
-		interiorActor.Modified();
-	}
+        interiorActor.SetMapper(interiorMapper);
+        ((SaavtkLODActor) interiorActor).setLODMapper(decimatedInteriorMapper);
+        interiorActor.Modified();
+    }
 
-	@Override
-	public List<vtkProp> getProps()
-	{
-		List<vtkProp> allActors = new ArrayList<>(actors);
-		allActors.addAll(super.getProps());
-		return allActors;
-	}
+    @Override
+    public List<vtkProp> getProps()
+    {
+        List<vtkProp> allActors = new ArrayList<>(actors);
+        allActors.addAll(super.getProps());
+        return allActors;
+    }
 
-	@Override
-	public String getClickStatusBarText(vtkProp prop, int cellId, @SuppressWarnings("unused") double[] pickPosition)
-	{
-		int polygonId = -1;
-		if (prop == super.getStructureActor())
-		{
-			polygonId = super.getStructureIndexFromCellId(cellId, prop);
-		}
-		else if (prop == interiorActor)
-		{
-			polygonId = this.getPolygonIdFromCellId(cellId);
-		}
+    @Override
+    public String getClickStatusBarText(vtkProp prop, int cellId, @SuppressWarnings("unused") double[] pickPosition)
+    {
+        int polygonId = -1;
+        if (prop == super.getStructureActor())
+        {
+            polygonId = super.getStructureIndexFromCellId(cellId, prop);
+        }
+        else if (prop == interiorActor)
+        {
+            polygonId = this.getPolygonIdFromCellId(cellId);
+        }
 
-		if (polygonId >= 0)
-		{
-			Polygon pol = getPolygon(polygonId);
-			return pol.getClickStatusBarText();
-		}
-		else
-		{
-			return "";
-		}
-	}
+        if (polygonId >= 0)
+        {
+            Polygon pol = getPolygon(polygonId);
+            return pol.getClickStatusBarText();
+        }
+        else
+        {
+            return "";
+        }
+    }
 
-	public vtkActor getInteriorActor()
-	{
-		return interiorActor;
-	}
+    public vtkActor getInteriorActor()
+    {
+        return interiorActor;
+    }
 
-	@Override
-	public void updateActivatedStructureVertex(int vertexId, double[] newPoint)
-	{
-		Polygon pol = getActivatedPolygon();
-		pol.setShowInterior(smallBodyModel, false);
+    @Override
+    public void updateActivatedStructureVertex(int vertexId, double[] newPoint)
+    {
+        Polygon pol = getActivatedPolygon();
+        pol.setShowInterior(smallBodyModel, false);
 
-		super.updateActivatedStructureVertex(vertexId, newPoint);
-	}
+        super.updateActivatedStructureVertex(vertexId, newPoint);
+    }
 
-	@Override
-	public void insertVertexIntoActivatedStructure(double[] newPoint)
-	{
-		Polygon pol = getActivatedPolygon();
-		pol.setShowInterior(smallBodyModel, false);
+    @Override
+    public void insertVertexIntoActivatedStructure(double[] newPoint)
+    {
+        Polygon pol = getActivatedPolygon();
+        pol.setShowInterior(smallBodyModel, false);
 
-		super.insertVertexIntoActivatedStructure(newPoint);
-	}
+        super.insertVertexIntoActivatedStructure(newPoint);
+    }
 
-	@Override
-	public void removeCurrentStructureVertex()
-	{
-		Polygon pol = getActivatedPolygon();
-		pol.setShowInterior(smallBodyModel, false);
+    @Override
+    public void removeCurrentStructureVertex()
+    {
+        Polygon pol = getActivatedPolygon();
+        pol.setShowInterior(smallBodyModel, false);
 
-		super.removeCurrentStructureVertex();
-	}
+        super.removeCurrentStructureVertex();
+    }
 
-	@Override
-	public int getStructureIndexFromCellId(int cellId, vtkProp prop)
-	{
-		if (prop == interiorActor)
-		{
-			return getPolygonIdFromCellId(cellId);
-		}
+    @Override
+    public int getStructureIndexFromCellId(int cellId, vtkProp prop)
+    {
+        if (prop == interiorActor)
+        {
+            return getPolygonIdFromCellId(cellId);
+        }
 
-		return super.getStructureIndexFromCellId(cellId, prop);
-	}
+        return super.getStructureIndexFromCellId(cellId, prop);
+    }
 
-	/**
-	 * A picker picking the actor of this model will return a cellId. But since
-	 * there are many polygons, we need to be able to figure out which polygon was
-	 * picked.
-	 */
-	private int getPolygonIdFromCellId(int cellId)
-	{
-		int numberCellsSoFar = 0;
-		int size = getNumberOfStructures();
-		for (int i = 0; i < size; ++i)
-		{
-			numberCellsSoFar += getPolygon(i).interiorPolyData.GetNumberOfCells();
+    /**
+     * A picker picking the actor of this model will return a cellId. But since
+     * there are many polygons, we need to be able to figure out which polygon was
+     * picked.
+     */
+    private int getPolygonIdFromCellId(int cellId)
+    {
+        int numberCellsSoFar = 0;
+        int size = getNumberOfStructures();
+        for (int i = 0; i < size; ++i)
+        {
+            numberCellsSoFar += getPolygon(i).interiorPolyData.GetNumberOfCells();
 
-			if (cellId < numberCellsSoFar)
-				return i;
-		}
-		return -1;
-	}
+            if (cellId < numberCellsSoFar)
+                return i;
+        }
+        return -1;
+    }
 
-	private IdPair getCellIdRangeOfPolygon(int polygonId)
-	{
-		int startCell = 0;
-		for (int i = 0; i < polygonId; ++i)
-		{
-			startCell += getPolygon(i).interiorPolyData.GetNumberOfCells();
-		}
+    private IdPair getCellIdRangeOfPolygon(int polygonId)
+    {
+        int startCell = 0;
+        for (int i = 0; i < polygonId; ++i)
+        {
+            startCell += getPolygon(i).interiorPolyData.GetNumberOfCells();
+        }
 
-		int endCell = startCell;
-		endCell += getPolygon(polygonId).interiorPolyData.GetNumberOfCells();
+        int endCell = startCell;
+        endCell += getPolygon(polygonId).interiorPolyData.GetNumberOfCells();
 
-		return new IdPair(startCell, endCell);
-	}
+        return new IdPair(startCell, endCell);
+    }
 
-	private IdPair getCellIdRangeOfDecimatedPolygon(int polygonId)
-	{
-		int startCell = 0;
-		for (int i = 0; i < polygonId; ++i)
-		{
-			startCell += getPolygon(i).decimatedInteriorPolyData.GetNumberOfCells();
-		}
+    private IdPair getCellIdRangeOfDecimatedPolygon(int polygonId)
+    {
+        int startCell = 0;
+        for (int i = 0; i < polygonId; ++i)
+        {
+            startCell += getPolygon(i).decimatedInteriorPolyData.GetNumberOfCells();
+        }
 
-		int endCell = startCell;
-		endCell += getPolygon(polygonId).decimatedInteriorPolyData.GetNumberOfCells();
+        int endCell = startCell;
+        endCell += getPolygon(polygonId).decimatedInteriorPolyData.GetNumberOfCells();
 
-		return new IdPair(startCell, endCell);
-	}
+        return new IdPair(startCell, endCell);
+    }
 
-	@Override
-	public void setVisible(boolean b)
-	{
-		interiorActor.SetVisibility(b ? 1 : 0);
-		super.setVisible(b);
-	}
+    @Override
+    public void setVisible(boolean b)
+    {
+        interiorActor.SetVisibility(b ? 1 : 0);
+        super.setVisible(b);
+    }
 
-	@Override
-	public void savePlateDataInsideStructure(int idx, File file) throws IOException
-	{
-		Polygon pol = getPolygon(idx);
-		if (pol.isShowInterior())
-		{
-			vtkPolyData polydata = getPolygon(idx).interiorPolyData;
-			smallBodyModel.savePlateDataInsidePolydata(polydata, file);
-		}
-		else
-		{
-			pol.setShowInterior(smallBodyModel, true);
+    @Override
+    public void savePlateDataInsideStructure(int idx, File file) throws IOException
+    {
+        Polygon pol = getPolygon(idx);
+        if (pol.isShowInterior())
+        {
+            vtkPolyData polydata = getPolygon(idx).interiorPolyData;
+            smallBodyModel.savePlateDataInsidePolydata(polydata, file);
+        }
+        else
+        {
+            pol.setShowInterior(smallBodyModel, true);
 
-			vtkPolyData polydata = getPolygon(idx).interiorPolyData;
-			smallBodyModel.savePlateDataInsidePolydata(polydata, file);
+            vtkPolyData polydata = getPolygon(idx).interiorPolyData;
+            smallBodyModel.savePlateDataInsidePolydata(polydata, file);
 
-			pol.setShowInterior(smallBodyModel, false);
-		}
-	}
-	
-	@Override
-	public void savePlateDataInsideStructure(int[] idx, File file) throws IOException
-	{
-		
-		vtkAppendPolyData appendFilter = new vtkAppendPolyData();
-		for (int i = 0; i < idx.length; i++)
-		{
-			Polygon pol = getPolygon(idx[i]);
-			pol.setShowInterior(smallBodyModel, true);
-			appendFilter.AddInputData(pol.interiorPolyData);
-			appendFilter.Update();
-			pol.setShowInterior(smallBodyModel, false);
-		}
-		smallBodyModel.savePlateDataInsidePolydata(appendFilter.GetOutput(), file);
-	}
+            pol.setShowInterior(smallBodyModel, false);
+        }
+    }
 
-	@Override
-	public FacetColoringData[] getPlateDataInsideStructure(int idx)
-	{
-		Polygon pol = getPolygon(idx);
-		if (pol.isShowInterior())
-		{
-			vtkPolyData polydata = getPolygon(idx).interiorPolyData;
-			return smallBodyModel.getPlateDataInsidePolydata(polydata);
-		}
-		else
-		{
-			pol.setShowInterior(smallBodyModel, true);
+    @Override
+    public void savePlateDataInsideStructure(int[] idx, File file) throws IOException
+    {
 
-			vtkPolyData polydata = getPolygon(idx).interiorPolyData;
-			FacetColoringData[] data = smallBodyModel.getPlateDataInsidePolydata(polydata);
-			pol.setShowInterior(smallBodyModel, false);
-			return data;
-		}
-	}
-	
-	@Override
-	public FacetColoringData[] getPlateDataInsideStructure(int[] idx)
-	{
-		vtkAppendPolyData appendFilter = new vtkAppendPolyData();
-		for (int i = 0; i < idx.length; i++)
-		{
-			Polygon pol = getPolygon(idx[i]);
-			pol.setShowInterior(smallBodyModel, true);
-			appendFilter.AddInputData(pol.interiorPolyData);
-			appendFilter.Update();
-			pol.setShowInterior(smallBodyModel, false);
-		}
-		
-		FacetColoringData[] data = smallBodyModel.getPlateDataInsidePolydata(appendFilter.GetOutput());
-		return data;
-	}
+        vtkAppendPolyData appendFilter = new vtkAppendPolyData();
+        for (int i = 0; i < idx.length; i++)
+        {
+            Polygon pol = getPolygon(idx[i]);
+            pol.setShowInterior(smallBodyModel, true);
+            appendFilter.AddInputData(pol.interiorPolyData);
+            appendFilter.Update();
+            pol.setShowInterior(smallBodyModel, false);
+        }
+        smallBodyModel.savePlateDataInsidePolydata(appendFilter.GetOutput(), file);
+    }
 
-	@Override
-	public void setShowStructuresInterior(int[] polygonIds, boolean show)
-	{
-		for (int i = 0; i < polygonIds.length; ++i)
-		{
-			Polygon pol = getPolygon(polygonIds[i]);
-			if (pol.isShowInterior() != show)
-			{
-				pol.setShowInterior(smallBodyModel, show);
-			}
-		}
+    @Override
+    public FacetColoringData[] getPlateDataInsideStructure(int idx)
+    {
+        Polygon pol = getPolygon(idx);
+        if (pol.isShowInterior())
+        {
+            vtkPolyData polydata = getPolygon(idx).interiorPolyData;
+            return smallBodyModel.getPlateDataInsidePolydata(polydata);
+        }
+        else
+        {
+            pol.setShowInterior(smallBodyModel, true);
 
-		updatePolyData();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-	}
+            vtkPolyData polydata = getPolygon(idx).interiorPolyData;
+            FacetColoringData[] data = smallBodyModel.getPlateDataInsidePolydata(polydata);
+            pol.setShowInterior(smallBodyModel, false);
+            return data;
+        }
+    }
 
-	@Override
-	public boolean isShowStructureInterior(int id)
-	{
-		return getPolygon(id).isShowInterior();
-	}
+    @Override
+    public FacetColoringData[] getPlateDataInsideStructure(int[] idx)
+    {
+        vtkAppendPolyData appendFilter = new vtkAppendPolyData();
+        for (int i = 0; i < idx.length; i++)
+        {
+            Polygon pol = getPolygon(idx[i]);
+            pol.setShowInterior(smallBodyModel, true);
+            appendFilter.AddInputData(pol.interiorPolyData);
+            appendFilter.Update();
+            pol.setShowInterior(smallBodyModel, false);
+        }
 
-	@Override
-	protected StructureModel.Structure createStructure()
-	{
-		return Polygon.of(++maxPolygonId);
-	}
+        FacetColoringData[] data = smallBodyModel.getPlateDataInsidePolydata(appendFilter.GetOutput());
+        return data;
+    }
 
-	private Polygon getPolygon(int i)
-	{
-		return (Polygon) getStructure(i);
-	}
+    @Override
+    public void setShowStructuresInterior(int[] polygonIds, boolean show)
+    {
+        for (int i = 0; i < polygonIds.length; ++i)
+        {
+            Polygon pol = getPolygon(polygonIds[i]);
+            if (pol.isShowInterior() != show)
+            {
+                pol.setShowInterior(smallBodyModel, show);
+            }
+        }
 
-	private Polygon getActivatedPolygon()
-	{
-		return (Polygon) getActivatedLine();
-	}
+        updatePolyData();
+        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+    }
+
+    @Override
+    public boolean isShowStructureInterior(int id)
+    {
+        return getPolygon(id).isShowInterior();
+    }
+
+    @Override
+    protected StructureModel.Structure createStructure()
+    {
+        return Polygon.of(++maxPolygonId);
+    }
+
+    private Polygon getPolygon(int i)
+    {
+        return (Polygon) getStructure(i);
+    }
+
+    private Polygon getActivatedPolygon()
+    {
+        return (Polygon) getActivatedLine();
+    }
 
 }
