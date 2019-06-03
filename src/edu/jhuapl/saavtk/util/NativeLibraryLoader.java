@@ -52,7 +52,7 @@ public class NativeLibraryLoader
                         && !lib.GetLibraryName().startsWith("vtkIOExport")
                         && !lib.GetLibraryName().startsWith("vtkIOImport")
                         && !lib.GetLibraryName().startsWith("vtkIOMINC")
-                        && !lib.GetLibraryName().startsWith("vtkFiltersHybrid")
+//                        && !lib.GetLibraryName().startsWith("vtkFiltersHybrid")
                         && !lib.GetLibraryName().startsWith("vtkFiltersParallel")
                         && !lib.GetLibraryName().startsWith("vtkGeovis")) {
                     lib.LoadLibrary();
