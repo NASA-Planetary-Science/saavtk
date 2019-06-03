@@ -1596,7 +1596,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         {
             fileName = FileCache.isFileGettable(baseFileName) ? baseFileName : null;
         }
-        
+
         return fileName;
     }
 
