@@ -60,7 +60,6 @@ public class Configuration
     private static boolean APLVersion = false;
     private static boolean userPasswordAccepted = false;
     private static URL restrictedAccessRoot = null;
-    private static String restrictedFileName = null;
     private static Iterable<Path> passwordFilesToTry = null;
 
     // Uncomment the following to enable the startup script (which can be changed by
@@ -97,9 +96,9 @@ public class Configuration
         }
     }
 
-    public static void setupPasswordAuthentication(final URL restrictedAccessRoot, final String restrictedFileName, final Iterable<Path> passwordFilesToTry)
+    public static void setupPasswordAuthentication(final URL restrictedAccessRoot, final Iterable<Path> passwordFilesToTry)
     {
-        if (restrictedAccessRoot == null || restrictedFileName == null || passwordFilesToTry == null)
+        if (restrictedAccessRoot == null || passwordFilesToTry == null)
         {
             throw new NullPointerException();
         }
@@ -109,18 +108,17 @@ public class Configuration
         }
 
         Configuration.restrictedAccessRoot = restrictedAccessRoot;
-        Configuration.restrictedFileName = restrictedFileName;
         Configuration.passwordFilesToTry = passwordFilesToTry;
 
         boolean foundEmptyPasswordFile = false;
         boolean userPasswordAccepted = false;
         final int maximumNumberTries = 1;
 
-        String restrictedAccessUrl = SAFE_URL_PATHS.getString(restrictedAccessRoot.toString(), restrictedFileName);
+        String restrictedAccessString = restrictedAccessRoot.toString();
 
         // The only condition that can be addressed here is if the user is not
         // authorized. If that's not the "problem", don't do anything.
-        DownloadableFileState info = FileCache.getState(restrictedAccessUrl);
+        DownloadableFileState info = FileCache.getState(restrictedAccessString);
         if (info.getUrlState().getStatus() != UrlStatus.NOT_AUTHORIZED)
         {
             return;
@@ -145,7 +143,7 @@ public class Configuration
                             {
                                 foundCredentials = true;
                                 setupPasswordAuthentication(userName, password, maximumNumberTries);
-                                info = FileCache.refreshStateInfo(restrictedAccessUrl);
+                                info = FileCache.refreshStateInfo(restrictedAccessString);
                                 if (info.getUrlState().getStatus() == UrlStatus.ACCESSIBLE)
                                 {
                                     userPasswordAccepted = true;
@@ -168,12 +166,16 @@ public class Configuration
 
         if (!userPasswordAccepted && !foundEmptyPasswordFile)
         {
-            userPasswordAccepted = promptUserForPassword(restrictedAccessUrl, passwordFilesToTry.iterator().next(), false);
+            userPasswordAccepted = promptUserForPassword(restrictedAccessString, passwordFilesToTry.iterator().next(), false);
         }
         if (!userPasswordAccepted)
         {
             setupPasswordAuthentication("public", "wide-open".toCharArray(), maximumNumberTries);
+            info = FileCache.refreshStateInfo(restrictedAccessString);
         }
+
+        FileCache.instance().queryAllInBackground(true);
+
         Configuration.userPasswordAccepted = userPasswordAccepted;
     }
 
@@ -262,7 +264,7 @@ public class Configuration
                             }
                             if (updateMode)
                             {
-                                JOptionPane.showMessageDialog(null, "You must restart the tool for this change to take effect.", "Password changes saved", JOptionPane.INFORMATION_MESSAGE);
+                                JOptionPane.showMessageDialog(null, "Password updated.", "Password changes saved", JOptionPane.INFORMATION_MESSAGE);
                             }
                         }
                         catch (IOException e)
@@ -349,11 +351,12 @@ public class Configuration
 
     public static void updatePassword() throws IOException
     {
-        if (restrictedAccessRoot == null || restrictedFileName == null || passwordFilesToTry == null)
+        if (restrictedAccessRoot == null || passwordFilesToTry == null)
         {
             throw new AssertionError("Cannot update password; authentication was not properly initialized.");
         }
-        promptUserForPassword(SAFE_URL_PATHS.getString(restrictedAccessRoot.toString(), restrictedFileName), passwordFilesToTry.iterator().next(), true);
+        promptUserForPassword(restrictedAccessRoot.toString(), passwordFilesToTry.iterator().next(), true);
+        FileCache.instance().queryAllInBackground(true);
 
     }
 
