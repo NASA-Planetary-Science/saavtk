@@ -17,6 +17,7 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
     private static final DecimalFormat DF = new DecimalFormat("0.00");
     private static final DecimalFormat PF = new DecimalFormat("0%");
     private final String filename;
+    Runnable completionBlock;
 
     public FileDownloadSwingWorker(Component c, String title, String filename)
     {
@@ -114,6 +115,8 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
                     computedTimeEstimate = true;
                 }
             }
+            if (completionBlock != null)
+                completionBlock.run();
         }
         catch (@SuppressWarnings("unused") InterruptedException ignore)
         {
@@ -135,4 +138,10 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
     {
         return filename;
     }
+
+    public void setCompletionBlock(Runnable completionBlock)
+    {
+        this.completionBlock = completionBlock;
+    }
+
 }

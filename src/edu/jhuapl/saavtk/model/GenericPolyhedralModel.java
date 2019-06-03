@@ -88,7 +88,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     private int blueFalseColor = -1; // blue channel for false coloring
     private vtkUnsignedCharArray falseColorArray;
 
-	private List<LidarDataSource> lidarDataSourceL = new ArrayList<>();
+    private List<LidarDataSource> lidarDataSourceL = new ArrayList<>();
 
     private vtkPolyData smallBodyPolyData;
     private vtkPolyData lowResSmallBodyPolyData;
@@ -2853,29 +2853,29 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         return coloringDataManager;
     }
 
-	@Override
-	public void addCustomLidarDataSource(LidarDataSource info) throws IOException
-	{
-		lidarDataSourceL.add(info);
-	}
+    @Override
+    public void addCustomLidarDataSource(LidarDataSource info) throws IOException
+    {
+        lidarDataSourceL.add(info);
+    }
 
-	@Override
-	public void setCustomLidarDataSource(int index, LidarDataSource info) throws IOException
-	{
-		lidarDataSourceL.set(index, info);
-	}
+    @Override
+    public void setCustomLidarDataSource(int index, LidarDataSource info) throws IOException
+    {
+        lidarDataSourceL.set(index, info);
+    }
 
-	@Override
-	public void removeCustomLidarDataSource(int index) throws IOException
-	{
-		lidarDataSourceL.remove(index);
-	}
+    @Override
+    public void removeCustomLidarDataSource(int index) throws IOException
+    {
+        lidarDataSourceL.remove(index);
+    }
 
-	@Override
-	public List<LidarDataSource> getLidarDataSourceList()
-	{
-		return lidarDataSourceL;
-	}
+    @Override
+    public List<LidarDataSource> getLidarDataSourceList()
+    {
+        return lidarDataSourceL;
+    }
 
     private void savePlateData(Indexable<Integer> indexable, File file) throws IOException
     {

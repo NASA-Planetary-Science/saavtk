@@ -101,7 +101,7 @@ public abstract class PolyhedralModel extends AbstractModel
 
     public abstract vtkDataArray getGravityVectorData();
 
-	public abstract List<LidarDataSource> getLidarDataSourceList();
+    public abstract List<LidarDataSource> getLidarDataSourceList();
 
     public abstract int getModelResolution();
 
@@ -111,11 +111,11 @@ public abstract class PolyhedralModel extends AbstractModel
 
     public abstract void addCustomLidarDataSource(LidarDataSource info) throws IOException;
 
-	public abstract void setCustomLidarDataSource(int index, LidarDataSource info) throws IOException;
+    public abstract void setCustomLidarDataSource(int index, LidarDataSource info) throws IOException;
 
-	public abstract void loadCustomLidarDataSource();
+    public abstract void loadCustomLidarDataSource();
 
-	public abstract void removeCustomLidarDataSource(int index) throws IOException;
+    public abstract void removeCustomLidarDataSource(int index) throws IOException;
 
     public abstract CustomizableColoringDataManager getColoringDataManager();
 
