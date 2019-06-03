@@ -137,5 +137,6 @@
 	<classpathentry exported="true" kind="lib" path="lib/guava-mini-0.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/rxjava-1.1.4.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/rxjava-extras-0.7.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/flatbuffers-java-1.3.0.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
