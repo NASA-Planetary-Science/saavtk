@@ -83,11 +83,11 @@ abstract public class ProgressBarSwingWorker extends SwingWorker<Void, Void>
     public void executeDialog()
     {
         label.setText(labelText);
-
+        System.out.println("ProgressBarSwingWorker: executeDialog: set label");
         // Note execute must be called BEFORE setVisible. Otherwise, the worker thread
         // won't run since setVisible blocks until the dialog closes.
         execute();
-
+        System.out.println("ProgressBarSwingWorker: executeDialog: called execute");
         while (true)
         {
             if (completionTimeEstimate >= 4.0 || completionTimeEstimate < 0.0)
@@ -106,6 +106,7 @@ abstract public class ProgressBarSwingWorker extends SwingWorker<Void, Void>
             }
             catch (InterruptedException e)
             {
+            	e.printStackTrace();
             }
         }
 
