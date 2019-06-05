@@ -92,10 +92,12 @@ abstract public class ProgressBarSwingWorker extends SwingWorker<Void, Void>
         {
             if (completionTimeEstimate >= 4.0 || completionTimeEstimate < 0.0)
             {
+            	System.out.println("ProgressBarSwingWorker: executeDialog: breaking");
                 break;
             }
             else if (isDone())
             {
+            	System.out.println("ProgressBarSwingWorker: executeDialog: disposing");
                 dialog.dispose();
                 return;
             }
@@ -109,7 +111,7 @@ abstract public class ProgressBarSwingWorker extends SwingWorker<Void, Void>
             	e.printStackTrace();
             }
         }
-
+        System.out.println("ProgressBarSwingWorker: executeDialog: setting dialog visible");
         dialog.setVisible(true);
     }
 
@@ -142,6 +144,7 @@ abstract public class ProgressBarSwingWorker extends SwingWorker<Void, Void>
 
         if (evt.getNewValue().equals(SwingWorker.StateValue.DONE))
         {
+        	System.out.println("ProgressBarSwingWorker: propertyChange: property change done - disposing");
             dialog.setVisible(false);
             dialog.dispose();
         }
