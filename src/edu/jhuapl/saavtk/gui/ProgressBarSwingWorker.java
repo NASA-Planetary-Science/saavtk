@@ -83,21 +83,19 @@ abstract public class ProgressBarSwingWorker extends SwingWorker<Void, Void>
     public void executeDialog()
     {
         label.setText(labelText);
-        System.out.println("ProgressBarSwingWorker: executeDialog: set label");
+
         // Note execute must be called BEFORE setVisible. Otherwise, the worker thread
         // won't run since setVisible blocks until the dialog closes.
         execute();
-        System.out.println("ProgressBarSwingWorker: executeDialog: called execute");
+
         while (true)
         {
             if (completionTimeEstimate >= 4.0 || completionTimeEstimate < 0.0)
             {
-            	System.out.println("ProgressBarSwingWorker: executeDialog: breaking");
                 break;
             }
             else if (isDone())
             {
-            	System.out.println("ProgressBarSwingWorker: executeDialog: disposing");
                 dialog.dispose();
                 return;
             }
@@ -108,10 +106,9 @@ abstract public class ProgressBarSwingWorker extends SwingWorker<Void, Void>
             }
             catch (InterruptedException e)
             {
-            	e.printStackTrace();
             }
         }
-        System.out.println("ProgressBarSwingWorker: executeDialog: setting dialog visible");
+
         dialog.setVisible(true);
     }
 
@@ -144,7 +141,6 @@ abstract public class ProgressBarSwingWorker extends SwingWorker<Void, Void>
 
         if (evt.getNewValue().equals(SwingWorker.StateValue.DONE))
         {
-        	System.out.println("ProgressBarSwingWorker: propertyChange: property change done - disposing");
             dialog.setVisible(false);
             dialog.dispose();
         }
