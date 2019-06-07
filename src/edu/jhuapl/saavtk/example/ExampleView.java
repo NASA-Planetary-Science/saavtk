@@ -127,7 +127,7 @@ public class ExampleView extends View
     @Override
     protected void setupTabs()
     {
-        addTab(getConfig().getShapeModelName(), new PolyhedralModelControlPanel(getModelManager(), getConfig().getShapeModelName()));
+        addTab(getConfig().getShapeModelName(), PolyhedralModelControlPanel.of(getModelManager(), getConfig().getShapeModelName()));
 
         // if (getConfig().hasLidarData)
         // {

@@ -61,59 +61,52 @@ import net.miginfocom.swing.MigLayout;
 
 public class PolyhedralModelControlPanel extends JPanel implements ItemListener, ChangeListener
 {
+    public static PolyhedralModelControlPanel of(ModelManager modelManager, String bodyName)
+    {
+        PolyhedralModelControlPanel result = new PolyhedralModelControlPanel(modelManager, bodyName) {
+            private static final long serialVersionUID = 256201608369977510L;
+        };
+
+        result.initialize();
+
+        return result;
+    }
+
+    private static final long serialVersionUID = 7858613374590442069L;
     private static final String NO_COLORING = "None";
     private static final String STANDARD_COLORING = "Standard";
     private static final String RGB_COLORING = "RGB";
 
-    protected JCheckBox modelCheckBox;
-    private ModelManager modelManager;
+    private final ModelManager modelManager;
+    private final String bodyName;
 
-    private JRadioButton noColoringButton;
-    private JRadioButton standardColoringButton;
-    private JRadioButton rgbColoringButton;
-    private ButtonGroup coloringButtonGroup;
-    private JComboBoxWithItemState<String> coloringComboBox;
-    private JButton showColoringProperties;
-    private JComboBoxWithItemState<String> customColorRedComboBox;
-    private JComboBoxWithItemState<String> customColorGreenComboBox;
-    private JComboBoxWithItemState<String> customColorBlueComboBox;
-    private JLabel customColorRedLabel;
-    private JLabel customColorGreenLabel;
-    private JLabel customColorBlueLabel;
-    private List<JRadioButton> resModelButtons = new ArrayList<>();
-    private ButtonGroup resolutionButtonGroup;
-    private JCheckBox gridCheckBox;
-    protected JCheckBox gridLabelCheckBox;
+    protected final JCheckBox modelCheckBox;
+    private final JRadioButton standardColoringButton;
+    private final JRadioButton rgbColoringButton;
+    private final JComboBoxWithItemState<String> coloringComboBox;
+    private final JButton showColoringProperties;
+    private final JComboBoxWithItemState<String> customColorRedComboBox;
+    private final JComboBoxWithItemState<String> customColorGreenComboBox;
+    private final JComboBoxWithItemState<String> customColorBlueComboBox;
+    private final JLabel customColorRedLabel;
+    private final JLabel customColorGreenLabel;
+    private final JLabel customColorBlueLabel;
+    private final JCheckBox gridCheckBox;
+    protected final JCheckBox gridLabelCheckBox;
 
-    private JCheckBox axesCheckBox;
-    private ContourPanel contourPanel = new ContourPanel();
-    private StandardPlatePanel colormapController = new StandardPlatePanel(contourPanel);
+    private final ContourPanel contourPanel = new ContourPanel();
+    private final StandardPlatePanel colormapController = new StandardPlatePanel(contourPanel);
 
-    public void setSaveColoringButton(JButton saveColoringButton)
-    {
-        this.saveColoringButton = saveColoringButton;
-    }
-
-    private JButton saveColoringButton;
-    private JButton customizeColoringButton;
-    private JEditorPane statisticsLabel;
-    private JScrollPane scrollPane;
-    private JButton additionalStatisticsButton;
-    private final ImmutableMap<String, Integer> resolutionLevels;
+    private final JButton saveColoringButton;
+    private final JButton customizeColoringButton;
+    private final JEditorPane statisticsLabel;
+    private final JScrollPane scrollPane;
+    private final JButton additionalStatisticsButton;
+    private ImmutableMap<String, Integer> resolutionLevels;
 
     public ModelManager getModelManager()
     {
         return modelManager;
-    }
-
-    public JButton getSaveColoringButton()
-    {
-        return saveColoringButton;
-    }
-
-    public JButton getCustomizeColoringButton()
-    {
-        return customizeColoringButton;
     }
 
     public JEditorPane getStatisticsLabel()
@@ -126,17 +119,52 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         return scrollPane;
     }
 
-    public PolyhedralModelControlPanel(ModelManager modelManager, String bodyName)
+    protected PolyhedralModelControlPanel(ModelManager modelManager, String bodyName)
     {
         super(new BorderLayout());
         this.modelManager = modelManager;
-
-        JPanel panel = new JPanel();
-        panel.setLayout(new MigLayout("wrap 1"));
+        this.bodyName = bodyName;
 
         scrollPane = new JScrollPane();
 
         modelCheckBox = new JCheckBox();
+
+        coloringComboBox = new JComboBoxWithItemState<>();
+
+        showColoringProperties = new JButton("Properties");
+
+        standardColoringButton = new JRadioButton(STANDARD_COLORING);
+
+        rgbColoringButton = new JRadioButton(RGB_COLORING);
+
+        customColorRedLabel = new JLabel("Red: ");
+        customColorGreenLabel = new JLabel("Green: ");
+        customColorBlueLabel = new JLabel("Blue: ");
+
+        customColorRedComboBox = new JComboBoxWithItemState<>();
+        customColorGreenComboBox = new JComboBoxWithItemState<>();
+        customColorBlueComboBox = new JComboBoxWithItemState<>();
+
+        saveColoringButton = new JButton("Save Plate Data...");
+
+        customizeColoringButton = new JButton("Customize Plate Coloring...");
+
+        gridCheckBox = new JCheckBox();
+        gridLabelCheckBox = new JCheckBox();
+
+        additionalStatisticsButton = new JButton("Show more statistics");
+        // The following snippet was taken from
+        // https://explodingpixels.wordpress.com/2008/10/28/make-jeditorpane-use-the-system-font/
+        // which shows how to make a JEditorPane behave look like a JLabel but still be
+        // selectable.
+        statisticsLabel = new JEditorPane(new HTMLEditorKit().getContentType(), "");
+    }
+
+    protected void initialize()
+    {
+        JPanel panel = new JPanel();
+        panel.setLayout(new MigLayout("wrap 1"));
+
         modelCheckBox.setText("Show " + bodyName);
         modelCheckBox.setSelected(true);
         modelCheckBox.addItemListener(this);
@@ -149,15 +177,17 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         ImmutableList<Integer> plateCount = smallBodyModel.getConfig().getResolutionNumberElements();
 
         ImmutableMap.Builder<String, Integer> builder = ImmutableMap.builder();
+        List<JRadioButton> resModelButtons = new ArrayList<>();
         if (numberResolutionLevels > 1)
         {
-            resolutionButtonGroup = new ButtonGroup();
             ActionListener listener = (e) -> {
                 setCursor(new Cursor(Cursor.WAIT_CURSOR));
                 updateModelResolution(e.getActionCommand());
                 setCursor(Cursor.getDefaultCursor());
             };
             ImmutableList<String> levels = smallBodyModel.getConfig().getResolutionLabels();
+            ButtonGroup resolutionButtonGroup = new ButtonGroup();
+
             for (int i = 0; i < numberResolutionLevels; ++i)
             {
                 String label = levels.get(i);
@@ -195,11 +225,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             }
         });
 
-        // The following snippet was taken from
-        // https://explodingpixels.wordpress.com/2008/10/28/make-jeditorpane-use-the-system-font/
-        // which shows how to make a JEditorPane behave look like a JLabel but still be
-        // selectable.
-        statisticsLabel = new JEditorPane(new HTMLEditorKit().getContentType(), "");
         statisticsLabel.setBorder(null);
         statisticsLabel.setOpaque(false);
         statisticsLabel.setEditable(false);
@@ -213,17 +238,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         JLabel coloringLabel = new JLabel();
         coloringLabel.setText("Plate Coloring");
 
-        coloringComboBox = new JComboBoxWithItemState<>();
-
-        showColoringProperties = new JButton("Properties");
         showColoringProperties.setEnabled(false);
         showColoringProperties.addActionListener(e -> {
             showColoringProperties();
         });
-
-        noColoringButton = new JRadioButton(NO_COLORING);
-
-        standardColoringButton = new JRadioButton(STANDARD_COLORING);
 
         smallBodyModel.setColormap(colormapController.getColormap());
 
@@ -256,30 +274,21 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             setCursor(Cursor.getDefaultCursor());
         });
 
-        rgbColoringButton = new JRadioButton(RGB_COLORING);
-
-        customColorRedLabel = new JLabel("Red: ");
-        customColorGreenLabel = new JLabel("Green: ");
-        customColorBlueLabel = new JLabel("Blue: ");
-
-        customColorRedComboBox = new JComboBoxWithItemState<>();
-        customColorGreenComboBox = new JComboBoxWithItemState<>();
-        customColorBlueComboBox = new JComboBoxWithItemState<>();
-
         updateColoringOptions(smallBodyModel.getModelResolution());
 
-        saveColoringButton = new JButton("Save Plate Data...");
         saveColoringButton.setEnabled(true);
         saveColoringButton.addActionListener(new SavePlateDataAction());
 
-        customizeColoringButton = new JButton("Customize Plate Coloring...");
         // if (smallBodyModel.getConfig().customTemporary)
         // customizeColoringButton.setEnabled(false);
         // else
         customizeColoringButton.setEnabled(true);
         customizeColoringButton.addActionListener(new CustomizePlateDataAction());
 
-        coloringButtonGroup = new ButtonGroup();
+        ButtonGroup coloringButtonGroup = new ButtonGroup();
+
+        JRadioButton noColoringButton = new JRadioButton(NO_COLORING);
+
         coloringButtonGroup.add(noColoringButton);
         coloringButtonGroup.add(standardColoringButton);
         coloringButtonGroup.add(rgbColoringButton);
@@ -304,18 +313,16 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
         setStatisticsLabel();
 
-        gridCheckBox = new JCheckBox();
         gridCheckBox.setText("Show Coordinate Grid");
         gridCheckBox.setSelected(false);
         gridCheckBox.addItemListener(this);
 
-        gridLabelCheckBox = new JCheckBox();
         gridLabelCheckBox.setText("Show Coord Labels");
         gridLabelCheckBox.setSelected(false);
         gridLabelCheckBox.setEnabled(false);
         gridLabelCheckBox.addItemListener(this);
 
-        axesCheckBox = new JCheckBox();
+        JCheckBox axesCheckBox = new JCheckBox();
         axesCheckBox.setText("Show Orientation Axes");
         axesCheckBox.setSelected(true);
         axesCheckBox.addItemListener(this);
@@ -324,7 +331,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
         JPanel surfacePropertiesEditorPanel = new DisplayPropertyEditorPanel(smallBodyModel);
 
-        additionalStatisticsButton = new JButton("Show more statistics");
         additionalStatisticsButton.addActionListener(e -> {
             additionalStatisticsButton.setVisible(false);
             addAdditionalStatisticsToLabel();
@@ -372,6 +378,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             panel.add(customizeColoringButton, "wrap, gapleft 25");
         }
 
+        addCustomControls(panel);
+
         panel.add(gridCheckBox);
         panel.add(gridLabelCheckBox, "wrap");
 
@@ -384,6 +392,12 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         scrollPane.setViewportView(panel);
 
         add(scrollPane, BorderLayout.CENTER);
+
+    }
+
+    protected void addCustomControls(@SuppressWarnings("unused") JPanel panel)
+    {
+
     }
 
     private void updateModelResolution(String actionCommand)
@@ -681,7 +695,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                     String urlString = coloringDataManager.get(name, numberElements).getFileName();
                     box.setEnabled(name, FileCache.instance().isAccessible(urlString));
                     StateListener listener = e -> {
-//                        System.err.println("Updating access for " + urlString);
                         box.setEnabled(name, e.isAccessible());
                     };
                     boxListeners.addStateChangeListener(urlString, listener);
@@ -709,12 +722,12 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         // We add a superscripted space at end of first 2 lines and last 6 lines so that
         // spacing between all lines is the same.
         String text =
-                "<html>Statistics:<br>" + "&nbsp;&nbsp;&nbsp;Number of Plates: " + smallBodyModel.getSmallBodyPolyData().GetNumberOfCells() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Number of Vertices: "
-                        + smallBodyModel.getSmallBodyPolyData().GetNumberOfPoints() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Surface Area: " + String.format("%.7g", smallBodyModel.getSurfaceArea()) + " km<sup>2</sup><br>"
-                        + "&nbsp;&nbsp;&nbsp;Volume: " + String.format("%.7g", smallBodyModel.getVolume()) + " km<sup>3</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Average: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMeanCellArea())
-                        + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Minimum: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMinCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Maximum: "
-                        + String.format("%.7g", 1.0e6 * smallBodyModel.getMaxCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Extent:<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;X: [" + String.format("%.7g, %.7g", bb.xmin, bb.xmax)
-                        + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Y: [" + String.format("%.7g, %.7g", bb.ymin, bb.ymax) + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Z: ["
+                "<html>Statistics:<br>" + "&nbsp;&nbsp;&nbsp;Number of Plates: " + smallBodyModel.getSmallBodyPolyData().GetNumberOfCells() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Number of Vertices: " //
+                        + smallBodyModel.getSmallBodyPolyData().GetNumberOfPoints() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Surface Area: " + String.format("%.7g", smallBodyModel.getSurfaceArea()) + " km<sup>2</sup><br>" //
+                        + "&nbsp;&nbsp;&nbsp;Volume: " + String.format("%.7g", smallBodyModel.getVolume()) + " km<sup>3</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Average: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMeanCellArea()) //
+                        + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Minimum: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMinCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Maximum: " //
+                        + String.format("%.7g", 1.0e6 * smallBodyModel.getMaxCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Extent:<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;X: [" + String.format("%.7g, %.7g", bb.xmin, bb.xmax) //
+                        + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Y: [" + String.format("%.7g, %.7g", bb.ymin, bb.ymax) + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Z: [" //
                         + String.format("%.7g, %.7g", bb.zmin, bb.zmax) + "] km<sup>&nbsp;</sup><br>";
 
         // There's some weird thing going one where changing the text of the label
@@ -753,6 +766,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
     private class CustomizePlateDataAction extends AbstractAction
     {
+        private static final long serialVersionUID = -1968139736125692972L;
+
         @Override
         public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
         {
@@ -764,6 +779,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
     private class SavePlateDataAction extends AbstractAction
     {
+        private static final long serialVersionUID = 1158470836083999433L;
+
         @Override
         public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
         {
