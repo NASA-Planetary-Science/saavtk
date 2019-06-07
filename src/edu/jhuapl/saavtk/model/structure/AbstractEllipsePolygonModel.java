@@ -902,7 +902,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel impleme
 		// Only if we reach here and no exception is thrown do we modify this class
 		if (append)
 		{
-			int init = polygons.size() - 1;
+			int init = polygons.size();
 			polygons.addAll(newPolygons);
 
 			for (int i = init; i < init + labels.size(); i++)
