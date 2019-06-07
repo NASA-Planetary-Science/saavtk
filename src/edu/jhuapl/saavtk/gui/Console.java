@@ -20,7 +20,7 @@ import javax.swing.JTextArea;
 
 public class Console
 {
-
+    private static boolean headless = Boolean.parseBoolean(System.getProperty("java.awt.headless"));
     private static Console CONSOLE = null;
     private final PrintStream outputFile;
     private final JFrame consoleFrame;
@@ -83,11 +83,22 @@ public class Console
 
     public static void configure(boolean enable, PrintStream outputFile) throws InvocationTargetException, InterruptedException
     {
+        if (isHeadless())
+        {
+            CONSOLE = new Console(false, outputFile);
+            if (enable)
+            {
+                CONSOLE.out.println("Console is forced to be disabled when running headless.");
+            }
+            return;
+        }
+
         Runnable runnable = () -> {
             if (CONSOLE != null)
                 throw new UnsupportedOperationException("Console may only be configured once.");
             CONSOLE = new Console(enable, outputFile);
         };
+
         if (EventQueue.isDispatchThread())
         {
             runnable.run();
@@ -101,6 +112,11 @@ public class Console
     public static boolean isConfigured()
     {
         return CONSOLE != null;
+    }
+
+    public static boolean isHeadless()
+    {
+        return headless;
     }
 
     public static boolean isEnabled()
@@ -193,7 +209,10 @@ public class Console
     {
         String message = "In-app console is disabled.";
         System.err.println(message);
-        JOptionPane.showMessageDialog(null, message);
+        if (!isHeadless())
+        {
+            JOptionPane.showMessageDialog(null, message);
+        }
     }
 
     private static void doShowConsole()
