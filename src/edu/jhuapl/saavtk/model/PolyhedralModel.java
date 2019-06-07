@@ -143,15 +143,11 @@ public abstract class PolyhedralModel extends AbstractModel
 
     public abstract String getDEMConfigFilename();
 
-    public abstract boolean isImageMapAvailable();
-
     public abstract void setShowSmallBody(boolean show);
 
     public abstract void setModelResolution(int level) throws IOException;
 
     public abstract void setFalseColoring(int redChannel, int greenChannel, int blueChannel) throws IOException;
-
-    public abstract String[] getImageMapNames();
 
     public abstract boolean isFalseColoringEnabled();
 

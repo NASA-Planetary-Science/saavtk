@@ -113,7 +113,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     private String[] modelNames;
     private String[] modelFiles;
 
-    private String[] imageMapNames = null;
     private BoundingBox boundingBox = null;
     private vtkIdList idList; // to avoid repeated allocations
     private vtkFloatArray gravityVector;
@@ -182,7 +181,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
      * resolution levels whereas modelNames is an array of names that is specific
      * for each resolution level.
      */
-    public GenericPolyhedralModel(ViewConfig config, String[] modelNames, String[] modelFiles, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls, String[] imageMapNames, ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource)
+    public GenericPolyhedralModel(ViewConfig config, String[] modelNames, String[] modelFiles, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls, ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource)
     {
         super(config);
         this.coloringDataManager = CustomizableColoringDataManager.of(config.getUniqueName());
@@ -190,7 +189,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         this.modelNames = modelNames;
         this.modelFiles = modelFiles;
         setDefaultModelFileName(this.modelFiles[0]);
-        this.imageMapNames = imageMapNames;
         this.coloringValueType = coloringValueType;
 
         new vtkUnsignedCharArray();
@@ -337,11 +335,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         this.coloringDataManager = CustomizableColoringDataManager.of(config.getUniqueName());
     }
 
-    protected void initializeConfigParameters(String[] modelFiles, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls, String[] imageMapNames, ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource)
+    protected void initializeConfigParameters(String[] modelFiles, String[] coloringFiles, String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls, ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource)
     {
         this.modelFiles = modelFiles;
         setDefaultModelFileName(this.modelFiles[0]);
-        this.imageMapNames = imageMapNames;
         this.coloringValueType = coloringValueType;
         initializeColoringDataManager(coloringDataManager, getConfig().getResolutionNumberElements(), coloringFiles, coloringNames, coloringUnits, coloringHasNulls);
 
@@ -1753,18 +1750,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     public boolean isColoringDataAvailable()
     {
         return !getAllColoringData().isEmpty();
-    }
-
-    @Override
-    public boolean isImageMapAvailable()
-    {
-        return imageMapNames != null && imageMapNames.length > 0;
-    }
-
-    @Override
-    public String[] getImageMapNames()
-    {
-        return imageMapNames;
     }
 
     @Override

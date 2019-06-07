@@ -2,7 +2,6 @@ package edu.jhuapl.saavtk.gui.panel;
 
 import java.awt.BorderLayout;
 import java.awt.Cursor;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
@@ -29,9 +28,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
-import javax.swing.JSpinner;
 import javax.swing.JTabbedPane;
-import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -67,10 +64,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
     private static final String NO_COLORING = "None";
     private static final String STANDARD_COLORING = "Standard";
     private static final String RGB_COLORING = "RGB";
-    private static final String EMPTY_SELECTION = "None";
-    private static final String IMAGE_MAP_TEXT = "Show Image Map";
 
-    private JCheckBox modelCheckBox;
+    protected JCheckBox modelCheckBox;
     private ModelManager modelManager;
 
     private JRadioButton noColoringButton;
@@ -91,11 +86,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
     protected JCheckBox gridLabelCheckBox;
 
     private JCheckBox axesCheckBox;
-    private final JCheckBox imageMapCheckBox;
-    private final JComboBox<String> imageMapComboBox;
-    private JLabel opacityLabel;
-    private JSpinner imageMapOpacitySpinner;
-
     private ContourPanel contourPanel = new ContourPanel();
     private StandardPlatePanel colormapController = new StandardPlatePanel(contourPanel);
 
@@ -116,30 +106,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         return modelManager;
     }
 
-    public String getSelectedImageMapName()
-    {
-        String[] names = getModelManager().getPolyhedralModel().getImageMapNames();
-        int index = 0;
-        if (imageMapComboBox != null)
-            index = imageMapComboBox.getSelectedIndex() - 1;
-        if (index < 0 || index >= names.length)
-            throw new IllegalStateException();
-        return names[index];
-    }
-
-    public JSpinner getImageMapOpacitySpinner()
-    {
-        return imageMapOpacitySpinner;
-    }
-
     public JButton getSaveColoringButton()
     {
         return saveColoringButton;
-    }
-
-    public JLabel getOpacityLabel()
-    {
-        return opacityLabel;
     }
 
     public JButton getCustomizeColoringButton()
@@ -351,21 +320,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         axesCheckBox.setSelected(true);
         axesCheckBox.addItemListener(this);
 
-        imageMapCheckBox = new JCheckBox();
-        imageMapCheckBox.setText(IMAGE_MAP_TEXT);
-        imageMapCheckBox.setSelected(false);
-        imageMapCheckBox.addItemListener(this);
-
-        imageMapComboBox = configureImageMapComboBox(modelManager.getPolyhedralModel());
-        if (imageMapComboBox != null)
-            imageMapComboBox.addItemListener(this);
-
-        opacityLabel = new JLabel("Image opacity");
-        imageMapOpacitySpinner = createOpacitySpinner();
-        imageMapOpacitySpinner.addChangeListener(this);
-        opacityLabel.setEnabled(false);
-        imageMapOpacitySpinner.setEnabled(false);
-
         JSeparator statisticsSeparator = new JSeparator(SwingConstants.HORIZONTAL);
 
         JPanel surfacePropertiesEditorPanel = new DisplayPropertyEditorPanel(smallBodyModel);
@@ -418,20 +372,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             panel.add(customizeColoringButton, "wrap, gapleft 25");
         }
 
-        if (modelManager.getPolyhedralModel().isImageMapAvailable())
-        {
-            if (imageMapComboBox != null)
-            {
-                panel.add(new JLabel(IMAGE_MAP_TEXT), "wrap");
-                panel.add(imageMapComboBox, "wrap");
-            }
-            else
-            {
-                panel.add(imageMapCheckBox, "wrap");
-            }
-            panel.add(opacityLabel, "gapleft 25, split 2");
-            panel.add(imageMapOpacitySpinner, "wrap");
-        }
         panel.add(gridCheckBox);
         panel.add(gridLabelCheckBox, "wrap");
 
@@ -484,104 +424,81 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
         PickUtil.setPickingEnabled(false);
 
-        PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
+        try
+        {
+            PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
 
-        if (e.getItemSelectable() == this.modelCheckBox)
-        {
-            // In the following we ensure that the graticule and image map are shown
-            // only if the shape model is shown
-            Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
-            if (e.getStateChange() == ItemEvent.SELECTED)
+            if (e.getItemSelectable() == this.modelCheckBox)
             {
-                smallBodyModel.setShowSmallBody(true);
-                if (graticule != null && gridCheckBox.isSelected())
-                {
-                    setCursor(new Cursor(Cursor.WAIT_CURSOR));
-                    graticule.setShowGraticule(true);
-                    gridLabelCheckBox.setEnabled(true);
-                    setCursor(Cursor.getDefaultCursor());
-                }
-                else
-                    gridLabelCheckBox.setEnabled(false);
-            }
-            else
-            {
-                setCursor(new Cursor(Cursor.WAIT_CURSOR));
-                smallBodyModel.setShowSmallBody(false);
-                if (graticule != null && gridCheckBox.isSelected())
-                    graticule.setShowGraticule(false);
-                setCursor(Cursor.getDefaultCursor());
-            }
-            setCursor(new Cursor(Cursor.WAIT_CURSOR));
-            showImageMap(isImageMapEnabled());
-            setCursor(Cursor.getDefaultCursor());
-        }
-        else if (e.getItemSelectable() == this.gridCheckBox)
-        {
-            Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
-            if (graticule != null)
-            {
+                // In the following we ensure that the graticule is shown
+                // only if the shape model is shown
+                Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
                 if (e.getStateChange() == ItemEvent.SELECTED)
                 {
-                    setCursor(new Cursor(Cursor.WAIT_CURSOR));
-                    graticule.setShowGraticule(true);
-                    gridLabelCheckBox.setEnabled(true);
-                    setCursor(Cursor.getDefaultCursor());
+                    smallBodyModel.setShowSmallBody(true);
+                    if (graticule != null && gridCheckBox.isSelected())
+                    {
+                        setCursor(new Cursor(Cursor.WAIT_CURSOR));
+                        graticule.setShowGraticule(true);
+                        gridLabelCheckBox.setEnabled(true);
+                        setCursor(Cursor.getDefaultCursor());
+                    }
+                    else
+                        gridLabelCheckBox.setEnabled(false);
                 }
                 else
                 {
                     setCursor(new Cursor(Cursor.WAIT_CURSOR));
-                    graticule.setShowGraticule(false);
-                    gridLabelCheckBox.setEnabled(false);
+                    smallBodyModel.setShowSmallBody(false);
+                    if (graticule != null && gridCheckBox.isSelected())
+                        graticule.setShowGraticule(false);
                     setCursor(Cursor.getDefaultCursor());
                 }
+                setCursor(new Cursor(Cursor.WAIT_CURSOR));
+                setCursor(Cursor.getDefaultCursor());
             }
-        }
-        else if (e.getItemSelectable() == this.gridLabelCheckBox)
-        {
-            Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
-            if (graticule != null)
+            else if (e.getItemSelectable() == this.gridCheckBox)
             {
-                if (e.getStateChange() == ItemEvent.SELECTED)
+                Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
+                if (graticule != null)
                 {
-                    setCursor(new Cursor(Cursor.WAIT_CURSOR));
-                    graticule.setShowCaptions(true);
-                    setCursor(Cursor.getDefaultCursor());
+                    if (e.getStateChange() == ItemEvent.SELECTED)
+                    {
+                        setCursor(new Cursor(Cursor.WAIT_CURSOR));
+                        graticule.setShowGraticule(true);
+                        gridLabelCheckBox.setEnabled(true);
+                        setCursor(Cursor.getDefaultCursor());
+                    }
+                    else
+                    {
+                        setCursor(new Cursor(Cursor.WAIT_CURSOR));
+                        graticule.setShowGraticule(false);
+                        gridLabelCheckBox.setEnabled(false);
+                        setCursor(Cursor.getDefaultCursor());
+                    }
                 }
-                else
-                    graticule.setShowCaptions(false);
             }
-        }
-        else if (e.getItemSelectable() == this.imageMapCheckBox)
-        {
-            if (e.getStateChange() == ItemEvent.SELECTED)
+            else if (e.getItemSelectable() == this.gridLabelCheckBox)
             {
-                setCursor(new Cursor(Cursor.WAIT_CURSOR));
-                showImageMap(true);
-                opacityLabel.setEnabled(true);
-                imageMapOpacitySpinner.setEnabled(true);
-                setCursor(Cursor.getDefaultCursor());
+                Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
+                if (graticule != null)
+                {
+                    if (e.getStateChange() == ItemEvent.SELECTED)
+                    {
+                        setCursor(new Cursor(Cursor.WAIT_CURSOR));
+                        graticule.setShowCaptions(true);
+                        setCursor(Cursor.getDefaultCursor());
+                    }
+                    else
+                        graticule.setShowCaptions(false);
+                }
             }
-            else
-            {
-                setCursor(new Cursor(Cursor.WAIT_CURSOR));
-                showImageMap(false);
-                opacityLabel.setEnabled(false);
-                imageMapOpacitySpinner.setEnabled(false);
-                setCursor(Cursor.getDefaultCursor());
-            }
-        }
-        else if (e.getItemSelectable() == this.imageMapComboBox)
-        {
-            boolean show = this.imageMapComboBox.getSelectedIndex() != 0;
-            setCursor(new Cursor(Cursor.WAIT_CURSOR));
-            showImageMap(show);
-            opacityLabel.setEnabled(show);
-            imageMapOpacitySpinner.setEnabled(show);
-            setCursor(Cursor.getDefaultCursor());
-        }
 
-        PickUtil.setPickingEnabled(true);
+        }
+        finally
+        {
+            PickUtil.setPickingEnabled(true);
+        }
     }
 
     public void updateColoringOptions()
@@ -820,20 +737,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         });
     }
 
-    //
-    // for subclasses that support images
-    //
-    protected void showImageMap(@SuppressWarnings("unused") boolean show)
-    {}
-
     protected void addAdditionalStatisticsToLabel()
-    {}
-
-    protected boolean isImageMapEnabled()
     {
-        if (imageMapComboBox != null)
-            return !EMPTY_SELECTION.equals(imageMapComboBox.getSelectedItem());
-        return imageMapCheckBox.isSelected();
+
     }
 
     @Override
@@ -843,32 +749,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
     protected CustomPlateDataDialog getPlateDataDialog(@SuppressWarnings("unused") ModelManager modelManager)
     {
         return new CustomPlateDataDialog(this);
-    }
-
-    private static JSpinner createOpacitySpinner()
-    {
-        JSpinner spinner = new JSpinner(new SpinnerNumberModel(1.0, 0.0, 1.0, 0.1));
-        spinner.setEditor(new JSpinner.NumberEditor(spinner, "0.00"));
-        spinner.setPreferredSize(new Dimension(80, 21));
-        return spinner;
-    }
-
-    private static JComboBox<String> configureImageMapComboBox(PolyhedralModel model)
-    {
-        JComboBox<String> result = null;
-        String[] mapNames = model.getImageMapNames();
-        if (mapNames != null && mapNames.length > 1)
-        {
-            String[] allOptions = new String[mapNames.length + 1];
-            int index = 0;
-            allOptions[index] = EMPTY_SELECTION;
-            for (; index < mapNames.length; ++index)
-            {
-                allOptions[index + 1] = mapNames[index].replaceAll(".*[/\\\\]", "");
-            }
-            result = new JComboBox<>(allOptions);
-        }
-        return result;
     }
 
     private class CustomizePlateDataAction extends AbstractAction
