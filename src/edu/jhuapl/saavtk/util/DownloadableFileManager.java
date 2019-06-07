@@ -54,6 +54,7 @@ public class DownloadableFileManager
         return new DownloadableFileManager(urlManager, fileManager);
     }
 
+    private static boolean headless = Boolean.parseBoolean(System.getProperty("java.awt.headless"));
     private final UrlAccessManager urlManager;
     private final FileAccessManager fileManager;
     private final ConcurrentMap<String, DownloadableFileInfo> downloadInfoCache;
@@ -351,18 +352,32 @@ public class DownloadableFileManager
                 PropertyChangeListener propertyListener = e -> {
                     if (e.getPropertyName().equals(DownloadableFileInfo.STATE_PROPERTY))
                     {
-                        EventQueue.invokeLater(() -> {
+                        if (isHeadless())
+                        {
                             listener.respond((DownloadableFileState) e.getNewValue());
-                        });
+                        }
+                        else
+                        {
+                            EventQueue.invokeLater(() -> {
+                                listener.respond((DownloadableFileState) e.getNewValue());
+                            });
+                        }
                     }
                 };
                 propertyListenerMap.put(listener, propertyListener);
                 info.addPropertyChangeListener(propertyListener);
 
                 // Immediately "fire" just the newly added listener.
-                EventQueue.invokeLater(() -> {
+                if (isHeadless())
+                {
                     listener.respond(info.getState());
-                });
+                }
+                else
+                {
+                    EventQueue.invokeLater(() -> {
+                        listener.respond(info.getState());
+                    });
+                }
             }
         }
     }
@@ -415,18 +430,32 @@ public class DownloadableFileManager
                 urlInfo.addPropertyChangeListener(e -> {
                     if (e.getPropertyName().equals(UrlInfo.STATE_PROPERTY))
                     {
-                        EventQueue.invokeLater(() -> {
+                        if (isHeadless())
+                        {
                             downloadableInfo.update((UrlState) e.getNewValue());
-                        });
+                        }
+                        else
+                        {
+                            EventQueue.invokeLater(() -> {
+                                downloadableInfo.update((UrlState) e.getNewValue());
+                            });
+                        }
                     }
                 });
 
                 fileInfo.addPropertyChangeListener(e -> {
                     if (e.getPropertyName().equals(FileInfo.STATE_PROPERTY))
                     {
-                        EventQueue.invokeLater(() -> {
+                        if (isHeadless())
+                        {
                             downloadableInfo.update((FileState) e.getNewValue());
-                        });
+                        }
+                        else
+                        {
+                            EventQueue.invokeLater(() -> {
+                                downloadableInfo.update((FileState) e.getNewValue());
+                            });
+                        }
                     }
                 });
 
@@ -449,6 +478,11 @@ public class DownloadableFileManager
         result.update(querier.getUrlInfo().getState(), querier.getFileInfo().getState());
 
         return result;
+    }
+
+    protected static boolean isHeadless()
+    {
+        return headless;
     }
 
     private static FileAccessManager createFileCacheManager(File cacheDir)

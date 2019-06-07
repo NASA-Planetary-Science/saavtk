@@ -36,6 +36,7 @@ import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
  */
 public class Configuration
 {
+    private static boolean headless = Boolean.parseBoolean(System.getProperty("java.awt.headless"));
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
     private static final int DEFAULT_MAXIMUM_NUMBER_TRIES = 3;
 
@@ -75,18 +76,34 @@ public class Configuration
     // rootURL = rootURLProperty;
     // }
 
+    public static boolean isHeadless()
+    {
+        return headless;
+    }
+
     public static void runOnEDT(Runnable runnable)
     {
         Preconditions.checkNotNull(runnable);
 
-        EventQueue.invokeLater(runnable);
+        if (isHeadless())
+        {
+            runnable.run();
+        }
+        else
+        {
+            EventQueue.invokeLater(runnable);
+        }
     }
 
     public static void runAndWaitOnEDT(Runnable runnable) throws InvocationTargetException, InterruptedException
     {
         Preconditions.checkNotNull(runnable);
 
-        if (EventQueue.isDispatchThread())
+        if (isHeadless())
+        {
+            runnable.run();
+        }
+        else if (EventQueue.isDispatchThread())
         {
             runnable.run();
         }
@@ -181,6 +198,11 @@ public class Configuration
 
     private static boolean promptUserForPassword(final String restrictedAccessUrl, final Path passwordFile, final boolean updateMode)
     {
+        if (isHeadless())
+        {
+            return false;
+        }
+
         AtomicBoolean validPasswordEntered = new AtomicBoolean(false);
 
         try
