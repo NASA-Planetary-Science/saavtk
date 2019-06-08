@@ -36,7 +36,7 @@ import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
  */
 public class Configuration
 {
-    private static boolean headless = Boolean.parseBoolean(System.getProperty("java.awt.headless"));
+    private static Boolean headless = null;
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
     private static final int DEFAULT_MAXIMUM_NUMBER_TRIES = 3;
 
@@ -78,6 +78,11 @@ public class Configuration
 
     public static boolean isHeadless()
     {
+        if (headless == null)
+        {
+            headless = Boolean.parseBoolean(System.getProperty("java.awt.headless"));
+        }
+
         return headless;
     }
 

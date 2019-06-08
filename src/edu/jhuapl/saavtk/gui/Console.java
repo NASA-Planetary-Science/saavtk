@@ -20,7 +20,7 @@ import javax.swing.JTextArea;
 
 public class Console
 {
-    private static boolean headless = Boolean.parseBoolean(System.getProperty("java.awt.headless"));
+    private static Boolean headless = null;
     private static Console CONSOLE = null;
     private final PrintStream outputFile;
     private final JFrame consoleFrame;
@@ -114,8 +114,13 @@ public class Console
         return CONSOLE != null;
     }
 
-    public static boolean isHeadless()
+    protected static boolean isHeadless()
     {
+        if (headless == null)
+        {
+            headless = Boolean.parseBoolean(System.getProperty("java.awt.headless"));
+        }
+
         return headless;
     }
 
