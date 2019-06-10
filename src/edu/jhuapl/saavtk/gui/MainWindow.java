@@ -77,6 +77,11 @@ public abstract class MainWindow extends JFrame
         this(tempCustomShapeModelPath, true);
     }
 
+    public boolean isReady()
+    {
+        return rootPanel.isReady();
+    }
+
     protected ImageIcon createImageIcon()
     {
         return new ImageIcon("data/yin-yang.gif");

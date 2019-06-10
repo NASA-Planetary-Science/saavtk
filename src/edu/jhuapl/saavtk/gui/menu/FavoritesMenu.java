@@ -10,23 +10,29 @@ import javax.swing.JSeparator;
 
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
+import edu.jhuapl.saavtk.util.FileCache;
+import edu.jhuapl.saavtk.util.FileStateListenerTracker;
 
 public class FavoritesMenu extends JMenu
 {
-    FavoritesFile favoritesFile;
-    ViewManager manager;
+    private final FavoritesFile favoritesFile;
+    private final ViewManager manager;
+    private final FileStateListenerTracker fileStateTracker;
 
     public FavoritesMenu(ViewManager manager)
     {
         super("Favorites");
         this.favoritesFile = new FavoritesFile(manager);
         this.manager = manager;
+        this.fileStateTracker = FileStateListenerTracker.of(FileCache.instance());
         rebuild();
     }
 
     private final void rebuild()
     {
         removeAll();
+        fileStateTracker.removeAllStateChangeListeners();
+
         //
         JMenuItem add = new JMenuItem();
         JMenuItem rem = new JMenuItem();
@@ -48,26 +54,31 @@ public class FavoritesMenu extends JMenu
         List<View> favoriteViews = favoritesFile.getAllFavorites();
         for (View view : favoriteViews)
         {
-            JMenuItem menuItem = new FavoritesMenuItem(view);
             if (!view.getUniqueName().equals(manager.getDefaultBodyToLoad()))
+            {
+                JMenuItem menuItem = new FavoritesMenuItem(view);
+                String urlString = view.getConfig().getShapeModelFileNames()[0];
+                fileStateTracker.addStateChangeListener(urlString, state -> {
+                    menuItem.setEnabled(state.isAccessible());
+                });
                 add(menuItem);
+            }
         }
 
         // show default to load
         if (!favoriteViews.isEmpty())
             add(new JSeparator());
         JMenuItem defaultItem = new JMenuItem("Default model:");
-        defaultItem.setEnabled(false);
         add(defaultItem);
 
         try
         {
             View defaultToLoad = manager.getView(manager.getDefaultBodyToLoad());
             JMenuItem menuItem = new FavoritesMenuItem(defaultToLoad);
-            if (!defaultToLoad.getConfig().isAccessible())
-            {
-                menuItem.setEnabled(false);
-            }
+            String urlString = defaultToLoad.getConfig().getShapeModelFileNames()[0];
+            fileStateTracker.addStateChangeListener(urlString, state -> {
+                menuItem.setEnabled(state.isAccessible());
+            });
             add(menuItem);
 
         }

@@ -12,7 +12,9 @@ import java.awt.event.ItemListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.AbstractAction;
 import javax.swing.ButtonGroup;
@@ -54,7 +56,9 @@ import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
+import edu.jhuapl.saavtk.util.DownloadableFileManager.StateListener;
 import edu.jhuapl.saavtk.util.FileCache;
+import edu.jhuapl.saavtk.util.FileStateListenerTracker;
 import edu.jhuapl.saavtk.util.Properties;
 import net.miginfocom.swing.MigLayout;
 
@@ -191,10 +195,15 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                 builder.put(label, i);
                 JRadioButton resButton = new JRadioButton(label);
                 resButton.setActionCommand(label);
-                resButton.setEnabled(smallBodyModel.isResolutionLevelAvailable(i));
                 resButton.setToolTipText("<html>Click here to show a model of " + bodyName + " <br />" + "containing " + plateCount.get(i) + " plates</html>");
                 resButton.addActionListener(listener);
                 resModelButtons.add(resButton);
+
+                resButton.setEnabled(FileCache.instance().isAccessible(smallBodyModel.getModelFileNames().get(i)));
+
+                FileCache.instance().addStateListener(smallBodyModel.getModelFileNames().get(i), state -> {
+                    resButton.setEnabled(state.isAccessible());
+                });
 
                 resolutionButtonGroup.add(resButton);
                 if (i == 0)
@@ -714,38 +723,64 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         showColoringProperties.setEnabled(coloringComboBox.isEnabled() && coloringComboBox.getSelectedIndex() >= 0);
     }
 
+    protected final Map<JComboBoxWithItemState<?>, FileStateListenerTracker> listenerTrackers = new HashMap<>();
+
     protected void updateColoringComboBox(JComboBoxWithItemState<String> box, ColoringDataManager coloringDataManager, int numberElements)
     {
         // Store the current selection and number of items in the combo box.
         int previousSelection = box.getSelectedIndex();
-        int previousNumberColorings = box.getItemCount();
 
         // Clear the current content.
         box.setSelectedIndex(-1);
         box.removeAllItems();
 
-        // Add one item for blank (no coloring).
-        box.addItem("");
-        for (String name : coloringDataManager.getNames())
+        synchronized (this.listenerTrackers)
         {
-            // Re-add the current colorings.
-            box.addItem(name);
-            if (!coloringDataManager.has(name, numberElements))
+            // Get rid of current file access state listeners.
+            FileStateListenerTracker boxListeners = listenerTrackers.get(box);
+            if (boxListeners == null)
             {
-                // This coloring is not available at this resolution. List it but grey it out.
-                box.setEnabled(name, false);
+                boxListeners = FileStateListenerTracker.of(FileCache.instance());
+                listenerTrackers.put(box, boxListeners);
             }
-        }
+            else
+            {
+                boxListeners.removeAllStateChangeListeners();
+            }
 
-        int numberColorings = box.getItemCount();
-        int selection = 0;
-        if (previousSelection < numberColorings)
-        {
-            // A coloring was replaced/edited. Re-select the current selection.
-            selection = previousSelection;
-        }
+            // Add one item for blank (no coloring).
+            box.addItem("");
+            for (String name : coloringDataManager.getNames())
+            {
+                // Re-add the current colorings.
+                box.addItem(name);
+                if (!coloringDataManager.has(name, numberElements))
+                {
+                    // This coloring is not available at this resolution. List it but grey it out.
+                    box.setEnabled(name, false);
+                }
+                else
+                {
+                    String urlString = coloringDataManager.get(name, numberElements).getFileName();
+                    box.setEnabled(name, FileCache.instance().isAccessible(urlString));
+                    StateListener listener = e -> {
+//                        System.err.println("Updating access for " + urlString);
+                        box.setEnabled(name, e.isAccessible());
+                    };
+                    boxListeners.addStateChangeListener(urlString, listener);
+                }
+            }
 
-        box.setSelectedIndex(selection);
+            int numberColorings = box.getItemCount();
+            int selection = 0;
+            if (previousSelection < numberColorings)
+            {
+                // A coloring was replaced/edited. Re-select the current selection.
+                selection = previousSelection;
+            }
+
+            box.setSelectedIndex(selection);
+        }
     }
 
     protected void setStatisticsLabel()
