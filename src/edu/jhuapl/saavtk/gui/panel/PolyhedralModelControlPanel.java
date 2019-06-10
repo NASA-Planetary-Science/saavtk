@@ -693,6 +693,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                 else
                 {
                     String urlString = coloringDataManager.get(name, numberElements).getFileName();
+                    if (urlString == null) continue;
                     box.setEnabled(name, FileCache.instance().isAccessible(urlString));
                     StateListener listener = e -> {
                         box.setEnabled(name, e.isAccessible());
