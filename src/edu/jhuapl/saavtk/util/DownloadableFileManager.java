@@ -54,7 +54,7 @@ public class DownloadableFileManager
         return new DownloadableFileManager(urlManager, fileManager);
     }
 
-    private static boolean headless = Boolean.parseBoolean(System.getProperty("java.awt.headless"));
+    private static Boolean headless = null;
     private final UrlAccessManager urlManager;
     private final FileAccessManager fileManager;
     private final ConcurrentMap<String, DownloadableFileInfo> downloadInfoCache;
@@ -482,6 +482,11 @@ public class DownloadableFileManager
 
     protected static boolean isHeadless()
     {
+        if (headless == null)
+        {
+            headless = Boolean.parseBoolean(System.getProperty("java.awt.headless"));
+        }
+
         return headless;
     }
 

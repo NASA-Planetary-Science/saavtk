@@ -383,9 +383,9 @@ public final class FileCache
         {
             if (exception != null)
             {
-                System.err.println("Cached file exists, but unable to update cache from URL: " + url);
-                System.err.println("Ignored the following exception:");
-                exception.printStackTrace();
+                System.err.println("Warning: cached file exists, but unable to update cache from URL: " + url);
+//                System.err.println("Ignored the following exception:");
+//                exception.printStackTrace();
             }
         }
         else
