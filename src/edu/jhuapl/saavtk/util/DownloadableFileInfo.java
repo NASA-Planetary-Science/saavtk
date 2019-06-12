@@ -198,7 +198,14 @@ public class DownloadableFileInfo
         }
     }
 
-    public void update(UrlState urlState, FileState fileState)
+    public void update(DownloadableFileState downloadableFileState)
+    {
+        Preconditions.checkNotNull(downloadableFileState);
+
+        update(downloadableFileState.getUrlState(), downloadableFileState.getFileState());
+    }
+
+    protected void update(UrlState urlState, FileState fileState)
     {
         Preconditions.checkNotNull(urlState);
         Preconditions.checkNotNull(fileState);

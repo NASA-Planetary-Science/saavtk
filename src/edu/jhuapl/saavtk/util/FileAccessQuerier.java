@@ -1,29 +1,15 @@
 package edu.jhuapl.saavtk.util;
 
 import java.io.IOException;
-import java.text.DecimalFormat;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import javax.swing.SwingWorker;
 
 import com.google.common.base.Preconditions;
 
-import edu.jhuapl.saavtk.util.CloseableUrlConnection.HttpRequestMethod;
+import edu.jhuapl.saavtk.util.DownloadableFileInfo.DownloadableFileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
-public class FileAccessQuerier extends SwingWorker<Void, Void>
+public class FileAccessQuerier extends UrlAccessQuerier
 {
-    protected static final DecimalFormat PF = new DecimalFormat("0%");
-    private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
-
-    public static final String PROGRESS_PROPERTY = "infoQueryProgress";
-    public static final String DONE_PROPERTY = "infoQueryDone";
-    public static final String CANCELED_PROPERTY = "infoQueryCanceled";
-
     public static FileAccessQuerier of(UrlInfo urlInfo, FileInfo fileInfo, boolean forceUpdate, boolean serverAccessEnabled)
     {
         Preconditions.checkNotNull(urlInfo);
@@ -32,82 +18,30 @@ public class FileAccessQuerier extends SwingWorker<Void, Void>
         return new FileAccessQuerier(urlInfo, fileInfo, forceUpdate, serverAccessEnabled);
     }
 
-    private final UrlInfo urlInfo;
     private final FileInfo fileInfo;
-    private final boolean forceUpdate;
-    private final boolean serverAccessEnabled;
 
     protected FileAccessQuerier(UrlInfo urlInfo, FileInfo fileInfo, boolean forceUpdate, boolean serverAccessEnabled)
     {
-        this.urlInfo = urlInfo;
+        super(urlInfo, forceUpdate, serverAccessEnabled);
         this.fileInfo = fileInfo;
-        this.forceUpdate = forceUpdate;
-        this.serverAccessEnabled = serverAccessEnabled;
     }
 
-    public UrlInfo getUrlInfo()
+    public DownloadableFileState getDownloadableFileState()
     {
-        return urlInfo;
-    }
-
-    public FileInfo getFileInfo()
-    {
-        return fileInfo;
-    }
-
-    public void query() throws IOException, InterruptedException
-    {
-        FileState fileState = fileInfo.getState();
-        UrlState urlState = urlInfo.getState();
-
-        // Begin DEBUG message.
-//        if (forceUpdate)
-//        {
-//            Debug.out().println("Querying FS and server (forced) for info about " + urlState.getUrl());
-//        }
-//        else if (fileState.getStatus() == FileStatus.UNKNOWN)
-//        {
-//            Debug.out().println("Querying FS " + //
-//                    (urlState.getStatus() == UrlStatus.UNKNOWN ? (serverAccessEnabled ? "and server " : "ONLY (server access disabled) ") : "") + //
-//                    "for info about " + urlState.getUrl());
-//        }
-//        else if (urlState.getStatus() == UrlStatus.UNKNOWN)
-//        {
-//            Debug.out().println((serverAccessEnabled ? "Querying server " : "NOT querying server (access disabled) ") + //
-//                    "for info about " + urlState.getUrl());
-//        }
-        // End DEBUG message.
-
-        if (forceUpdate || fileState.getStatus() == FileStatus.UNKNOWN)
-        {
-            fileInfo.update();
-        }
-
-        if (forceUpdate || urlState.getStatus() == UrlStatus.UNKNOWN)
-        {
-            if (serverAccessEnabled)
-            {
-                try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.HEAD))
-                {
-                    urlInfo.update(closeableConnection.getConnection());
-                }
-            }
-            else
-            {
-                urlInfo.update(UrlState.of(urlState.getUrl()));
-            }
-        }
-    }
-
-    public void queryInBackground()
-    {
-        THREAD_POOL.execute(this);
+        return DownloadableFileState.of(getUrlState(), fileInfo.getState());
     }
 
     @Override
-    public void done()
+    public void query() throws IOException, InterruptedException
     {
-        firePropertyChange(isCancelled() ? CANCELED_PROPERTY : DONE_PROPERTY, null, fileInfo);
+        super.query();
+
+        FileState fileState = fileInfo.getState();
+
+        if (isForceUpdate() || fileState.getStatus() == FileStatus.UNKNOWN)
+        {
+            fileInfo.update();
+        }
     }
 
     @Override
@@ -116,6 +50,12 @@ public class FileAccessQuerier extends SwingWorker<Void, Void>
         query();
 
         return null;
+    }
+
+    @Override
+    public void done()
+    {
+        firePropertyChange(isCancelled() ? CANCELED_PROPERTY : DONE_PROPERTY, null, fileInfo);
     }
 
 }

@@ -260,9 +260,10 @@ public class UrlAccessManager
     public UrlInfo queryRootUrl() throws Exception
     {
         UrlInfo rootInfo = getInfo(rootUrl);
-        try (CloseableUrlConnection connection = CloseableUrlConnection.of(rootInfo, HttpRequestMethod.HEAD))
+        UrlAccessQuerier querier = UrlAccessQuerier.of(rootInfo, true, isServerAccessEnabled());
+        try
         {
-            rootInfo.update(connection.getConnection());
+            querier.query();
             setEnableServerAccess(true);
         }
         catch (FileNotFoundException | ConnectException | UnknownHostException e)
@@ -328,15 +329,17 @@ public class UrlAccessManager
 
         UrlInfo result = getInfo(url);
 
-        if (isServerAccessEnabled() || forceUpdate)
+        boolean serverAccessEnabled = isServerAccessEnabled();
+        if (serverAccessEnabled || forceUpdate)
         {
             UrlState state = result.getState();
             if (state.getStatus() == UrlStatus.UNKNOWN || forceUpdate)
             {
+                Debug.out().println("Querying server about " + url);
                 try (CloseableUrlConnection connection = CloseableUrlConnection.of(result, HttpRequestMethod.HEAD))
                 {
-                    Debug.out().println("Querying server about " + url);
-                    result.update(connection.getConnection());
+                    UrlAccessQuerier querier = UrlAccessQuerier.of(result, forceUpdate, serverAccessEnabled);
+                    querier.query();
                 }
                 catch (@SuppressWarnings("unused") Exception ignored)
                 {

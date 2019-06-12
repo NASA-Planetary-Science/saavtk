@@ -31,6 +31,7 @@ public class DownloadableFileManager
         void respond(DownloadableFileState fileState);
     }
 
+    private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
     private static volatile boolean showDotsForFiles = false;
 
     public static void setShowDotsForFiles(boolean showDotsForFiles)
@@ -195,12 +196,12 @@ public class DownloadableFileManager
             String propertyName = e.getPropertyName();
             if (propertyName.equals(FileAccessQuerier.DONE_PROPERTY) || propertyName.equals(FileAccessQuerier.CANCELED_PROPERTY))
             {
-                info.update(querier.getUrlInfo().getState(), querier.getFileInfo().getState());
+                info.update(querier.getDownloadableFileState());
                 whenFinished.respond(info.getState());
             }
         });
 
-        querier.queryInBackground();
+        THREAD_POOL.execute(querier);
     }
 
     public void queryAll(boolean forceUpdate)
@@ -444,9 +445,11 @@ public class DownloadableFileManager
         Preconditions.checkNotNull(url);
 
         DownloadableFileInfo result = getInfo(url);
+
         FileAccessQuerier querier = getQuerier(url.toString(), forceUpdate);
         querier.query();
-        result.update(querier.getUrlInfo().getState(), querier.getFileInfo().getState());
+
+        result.update(querier.getDownloadableFileState());
 
         return result;
     }
