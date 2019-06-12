@@ -14,7 +14,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.google.common.base.Preconditions;
 
-import edu.jhuapl.saavtk.util.CloseableUrlConnection.HttpRequestMethod;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
@@ -336,7 +335,7 @@ public class UrlAccessManager
             if (state.getStatus() == UrlStatus.UNKNOWN || forceUpdate)
             {
                 Debug.out().println("Querying server about " + url);
-                try (CloseableUrlConnection connection = CloseableUrlConnection.of(result, HttpRequestMethod.HEAD))
+                try
                 {
                     UrlAccessQuerier querier = UrlAccessQuerier.of(result, forceUpdate, serverAccessEnabled);
                     querier.query();
