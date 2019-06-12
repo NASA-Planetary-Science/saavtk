@@ -429,7 +429,7 @@ public class UrlAccessManager
         testCache.testGetInfo(host + "/sbmt/prod/help/index.php", UrlStatus.ACCESSIBLE, 0l, null);
         testCache.testGetInfo(host + "/sbmt/prod/data/bennu/altwg-spc-v20181217", UrlStatus.NOT_AUTHORIZED, 0l, null);
         testCache.testGetInfo("\\bennu\\altwg-spc-v20181217", UrlStatus.NOT_AUTHORIZED, 0l, null);
-        testCache.testGetInfo(host + "/non-existent-url", UrlStatus.HTTP_ERROR, 0l, FileNotFoundException.class);
+        testCache.testGetInfo(host + "/non-existent-url", UrlStatus.NOT_FOUND, 0l, FileNotFoundException.class);
         testCache.testGetInfo("http://sbmt.jhuBOZOapl.edu", UrlStatus.UNKNOWN, 0l, IOException.class);
     }
 
