@@ -86,7 +86,10 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
         {
             shapeModelPathTextField.setText(configMap.get(ShapeModel.CUSTOM_SHAPE_MODEL_PATH));
             String format = configMap.get(ShapeModel.CUSTOM_SHAPE_MODEL_FORMAT);
-            shapeModelFormatComboBox.setSelectedItem(format);
+            shapeModelFormatComboBox.setEnabled(true);
+            shapeModelFormatComboBox.setSelectedItem(FormatType.valueOf(format));
+            shapeModelFormatComboBox.setEnabled(false);
+
         }
 
 
@@ -121,8 +124,10 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
     	ellipsoidRadioButton.setEnabled(false);
     	shapeModelPathTextField.setText(demVtkFilename);
     	FormatType fileType = FormatType.valueOf(originalFileType.toUpperCase());
-    	
-    	shapeModelFormatComboBox.setSelectedItem(fileType.toString());
+        shapeModelFormatComboBox.setEnabled(true);
+    	shapeModelFormatComboBox.setSelectedItem(fileType);
+        shapeModelFormatComboBox.setEnabled(false);
+
     }
     
     public void setDisplayName(String displayName)
@@ -332,8 +337,8 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
         gridBagConstraints.insets = new java.awt.Insets(0, 25, 0, 0);
         getContentPane().add(shapeModelFormatLabel, gridBagConstraints);
 
-        shapeModelFormatComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "PDS", "OBJ", "VTK", "FIT" }));
-        shapeModelFormatComboBox.setEnabled(false);
+        shapeModelFormatComboBox.setModel(new javax.swing.DefaultComboBoxModel( FormatType.values()));
+        shapeModelFormatComboBox.setEnabled(true);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 8;
@@ -446,7 +451,7 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
         {
             String format = (String) shapeModelFormatComboBox.getSelectedItem();
             String modelPath = shapeModelPathTextField.getText();
-            importer.setFormat(ShapeModelImporter.FormatType.valueOf(format));
+            importer.setFormat((FormatType)(shapeModelFormatComboBox.getSelectedItem()));
             importer.setModelPath(modelPath);
         }
 

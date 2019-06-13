@@ -2,7 +2,6 @@ package edu.jhuapl.saavtk.gui.panel;
 
 import java.awt.BorderLayout;
 import java.awt.Cursor;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
@@ -29,9 +28,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
-import javax.swing.JSpinner;
 import javax.swing.JTabbedPane;
-import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -64,87 +61,52 @@ import net.miginfocom.swing.MigLayout;
 
 public class PolyhedralModelControlPanel extends JPanel implements ItemListener, ChangeListener
 {
+    public static PolyhedralModelControlPanel of(ModelManager modelManager, String bodyName)
+    {
+        PolyhedralModelControlPanel result = new PolyhedralModelControlPanel(modelManager, bodyName) {
+            private static final long serialVersionUID = 256201608369977510L;
+        };
+
+        result.initialize();
+
+        return result;
+    }
+
+    private static final long serialVersionUID = 7858613374590442069L;
     private static final String NO_COLORING = "None";
     private static final String STANDARD_COLORING = "Standard";
     private static final String RGB_COLORING = "RGB";
-    private static final String EMPTY_SELECTION = "None";
-    private static final String IMAGE_MAP_TEXT = "Show Image Map";
 
-    private JCheckBox modelCheckBox;
-    private ModelManager modelManager;
+    private final ModelManager modelManager;
+    private final String bodyName;
 
-    private JRadioButton noColoringButton;
-    private JRadioButton standardColoringButton;
-    private JRadioButton rgbColoringButton;
-    private ButtonGroup coloringButtonGroup;
-    private JComboBoxWithItemState<String> coloringComboBox;
-    private JButton showColoringProperties;
-    private JComboBoxWithItemState<String> customColorRedComboBox;
-    private JComboBoxWithItemState<String> customColorGreenComboBox;
-    private JComboBoxWithItemState<String> customColorBlueComboBox;
-    private JLabel customColorRedLabel;
-    private JLabel customColorGreenLabel;
-    private JLabel customColorBlueLabel;
-    private List<JRadioButton> resModelButtons = new ArrayList<>();
-    private ButtonGroup resolutionButtonGroup;
-    private JCheckBox gridCheckBox;
-    protected JCheckBox gridLabelCheckBox;
+    protected final JCheckBox modelCheckBox;
+    private final JRadioButton standardColoringButton;
+    private final JRadioButton rgbColoringButton;
+    private final JComboBoxWithItemState<String> coloringComboBox;
+    private final JButton showColoringProperties;
+    private final JComboBoxWithItemState<String> customColorRedComboBox;
+    private final JComboBoxWithItemState<String> customColorGreenComboBox;
+    private final JComboBoxWithItemState<String> customColorBlueComboBox;
+    private final JLabel customColorRedLabel;
+    private final JLabel customColorGreenLabel;
+    private final JLabel customColorBlueLabel;
+    private final JCheckBox gridCheckBox;
+    protected final JCheckBox gridLabelCheckBox;
 
-    private JCheckBox axesCheckBox;
-    private final JCheckBox imageMapCheckBox;
-    private final JComboBox<String> imageMapComboBox;
-    private JLabel opacityLabel;
-    private JSpinner imageMapOpacitySpinner;
+    private final ContourPanel contourPanel = new ContourPanel();
+    private final StandardPlatePanel colormapController = new StandardPlatePanel(contourPanel);
 
-    private ContourPanel contourPanel = new ContourPanel();
-    private StandardPlatePanel colormapController = new StandardPlatePanel(contourPanel);
-
-    public void setSaveColoringButton(JButton saveColoringButton)
-    {
-        this.saveColoringButton = saveColoringButton;
-    }
-
-    private JButton saveColoringButton;
-    private JButton customizeColoringButton;
-    private JEditorPane statisticsLabel;
-    private JScrollPane scrollPane;
-    private JButton additionalStatisticsButton;
-    private final ImmutableMap<String, Integer> resolutionLevels;
+    private final JButton saveColoringButton;
+    private final JButton customizeColoringButton;
+    private final JEditorPane statisticsLabel;
+    private final JScrollPane scrollPane;
+    private final JButton additionalStatisticsButton;
+    private ImmutableMap<String, Integer> resolutionLevels;
 
     public ModelManager getModelManager()
     {
         return modelManager;
-    }
-
-    public String getSelectedImageMapName()
-    {
-        String[] names = getModelManager().getPolyhedralModel().getImageMapNames();
-        int index = 0;
-        if (imageMapComboBox != null)
-            index = imageMapComboBox.getSelectedIndex() - 1;
-        if (index < 0 || index >= names.length)
-            throw new IllegalStateException();
-        return names[index];
-    }
-
-    public JSpinner getImageMapOpacitySpinner()
-    {
-        return imageMapOpacitySpinner;
-    }
-
-    public JButton getSaveColoringButton()
-    {
-        return saveColoringButton;
-    }
-
-    public JLabel getOpacityLabel()
-    {
-        return opacityLabel;
-    }
-
-    public JButton getCustomizeColoringButton()
-    {
-        return customizeColoringButton;
     }
 
     public JEditorPane getStatisticsLabel()
@@ -157,17 +119,52 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         return scrollPane;
     }
 
-    public PolyhedralModelControlPanel(ModelManager modelManager, String bodyName)
+    protected PolyhedralModelControlPanel(ModelManager modelManager, String bodyName)
     {
         super(new BorderLayout());
         this.modelManager = modelManager;
-
-        JPanel panel = new JPanel();
-        panel.setLayout(new MigLayout("wrap 1"));
+        this.bodyName = bodyName;
 
         scrollPane = new JScrollPane();
 
         modelCheckBox = new JCheckBox();
+
+        coloringComboBox = new JComboBoxWithItemState<>();
+
+        showColoringProperties = new JButton("Properties");
+
+        standardColoringButton = new JRadioButton(STANDARD_COLORING);
+
+        rgbColoringButton = new JRadioButton(RGB_COLORING);
+
+        customColorRedLabel = new JLabel("Red: ");
+        customColorGreenLabel = new JLabel("Green: ");
+        customColorBlueLabel = new JLabel("Blue: ");
+
+        customColorRedComboBox = new JComboBoxWithItemState<>();
+        customColorGreenComboBox = new JComboBoxWithItemState<>();
+        customColorBlueComboBox = new JComboBoxWithItemState<>();
+
+        saveColoringButton = new JButton("Save Plate Data...");
+
+        customizeColoringButton = new JButton("Customize Plate Coloring...");
+
+        gridCheckBox = new JCheckBox();
+        gridLabelCheckBox = new JCheckBox();
+
+        additionalStatisticsButton = new JButton("Show more statistics");
+        // The following snippet was taken from
+        // https://explodingpixels.wordpress.com/2008/10/28/make-jeditorpane-use-the-system-font/
+        // which shows how to make a JEditorPane behave look like a JLabel but still be
+        // selectable.
+        statisticsLabel = new JEditorPane(new HTMLEditorKit().getContentType(), "");
+    }
+
+    protected void initialize()
+    {
+        JPanel panel = new JPanel();
+        panel.setLayout(new MigLayout("wrap 1"));
+
         modelCheckBox.setText("Show " + bodyName);
         modelCheckBox.setSelected(true);
         modelCheckBox.addItemListener(this);
@@ -180,15 +177,17 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         ImmutableList<Integer> plateCount = smallBodyModel.getConfig().getResolutionNumberElements();
 
         ImmutableMap.Builder<String, Integer> builder = ImmutableMap.builder();
+        List<JRadioButton> resModelButtons = new ArrayList<>();
         if (numberResolutionLevels > 1)
         {
-            resolutionButtonGroup = new ButtonGroup();
             ActionListener listener = (e) -> {
                 setCursor(new Cursor(Cursor.WAIT_CURSOR));
                 updateModelResolution(e.getActionCommand());
                 setCursor(Cursor.getDefaultCursor());
             };
             ImmutableList<String> levels = smallBodyModel.getConfig().getResolutionLabels();
+            ButtonGroup resolutionButtonGroup = new ButtonGroup();
+
             for (int i = 0; i < numberResolutionLevels; ++i)
             {
                 String label = levels.get(i);
@@ -226,11 +225,6 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             }
         });
 
-        // The following snippet was taken from
-        // https://explodingpixels.wordpress.com/2008/10/28/make-jeditorpane-use-the-system-font/
-        // which shows how to make a JEditorPane behave look like a JLabel but still be
-        // selectable.
-        statisticsLabel = new JEditorPane(new HTMLEditorKit().getContentType(), "");
         statisticsLabel.setBorder(null);
         statisticsLabel.setOpaque(false);
         statisticsLabel.setEditable(false);
@@ -244,17 +238,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         JLabel coloringLabel = new JLabel();
         coloringLabel.setText("Plate Coloring");
 
-        coloringComboBox = new JComboBoxWithItemState<>();
-
-        showColoringProperties = new JButton("Properties");
         showColoringProperties.setEnabled(false);
         showColoringProperties.addActionListener(e -> {
             showColoringProperties();
         });
-
-        noColoringButton = new JRadioButton(NO_COLORING);
-
-        standardColoringButton = new JRadioButton(STANDARD_COLORING);
 
         smallBodyModel.setColormap(colormapController.getColormap());
 
@@ -287,30 +274,21 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             setCursor(Cursor.getDefaultCursor());
         });
 
-        rgbColoringButton = new JRadioButton(RGB_COLORING);
-
-        customColorRedLabel = new JLabel("Red: ");
-        customColorGreenLabel = new JLabel("Green: ");
-        customColorBlueLabel = new JLabel("Blue: ");
-
-        customColorRedComboBox = new JComboBoxWithItemState<>();
-        customColorGreenComboBox = new JComboBoxWithItemState<>();
-        customColorBlueComboBox = new JComboBoxWithItemState<>();
-
         updateColoringOptions(smallBodyModel.getModelResolution());
 
-        saveColoringButton = new JButton("Save Plate Data...");
         saveColoringButton.setEnabled(true);
         saveColoringButton.addActionListener(new SavePlateDataAction());
 
-        customizeColoringButton = new JButton("Customize Plate Coloring...");
         // if (smallBodyModel.getConfig().customTemporary)
         // customizeColoringButton.setEnabled(false);
         // else
         customizeColoringButton.setEnabled(true);
         customizeColoringButton.addActionListener(new CustomizePlateDataAction());
 
-        coloringButtonGroup = new ButtonGroup();
+        ButtonGroup coloringButtonGroup = new ButtonGroup();
+
+        JRadioButton noColoringButton = new JRadioButton(NO_COLORING);
+
         coloringButtonGroup.add(noColoringButton);
         coloringButtonGroup.add(standardColoringButton);
         coloringButtonGroup.add(rgbColoringButton);
@@ -335,42 +313,24 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
         setStatisticsLabel();
 
-        gridCheckBox = new JCheckBox();
         gridCheckBox.setText("Show Coordinate Grid");
         gridCheckBox.setSelected(false);
         gridCheckBox.addItemListener(this);
 
-        gridLabelCheckBox = new JCheckBox();
         gridLabelCheckBox.setText("Show Coord Labels");
         gridLabelCheckBox.setSelected(false);
         gridLabelCheckBox.setEnabled(false);
         gridLabelCheckBox.addItemListener(this);
 
-        axesCheckBox = new JCheckBox();
+        JCheckBox axesCheckBox = new JCheckBox();
         axesCheckBox.setText("Show Orientation Axes");
         axesCheckBox.setSelected(true);
         axesCheckBox.addItemListener(this);
-
-        imageMapCheckBox = new JCheckBox();
-        imageMapCheckBox.setText(IMAGE_MAP_TEXT);
-        imageMapCheckBox.setSelected(false);
-        imageMapCheckBox.addItemListener(this);
-
-        imageMapComboBox = configureImageMapComboBox(modelManager.getPolyhedralModel());
-        if (imageMapComboBox != null)
-            imageMapComboBox.addItemListener(this);
-
-        opacityLabel = new JLabel("Image opacity");
-        imageMapOpacitySpinner = createOpacitySpinner();
-        imageMapOpacitySpinner.addChangeListener(this);
-        opacityLabel.setEnabled(false);
-        imageMapOpacitySpinner.setEnabled(false);
 
         JSeparator statisticsSeparator = new JSeparator(SwingConstants.HORIZONTAL);
 
         JPanel surfacePropertiesEditorPanel = new DisplayPropertyEditorPanel(smallBodyModel);
 
-        additionalStatisticsButton = new JButton("Show more statistics");
         additionalStatisticsButton.addActionListener(e -> {
             additionalStatisticsButton.setVisible(false);
             addAdditionalStatisticsToLabel();
@@ -418,20 +378,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             panel.add(customizeColoringButton, "wrap, gapleft 25");
         }
 
-        if (modelManager.getPolyhedralModel().isImageMapAvailable())
-        {
-            if (imageMapComboBox != null)
-            {
-                panel.add(new JLabel(IMAGE_MAP_TEXT), "wrap");
-                panel.add(imageMapComboBox, "wrap");
-            }
-            else
-            {
-                panel.add(imageMapCheckBox, "wrap");
-            }
-            panel.add(opacityLabel, "gapleft 25, split 2");
-            panel.add(imageMapOpacitySpinner, "wrap");
-        }
+        addCustomControls(panel);
+
         panel.add(gridCheckBox);
         panel.add(gridLabelCheckBox, "wrap");
 
@@ -444,6 +392,12 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         scrollPane.setViewportView(panel);
 
         add(scrollPane, BorderLayout.CENTER);
+
+    }
+
+    protected void addCustomControls(@SuppressWarnings("unused") JPanel panel)
+    {
+
     }
 
     private void updateModelResolution(String actionCommand)
@@ -484,104 +438,81 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
         PickUtil.setPickingEnabled(false);
 
-        PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
+        try
+        {
+            PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
 
-        if (e.getItemSelectable() == this.modelCheckBox)
-        {
-            // In the following we ensure that the graticule and image map are shown
-            // only if the shape model is shown
-            Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
-            if (e.getStateChange() == ItemEvent.SELECTED)
+            if (e.getItemSelectable() == this.modelCheckBox)
             {
-                smallBodyModel.setShowSmallBody(true);
-                if (graticule != null && gridCheckBox.isSelected())
-                {
-                    setCursor(new Cursor(Cursor.WAIT_CURSOR));
-                    graticule.setShowGraticule(true);
-                    gridLabelCheckBox.setEnabled(true);
-                    setCursor(Cursor.getDefaultCursor());
-                }
-                else
-                    gridLabelCheckBox.setEnabled(false);
-            }
-            else
-            {
-                setCursor(new Cursor(Cursor.WAIT_CURSOR));
-                smallBodyModel.setShowSmallBody(false);
-                if (graticule != null && gridCheckBox.isSelected())
-                    graticule.setShowGraticule(false);
-                setCursor(Cursor.getDefaultCursor());
-            }
-            setCursor(new Cursor(Cursor.WAIT_CURSOR));
-            showImageMap(isImageMapEnabled());
-            setCursor(Cursor.getDefaultCursor());
-        }
-        else if (e.getItemSelectable() == this.gridCheckBox)
-        {
-            Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
-            if (graticule != null)
-            {
+                // In the following we ensure that the graticule is shown
+                // only if the shape model is shown
+                Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
                 if (e.getStateChange() == ItemEvent.SELECTED)
                 {
-                    setCursor(new Cursor(Cursor.WAIT_CURSOR));
-                    graticule.setShowGraticule(true);
-                    gridLabelCheckBox.setEnabled(true);
-                    setCursor(Cursor.getDefaultCursor());
+                    smallBodyModel.setShowSmallBody(true);
+                    if (graticule != null && gridCheckBox.isSelected())
+                    {
+                        setCursor(new Cursor(Cursor.WAIT_CURSOR));
+                        graticule.setShowGraticule(true);
+                        gridLabelCheckBox.setEnabled(true);
+                        setCursor(Cursor.getDefaultCursor());
+                    }
+                    else
+                        gridLabelCheckBox.setEnabled(false);
                 }
                 else
                 {
                     setCursor(new Cursor(Cursor.WAIT_CURSOR));
-                    graticule.setShowGraticule(false);
-                    gridLabelCheckBox.setEnabled(false);
+                    smallBodyModel.setShowSmallBody(false);
+                    if (graticule != null && gridCheckBox.isSelected())
+                        graticule.setShowGraticule(false);
                     setCursor(Cursor.getDefaultCursor());
                 }
+                setCursor(new Cursor(Cursor.WAIT_CURSOR));
+                setCursor(Cursor.getDefaultCursor());
             }
-        }
-        else if (e.getItemSelectable() == this.gridLabelCheckBox)
-        {
-            Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
-            if (graticule != null)
+            else if (e.getItemSelectable() == this.gridCheckBox)
             {
-                if (e.getStateChange() == ItemEvent.SELECTED)
+                Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
+                if (graticule != null)
                 {
-                    setCursor(new Cursor(Cursor.WAIT_CURSOR));
-                    graticule.setShowCaptions(true);
-                    setCursor(Cursor.getDefaultCursor());
+                    if (e.getStateChange() == ItemEvent.SELECTED)
+                    {
+                        setCursor(new Cursor(Cursor.WAIT_CURSOR));
+                        graticule.setShowGraticule(true);
+                        gridLabelCheckBox.setEnabled(true);
+                        setCursor(Cursor.getDefaultCursor());
+                    }
+                    else
+                    {
+                        setCursor(new Cursor(Cursor.WAIT_CURSOR));
+                        graticule.setShowGraticule(false);
+                        gridLabelCheckBox.setEnabled(false);
+                        setCursor(Cursor.getDefaultCursor());
+                    }
                 }
-                else
-                    graticule.setShowCaptions(false);
             }
-        }
-        else if (e.getItemSelectable() == this.imageMapCheckBox)
-        {
-            if (e.getStateChange() == ItemEvent.SELECTED)
+            else if (e.getItemSelectable() == this.gridLabelCheckBox)
             {
-                setCursor(new Cursor(Cursor.WAIT_CURSOR));
-                showImageMap(true);
-                opacityLabel.setEnabled(true);
-                imageMapOpacitySpinner.setEnabled(true);
-                setCursor(Cursor.getDefaultCursor());
+                Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
+                if (graticule != null)
+                {
+                    if (e.getStateChange() == ItemEvent.SELECTED)
+                    {
+                        setCursor(new Cursor(Cursor.WAIT_CURSOR));
+                        graticule.setShowCaptions(true);
+                        setCursor(Cursor.getDefaultCursor());
+                    }
+                    else
+                        graticule.setShowCaptions(false);
+                }
             }
-            else
-            {
-                setCursor(new Cursor(Cursor.WAIT_CURSOR));
-                showImageMap(false);
-                opacityLabel.setEnabled(false);
-                imageMapOpacitySpinner.setEnabled(false);
-                setCursor(Cursor.getDefaultCursor());
-            }
-        }
-        else if (e.getItemSelectable() == this.imageMapComboBox)
-        {
-            boolean show = this.imageMapComboBox.getSelectedIndex() != 0;
-            setCursor(new Cursor(Cursor.WAIT_CURSOR));
-            showImageMap(show);
-            opacityLabel.setEnabled(show);
-            imageMapOpacitySpinner.setEnabled(show);
-            setCursor(Cursor.getDefaultCursor());
-        }
 
-        PickUtil.setPickingEnabled(true);
+        }
+        finally
+        {
+            PickUtil.setPickingEnabled(true);
+        }
     }
 
     public void updateColoringOptions()
@@ -762,9 +693,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                 else
                 {
                     String urlString = coloringDataManager.get(name, numberElements).getFileName();
+                    if (urlString == null) continue;
                     box.setEnabled(name, FileCache.instance().isAccessible(urlString));
                     StateListener listener = e -> {
-//                        System.err.println("Updating access for " + urlString);
                         box.setEnabled(name, e.isAccessible());
                     };
                     boxListeners.addStateChangeListener(urlString, listener);
@@ -792,12 +723,12 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         // We add a superscripted space at end of first 2 lines and last 6 lines so that
         // spacing between all lines is the same.
         String text =
-                "<html>Statistics:<br>" + "&nbsp;&nbsp;&nbsp;Number of Plates: " + smallBodyModel.getSmallBodyPolyData().GetNumberOfCells() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Number of Vertices: "
-                        + smallBodyModel.getSmallBodyPolyData().GetNumberOfPoints() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Surface Area: " + String.format("%.7g", smallBodyModel.getSurfaceArea()) + " km<sup>2</sup><br>"
-                        + "&nbsp;&nbsp;&nbsp;Volume: " + String.format("%.7g", smallBodyModel.getVolume()) + " km<sup>3</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Average: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMeanCellArea())
-                        + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Minimum: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMinCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Maximum: "
-                        + String.format("%.7g", 1.0e6 * smallBodyModel.getMaxCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Extent:<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;X: [" + String.format("%.7g, %.7g", bb.xmin, bb.xmax)
-                        + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Y: [" + String.format("%.7g, %.7g", bb.ymin, bb.ymax) + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Z: ["
+                "<html>Statistics:<br>" + "&nbsp;&nbsp;&nbsp;Number of Plates: " + smallBodyModel.getSmallBodyPolyData().GetNumberOfCells() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Number of Vertices: " //
+                        + smallBodyModel.getSmallBodyPolyData().GetNumberOfPoints() + "<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;Surface Area: " + String.format("%.7g", smallBodyModel.getSurfaceArea()) + " km<sup>2</sup><br>" //
+                        + "&nbsp;&nbsp;&nbsp;Volume: " + String.format("%.7g", smallBodyModel.getVolume()) + " km<sup>3</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Average: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMeanCellArea()) //
+                        + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Minimum: " + String.format("%.7g", 1.0e6 * smallBodyModel.getMinCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Plate Area Maximum: " //
+                        + String.format("%.7g", 1.0e6 * smallBodyModel.getMaxCellArea()) + " m<sup>2</sup><br>" + "&nbsp;&nbsp;&nbsp;Extent:<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;X: [" + String.format("%.7g, %.7g", bb.xmin, bb.xmax) //
+                        + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Y: [" + String.format("%.7g, %.7g", bb.ymin, bb.ymax) + "] km<sup>&nbsp;</sup><br>" + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Z: [" //
                         + String.format("%.7g, %.7g", bb.zmin, bb.zmax) + "] km<sup>&nbsp;</sup><br>";
 
         // There's some weird thing going one where changing the text of the label
@@ -820,20 +751,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         });
     }
 
-    //
-    // for subclasses that support images
-    //
-    protected void showImageMap(@SuppressWarnings("unused") boolean show)
-    {}
-
     protected void addAdditionalStatisticsToLabel()
-    {}
-
-    protected boolean isImageMapEnabled()
     {
-        if (imageMapComboBox != null)
-            return !EMPTY_SELECTION.equals(imageMapComboBox.getSelectedItem());
-        return imageMapCheckBox.isSelected();
+
     }
 
     @Override
@@ -845,34 +765,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         return new CustomPlateDataDialog(this);
     }
 
-    private static JSpinner createOpacitySpinner()
-    {
-        JSpinner spinner = new JSpinner(new SpinnerNumberModel(1.0, 0.0, 1.0, 0.1));
-        spinner.setEditor(new JSpinner.NumberEditor(spinner, "0.00"));
-        spinner.setPreferredSize(new Dimension(80, 21));
-        return spinner;
-    }
-
-    private static JComboBox<String> configureImageMapComboBox(PolyhedralModel model)
-    {
-        JComboBox<String> result = null;
-        String[] mapNames = model.getImageMapNames();
-        if (mapNames != null && mapNames.length > 1)
-        {
-            String[] allOptions = new String[mapNames.length + 1];
-            int index = 0;
-            allOptions[index] = EMPTY_SELECTION;
-            for (; index < mapNames.length; ++index)
-            {
-                allOptions[index + 1] = mapNames[index].replaceAll(".*[/\\\\]", "");
-            }
-            result = new JComboBox<>(allOptions);
-        }
-        return result;
-    }
-
     private class CustomizePlateDataAction extends AbstractAction
     {
+        private static final long serialVersionUID = -1968139736125692972L;
+
         @Override
         public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
         {
@@ -884,6 +780,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
     private class SavePlateDataAction extends AbstractAction
     {
+        private static final long serialVersionUID = 1158470836083999433L;
+
         @Override
         public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
         {

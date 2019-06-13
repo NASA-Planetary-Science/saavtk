@@ -27,7 +27,8 @@ public class ShapeModelImporter
         PDS,
         OBJ,
         VTK,
-        FIT
+        FIT,
+        FITS
     }
 
     /**
@@ -158,7 +159,7 @@ public class ShapeModelImporter
 
                 configMap.put(ShapeModel.CUSTOM_SHAPE_MODEL_FORMAT, ShapeModel.VTK_FORMAT);
             }
-            else if (format == FormatType.FIT)
+            else if (format == FormatType.FIT || format == FormatType.FITS)
             {
                 try
                 {
@@ -192,7 +193,7 @@ public class ShapeModelImporter
 
         if (modelPath != null)
         {
-	        File jsonFile = new File(modelPath.substring(0, modelPath.length()-3) + "json");
+	        File jsonFile = new File(FileUtil.removeExtension(modelPath) + ".json");
 	        if (jsonFile.exists())
 	        {
 		        File jsonFileDestination = new File(newModelDir.getAbsolutePath() + File.separator + "model.json");
