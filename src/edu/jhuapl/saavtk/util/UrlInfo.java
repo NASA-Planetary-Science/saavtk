@@ -18,7 +18,7 @@ import com.google.common.base.Preconditions;
  */
 public class UrlInfo
 {
-    public static String STATE_PROPERTY = "urlInfoState";
+    public static final String STATE_PROPERTY = "urlInfoState";
 
     public enum UrlStatus
     {
@@ -31,9 +31,17 @@ public class UrlInfo
 
     public static class UrlState
     {
+        protected static final long UNKNOWN_LENGTH = -1;
+        protected static final long UNKNOWN_LAST_MODIFIED = 0;
+
         public static UrlState of(URL url)
         {
-            return of(url, UrlStatus.UNKNOWN, -1, 0);
+            return of(url, UrlStatus.UNKNOWN, UNKNOWN_LENGTH, UNKNOWN_LAST_MODIFIED);
+        }
+
+        public static UrlState of(URL url, UrlStatus status)
+        {
+            return of(url, status, UNKNOWN_LENGTH, UNKNOWN_LAST_MODIFIED);
         }
 
         public static UrlState of(URL url, UrlStatus status, long contentLength, long lastModified)
@@ -148,20 +156,7 @@ public class UrlInfo
         }
     }
 
-    public void update(UrlStatus status, long contentLength, long lastModified)
-    {
-        Preconditions.checkNotNull(status);
-
-        URL url;
-        synchronized (this.state)
-        {
-            url = state.get().getUrl();
-            update(UrlState.of(url, status, contentLength, lastModified));
-        }
-
-    }
-
-    public void update(URLConnection connection) throws IOException
+    public UrlState update(URLConnection connection) throws IOException
     {
         Preconditions.checkNotNull(connection);
 
@@ -198,7 +193,7 @@ public class UrlInfo
                     }
                     else
                     {
-                        Debug.err().println("Received response code " + code + " for URL " + connection.getURL());
+                        Debug.err().println("Received response code " + code + " for URL " + state.getUrl());
                         status = UrlStatus.HTTP_ERROR;
                     }
                 }
@@ -215,15 +210,28 @@ public class UrlInfo
                 status = UrlStatus.ACCESSIBLE;
             }
 
-            update(status, contentLength, lastModified);
+            return update(status, contentLength, lastModified);
         }
     }
 
-    public void update(UrlState state)
+    public UrlState update(UrlStatus status, long contentLength, long lastModified)
+    {
+        Preconditions.checkNotNull(status);
+
+        synchronized (this.state)
+        {
+            URL url = state.get().getUrl();
+            return update(UrlState.of(url, status, contentLength, lastModified));
+        }
+
+    }
+
+    public UrlState update(UrlState state)
     {
         Preconditions.checkNotNull(state);
 
         boolean changed = false;
+
         synchronized (this.state)
         {
             Preconditions.checkArgument(this.state.get().getUrl().equals(state.getUrl()));
@@ -242,6 +250,8 @@ public class UrlInfo
                 pcs.firePropertyChange(STATE_PROPERTY, null, state);
             }
         }
+
+        return state;
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener)

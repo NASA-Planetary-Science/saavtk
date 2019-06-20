@@ -151,6 +151,16 @@ public class DownloadableFileManager
         return query(urlString, false).isAccessible();
     }
 
+    public URL getUrl(String urlString)
+    {
+        return urlManager.getUrl(urlString);
+    }
+
+    public File getFile(String urlString)
+    {
+        return getInfo(getUrl(urlString)).getState().getFileState().getFile();
+    }
+
     public DownloadableFileState getState(String urlString)
     {
         return getInfo(urlManager.getUrl(urlString)).getState();
@@ -195,7 +205,7 @@ public class DownloadableFileManager
 
         querier.addPropertyChangeListener(e -> {
             String propertyName = e.getPropertyName();
-            if (propertyName.equals(FileAccessQuerier.DONE_PROPERTY) || propertyName.equals(FileAccessQuerier.CANCELED_PROPERTY))
+            if (propertyName.equals(FileAccessQuerier.QUERY_DONE) || propertyName.equals(FileAccessQuerier.QUERY_CANCELED))
             {
                 info.update(querier.getDownloadableFileState());
                 whenFinished.respond(info.getState());
@@ -287,7 +297,7 @@ public class DownloadableFileManager
         if (urlManager.isServerAccessEnabled())
         {
             FileDownloader downloader = getDownloader(urlString, forceDownload);
-            downloader.download();
+            downloader.downloadAndUnzip();
             fileState = getState(urlString);
         }
 
@@ -312,13 +322,14 @@ public class DownloadableFileManager
 
             downloader.addPropertyChangeListener(e -> {
                 String propertyName = e.getPropertyName();
-                if (propertyName.equals(FileDownloader.DONE_PROPERTY) || propertyName.equals(FileDownloader.CANCELED_PROPERTY))
+                if (propertyName.equals(FileDownloader.DOWNLOAD_DONE) || propertyName.equals(FileDownloader.DOWNLOAD_CANCELED))
                 {
-                    whenFinished.respond(getState(urlString));
+                    // Either way, respond to the state change, if any.
+                    whenFinished.respond((DownloadableFileState) e.getNewValue());
                 }
             });
 
-            downloader.downloadInBackground();
+            THREAD_POOL.execute(downloader);
         }
         else
         {

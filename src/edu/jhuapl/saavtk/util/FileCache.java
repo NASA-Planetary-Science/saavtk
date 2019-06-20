@@ -299,11 +299,6 @@ public final class FileCache
         return downloadableManager;
     }
 
-    public static URL getURL(String urlString)
-    {
-        return downloadableManager.getState(urlString).getUrlState().getUrl();
-    }
-
     public static DownloadableFileState getState(String urlString)
     {
         return downloadableManager.query(urlString, false);
@@ -312,40 +307,6 @@ public final class FileCache
     public static DownloadableFileState refreshStateInfo(String urlString)
     {
         return downloadableManager.query(urlString, true);
-    }
-
-    public static boolean isDownloadNeeded(String urlString)
-    {
-        DownloadableFileState state = getState(urlString);
-
-        File file = state.getFileState().getFile();
-
-        return !file.exists() || state.getUrlState().getLastModified() > file.lastModified();
-    }
-
-    public static DownloadableFileState refreshDownload(String urlString) throws IOException, InterruptedException
-    {
-        return instance().getDownloadedFile(urlString, false);
-    }
-
-    public static FileDownloader getDownloader(String urlString)
-    {
-        return instance().getDownloader(urlString, false);
-    }
-
-    /**
-     * Return a File object representing the fully qualified location in the cache
-     * where the supplied URL was or would be downloaded. This method does not
-     * download the file, nor query the server for any information about the URL.
-     * Thus this method implies nothing about whether File.exists() will return true
-     * or false.
-     * 
-     * @param urlString the URL
-     * @return the File object
-     */
-    public static File getDownloadFile(String urlString)
-    {
-        return getState(urlString).getFileState().getFile();
     }
 
     /**
@@ -384,8 +345,8 @@ public final class FileCache
             if (exception != null)
             {
                 System.err.println("Warning: cached file exists, but unable to update cache from URL: " + url);
-//                System.err.println("Ignored the following exception:");
-//                exception.printStackTrace();
+                System.err.println("Ignored the following exception:");
+                exception.printStackTrace();
             }
         }
         else
@@ -449,7 +410,7 @@ public final class FileCache
      *         DEPRECATED: use getUrlInfo()/refreshUrlInfo() instead.
      */
     @Deprecated
-    public static FileInfo getFileInfoFromServer(String urlOrPathSegment)
+    private static FileInfo getFileInfoFromServer(String urlOrPathSegment)
     {
         Preconditions.checkNotNull(urlOrPathSegment);
 
@@ -725,7 +686,7 @@ public final class FileCache
      *             here just for reference as nothing calls it nor should call it.
      */
     @Deprecated
-    public static File getFileFromServerOrig(String urlOrPathSegment) throws NoInternetAccessException
+    private static File getFileFromServerOrig(String urlOrPathSegment) throws NoInternetAccessException
     {
         FileInfo fileInfo = getFileInfoFromServer(urlOrPathSegment);
         URL url = fileInfo.getURL();
@@ -848,12 +809,14 @@ public final class FileCache
         return lines;
     }
 
-    public static boolean getOfflineMode()
+    @Deprecated
+    private static boolean getOfflineMode()
     {
         return !downloadableManager.isServerAccessEnabled();
     }
 
-    public static void setOfflineMode(boolean offlineMode)
+    @Deprecated
+    private static void setOfflineMode(boolean offlineMode)
     {
         setOfflineMode(offlineMode, offlineModeRootFolder != null ? offlineModeRootFolder : Configuration.getCacheDir());
     }
@@ -890,12 +853,14 @@ public final class FileCache
      * 
      * @param enable if true, dots will be shown, if false, no dots will be shown.
      */
-    public static void showDotsForFiles(boolean enable)
+    @Deprecated
+    private static void showDotsForFiles(boolean enable)
     {
         showDotsForFiles = enable;
         DownloadableFileManager.setShowDotsForFiles(enable);
     }
 
+    @Deprecated
     private static String toUrlSegment(String firstSegment, String... pathSegments)
     {
         // Concatenate the paths safely with a single delimiter.
@@ -907,6 +872,7 @@ public final class FileCache
         throw new AssertionError();
     }
 
+    @Deprecated
     private static final class WrappedInputStream implements Closeable
     {
         private final long totalByteCount;

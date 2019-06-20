@@ -18,22 +18,21 @@ public class CloseableUrlConnection implements Closeable
         HEAD
     }
 
-    public static CloseableUrlConnection of(UrlInfo urlInfo, HttpRequestMethod method) throws IOException
+    public static CloseableUrlConnection of(URL url, HttpRequestMethod method) throws IOException
     {
-        Preconditions.checkNotNull(urlInfo);
+        Preconditions.checkNotNull(url);
         Preconditions.checkNotNull(method);
 
-        return new CloseableUrlConnection(urlInfo, method);
+        return new CloseableUrlConnection(url, method);
     }
 
     private final String description;
     private final URLConnection connection;
 
-    protected CloseableUrlConnection(UrlInfo urlInfo, HttpRequestMethod method) throws IOException
+    protected CloseableUrlConnection(URL url, HttpRequestMethod method) throws IOException
     {
-        this.description = "Connection with method \"" + method + "\" from " + urlInfo.toString();
-        URL url = urlInfo.getState().getUrl();
-        this.connection = open(url, urlInfo, method);
+        this.description = "Connection with method \"" + method + "\" from " + url.toString();
+        this.connection = open(url, method);
     }
 
     public URLConnection getConnection()
@@ -47,13 +46,12 @@ public class CloseableUrlConnection implements Closeable
      * method is used to create the connection field.
      * 
      * @param url TODO
-     * @param urlInfo
      * @param method
      * 
      * @return
      * @throws IOException
      */
-    protected URLConnection open(URL url, UrlInfo urlInfo, HttpRequestMethod method) throws IOException
+    protected URLConnection open(URL url, HttpRequestMethod method) throws IOException
     {
         URL uncachedUrl;
         try
@@ -99,41 +97,39 @@ public class CloseableUrlConnection implements Closeable
 
     private static class MyConnection extends CloseableUrlConnection
     {
-        MyConnection(UrlInfo urlInfo, HttpRequestMethod method) throws IOException
+        MyConnection(URL url, HttpRequestMethod method) throws IOException
         {
-            super(urlInfo, method);
+            super(url, method);
         }
 
         @Override
-        protected URLConnection open(@SuppressWarnings("unused") URL url, @SuppressWarnings("unused") UrlInfo urlInfo, @SuppressWarnings("unused") HttpRequestMethod method) throws IOException
+        protected URLConnection open(@SuppressWarnings("unused") URL url, @SuppressWarnings("unused") HttpRequestMethod method) throws IOException
         {
-            System.err.println("bleh!");
-
             return null;
         }
 
     }
 
-    public static void main(String[] args)
-    {
-        try
-        {
-            UrlInfo urlInfo = UrlInfo.of(new URL("http://spud.com"));
-            try (CloseableUrlConnection connection = new MyConnection(urlInfo, HttpRequestMethod.HEAD))
-            {
-                System.err.println(connection);
-
-                System.err.println(new URL("http://MyCaseSensie/c:\\url\\foRMed\\file.txt").getPath());
-            }
-            catch (IOException e)
-            {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-        catch (MalformedURLException e)
-        {
-            e.printStackTrace();
-        }
-    }
+//    public static void main(String[] args)
+//    {
+//        try
+//        {
+//            UrlInfo urlInfo = UrlInfo.of(new URL("http://spud.com"));
+//            try (CloseableUrlConnection connection = new MyConnection(urlInfo.getState().getUrl(), HttpRequestMethod.HEAD))
+//            {
+//                System.err.println(connection);
+//
+//                System.err.println(new URL("http://MyCaseSensie/c:\\url\\foRMed\\file.txt").getPath());
+//            }
+//            catch (IOException e)
+//            {
+//                // TODO Auto-generated catch block
+//                e.printStackTrace();
+//            }
+//        }
+//        catch (MalformedURLException e)
+//        {
+//            e.printStackTrace();
+//        }
+//    }
 }

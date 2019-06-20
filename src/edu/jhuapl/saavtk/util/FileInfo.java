@@ -140,7 +140,22 @@ public class FileInfo
         }
     }
 
-    public void update(FileStatus status, long length, long lastModified)
+    public FileState update()
+    {
+        synchronized (this.state)
+        {
+            FileState state = this.state.get();
+            File file = state.getFile();
+
+            FileStatus status = file.exists() ? FileStatus.ACCESSIBLE : FileStatus.INACCESSIBLE;
+            long length = file.length();
+            long lastModified = file.lastModified();
+
+            return update(status, length, lastModified);
+        }
+    }
+
+    public FileState update(FileStatus status, long length, long lastModified)
     {
         Preconditions.checkNotNull(status);
 
@@ -164,22 +179,8 @@ public class FileInfo
                 pcs.firePropertyChange(STATE_PROPERTY, null, state);
             }
         }
-    }
 
-    public void update()
-    {
-        File file;
-        synchronized (this.state)
-        {
-            file = state.get().getFile();
-
-            FileStatus status = file.exists() ? FileStatus.ACCESSIBLE : FileStatus.INACCESSIBLE;
-            long length = file.length();
-            long lastModified = file.lastModified();
-
-            update(status, length, lastModified);
-        }
-
+        return state;
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener)

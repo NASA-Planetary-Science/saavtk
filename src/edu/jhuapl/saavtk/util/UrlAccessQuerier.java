@@ -1,6 +1,8 @@
 package edu.jhuapl.saavtk.util;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 
 import javax.swing.SwingWorker;
 
@@ -12,9 +14,11 @@ import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
 public class UrlAccessQuerier extends SwingWorker<Void, Void>
 {
-    public static final String PROGRESS_PROPERTY = "infoQueryProgress";
-    public static final String DONE_PROPERTY = "infoQueryDone";
-    public static final String CANCELED_PROPERTY = "infoQueryCanceled";
+    private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
+
+    public static final String QUERY_PROGRESS = "queryProgress";
+    public static final String QUERY_DONE = "queryDone";
+    public static final String QUERY_CANCELED = "queryCanceled";
 
     public static UrlAccessQuerier of(UrlInfo urlInfo, boolean forceUpdate, boolean serverAccessEnabled)
     {
@@ -44,24 +48,58 @@ public class UrlAccessQuerier extends SwingWorker<Void, Void>
         return forceUpdate;
     }
 
-    public void query() throws IOException, InterruptedException
+    public void query() throws IOException
     {
         UrlState urlState = urlInfo.getState();
 
         if (forceUpdate || urlState.getStatus() == UrlStatus.UNKNOWN)
         {
-            if (serverAccessEnabled)
+            if (SAFE_URL_PATHS.hasFileProtocol(urlState.getUrl().getPath()))
             {
-                try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.HEAD))
-                {
-                    urlInfo.update(closeableConnection.getConnection());
-                }
+                queryFileSystem();
             }
             else
             {
-                urlInfo.update(UrlState.of(urlState.getUrl()));
+                queryServer();
             }
         }
+    }
+
+    protected void queryServer() throws IOException
+    {
+        UrlState urlState = urlInfo.getState();
+
+        if (serverAccessEnabled)
+        {
+            try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlState.getUrl(), HttpRequestMethod.HEAD))
+            {
+                urlInfo.update(closeableConnection.getConnection());
+            }
+        }
+        else
+        {
+            urlInfo.update(UrlState.of(urlState.getUrl()));
+        }
+    }
+
+    protected void queryFileSystem() throws IOException
+    {
+        UrlState urlState = urlInfo.getState();
+
+        URL url = urlState.getUrl();
+
+        File file = new File(url.getPath());
+
+        if (file.exists())
+        {
+            urlState = UrlState.of(url, UrlStatus.ACCESSIBLE, file.length(), file.lastModified());
+        }
+        else
+        {
+            urlState = UrlState.of(url, UrlStatus.NOT_FOUND);
+        }
+
+        urlInfo.update(urlState);
     }
 
     @Override
@@ -75,7 +113,7 @@ public class UrlAccessQuerier extends SwingWorker<Void, Void>
     @Override
     public void done()
     {
-        firePropertyChange(isCancelled() ? CANCELED_PROPERTY : DONE_PROPERTY, null, urlInfo.getState());
+        firePropertyChange(isCancelled() ? QUERY_CANCELED : QUERY_DONE, null, urlInfo.getState());
     }
 
 }

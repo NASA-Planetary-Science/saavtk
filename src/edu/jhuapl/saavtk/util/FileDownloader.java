@@ -1,94 +1,80 @@
 package edu.jhuapl.saavtk.util;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.DecimalFormat;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.zip.GZIPInputStream;
-
-import javax.swing.SwingWorker;
 
 import com.google.common.base.Preconditions;
-import com.google.common.io.CountingInputStream;
 
 import edu.jhuapl.saavtk.util.CloseableUrlConnection.HttpRequestMethod;
+import edu.jhuapl.saavtk.util.DownloadableFileInfo.DownloadableFileState;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
+import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
+import edu.jhuapl.saavtk.util.file.StreamGunzipper;
+import edu.jhuapl.saavtk.util.file.StreamUnpacker;
+import edu.jhuapl.saavtk.util.file.StreamUnpacker.UnpackingStatus;
+import edu.jhuapl.saavtk.util.file.ZipFileUnzipper;
 
-public class FileDownloader extends SwingWorker<Void, Void>
+public abstract class FileDownloader implements Runnable
 {
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
-    protected static final DecimalFormat PF = new DecimalFormat("0%");
-    private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
 
-    public static final String PROGRESS_PROPERTY = "downloadProgress";
-    public static final String DONE_PROPERTY = "downloadDone";
-    public static final String CANCELED_PROPERTY = "downloadCanceled";
-
-    protected enum ByteScale
-    {
-        TBYTES("TB", 1.e12),
-        GBYTES("GB", 1.e9),
-        MBTYES("MB", 1.e6), //
-        KBYTES("kB", 1.e3), //
-        ;
-
-        protected static final DecimalFormat DF = new DecimalFormat("0.0");
-
-        public static String describe(double numberOfBytes)
-        {
-            for (ByteScale scale : values())
-            {
-                if (numberOfBytes > scale.multiplier)
-                {
-                    return DF.format(numberOfBytes / scale.multiplier) + " " + scale.description;
-                }
-            }
-
-            return numberOfBytes + " Bytes";
-        }
-
-        private final String description;
-        private final double multiplier;
-
-        private ByteScale(String name, double scale)
-        {
-            this.description = name;
-            this.multiplier = scale;
-        }
-
-    }
+    public static final String DOWNLOAD_PROGRESS = "downloadProgress";
+    public static final String DOWNLOAD_DONE = "downloadDone";
+    public static final String DOWNLOAD_CANCELED = "downloadCanceled";
 
     public static FileDownloader of(UrlInfo urlInfo, FileInfo fileInfo, boolean forceDownload)
     {
         Preconditions.checkNotNull(urlInfo);
         Preconditions.checkNotNull(fileInfo);
 
-        return new FileDownloader(urlInfo, fileInfo, forceDownload);
+        return new FileDownloader(urlInfo, fileInfo, forceDownload) {
+
+            @Override
+            public void run()
+            {
+                try
+                {
+                    downloadAndUnzip();
+                    pcs.firePropertyChange(DOWNLOAD_DONE, null, DownloadableFileState.of(urlInfo.getState(), fileInfo.getState()));
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                    pcs.firePropertyChange(DOWNLOAD_CANCELED, null, DownloadableFileState.of(urlInfo.getState(), fileInfo.getState()));
+                }
+            }
+
+        };
     }
 
+    protected final PropertyChangeSupport pcs;
     private final UrlInfo urlInfo;
     private final File file;
     private final FileInfo fileInfo;
     private final boolean forceDownload;
-    private volatile Boolean unzipping;
+    private volatile String progressMessage;
+    private volatile double progress;
+    private volatile boolean canceled;
 
     protected FileDownloader(UrlInfo urlInfo, FileInfo fileInfo, boolean forceDownload)
     {
+        this.pcs = new PropertyChangeSupport(this);
         this.urlInfo = urlInfo;
         this.file = fileInfo.getState().getFile();
         this.fileInfo = fileInfo;
         this.forceDownload = forceDownload;
-        this.unzipping = Boolean.FALSE;
+        this.progress = 0.;
+        this.canceled = false;
+        this.progressMessage = "<html>Downloading file<br>0% completed</html>";
     }
 
     public UrlInfo getUrlInfo()
@@ -101,170 +87,59 @@ public class FileDownloader extends SwingWorker<Void, Void>
         return fileInfo;
     }
 
-    public String createProgressMessage()
+    public DownloadableFileState getState()
     {
-        if (unzipping)
-        {
-            return createProgressMessage("Unzipping " + file.getName(), FileUtil.getDecompressedSize());
-        }
-        else
-        {
-            return createProgressMessage("Downloading " + file.getName(), urlInfo.getState().getContentLength());
-        }
+        return DownloadableFileState.of(urlInfo.getState(), fileInfo.getState());
+    }
+
+    public String getProgressMessage()
+    {
+        return progressMessage;
+    }
+
+    protected void setProgressMessage(String progressMessage)
+    {
+        this.progressMessage = progressMessage;
+    }
+
+    public double getProgress()
+    {
+        return progress;
+    }
+
+    public void downloadAndUnzip() throws IOException, InterruptedException
+    {
+        download();
+        unzipIfNecessary();
     }
 
     public void download() throws IOException, InterruptedException
     {
         // Do nothing if the URL already points to the cached file.
-        UrlState state = urlInfo.getState();
-        String urlPath = state.getUrl().getPath();
+        UrlState urlState = urlInfo.getState();
+        URL url = urlState.getUrl();
+        String urlPath = url.getPath();
         if (SAFE_URL_PATHS.hasFileProtocol(urlPath) && urlPath.equals(fileInfo.getState().getFile().getAbsolutePath()))
         {
             return;
         }
 
-        Debug.out().println("Querying FS and server before maybe downloading " + state.getUrl());
+        Debug.out().println("Querying FS and server before maybe downloading " + urlState.getUrl());
 
         fileInfo.update();
 
-        try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlInfo, HttpRequestMethod.GET))
+        try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(url, HttpRequestMethod.GET))
         {
             urlInfo.update(closeableConnection.getConnection());
 
-            if (forceDownload || isFileOutOfDate())
+            if ((forceDownload || isDownloadNeeded()) && isDownloadable())
             {
                 download(closeableConnection);
             }
         }
     }
 
-    public void downloadInBackground()
-    {
-        THREAD_POOL.execute(this);
-    }
-
-    @Override
-    public void done()
-    {
-//        Debug.out().println("Querying FS following download of " + urlInfo.getState().getUrl());
-        fileInfo.update();
-
-        firePropertyChange(isCancelled() ? CANCELED_PROPERTY : DONE_PROPERTY, null, fileInfo);
-    }
-
-    @Override
-    protected Void doInBackground() throws Exception
-    {
-        download();
-        unzipIfNecessary();
-
-        return null;
-    }
-
-    protected void download(CloseableUrlConnection closeableConnection) throws IOException, InterruptedException
-    {
-        System.out.println("Downloading " + urlInfo.getState().getUrl());
-
-        URLConnection connection = closeableConnection.getConnection();
-
-        URL url = connection.getURL();
-        boolean gunzip = url.getPath().toLowerCase().endsWith(".gz");
-
-        long totalByteCount = connection.getContentLengthLong();
-        long lastModifiedTime = connection.getLastModified();
-
-        File parentFile = file.getParentFile();
-        Path tmpFilePath = SAFE_URL_PATHS.get(file.toPath() + "-" + UUID.randomUUID().toString());
-
-        // Don't use try with resources because there are two references to the same
-        // underlying stream.
-        CountingInputStream countingInputStream = null;
-        InputStream inputStream = null;
-
-        try
-        {
-            unzipping = Boolean.FALSE;
-            // Count characters that were read based on the connection's original stream,
-            // i.e.,
-            // before any unzipping is performed.
-            countingInputStream = new CountingInputStream(connection.getInputStream());
-
-            inputStream = gunzip ? new GZIPInputStream(countingInputStream) : countingInputStream;
-
-            if (!isCancelled())
-            {
-                parentFile.mkdirs();
-
-                File tmpFile = tmpFilePath.toFile();
-
-                try (FileOutputStream os = new FileOutputStream(tmpFile))
-                {
-                    final int bufferSize = 8192;
-                    byte[] buff = new byte[bufferSize];
-                    int len;
-                    double progress = 0;
-                    while ((len = inputStream.read(buff)) > 0 && !isCancelled())
-                    {
-                        os.write(buff, 0, len);
-                        double oldProgress = progress;
-                        progress = Math.min(100. * countingInputStream.getCount() / totalByteCount, 99.);
-                        setProgress((int) progress);
-                        firePropertyChange(PROGRESS_PROPERTY, (int) oldProgress, (int) progress);
-                    }
-
-                    if (isCancelled())
-                    {
-                        throw new InterruptedException();
-                    }
-
-                    setProgress(99);
-                    firePropertyChange(PROGRESS_PROPERTY, progress, 99);
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            if (!Debug.isEnabled())
-            {
-                Files.deleteIfExists(tmpFilePath);
-            }
-            throw e;
-        }
-        finally
-        {
-            if (inputStream != null)
-            {
-                inputStream.close();
-            }
-            else if (countingInputStream != null)
-            {
-                countingInputStream.close();
-            }
-        }
-
-        // Rename the temporary file to the real name.
-        File tmpFile = tmpFilePath.toFile();
-        if (tmpFile.exists())
-        {
-            file.delete();
-
-            if (!tmpFile.renameTo(file))
-            {
-                throw new IOException("Failed to rename temporary file " + tmpFile);
-            }
-
-            // Change the modified time of the final real file.
-            if (lastModifiedTime > 0)
-                file.setLastModified(lastModifiedTime);
-        }
-    }
-
-    protected boolean isFileOutOfDate()
-    {
-        return !file.exists() || urlInfo.getState().getLastModified() > file.lastModified();
-    }
-
-    protected void unzipIfNecessary() throws IOException, InterruptedException
+    public void unzipIfNecessary() throws IOException, InterruptedException
     {
         String filePath = file.getAbsolutePath();
         if (filePath.matches("^.*\\.[Zz][Ii][Pp]$"))
@@ -281,57 +156,174 @@ public class FileDownloader extends SwingWorker<Void, Void>
         }
     }
 
-    protected void unzip() throws InterruptedException
+    public void unzip() throws IOException, InterruptedException
     {
-        AtomicBoolean done = new AtomicBoolean(false);
-        Runnable runnable = () -> {
-            try
-            {
-                FileUtil.unzipFile(file);
-            }
-            finally
-            {
-                done.set(true);
-            }
-        };
+        ZipFileUnzipper unzipper = ZipFileUnzipper.of(file);
 
-        int oldProgress = getProgress();
+        long totalDecompressedSize = unzipper.getTotalCompressedSize();
+        setProgress(0, totalDecompressedSize);
 
-        try
+        unzipper.addPropertyChangeListener(e -> {
+            if (ZipFileUnzipper.UNZIPPING_PROGRESS.equals(e.getPropertyName()))
+            {
+                UnpackingStatus unpackingStatus = (UnpackingStatus) e.getNewValue();
+                long unpackedByteCount = unpackingStatus.getUnpackedByteCount();
+                long elapsedTime = unpackingStatus.getElapsedTime();
+
+                setProgress(unpackedByteCount, totalDecompressedSize);
+
+                String progressMessage = unpackingStatus.createProgressMessage("Unzipping", totalDecompressedSize);
+
+                setProgressMessage(progressMessage);
+                unpackingStatus = UnpackingStatus.of(progressMessage, unpackedByteCount, elapsedTime);
+                pcs.firePropertyChange(DOWNLOAD_PROGRESS, null, unpackingStatus);
+            }
+
+            if (isCanceled())
+                unzipper.cancel();
+        });
+
+        unzipper.unzip();
+    }
+
+    public boolean isCanceled()
+    {
+        return canceled;
+    }
+
+    public void cancel()
+    {
+        canceled = true;
+    }
+
+    public void addPropertyChangeListener(PropertyChangeListener listener)
+    {
+        Preconditions.checkNotNull(listener);
+
+        pcs.addPropertyChangeListener(listener);
+    }
+
+    public void removePropertyChangeListener(PropertyChangeListener listener)
+    {
+        Preconditions.checkNotNull(listener);
+
+        pcs.removePropertyChangeListener(listener);
+    }
+
+    protected void download(CloseableUrlConnection closeableConnection) throws IOException, InterruptedException
+    {
+        System.out.println("Downloading " + urlInfo.getState().getUrl());
+
+        URLConnection connection = closeableConnection.getConnection();
+
+        long contentLength = connection.getContentLengthLong();
+        long lastModifiedTime = connection.getLastModified();
+
+        setProgress(0, contentLength);
+
+        Path tmpFilePath = SAFE_URL_PATHS.get(file.toPath() + "-" + UUID.randomUUID().toString());
+
+        Files.deleteIfExists(tmpFilePath);
+
+        File tmpFile = tmpFilePath.toFile();
+        File parent = tmpFile.getParentFile();
+
+        if (parent.exists() && !parent.isDirectory())
         {
-            unzipping = Boolean.TRUE;
+            throw new IOException(parent + " exists but is not a directory.");
+        }
 
-            THREAD_POOL.execute(runnable);
+        parent.mkdirs();
 
-            while (!done.get())
+        try (StreamGunzipper gunzipper = StreamGunzipper.of(connection.getInputStream()))
+        {
+            try (FileOutputStream outputStream = new FileOutputStream(tmpFile))
             {
-                int progress = Math.min((int) FileUtil.getUnzipProgress(), 99);
-                setProgress(progress);
-                firePropertyChange(PROGRESS_PROPERTY, oldProgress, progress);
-                oldProgress = progress;
+                gunzipper.addPropertyChangeListener(e -> {
+                    if (StreamUnpacker.UNPACKING_STATUS.equals(e.getPropertyName()))
+                    {
+                        UnpackingStatus unpackingStatus = (UnpackingStatus) e.getNewValue();
+                        long unpackedByteCount = unpackingStatus.getUnpackedByteCount();
+                        long elapsedTime = unpackingStatus.getElapsedTime();
 
-                if (isCancelled())
+                        setProgress(unpackedByteCount, contentLength);
+
+                        String progressMessage = unpackingStatus.createProgressMessage("Downloading", contentLength);
+
+                        setProgressMessage(progressMessage);
+                        unpackingStatus = UnpackingStatus.of(progressMessage, unpackedByteCount, elapsedTime);
+                        pcs.firePropertyChange(DOWNLOAD_PROGRESS, null, unpackingStatus);
+                    }
+
+                    if (isCanceled())
+                        gunzipper.cancel();
+                });
+
+                gunzipper.unpack(outputStream);
+            }
+
+            // Rename the temporary file to the real name.
+            if (tmpFile.exists())
+            {
+                file.delete();
+
+                if (!tmpFile.renameTo(file))
                 {
-                    throw new InterruptedException();
+                    throw new IOException("Failed to rename temporary file " + tmpFile);
                 }
 
-                Thread.sleep(333);
+                // Change the modified time of the final real file.
+                if (lastModifiedTime > 0)
+                    file.setLastModified(lastModifiedTime);
             }
         }
-        finally
+        catch (Exception e)
         {
-            setProgress(99);
-            firePropertyChange(PROGRESS_PROPERTY, oldProgress, 99);
+            if (!Debug.isEnabled())
+            {
+                Files.deleteIfExists(tmpFilePath);
+            }
+            throw e;
+        }
+
+        fileInfo.update();
+    }
+
+    protected boolean isDownloadNeeded()
+    {
+        return !file.exists() || urlInfo.getState().getLastModified() > fileInfo.getState().getLastModified();
+    }
+
+    protected boolean isDownloadable()
+    {
+        return urlInfo.getState().getStatus() == UrlStatus.ACCESSIBLE;
+    }
+
+    protected void setProgress(long unpackedByteCount, long totalUnpackedByteCount)
+    {
+        if (totalUnpackedByteCount <= 0)
+        {
+            progress = 0.;
+        }
+        else
+        {
+            progress = Math.min(Math.max(100. * unpackedByteCount / totalUnpackedByteCount, 0.), 100.);
         }
     }
 
-    protected String createProgressMessage(String prefix, long contentLength)
-    {
-        double percentDownloaded = getProgress() / 100.;
-        long progressInBytes = (long) (percentDownloaded * contentLength);
-
-        return "<html>" + prefix + "<br>" + PF.format(percentDownloaded) + " complete (" + //
-                ByteScale.describe(progressInBytes) + " of " + ByteScale.describe(contentLength) + ")</html>";
-    }
-
+//    public static void main(String[] args) throws MalformedURLException
+//    {
+//        File file = SafeURLPaths.instance().get(System.getProperty("user.home"), "Downloads", "spud").toFile();
+//
+//        FileDownloader downloader = FileDownloader.of(UrlInfo.of(new URL("http://sbmt.jhuapl.edu")), FileInfo.of(file), true);
+//        try
+//        {
+//            downloader.download();
+//            System.out.println("Done");
+//        }
+//        catch (Exception e)
+//        {
+//            e.printStackTrace();
+//        }
+//    }
 }

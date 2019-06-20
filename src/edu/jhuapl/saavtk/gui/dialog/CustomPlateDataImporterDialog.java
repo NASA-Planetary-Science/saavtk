@@ -301,7 +301,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
         String fileName = null;
         if (urlString != null)
         {
-            fileName = FileCache.getDownloadFile(urlString).toString();
+            fileName = FileCache.instance().getFile(urlString).toString();
         }
 
         return fileName;

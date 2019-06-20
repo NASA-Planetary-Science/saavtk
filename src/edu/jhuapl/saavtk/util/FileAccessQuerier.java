@@ -32,7 +32,7 @@ public class FileAccessQuerier extends UrlAccessQuerier
     }
 
     @Override
-    public void query() throws IOException, InterruptedException
+    public void query() throws IOException
     {
         super.query();
 
@@ -55,7 +55,7 @@ public class FileAccessQuerier extends UrlAccessQuerier
     @Override
     public void done()
     {
-        firePropertyChange(isCancelled() ? CANCELED_PROPERTY : DONE_PROPERTY, null, fileInfo);
+        firePropertyChange(isCancelled() ? QUERY_CANCELED : QUERY_DONE, null, fileInfo);
     }
 
 }
