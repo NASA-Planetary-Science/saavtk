@@ -213,12 +213,13 @@ public class UrlAccessManager
             // Deal with the colon in Windows paths.
             pathString = pathString.replaceFirst("^(\\w):[/\\\\]*", "\1/");
 
-            // This is not ideal. UrlDownloader automatically
-            // gunzips files if they end with .gz, but it would be better not to couple
-            // this code to that (current) implementation detail. Zip files are unzipped
-            // after download, so don't strip the .zip suffix here.
-            pathString = pathString.replaceFirst("\\.[gG][zZ]$", "");
         }
+
+        // This is not ideal. UrlDownloader automatically
+        // gunzips files if they end with .gz, but it would be better not to couple
+        // this code to that (current) implementation detail. Zip files are unzipped
+        // after download, so don't strip the .zip suffix here.
+        pathString = pathString.replaceFirst("\\.[gG][zZ]$", "");
 
         return SAFE_URL_PATHS.get(pathString);
     }
