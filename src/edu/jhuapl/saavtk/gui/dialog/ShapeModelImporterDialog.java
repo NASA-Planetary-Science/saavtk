@@ -449,7 +449,7 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
         }
         else
         {
-            String format = (String) shapeModelFormatComboBox.getSelectedItem();
+//            String format = (String) shapeModelFormatComboBox.getSelectedItem();
             String modelPath = shapeModelPathTextField.getText();
             importer.setFormat((FormatType)(shapeModelFormatComboBox.getSelectedItem()));
             importer.setModelPath(modelPath);
