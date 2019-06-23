@@ -54,7 +54,7 @@ public class UrlAccessQuerier extends SwingWorker<Void, Void>
 
         if (forceUpdate || urlState.getStatus() == UrlStatus.UNKNOWN)
         {
-            if (SAFE_URL_PATHS.hasFileProtocol(urlState.getUrl().getPath()))
+            if (SAFE_URL_PATHS.hasFileProtocol(urlState.getUrl().toString()))
             {
                 queryFileSystem();
             }
