@@ -59,11 +59,13 @@ public abstract class StreamUnpacker
         long totalUnpackedByteCount = 0;
         long unpackedByteCount = 0;
         long startTime = System.currentTimeMillis();
+        boolean firstBuffer = true;
         do
         {
             checkNotCanceled("Unpacking canceled");
 
-            unpackedByteCount = unpackOneBuffer(outputStream);
+            unpackedByteCount = unpackOneBuffer(outputStream, firstBuffer);
+            firstBuffer = false;
             if (unpackedByteCount > 0)
             {
                 totalUnpackedByteCount = updateTotalUnpackedByteCount(totalUnpackedByteCount, unpackedByteCount);
@@ -75,17 +77,40 @@ public abstract class StreamUnpacker
         while (unpackedByteCount > 0);
     }
 
-    public long unpackOneBuffer(OutputStream outputStream) throws IOException
+    protected long unpackOneBuffer(OutputStream outputStream, boolean firstBuffer) throws IOException
     {
         synchronized (this.buffer)
         {
             int numberBytesRead = getInputStream().read(buffer);
             if (numberBytesRead > 0)
             {
+                if (firstBuffer)
+                {
+                    checkForRejectedRequest(numberBytesRead);
+                }
                 outputStream.write(buffer, 0, numberBytesRead);
             }
 
             return numberBytesRead;
+        }
+    }
+
+    protected void checkForRejectedRequest(int numberBytesRead) throws IOException
+    {
+        synchronized (this.buffer)
+        {
+            final int numberBytesToCheck = Math.min(numberBytesRead, 64);
+            char[] firstCharacters = new char[numberBytesToCheck];
+            for (int index = 0; index < numberBytesToCheck; ++index)
+            {
+                firstCharacters[index] = (char) buffer[index];
+            }
+
+            String firstCharacterString = new String(firstCharacters);
+            if (firstCharacterString.matches(("^<html>.*Request Rejected.*")))
+            {
+                throw new IOException("Request for file was rejected by the server.");
+            }
         }
     }
 
