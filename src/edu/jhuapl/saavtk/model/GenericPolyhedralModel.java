@@ -622,7 +622,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
             convertOldConfigFormatToNewVersion(configMap);
 
-            if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_UNITS) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_HAS_NULLS))
+            if (configMap.containsKey(GenericPolyhedralModel.CELL_DATA_FILENAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_NAMES) && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_UNITS)
+                    && configMap.containsKey(GenericPolyhedralModel.CELL_DATA_HAS_NULLS))
             {
                 String[] cellDataFilenames = configMap.get(GenericPolyhedralModel.CELL_DATA_FILENAMES).split(",", -1);
                 String[] cellDataNames = configMap.get(GenericPolyhedralModel.CELL_DATA_NAMES).split(",", -1);
@@ -1590,7 +1591,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         }
         else
         {
-            fileName = FileCache.isFileGettable(baseFileName) ? baseFileName : null;
+            fileName = baseFileName;
         }
 
         return fileName;
@@ -1603,25 +1604,15 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         {
         case TXT:
             fileName = baseFileName + ".txt.gz";
-            if (FileCache.isFileGettable(fileName))
-            {
-                return fileName;
-            }
-            fileName = baseFileName + ".fits.gz";
             break;
         case FIT:
-        case UNKNOWN:
             fileName = baseFileName + ".fits.gz";
-            if (FileCache.isFileGettable(fileName))
-            {
-                return fileName;
-            }
-            fileName = baseFileName + ".txt.gz";
             break;
         default:
             throw new AssertionError("Unhandled case " + format);
         }
-        return FileCache.isFileGettable(fileName) ? fileName : null;
+
+        return fileName;
     }
 
     /**

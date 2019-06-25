@@ -624,10 +624,9 @@ public final class FileCache
 
     /**
      * Determine if it appears that the provided data object identifier could be
-     * downloaded and/or accessed. (See getFileInfoFromServer method for more
-     * details). If the server is in use this will check whether the file exists on
-     * the server. Otherwise it checks whether the file already exists on disk. This
-     * will not actually open or download any files.
+     * downloaded and/or accessed. If the server is in use this will check whether
+     * the file exists on the server. Otherwise it checks whether the file already
+     * exists on disk. This will not actually open or download any files.
      * 
      * @param urlOrPathSegment the input URL string or path segment
      * @return true if it appears the file could be successfully downloaded/used
@@ -641,7 +640,7 @@ public final class FileCache
 
         boolean result = false;
 
-        DownloadableFileState state = getState(urlOrPathSegment);
+        DownloadableFileState state = downloadableManager.query(urlOrPathSegment, false);
 
         if (state.getFileState().getStatus() == FileStatus.ACCESSIBLE)
         {
