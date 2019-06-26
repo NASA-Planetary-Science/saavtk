@@ -16,45 +16,68 @@ import vtk.vtkQuadricClustering;
 
 public class EllipsePolygon extends StructureModel.Structure
 {
-	private String name = "default";
-	public final int id;
-	private String label = "";
-	private vtkCaptionActor2D caption;
+	// Constants
+	private static final DecimalFormat DF = new DecimalFormat("#.#####");
 
+	// Attributes
+	private final Mode mode;
+	private final int id;
+	private final String type;
+
+	// TODO: Both radius and numberOfSlides should be private
+	// State vars
+	private String name = "default";
+	private String label = "";
 	private double[] center;
 	public double radius; // or semimajor axis
-	public double flattening; // ratio of semiminor axis to semimajor axis
-	public double angle;
-	public boolean hidden = false;
-	public boolean labelHidden = false;
+	private double flattening; // ratio of semiminor axis to semimajor axis
+	private double angle;
+	private boolean hidden = false;
+	private boolean labelHidden = false;
+	public int numberOfSides;
+	private int[] color;
+	private int[] labelColor;
+	private int labelFontSize;
 
+	// VTK vars
 	public vtkPolyData boundaryPolyData;
 	public vtkPolyData decimatedBoundaryPolyData;
 	public vtkPolyData interiorPolyData;
 	public vtkPolyData decimatedInteriorPolyData;
-	public int numberOfSides;
-	public String type;
-	public int[] color;
-	private int[] labelColor;
-	private int labelFontSize;
-	private Mode mode;
+	private vtkCaptionActor2D caption;
 
-	private static final DecimalFormat DF = new DecimalFormat("#.#####");
-
-	public EllipsePolygon(int numberOfSides, String type, int[] color, Mode mode, int id, String label)
+	public EllipsePolygon(int numberOfSides, String aType, int[] color, Mode aMode, int aId, String label)
 	{
-		this.id = id;
+		mode = aMode;
+		id = aId;
+		type = aType;
+
+		this.numberOfSides = numberOfSides;
+		this.color = color.clone();
+		this.label = label != null ? label : "";
+		this.labelColor = BLACK_INT_ARRAY.clone();
+		this.labelFontSize = 16;
+
 		boundaryPolyData = new vtkPolyData();
 		decimatedBoundaryPolyData = new vtkPolyData();
 		interiorPolyData = new vtkPolyData();
 		decimatedInteriorPolyData = new vtkPolyData();
-		this.numberOfSides = numberOfSides;
-		this.type = type;
-		this.color = color.clone();
-		this.mode = mode;
-		this.label = label != null ? label : "";
-		this.labelColor = BLACK_INT_ARRAY.clone();
-		this.labelFontSize = 16;
+		caption = null;
+	}
+
+	public double getAngle()
+	{
+		return angle;
+	}
+
+	public double getFlattening()
+	{
+		return flattening;
+	}
+
+	public double getRadius()
+	{
+		return radius;
 	}
 
 	@Override
@@ -97,7 +120,7 @@ public class EllipsePolygon extends StructureModel.Structure
 	@Override
 	public int[] getColor()
 	{
-		return color;
+		return color.clone();
 	}
 
 	@Override
@@ -111,9 +134,24 @@ public class EllipsePolygon extends StructureModel.Structure
 		return center;
 	}
 
-	public void setCenter(double[] center)
+	public void setAngle(double aAngle)
 	{
-		this.center = center;
+		angle = aAngle;
+	}
+
+	public void setCenter(double[] aCenter)
+	{
+		center = aCenter;
+	}
+
+	public void setFlattening(double aFlattening)
+	{
+		flattening = aFlattening;
+	}
+
+	public void setRadius(double aRadius)
+	{
+		radius = aRadius;
 	}
 
 	public vtkPolyData getBoundaryPolyData()
@@ -126,49 +164,50 @@ public class EllipsePolygon extends StructureModel.Structure
 		return interiorPolyData;
 	}
 
-	public void updatePolygon(PolyhedralModel sbModel, double[] center, double radius, double flattening, double angle)
+	/**
+	 * Method that will update the internal VTK state of this EllipsePolygon.
+	 * 
+	 * @param aPolyhedralModel
+	 */
+	public void updateVtkState(PolyhedralModel aPolyhedralModel)
 	{
-		this.setCenter(center);
-		this.radius = radius;
-		this.flattening = flattening;
-		this.angle = angle;
-
-		if (!hidden)
-		{
-			sbModel.drawEllipticalPolygon(center, radius, flattening, angle, numberOfSides, interiorPolyData, boundaryPolyData);
-
-			// LatLon ll=MathUtil.reclat(center);
-			// System.out.println(Math.toDegrees(ll.lat)+" "+Math.toDegrees(ll.lon));
-
-			// Setup decimator
-			vtkQuadricClustering decimator = new vtkQuadricClustering();
-
-			// Decimate interior
-			decimator.SetInputData(interiorPolyData);
-			decimator.AutoAdjustNumberOfDivisionsOn();
-			decimator.CopyCellDataOn();
-			decimator.Update();
-			decimatedInteriorPolyData.DeepCopy(decimator.GetOutput());
-
-			// Decimate boundary
-			decimator.SetInputData(boundaryPolyData);
-			decimator.SetNumberOfXDivisions(2);
-			decimator.SetNumberOfYDivisions(2);
-			decimator.SetNumberOfZDivisions(2);
-			decimator.CopyCellDataOn();
-			decimator.Update();
-			decimatedBoundaryPolyData.DeepCopy(decimator.GetOutput());
-
-			// Destroy decimator
-			decimator.Delete();
-		}
-		else
+		// Clear VTK state if hidden and bail
+		if (hidden == true)
 		{
 			PolyDataUtil.clearPolyData(interiorPolyData);
 			PolyDataUtil.clearPolyData(decimatedInteriorPolyData);
 			PolyDataUtil.clearPolyData(boundaryPolyData);
 			PolyDataUtil.clearPolyData(decimatedBoundaryPolyData);
+			return;
 		}
+
+		aPolyhedralModel.drawEllipticalPolygon(center, radius, flattening, angle, numberOfSides, interiorPolyData,
+				boundaryPolyData);
+
+		// LatLon ll=MathUtil.reclat(center);
+		// System.out.println(Math.toDegrees(ll.lat)+" "+Math.toDegrees(ll.lon));
+
+		// Setup decimator
+		vtkQuadricClustering decimator = new vtkQuadricClustering();
+
+		// Decimate interior
+		decimator.SetInputData(interiorPolyData);
+		decimator.AutoAdjustNumberOfDivisionsOn();
+		decimator.CopyCellDataOn();
+		decimator.Update();
+		decimatedInteriorPolyData.DeepCopy(decimator.GetOutput());
+
+		// Decimate boundary
+		decimator.SetInputData(boundaryPolyData);
+		decimator.SetNumberOfXDivisions(2);
+		decimator.SetNumberOfYDivisions(2);
+		decimator.SetNumberOfZDivisions(2);
+		decimator.CopyCellDataOn();
+		decimator.Update();
+		decimatedBoundaryPolyData.DeepCopy(decimator.GetOutput());
+
+		// Destroy decimator
+		decimator.Delete();
 	}
 
 	@Override
