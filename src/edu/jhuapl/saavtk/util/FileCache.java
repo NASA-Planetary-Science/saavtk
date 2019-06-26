@@ -852,10 +852,10 @@ public final class FileCache
      * 
      * @param enable if true, dots will be shown, if false, no dots will be shown.
      */
+    @Deprecated
     public static void showDotsForFiles(boolean enable)
     {
         showDotsForFiles = enable;
-        FileDownloader.setShowDotsForDownloadQueries(enable);
     }
 
     @Deprecated
