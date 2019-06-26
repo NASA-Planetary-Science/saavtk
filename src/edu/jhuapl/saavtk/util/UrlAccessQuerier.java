@@ -78,6 +78,7 @@ public class UrlAccessQuerier extends SwingWorker<Void, Void>
         }
         else
         {
+            // This resets the state to a new/unknown condition.
             urlInfo.update(UrlState.of(urlState.getUrl()));
         }
     }
