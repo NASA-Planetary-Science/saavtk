@@ -17,6 +17,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.nio.file.Path;
+import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Objects;
 
@@ -59,6 +60,7 @@ import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.gui.ColorCellRenderer;
 import edu.jhuapl.saavtk.gui.GNumberFieldSlider;
+import edu.jhuapl.saavtk.gui.IconUtil;
 import edu.jhuapl.saavtk.gui.ProfilePlot;
 import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.dialog.ColorChooser;
@@ -87,11 +89,11 @@ import edu.jhuapl.saavtk.pick.PickManager.PickMode;
 import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.popup.StructuresPopupMenu;
 import edu.jhuapl.saavtk.util.ColorIcon;
-import edu.jhuapl.saavtk.util.FileUtil;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.ProgressListener;
 import edu.jhuapl.saavtk.util.Properties;
+import glum.gui.TableUtil;
 import net.miginfocom.swing.MigLayout;
 
 public class AbstractStructureMappingControlPanel extends JPanel implements ActionListener, PropertyChangeListener, TableModelListener, ListSelectionListener
@@ -114,10 +116,11 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 
 	// GUI vars
 	private NormalOffsetChangerDialog changeOffsetDialog;
+	private JLabel tableHeadL;
+	private JButton selectAllB, selectInvertB, selectNoneB;
 	private JButton createB, deleteB;
 	private JToggleButton editB;
 	private JLabel labelTitleL, structTitleL;
-	private JButton selectAllB, selectNoneB;
 	private JButton structColorB, structHideB, structShowB;
 	private JButton labelColorB, labelHideB, labelShowB;
 	private JButton changeOffsetB;
@@ -170,37 +173,37 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-
 			File file = CustomFileChooser.showOpenDialog(AbstractStructureMappingControlPanel.this, "Select File");
+			if (file == null)
+				return;
 
-			if (file != null)
+			try
 			{
-				try
+				// If there are already structures, ask user if they want to
+				// append or overwrite them
+				boolean append = false;
+				if (structureModel.getNumberOfStructures() > 0)
 				{
-					// If there are already structures, ask user if they want to
-					// append or overwrite them
-					boolean append = false;
-					if (structureModel.getNumberOfStructures() > 0)
-					{
-						Object[] options = { "Append", "Replace" };
-						int n = JOptionPane.showOptionDialog(AbstractStructureMappingControlPanel.this, "Would you like to append to or replace the existing structures?", "Append or Replace?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-						append = (n == 0 ? true : false);
-					}
-					List<String> lines = FileUtil.getFileLinesAsStringList(file.getAbsolutePath());
-					structuresLoadingProgressMonitor = new ProgressMonitor(null, "Loading Structures...", "", 0, 100);
-					structuresLoadingProgressMonitor.setProgress(0);
-
-					task = new StructuresLoadingTask(file, append);
-					task.addPropertyChangeListener(AbstractStructureMappingControlPanel.this);
-					task.execute();
-
+					Object[] options = { "Append", "Replace" };
+					int n = JOptionPane.showOptionDialog(AbstractStructureMappingControlPanel.this,
+							"Would you like to append to or replace the existing structures?", "Append or Replace?",
+							JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+					append = (n == 0 ? true : false);
 				}
-				catch (Exception ex)
-				{
-					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(AbstractStructureMappingControlPanel.this), "There was an error reading the file.", "Error", JOptionPane.ERROR_MESSAGE);
+				structuresLoadingProgressMonitor = new ProgressMonitor(null, "Loading Structures...", "", 0, 100);
+				structuresLoadingProgressMonitor.setProgress(0);
 
-					ex.printStackTrace();
-				}
+				task = new StructuresLoadingTask(file, append);
+				task.addPropertyChangeListener(AbstractStructureMappingControlPanel.this);
+				task.execute();
+
+			}
+			catch (Exception aExp)
+			{
+				JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(AbstractStructureMappingControlPanel.this),
+						"There was an error reading the file.", "Error", JOptionPane.ERROR_MESSAGE);
+
+				aExp.printStackTrace();
 			}
 		}
 	}
@@ -232,7 +235,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 				try
 				{
 					structureModel.saveModel(file);
-					structuresFileL.setText(file.getAbsolutePath());
+					structuresFileL.setText(file.getName());
+					structuresFileL.setToolTipText(file.getAbsolutePath());
 					structuresFile = file;
 				}
 				catch (Exception ex)
@@ -645,13 +649,30 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		JLabel fileNameL = new JLabel("File: ");
 		structuresFileL = new JLabel("<no file loaded>");
 		add(fileNameL, "span,split");
-		add(structuresFileL, "growx,pushx,w 100:100:,wrap");
-
-		JLabel tableHeadL = new JLabel(" Structures");
-		add(tableHeadL, "span,split,growx,pushx");
+		add(structuresFileL, "growx,pushx,w 100:100:");
 		add(loadB, "sg g0");
 		add(saveB, "sg g0,wrap");
 
+		// Table header
+		selectInvertB = new JButton(IconUtil.loadIcon("resources/icons/itemSelectInvert.png"));
+		selectInvertB.addActionListener(this);
+		selectInvertB.setToolTipText("Invert Selection");
+
+		selectNoneB = new JButton(IconUtil.loadIcon("resources/icons/itemSelectNone.png"));
+		selectNoneB.addActionListener(this);
+		selectNoneB.setToolTipText("Clear Selection");
+
+		selectAllB = new JButton(IconUtil.loadIcon("resources/icons/itemSelectAll.png"));
+		selectAllB.addActionListener(this);
+		selectAllB.setToolTipText("Select All");
+		
+		tableHeadL = new JLabel("Structures: 0");
+		add(tableHeadL, "growx,span,split");
+		add(selectInvertB, "w 24!,h 24!");
+		add(selectNoneB, "w 24!,h 24!");
+		add(selectAllB, "w 24!,h 24!,wrap 2");
+
+		// Table content
 		String[] columnNames = { "Id", "Type", "Name", "Details", "Color", "Label" };
 		// "Hide Label",
 		// "Hide Structure"
@@ -711,9 +732,9 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		labelShowB = new JButton("Show");
 		labelShowB.addActionListener(this);
 		add(labelTitleL, "span,split,sg g2");
-		add(labelHideB, "gapright 0,sg g3");
-		add(labelShowB, "gapleft 0,sg g3");
-		add(labelColorB, "gapy 0,sg g3,wrap");
+		add(labelHideB, "sg g3");
+		add(labelShowB, "sg g3");
+		add(labelColorB, "gapy 0,sgy g3,wrap");
 
 		structTitleL = new JLabel("Structs:", JLabel.RIGHT);
 		structColorB = new JButton("");
@@ -723,16 +744,9 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		structShowB = new JButton("Show");
 		structShowB.addActionListener(this);
 		add(structTitleL, "span,split,sg g2");
-		add(structHideB, "gapright 0,sg g3");
-		add(structShowB, "gapleft 0,sg g3");
-		add(structColorB, "gapy 0,sg g3,wrap 2");
-
-		selectAllB = new JButton("Select All");
-		selectAllB.addActionListener(this);
-		selectNoneB = new JButton("Select None");
-		selectNoneB.addActionListener(this);
-		add(selectAllB, "sg g4,span,split");
-		add(selectNoneB, "sg g4,wrap");
+		add(structHideB, "sg g3");
+		add(structShowB, "sg g3");
+		add(structColorB, "gapy 0,sgy g3,wrap");
 
 		changeOffsetB = new JButton("Change Normal Offset...");
 		changeOffsetB.addActionListener(this);
@@ -803,8 +817,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 
 	class StructuresLoadingTask extends SwingWorker<Void, Void>
 	{
-		File file;
-		boolean append;
+		private final File file;
+		private final boolean append;
 
 		public StructuresLoadingTask(File file, boolean append)
 		{
@@ -823,7 +837,8 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 				}
 
 			});
-			structuresFileL.setText(file.getAbsolutePath());
+			structuresFileL.setText(file.getName());
+			structuresFileL.setToolTipText(file.getAbsolutePath());
 			structuresFile = file;
 			return null;
 		}
@@ -882,6 +897,10 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		else if (source == selectNoneB)
 		{
 			structuresTable.clearSelection();
+		}
+		else if (source == selectInvertB)
+		{
+			TableUtil.invertSelection(structuresTable, this);
 		}
 		else if (source == deleteB)
 		{
@@ -970,7 +989,9 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		}
 
 		// Remove the structures
+		structuresTable.getSelectionModel().removeListSelectionListener(this);
 		structureModel.removeStructures(idxArr);
+		structuresTable.getSelectionModel().addListSelectionListener(this);
 
 		// Update internal state vars
 		pickManager.setPickMode(PickManager.PickMode.DEFAULT);
@@ -1010,13 +1031,12 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		// Retrieve the lineWidth
 		int lineWidth = (int) lineWidthNFS.getValue();
 
-		// TODO: Currently individual (sub)structures can not have different line widths
-		// from
-		// TODO: their parent (super) structure. In the future that may be a request
-		// Update the relevant structures
-		//		int[] idxArr = structuresTable.getSelectedRows();
-		//		for (int aIdx : idxArr)
-		//			structureModel.setLineWidth(aIdx, lineWidth);
+// TODO: Currently individual (sub)structures can not have different line widths from
+// TODO: their parent (super) structure. In the future that may be a request
+// Update the relevant structures
+//		int[] idxArr = structuresTable.getSelectedRows();
+//		for (int aIdx : idxArr)
+//			structureModel.setLineWidth(aIdx, lineWidth);
 		structureModel.setLineWidth(lineWidth);
 	}
 
@@ -1025,6 +1045,10 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	 */
 	private void updateColoredButtons()
 	{
+		// These values may need to be fiddled with if there are sizing issues
+		int iconW = (int) (structHideB.getWidth() * 0.80);
+		int iconH = (int) (structHideB.getHeight() * 0.50);
+
 		// Update the label / struct colors
 		Icon labelIcon = null;
 		Icon structIcon = null;
@@ -1033,10 +1057,6 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		boolean isEnabled = idxArr.length > 0;
 		if (isEnabled == true)
 		{
-			// These values may need to be fiddled with if there are sizing issues
-			int iconW = (int) (structColorB.getWidth() * 0.60);
-			int iconH = (int) (structColorB.getHeight() * 0.50);
-
 			// Determine label color attributes
 			boolean isMixed = false;
 			Color tmpColor = structureModel.getLabelColor(idxArr[0]);
@@ -1059,6 +1079,12 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 			else
 				structIcon = new ColorIcon(Color.LIGHT_GRAY, Color.GRAY, iconW, iconH);
 		}
+		else
+		{
+			Color tmpColor = new Color(0, 0, 0, 0);
+			labelIcon = new ColorIcon(tmpColor, tmpColor, iconW, iconH);
+			structIcon = labelIcon;
+		}
 
 		labelColorB.setIcon(labelIcon);
 		structColorB.setIcon(structIcon);
@@ -1069,44 +1095,55 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	 */
 	public void updateControlGui()
 	{
-		boolean isEnabled;
+		// Update various buttons
+		int cntFullItems = structureModel.getNumberOfStructures();
+		boolean isEnabled = cntFullItems > 0;
+		selectInvertB.setEnabled(isEnabled);
 
-		int[] idxArr = structureModel.getSelectedStructures();
-
-		isEnabled = idxArr.length < structuresTable.getRowCount();
-		selectAllB.setEnabled(isEnabled);
-
-		isEnabled = idxArr.length > 0;
+		int[] pickArr = structureModel.getSelectedStructures();
+		int cntPickItems = pickArr.length;
+		isEnabled = cntPickItems > 0;
 		selectNoneB.setEnabled(isEnabled);
 		labelColorB.setEnabled(isEnabled);
 		structColorB.setEnabled(isEnabled);
 
-		isEnabled = idxArr.length > 0 && editB.isSelected() == false;
+		isEnabled = cntFullItems > 0 && cntPickItems < cntFullItems;
+		selectAllB.setEnabled(isEnabled);
+
+		isEnabled = cntPickItems > 0 && editB.isSelected() == false;
 		deleteB.setEnabled(isEnabled);
 		labelTitleL.setEnabled(isEnabled);
 		labelHideB.setEnabled(isEnabled);
 		labelShowB.setEnabled(isEnabled);
-		//		labelColorB.setEnabled(isEnabled);
+//		labelColorB.setEnabled(isEnabled);
 		structTitleL.setEnabled(isEnabled);
 		structHideB.setEnabled(isEnabled);
 		structShowB.setEnabled(isEnabled);
-		//		structColorB.setEnabled(isEnabled);
+//		structColorB.setEnabled(isEnabled);
 		updateColoredButtons();
 
-		isEnabled = idxArr.length > 0;
+		isEnabled = cntPickItems > 0;
 		fontSizeNFS.setEnabled(isEnabled);
 
 		int fontSize = -1;
-		if (idxArr.length > 0)
-			fontSize = structureModel.getLabelFontSize(idxArr[0]);
+		if (cntPickItems > 0)
+			fontSize = structureModel.getLabelFontSize(pickArr[0]);
 		fontSizeNFS.setValue(fontSize);
 
 		double lineWidth = -1;
 		lineWidth = structureModel.getLineWidth();
-		// TODO: Enable if lineWidths are customizable on a per (sub)structure basis
-		//		if (idxArr.length > 0)
-		//			lineWidth = structureModel.getLineWidth();
+// TODO: Enable if lineWidths are customizable on a per (sub)structure basis
+//		if (idxArr.length > 0)
+//			lineWidth = structureModel.getLineWidth();
 		lineWidthNFS.setValue(lineWidth);
+
+		// Table title
+		DecimalFormat cntFormat = new DecimalFormat("#,###");
+		String infoStr = "Structures: " + cntFormat.format(cntFullItems);
+		if (cntPickItems > 0)
+			infoStr += "  (Selected: " + cntFormat.format(cntPickItems) + ")";
+
+		tableHeadL.setText(infoStr);
 	}
 
 	@Override
@@ -1308,16 +1345,13 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 	}
 
 	@Override
-	public void valueChanged(ListSelectionEvent e)
+	public void valueChanged(ListSelectionEvent aEvent)
 	{
-		if (e.getValueIsAdjusting() == false)
-		{
-			if (getSelectedRows().length == 0)
-				structuresTable.clearSelection();
-			int[] selectedRows = getSelectedRows();
-			structureModel.selectStructures(selectedRows);
-			updateControlGui();
-		}
+		if (getSelectedRows().length == 0)
+			structuresTable.clearSelection();
+		int[] selectedRows = getSelectedRows();
+		structureModel.selectStructures(selectedRows);
+		updateControlGui();
 	}
 
 	public void setEditingEnabled(boolean enable)
