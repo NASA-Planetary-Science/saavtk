@@ -32,12 +32,6 @@ public class DownloadableFileManager
     }
 
     private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
-    private static volatile boolean showDotsForFiles = false;
-
-    public static void setShowDotsForFiles(boolean showDotsForFiles)
-    {
-        DownloadableFileManager.showDotsForFiles = showDotsForFiles;
-    }
 
     public static DownloadableFileManager of(URL rootUrl, File cacheDir)
     {
@@ -269,11 +263,6 @@ public class DownloadableFileManager
     {
         Preconditions.checkNotNull(urlString);
 
-        if (!Debug.isEnabled() && showDotsForFiles)
-        {
-            System.out.print(".");
-        }
-
         URL url = urlManager.getUrl(urlString);
         UrlInfo urlInfo = urlManager.getInfo(urlString);
         Path downloadPath = urlManager.getDownloadPath(url);
@@ -286,11 +275,6 @@ public class DownloadableFileManager
     public DownloadableFileState getDownloadedFile(String urlString, boolean forceDownload) throws IOException, InterruptedException
     {
         Preconditions.checkNotNull(urlString);
-
-        if (!Debug.isEnabled() && showDotsForFiles)
-        {
-            System.out.print(".");
-        }
 
         DownloadableFileState fileState = getState(urlString);
 
@@ -308,11 +292,6 @@ public class DownloadableFileManager
     {
         Preconditions.checkNotNull(urlString);
         Preconditions.checkNotNull(whenFinished);
-
-        if (!Debug.isEnabled() && showDotsForFiles)
-        {
-            System.out.print(".");
-        }
 
         DownloadableFileState fileState = getState(urlString);
 

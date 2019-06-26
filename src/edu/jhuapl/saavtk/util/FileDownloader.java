@@ -31,6 +31,8 @@ public abstract class FileDownloader implements Runnable
     public static final String DOWNLOAD_DONE = "downloadDone";
     public static final String DOWNLOAD_CANCELED = "downloadCanceled";
 
+    private static volatile boolean showDotsForDownloadQueries;
+
     public static FileDownloader of(UrlInfo urlInfo, FileInfo fileInfo, boolean forceDownload)
     {
         Preconditions.checkNotNull(urlInfo);
@@ -54,6 +56,11 @@ public abstract class FileDownloader implements Runnable
             }
 
         };
+    }
+
+    static void setShowDotsForDownloadQueries(boolean showDotsForDownloadQueries)
+    {
+        FileDownloader.showDotsForDownloadQueries = showDotsForDownloadQueries;
     }
 
     protected final PropertyChangeSupport pcs;
@@ -125,6 +132,10 @@ public abstract class FileDownloader implements Runnable
         }
 
         Debug.out().println("Querying FS and server before maybe downloading " + urlState.getUrl());
+        if (!Debug.isEnabled() && showDotsForDownloadQueries)
+        {
+            System.out.println(".");
+        }
 
         fileInfo.update();
 
