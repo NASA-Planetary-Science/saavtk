@@ -119,7 +119,8 @@ public abstract class FileDownloader implements Runnable
         UrlState urlState = urlInfo.getState();
         URL url = urlState.getUrl();
         String urlPath = url.getPath();
-        if (SAFE_URL_PATHS.hasFileProtocol(urlPath) && urlPath.equals(fileInfo.getState().getFile().getAbsolutePath()))
+        File file = fileInfo.getState().getFile();
+        if (SAFE_URL_PATHS.hasFileProtocol(urlPath) && urlPath.equals(file.getAbsolutePath()))
         {
             return;
         }
@@ -134,12 +135,22 @@ public abstract class FileDownloader implements Runnable
 
             if (forceDownload || isDownloadNeeded())
             {
-                download(closeableConnection);
-                System.out.println("Downloaded file from " + url);
+                if (isDownloadable())
+                {
+                    download(closeableConnection);
+                    System.out.println("Downloaded file from " + url);
+                }
+                else
+                {
+                    Debug.out().println("Debug: unable to download " + file);
+                }
             }
             else
             {
-                System.out.println("Cached file up to date. Skipped download from " + url);
+                if (isDownloadable())
+                {
+                    System.out.println("File cache is up to date. Skipped download from " + url);
+                }
             }
         }
         catch (Exception e)
