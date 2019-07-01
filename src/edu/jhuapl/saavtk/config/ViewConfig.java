@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.model.ShapeModelBody;
 import edu.jhuapl.saavtk.model.ShapeModelType;
+import edu.jhuapl.saavtk.util.DownloadableFileManager;
 
 /**
  * A Config is a class for storing models should be instantiated together for a
@@ -118,6 +119,8 @@ public abstract class ViewConfig implements Cloneable
 		}
 	}
 
+    public abstract String[] getShapeModelFileNames();
+
 	public boolean isEnabled()
 	{
 		return enabled;
@@ -128,10 +131,10 @@ public abstract class ViewConfig implements Cloneable
 		this.enabled = enabled;
 	}
 
-	static private List<ViewConfig> builtInConfigs = new ArrayList<>();
+    private static List<ViewConfig> builtInConfigs = new ArrayList<>();
 	private static String firstTimeDefaultModel = null;
 
-	static public List<ViewConfig> getBuiltInConfigs()
+    public static List<ViewConfig> getBuiltInConfigs()
 	{
 		return builtInConfigs;
 	}
@@ -146,7 +149,7 @@ public abstract class ViewConfig implements Cloneable
 	 * @param author
 	 * @return
 	 */
-	static public ViewConfig getConfig(ShapeModelBody name, ShapeModelType author)
+    public static ViewConfig getConfig(ShapeModelBody name, ShapeModelType author)
 	{
 		return getConfig(name, author, null);
 	}
@@ -161,7 +164,7 @@ public abstract class ViewConfig implements Cloneable
 	 * @param version
 	 * @return
 	 */
-	static public ViewConfig getConfig(ShapeModelBody name, ShapeModelType author, String version)
+    public static ViewConfig getConfig(ShapeModelBody name, ShapeModelType author, String version)
 	{
 		for (ViewConfig config : getBuiltInConfigs())
 		{

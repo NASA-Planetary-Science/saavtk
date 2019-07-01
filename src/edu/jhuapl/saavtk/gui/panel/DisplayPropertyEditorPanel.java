@@ -14,8 +14,8 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import net.miginfocom.swing.MigLayout;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import net.miginfocom.swing.MigLayout;
 
 /**
  * Swing panel for editing a vtkProperty

@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -8,11 +9,12 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.BorderFactory;
-import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -27,6 +29,7 @@ import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.popup.PopupMenu;
+import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.Preferences;
 
 /**
@@ -37,354 +40,356 @@ import edu.jhuapl.saavtk.util.Preferences;
  */
 public abstract class View extends JPanel
 {
-	private static final long serialVersionUID = 1L;
-	private JSplitPane splitPane;
-	protected Renderer renderer;
-	private JTabbedPane controlPanel;
-	private ModelManager modelManager;
-	private PickManager pickManager;
-	private PopupManager popupManager;
-	private WindowManager infoPanelManager;
-	private WindowManager spectrumPanelManager;
-	private StatusBar statusBar;
-	private boolean initialized = false;
-	private ViewConfig config;
-	static private boolean initializedPanelSizing = false;
+    private static final long serialVersionUID = 1L;
+    private JSplitPane splitPane;
+    protected Renderer renderer;
+    private JTabbedPane controlPanel;
+    private ModelManager modelManager;
+    private PickManager pickManager;
+    private PopupManager popupManager;
+    private WindowManager infoPanelManager;
+    private WindowManager spectrumPanelManager;
+    private StatusBar statusBar;
+    private final AtomicBoolean initialized = new AtomicBoolean(false);
+    private ViewConfig config;
 
-	// accessor methods
+    // accessor methods
 
-	public JTabbedPane getControlPanel()
-	{
-		return controlPanel;
-	}
+    public JTabbedPane getControlPanel()
+    {
+        return controlPanel;
+    }
 
-	public void setControlPanel(JTabbedPane controlPanel)
-	{
-		this.controlPanel = controlPanel;
-	}
+    public void setControlPanel(JTabbedPane controlPanel)
+    {
+        this.controlPanel = controlPanel;
+    }
 
-	public PopupManager getPopupManager()
-	{
-		return popupManager;
-	}
+    public PopupManager getPopupManager()
+    {
+        return popupManager;
+    }
 
-	public void setPopupManager(PopupManager popupManager)
-	{
-		this.popupManager = popupManager;
-	}
+    public void setPopupManager(PopupManager popupManager)
+    {
+        this.popupManager = popupManager;
+    }
 
-	public WindowManager getInfoPanelManager()
-	{
-		return infoPanelManager;
-	}
+    public WindowManager getInfoPanelManager()
+    {
+        return infoPanelManager;
+    }
 
-	public void setInfoPanelManager(WindowManager infoPanelManager)
-	{
-		this.infoPanelManager = infoPanelManager;
-	}
+    public void setInfoPanelManager(WindowManager infoPanelManager)
+    {
+        this.infoPanelManager = infoPanelManager;
+    }
 
-	public WindowManager getSpectrumPanelManager()
-	{
-		return spectrumPanelManager;
-	}
+    public WindowManager getSpectrumPanelManager()
+    {
+        return spectrumPanelManager;
+    }
 
-	public void setSpectrumPanelManager(WindowManager spectrumPanelManager)
-	{
-		this.spectrumPanelManager = spectrumPanelManager;
-	}
+    public void setSpectrumPanelManager(WindowManager spectrumPanelManager)
+    {
+        this.spectrumPanelManager = spectrumPanelManager;
+    }
 
-	public StatusBar getStatusBar()
-	{
-		return statusBar;
-	}
+    public StatusBar getStatusBar()
+    {
+        return statusBar;
+    }
 
-	public void setStatusBar(StatusBar statusBar)
-	{
-		this.statusBar = statusBar;
-	}
+    public void setStatusBar(StatusBar statusBar)
+    {
+        this.statusBar = statusBar;
+    }
 
-	public void setRenderer(Renderer renderer)
-	{
-		this.renderer = renderer;
-	}
+    public void setRenderer(Renderer renderer)
+    {
+        this.renderer = renderer;
+    }
 
-	public void setModelManager(ModelManager modelManager)
-	{
-		this.modelManager = modelManager;
-	}
+    public void setModelManager(ModelManager modelManager)
+    {
+        this.modelManager = modelManager;
+    }
 
-	public void setPickManager(PickManager pickManager)
-	{
-		this.pickManager = pickManager;
-	}
+    public void setPickManager(PickManager pickManager)
+    {
+        this.pickManager = pickManager;
+    }
 
-	/**
-	 * By default a view should be created empty. Only when the user requests to
-	 * show a particular View, should the View's contents be created in order to
-	 * reduce memory and startup time. Therefore, this function should be called
-	 * prior to first time the View is shown in order to cause it
-	 */
-	public View(StatusBar statusBar, ViewConfig config)
-	{
-		super(new BorderLayout());
-		this.statusBar = statusBar;
-		this.config = config;
-	}
+    /**
+     * By default a view should be created empty. Only when the user requests to
+     * show a particular View, should the View's contents be created in order to
+     * reduce memory and startup time. Therefore, this function should be called
+     * prior to first time the View is shown in order to cause it
+     */
+    public View(StatusBar statusBar, ViewConfig config)
+    {
+        super(new BorderLayout());
+        this.statusBar = statusBar;
+        this.config = config;
+    }
 
-	protected void addTab(String name, JComponent component)
-	{
-		controlPanel.addTab(name, component);
-	}
+    protected void addTab(String name, Component component)
+    {
+        controlPanel.addTab(name, component);
+    }
 
-	protected abstract void setupTabs();
+    protected abstract void setupTabs();
 
-	public void initialize()
-	{
-		if (initialized)
-			return;
+    protected void initialize() throws InvocationTargetException, InterruptedException
+    {
+        synchronized (initialized)
+        {
+            if (initialized.get())
+                return;
 
-		setupModelManager();
+            Configuration.runAndWaitOnEDT(() -> {
+                setupModelManager();
+            });
 
-		setupInfoPanelManager();
+            Configuration.runAndWaitOnEDT(() -> {
+                setupInfoPanelManager();
+            });
 
-		setupSpectrumPanelManager();
+            Configuration.runAndWaitOnEDT(() -> {
+                setupSpectrumPanelManager();
+            });
 
-		setupRenderer();
+            Configuration.runAndWaitOnEDT(() -> {
+                setupRenderer();
+            });
 
-		setupPopupManager();
+            Configuration.runAndWaitOnEDT(() -> {
+                setupPopupManager();
+            });
 
-		setupPickManager();
+            Configuration.runAndWaitOnEDT(() -> {
+                setupPickManager();
+            });
 
-		controlPanel = new JTabbedPane();
-		controlPanel.setBorder(BorderFactory.createEmptyBorder());
+            Configuration.runAndWaitOnEDT(() -> {
+                controlPanel = new JTabbedPane();
+                controlPanel.setBorder(BorderFactory.createEmptyBorder());
 
-		setupTabs();
+                setupTabs();
+            });
 
-		// add capability to right click on tab title regions and set as default tab to
-		// load
-		controlPanel.addMouseListener(new MouseAdapter() {
+            Configuration.runAndWaitOnEDT(() -> {
+                // add capability to right click on tab title regions and set as default tab to
+                // load
+                controlPanel.addMouseListener(new MouseAdapter() {
 
-			@Override
-			public void mouseReleased(MouseEvent e)
-			{
-				showDefaultTabSelectionPopup(e);
-			}
+                    @Override
+                    public void mouseReleased(MouseEvent e)
+                    {
+                        showDefaultTabSelectionPopup(e);
+                    }
 
-			@Override
-			public void mousePressed(MouseEvent e)
-			{
-				showDefaultTabSelectionPopup(e);
-			}
+                    @Override
+                    public void mousePressed(MouseEvent e)
+                    {
+                        showDefaultTabSelectionPopup(e);
+                    }
 
-			@Override
-			public void mouseClicked(MouseEvent e)
-			{
-				showDefaultTabSelectionPopup(e);
-			}
-		});
-		int tabIndex = FavoriteTabsFile.getInstance().getFavoriteTab(config.getUniqueName());
-		controlPanel.setSelectedIndex(tabIndex); // load default tab (which is 0 if not specified in favorite tabs file)
+                    @Override
+                    public void mouseClicked(MouseEvent e)
+                    {
+                        showDefaultTabSelectionPopup(e);
+                    }
+                });
+                int tabIndex = FavoriteTabsFile.getInstance().getFavoriteTab(config.getUniqueName());
+                controlPanel.setSelectedIndex(tabIndex); // load default tab (which is 0 if not specified in favorite tabs file)
 
-		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, controlPanel, renderer);
-		splitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, 
-		    new PropertyChangeListener() {
-		        @Override
-		        public void propertyChange(PropertyChangeEvent pce) 
-		        {
-		        	LinkedHashMap<String, String> map = new LinkedHashMap<>();
-		        	map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
-					map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
-					Preferences.getInstance().put(map);
-		        }
-		});
-		splitPane.setOneTouchExpandable(true);
+                splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, controlPanel, renderer);
 
-		if (!initializedPanelSizing)
-		{
-			int splitLocation = (int)Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
-			int rendererWidth = splitPane.getWidth() - splitLocation;
-			
-			int width = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_WIDTH, 800L);
-			int height = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_HEIGHT, 800L);
+                splitPane.setOneTouchExpandable(true);
 
-			renderer.setMinimumSize(new Dimension(100, 100));
-			renderer.setPreferredSize(new Dimension(rendererWidth, height));
+                int splitLocation = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
+                splitPane.setDividerLocation(splitLocation);
 
-			width = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
-			height = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_HEIGHT, 800L);
+                splitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, new PropertyChangeListener() {
+                    @Override
+                    public void propertyChange(@SuppressWarnings("unused") PropertyChangeEvent pce)
+                    {
+                        LinkedHashMap<String, String> map = new LinkedHashMap<>();
+                        map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
+                        map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
+                        Preferences.getInstance().put(map);
+                    }
+                });
+                int rendererWidth = splitPane.getWidth() - splitLocation;
 
-			controlPanel.setMinimumSize(new Dimension(320, 100));
-			controlPanel.setPreferredSize(new Dimension(splitLocation, height));
+                int height = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_HEIGHT, 800L);
+                renderer.setMinimumSize(new Dimension(100, 100));
+                controlPanel.setMinimumSize(new Dimension(320, 100));
 
-			// Save out the size of the control panel and renderer when the tool exits
-			Runtime.getRuntime().addShutdownHook(new Thread() {
-				private LinkedHashMap<String, String> map = new LinkedHashMap<>();
+                renderer.setPreferredSize(new Dimension(rendererWidth, height));
+                controlPanel.setPreferredSize(new Dimension(splitLocation, height));
 
-				@Override
-				public void run()
-				{
-					map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
-					map.put(Preferences.RENDERER_PANEL_HEIGHT, new Long(renderer.getHeight()).toString());
-					map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
-					map.put(Preferences.CONTROL_PANEL_HEIGHT, new Long(controlPanel.getHeight()).toString());
-					Preferences.getInstance().put(map);
-				}
-			});
+                Runtime.getRuntime().addShutdownHook(new Thread() {
+                    private LinkedHashMap<String, String> map = new LinkedHashMap<>();
 
-			initializedPanelSizing = true;
-		}
-		else
-		{
-			int splitLocation = Integer.parseInt(Preferences.getInstance().get(Preferences.CONTROL_PANEL_WIDTH));
-			int rendererWidth = splitPane.getWidth() - splitLocation;
-			
-			renderer.setMinimumSize(new Dimension(100, 100));
-			renderer.setPreferredSize(new Dimension(rendererWidth, 800));
-			controlPanel.setMinimumSize(new Dimension(320, 100));
-			controlPanel.setPreferredSize(new Dimension(splitLocation, 800));
-		}
+                    @Override
+                    public void run()
+                    {
+                        map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
+                        map.put(Preferences.RENDERER_PANEL_HEIGHT, new Long(renderer.getHeight()).toString());
+                        map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
+                        map.put(Preferences.CONTROL_PANEL_HEIGHT, new Long(controlPanel.getHeight()).toString());
+                        Preferences.getInstance().put(map);
+                    }
+                });
 
-		this.add(splitPane, BorderLayout.CENTER);
+                this.add(splitPane, BorderLayout.CENTER);
 
-		renderer.getRenderWindowPanel().resetCamera();
+                renderer.getRenderWindowPanel().resetCamera();
 
-		initializeStateManager();
+                initializeStateManager();
 
-		initialized = true;
-	}
+                initialized.set(true);
+            });
+        }
+    }
 
-	protected final boolean isInitialized()
-	{
-		return initialized;
-	}
+    protected final boolean isInitialized()
+    {
+        synchronized (initialized)
+        {
+            return initialized.get();
+        }
+    }
 
-	private void showDefaultTabSelectionPopup(MouseEvent e)
-	{
-		if (e.isPopupTrigger())
-		{
-			JPopupMenu tabMenu = new JPopupMenu();
-			JMenuItem menuItem = new JMenuItem("Set instrument as default");
-			menuItem.addActionListener(new ActionListener() {
+    private void showDefaultTabSelectionPopup(MouseEvent e)
+    {
+        if (e.isPopupTrigger())
+        {
+            JPopupMenu tabMenu = new JPopupMenu();
+            JMenuItem menuItem = new JMenuItem("Set instrument as default");
+            menuItem.addActionListener(new ActionListener() {
 
-				@Override
-				public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
-				{
-					FavoriteTabsFile.getInstance().setFavoriteTab(config.getUniqueName(), controlPanel.getSelectedIndex());
-				}
-			});
-			tabMenu.add(menuItem);
-			tabMenu.show(controlPanel, e.getX(), e.getY());
-		}
+                @Override
+                public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
+                {
+                    FavoriteTabsFile.getInstance().setFavoriteTab(config.getUniqueName(), controlPanel.getSelectedIndex());
+                }
+            });
+            tabMenu.add(menuItem);
+            tabMenu.show(controlPanel, e.getX(), e.getY());
+        }
 
-	}
+    }
 
-	public Renderer getRenderer()
-	{
-		return renderer;
-	}
+    public Renderer getRenderer()
+    {
+        return renderer;
+    }
 
-	public ModelManager getModelManager()
-	{
-		return modelManager;
-	}
+    public ModelManager getModelManager()
+    {
+        return modelManager;
+    }
 
-	public PickManager getPickManager()
-	{
-		return pickManager;
-	}
+    public PickManager getPickManager()
+    {
+        return pickManager;
+    }
 
-	protected void setModels(HashMap<ModelNames, Model> models)
-	{
-		modelManager.setModels(models);
-	}
+    protected void setModels(HashMap<ModelNames, Model> models)
+    {
+        modelManager.setModels(models);
+    }
 
-	protected void registerPopup(Model model, PopupMenu menu)
-	{
-		popupManager.registerPopup(model, menu);
-	}
+    protected void registerPopup(Model model, PopupMenu menu)
+    {
+        popupManager.registerPopup(model, menu);
+    }
 
-	protected Model getModel(ModelNames name)
-	{
-		return modelManager.getModel(name);
-	}
+    protected Model getModel(ModelNames name)
+    {
+        return modelManager.getModel(name);
+    }
 
-	/**
-	 * Return a unique name for this view. No other view may have this name. Note
-	 * that only applies within built-in views or custom views but a custom view can
-	 * share the name of a built-in one or vice versa. By default simply return the
-	 * author concatenated with the name if the author is not null or just the name
-	 * if the author is null.
-	 * 
-	 * @return
-	 */
-	public String getUniqueName()
-	{
-		return config.getUniqueName();
-	}
+    /**
+     * Return a unique name for this view. No other view may have this name. Note
+     * that only applies within built-in views or custom views but a custom view can
+     * share the name of a built-in one or vice versa. By default simply return the
+     * author concatenated with the name if the author is not null or just the name
+     * if the author is null.
+     * 
+     * @return
+     */
+    public String getUniqueName()
+    {
+        return config.getUniqueName();
+    }
 
-	/**
-	 * Return a hierarchical path representation of this view.
-	 * 
-	 * @return the representation.
-	 */
-	public abstract String getPathRepresentation();
+    /**
+     * Return a hierarchical path representation of this view.
+     * 
+     * @return the representation.
+     */
+    public abstract String getPathRepresentation();
 
-	/**
-	 * Return the display name for this view (the name to be shown in the menu).
-	 * This name need not be unique among all views.
-	 * 
-	 * @return the name to display
-	 */
-	public abstract String getDisplayName();
+    /**
+     * Return the display name for this view (the name to be shown in the menu).
+     * This name need not be unique among all views.
+     * 
+     * @return the name to display
+     */
+    public abstract String getDisplayName();
 
-	/**
-	 * Similar to {@link getDisplayName()}, this returns a suitable-for-display name
-	 * that uniquely identifies the model. This name must be unique among all views.
-	 * 
-	 * @return
-	 */
-	public abstract String getModelDisplayName();
+    /**
+     * Similar to {@link getDisplayName()}, this returns a suitable-for-display name
+     * that uniquely identifies the model. This name must be unique among all views.
+     * 
+     * @return
+     */
+    public abstract String getModelDisplayName();
 
-	public ViewConfig getConfig()
-	{
-		return config;
-	}
+    public ViewConfig getConfig()
+    {
+        return config;
+    }
 
-	//
-	// Setup methods, to be defined by subclasses
-	//
+    //
+    // Setup methods, to be defined by subclasses
+    //
 
-	protected abstract void setupModelManager();
+    protected abstract void setupModelManager();
 
-	protected abstract void setupPopupManager();
+    protected abstract void setupPopupManager();
 
-	protected abstract void setupInfoPanelManager();
+    protected abstract void setupInfoPanelManager();
 
-	protected abstract void setupSpectrumPanelManager();
+    protected abstract void setupSpectrumPanelManager();
 
-	protected void setupRenderer()
-	{
-		ModelManager manager = getModelManager();
-		Renderer renderer = new Renderer(manager);
-		renderer.addPropertyChangeListener(manager);
-		setRenderer(renderer);
-		
+    protected void setupRenderer()
+    {
+        ModelManager manager = getModelManager();
+        Renderer renderer = new Renderer(manager);
+        renderer.addPropertyChangeListener(manager);
+        setRenderer(renderer);
+
         // Force the renderer's camera to the "reset" default view
         renderer.getCamera().reset();
-	}
+    }
 
-	protected abstract void setupPickManager();
+    protected abstract void setupPickManager();
 
-	protected abstract void initializeStateManager();
+    protected abstract void initializeStateManager();
 
-	@Override
-	public String toString()
-	{
-		if (config != null)
-		{
-			return "View of " + config.toString();
-		}
-		return "View of (null)";
-	}
+    @Override
+    public String toString()
+    {
+        if (config != null)
+        {
+            return "View of " + config.toString();
+        }
+        return "View of (null)";
+    }
 
 }

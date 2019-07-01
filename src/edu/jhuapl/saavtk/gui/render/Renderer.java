@@ -57,6 +57,7 @@ import vtk.vtkPostScriptWriter;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
 import vtk.vtkRenderer;
+import vtk.vtkScalarBarActor;
 import vtk.vtkTIFFWriter;
 import vtk.vtkWindowToImageFilter;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
@@ -253,13 +254,15 @@ public class Renderer extends JPanel implements ActionListener
 		HashSet<vtkProp> renderedProps = new HashSet<vtkProp>();
 		for (int i = 0; i < size; ++i)
 			renderedProps.add((vtkProp) propCollection.GetItemAsObject(i));
+
 		renderedProps.removeAll(props);
+
 		if (!renderedProps.isEmpty())
 		{
 			renderWindow.getVTKLock().lock();
 			for (vtkProp prop : renderedProps)
 			{
-				if (!(prop instanceof vtkCubeAxesActor2D))
+				if (!(prop instanceof vtkCubeAxesActor2D) && !(prop instanceof vtkScalarBarActor))
 					whichRenderer.RemoveViewProp(prop);
 			}
 			renderWindow.getVTKLock().unlock();
@@ -767,14 +770,16 @@ public class Renderer extends JPanel implements ActionListener
 		return mainCanvas;
 	}
 
-	public void setInteractorStyleToDefault()
+	/**
+	 * Sets the enable state of the associated Interactor.
+	 * <P>
+	 * If the Interactor is disabled then it will not respond to mouse / keyboard
+	 * events.
+	 */
+	public void setInteractorEnableState(boolean aBool)
 	{
-		mainCanvas.setInteractorStyleToDefault();
-	}
-
-	public void setInteractorStyleToNone()
-	{
-		mainCanvas.setInteractorStyle(null);
+		// Delegate
+		mainCanvas.setInteractorEnableState(aBool);
 	}
 
 	public void setLighting(LightingType type)

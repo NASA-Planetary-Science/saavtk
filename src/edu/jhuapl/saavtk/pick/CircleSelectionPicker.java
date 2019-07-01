@@ -2,115 +2,116 @@ package edu.jhuapl.saavtk.pick;
 
 import java.awt.Cursor;
 import java.awt.event.MouseEvent;
-import java.util.List;
 
-import vtk.vtkActor;
-import vtk.vtkCellPicker;
-import vtk.vtkProp;
-import vtk.vtkPropCollection;
-import vtk.rendering.jogl.vtkJoglPanelComponent;
-import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
+import vtk.vtkActor;
+import vtk.vtkCellPicker;
+import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 public class CircleSelectionPicker extends Picker
 {
-    private ModelManager modelManager;
-    private vtkJoglPanelComponent renWin;
-    private PolyhedralModel smallBodyModel;
-    private AbstractEllipsePolygonModel circleModel;
+	// Reference vars
+	private ModelManager refModelManager;
+	private PolyhedralModel refSmallBodyModel;
+	private AbstractEllipsePolygonModel refStructureModel;
+	private vtkJoglPanelComponent refRenWin;
 
-    private vtkCellPicker smallBodyPicker;
+	// VTK vars
+	private vtkCellPicker smallBodyPicker;
 
-    private int vertexIdBeingEdited = -1;
+	// State vars
+	private int currVertexId;
 
-    public CircleSelectionPicker(
-            Renderer renderer,
-            ModelManager modelManager
-            )
-    {
-        this.renWin = renderer.getRenderWindowPanel();
-        this.modelManager = modelManager;
-        this.circleModel = (AbstractEllipsePolygonModel)modelManager.getModel(ModelNames.CIRCLE_SELECTION);
+	public CircleSelectionPicker(Renderer renderer, ModelManager modelManager)
+	{
+		refModelManager = modelManager;
+		refSmallBodyModel = (PolyhedralModel) modelManager.getPolyhedralModel();
+		refStructureModel = (AbstractEllipsePolygonModel) modelManager.getModel(ModelNames.CIRCLE_SELECTION);
+		refRenWin = renderer.getRenderWindowPanel();
 
-        smallBodyPicker = new vtkCellPicker();
-        smallBodyPicker.PickFromListOn();
-        smallBodyPicker.InitializePickList();
-        smallBodyModel = (PolyhedralModel)modelManager.getPolyhedralModel();
-        List<vtkProp> actors = smallBodyModel.getProps();
-        vtkPropCollection smallBodyPickList = smallBodyPicker.GetPickList();
-        smallBodyPickList.RemoveAllItems();
-        for (vtkProp act : actors)
-        {
-            smallBodyPicker.AddPickList(act);
-        }
-        smallBodyPicker.AddLocator(smallBodyModel.getCellLocator());
-    }
+		smallBodyPicker = PickUtilEx.formSmallBodyPicker(refSmallBodyModel);
 
-    public void mousePressed(MouseEvent e)
+		currVertexId = -1;
+	}
+
+	@Override
+	public int getCursorType()
+	{
+		return Cursor.CROSSHAIR_CURSOR;
+	}
+
+	@Override
+	public boolean isExclusiveMode()
+	{
+		if (currVertexId >= 0)
+			return true;
+
+		return false;
+	}
+
+   public void mousePressed(MouseEvent e)
     {
         //if (e.getButton() != MouseEvent.BUTTON1)
         //    return;
 
-        vertexIdBeingEdited = -1;
+        currVertexId = -1;
 
-        circleModel.removeAllStructures();
+        refStructureModel.removeAllStructures();
 
-        int pickSucceeded = doPick(e, smallBodyPicker, renWin);
+        int pickSucceeded = doPick(e, smallBodyPicker, refRenWin);
 
         if (pickSucceeded == 1)
         {
             vtkActor pickedActor = smallBodyPicker.GetActor();
-            Model model = modelManager.getModel(pickedActor);
+            Model model = refModelManager.getModel(pickedActor);
 
-            if (model == smallBodyModel)
+            if (model == refSmallBodyModel)
             {
                 double[] pos = smallBodyPicker.GetPickPosition();
                 if (e.getClickCount() == 1)
                 {
-                    circleModel.addNewStructure(pos);
-                    vertexIdBeingEdited = circleModel.getNumberOfStructures()-1;
+                    refStructureModel.addNewStructure(pos);
+                    currVertexId = refStructureModel.getNumberOfStructures()-1;
                 }
             }
         }
     }
 
-    public void mouseReleased(MouseEvent e)
-    {
-        vertexIdBeingEdited = -1;
-    }
+	@Override
+	public void mouseReleased(MouseEvent aEvent)
+	{
+		currVertexId = -1;
+	}
 
-    public void mouseDragged(MouseEvent e)
-    {
-        //if (e.getButton() != MouseEvent.BUTTON1)
-        //    return;
+	@Override
+	public void mouseDragged(MouseEvent aEvent)
+	{
+		// Bail if there is no vertex being edited
+		if (currVertexId < 0)
+			return;
+		
+//		if (aEvent.getButton() != MouseEvent.BUTTON1)
+//			return;
+		
+		// Bail if we failed to pick something
+		int pickSucceeded = doPick(aEvent, smallBodyPicker, refRenWin);
+		if (pickSucceeded != 1)
+			return;
 
+		vtkActor pickedActor = smallBodyPicker.GetActor();
+		Model model = refModelManager.getModel(pickedActor);
 
-        if (vertexIdBeingEdited >= 0)
-        {
-            int pickSucceeded = doPick(e, smallBodyPicker, renWin);
-            if (pickSucceeded == 1)
-            {
-                vtkActor pickedActor = smallBodyPicker.GetActor();
-                Model model = modelManager.getModel(pickedActor);
+		if (model == refSmallBodyModel)
+		{
+			double[] lastDragPosition = smallBodyPicker.GetPickPosition();
 
-                if (model == smallBodyModel)
-                {
-                    double[] lastDragPosition = smallBodyPicker.GetPickPosition();
+			refStructureModel.changeRadiusOfPolygon(currVertexId, lastDragPosition);
+		}
+	}
 
-                    circleModel.changeRadiusOfPolygon(vertexIdBeingEdited, lastDragPosition);
-                }
-            }
-        }
-    }
-
-    @Override
-    public int getDefaultCursor()
-    {
-        return Cursor.CROSSHAIR_CURSOR;
-    }
 }

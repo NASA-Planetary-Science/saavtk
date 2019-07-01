@@ -123,6 +123,11 @@
         <artifactId>nom-tam-fits</artifactId>
         <version>1.13.1m0</version>
     </dependency>
+    <dependency>
+  		<groupId>com.github.davidmoten</groupId>
+  		<artifactId>rtree</artifactId>
+  		<version>0.8.6</version>
+	</dependency>
   </dependencies>
   <scm>
     <connection>scm:git:http://hardin:8080/scm/git/vtk/saavtk</connection>

@@ -1,12 +1,10 @@
 package edu.jhuapl.saavtk.gui;
 
 import java.awt.Component;
-import java.awt.Dialog;
 import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -18,24 +16,22 @@ import javax.swing.SwingWorker;
 
 import net.miginfocom.swing.MigLayout;
 
-abstract public class ProgressBarSwingWorker extends SwingWorker<Void, Void>
-        implements PropertyChangeListener
+public abstract class ProgressBarSwingWorker extends SwingWorker<Void, Void>
 {
-    private JProgressBar progressBar;
-    private JButton cancelButton;
-    private JLabel label;
-    private ProgressDialog dialog;
-    private volatile boolean indeterminate = false;
-    private volatile String labelText = " ";
-    private volatile boolean enableCancelButton = true;
-    private volatile double completionTimeEstimate = -1.0; // in seconds
+    private final ProgressDialog dialog;
+    private final double completionTimeThreshold;
+    private volatile double completionTimeEstimate;
 
     private class ProgressDialog extends JDialog implements ActionListener
     {
+        private static final long serialVersionUID = 1L;
+        private final JLabel label;
+        private final JProgressBar progressBar;
+        private final JButton cancelButton;
 
-        public ProgressDialog(Component c)
+        private ProgressDialog(Component c, boolean indeterminate)
         {
-            super(JOptionPane.getFrameForComponent(c));
+            super(JOptionPane.getFrameForComponent(c), ModalityType.APPLICATION_MODAL);
             JPanel panel = new JPanel(new MigLayout());
             setPreferredSize(new Dimension(375, 150));
 
@@ -43,13 +39,14 @@ abstract public class ProgressBarSwingWorker extends SwingWorker<Void, Void>
 
             progressBar = new JProgressBar(0, 100);
             progressBar.setPreferredSize(new Dimension(350, 20));
+            progressBar.setIndeterminate(indeterminate);
+
             panel.add(label, "wrap");
             panel.add(progressBar, "wrap");
 
             cancelButton = new JButton("Cancel");
             cancelButton.addActionListener(this);
 
-            setModalityType(Dialog.ModalityType.APPLICATION_MODAL);
             setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
             panel.add(cancelButton, "align center");
 
@@ -59,7 +56,8 @@ abstract public class ProgressBarSwingWorker extends SwingWorker<Void, Void>
             pack();
         }
 
-        public void actionPerformed(ActionEvent e)
+        @Override
+        public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
         {
             cancel(true);
 
@@ -68,93 +66,172 @@ abstract public class ProgressBarSwingWorker extends SwingWorker<Void, Void>
         }
     }
 
-    public ProgressBarSwingWorker(Component c, String title)
+    public ProgressBarSwingWorker(Component c, String title, boolean indeterminate)
     {
-        dialog = new ProgressDialog(c);
+        this(c, title, null, indeterminate);
+    }
+
+    public ProgressBarSwingWorker(Component c, String title, String labelText, boolean indeterminate)
+    {
+        this.dialog = new ProgressDialog(c, indeterminate);
+        this.completionTimeThreshold = 4.0;
+        this.completionTimeEstimate = -1.;
+
         dialog.setTitle(title);
 
-        addPropertyChangeListener(this);
+        if (labelText != null)
+        {
+            dialog.label.setText(labelText);
+        }
     }
 
     /**
-     * Executes the worker and shows the dialog. Also updates the dialog text
-     * if setLabelText was called.
+     * {@inheritDoc}
+     * <p>
+     * The dialog will only be shown if the time-to-complete the task exceeds the
+     * completion time threshold. The time-to-complete is set by calling
+     * updateProgressDialog. Thus, implementers of doInBackground must call
+     * updateProgressDialog() at least once in order to (possibly) display the
+     * dialog.
+     */
+    @Override
+    protected abstract Void doInBackground() throws Exception;
+
+    /**
+     * Execute the task provided by this swing worker (as specified in
+     * doInBackground) on a background thread and wait for it to finish on the Event
+     * Dispatch Thread, showing a progress dialog if the estimated completion time
+     * exceeds the completion time threshold provided to the constructor.
      */
     public void executeDialog()
     {
-        label.setText(labelText);
-
-        // Note execute must be called BEFORE setVisible. Otherwise, the worker thread
-        // won't run since setVisible blocks until the dialog closes.
-        execute();
-
-        while (true)
-        {
-            if (completionTimeEstimate >= 4.0 || completionTimeEstimate < 0.0)
-            {
-                break;
-            }
-            else if (isDone())
-            {
-                dialog.dispose();
-                return;
-            }
-
+        Runnable runnable = () -> {
             try
             {
-                Thread.sleep(100);
+                // Dialog will be shown as needed via a call to updateProgressDialog
+                // after execution begins.
+                execute();
+
+                while (!isDone())
+                {
+                    if (dialog.progressBar.isIndeterminate() || completionTimeEstimate > completionTimeThreshold)
+                    {
+                        dialog.setVisible(true);
+                        break;
+                    }
+
+                    try
+                    {
+                        Thread.sleep(100);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        e.printStackTrace();
+                        break;
+                    }
+                }
             }
-            catch (InterruptedException e)
+            finally
             {
+                dialog.setVisible(false);
+                dialog.dispose();
+            }
+        };
+
+        if (EventQueue.isDispatchThread())
+        {
+            runnable.run();
+        }
+        else
+        {
+            try
+            {
+                EventQueue.invokeAndWait(runnable);
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
             }
         }
-
-        dialog.setVisible(true);
     }
 
-    protected void setIndeterminate(boolean indeterminate)
+    @Override
+    protected void done()
     {
-        this.indeterminate = indeterminate;
+        super.done();
+        dialog.setVisible(false);
+        dialog.dispose();
     }
 
-    protected void setLabelText(String labelText)
+    protected void updateCompletionTimeEstimate(double completionTimeEstimate)
     {
-        this.labelText = labelText;
+        this.completionTimeEstimate = completionTimeEstimate;
     }
 
-    public void propertyChange(PropertyChangeEvent evt)
+    protected void updateProgressDialog(String labelText)
     {
-        if ("progress".equals(evt.getPropertyName()))
+        Runnable runnable = () -> {
+            dialog.label.setText(labelText);
+            dialog.progressBar.setIndeterminate(true);
+        };
+
+        runOnEdt(runnable);
+    }
+
+    protected void updateProgressDialog(int progress)
+    {
+        setProgress(progress);
+
+        Runnable runnable = () -> {
+            dialog.progressBar.setValue(progress);
+        };
+
+        runOnEdt(runnable);
+    }
+
+    protected void updateProgressDialog(String labelText, int progress)
+    {
+        setProgress(progress);
+
+        Runnable runnable = () -> {
+            dialog.label.setText(labelText);
+            dialog.progressBar.setValue(progress);
+        };
+
+        runOnEdt(runnable);
+    }
+
+    protected int computeProgress(long unpackedByteCount, long totalUnpackedByteCount)
+    {
+        double progress = 0.;
+        if (totalUnpackedByteCount > 0)
         {
-            int progress = (Integer) evt.getNewValue();
-
-            if (indeterminate)
-                progressBar.setIndeterminate(true);
-            else
-                progressBar.setValue(progress);
-
-            label.setText(labelText);
-
-            if (cancelButton.isEnabled() != enableCancelButton)
-                cancelButton.setEnabled(enableCancelButton);
+            progress = Math.min(Math.max(100. * unpackedByteCount / totalUnpackedByteCount, 0.), 100.);
         }
 
-        if (evt.getNewValue().equals(SwingWorker.StateValue.DONE))
+        return (int) progress;
+    }
+
+    protected void checkNotCanceled(String hint) throws InterruptedException
+    {
+        if (isCancelled())
         {
-            dialog.setVisible(false);
-            dialog.dispose();
+            throw new InterruptedException(hint);
         }
     }
 
-    public void setCancelButtonEnabled(boolean b)
+    protected void runOnEdt(Runnable runnable)
     {
-        enableCancelButton = b;
+        if (EventQueue.isDispatchThread())
+        {
+            runnable.run();
+        }
+        else
+        {
+            EventQueue.invokeLater(() -> {
+                runnable.run();
+            });
+        }
     }
 
-    public void setCompletionTimeEstimate(double completionTimeEstimate)
-    {
-        // Only allow setting completion time once
-        if (this.completionTimeEstimate < 0.0)
-            this.completionTimeEstimate = completionTimeEstimate;
-    }
 }

@@ -3,234 +3,219 @@ package edu.jhuapl.saavtk.pick;
 import java.awt.Cursor;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
-import java.util.List;
 
 import javax.swing.JOptionPane;
 
-import vtk.vtkActor;
-import vtk.vtkCellPicker;
-import vtk.vtkProp;
-import vtk.vtkPropCollection;
-import vtk.rendering.jogl.vtkJoglPanelComponent;
-import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
+import edu.jhuapl.saavtk.gui.GuiUtil;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.EllipseModel;
+import vtk.vtkActor;
+import vtk.vtkCellPicker;
+import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 public class EllipsePicker extends Picker
 {
-    private ModelManager modelManager;
-    private vtkJoglPanelComponent renWin;
-    private PolyhedralModel smallBodyModel;
-    private EllipseModel ellipseModel;
+	// Reference vars
+	private ModelManager refModelManager;
+	private PolyhedralModel refSmallBodyModel;
+	private EllipseModel refStructureModel;
+	private vtkJoglPanelComponent refRenWin;
 
-    private vtkCellPicker smallBodyPicker;
-    private vtkCellPicker ellipsePicker;
+	// VTK vars
+	private vtkCellPicker smallBodyPicker;
+	private vtkCellPicker structurePicker;
 
-    private int vertexIdBeingEdited = -1;
+	// State vars
+	private EditMode currEditMode;
+	private int currVertexId;
+	private boolean changeAngleKeyPressed;
+	private boolean changeFlatteningKeyPressed;
 
-    // There are 2 types of line editing possible:
-    //   1. Dragging an existing vertex to a new locations
-    //   2. Extending a line by adding new vertices
-    public enum EditMode
-    {
-        VERTEX_DRAG_OR_DELETE,
-        VERTEX_ADD
-    }
+	public EllipsePicker(Renderer renderer, ModelManager modelManager)
+	{
+		refModelManager = modelManager;
+		refSmallBodyModel = (PolyhedralModel) modelManager.getPolyhedralModel();
+		refStructureModel = (EllipseModel) modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES);
+		refRenWin = renderer.getRenderWindowPanel();
 
-    private EditMode currentEditMode = EditMode.VERTEX_ADD;
+		smallBodyPicker = PickUtilEx.formSmallBodyPicker(refSmallBodyModel);
+		structurePicker = PickUtilEx.formStructurePicker(refStructureModel.getBoundaryActor());
 
-    private double[] lastDragPosition;
-    private boolean changeFlatteningKeyPressed = false;
-    private boolean changeAngleKeyPressed = false;
+		currEditMode = EditMode.CLICKABLE;
+		currVertexId = -1;
+		changeAngleKeyPressed = false;
+		changeFlatteningKeyPressed = false;
+	}
 
-    public EllipsePicker(
-            Renderer renderer,
-            ModelManager modelManager
-            )
-    {
-        this.renWin = renderer.getRenderWindowPanel();
-        this.modelManager = modelManager;
-        this.ellipseModel = (EllipseModel)modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES);
+	@Override
+	public int getCursorType()
+	{
+		if (currEditMode == EditMode.DRAGGABLE)
+			return Cursor.HAND_CURSOR;
 
-        smallBodyPicker = new vtkCellPicker();
-        smallBodyPicker.PickFromListOn();
-        smallBodyPicker.InitializePickList();
-        smallBodyModel = (PolyhedralModel)modelManager.getPolyhedralModel();
-        List<vtkProp> actors = smallBodyModel.getProps();
-        vtkPropCollection smallBodyPickList = smallBodyPicker.GetPickList();
-        smallBodyPickList.RemoveAllItems();
-        for (vtkProp act : actors)
-        {
-            smallBodyPicker.AddPickList(act);
-        }
-        smallBodyPicker.AddLocator(smallBodyModel.getCellLocator());
+		return Cursor.CROSSHAIR_CURSOR;
+	}
 
-        ellipsePicker = new vtkCellPicker();
-        ellipsePicker.PickFromListOn();
-        ellipsePicker.InitializePickList();
-        vtkPropCollection ellipsePickList = ellipsePicker.GetPickList();
-        ellipsePickList.RemoveAllItems();
-        ellipsePicker.AddPickList(ellipseModel.getBoundaryActor());
-    }
+	@Override
+	public boolean isExclusiveMode()
+	{
+		if (currVertexId >= 0)
+			return true;
 
-    public void mousePressed(MouseEvent e)
-    {
-        // If we pressed a vertex of an existing ellipse, begin dragging that vertex.
-        // If we pressed a point on the asteroid, begin drawing a new ellipse.
+		return false;
+	}
 
+	@Override
+	public void mouseClicked(MouseEvent aEvent)
+	{
+		// We respond only if we are adding points
+		if (currEditMode != EditMode.CLICKABLE)
+			return;
 
-        vertexIdBeingEdited = -1;
-        lastDragPosition = null;
+		// Bail if mouse button 1 is not pressed
+		if (aEvent.getButton() != MouseEvent.BUTTON1)
+		{
+			refStructureModel.resetCircumferencePoints();
+			return;
+		}
 
-        if (this.currentEditMode == EditMode.VERTEX_DRAG_OR_DELETE)
-        {
-            if (e.getButton() != MouseEvent.BUTTON1 && e.getButton() != MouseEvent.BUTTON3)
-                return;
+		// Bail if a valid point was not picked
+		int pickSucceeded = doPick(aEvent, smallBodyPicker, refRenWin);
+		if (pickSucceeded != 1)
+			return;
 
-            int pickSucceeded = doPick(e, ellipsePicker, renWin);
-            if (pickSucceeded == 1)
-            {
-                vtkActor pickedActor = ellipsePicker.GetActor();
+		vtkActor pickedActor = smallBodyPicker.GetActor();
+		Model model = refModelManager.getModel(pickedActor);
+		if (model == refSmallBodyModel)
+		{
+			double[] pos = smallBodyPicker.GetPickPosition();
+			// TODO: Is this conditional really necessary?
+			if (aEvent.getClickCount() == 1)
+			{
+//				refStructureModel.addNewStructure(pos);
+				if (refStructureModel.addCircumferencePoint(pos) == false)
+				{
+					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(refRenWin.getComponent()),
+							"Could not fit ellipse to specified points.", "Error", JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		}
+	}
 
-                if (pickedActor == ellipseModel.getBoundaryActor())
-                {
-                    if (e.getButton() == MouseEvent.BUTTON1)
-                    {
-                        int cellId = ellipsePicker.GetCellId();
-                        int pointId = ellipseModel.getPolygonIdFromBoundaryCellId(cellId);
-                        this.vertexIdBeingEdited = pointId;
-                    }
-                    else
-                    {
-                        vertexIdBeingEdited = -1;
-                    }
-                }
-            }
-        }
-        else if (this.currentEditMode == EditMode.VERTEX_ADD)
-        {
-            if (e.getButton() != MouseEvent.BUTTON1)
-            {
-                ellipseModel.resetCircumferencePoints();
-                return;
-            }
+	@Override
+	public void mousePressed(MouseEvent aEvent)
+	{
+		// Assume nothing will be picked
+		currVertexId = -1;
 
-            int pickSucceeded = doPick(e, smallBodyPicker, renWin);
+		// Bail if we are not ready to do a drag operation
+		if (currEditMode != EditMode.DRAGGABLE)
+			return;
 
-            if (pickSucceeded == 1)
-            {
-                vtkActor pickedActor = smallBodyPicker.GetActor();
-                Model model = modelManager.getModel(pickedActor);
+		// Bail if mouse button 1 is not pressed
+		if (aEvent.getButton() != MouseEvent.BUTTON1)
+			return;
 
-                if (model == smallBodyModel)
-                {
-                    double[] pos = smallBodyPicker.GetPickPosition();
-                    if (e.getClickCount() == 1)
-                    {
-                        if (!ellipseModel.addCircumferencePoint(pos))
-                        {
-                            JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(renWin.getComponent()),
-                                    "Could not fit ellipse to specified points.",
-                                    "Error",
-                                    JOptionPane.ERROR_MESSAGE);
-                        }
-                    }
-                }
-            }
-        }
-    }
+		// Bail if we failed to pick something
+		int pickSucceeded = doPick(aEvent, structurePicker, refRenWin);
+		if (pickSucceeded != 1)
+			return;
 
-    public void mouseReleased(MouseEvent e)
-    {
-    }
+		// Determine what was picked
+		vtkActor pickedActor = structurePicker.GetActor();
+		if (pickedActor == refStructureModel.getBoundaryActor())
+		{
+			int cellId = structurePicker.GetCellId();
+			int pointId = refStructureModel.getPolygonIdFromBoundaryCellId(cellId);
+			currVertexId = pointId;
+		}
+	}
 
-    public void mouseDragged(MouseEvent e)
-    {
-        //if (e.getButton() != MouseEvent.BUTTON1)
-        //    return;
+	@Override
+	public void mouseReleased(MouseEvent aEvent)
+	{
+		currVertexId = -1;
+	}
 
+	@Override
+	public void mouseDragged(MouseEvent aEvent)
+	{
+		// Bail if we are not in the proper edit mode or there is no vertex being edited
+		if (currEditMode != EditMode.DRAGGABLE || currVertexId < 0)
+			return;
 
-        if (this.currentEditMode == EditMode.VERTEX_DRAG_OR_DELETE &&
-            vertexIdBeingEdited >= 0)
-        {
-            int pickSucceeded = doPick(e, smallBodyPicker, renWin);
-            if (pickSucceeded == 1)
-            {
-                vtkActor pickedActor = smallBodyPicker.GetActor();
-                Model model = modelManager.getModel(pickedActor);
+		// Bail if the left button is not pressed
+//		if (e.getButton() != MouseEvent.BUTTON1)
+//			return;
 
-                if (model == smallBodyModel)
-                {
-                    lastDragPosition = smallBodyPicker.GetPickPosition();
+		// Bail if we failed to pick something
+		int pickSucceeded = doPick(aEvent, smallBodyPicker, refRenWin);
+		if (pickSucceeded != 1)
+			return;
 
-                    if (e.isControlDown() || e.isShiftDown())
-                        ellipseModel.changeRadiusOfPolygon(vertexIdBeingEdited, lastDragPosition);
-                    else if (changeFlatteningKeyPressed)
-                        ellipseModel.changeFlatteningOfPolygon(vertexIdBeingEdited, lastDragPosition);
-                    else if (changeAngleKeyPressed)
-                        ellipseModel.changeAngleOfPolygon(vertexIdBeingEdited, lastDragPosition);
-                    else
-                        ellipseModel.movePolygon(vertexIdBeingEdited, lastDragPosition);
-                }
-            }
-        }
-    }
+		vtkActor pickedActor = smallBodyPicker.GetActor();
+		Model model = refModelManager.getModel(pickedActor);
 
+		if (model == refSmallBodyModel)
+		{
+			double[] lastDragPosition = smallBodyPicker.GetPickPosition();
 
-    public void mouseMoved(MouseEvent e)
-    {
-        int pickSucceeded = doPick(e, ellipsePicker, renWin);
+			if (aEvent.isControlDown() || aEvent.isShiftDown())
+				refStructureModel.changeRadiusOfPolygon(currVertexId, lastDragPosition);
+			else if (changeFlatteningKeyPressed)
+				refStructureModel.changeFlatteningOfPolygon(currVertexId, lastDragPosition);
+			else if (changeAngleKeyPressed)
+				refStructureModel.changeAngleOfPolygon(currVertexId, lastDragPosition);
+			else
+				refStructureModel.movePolygon(currVertexId, lastDragPosition);
+		}
+	}
 
-        // Only allow dragging if we are not in the middle of drawing a
-        // new ellipse, i.e. if number of circumference points is zero.
-        if (ellipseModel.getNumberOfCircumferencePoints() == 0 &&
-                pickSucceeded == 1 &&
-                ellipsePicker.GetActor() == ellipseModel.getBoundaryActor())
-        {
-            if (renWin.getComponent().getCursor().getType() != Cursor.HAND_CURSOR)
-                renWin.getComponent().setCursor(new Cursor(Cursor.HAND_CURSOR));
+	@Override
+	public void mouseMoved(MouseEvent aEvent)
+	{
+		int pickSucceeded = doPick(aEvent, structurePicker, refRenWin);
+		int numActivePoints = refStructureModel.getNumberOfCircumferencePoints();
 
-            currentEditMode = EditMode.VERTEX_DRAG_OR_DELETE;
-        }
-        else
-        {
-            if (renWin.getComponent().getCursor().getType() != getDefaultCursor())
-                renWin.getComponent().setCursor(new Cursor(getDefaultCursor()));
+		// Only allow dragging if we are not in the middle of drawing a
+		// new ellipse, i.e. if number of circumference points is zero.
+		if (numActivePoints == 0 && pickSucceeded == 1
+				&& structurePicker.GetActor() == refStructureModel.getBoundaryActor())
+			currEditMode = EditMode.DRAGGABLE;
+		else
+			currEditMode = EditMode.CLICKABLE;
 
-            currentEditMode = EditMode.VERTEX_ADD;
-        }
-    }
+		GuiUtil.updateCursor(refRenWin.getComponent(), getCursorType());
+	}
 
-    public void keyPressed(KeyEvent e)
-    {
-        if (e.getKeyCode() == KeyEvent.VK_Z || e.getKeyCode() == KeyEvent.VK_SLASH)
-            changeFlatteningKeyPressed = true;
-        if (e.getKeyCode() == KeyEvent.VK_X || e.getKeyCode() == KeyEvent.VK_PERIOD)
-            changeAngleKeyPressed = true;
+	@Override
+	public void keyPressed(KeyEvent aEvent)
+	{
+		int keyCode = aEvent.getKeyCode();
+		if (keyCode == KeyEvent.VK_Z || keyCode == KeyEvent.VK_SLASH)
+			changeFlatteningKeyPressed = true;
+		if (keyCode == KeyEvent.VK_X || keyCode == KeyEvent.VK_PERIOD)
+			changeAngleKeyPressed = true;
 
-        int keyCode = e.getKeyCode();
-        if (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE)
-        {
-            int[] selectedStructures = ellipseModel.getSelectedStructures();
-            ellipseModel.removeStructures(selectedStructures);
-        }
-    }
+		if (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE)
+		{
+			int[] selectedStructures = refStructureModel.getSelectedStructures();
+			refStructureModel.removeStructures(selectedStructures);
+		}
+	}
 
-    public void keyReleased(KeyEvent e)
-    {
-        if (e.getKeyCode() == KeyEvent.VK_Z || e.getKeyCode() == KeyEvent.VK_SLASH)
-            changeFlatteningKeyPressed = false;
-        if (e.getKeyCode() == KeyEvent.VK_X || e.getKeyCode() == KeyEvent.VK_PERIOD)
-            changeAngleKeyPressed = false;
-    }
+	@Override
+	public void keyReleased(KeyEvent aEvent)
+	{
+		int keyCode = aEvent.getKeyCode();
+		if (keyCode == KeyEvent.VK_Z || keyCode == KeyEvent.VK_SLASH)
+			changeFlatteningKeyPressed = false;
+		if (keyCode == KeyEvent.VK_X || keyCode == KeyEvent.VK_PERIOD)
+			changeAngleKeyPressed = false;
+	}
 
-    @Override
-    public int getDefaultCursor()
-    {
-        return Cursor.CROSSHAIR_CURSOR;
-    }
 }

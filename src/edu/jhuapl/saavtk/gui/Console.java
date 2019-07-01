@@ -1,13 +1,14 @@
 package edu.jhuapl.saavtk.gui;
 
-
 import java.awt.Component;
+import java.awt.EventQueue;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -17,31 +18,37 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
-public class Console {
-
+public class Console
+{
+    private static Boolean headless = null;
     private static Console CONSOLE = null;
     private final PrintStream outputFile;
     private final JFrame consoleFrame;
     private final PrintStream out;
 
-    private Console(boolean enable, PrintStream outputFile) {
-    	this.outputFile = outputFile;
+    private Console(boolean enable, PrintStream outputFile)
+    {
+        this.outputFile = outputFile;
 
-    	// Start with settings for enable == false.
+        // Start with settings for enable == false.
         JFrame consoleFrame = null;
         PrintStream out = System.out;
 
-        if (enable) {
-            try {
-                // Add Copy/Cut/Paste popup menu to Text Components (specifically our Console replacement)
-                Toolkit.getDefaultToolkit().getSystemEventQueue().push( new PopupEventQueue());
+        if (enable)
+        {
+            try
+            {
+                // Add Copy/Cut/Paste popup menu to Text Components (specifically our Console
+                // replacement)
+                Toolkit.getDefaultToolkit().getSystemEventQueue().push(new PopupEventQueue());
 
                 // Check whether redirecting streams is allowed in this runtime environment.
                 SecurityManager manager = System.getSecurityManager();
-                if (manager != null) manager.checkPermission(new RuntimePermission("setIO"));
-//              if (true) throw new SecurityException("fake security exception");
+                if (manager != null)
+                    manager.checkPermission(new RuntimePermission("setIO"));
+                // if (true) throw new SecurityException("fake security exception");
 
-                JTextArea consoleTextArea = new JTextArea(20,60);
+                JTextArea consoleTextArea = new JTextArea(20, 60);
                 // I updated this to not set the entire content of the text area every time,
                 // but just to append to it as it gets read. This has a HUGE effect
                 // on performance (more than a factor of 100) for cases where the
@@ -55,12 +62,9 @@ public class Console {
 
                 JScrollPane consolePane = new JScrollPane(consoleTextArea);
                 consoleFrame.add(consolePane);
-
-                consoleFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-                consoleFrame.pack();
-                consoleFrame.validate();
-                consoleFrame.setVisible(false);
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 // Restore local variables to same state as if enable == false.
                 consoleFrame = null;
                 out = System.out;
@@ -72,71 +76,125 @@ public class Console {
         this.out = out;
     }
 
-    public static void configure(boolean enable) {
-    	configure(enable, null);
+    public static void configure(boolean enable) throws InvocationTargetException, InterruptedException
+    {
+        configure(enable, null);
     }
 
-	public static void configure(boolean enable, PrintStream outputFile) {
-        if (CONSOLE != null) throw new UnsupportedOperationException("Console may only be configured once.");
-        CONSOLE = new Console(enable, outputFile);
-	}
+    public static void configure(boolean enable, PrintStream outputFile) throws InvocationTargetException, InterruptedException
+    {
+        if (isHeadless())
+        {
+            CONSOLE = new Console(false, outputFile);
+            if (enable)
+            {
+                CONSOLE.out.println("Console is forced to be disabled when running headless.");
+            }
+            return;
+        }
 
-    public static boolean isConfigured() {
-        return CONSOLE != null;
-    }
+        Runnable runnable = () -> {
+            if (CONSOLE != null)
+                throw new UnsupportedOperationException("Console may only be configured once.");
+            CONSOLE = new Console(enable, outputFile);
+        };
 
-    public static boolean isEnabled() {
-        return isConfigured() && CONSOLE.consoleFrame != null;
-    }
-
-    public static JFrame getConsoleFrame() {
-    	return CONSOLE.consoleFrame;
-    }
-
-    public static void showConsole() {
-        if (isEnabled()) {
-            CONSOLE.consoleFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-            CONSOLE.consoleFrame.setVisible(true);
-        } else {
-            reportConsoleDisabled();
+        if (EventQueue.isDispatchThread())
+        {
+            runnable.run();
+        }
+        else
+        {
+            EventQueue.invokeAndWait(runnable);
         }
     }
 
-    public static void showStandaloneConsole() {
-        showConsole();
-        if (isEnabled()) CONSOLE.consoleFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    public static boolean isConfigured()
+    {
+        return CONSOLE != null;
     }
 
-    public static void hideConsole() {
-    	if (isEnabled()) {
-    		CONSOLE.consoleFrame.setVisible(false);
-    		CONSOLE.consoleFrame.setLocationByPlatform(false);
-    	}
+    protected static boolean isHeadless()
+    {
+        if (headless == null)
+        {
+            headless = Boolean.parseBoolean(System.getProperty("java.awt.headless"));
+        }
+
+        return headless;
     }
 
-    public static void setDefaultLocation(Component relativeTo) {
-    	if (isEnabled()) {    		
-    		CONSOLE.consoleFrame.setLocationRelativeTo(relativeTo);
-    	}
+    public static boolean isEnabled()
+    {
+        return isConfigured() && CONSOLE.consoleFrame != null;
     }
 
-    public static void addConsoleMenu(final JMenuBar menuBar) {
+    public static JFrame getConsoleFrame()
+    {
+        return CONSOLE.consoleFrame;
+    }
+
+    public static void showConsole()
+    {
+        if (isEnabled())
+        {
+            CONSOLE.consoleFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+        }
+
+        doShowConsole();
+    }
+
+    public static void showStandaloneConsole()
+    {
+        if (isEnabled())
+        {
+            CONSOLE.consoleFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        }
+
+        doShowConsole();
+    }
+
+    public static void hideConsole()
+    {
+        if (isEnabled())
+        {
+            CONSOLE.consoleFrame.setVisible(false);
+            CONSOLE.consoleFrame.setLocationByPlatform(false);
+        }
+    }
+
+    public static void setDefaultLocation(Component relativeTo)
+    {
+        if (isEnabled())
+        {
+            CONSOLE.consoleFrame.setLocationRelativeTo(relativeTo);
+        }
+    }
+
+    public static void addConsoleMenu(final JMenuBar menuBar)
+    {
         JMenu consoleMenu = new JMenu("Console");
 
         JMenuItem toggleConsoleItem = new JMenuItem("Toggle Console");
         consoleMenu.add(toggleConsoleItem);
-        if (isEnabled()) CONSOLE.consoleFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         toggleConsoleItem.addActionListener(new ActionListener() {
 
             @Override
-            public void actionPerformed(@SuppressWarnings("unused") ActionEvent e) {
-                if (isEnabled()) {
-                    CONSOLE.consoleFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-                    JFrame console_frame = CONSOLE.consoleFrame;
-                    console_frame.setVisible(!console_frame.isVisible());
-                    console_frame.toFront();
-                    console_frame.repaint();
-                } else {
+            public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
+            {
+                if (isEnabled())
+                {
+                    if (CONSOLE.consoleFrame.isVisible())
+                    {
+                        hideConsole();
+                    }
+                    else
+                    {
+                        showConsole();
+                    }
+                }
+                else
+                {
                     reportConsoleDisabled();
                 }
             }
@@ -145,15 +203,36 @@ public class Console {
         menuBar.add(consoleMenu);
     }
 
-    public static PrintStream getStream() {
-        if (!isConfigured()) throw new UnsupportedOperationException();
+    public static PrintStream getStream()
+    {
+        if (!isConfigured())
+            throw new UnsupportedOperationException();
         return CONSOLE.out;
     }
 
-    private static void reportConsoleDisabled() {
+    private static void reportConsoleDisabled()
+    {
         String message = "In-app console is disabled.";
         System.err.println(message);
-        JOptionPane.showMessageDialog(null, message);
+        if (!isHeadless())
+        {
+            JOptionPane.showMessageDialog(null, message);
+        }
+    }
+
+    private static void doShowConsole()
+    {
+        if (isEnabled())
+        {
+            CONSOLE.consoleFrame.pack();
+            CONSOLE.consoleFrame.setVisible(true);
+            CONSOLE.consoleFrame.toFront();
+            CONSOLE.consoleFrame.repaint();
+        }
+        else
+        {
+            reportConsoleDisabled();
+        }
     }
 
     private class TextAreaStream extends OutputStream
@@ -171,8 +250,9 @@ public class Console {
             // put the string version of each character into the text area
             textArea.append(String.valueOf((char) b)); // make sure the bottom of the data is showing in the window
             textArea.setCaretPosition(textArea.getDocument().getLength());
-            if (outputFile != null) {
-            	outputFile.append((char) b);
+            if (outputFile != null)
+            {
+                outputFile.append((char) b);
             }
         }
     }
