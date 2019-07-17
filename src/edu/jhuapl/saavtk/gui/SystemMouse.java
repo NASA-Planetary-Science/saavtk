@@ -8,59 +8,66 @@ import java.util.List;
 import com.google.common.collect.Lists;
 
 // adapted from https://stackoverflow.com/questions/13061122/getting-rgb-value-from-under-mouse-cursor
-public class SystemMouse extends Thread {
+public class SystemMouse extends Thread
+{
 
-	private static final SystemMouse instance=new SystemMouse();
-	private static final int sleepPeriod=25;
-	
-	public static SystemMouse getInstance()
-	{
-		if (!instance.isAlive())
-			instance.start();
-		return instance;
-	}
-	
-	private Point lastPoint;
-	List<SystemMouseListener> listeners = Lists.newArrayList();
+    private static final SystemMouse instance = new SystemMouse();
+    private static final int sleepPeriod = 25;
 
-	private SystemMouse() {
-			setDaemon(true);
-			setPriority(MIN_PRIORITY);
-		}
+    public static SystemMouse getInstance()
+    {
+        if (!instance.isAlive())
+            instance.start();
+        return instance;
+    }
 
-	public void addListener(SystemMouseListener l) {
-		listeners.add(l);
-	}
+    private Point lastPoint;
+    List<SystemMouseListener> listeners = Lists.newArrayList();
 
-	public void removeListener(SystemMouseListener l) {
-		listeners.remove(l);
-	}
+    private SystemMouse()
+    {
+        setDaemon(true);
+        setPriority(MIN_PRIORITY);
+    }
 
-	public Point getPosition() {
-		PointerInfo pi = MouseInfo.getPointerInfo();
-		return pi.getLocation();
-	}
+    public void addListener(SystemMouseListener l)
+    {
+        listeners.add(l);
+    }
 
-	@Override
-	public void run() {
-		lastPoint = getPosition();
-		while (true) {
-			try
+    public void removeListener(SystemMouseListener l)
+    {
+        listeners.remove(l);
+    }
 
-			{
-				sleep(sleepPeriod);
-			} catch (InterruptedException e) {
-			}
-			
-			Point currentPoint = getPosition();
-			if (!currentPoint.equals(lastPoint)) {
-				for (SystemMouseListener l : listeners)
-					l.mousePositionChanged(currentPoint);
-				lastPoint = currentPoint;
-			}
-		}
-	}
+    public Point getPosition()
+    {
+        PointerInfo pi = MouseInfo.getPointerInfo();
+        return pi.getLocation();
+    }
 
-	
+    @Override
+    public void run()
+    {
+        lastPoint = getPosition();
+        while (true)
+        {
+            try
+
+            {
+                sleep(sleepPeriod);
+            }
+            catch (InterruptedException e)
+            {}
+
+            Point currentPoint = getPosition();
+            if (!currentPoint.equals(lastPoint))
+            {
+                for (SystemMouseListener l : listeners)
+                    l.mousePositionChanged(currentPoint);
+                lastPoint = currentPoint;
+            }
+        }
+    }
 
 }
