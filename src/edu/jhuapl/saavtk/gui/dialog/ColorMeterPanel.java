@@ -17,6 +17,8 @@ import java.awt.event.HierarchyEvent;
 import java.awt.event.HierarchyListener;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -27,11 +29,10 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import edu.jhuapl.saavtk.gui.SystemMouse;
-import edu.jhuapl.saavtk.gui.SystemMouseListener;
 
 // this color meter panel was adapted from the example at https://stackoverflow.com/questions/13061122/getting-rgb-value-from-under-mouse-cursor 
 @SuppressWarnings("serial")
-class ColorMeterPanel extends JPanel implements SystemMouseListener, HierarchyListener, AWTEventListener, ChangeListener
+class ColorMeterPanel extends JPanel implements PropertyChangeListener, HierarchyListener, AWTEventListener, ChangeListener
 {
 
     JLabel hoverColorPatch = new JLabel();
@@ -54,12 +55,13 @@ class ColorMeterPanel extends JPanel implements SystemMouseListener, HierarchyLi
     };
     JLabel currentColorPatch = new JLabel();
     JColorChooser parent;
+    private SystemMouse systemMouse;
     Robot robot;
     ImageIcon icon;
     private int screenShotDim = 21;
     private int labelDim = 100;
 
-    public ColorMeterPanel(JColorChooser parent)
+    public ColorMeterPanel(JColorChooser parent) throws AWTException
     {
         this.add(screenCapturePatch);
         this.add(hoverColorPatch);
@@ -80,23 +82,20 @@ class ColorMeterPanel extends JPanel implements SystemMouseListener, HierarchyLi
         currentColorPatch.setOpaque(true);
         currentColorPatch.setBorder(BorderFactory.createLineBorder(Color.BLACK));
         parent.getSelectionModel().addChangeListener(this);
-        try
-        {
-            robot = new Robot();
-        }
-        catch (AWTException e)
-        {
-            e.printStackTrace();
-        }
+        robot = new Robot();
     }
 
     @Override
-    public void mousePositionChanged(Point pos)
+    public void propertyChange(PropertyChangeEvent e)
     {
-        hoverColorPatch.setBackground(robot.getPixelColor(pos.x, pos.y));
-        BufferedImage image = robot.createScreenCapture(new Rectangle(pos.x - screenShotDim / 2, pos.y - screenShotDim / 2, screenShotDim, screenShotDim));
-        icon = new ImageIcon(image.getScaledInstance(labelDim, labelDim, BufferedImage.SCALE_DEFAULT));
-        screenCapturePatch.setIcon(icon);
+        if (e.getPropertyName().equals(SystemMouse.POINTER_POSITION))
+        {
+            Point pos = (Point) e.getNewValue();
+            hoverColorPatch.setBackground(robot.getPixelColor(pos.x, pos.y));
+            BufferedImage image = robot.createScreenCapture(new Rectangle(pos.x - screenShotDim / 2, pos.y - screenShotDim / 2, screenShotDim, screenShotDim));
+            icon = new ImageIcon(image.getScaledInstance(labelDim, labelDim, BufferedImage.SCALE_DEFAULT));
+            screenCapturePatch.setIcon(icon);
+        }
     }
 
     @Override
@@ -106,12 +105,22 @@ class ColorMeterPanel extends JPanel implements SystemMouseListener, HierarchyLi
         {
             if (isShowing())
             {
-                SystemMouse.getInstance().addListener(this);
+                if (systemMouse == null)
+                {
+                    systemMouse = SystemMouse.of();
+                    systemMouse.addPropertyChangeListener(this);
+                    systemMouse.execute();
+                }
                 Toolkit.getDefaultToolkit().addAWTEventListener(this, AWTEvent.KEY_EVENT_MASK);
             }
             else
             {
-                SystemMouse.getInstance().removeListener(this);
+                if (systemMouse != null)
+                {
+                    systemMouse.removePropertyChangeListener(this);
+                    systemMouse.cancel(true);
+                    systemMouse = null;
+                }
                 Toolkit.getDefaultToolkit().removeAWTEventListener(this);
             }
         }
@@ -121,9 +130,9 @@ class ColorMeterPanel extends JPanel implements SystemMouseListener, HierarchyLi
     public void eventDispatched(AWTEvent event)
     {
         KeyEvent keyEvent = (KeyEvent) event;
-        if (keyEvent.getKeyCode() == KeyEvent.VK_C)
+        if (keyEvent.getKeyCode() == KeyEvent.VK_C && systemMouse != null)
         {
-            Point pos = SystemMouse.getInstance().getPosition();
+            Point pos = systemMouse.getPosition();
             parent.setColor(robot.getPixelColor(pos.x, pos.y));
         }
     }

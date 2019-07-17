@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.gui.dialog;
 
+import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionListener;
@@ -9,7 +10,7 @@ import javax.swing.JDialog;
 
 public class ColorChooser
 {
-    private static Color lastColorChosen = null;
+    private static Color lastColorChosen = Color.MAGENTA;
 
     static public Color showColorChooser(Component parent)
     {
@@ -31,18 +32,22 @@ public class ColorChooser
         Color color = null;
         if (aColor != null)
             color = aColor;
-        else if (lastColorChosen != null)
-            color = lastColorChosen;
         else
-            color = Color.MAGENTA;
+            color = lastColorChosen;
 
-        lastColorChosen = new ColorChooser(color).showColorDialog(parent);// JColorChooser.showDialog(parent, "Color
-                                                                          // Chooser Dialog", color);
+        try
+        {
+            lastColorChosen = new ColorChooser(color).showColorDialog(parent);
+        }
+        catch (AWTException e)
+        {
+            e.printStackTrace();
+        }
 
         return lastColorChosen;
     }
 
-    static public ColorChooser of(Color initialColor)
+    static public ColorChooser of(Color initialColor) throws AWTException
     {
         return new ColorChooser(initialColor);
     }
@@ -50,7 +55,7 @@ public class ColorChooser
     private final JColorChooser chooser;
     private Color currentColor;
 
-    private ColorChooser(Color initialColor)
+    private ColorChooser(Color initialColor) throws AWTException
     {
         this.chooser = new JColorChooser(initialColor);
         this.currentColor = initialColor;

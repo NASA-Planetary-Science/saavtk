@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.popup;
 
+import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.GridLayout;
@@ -34,7 +35,7 @@ public class GraticulePopupMenu extends PopupMenu
     private double[] factors = { 1, 2, 3, 4, 5, 6, 9, 10, 12, 15, 18, 20, 30, 36, 45, 60, 90, 180 };
     private boolean tooSmall = false;
 
-    public GraticulePopupMenu(ModelManager modelManager, Component invoker)
+    public GraticulePopupMenu(ModelManager modelManager, Component invoker) throws AWTException
     {
         this.graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
         this.invoker = invoker;
@@ -116,7 +117,7 @@ public class GraticulePopupMenu extends PopupMenu
                 if (180 % (Double) longitudeSpinner.getValue() != 0)
                 {
                     findBounds((Double) longitudeSpinner.getValue());
-//                	System.out.println(" Bound: " + (((bounds[1] - bounds[0]) / 2.0) + bounds[0]));
+//                  System.out.println(" Bound: " + (((bounds[1] - bounds[0]) / 2.0) + bounds[0]));
                     if ((((bounds[1] - bounds[0]) / 2.0) + bounds[0]) >= (Double) longitudeSpinner.getValue())
                     {
                         longitudeSpinner.setValue(bounds[0]);
@@ -156,7 +157,7 @@ public class GraticulePopupMenu extends PopupMenu
                 {
                     bounds[1] = factors[i];
                     bounds[0] = factors[i - 1];
-//					System.out.println(bounds[0] + "   " + bounds[1]);
+//                  System.out.println(bounds[0] + "   " + bounds[1]);
                     break;
                 }
             }
@@ -165,7 +166,7 @@ public class GraticulePopupMenu extends PopupMenu
         {
             tooSmall = false;
             input = Math.round(input * 100.0) / 100.0;
-//			System.out.println(input);
+//          System.out.println(input);
             bounds[0] = input;
             bounds[1] = input;
 
@@ -173,14 +174,14 @@ public class GraticulePopupMenu extends PopupMenu
             {
                 bounds[0] -= .01;
                 bounds[0] = Math.round(bounds[0] * 100.0) / 100.0;
-//				System.out.println("Lower: " + bounds[0]);
+//              System.out.println("Lower: " + bounds[0]);
             }
 
             while ((180.0 / bounds[1]) % 2 != 0)
             {
                 bounds[1] += .01;
                 bounds[1] = Math.round(bounds[1] * 100.0) / 100.0;
-//				System.out.println("Upper: " + bounds[1]);
+//              System.out.println("Upper: " + bounds[1]);
             }
         }
         else

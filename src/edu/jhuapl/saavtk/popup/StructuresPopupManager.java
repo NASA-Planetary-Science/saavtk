@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.popup;
 
+import java.awt.AWTException;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
 
@@ -38,8 +39,15 @@ public class StructuresPopupManager extends PopupManager
         popupMenu = new PointsPopupMenu(modelManager, renderer);
         registerPopup(modelManager.getModel(ModelNames.POINT_STRUCTURES), popupMenu);
 
-        popupMenu = new GraticulePopupMenu(modelManager, renderer);
-        registerPopup(modelManager.getModel(ModelNames.GRATICULE), popupMenu);
+        try
+        {
+            popupMenu = new GraticulePopupMenu(modelManager, renderer);
+            registerPopup(modelManager.getModel(ModelNames.GRATICULE), popupMenu);
+        }
+        catch (AWTException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     @Override
