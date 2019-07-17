@@ -11,7 +11,6 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Robot;
-import java.awt.Stroke;
 import java.awt.Toolkit;
 import java.awt.event.AWTEventListener;
 import java.awt.event.HierarchyEvent;
@@ -32,97 +31,109 @@ import edu.jhuapl.saavtk.gui.SystemMouseListener;
 
 // this color meter panel was adapted from the example at https://stackoverflow.com/questions/13061122/getting-rgb-value-from-under-mouse-cursor 
 @SuppressWarnings("serial")
-class ColorMeterPanel extends JPanel implements SystemMouseListener, HierarchyListener, AWTEventListener, ChangeListener {
+class ColorMeterPanel extends JPanel implements SystemMouseListener, HierarchyListener, AWTEventListener, ChangeListener
+{
 
-	JLabel hoverColorPatch = new JLabel();
-	JLabel screenCapturePatch = new JLabel()
-			{
-				@Override
-				protected void paintComponent(Graphics g) {
-					super.paintComponent(g);
-					if (labelDim<screenShotDim)
-						labelDim=screenShotDim;
-					g.setColor(Color.BLACK);
-					((Graphics2D)g).setStroke(new BasicStroke(2));
-					int x=labelDim/2-(labelDim/screenShotDim/2)+1;
-					int y=labelDim/2-(labelDim/screenShotDim/2)+1;
-					int w=labelDim/screenShotDim;
-					g.drawRect(x,y,w,w);
-					g.setColor(Color.WHITE);
-					g.drawRect(x-1, y-1, w+2, w+2);
-				}
-			};
-	JLabel currentColorPatch = new JLabel();
-	JColorChooser parent;
-	Robot robot;
-	ImageIcon icon;
-	private int screenShotDim = 21;
-	private int labelDim=100;
+    JLabel hoverColorPatch = new JLabel();
+    JLabel screenCapturePatch = new JLabel() {
+        @Override
+        protected void paintComponent(Graphics g)
+        {
+            super.paintComponent(g);
+            if (labelDim < screenShotDim)
+                labelDim = screenShotDim;
+            g.setColor(Color.BLACK);
+            ((Graphics2D) g).setStroke(new BasicStroke(2));
+            int x = labelDim / 2 - (labelDim / screenShotDim / 2) + 1;
+            int y = labelDim / 2 - (labelDim / screenShotDim / 2) + 1;
+            int w = labelDim / screenShotDim;
+            g.drawRect(x, y, w, w);
+            g.setColor(Color.WHITE);
+            g.drawRect(x - 1, y - 1, w + 2, w + 2);
+        }
+    };
+    JLabel currentColorPatch = new JLabel();
+    JColorChooser parent;
+    Robot robot;
+    ImageIcon icon;
+    private int screenShotDim = 21;
+    private int labelDim = 100;
 
-	public ColorMeterPanel(JColorChooser parent) {
-		this.add(screenCapturePatch);
-		this.add(hoverColorPatch);
-		this.add(currentColorPatch);
-		currentColorPatch.setBackground(parent.getSelectionModel().getSelectedColor());
-		
-		this.add(new JLabel("<html>Note: hover over any pixel on the screen<br>&nbsp&nbsp&nbsp&nbsp and press 'c' to select its color</html>"));
-		
-		this.parent = parent;
-		this.addHierarchyListener(this);
-		screenCapturePatch.setPreferredSize(new Dimension(labelDim, labelDim));
-		screenCapturePatch.setOpaque(true);
-		screenCapturePatch.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-		hoverColorPatch.setPreferredSize(new Dimension(labelDim, labelDim));
-		hoverColorPatch.setOpaque(true);
-		hoverColorPatch.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-		currentColorPatch.setPreferredSize(new Dimension(labelDim, labelDim));
-		currentColorPatch.setOpaque(true);
-		currentColorPatch.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-		parent.getSelectionModel().addChangeListener(this);
-		try {
-			robot = new Robot();
-		} catch (AWTException e) {
-			e.printStackTrace();
-		}
-	}
+    public ColorMeterPanel(JColorChooser parent)
+    {
+        this.add(screenCapturePatch);
+        this.add(hoverColorPatch);
+        this.add(currentColorPatch);
+        currentColorPatch.setBackground(parent.getSelectionModel().getSelectedColor());
 
-	@Override
-	public void mousePositionChanged(Point pos) {
-			hoverColorPatch.setBackground(robot.getPixelColor(pos.x, pos.y));
-			BufferedImage image = robot.createScreenCapture(new Rectangle(pos.x - screenShotDim / 2, pos.y - screenShotDim / 2, screenShotDim, screenShotDim));
-			icon = new ImageIcon(image.getScaledInstance(labelDim, labelDim, BufferedImage.SCALE_DEFAULT));
-			screenCapturePatch.setIcon(icon);
-	}
+        this.add(new JLabel("<html>Note: hover over any pixel on the screen<br>&nbsp&nbsp&nbsp&nbsp and press 'c' to select its color</html>"));
 
-	@Override
-	public void hierarchyChanged(HierarchyEvent e) {
-		if (e.getSource() == this) {
-			if (isShowing()) {
-				SystemMouse.getInstance().addListener(this);
-				Toolkit.getDefaultToolkit().addAWTEventListener(this, AWTEvent.KEY_EVENT_MASK);
-			} else {
-				SystemMouse.getInstance().removeListener(this);
-				Toolkit.getDefaultToolkit().removeAWTEventListener(this);
-			}
-		}
-	}
+        this.parent = parent;
+        this.addHierarchyListener(this);
+        screenCapturePatch.setPreferredSize(new Dimension(labelDim, labelDim));
+        screenCapturePatch.setOpaque(true);
+        screenCapturePatch.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        hoverColorPatch.setPreferredSize(new Dimension(labelDim, labelDim));
+        hoverColorPatch.setOpaque(true);
+        hoverColorPatch.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        currentColorPatch.setPreferredSize(new Dimension(labelDim, labelDim));
+        currentColorPatch.setOpaque(true);
+        currentColorPatch.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        parent.getSelectionModel().addChangeListener(this);
+        try
+        {
+            robot = new Robot();
+        }
+        catch (AWTException e)
+        {
+            e.printStackTrace();
+        }
+    }
 
-		@Override
-		public void eventDispatched(AWTEvent event) {
-				KeyEvent keyEvent=(KeyEvent)event;
-				if (keyEvent.getKeyCode()==KeyEvent.VK_C)
-				{
-					Point pos = SystemMouse.getInstance().getPosition();
-					parent.setColor(robot.getPixelColor(pos.x, pos.y));
-				}
-			}
+    @Override
+    public void mousePositionChanged(Point pos)
+    {
+        hoverColorPatch.setBackground(robot.getPixelColor(pos.x, pos.y));
+        BufferedImage image = robot.createScreenCapture(new Rectangle(pos.x - screenShotDim / 2, pos.y - screenShotDim / 2, screenShotDim, screenShotDim));
+        icon = new ImageIcon(image.getScaledInstance(labelDim, labelDim, BufferedImage.SCALE_DEFAULT));
+        screenCapturePatch.setIcon(icon);
+    }
 
-		@Override
-		public void stateChanged(ChangeEvent e) {
-			currentColorPatch.setBackground(parent.getSelectionModel().getSelectedColor());
-		}
-	
-		
+    @Override
+    public void hierarchyChanged(HierarchyEvent e)
+    {
+        if (e.getSource() == this)
+        {
+            if (isShowing())
+            {
+                SystemMouse.getInstance().addListener(this);
+                Toolkit.getDefaultToolkit().addAWTEventListener(this, AWTEvent.KEY_EVENT_MASK);
+            }
+            else
+            {
+                SystemMouse.getInstance().removeListener(this);
+                Toolkit.getDefaultToolkit().removeAWTEventListener(this);
+            }
+        }
+    }
+
+    @Override
+    public void eventDispatched(AWTEvent event)
+    {
+        KeyEvent keyEvent = (KeyEvent) event;
+        if (keyEvent.getKeyCode() == KeyEvent.VK_C)
+        {
+            Point pos = SystemMouse.getInstance().getPosition();
+            parent.setColor(robot.getPixelColor(pos.x, pos.y));
+        }
+    }
+
+    @Override
+    public void stateChanged(ChangeEvent e)
+    {
+        currentColorPatch.setBackground(parent.getSelectionModel().getSelectedColor());
+    }
+
 //	@Override
 //	public void keyTyped(KeyEvent e) {
 //		System.out.println(e);
