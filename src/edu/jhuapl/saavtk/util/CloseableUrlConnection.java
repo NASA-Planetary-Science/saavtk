@@ -95,21 +95,21 @@ public class CloseableUrlConnection implements Closeable
         return description;
     }
 
-    private static class MyConnection extends CloseableUrlConnection
-    {
-        MyConnection(URL url, HttpRequestMethod method) throws IOException
-        {
-            super(url, method);
-        }
-
-        @Override
-        protected URLConnection open(@SuppressWarnings("unused") URL url, @SuppressWarnings("unused") HttpRequestMethod method) throws IOException
-        {
-            return null;
-        }
-
-    }
-
+//    private static class MyConnection extends CloseableUrlConnection
+//    {
+//        MyConnection(URL url, HttpRequestMethod method) throws IOException
+//        {
+//            super(url, method);
+//        }
+//
+//        @Override
+//        protected URLConnection open(@SuppressWarnings("unused") URL url, @SuppressWarnings("unused") HttpRequestMethod method) throws IOException
+//        {
+//            return null;
+//        }
+//
+//    }
+//
 //    public static void main(String[] args)
 //    {
 //        try
