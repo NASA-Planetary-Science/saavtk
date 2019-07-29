@@ -292,21 +292,25 @@ public final class FileCache
     private static boolean showDotsForFiles = false;
     private static String offlineModeRootFolder;
 
-    private static final DownloadableFileManager downloadableManager = createDownloadManager();
+    private static DownloadableFileManager downloadableManager = null;
 
     public static DownloadableFileManager instance()
     {
+        if (downloadableManager == null)
+        {
+            downloadableManager = createDownloadManager();
+        }
         return downloadableManager;
     }
 
     public static DownloadableFileState getState(String urlString)
     {
-        return downloadableManager.query(urlString, false);
+        return instance().query(urlString, false);
     }
 
     public static DownloadableFileState refreshStateInfo(String urlString)
     {
-        return downloadableManager.query(urlString, true);
+        return instance().query(urlString, true);
     }
 
     /**
@@ -325,7 +329,7 @@ public final class FileCache
         RuntimeException exception = null;
         try
         {
-            fileState = downloadableManager.getDownloadedFile(urlString, false);
+            fileState = instance().getDownloadedFile(urlString, false);
         }
         catch (FileNotFoundException e)
         {
@@ -640,7 +644,7 @@ public final class FileCache
 
         boolean result = false;
 
-        DownloadableFileState state = downloadableManager.query(urlOrPathSegment, false);
+        DownloadableFileState state = instance().query(urlOrPathSegment, false);
 
         if (state.getFileState().getStatus() == FileStatus.ACCESSIBLE)
         {
@@ -811,7 +815,7 @@ public final class FileCache
     @Deprecated
     private static boolean getOfflineMode()
     {
-        return !downloadableManager.isServerAccessEnabled();
+        return !instance().isServerAccessEnabled();
     }
 
     @Deprecated
@@ -837,7 +841,7 @@ public final class FileCache
         }
         FileCache.offlineModeRootFolder = offlineModeRootFolder;
 
-        downloadableManager.setEnableServerAccess(!offlineMode);
+        instance().setEnableServerAccess(!offlineMode);
     }
 
     public static void addServerUrlPropertyChangeListener(PropertyChangeListener listener)
