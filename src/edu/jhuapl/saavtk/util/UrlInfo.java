@@ -26,6 +26,7 @@ public class UrlInfo
         NOT_AUTHORIZED, // Connection made, but user is not authorized.
         NOT_FOUND, // Connection made, but resource was not found.
         HTTP_ERROR, // Connection made, but HTTP error code was returned. Future access unknown.
+        INVALID_URL, // URL itself is flawed. Future access will fail.
         UNKNOWN, // Have not succesfully obtained information about the URL.
     }
 
@@ -36,7 +37,9 @@ public class UrlInfo
 
         public static UrlState of(URL url)
         {
-            return of(url, UrlStatus.UNKNOWN, UNKNOWN_LENGTH, UNKNOWN_LAST_MODIFIED);
+            UrlStatus initialStatus = url.toString().contains(" ") ? UrlStatus.INVALID_URL : UrlStatus.UNKNOWN;
+
+            return of(url, initialStatus, UNKNOWN_LENGTH, UNKNOWN_LAST_MODIFIED);
         }
 
         public static UrlState of(URL url, UrlStatus status)
@@ -163,54 +166,58 @@ public class UrlInfo
         synchronized (this.state)
         {
             UrlState state = this.state.get();
-
             UrlStatus status = state.getStatus();
-            long contentLength = state.getContentLength();
-            long lastModified = state.getLastModified();
 
-            if (connection instanceof HttpURLConnection)
+            if (status != UrlStatus.INVALID_URL)
             {
-                HttpURLConnection httpConnection = (HttpURLConnection) connection;
-                try
+                long contentLength = state.getContentLength();
+                long lastModified = state.getLastModified();
+                if (connection instanceof HttpURLConnection)
                 {
-                    int code = httpConnection.getResponseCode();
+                    HttpURLConnection httpConnection = (HttpURLConnection) connection;
+                    try
+                    {
+                        int code = httpConnection.getResponseCode();
 
-                    // Codes in the 200 series are generally "ok" so treat any of them as
-                    // successful.
-                    if (code >= HttpURLConnection.HTTP_OK && code < HttpURLConnection.HTTP_MULT_CHOICE)
-                    {
-                        status = UrlStatus.ACCESSIBLE;
-                        contentLength = httpConnection.getContentLengthLong();
-                        lastModified = httpConnection.getLastModified();
+                        // Codes in the 200 series are generally "ok" so treat any of them as
+                        // successful.
+                        if (code >= HttpURLConnection.HTTP_OK && code < HttpURLConnection.HTTP_MULT_CHOICE)
+                        {
+                            status = UrlStatus.ACCESSIBLE;
+                            contentLength = httpConnection.getContentLengthLong();
+                            lastModified = httpConnection.getLastModified();
+                        }
+                        else if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN)
+                        {
+                            status = UrlStatus.NOT_AUTHORIZED;
+                        }
+                        else if (code == HttpURLConnection.HTTP_NOT_FOUND)
+                        {
+                            status = UrlStatus.NOT_FOUND;
+                        }
+                        else
+                        {
+                            Debug.err().println("Received response code " + code + " for URL " + state.getUrl());
+                            status = UrlStatus.HTTP_ERROR;
+                        }
                     }
-                    else if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN)
+                    catch (ProtocolException e)
                     {
-                        status = UrlStatus.NOT_AUTHORIZED;
-                    }
-                    else if (code == HttpURLConnection.HTTP_NOT_FOUND)
-                    {
-                        status = UrlStatus.NOT_FOUND;
-                    }
-                    else
-                    {
-                        Debug.err().println("Received response code " + code + " for URL " + state.getUrl());
-                        status = UrlStatus.HTTP_ERROR;
+                        // This indicates the request method isn't supported. That should not happen.
+                        throw new AssertionError(e);
                     }
                 }
-                catch (ProtocolException e)
+                else
                 {
-                    // This indicates the request method isn't supported. That should not happen.
-                    throw new AssertionError(e);
+                    // Probably this is a file-type URL. May need to add access checks for that, but
+                    // for now, be optimistic and assume it's accessible.
+                    status = UrlStatus.ACCESSIBLE;
                 }
-            }
-            else
-            {
-                // Probably this is a file-type URL. May need to add access checks for that, but
-                // for now, be optimistic and assume it's accessible.
-                status = UrlStatus.ACCESSIBLE;
+
+                state = update(status, contentLength, lastModified);
             }
 
-            return update(status, contentLength, lastModified);
+            return state;
         }
     }
 
