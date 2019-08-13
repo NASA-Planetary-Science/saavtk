@@ -25,19 +25,30 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import edu.jhuapl.saavtk.colormap.RgbColormap.ColorSpace;
+import edu.jhuapl.saavtk.util.Preferences;
 import vtk.vtkNativeLibrary;
 
 public class Colormaps
 {
     private static Map<String, RgbColormap> builtInColormaps = null;
+    private static String defaultColorMapName = "rainbow";
 
     public static String getDefaultColormapName()
     {
-        return "rainbow";
+        return defaultColorMapName;
+    }
+
+    public static void setDefaultColormapName(String colorMapName)
+    {
+        Preconditions.checkNotNull(colorMapName);
+        Preconditions.checkArgument(getAllBuiltInColormapNames().contains(colorMapName), "Unknown color map name " + colorMapName);
+
+        defaultColorMapName = colorMapName;
     }
 
     public static Set<String> getAllBuiltInColormapNames()
@@ -58,6 +69,19 @@ public class Colormaps
     {
         builtInColormaps = Maps.newTreeMap();
         loadFromXml("ColorMaps.xml");
+
+        String defaultColorMapName = Preferences.getInstance().get(Preferences.DEFAULT_COLOR_MAP_NAME);
+        if (defaultColorMapName != null)
+        {
+            try
+            {
+                setDefaultColormapName(defaultColorMapName);
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
     }
 
     private static void loadFromXml(String resourceName)

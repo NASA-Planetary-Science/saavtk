@@ -20,6 +20,7 @@ import javax.swing.JOptionPane;
 import com.google.common.base.Joiner;
 import com.google.common.primitives.Ints;
 
+import edu.jhuapl.saavtk.colormap.Colormaps;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.render.RenderPanel;
@@ -316,6 +317,8 @@ public class PreferencesDialog extends javax.swing.JDialog
         jLabel9 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
 //        mouseWheelMotionFactorSpinner = new javax.swing.JSpinner();
+        defaultColorMapLabel = new javax.swing.JLabel("Default color map name");
+        defaultColorMapSelection = new javax.swing.JComboBox<>();
         selectionColorLabel = new javax.swing.JLabel();
         selectionColorButton = new javax.swing.JButton();
         jPanel10 = new javax.swing.JPanel();
@@ -457,7 +460,7 @@ public class PreferencesDialog extends javax.swing.JDialog
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 33;
+        gridBagConstraints.gridy = 36;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.weighty = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(15, 0, 0, 0);
@@ -731,7 +734,7 @@ public class PreferencesDialog extends javax.swing.JDialog
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 29;
+        gridBagConstraints.gridy = 32;
         gridBagConstraints.gridwidth = 4;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.insets = new java.awt.Insets(15, 4, 5, 0);
@@ -754,10 +757,32 @@ public class PreferencesDialog extends javax.swing.JDialog
 //        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
 //        jPanel11.add(mouseWheelMotionFactorSpinner, gridBagConstraints);
 
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 31;
+        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 0);
+        jPanel11.add(defaultColorMapLabel, gridBagConstraints);
+
+        for (String colorMapName : Colormaps.getAllBuiltInColormapNames())
+        {
+            defaultColorMapSelection.addItem(colorMapName);
+        }
+        defaultColorMapSelection.setSelectedItem(Colormaps.getDefaultColormapName());
+        defaultColorMapSelection.addItemListener(e -> {
+            Colormaps.setDefaultColormapName((String) e.getItem());
+        });
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 31;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        jPanel11.add(defaultColorMapSelection, gridBagConstraints);
+
         selectionColorLabel.setText("Default");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 30;
+        gridBagConstraints.gridy = 33;
         gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 0);
         jPanel11.add(selectionColorLabel, gridBagConstraints);
 
@@ -771,7 +796,7 @@ public class PreferencesDialog extends javax.swing.JDialog
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 30;
+        gridBagConstraints.gridy = 33;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         jPanel11.add(selectionColorButton, gridBagConstraints);
@@ -814,7 +839,7 @@ public class PreferencesDialog extends javax.swing.JDialog
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 31;
+        gridBagConstraints.gridy = 34;
         gridBagConstraints.gridwidth = 4;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.insets = new java.awt.Insets(15, 4, 5, 0);
@@ -823,7 +848,7 @@ public class PreferencesDialog extends javax.swing.JDialog
         backgroundColorLabel.setText("Default");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 32;
+        gridBagConstraints.gridy = 35;
         gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 0);
         jPanel11.add(backgroundColorLabel, gridBagConstraints);
 
@@ -837,7 +862,7 @@ public class PreferencesDialog extends javax.swing.JDialog
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 32;
+        gridBagConstraints.gridy = 35;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         jPanel11.add(backgroundColorButton, gridBagConstraints);
@@ -1049,6 +1074,7 @@ public class PreferencesDialog extends javax.swing.JDialog
         preferencesMap.put(Preferences.LIGHT_INTENSITY, ((Double) intensitySpinner.getValue()).toString());
         preferencesMap.put(Preferences.PICK_TOLERANCE, Double.valueOf(getToleranceFromSliderValue(pickToleranceSlider.getValue())).toString());
 //        preferencesMap.put(Preferences.MOUSE_WHEEL_MOTION_FACTOR, ((Double)mouseWheelMotionFactorSpinner.getValue()).toString());
+        preferencesMap.put(Preferences.DEFAULT_COLOR_MAP_NAME, (String) defaultColorMapSelection.getSelectedItem());
         preferencesMap.put(Preferences.SELECTION_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(selectionColorLabel))));
         preferencesMap.put(Preferences.BACKGROUND_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(backgroundColorLabel))));
 //        preferencesMap.put(Preferences.AXES_XAXIS_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(xAxisColorLabel))));
@@ -1180,6 +1206,8 @@ public class PreferencesDialog extends javax.swing.JDialog
     private javax.swing.JFormattedTextField longitudeTextField;
 //    private javax.swing.JSpinner mouseWheelMotionFactorSpinner;
     private javax.swing.JSlider pickToleranceSlider;
+    private javax.swing.JLabel defaultColorMapLabel;
+    private javax.swing.JComboBox<String> defaultColorMapSelection;
     private javax.swing.JButton selectionColorButton;
     private javax.swing.JLabel selectionColorLabel;
 //    private javax.swing.JCheckBox showAxesCheckBox;
