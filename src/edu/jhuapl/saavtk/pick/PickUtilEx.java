@@ -16,6 +16,21 @@ import vtk.vtkPropCollection;
 public class PickUtilEx
 {
 	/**
+	 * Utility method to form a vtkCellPicker suitable for picking targets.
+	 * <P>
+	 * The returned picker will not have any registered vtkPros and thus will
+	 * (initially) not be able to pick anything.
+	 */
+	public static vtkCellPicker formEmptyPicker()
+	{
+		vtkCellPicker retCellPicker = new vtkCellPicker();
+		retCellPicker.PickFromListOn();
+		retCellPicker.InitializePickList();
+
+		return retCellPicker;
+	}
+
+	/**
 	 * Utility method to form a vtkCellPicker suitable for picking targets on the
 	 * "small body".
 	 */
@@ -39,41 +54,36 @@ public class PickUtilEx
 
 	/**
 	 * Utility method to form a vtkCellPicker suitable for picking targets
-	 * corresponding to the specified vtkActor.
+	 * corresponding to the specified vtkProp.
 	 */
-	public static vtkCellPicker formStructurePicker(vtkActor aActor)
+	public static vtkCellPicker formStructurePicker(vtkActor aProp)
 	{
-		vtkCellPicker retCellPicker = new vtkCellPicker();
-		retCellPicker.PickFromListOn();
-		retCellPicker.InitializePickList();
+		// Delegate
+		vtkCellPicker retCellPicker = formEmptyPicker();
 
+		// Register the single vtkProp
 		vtkPropCollection vPropCollection = retCellPicker.GetPickList();
 		vPropCollection.RemoveAllItems();
-		retCellPicker.AddPickList(aActor);
+		retCellPicker.AddPickList(aProp);
 
 		return retCellPicker;
 	}
 
 	/**
-	 * Utility method to form a vtkCellPicker suitable for picking targets
-	 * corresponding to the specified list of vtkActors.
+	 * Utility method to update a vtkCellPicker with an updated list of vtkProps
+	 * corresponding to potential targets of interest.
 	 */
-	public static vtkCellPicker formStructurePicker(List<vtkProp> aActorL)
+	public static void updatePickerProps(vtkCellPicker aCellPicker, List<vtkProp> aPropL)
 	{
-		vtkCellPicker retCellPicker = new vtkCellPicker();
-		retCellPicker.PickFromListOn();
-		retCellPicker.InitializePickList();
-
 		// Utilize the reverse ordering so that items drawn on top will
 		// be picked before items on bottom
-		aActorL = Lists.reverse(aActorL);
+		aPropL = Lists.reverse(aPropL);
 
-		vtkPropCollection vPropCollection = retCellPicker.GetPickList();
+		// Update the list of vtkProps that the picker will respond to
+		vtkPropCollection vPropCollection = aCellPicker.GetPickList();
 		vPropCollection.RemoveAllItems();
-		for (vtkProp aActor : aActorL)
-			retCellPicker.AddPickList(aActor);
-
-		return retCellPicker;
+		for (vtkProp aActor : aPropL)
+			aCellPicker.AddPickList(aActor);
 	}
 
 }
