@@ -1,14 +1,10 @@
 package edu.jhuapl.saavtk.config;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.model.ShapeModelBody;
 import edu.jhuapl.saavtk.model.ShapeModelType;
-import edu.jhuapl.saavtk.util.DownloadableFileManager;
 
 /**
  * A Config is a class for storing models should be instantiated together for a
@@ -22,8 +18,6 @@ public abstract class ViewConfig implements Cloneable
 	public ShapeModelType author; // e.g. Gaskell
 	public String version; // e.g. 2.0
 	public ShapeModelBody body; // e.g. EROS or ITOKAWA
-	public boolean hasFlybyData; // for flyby path data
-	public boolean hasStateHistory; // for bodies with state history tabs
 
 	public boolean useMinimumReferencePotential = false; // uses average otherwise
 	public boolean hasCustomBodyCubeSize = false;
@@ -131,10 +125,10 @@ public abstract class ViewConfig implements Cloneable
 		this.enabled = enabled;
 	}
 
-    private static List<ViewConfig> builtInConfigs = new ArrayList<>();
+    private static ConfigArrayList builtInConfigs = new ConfigArrayList();
 	private static String firstTimeDefaultModel = null;
 
-    public static List<ViewConfig> getBuiltInConfigs()
+    public static ConfigArrayList getBuiltInConfigs()
 	{
 		return builtInConfigs;
 	}
