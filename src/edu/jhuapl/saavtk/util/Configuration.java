@@ -334,6 +334,10 @@ public class Configuration
         }
         try
         {
+            // Clear out any previous credentials.
+            java.net.Authenticator.setDefault(null);
+
+            // Now try to set up authentication using the new credentials.
             java.net.Authenticator.setDefault(new java.net.Authenticator() {
                 final Map<String, Integer> triedCount = new HashMap<>();
 
@@ -348,15 +352,11 @@ public class Configuration
                         triedCount.put(urlString, count + 1);
                         return new java.net.PasswordAuthentication(username, password);
                     }
-                    // Oddly enough, this does the trick to prevent repeatedly trying a wrong
-                    // password,
-                    // while throwing a RuntimeException doesn't work. It appears that null is
-                    // interpreted
-                    // as meaning the user failed to provide credentials, so it just returns an
-                    // appropriate
-                    // HTTP code back up the stack. Nice!
-                    // By contrast, the RuntimeException was not catchable because the authorization
-                    // attempt
+                    // Oddly enough, returning null (eee below) prevents repeatedly trying a wrong
+                    // password, while throwing a RuntimeException doesn't work. It appears that
+                    // null is interpreted as meaning the user failed to provide credentials, so it
+                    // just returns an appropriate HTTP code back up the stack. Nice! By contrast,
+                    // the RuntimeException was not catchable because the authorization attempt
                     // occurred in a different thread.
                     return null;
                 }
