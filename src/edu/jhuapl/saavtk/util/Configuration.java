@@ -62,6 +62,7 @@ public class Configuration
     private static boolean userPasswordAccepted = false;
     private static URL restrictedAccessRoot = null;
     private static Iterable<Path> passwordFilesToTry = null;
+    private static final AtomicBoolean validPasswordEntered = new AtomicBoolean(false);
 
     // Uncomment the following to enable the startup script (which can be changed by
     // the user)
@@ -203,12 +204,15 @@ public class Configuration
 
     private static boolean promptUserForPassword(final String restrictedAccessUrl, final Path passwordFile, final boolean updateMode)
     {
-        if (isHeadless())
+        // Prevent re-issuing prompts after valid credentials were used once.
+        if (validPasswordEntered.get() && !updateMode)
+        {
+            return true;
+        }
+        else if (isHeadless())
         {
             return false;
         }
-
-        AtomicBoolean validPasswordEntered = new AtomicBoolean(false);
 
         try
         {
