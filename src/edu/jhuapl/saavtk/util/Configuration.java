@@ -435,6 +435,13 @@ public class Configuration
         return cacheDir;
     }
 
+    public static void setCacheDir(String cacheDir)
+    {
+        Preconditions.checkNotNull(cacheDir);
+
+        Configuration.cacheDir = SafeURLPaths.instance().getString(cacheDir);
+    }
+
     public static URL getRootURL()
     {
         return rootURL;

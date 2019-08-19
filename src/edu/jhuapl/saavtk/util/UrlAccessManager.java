@@ -3,14 +3,13 @@ package edu.jhuapl.saavtk.util;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Preconditions;
 
@@ -61,23 +60,23 @@ public class UrlAccessManager
 
     private final URL rootUrl;
     private final ConcurrentMap<String, UrlInfo> urlInfoCache;
-    private volatile boolean enableServerAccess;
+    private final AtomicBoolean enableServerAccess;
 
     protected UrlAccessManager(URL rootUrl)
     {
         this.rootUrl = rootUrl;
         this.urlInfoCache = new ConcurrentHashMap<>();
-        this.enableServerAccess = true;
+        this.enableServerAccess = new AtomicBoolean(true);
     }
 
     public boolean isServerAccessEnabled()
     {
-        return enableServerAccess;
+        return enableServerAccess.get();
     }
 
     public void setEnableServerAccess(boolean enableServerAccess)
     {
-        this.enableServerAccess = enableServerAccess;
+        this.enableServerAccess.set(enableServerAccess);
     }
 
     public URL getRootUrl()
@@ -260,25 +259,17 @@ public class UrlAccessManager
     public UrlInfo queryRootUrl() throws Exception
     {
         UrlInfo rootInfo = getInfo(rootUrl);
-        UrlAccessQuerier querier = UrlAccessQuerier.of(rootInfo, true, isServerAccessEnabled());
+        UrlAccessQuerier querier = UrlAccessQuerier.of(rootInfo, true, true);
         try
         {
             querier.query();
             setEnableServerAccess(true);
         }
-        catch (FileNotFoundException | ConnectException | UnknownHostException e)
+        catch (Exception e)
         {
             // Serious problem. Disable server access pending resolution.
             rootInfo.update(UrlState.of(rootUrl));
             setEnableServerAccess(false);
-            throw e;
-        }
-        catch (Exception e)
-        {
-            // Any other exception (e.g. SocketTimeoutException) most likely indicates
-            // a transient problem, so report it but do not disable access.
-            rootInfo.update(UrlState.of(rootUrl));
-            setEnableServerAccess(true);
             throw e;
         }
 
