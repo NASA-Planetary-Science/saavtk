@@ -14,7 +14,9 @@ public class ConfigArrayList extends ArrayList<ViewConfig>
 	public boolean add(ViewConfig e)
 	{
 		if (!contains(e))
+		{
 			return super.add(e);
+		}
 		return false;
 	}
 	

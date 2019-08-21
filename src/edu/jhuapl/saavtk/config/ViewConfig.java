@@ -192,4 +192,79 @@ public abstract class ViewConfig implements Cloneable
 	{
 		return getUniqueName();
 	}
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((author == null) ? 0 : author.hashCode());
+		result = prime * result + ((body == null) ? 0 : body.hashCode());
+		long temp;
+		temp = Double.doubleToLongBits(customBodyCubeSize);
+		result = prime * result + (int) (temp ^ (temp >>> 32));
+		result = prime * result + (customTemporary ? 1231 : 1237);
+		result = prime * result + (hasCustomBodyCubeSize ? 1231 : 1237);
+		result = prime * result + ((modelLabel == null) ? 0 : modelLabel.hashCode());
+		result = prime * result
+				+ ((smallBodyLabelPerResolutionLevel == null) ? 0 : smallBodyLabelPerResolutionLevel.hashCode());
+		result = prime * result + ((smallBodyNumberOfPlatesPerResolutionLevel == null) ? 0
+				: smallBodyNumberOfPlatesPerResolutionLevel.hashCode());
+		result = prime * result + (useMinimumReferencePotential ? 1231 : 1237);
+		result = prime * result + ((version == null) ? 0 : version.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ViewConfig other = (ViewConfig) obj;
+		if (author == null)
+		{
+			if (other.author != null)
+				return false;
+		} else if (!author.equals(other.author))
+			return false;
+		if (body != other.body)
+			return false;
+		if (Double.doubleToLongBits(customBodyCubeSize) != Double.doubleToLongBits(other.customBodyCubeSize))
+			return false;
+		if (customTemporary != other.customTemporary)
+			return false;
+		if (hasCustomBodyCubeSize != other.hasCustomBodyCubeSize)
+			return false;
+		if (modelLabel == null)
+		{
+			if (other.modelLabel != null)
+				return false;
+		} else if (!modelLabel.equals(other.modelLabel))
+			return false;
+		if (smallBodyLabelPerResolutionLevel == null)
+		{
+			if (other.smallBodyLabelPerResolutionLevel != null)
+				return false;
+		} else if (!smallBodyLabelPerResolutionLevel.equals(other.smallBodyLabelPerResolutionLevel))
+			return false;
+		if (smallBodyNumberOfPlatesPerResolutionLevel == null)
+		{
+			if (other.smallBodyNumberOfPlatesPerResolutionLevel != null)
+				return false;
+		} else if (!smallBodyNumberOfPlatesPerResolutionLevel.equals(other.smallBodyNumberOfPlatesPerResolutionLevel))
+			return false;
+		if (useMinimumReferencePotential != other.useMinimumReferencePotential)
+			return false;
+		if (version == null)
+		{
+			if (other.version != null)
+				return false;
+		} else if (!version.equals(other.version))
+			return false;
+		return true;
+	}
 }
