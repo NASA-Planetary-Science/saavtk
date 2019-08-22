@@ -1,7 +1,6 @@
 package edu.jhuapl.saavtk.gui;
 
 import java.awt.Component;
-import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Image;
 import java.awt.event.ActionListener;
@@ -18,21 +17,7 @@ import javax.swing.JToggleButton;
 public class GuiUtil
 {
 	/**
-	 * Utility helper method to create a JButton with the specified configuration.
-	 * 
-	 * @param aListener A Listener registered with the JButton.
-	 * @param aTitle    The text title of the JButton.
-	 */
-	public static JButton formButton(ActionListener aListener, String aTitle)
-	{
-		JButton retB = new JButton();
-		retB.addActionListener(aListener);
-		retB.setText(aTitle);
-		return retB;
-	}
-
-	/**
-	 * Utility helper method to create a JButton with the specified configuration.
+	 * Utility method to create a JButton with the specified configuration.
 	 * 
 	 * @param aListener A Listener registered with the JButton.
 	 * @param aImage    The image to be used as an icon.
@@ -51,8 +36,7 @@ public class GuiUtil
 	}
 
 	/**
-	 * Utility helper method to create a JToggleButton with the specified
-	 * configuration.
+	 * Utility method to create a JToggleButton with the specified configuration.
 	 * 
 	 * @param aListener A Listener registered with the JButton.
 	 * @param aPriImage The image to be used as the primary icon.
@@ -71,23 +55,6 @@ public class GuiUtil
 		retTB.addActionListener(aListener);
 
 		return retTB;
-	}
-
-	/**
-	 * Utility method to recursively change the enable state of all Components
-	 * contained by the specified Container.
-	 * 
-	 * @param aContainer The Container of interest.
-	 * @param aBool      Boolean used to define the enable state.
-	 */
-	public static void setEnabled(Container aContainer, boolean aBool)
-	{
-		for (Component aComp : aContainer.getComponents())
-		{
-			aComp.setEnabled(aBool);
-			if (aComp instanceof Container)
-				setEnabled((Container) aComp, aBool);
-		}
 	}
 
 	/**
