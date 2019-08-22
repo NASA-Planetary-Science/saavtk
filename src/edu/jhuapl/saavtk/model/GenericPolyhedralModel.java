@@ -464,12 +464,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         {
             smallBodyPolyData.DeepCopy(polydata);
         }
-        coloringDataManager.clearCustom();
         for (int i = 0; i < coloringNames.length; ++i)
         {
             int numberElements = coloringValues[i].GetNumberOfTuples();
             ImmutableList<String> elementNames = ImmutableList.of(coloringNames[i]);
-            coloringDataManager.addCustom(ColoringData.of(coloringNames[i], elementNames, coloringUnits[i], numberElements, false, coloringValues[i]));
+            coloringDataManager.addBuiltIn(ColoringData.of(coloringNames[i], elementNames, coloringUnits[i], numberElements, false, coloringValues[i]));
         }
         this.coloringValueType = coloringValueType;
 
