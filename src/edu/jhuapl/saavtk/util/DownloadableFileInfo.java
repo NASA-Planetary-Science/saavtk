@@ -76,13 +76,6 @@ public class DownloadableFileInfo
             return urlState.getStatus() == UrlStatus.NOT_FOUND;
         }
 
-        public boolean isDownloadMayBePossible()
-        {
-            UrlStatus urlStatus = urlState.getStatus();
-
-            return urlStatus != UrlStatus.NOT_AUTHORIZED && urlStatus != UrlStatus.NOT_FOUND;
-        }
-
         public boolean isDownloadNecessary()
         {
             UrlStatus urlStatus = urlState.getStatus();
@@ -93,10 +86,6 @@ public class DownloadableFileInfo
             {
             case ACCESSIBLE:
                 result = fileState.getStatus() != FileStatus.ACCESSIBLE || urlState.getLastModified() > fileState.getLastModified();
-                break;
-            case NOT_AUTHORIZED:
-            case NOT_FOUND:
-                result = false;
                 break;
             case UNKNOWN:
                 result = true;

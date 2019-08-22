@@ -609,12 +609,12 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
     protected void showColoringProperties()
     {
-        PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
-        int index = smallBodyModel.getColoringIndex();
-        File file = FileCache.getFileFromServer(smallBodyModel.getAllColoringData().get(index).getFileName());
-
         try
         {
+            PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
+            int index = smallBodyModel.getColoringIndex();
+            File file = FileCache.getFileFromServer(smallBodyModel.getAllColoringData().get(index).getFileName());
+            
             JTabbedPane jTabbedPane = MetadataDisplay.summary(file);
             int tabCount = jTabbedPane.getTabCount();
             if (tabCount > 0)
