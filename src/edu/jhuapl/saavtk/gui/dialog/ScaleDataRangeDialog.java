@@ -12,9 +12,8 @@ import javax.swing.JLabel;
 import com.google.common.base.Preconditions;
 
 import edu.jhuapl.saavtk.colormap.SigFigNumberFormat;
-import edu.jhuapl.saavtk.gui.GNumberField;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-
+import glum.gui.component.GNumberField;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -139,11 +138,9 @@ public class ScaleDataRangeDialog extends JDialog implements ActionListener
         // Set up the action area
         JLabel minValueL = new JLabel("Minimum");
         JLabel maxValueL = new JLabel("Maximum");
-        minValueNF = new GNumberField(this);
-        minValueNF.setFormat(new SigFigNumberFormat(3));
+        minValueNF = new GNumberField(this, new SigFigNumberFormat(3));
         minValueNF.setColumns(8);
-        maxValueNF = new GNumberField(this);
-        maxValueNF.setFormat(new SigFigNumberFormat(3));
+        maxValueNF = new GNumberField(this, new SigFigNumberFormat(3));
         maxValueNF.setColumns(8);
         add(minValueL);
         add(minValueNF, "");
