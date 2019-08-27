@@ -94,4 +94,13 @@ public enum ShapeModelBody
 	{
 		return str;
 	}
+	
+    public static ShapeModelBody valueFor(String desc)
+    {
+    	for (ShapeModelBody type : values())
+    	{
+    		if (type.toString().equals(desc)) return type;
+    	}
+    	return null;
+    }
 }
