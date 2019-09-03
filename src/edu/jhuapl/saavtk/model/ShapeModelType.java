@@ -11,7 +11,7 @@ public final class ShapeModelType
 
     public static ShapeModelType valueOf(String identifier)
     {
-        Preconditions.checkArgument(SHAPE_MODEL_IDENTIFIERS.containsKey(identifier));
+        Preconditions.checkArgument(SHAPE_MODEL_IDENTIFIERS.containsKey(identifier), "Cannot find a configuration for model " + identifier);
         return SHAPE_MODEL_IDENTIFIERS.get(identifier);
     }
 
@@ -24,6 +24,12 @@ public final class ShapeModelType
         SHAPE_MODEL_IDENTIFIERS.put(identifier, result);
 
         return result;
+    }
+
+    public static boolean contains(String identifier)
+    {
+        Preconditions.checkNotNull(identifier);
+        return SHAPE_MODEL_IDENTIFIERS.containsKey(identifier);
     }
 
     public static final ShapeModelType GASKELL = create("Gaskell");
@@ -81,6 +87,7 @@ public final class ShapeModelType
     public static final ShapeModelType ALTWG_SPO_v20190612 = create("ALTWG-SPO-v20190612");
     public static final ShapeModelType MU69_TEST5H_1_FINAL_ORIENTED = create("mu69_test5h_1_final_oriented");
     public static final ShapeModelType NIMMO = create("Nimmo");
+    public static final ShapeModelType WEAVER = create("Weaver");
 
     private final String identifier;
 

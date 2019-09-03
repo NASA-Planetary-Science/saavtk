@@ -75,7 +75,7 @@ public class FavoritesMenu extends JMenu
         {
             View defaultToLoad = manager.getView(manager.getDefaultBodyToLoad());
             JMenuItem menuItem = new FavoritesMenuItem(defaultToLoad);
-            String urlString = defaultToLoad.getConfig().getShapeModelFileNames()[0];
+            String urlString = defaultToLoad.getShapeModelName();
             fileStateTracker.addStateChangeListener(urlString, state -> {
                 menuItem.setEnabled(state.isAccessible());
             });
