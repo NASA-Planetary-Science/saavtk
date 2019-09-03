@@ -59,10 +59,10 @@ public class Configuration
 
     // Flag indicating if this version of the tool is APL in-house only ("private")
     private static boolean APLVersion = false;
-    private static boolean userPasswordAccepted = false;
+    private static volatile boolean userPasswordAccepted = false;
     private static URL restrictedAccessRoot = null;
     private static Iterable<Path> passwordFilesToTry = null;
-    private static final AtomicBoolean validPasswordEntered = new AtomicBoolean(false);
+    private static final AtomicBoolean authenticationSuccessful = new AtomicBoolean(false);
 
     // Uncomment the following to enable the startup script (which can be changed by
     // the user)
@@ -197,15 +197,17 @@ public class Configuration
             info = FileCache.refreshStateInfo(restrictedAccessString);
         }
 
-        FileCache.instance().queryAllInBackground(true);
-
         Configuration.userPasswordAccepted = userPasswordAccepted;
+
+        authenticationSuccessful.set(userPasswordAccepted || foundEmptyPasswordFile);
+
+        FileCache.instance().queryAllInBackground(true);
     }
 
     private static boolean promptUserForPassword(final String restrictedAccessUrl, final Path passwordFile, final boolean updateMode)
     {
         // Prevent re-issuing prompts after valid credentials were used once.
-        if (validPasswordEntered.get() && !updateMode)
+        if (authenticationSuccessful.get() && !updateMode)
         {
             return true;
         }
@@ -281,7 +283,7 @@ public class Configuration
                                 repromptUser = true;
                                 continue;
                             }
-                            validPasswordEntered.set(true);
+                            authenticationSuccessful.set(status == UrlStatus.ACCESSIBLE);
                         }
                         try
                         {
@@ -314,7 +316,7 @@ public class Configuration
             e.printStackTrace();
         }
 
-        return validPasswordEntered.get();
+        return authenticationSuccessful.get();
     }
 
     public static void setupPasswordAuthentication(final String username, final char[] password)
