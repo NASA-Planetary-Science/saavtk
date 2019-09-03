@@ -11,7 +11,7 @@ public final class ShapeModelType
 
     public static ShapeModelType valueOf(String identifier)
     {
-        Preconditions.checkArgument(SHAPE_MODEL_IDENTIFIERS.containsKey(identifier));
+        Preconditions.checkArgument(SHAPE_MODEL_IDENTIFIERS.containsKey(identifier), "Cannot find a configuration for model " + identifier);
         return SHAPE_MODEL_IDENTIFIERS.get(identifier);
     }
 
@@ -25,11 +25,11 @@ public final class ShapeModelType
 
         return result;
     }
-    
+
     public static boolean contains(String identifier)
     {
         Preconditions.checkNotNull(identifier);
-    	return SHAPE_MODEL_IDENTIFIERS.containsKey(identifier);
+        return SHAPE_MODEL_IDENTIFIERS.containsKey(identifier);
     }
 
     public static final ShapeModelType GASKELL = create("Gaskell");
