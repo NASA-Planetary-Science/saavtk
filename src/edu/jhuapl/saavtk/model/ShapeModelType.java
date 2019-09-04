@@ -5,23 +5,70 @@ import java.util.Map;
 
 import com.google.common.base.Preconditions;
 
+/**
+ * This class was originally an enumeration (ShapeModelAuthor), but was later
+ * modified to allow new members to be added dynamically. Enum-like methods were
+ * provided for the benefit of existing code. The code prevents two shape model
+ * types with the same identifier string.
+ * 
+ * This class is not thread-safe.
+ */
 public final class ShapeModelType
 {
     private static final Map<String, ShapeModelType> SHAPE_MODEL_IDENTIFIERS = new HashMap<>();
 
+    /**
+     * Return the ShapeModelType object associated with the provided identifier
+     * parameter.
+     * 
+     * @param identifier of the ShapeModelType object
+     * @return the ShapeModelType object
+     * @throws IllegalArgumentException if there is no associated ShapeModelType.
+     */
     public static ShapeModelType valueOf(String identifier)
     {
-        Preconditions.checkArgument(SHAPE_MODEL_IDENTIFIERS.containsKey(identifier), "Cannot find a configuration for model " + identifier);
+        Preconditions.checkArgument(SHAPE_MODEL_IDENTIFIERS.containsKey(identifier), "Cannot find a ShapeModelType object for identifier " + identifier);
         return SHAPE_MODEL_IDENTIFIERS.get(identifier);
     }
 
+    /**
+     * Create and return a new ShapeModelType object identified with the provided
+     * identifier string.
+     * 
+     * @param identifier of the ShapeModelType object
+     * @return the ShapeModelType object
+     * @throws IllegalArgumentException if there is already a ShapeModelType object
+     *             associated with the identifier
+     */
     public static ShapeModelType create(String identifier)
     {
         Preconditions.checkNotNull(identifier);
-        Preconditions.checkArgument(!SHAPE_MODEL_IDENTIFIERS.containsKey(identifier));
+        Preconditions.checkArgument(!SHAPE_MODEL_IDENTIFIERS.containsKey(identifier), "Already have a ShapeModelType object for identifier " + identifier);
 
         ShapeModelType result = new ShapeModelType(identifier);
         SHAPE_MODEL_IDENTIFIERS.put(identifier, result);
+
+        return result;
+    }
+
+    /**
+     * Provide a ShapeModelType object for the given identifier parameter. If a
+     * ShapeModelType object already exists for this identity, it is simply
+     * returned, otherwise it is created first.
+     * 
+     * @param identifier of the ShapeModelType object
+     * @return the ShapeModelType object
+     */
+    public static ShapeModelType provide(String identifier)
+    {
+        Preconditions.checkNotNull(identifier);
+
+        ShapeModelType result = SHAPE_MODEL_IDENTIFIERS.get(identifier);
+        if (result == null)
+        {
+            result = new ShapeModelType(identifier);
+            SHAPE_MODEL_IDENTIFIERS.put(identifier, result);
+        }
 
         return result;
     }
