@@ -52,6 +52,9 @@ public abstract class View extends JPanel
     private StatusBar statusBar;
     private final AtomicBoolean initialized = new AtomicBoolean(false);
     private ViewConfig config;
+    protected String uniqueName;
+    protected String shapeModelName;
+    protected String configURL;
 
     // accessor methods
 
@@ -119,6 +122,21 @@ public abstract class View extends JPanel
     {
         this.pickManager = pickManager;
     }
+    
+    protected void setConfig(ViewConfig config)
+    {
+    	this.config = config;
+    }
+    
+    public boolean isAccessible()
+    {
+    	return getConfig().isAccessible();
+    }
+    
+    public String getShapeModelName()
+    {
+    	return shapeModelName;
+    }
 
     /**
      * By default a view should be created empty. Only when the user requests to
@@ -131,6 +149,8 @@ public abstract class View extends JPanel
         super(new BorderLayout());
         this.statusBar = statusBar;
         this.config = config;
+        if (config != null)
+        	this.uniqueName = config.getUniqueName();
     }
 
     protected void addTab(String name, Component component)
@@ -201,7 +221,7 @@ public abstract class View extends JPanel
                         showDefaultTabSelectionPopup(e);
                     }
                 });
-                int tabIndex = FavoriteTabsFile.getInstance().getFavoriteTab(config.getUniqueName());
+                int tabIndex = FavoriteTabsFile.getInstance().getFavoriteTab(uniqueName);
                 controlPanel.setSelectedIndex(tabIndex); // load default tab (which is 0 if not specified in favorite tabs file)
 
                 splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, controlPanel, renderer);
@@ -274,7 +294,7 @@ public abstract class View extends JPanel
                 @Override
                 public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
                 {
-                    FavoriteTabsFile.getInstance().setFavoriteTab(config.getUniqueName(), controlPanel.getSelectedIndex());
+                    FavoriteTabsFile.getInstance().setFavoriteTab(uniqueName, controlPanel.getSelectedIndex());
                 }
             });
             tabMenu.add(menuItem);
@@ -324,10 +344,15 @@ public abstract class View extends JPanel
      */
     public String getUniqueName()
     {
-        return config.getUniqueName();
+        return uniqueName;
     }
 
-    /**
+    public void setUniqueName(String uniqueName)
+	{
+		this.uniqueName = uniqueName;
+	}
+
+	/**
      * Return a hierarchical path representation of this view.
      * 
      * @return the representation.
@@ -359,7 +384,17 @@ public abstract class View extends JPanel
     // Setup methods, to be defined by subclasses
     //
 
-    protected abstract void setupModelManager();
+    public String getConfigURL()
+	{
+		return configURL;
+	}
+
+	public void setConfigURL(String configURL)
+	{
+		this.configURL = configURL;
+	}
+
+	protected abstract void setupModelManager();
 
     protected abstract void setupPopupManager();
 
