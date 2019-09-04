@@ -24,7 +24,7 @@ public class Preferences extends MapUtil
     public static final String CONTROL_PANEL_HEIGHT = "ControlPanelHeight";
     public static final String RENDERER_PANEL_WIDTH = "RendererPanelWidth";
     public static final String RENDERER_PANEL_HEIGHT = "RendererPanelHeight";
-    public static final String DEFAULT_COLOR_MAP_NAME = "DefaultColorMapName";
+    public static final String DEFAULT_COLORMAP_NAME = "DefaultColormapName";
     public static final String BACKGROUND_COLOR = "BackgroundColor";
     public static final String SELECTION_COLOR = "SelectionColor";
     public static final String AXES_XAXIS_COLOR = "AxesXAxisColor";

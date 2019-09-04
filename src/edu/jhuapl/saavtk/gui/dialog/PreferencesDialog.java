@@ -101,6 +101,8 @@ public class PreferencesDialog extends javax.swing.JDialog
             RenderPanel renderPanel = (RenderPanel) viewManager.getCurrentView().getRenderer().getRenderWindowPanel();
             AxesPanel axesPanel = renderPanel.getAxesPanel();
 
+            defaultColorMapSelection.setSelectedItem(Colormaps.getCurrentColormapName());
+
             /*
              * updateColorLabel(axesPanel.getxColor(), xAxisColorLabel);
              * updateColorLabel(axesPanel.getyColor(), yAxisColorLabel);
@@ -767,10 +769,7 @@ public class PreferencesDialog extends javax.swing.JDialog
         {
             defaultColorMapSelection.addItem(colorMapName);
         }
-        defaultColorMapSelection.setSelectedItem(Colormaps.getDefaultColormapName());
-        defaultColorMapSelection.addItemListener(e -> {
-            Colormaps.setDefaultColormapName((String) e.getItem());
-        });
+        defaultColorMapSelection.setSelectedItem(Colormaps.getCurrentColormapName());
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
@@ -1036,6 +1035,18 @@ public class PreferencesDialog extends javax.swing.JDialog
 
     private void applyToAllButtonActionPerformed(java.awt.event.ActionEvent evt)
     {// GEN-FIRST:event_applyToAllButtonActionPerformed
+
+        // View-independent preferences.
+        Object colormapSelection = defaultColorMapSelection.getSelectedItem();
+
+        // Ensure colormapSelection is a (possibly null) string:
+        if (colormapSelection != null)
+        {
+            colormapSelection = colormapSelection.toString();
+        }
+
+        Colormaps.setCurrentColormapName((String) colormapSelection);
+
         List<View> views = viewManager.getAllViews();
         for (View v : views)
         {
@@ -1074,7 +1085,7 @@ public class PreferencesDialog extends javax.swing.JDialog
         preferencesMap.put(Preferences.LIGHT_INTENSITY, ((Double) intensitySpinner.getValue()).toString());
         preferencesMap.put(Preferences.PICK_TOLERANCE, Double.valueOf(getToleranceFromSliderValue(pickToleranceSlider.getValue())).toString());
 //        preferencesMap.put(Preferences.MOUSE_WHEEL_MOTION_FACTOR, ((Double)mouseWheelMotionFactorSpinner.getValue()).toString());
-        preferencesMap.put(Preferences.DEFAULT_COLOR_MAP_NAME, (String) defaultColorMapSelection.getSelectedItem());
+        preferencesMap.put(Preferences.DEFAULT_COLORMAP_NAME, (String) colormapSelection);
         preferencesMap.put(Preferences.SELECTION_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(selectionColorLabel))));
         preferencesMap.put(Preferences.BACKGROUND_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(backgroundColorLabel))));
 //        preferencesMap.put(Preferences.AXES_XAXIS_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(xAxisColorLabel))));
