@@ -1,66 +1,61 @@
 package edu.jhuapl.saavtk.gui;
 
+import java.awt.EventQueue;
 import java.awt.MouseInfo;
 import java.awt.Point;
-import java.awt.PointerInfo;
-import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
-import com.google.common.collect.Lists;
+import javax.swing.SwingWorker;
 
 // adapted from https://stackoverflow.com/questions/13061122/getting-rgb-value-from-under-mouse-cursor
-public class SystemMouse extends Thread {
+public class SystemMouse extends SwingWorker<Void, Void>
+{
+    public static final String POINTER_POSITION = "mousePointerPosition";
 
-	private static final SystemMouse instance=new SystemMouse();
-	private static final int sleepPeriod=25;
-	
-	public static SystemMouse getInstance()
-	{
-		if (!instance.isAlive())
-			instance.start();
-		return instance;
-	}
-	
-	private Point lastPoint;
-	List<SystemMouseListener> listeners = Lists.newArrayList();
+    public static SystemMouse of()
+    {
+        return new SystemMouse();
+    }
 
-	private SystemMouse() {
-			setDaemon(true);
-			setPriority(MIN_PRIORITY);
-		}
+    private static final int sleepPeriod = 25;
 
-	public void addListener(SystemMouseListener l) {
-		listeners.add(l);
-	}
+    private final AtomicReference<Point> lastPoint;
 
-	public void removeListener(SystemMouseListener l) {
-		listeners.remove(l);
-	}
+    protected SystemMouse()
+    {
+        this.lastPoint = new AtomicReference<>();
+    }
 
-	public Point getPosition() {
-		PointerInfo pi = MouseInfo.getPointerInfo();
-		return pi.getLocation();
-	}
+    public Point getPosition()
+    {
+        return lastPoint.get();
+    }
 
-	@Override
-	public void run() {
-		lastPoint = getPosition();
-		while (true) {
-			try
+    @Override
+    protected Void doInBackground() throws Exception
+    {
+        while (!isDone())
+        {
+            EventQueue.invokeAndWait(() -> {
+                Point currentPoint = MouseInfo.getPointerInfo().getLocation();
+                Point lastPoint = this.lastPoint.getAndSet(currentPoint);
+                if (!currentPoint.equals(lastPoint))
+                {
+                    firePropertyChange(POINTER_POSITION, lastPoint, currentPoint);
+                }
+            });
 
-			{
-				sleep(sleepPeriod);
-			} catch (InterruptedException e) {
-			}
-			
-			Point currentPoint = getPosition();
-			if (!currentPoint.equals(lastPoint)) {
-				for (SystemMouseListener l : listeners)
-					l.mousePositionChanged(currentPoint);
-				lastPoint = currentPoint;
-			}
-		}
-	}
+            try
+            {
+                Thread.sleep(sleepPeriod);
+            }
+            catch (@SuppressWarnings("unused") InterruptedException ignored)
+            {
+                break;
+            }
+        }
 
-	
+        return null;
+    }
 
 }

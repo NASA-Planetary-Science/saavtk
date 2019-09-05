@@ -3,14 +3,13 @@ package edu.jhuapl.saavtk.util;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Preconditions;
 
@@ -61,23 +60,23 @@ public class UrlAccessManager
 
     private final URL rootUrl;
     private final ConcurrentMap<String, UrlInfo> urlInfoCache;
-    private volatile boolean enableServerAccess;
+    private final AtomicBoolean enableServerAccess;
 
     protected UrlAccessManager(URL rootUrl)
     {
         this.rootUrl = rootUrl;
         this.urlInfoCache = new ConcurrentHashMap<>();
-        this.enableServerAccess = true;
+        this.enableServerAccess = new AtomicBoolean(true);
     }
 
     public boolean isServerAccessEnabled()
     {
-        return enableServerAccess;
+        return enableServerAccess.get();
     }
 
     public void setEnableServerAccess(boolean enableServerAccess)
     {
-        this.enableServerAccess = enableServerAccess;
+        this.enableServerAccess.set(enableServerAccess);
     }
 
     public URL getRootUrl()
@@ -260,25 +259,17 @@ public class UrlAccessManager
     public UrlInfo queryRootUrl() throws Exception
     {
         UrlInfo rootInfo = getInfo(rootUrl);
-        UrlAccessQuerier querier = UrlAccessQuerier.of(rootInfo, true, isServerAccessEnabled());
+        UrlAccessQuerier querier = UrlAccessQuerier.of(rootInfo, true, true);
         try
         {
             querier.query();
             setEnableServerAccess(true);
         }
-        catch (FileNotFoundException | ConnectException | UnknownHostException e)
+        catch (Exception e)
         {
             // Serious problem. Disable server access pending resolution.
             rootInfo.update(UrlState.of(rootUrl));
             setEnableServerAccess(false);
-            throw e;
-        }
-        catch (Exception e)
-        {
-            // Any other exception (e.g. SocketTimeoutException) most likely indicates
-            // a transient problem, so report it but do not disable access.
-            rootInfo.update(UrlState.of(rootUrl));
-            setEnableServerAccess(true);
             throw e;
         }
 
@@ -333,7 +324,8 @@ public class UrlAccessManager
         if (serverAccessEnabled || forceUpdate)
         {
             UrlState state = result.getState();
-            if (state.getStatus() == UrlStatus.UNKNOWN || forceUpdate)
+            UrlStatus status = state.getStatus();
+            if (status == UrlStatus.UNKNOWN || forceUpdate)
             {
                 Debug.out().println("Querying server about " + url);
                 try
@@ -345,6 +337,10 @@ public class UrlAccessManager
                 {
                     result.update(UrlState.of(url));
                 }
+            }
+            else if (status == UrlStatus.INVALID_URL)
+            {
+                Debug.out().println("Skipping server query about invalid url " + url);
             }
         }
 
@@ -390,15 +386,15 @@ public class UrlAccessManager
             UrlAccessManager remoteTestCache = UrlAccessManager.of(Configuration.getDataRootURL());
 
             System.out.println("\nRunning remote tests the first time");
-            runRemoteTests(remoteTestCache);
+            runRemoteTests(remoteTestCache, true);
 
             System.out.println("\nRunning remote tests the second time with server access disabled (should see no connections)");
             remoteTestCache.setEnableServerAccess(false);
-            runRemoteTests(remoteTestCache);
+            runRemoteTests(remoteTestCache, false);
             remoteTestCache.setEnableServerAccess(true);
 
             System.out.println("\nRunning remote tests the third time (should see one connection)");
-            runRemoteTests(remoteTestCache);
+            runRemoteTests(remoteTestCache, false);
 
             System.out.println("\nTry setting up a manager using an invalid root url");
 
@@ -407,10 +403,10 @@ public class UrlAccessManager
             UrlAccessManager localTestCache = UrlAccessManager.of(new URL(SAFE_URL_PATHS.getUrl(cacheDir)));
 
             System.out.println("\nRunning local tests first time");
-            runLocalTests(localTestCache);
+            runLocalTests(localTestCache, true);
 
             System.out.println("\nRunning local tests second time");
-            runLocalTests(localTestCache);
+            runLocalTests(localTestCache, false);
 
             System.out.println("Done");
         }
@@ -422,21 +418,22 @@ public class UrlAccessManager
 
     }
 
-    private static void runRemoteTests(UrlAccessManager testCache)
+    private static void runRemoteTests(UrlAccessManager testCache, boolean forceQuery)
     {
         URL rootUrl = testCache.getRootUrl();
         String host = rootUrl.getProtocol() + "://" + rootUrl.getHost();
 
-        testCache.testGetInfo(host, UrlStatus.ACCESSIBLE, 0l, null);
-        testCache.testGetInfo(host + "/sbmt/prod/help/sbmt-linux-x64.zip", UrlStatus.ACCESSIBLE, 1521665260000l, null);
-        testCache.testGetInfo(host + "/sbmt/prod/help/index.php", UrlStatus.ACCESSIBLE, 0l, null);
-        testCache.testGetInfo(host + "/sbmt/prod/data/bennu/altwg-spc-v20181217", UrlStatus.NOT_AUTHORIZED, 0l, null);
-        testCache.testGetInfo("\\bennu\\altwg-spc-v20181217", UrlStatus.NOT_AUTHORIZED, 0l, null);
-        testCache.testGetInfo(host + "/non-existent-url", UrlStatus.NOT_FOUND, 0l, FileNotFoundException.class);
-        testCache.testGetInfo("http://sbmt.jhuBOZOapl.edu", UrlStatus.UNKNOWN, 0l, IOException.class);
+        testCache.testGetInfo(host, UrlStatus.ACCESSIBLE, 0l, null, forceQuery);
+        testCache.testGetInfo(host + "/sbmt/prod/help/sbmt-linux-x64.zip", UrlStatus.ACCESSIBLE, 1521665260000l, null, forceQuery);
+        testCache.testGetInfo(host + "/sbmt/prod/help/index.php", UrlStatus.ACCESSIBLE, 0l, null, forceQuery);
+        testCache.testGetInfo(host + "/sbmt/prod/data/bennu/altwg-spc-v20181217", UrlStatus.NOT_AUTHORIZED, 0l, null, forceQuery);
+        testCache.testGetInfo("\\bennu\\altwg-spc-v20181217", UrlStatus.NOT_AUTHORIZED, 0l, null, forceQuery);
+        testCache.testGetInfo(host + "/non-existent-url", UrlStatus.NOT_FOUND, 0l, FileNotFoundException.class, forceQuery);
+        testCache.testGetInfo("http://sbmt.jhuBOZOapl.edu", UrlStatus.UNKNOWN, 0l, IOException.class, forceQuery);
+        testCache.testGetInfo("/sbmt/prod/data/DO NOT DELETE.TXT", UrlStatus.INVALID_URL, 0l, IOException.class, forceQuery);
     }
 
-    private static void runLocalTests(UrlAccessManager testCache) throws IOException
+    private static void runLocalTests(UrlAccessManager testCache, boolean forceQuery) throws IOException
     {
         URL rootUrl = testCache.getRootUrl();
         String host = rootUrl.getProtocol() + "://" + rootUrl.getHost();
@@ -446,24 +443,27 @@ public class UrlAccessManager
         File testFile;
 
         testUrlString = host;
-        testCache.testGetInfo(testUrlString, UrlStatus.ACCESSIBLE, null, null);
+        // This is different from the online case -- file:// equates to a zero-length
+        // path -- not found.
+        // The server http:// would be considered accessible.
+        testCache.testGetInfo(testUrlString, UrlStatus.NOT_FOUND, null, null, forceQuery);
         testFile = SAFE_URL_PATHS.get(testCache.getUrl(testUrlString).getPath()).toFile();
         System.out.println("URL " + testUrlString + " = file " + testFile + "; exists? " + testFile.exists());
 
         testUrlString = host + path;
-        testCache.testGetInfo(testUrlString, UrlStatus.ACCESSIBLE, null, null);
+        testCache.testGetInfo(testUrlString, UrlStatus.ACCESSIBLE, null, null, forceQuery);
         testFile = SAFE_URL_PATHS.get(testCache.getUrl(testUrlString).getPath()).toFile();
         System.out.println("URL " + testUrlString + " = file " + testFile + "; exists? " + testFile.exists());
 
         testUrlString = host + "/non-existent-path";
-        testCache.testGetInfo(testUrlString, UrlStatus.ACCESSIBLE, null, null);
+        testCache.testGetInfo(testUrlString, UrlStatus.NOT_FOUND, null, null, forceQuery);
         testFile = SAFE_URL_PATHS.get(testCache.getUrl(testUrlString).getPath()).toFile();
         System.out.println("URL " + testUrlString + " = file " + testFile + "; exists? " + testFile.exists());
 
         File file = createTestFile(rootUrl.getPath());
 
         testUrlString = host + file.getAbsolutePath();
-        testCache.testGetInfo(testUrlString, UrlStatus.ACCESSIBLE, null, null);
+        testCache.testGetInfo(testUrlString, UrlStatus.ACCESSIBLE, null, null, forceQuery);
         testFile = SAFE_URL_PATHS.get(testCache.getUrl(testUrlString).getPath()).toFile();
         System.out.println("URL " + testUrlString + " = file " + testFile + "; exists? " + testFile.exists());
     }
@@ -481,11 +481,11 @@ public class UrlAccessManager
         return result;
     }
 
-    private void testGetInfo(String urlString, UrlStatus expectedStatus, Long expectedModificationTime, Class<?> expectedException)
+    private void testGetInfo(String urlString, UrlStatus expectedStatus, Long expectedModificationTime, Class<?> expectedException, boolean forceQuery)
     {
         try
         {
-            UrlState info = queryServer(urlString, false).getState();
+            UrlState info = queryServer(urlString, forceQuery).getState();
 
             if (info.getStatus() != expectedStatus)
             {

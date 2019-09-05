@@ -3,6 +3,7 @@ package edu.jhuapl.saavtk.gui.dialog;
 import java.awt.Dialog;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.text.DecimalFormat;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -10,18 +11,16 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import net.miginfocom.swing.MigLayout;
-
 import org.apache.commons.math3.geometry.euclidean.threed.NotARotationMatrixException;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 
-import edu.jhuapl.saavtk.gui.GNumberField;
 import edu.jhuapl.saavtk.gui.render.Renderer;
-import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.gui.render.Renderer.ProjectionType;
 import edu.jhuapl.saavtk.gui.render.camera.Camera;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
+import glum.gui.component.GNumberField;
+import net.miginfocom.swing.MigLayout;
 
 public class CameraDialog extends JDialog implements ActionListener
 {
@@ -59,21 +58,21 @@ public class CameraDialog extends JDialog implements ActionListener
 
 		// Create "Vertical Field of View" text entry box and add to 1st row
 		JLabel fovLabel = new JLabel("Vertical Field of View");
-		fovNF = new GNumberField(this, 0.00000001, 179.0);
+		fovNF = new GNumberField(this, new DecimalFormat("#.###"), 0.00000001, 179.0);
 		panel.add(fovLabel, "");
 		panel.add(fovNF, "growx");
 		panel.add(new JLabel("degrees"), "wrap");
 
 		// Create "View Point Latitude" text entry box and add to 2nd row
 		JLabel vpLat = new JLabel("Boresight Latitude");
-		boresightLatNF = new GNumberField(this, -90, 90);
+		boresightLatNF = new GNumberField(this, new DecimalFormat("#.###"), -90, 90);
 		panel.add(vpLat, "");
 		panel.add(boresightLatNF, "growx");
 		panel.add(new JLabel("degrees"), "wrap");
 
 		// Create "View Point Longitude" text entry box and add to 3rd row
 		JLabel vpLong = new JLabel("Boresight Longitude");
-		boresightLonNF = new GNumberField(this, -180, 180);
+		boresightLonNF = new GNumberField(this, new DecimalFormat("#.###"), -180, 180);
 		JLabel vpLongDegree = new JLabel("degrees east");
 		panel.add(vpLong, "");
 		panel.add(boresightLonNF, "growx");
@@ -94,13 +93,13 @@ public class CameraDialog extends JDialog implements ActionListener
 		panel.add(projComboBox, "growx,wrap");
 
 		// Create "Camera Latitude" text entry box and add to 6th row
-		subSpacecraftLatNF = new GNumberField(this, -90, 90);
+		subSpacecraftLatNF = new GNumberField(this, new DecimalFormat("#.###"), -90, 90);
 		panel.add(new JLabel("Sub-Spacecraft Latitude"), "");
 		panel.add(subSpacecraftLatNF, "growx");
 		panel.add(new JLabel("degrees"), "wrap");
 
 		// Create "Camera Longitude" text entry box and add to 7th row
-		subspacecraftLonNF = new GNumberField(this, -180, 180);
+		subspacecraftLonNF = new GNumberField(this, new DecimalFormat("#.###"), -180, 180);
 		panel.add(new JLabel("Sub-Spacecraft Longitude"), "");
 		panel.add(subspacecraftLonNF, "growx");
 		panel.add(new JLabel("degrees east"), "wrap");
@@ -114,7 +113,7 @@ public class CameraDialog extends JDialog implements ActionListener
 		panel.add(kmLabel, "wrap");
 
 		// Create "Camera Roll" text entry box and add to 9th row
-		cameraRollNF = new GNumberField(this, -360, 360);
+		cameraRollNF = new GNumberField(this, new DecimalFormat("#.###"), -360, 360);
 		panel.add(new JLabel("Camera Roll"), "");
 		panel.add(cameraRollNF, "growx");
 		panel.add(new JLabel("degrees"), "wrap");

@@ -168,7 +168,7 @@ public abstract class StreamUnpacker
 
         public long getEstimatedTimeToComplete(long totalByteCount)
         {
-            Preconditions.checkArgument(totalByteCount > 0);
+            Preconditions.checkArgument(totalByteCount >= 0);
 
             long result = -1; // If nothing downloaded yet, return -1.
 

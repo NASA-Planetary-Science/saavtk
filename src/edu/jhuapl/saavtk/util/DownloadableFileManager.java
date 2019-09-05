@@ -188,27 +188,6 @@ public class DownloadableFileManager
         return getState(urlString);
     }
 
-    public void query(String urlString, StateListener whenFinished, boolean forceUpdate)
-    {
-        Preconditions.checkNotNull(urlString);
-        Preconditions.checkNotNull(whenFinished);
-
-        FileAccessQuerier querier = getQuerier(urlString, forceUpdate);
-
-        DownloadableFileInfo info = getInfo(urlManager.getUrl(urlString));
-
-        querier.addPropertyChangeListener(e -> {
-            String propertyName = e.getPropertyName();
-            if (propertyName.equals(FileAccessQuerier.QUERY_DONE) || propertyName.equals(FileAccessQuerier.QUERY_CANCELED))
-            {
-                info.update(querier.getDownloadableFileState());
-                whenFinished.respond(info.getState());
-            }
-        });
-
-        THREAD_POOL.execute(querier);
-    }
-
     public void queryAll(boolean forceUpdate)
     {
         URL rootUrl = urlManager.getRootUrl();
