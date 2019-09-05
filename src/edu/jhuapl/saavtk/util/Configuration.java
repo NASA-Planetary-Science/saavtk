@@ -130,6 +130,11 @@ public class Configuration
             throw new IllegalArgumentException();
         }
 
+        if (authenticationSuccessful.get())
+        {
+            return;
+        }
+
         Configuration.restrictedAccessRoot = restrictedAccessRoot;
         Configuration.passwordFilesToTry = passwordFilesToTry;
 
