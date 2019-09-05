@@ -21,10 +21,14 @@ public final class ShapeModelType
      * Return the ShapeModelType object associated with the provided identifier
      * parameter.
      * 
+     * Deprecated in favor of the provide method, which creates a new ShapeModelType
+     * if it is missing.
+     * 
      * @param identifier of the ShapeModelType object
      * @return the ShapeModelType object
      * @throws IllegalArgumentException if there is no associated ShapeModelType.
      */
+    @Deprecated
     public static ShapeModelType valueOf(String identifier)
     {
         Preconditions.checkArgument(SHAPE_MODEL_IDENTIFIERS.containsKey(identifier), "Cannot find a ShapeModelType object for identifier " + identifier);
@@ -40,7 +44,7 @@ public final class ShapeModelType
      * @throws IllegalArgumentException if there is already a ShapeModelType object
      *             associated with the identifier
      */
-    public static ShapeModelType create(String identifier)
+    private static ShapeModelType create(String identifier)
     {
         Preconditions.checkNotNull(identifier);
         Preconditions.checkArgument(!SHAPE_MODEL_IDENTIFIERS.containsKey(identifier), "Already have a ShapeModelType object for identifier " + identifier);
