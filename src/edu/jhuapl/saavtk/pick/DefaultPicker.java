@@ -53,6 +53,7 @@ public class DefaultPicker extends Picker implements PropertyChangeListener
     private boolean suppressPopups = false;
 	private double[] lastClickedPosition = null;
 	private double[] lastClickedNormal = null;
+	protected String distanceStr;
 
     public DefaultPicker(
             Renderer renderer,
@@ -324,7 +325,40 @@ public class DefaultPicker extends Picker implements PropertyChangeListener
         distanceStr += " km";
 
         int pickSucceeded = doPick(e, smallBodyCellPicker, renWin);
+        updateStatusBar(pickSucceeded, modelManager.getPolyhedralModel().getScaleBarWidthInKm());
+    }
+    
+    protected void updateStatusBar(double scaleBarWidthInKm)
+    {
+    	updateStatusBar(1, scaleBarWidthInKm);
+    }
 
+    protected void updateStatusBar(int pickSucceeded, double scaleBarWidthInKm)
+    {
+    	if (distanceStr == null)
+    	{
+    		vtkCamera activeCamera = renWin.getRenderer().GetActiveCamera();
+            double[] cameraPos = activeCamera.GetPosition();
+            double distance = Math.sqrt(
+                    cameraPos[0]*cameraPos[0] +
+                    cameraPos[1]*cameraPos[1] +
+                    cameraPos[2]*cameraPos[2]);
+            distanceStr = decimalFormatter.format(distance);
+            if (distanceStr.length() == 5)
+                distanceStr = "  " + distanceStr;
+            else if (distanceStr.length() == 6)
+                distanceStr = " " + distanceStr;
+            distanceStr += " km";
+    	}
+
+    	String pixelResolutionString = "";
+        if (modelManager.getPolyhedralModel().getScaleBarWidthInKm() > 0)
+        {
+	        if (modelManager.getPolyhedralModel().getScaleBarWidthInKm() < 1.0)
+	        	pixelResolutionString = String.format("%.2f m", 1000.0 * modelManager.getPolyhedralModel().getScaleBarWidthInKm());
+			else
+				pixelResolutionString = String.format("%.2f km", modelManager.getPolyhedralModel().getScaleBarWidthInKm());
+        }
         if (pickSucceeded == 1)
         {
             double[] pos = smallBodyCellPicker.GetPickPosition();
@@ -369,11 +403,17 @@ public class DefaultPicker extends Picker implements PropertyChangeListener
                 radStr = " " + radStr;
             radStr += " km";
 
-            statusBar.setRightText("Lat: " + latStr + "  Lon: " + lonStr + "  Radius: " + radStr + "  Range: " + distanceStr + " ");
+            if (pixelResolutionString.equals(""))
+            	statusBar.setRightText("Lat: " + latStr + "  Lon: " + lonStr + "  Radius: " + radStr + "  Range: " + distanceStr + " ");
+            else
+            	statusBar.setRightText("Lat: " + latStr + "  Lon: " + lonStr + "  Radius: " + radStr + "  Range: " + distanceStr + " " + " " + "Scalebar " + pixelResolutionString);
         }
         else
         {
-            statusBar.setRightText("Range: " + distanceStr + " ");
+        	if (pixelResolutionString.equals(""))
+        		statusBar.setRightText("Range: " + distanceStr + " ");
+        	else
+        		statusBar.setRightText("Range: " + distanceStr + " " + "Scalebar: " + pixelResolutionString);
         }
     }
 
