@@ -40,19 +40,19 @@ import edu.jhuapl.saavtk.util.Properties;
  */
 public class DefaultPicker extends Picker implements PropertyChangeListener
 {
-    private Renderer renderer;
-    private vtkJoglPanelComponent renWin;
-    private StatusBar statusBar;
-    private ModelManager modelManager;
-    private PopupManager popupManager;
-    private vtkCellPicker mousePressNonSmallBodyCellPicker; // includes all props EXCEPT the small body
-    private vtkCellPicker smallBodyCellPicker; // only includes small body prop
-    private vtkCellPicker allPropsCellPicker; // includes all props including the small body
-    private DecimalFormat decimalFormatter = new DecimalFormat("##0.000");
-    private DecimalFormat decimalFormatter2 = new DecimalFormat("#0.000");
-    private boolean suppressPopups = false;
-	private double[] lastClickedPosition = null;
-	private double[] lastClickedNormal = null;
+    protected Renderer renderer;
+    protected vtkJoglPanelComponent renWin;
+    protected StatusBar statusBar;
+    protected ModelManager modelManager;
+    protected PopupManager popupManager;
+    protected vtkCellPicker mousePressNonSmallBodyCellPicker; // includes all props EXCEPT the small body
+    protected vtkCellPicker smallBodyCellPicker; // only includes small body prop
+    protected vtkCellPicker allPropsCellPicker; // includes all props including the small body
+    protected DecimalFormat decimalFormatter = new DecimalFormat("##0.000");
+    protected DecimalFormat decimalFormatter2 = new DecimalFormat("#0.000");
+    protected boolean suppressPopups = false;
+    protected double[] lastClickedPosition = null;
+    protected double[] lastClickedNormal = null;
 	protected String distanceStr;
 
     public DefaultPicker(
