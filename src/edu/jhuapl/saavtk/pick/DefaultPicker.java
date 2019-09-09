@@ -317,7 +317,7 @@ public class DefaultPicker extends Picker implements PropertyChangeListener
                 cameraPos[0]*cameraPos[0] +
                 cameraPos[1]*cameraPos[1] +
                 cameraPos[2]*cameraPos[2]);
-        String distanceStr = decimalFormatter.format(distance);
+        distanceStr = decimalFormatter.format(distance);
         if (distanceStr.length() == 5)
             distanceStr = "  " + distanceStr;
         else if (distanceStr.length() == 6)
@@ -481,11 +481,28 @@ public class DefaultPicker extends Picker implements PropertyChangeListener
         return sizeOfPixel;
     }
 
+    private void updateScaleBar()
+    {
+    	updateScaleBarValue();
+        updateScaleBarPosition();
+    }
+
     private void updateScaleBarValue()
     {
         double sizeOfPixel = computeSizeOfPixel();
+
+        if (sizeOfPixel == -1) return;	//if the body doesn't intercept all corners of the renderer, just go ahead and return, leaving the scale bar value untouched
+
         PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
-        smallBodyModel.updateScaleBarValue(sizeOfPixel);
+        smallBodyModel.updateScaleBarValue(sizeOfPixel, new Runnable()
+		{
+
+			@Override
+			public void run()
+			{
+				updateStatusBar(modelManager.getPolyhedralModel().getScaleBarWidthInKm());
+			}
+		});
     }
 
     public void updateScaleBarPosition()
