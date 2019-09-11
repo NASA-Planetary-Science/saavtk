@@ -739,7 +739,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		{
 			if (idx != index)
 			{
-				updatedIndices[i] = idx;
+				updatedIndices[i++] = idx;
 			}
 		}
 		return updatedIndices;

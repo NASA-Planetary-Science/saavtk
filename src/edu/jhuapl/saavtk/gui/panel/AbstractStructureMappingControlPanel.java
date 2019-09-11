@@ -991,6 +991,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		// Remove the structures
 		structuresTable.getSelectionModel().removeListSelectionListener(this);
 		structureModel.removeStructures(idxArr);
+		structuresTable.getSelectionModel().clearSelection();
 		structuresTable.getSelectionModel().addListSelectionListener(this);
 
 		// Update internal state vars
