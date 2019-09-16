@@ -144,7 +144,12 @@ public class RecentlyViewed extends JMenu
             }
         });
 
-        String urlString = view.getConfig().getShapeModelFileNames()[0];
+        String urlString = (view.getConfigURL() == null) ? view.getShapeModelName() : view.getConfigURL();
+        if (view.getUniqueName().contains("Custom"))
+        {
+        	SafeURLPaths safeUrlPaths = SafeURLPaths.instance();
+            urlString = safeUrlPaths.getUrl(safeUrlPaths.getString(Configuration.getImportedShapeModelsDir(), view.getShapeModelName()));
+        }
         fileStateTracker.addStateChangeListener(urlString, state -> {
             item.setEnabled(state.isAccessible());
         });

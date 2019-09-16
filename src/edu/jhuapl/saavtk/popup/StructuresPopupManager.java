@@ -1,24 +1,24 @@
 package edu.jhuapl.saavtk.popup;
 
+import java.awt.AWTException;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
 
-import vtk.vtkProp;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
+import vtk.vtkProp;
 
 /**
- * This class is responsible for the creation of popups and for the routing
- * of the right click events (i.e. show popup events) to the correct model.
+ * This class is responsible for the creation of popups and for the routing of
+ * the right click events (i.e. show popup events) to the correct model.
  */
 public class StructuresPopupManager extends PopupManager
 {
     private ModelManager modelManager;
     private HashMap<Model, PopupMenu> modelToPopupMap =
-        new HashMap<Model, PopupMenu>();
-
+            new HashMap<>();
 
     public StructuresPopupManager(ModelManager modelManager, Renderer renderer)
     {
@@ -39,15 +39,24 @@ public class StructuresPopupManager extends PopupManager
         popupMenu = new PointsPopupMenu(modelManager, renderer);
         registerPopup(modelManager.getModel(ModelNames.POINT_STRUCTURES), popupMenu);
 
-        popupMenu = new GraticulePopupMenu(modelManager, renderer);
-        registerPopup(modelManager.getModel(ModelNames.GRATICULE), popupMenu);
+        try
+        {
+            popupMenu = new GraticulePopupMenu(modelManager, renderer);
+            registerPopup(modelManager.getModel(ModelNames.GRATICULE), popupMenu);
+        }
+        catch (AWTException e)
+        {
+            e.printStackTrace();
+        }
     }
 
+    @Override
     public PopupMenu getPopup(Model model)
     {
         return modelToPopupMap.get(model);
     }
 
+    @Override
     public void showPopup(MouseEvent e, vtkProp pickedProp, int pickedCellId, double[] pickedPosition)
     {
         PopupMenu popup = modelToPopupMap.get(modelManager.getModel(pickedProp));
@@ -55,6 +64,7 @@ public class StructuresPopupManager extends PopupManager
             popup.showPopup(e, pickedProp, pickedCellId, pickedPosition);
     }
 
+    @Override
     public void showPopup(MouseEvent e, ModelNames name)
     {
         PopupMenu popup = modelToPopupMap.get(modelManager.getModel(name));
@@ -62,11 +72,13 @@ public class StructuresPopupManager extends PopupManager
             popup.show(e.getComponent(), e.getX(), e.getY());
     }
 
+    @Override
     protected HashMap<Model, PopupMenu> getModelToPopupMap()
     {
         return modelToPopupMap;
     }
 
+    @Override
     public void registerPopup(Model model, PopupMenu menu)
     {
         modelToPopupMap.put(model, menu);

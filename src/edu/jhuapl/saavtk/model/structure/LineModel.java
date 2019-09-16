@@ -715,9 +715,8 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 			Structure structure = lines.get(indices[i]);
 			structure.setHidden(true);
 			updateStructure(structure);
-
+			selectedStructures = removeSelectedStructureIndex(indices[i]);
 			lines.remove(indices[i]);
-
 			this.pcs.firePropertyChange(Properties.STRUCTURE_REMOVED, null, indices[i]);
 		}
 
@@ -730,6 +729,20 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 			activateStructure(-1);
 
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+	}
+	
+	private int[] removeSelectedStructureIndex(int index)
+	{
+		int[] updatedIndices = new int[getSelectedStructures().length-1];
+		int i=0;
+		for (int idx : getSelectedStructures())
+		{
+			if (idx != index)
+			{
+				updatedIndices[i++] = idx;
+			}
+		}
+		return updatedIndices;
 	}
 
 	@Override

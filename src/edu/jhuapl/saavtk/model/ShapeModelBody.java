@@ -23,8 +23,8 @@ public enum ShapeModelBody
 	JANUS("Janus"),
 	EPIMETHEUS("Epimetheus"),
 	HYPERION("Hyperion"),
-	TEMPEL_1("9P/Tempel 1"),
-	HALLEY("1P/Halley"),
+	TEMPEL_1("9P Tempel 1"),
+	HALLEY("1P Halley"),
 	JUPITER("Jupiter"),
 	AMALTHEA("Amalthea"),
 	CALLISTO("Callisto"),
@@ -43,9 +43,9 @@ public enum ShapeModelBody
 	CASTALIA("4769 Castalia"),
 	_52760_1998_ML14("(52760) 1998 ML14"),
 	GOLEVKA("6489 Golevka"),
-	WILD_2("81P/Wild 2"),
+	WILD_2("81P Wild 2"),
 	STEINS("2867 Steins"),
-	HARTLEY("103P/Hartley 2"),
+	HARTLEY("103P Hartley 2"),
 	PLUTO("Pluto"),
 	CHARON("Charon"),
 	HYDRA("Hydra"),
@@ -70,7 +70,7 @@ public enum ShapeModelBody
 	PALLAS("2 Pallas"),
 	DAPHNE("41 Daphne"),
 	HERMIONE("121 Hermione"),
-	_67P("67P/Churyumov-Gerasimenko"),
+	_67P("67P Churyumov-Gerasimenko"),
 	EARTH("Earth"),
 	CALYPSO("Calypso"),
 	PAN("Pan"),
@@ -94,4 +94,13 @@ public enum ShapeModelBody
 	{
 		return str;
 	}
+	
+    public static ShapeModelBody valueFor(String desc)
+    {
+    	for (ShapeModelBody type : values())
+    	{
+    		if (type.toString().equals(desc)) return type;
+    	}
+    	return null;
+    }
 }

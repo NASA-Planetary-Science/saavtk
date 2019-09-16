@@ -59,14 +59,14 @@ import org.opengis.feature.simple.SimpleFeature;
 import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.gui.ColorCellRenderer;
-import edu.jhuapl.saavtk.gui.GNumberFieldSlider;
-import edu.jhuapl.saavtk.gui.IconUtil;
 import edu.jhuapl.saavtk.gui.ProfilePlot;
 import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.dialog.ColorChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.NormalOffsetChangerDialog;
 import edu.jhuapl.saavtk.gui.funk.PopupButton;
+import edu.jhuapl.saavtk.gui.util.IconUtil;
+import edu.jhuapl.saavtk.gui.util.ToolTipUtil;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
@@ -93,7 +93,10 @@ import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.ProgressListener;
 import edu.jhuapl.saavtk.util.Properties;
+import glum.gui.GuiUtil;
 import glum.gui.TableUtil;
+import glum.gui.component.GNumberFieldSlider;
+import glum.gui.icon.EmptyIcon;
 import net.miginfocom.swing.MigLayout;
 
 public class AbstractStructureMappingControlPanel extends JPanel implements ActionListener, PropertyChangeListener, TableModelListener, ListSelectionListener
@@ -654,17 +657,14 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		add(saveB, "sg g0,wrap");
 
 		// Table header
-		selectInvertB = new JButton(IconUtil.loadIcon("resources/icons/itemSelectInvert.png"));
-		selectInvertB.addActionListener(this);
-		selectInvertB.setToolTipText("Invert Selection");
+		selectInvertB = GuiUtil.formButton(this, IconUtil.getSelectInvert());
+		selectInvertB.setToolTipText(ToolTipUtil.getSelectInvert());
 
-		selectNoneB = new JButton(IconUtil.loadIcon("resources/icons/itemSelectNone.png"));
-		selectNoneB.addActionListener(this);
-		selectNoneB.setToolTipText("Clear Selection");
+		selectNoneB = GuiUtil.formButton(this, IconUtil.getSelectNone());
+		selectNoneB.setToolTipText(ToolTipUtil.getSelectNone());
 
-		selectAllB = new JButton(IconUtil.loadIcon("resources/icons/itemSelectAll.png"));
-		selectAllB.addActionListener(this);
-		selectAllB.setToolTipText("Select All");
+		selectAllB = GuiUtil.formButton(this, IconUtil.getSelectAll());
+		selectAllB.setToolTipText(ToolTipUtil.getSelectAll());
 		
 		tableHeadL = new JLabel("Structures: 0");
 		add(tableHeadL, "growx,span,split");
@@ -991,6 +991,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		// Remove the structures
 		structuresTable.getSelectionModel().removeListSelectionListener(this);
 		structureModel.removeStructures(idxArr);
+		structuresTable.getSelectionModel().clearSelection();
 		structuresTable.getSelectionModel().addListSelectionListener(this);
 
 		// Update internal state vars
@@ -1081,8 +1082,7 @@ public class AbstractStructureMappingControlPanel extends JPanel implements Acti
 		}
 		else
 		{
-			Color tmpColor = new Color(0, 0, 0, 0);
-			labelIcon = new ColorIcon(tmpColor, tmpColor, iconW, iconH);
+			labelIcon = new EmptyIcon(iconW, iconH);
 			structIcon = labelIcon;
 		}
 

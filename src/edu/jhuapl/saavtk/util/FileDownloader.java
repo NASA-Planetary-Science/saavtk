@@ -118,9 +118,9 @@ public abstract class FileDownloader implements Runnable
         // Do nothing if the URL already points to the cached file.
         UrlState urlState = urlInfo.getState();
         URL url = urlState.getUrl();
-        String urlPath = url.getPath();
         File file = fileInfo.getState().getFile();
-        if (SAFE_URL_PATHS.hasFileProtocol(urlPath) && urlPath.equals(file.getAbsolutePath()))
+
+        if (SAFE_URL_PATHS.hasFileProtocol(url.toString()) && url.getPath().equals(file.getAbsolutePath()))
         {
             return;
         }

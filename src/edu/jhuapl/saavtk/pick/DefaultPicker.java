@@ -40,19 +40,20 @@ import edu.jhuapl.saavtk.util.Properties;
  */
 public class DefaultPicker extends Picker implements PropertyChangeListener
 {
-    private Renderer renderer;
-    private vtkJoglPanelComponent renWin;
-    private StatusBar statusBar;
-    private ModelManager modelManager;
-    private PopupManager popupManager;
-    private vtkCellPicker mousePressNonSmallBodyCellPicker; // includes all props EXCEPT the small body
-    private vtkCellPicker smallBodyCellPicker; // only includes small body prop
-    private vtkCellPicker allPropsCellPicker; // includes all props including the small body
-    private DecimalFormat decimalFormatter = new DecimalFormat("##0.000");
-    private DecimalFormat decimalFormatter2 = new DecimalFormat("#0.000");
-    private boolean suppressPopups = false;
-	private double[] lastClickedPosition = null;
-	private double[] lastClickedNormal = null;
+    protected Renderer renderer;
+    protected vtkJoglPanelComponent renWin;
+    protected StatusBar statusBar;
+    protected ModelManager modelManager;
+    protected PopupManager popupManager;
+    protected vtkCellPicker mousePressNonSmallBodyCellPicker; // includes all props EXCEPT the small body
+    protected vtkCellPicker smallBodyCellPicker; // only includes small body prop
+    protected vtkCellPicker allPropsCellPicker; // includes all props including the small body
+    protected DecimalFormat decimalFormatter = new DecimalFormat("##0.000");
+    protected DecimalFormat decimalFormatter2 = new DecimalFormat("#0.000");
+    protected boolean suppressPopups = false;
+    protected double[] lastClickedPosition = null;
+    protected double[] lastClickedNormal = null;
+	protected String distanceStr;
 
     public DefaultPicker(
             Renderer renderer,
@@ -316,7 +317,7 @@ public class DefaultPicker extends Picker implements PropertyChangeListener
                 cameraPos[0]*cameraPos[0] +
                 cameraPos[1]*cameraPos[1] +
                 cameraPos[2]*cameraPos[2]);
-        String distanceStr = decimalFormatter.format(distance);
+        distanceStr = decimalFormatter.format(distance);
         if (distanceStr.length() == 5)
             distanceStr = "  " + distanceStr;
         else if (distanceStr.length() == 6)
@@ -324,7 +325,40 @@ public class DefaultPicker extends Picker implements PropertyChangeListener
         distanceStr += " km";
 
         int pickSucceeded = doPick(e, smallBodyCellPicker, renWin);
+        updateStatusBar(pickSucceeded, modelManager.getPolyhedralModel().getScaleBarWidthInKm());
+    }
+    
+    protected void updateStatusBar(double scaleBarWidthInKm)
+    {
+    	updateStatusBar(1, scaleBarWidthInKm);
+    }
 
+    protected void updateStatusBar(int pickSucceeded, double scaleBarWidthInKm)
+    {
+    	if (distanceStr == null)
+    	{
+    		vtkCamera activeCamera = renWin.getRenderer().GetActiveCamera();
+            double[] cameraPos = activeCamera.GetPosition();
+            double distance = Math.sqrt(
+                    cameraPos[0]*cameraPos[0] +
+                    cameraPos[1]*cameraPos[1] +
+                    cameraPos[2]*cameraPos[2]);
+            distanceStr = decimalFormatter.format(distance);
+            if (distanceStr.length() == 5)
+                distanceStr = "  " + distanceStr;
+            else if (distanceStr.length() == 6)
+                distanceStr = " " + distanceStr;
+            distanceStr += " km";
+    	}
+
+    	String pixelResolutionString = "";
+        if (modelManager.getPolyhedralModel().getScaleBarWidthInKm() > 0)
+        {
+	        if (modelManager.getPolyhedralModel().getScaleBarWidthInKm() < 1.0)
+	        	pixelResolutionString = String.format("%.2f m", 1000.0 * modelManager.getPolyhedralModel().getScaleBarWidthInKm());
+			else
+				pixelResolutionString = String.format("%.2f km", modelManager.getPolyhedralModel().getScaleBarWidthInKm());
+        }
         if (pickSucceeded == 1)
         {
             double[] pos = smallBodyCellPicker.GetPickPosition();
@@ -369,11 +403,17 @@ public class DefaultPicker extends Picker implements PropertyChangeListener
                 radStr = " " + radStr;
             radStr += " km";
 
-            statusBar.setRightText("Lat: " + latStr + "  Lon: " + lonStr + "  Radius: " + radStr + "  Range: " + distanceStr + " ");
+            if (pixelResolutionString.equals(""))
+            	statusBar.setRightText("Lat: " + latStr + "  Lon: " + lonStr + "  Radius: " + radStr + "  Range: " + distanceStr + " ");
+            else
+            	statusBar.setRightText("Lat: " + latStr + "  Lon: " + lonStr + "  Radius: " + radStr + "  Range: " + distanceStr + " " + " " + "Scalebar " + pixelResolutionString);
         }
         else
         {
-            statusBar.setRightText("Range: " + distanceStr + " ");
+        	if (pixelResolutionString.equals(""))
+        		statusBar.setRightText("Range: " + distanceStr + " ");
+        	else
+        		statusBar.setRightText("Range: " + distanceStr + " " + "Scalebar: " + pixelResolutionString);
         }
     }
 
@@ -441,11 +481,28 @@ public class DefaultPicker extends Picker implements PropertyChangeListener
         return sizeOfPixel;
     }
 
+    private void updateScaleBar()
+    {
+    	updateScaleBarValue();
+        updateScaleBarPosition();
+    }
+
     private void updateScaleBarValue()
     {
         double sizeOfPixel = computeSizeOfPixel();
+
+        if (sizeOfPixel == -1) return;	//if the body doesn't intercept all corners of the renderer, just go ahead and return, leaving the scale bar value untouched
+
         PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
-        smallBodyModel.updateScaleBarValue(sizeOfPixel);
+        smallBodyModel.updateScaleBarValue(sizeOfPixel, new Runnable()
+		{
+
+			@Override
+			public void run()
+			{
+				updateStatusBar(modelManager.getPolyhedralModel().getScaleBarWidthInKm());
+			}
+		});
     }
 
     public void updateScaleBarPosition()
