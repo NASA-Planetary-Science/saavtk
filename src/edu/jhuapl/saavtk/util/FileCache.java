@@ -36,6 +36,7 @@ import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 public final class FileCache
 {
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
+    private static volatile boolean silenceInfoMessages = false;
 
     // TODO this should extend Exception and thus be checked.
     public static class NoInternetAccessException extends RuntimeException
@@ -294,6 +295,14 @@ public final class FileCache
 
     private static DownloadableFileManager downloadableManager = null;
 
+    public static void setSilenceInfoMessages(boolean enable)
+    {
+        silenceInfoMessages = enable;
+        DownloadableFileManager.setSilenceInfoMessages(enable);
+        FileDownloader.setSilenceInfoMessages(enable);
+        UrlAccessManager.setSilenceInfoMessages(enable);
+    }
+
     public static DownloadableFileManager instance()
     {
         if (downloadableManager == null)
@@ -348,9 +357,12 @@ public final class FileCache
         {
             if (exception != null)
             {
-                System.err.println("Warning: cached file exists, but unable to update cache from URL: " + url);
-                System.err.println("Ignored the following exception:");
-                exception.printStackTrace();
+                if (!silenceInfoMessages)
+                {
+                    System.err.println("Warning: cached file exists, but unable to update cache from URL: " + url);
+                    System.err.println("Ignored the following exception:");
+                    exception.printStackTrace();
+                }
             }
         }
         else
@@ -560,7 +572,7 @@ public final class FileCache
             URLConnection connection = uncachedUrl.openConnection();
 
             Debug.out().println("Opened connection for info to " + url);
-            if (!Debug.isEnabled() && showDotsForFiles)
+            if (!Debug.isEnabled() && showDotsForFiles && !silenceInfoMessages)
             {
                 System.out.print('.');
             }
@@ -889,7 +901,7 @@ public final class FileCache
 
             URLConnection connection = url.openConnection();
             Debug.out().println("Opened connection for download to " + url);
-            if (!Debug.isEnabled() && showDotsForFiles)
+            if (!Debug.isEnabled() && showDotsForFiles && !silenceInfoMessages)
             {
                 System.out.print('.');
             }

@@ -26,6 +26,9 @@ import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
 
 public class DownloadableFileManager
 {
+    private static Boolean headless = null;
+    private static volatile boolean silenceInfoMessages = false;
+
     public interface StateListener
     {
         void respond(DownloadableFileState fileState);
@@ -49,7 +52,11 @@ public class DownloadableFileManager
         return new DownloadableFileManager(urlManager, fileManager);
     }
 
-    private static Boolean headless = null;
+    public static void setSilenceInfoMessages(boolean enable)
+    {
+        silenceInfoMessages = enable;
+    }
+
     private final UrlAccessManager urlManager;
     private final FileAccessManager fileManager;
     private final ConcurrentMap<String, DownloadableFileInfo> downloadInfoCache;
@@ -95,9 +102,12 @@ public class DownloadableFileManager
 
                     if (forceUpdate)
                     {
-                        System.out.println(currentlyEnabled ? //
-                        "Connected to server. Re-enabling online access." : //
-                        "Failed to connect to server. Disabling online access for now.");
+                        if (!silenceInfoMessages)
+                        {
+                            System.out.println(currentlyEnabled ? //
+                            "Connected to server. Re-enabling online access." : //
+                            "Failed to connect to server. Disabling online access for now.");
+                        }
                         if (exception != null)
                         {
                             exception.printStackTrace(Debug.err());
