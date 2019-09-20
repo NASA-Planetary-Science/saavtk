@@ -99,7 +99,7 @@ public class LineStructure implements Structure
 	public static List<LineStructure> fromSbmtStructure(LineModel model)
 	{
 		List<LineStructure> structures = Lists.newArrayList();
-		for (int i = 0; i < model.getNumberOfStructures(); i++)
+		for (int i = 0; i < model.getNumItems(); i++)
 		{
 			Line poly = (Line) model.getStructure(i);
 
@@ -114,9 +114,9 @@ public class LineStructure implements Structure
 				controlPoints.add(new Vector3D(MathUtil.latrec(poly.getControlPoints().get(m))));
 
 			LineStructure ls=new LineStructure(segments, controlPoints);
-			int[] c = poly.getColor();
+			Color c = poly.getColor();
 			double w = model.getLineWidth();
-			LineStyle style = new LineStyle(new Color(c[0], c[1], c[2]), w);
+			LineStyle style = new LineStyle(c, w);
 			String label = poly.getLabel();
 			ls.setLineStyle(style);
 			ls.setLabel(label);

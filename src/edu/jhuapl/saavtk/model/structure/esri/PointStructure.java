@@ -1,11 +1,13 @@
 package edu.jhuapl.saavtk.model.structure.esri;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
 
+import edu.jhuapl.saavtk.model.structure.EllipsePolygon;
 import edu.jhuapl.saavtk.model.structure.PointModel;
 
 public class PointStructure implements Structure
@@ -53,14 +55,14 @@ public class PointStructure implements Structure
 		return getClass().getSimpleName() + "{centroid=" + location + ",label=" + label + ",style=" + pointStyle + "}";
 	}
 
-	public static List<PointStructure> fromSbmtStructure(PointModel crappySbmtPointModel)
+	public static List<PointStructure> fromSbmtStructure(PointModel aPointManager)
 	{
-		List<PointStructure> ps=Lists.newArrayList();
-		for (int i=0; i<crappySbmtPointModel.getNumberOfStructures(); i++)
+		List<PointStructure> retL = new ArrayList<>();
+		for (EllipsePolygon aItem : aPointManager.getAllItems())
 		{
-			ps.add(new PointStructure(new Vector3D(crappySbmtPointModel.getStructureCenter(i))));
+			retL.add(new PointStructure(new Vector3D(aPointManager.getStructureCenter(aItem))));
 		}
-		return ps;
+		return retL;
 	}
 	
 }

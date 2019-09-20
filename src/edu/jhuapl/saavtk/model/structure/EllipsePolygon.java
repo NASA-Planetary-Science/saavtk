@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.model.structure;
 
+import java.awt.Color;
 import java.text.DecimalFormat;
 
 import crucible.crust.metadata.api.Key;
@@ -7,14 +8,15 @@ import crucible.crust.metadata.api.Version;
 import crucible.crust.metadata.impl.InstanceGetter;
 import crucible.crust.metadata.impl.SettableMetadata;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
+import edu.jhuapl.saavtk.structure.Structure;
+import edu.jhuapl.saavtk.structure.io.StructureLoadUtil;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
 import vtk.vtkCaptionActor2D;
 import vtk.vtkPolyData;
 import vtk.vtkQuadricClustering;
 
-public class EllipsePolygon extends StructureModel.Structure
+public class EllipsePolygon implements Structure
 {
 	// Constants
 	private static final DecimalFormat DF = new DecimalFormat("#.#####");
@@ -24,45 +26,48 @@ public class EllipsePolygon extends StructureModel.Structure
 	private final int id;
 	private final String type;
 
-	// TODO: Both radius and numberOfSlides should be private
 	// State vars
 	private String name = "default";
 	private String label = "";
 	private double[] center;
-	public double radius; // or semimajor axis
+	private double radius; // or semimajor axis
 	private double flattening; // ratio of semiminor axis to semimajor axis
 	private double angle;
-	private boolean hidden = false;
-	private boolean labelHidden = false;
-	public int numberOfSides;
-	private int[] color;
-	private int[] labelColor;
+	private boolean visible;
+	private boolean labelVisible;
+	private int numberOfSides;
+	private Color color;
+	private Color labelColor;
 	private int labelFontSize;
 
 	// VTK vars
-	public vtkPolyData boundaryPolyData;
-	public vtkPolyData decimatedBoundaryPolyData;
-	public vtkPolyData interiorPolyData;
-	public vtkPolyData decimatedInteriorPolyData;
-	private vtkCaptionActor2D caption;
+	protected final vtkPolyData vExteriorDecPD;
+	protected final vtkPolyData vExteriorRegPD;
+	protected final vtkPolyData vInteriorDecPD;
+	protected final vtkPolyData vInteriorRegPD;
+	private vtkCaptionActor2D vCaption;
+	protected boolean vIsStale;
 
-	public EllipsePolygon(int numberOfSides, String aType, int[] color, Mode aMode, int aId, String label)
+	public EllipsePolygon(int aNumberOfSides, String aType, Color aColor, Mode aMode, int aId, String aLabel)
 	{
 		mode = aMode;
 		id = aId;
 		type = aType;
 
-		this.numberOfSides = numberOfSides;
-		this.color = color.clone();
-		this.label = label != null ? label : "";
-		this.labelColor = BLACK_INT_ARRAY.clone();
-		this.labelFontSize = 16;
+		numberOfSides = aNumberOfSides;
+		color = aColor;
+		label = aLabel != null ? aLabel : "";
+		labelColor = Color.BLACK;
+		labelFontSize = 16;
+		visible = true;
+		labelVisible = true;
 
-		boundaryPolyData = new vtkPolyData();
-		decimatedBoundaryPolyData = new vtkPolyData();
-		interiorPolyData = new vtkPolyData();
-		decimatedInteriorPolyData = new vtkPolyData();
-		caption = null;
+		vExteriorDecPD = new vtkPolyData();
+		vExteriorRegPD = new vtkPolyData();
+		vInteriorDecPD = new vtkPolyData();
+		vInteriorRegPD = new vtkPolyData();
+		vCaption = null;
+		vIsStale = true;
 	}
 
 	public double getAngle()
@@ -73,6 +78,11 @@ public class EllipsePolygon extends StructureModel.Structure
 	public double getFlattening()
 	{
 		return flattening;
+	}
+
+	public int getNumberOfSides()
+	{
+		return numberOfSides;
 	}
 
 	public double getRadius()
@@ -93,9 +103,9 @@ public class EllipsePolygon extends StructureModel.Structure
 	}
 
 	@Override
-	public void setName(String name)
+	public void setName(String aName)
 	{
-		this.name = name != null ? name : "";
+		name = aName != null ? aName : "";
 	}
 
 	@Override
@@ -118,15 +128,15 @@ public class EllipsePolygon extends StructureModel.Structure
 	}
 
 	@Override
-	public int[] getColor()
+	public Color getColor()
 	{
-		return color.clone();
+		return color;
 	}
 
 	@Override
-	public void setColor(int[] color)
+	public void setColor(Color aColor)
 	{
-		this.color = color.clone();
+		color = aColor;
 	}
 
 	public double[] getCenter()
@@ -137,31 +147,45 @@ public class EllipsePolygon extends StructureModel.Structure
 	public void setAngle(double aAngle)
 	{
 		angle = aAngle;
+		vIsStale = true;
 	}
 
 	public void setCenter(double[] aCenter)
 	{
 		center = aCenter;
+		vIsStale = true;
 	}
 
 	public void setFlattening(double aFlattening)
 	{
 		flattening = aFlattening;
+		vIsStale = true;
 	}
 
 	public void setRadius(double aRadius)
 	{
 		radius = aRadius;
+		vIsStale = true;
 	}
 
-	public vtkPolyData getBoundaryPolyData()
+	/**
+	 * Returns the exterior vtkPolyData.
+	 * <P>
+	 * Note the returned VtkPolyData is the regular one - not the decimated one.
+	 */
+	public vtkPolyData getVtkExteriorPolyData()
 	{
-		return boundaryPolyData;
+		return vExteriorRegPD;
 	}
 
-	public vtkPolyData getInteriorPolyData()
+	/**
+	 * Returns the interior vtkPolyData.
+	 * <P>
+	 * Note the returned VtkPolyData is the regular one - not the decimated one.
+	 */
+	public vtkPolyData getVtkInteriorPolyData()
 	{
-		return interiorPolyData;
+		return vInteriorRegPD;
 	}
 
 	/**
@@ -171,18 +195,13 @@ public class EllipsePolygon extends StructureModel.Structure
 	 */
 	public void updateVtkState(PolyhedralModel aPolyhedralModel)
 	{
-		// Clear VTK state if hidden and bail
-		if (hidden == true)
-		{
-			PolyDataUtil.clearPolyData(interiorPolyData);
-			PolyDataUtil.clearPolyData(decimatedInteriorPolyData);
-			PolyDataUtil.clearPolyData(boundaryPolyData);
-			PolyDataUtil.clearPolyData(decimatedBoundaryPolyData);
+		// Bail if the VTK state is not stale
+		if (vIsStale == false)
 			return;
-		}
+		vIsStale = false;
 
-		aPolyhedralModel.drawEllipticalPolygon(center, radius, flattening, angle, numberOfSides, interiorPolyData,
-				boundaryPolyData);
+		aPolyhedralModel.drawEllipticalPolygon(center, radius, flattening, angle, numberOfSides, vInteriorRegPD,
+				vExteriorRegPD);
 
 		// LatLon ll=MathUtil.reclat(center);
 		// System.out.println(Math.toDegrees(ll.lat)+" "+Math.toDegrees(ll.lon));
@@ -191,20 +210,20 @@ public class EllipsePolygon extends StructureModel.Structure
 		vtkQuadricClustering decimator = new vtkQuadricClustering();
 
 		// Decimate interior
-		decimator.SetInputData(interiorPolyData);
+		decimator.SetInputData(vInteriorRegPD);
 		decimator.AutoAdjustNumberOfDivisionsOn();
 		decimator.CopyCellDataOn();
 		decimator.Update();
-		decimatedInteriorPolyData.DeepCopy(decimator.GetOutput());
+		vInteriorDecPD.DeepCopy(decimator.GetOutput());
 
 		// Decimate boundary
-		decimator.SetInputData(boundaryPolyData);
+		decimator.SetInputData(vExteriorRegPD);
 		decimator.SetNumberOfXDivisions(2);
 		decimator.SetNumberOfYDivisions(2);
 		decimator.SetNumberOfZDivisions(2);
 		decimator.CopyCellDataOn();
 		decimator.Update();
-		decimatedBoundaryPolyData.DeepCopy(decimator.GetOutput());
+		vExteriorDecPD.DeepCopy(decimator.GetOutput());
 
 		// Destroy decimator
 		decimator.Delete();
@@ -217,9 +236,9 @@ public class EllipsePolygon extends StructureModel.Structure
 	}
 
 	@Override
-	public void setLabel(String label)
+	public void setLabel(String aLabel)
 	{
-		this.label = label != null ? label : "";
+		label = aLabel != null ? aLabel : "";
 	}
 
 	@Override
@@ -229,15 +248,15 @@ public class EllipsePolygon extends StructureModel.Structure
 	}
 
 	@Override
-	public int[] getLabelColor()
+	public Color getLabelColor()
 	{
 		return labelColor;
 	}
 
 	@Override
-	public void setLabelColor(int[] labelColor)
+	public void setLabelColor(Color aColor)
 	{
-		this.labelColor = labelColor.clone();
+		labelColor = aColor;
 	}
 
 	@Override
@@ -247,33 +266,33 @@ public class EllipsePolygon extends StructureModel.Structure
 	}
 
 	@Override
-	public void setLabelFontSize(int fontSize)
+	public void setLabelFontSize(int aFontSize)
 	{
-		this.labelFontSize = fontSize;
+		labelFontSize = aFontSize;
 	}
 
 	@Override
-	public boolean getHidden()
+	public boolean getVisible()
 	{
-		return hidden;
+		return visible;
 	}
 
 	@Override
-	public boolean getLabelHidden()
+	public boolean getLabelVisible()
 	{
-		return labelHidden;
+		return labelVisible;
 	}
 
 	@Override
-	public void setHidden(boolean b)
+	public void setVisible(boolean aBool)
 	{
-		hidden = b;
+		visible = aBool;
 	}
 
 	@Override
-	public void setLabelHidden(boolean b)
+	public void setLabelVisible(boolean aBool)
 	{
-		labelHidden = b;
+		labelVisible = aBool;
 	}
 
 	@Override
@@ -285,13 +304,36 @@ public class EllipsePolygon extends StructureModel.Structure
 	@Override
 	public vtkCaptionActor2D getCaption()
 	{
-		return caption;
+		return vCaption;
 	}
 
 	@Override
-	public void setCaption(vtkCaptionActor2D caption)
+	public void setCaption(vtkCaptionActor2D aCaption)
 	{
-		this.caption = caption;
+		vCaption = aCaption;
+	}
+
+	/**
+	 * Helper method to release the VTK state vars
+	 * <P>
+	 * TODO: Currently not known if this properly releases the VTK resources.
+	 * <P>
+	 * TODO: This should be be simplified
+	 */
+	protected void clearVtkState()
+	{
+		visible = false;
+
+		PolyDataUtil.clearPolyData(vInteriorRegPD);
+		PolyDataUtil.clearPolyData(vInteriorDecPD);
+		PolyDataUtil.clearPolyData(vExteriorRegPD);
+		PolyDataUtil.clearPolyData(vExteriorDecPD);
+
+		if (getCaption() != null)
+		{
+			getCaption().VisibilityOff();
+			setCaption(null);
+		}
 	}
 
 	private static final Key<EllipsePolygon> ELLIPSE_POLYGON_KEY = Key.of("ellipsePolygon");
@@ -316,7 +358,7 @@ public class EllipsePolygon extends StructureModel.Structure
 		InstanceGetter.defaultInstanceGetter().register(ELLIPSE_POLYGON_KEY, (source) -> {
 			int numberSides = source.get(NUMBER_SIDES_KEY);
 			String type = source.get(TYPE_KEY);
-			int[] color = source.get(COLOR_KEY);
+			Color color = StructureLoadUtil.convertRgbaToColor(source.get(COLOR_KEY));
 			Mode mode = Mode.valueOf(source.get(MODE_KEY));
 			int id = source.get(ID_KEY);
 			String label = source.get(LABEL_KEY);
@@ -328,9 +370,9 @@ public class EllipsePolygon extends StructureModel.Structure
 			result.radius = source.get(RADIUS_KEY);
 			result.flattening = source.get(FLATTENING_KEY);
 			result.angle = source.get(ANGLE_KEY);
-			result.hidden = source.get(HIDDEN_KEY);
-			result.labelHidden = source.get(LABEL_HIDDEN_KEY);
-			result.labelColor = source.get(LABEL_COLOR_KEY);
+			result.visible = !source.get(HIDDEN_KEY);
+			result.labelVisible = !source.get(LABEL_HIDDEN_KEY);
+			result.labelColor = StructureLoadUtil.convertRgbaToColor(source.get(LABEL_COLOR_KEY));
 			result.labelFontSize = source.get(LABEL_FONT_SIZE_KEY);
 
 			return result;
@@ -339,7 +381,7 @@ public class EllipsePolygon extends StructureModel.Structure
 
 			result.put(NUMBER_SIDES_KEY, polygon.numberOfSides);
 			result.put(TYPE_KEY, polygon.type);
-			result.put(COLOR_KEY, polygon.color);
+			result.put(COLOR_KEY, StructureLoadUtil.convertColorToRgba(polygon.color));
 			result.put(MODE_KEY, polygon.mode.name());
 			result.put(ID_KEY, polygon.id);
 			result.put(LABEL_KEY, polygon.getLabel());
@@ -349,9 +391,9 @@ public class EllipsePolygon extends StructureModel.Structure
 			result.put(RADIUS_KEY, polygon.radius);
 			result.put(FLATTENING_KEY, polygon.flattening);
 			result.put(ANGLE_KEY, polygon.angle);
-			result.put(HIDDEN_KEY, polygon.hidden);
-			result.put(LABEL_HIDDEN_KEY, polygon.labelHidden);
-			result.put(LABEL_COLOR_KEY, polygon.getLabelColor());
+			result.put(HIDDEN_KEY, !polygon.visible);
+			result.put(LABEL_HIDDEN_KEY, !polygon.labelVisible);
+			result.put(LABEL_COLOR_KEY, StructureLoadUtil.convertColorToRgba(polygon.getLabelColor()));
 			result.put(LABEL_FONT_SIZE_KEY, polygon.getLabelFontSize());
 
 			return result;
