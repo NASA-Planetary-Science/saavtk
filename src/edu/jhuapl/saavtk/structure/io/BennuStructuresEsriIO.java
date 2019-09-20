@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.panel;
+package edu.jhuapl.saavtk.structure.io;
 
 import java.io.File;
 import java.io.IOException;

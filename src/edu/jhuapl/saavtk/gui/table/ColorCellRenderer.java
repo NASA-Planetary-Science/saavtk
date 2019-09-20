@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui;
+package edu.jhuapl.saavtk.gui.table;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -10,8 +10,8 @@ import javax.swing.border.Border;
 import javax.swing.table.TableCellRenderer;
 
 /**
- * Class that used to display a filled color rectangle for a table cell where
- * the data model is a {@link Color}
+ * {@link TableCellRenderer} used to display a filled color rectangle for a
+ * table cell where the data model is a {@link Color}
  */
 public class ColorCellRenderer extends JLabel implements TableCellRenderer
 {
@@ -33,7 +33,8 @@ public class ColorCellRenderer extends JLabel implements TableCellRenderer
 	}
 
 	@Override
-	public Component getTableCellRendererComponent(JTable table, Object color, boolean isSelected, boolean hasFocus, int row, int column)
+	public Component getTableCellRendererComponent(JTable table, Object color, boolean isSelected, boolean hasFocus,
+			int row, int column)
 	{
 		Color newColor = (Color) color;
 		setBackground(newColor);
@@ -58,4 +59,5 @@ public class ColorCellRenderer extends JLabel implements TableCellRenderer
 
 		return this;
 	}
+
 }
