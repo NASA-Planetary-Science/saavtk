@@ -40,15 +40,17 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
  */
 public class PickManager
 {
+	/**
+	 * TODO: This enum will eventually go away as we transition away from a shared
+	 * (coupled) Picker system to a decoupled Picker system.
+	 */
 	public enum PickMode
 	{
 		DEFAULT,
+
 		CIRCLE_SELECTION,
-		POLYGON_DRAW,
+
 		LINE_DRAW,
-		CIRCLE_DRAW,
-		ELLIPSE_DRAW,
-		POINT_DRAW,
 	}
 
 	// Ref vars
@@ -128,7 +130,7 @@ public class PickManager
 	 * <P>
 	 * This method will eventually go away. Please use
 	 * {@link #setActivePicker(Picker)}
-	 * 
+	 *
 	 * @param aMode
 	 */
 	@Deprecated

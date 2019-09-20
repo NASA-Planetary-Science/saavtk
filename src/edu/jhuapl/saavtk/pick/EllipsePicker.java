@@ -3,6 +3,7 @@ package edu.jhuapl.saavtk.pick;
 import java.awt.Cursor;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.util.Set;
 
 import javax.swing.JOptionPane;
 
@@ -13,6 +14,7 @@ import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.EllipseModel;
+import edu.jhuapl.saavtk.model.structure.EllipsePolygon;
 import vtk.vtkActor;
 import vtk.vtkCellPicker;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
@@ -22,7 +24,7 @@ public class EllipsePicker extends Picker
 	// Reference vars
 	private ModelManager refModelManager;
 	private PolyhedralModel refSmallBodyModel;
-	private EllipseModel refStructureModel;
+	private EllipseModel refStructureManager;
 	private vtkJoglPanelComponent refRenWin;
 
 	// VTK vars
@@ -35,15 +37,15 @@ public class EllipsePicker extends Picker
 	private boolean changeAngleKeyPressed;
 	private boolean changeFlatteningKeyPressed;
 
-	public EllipsePicker(Renderer renderer, ModelManager modelManager)
+	public EllipsePicker(Renderer aRenderer, ModelManager aModelManager)
 	{
-		refModelManager = modelManager;
-		refSmallBodyModel = (PolyhedralModel) modelManager.getPolyhedralModel();
-		refStructureModel = (EllipseModel) modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES);
-		refRenWin = renderer.getRenderWindowPanel();
+		refModelManager = aModelManager;
+		refSmallBodyModel = aModelManager.getPolyhedralModel();
+		refStructureManager = (EllipseModel) aModelManager.getModel(ModelNames.ELLIPSE_STRUCTURES);
+		refRenWin = aRenderer.getRenderWindowPanel();
 
 		smallBodyPicker = PickUtilEx.formSmallBodyPicker(refSmallBodyModel);
-		structurePicker = PickUtilEx.formStructurePicker(refStructureModel.getBoundaryActor());
+		structurePicker = PickUtilEx.formStructurePicker(refStructureManager.getBoundaryActor());
 
 		currEditMode = EditMode.CLICKABLE;
 		currVertexId = -1;
@@ -79,7 +81,7 @@ public class EllipsePicker extends Picker
 		// Bail if mouse button 1 is not pressed
 		if (aEvent.getButton() != MouseEvent.BUTTON1)
 		{
-			refStructureModel.resetCircumferencePoints();
+			refStructureManager.resetCircumferencePoints();
 			return;
 		}
 
@@ -97,7 +99,7 @@ public class EllipsePicker extends Picker
 			if (aEvent.getClickCount() == 1)
 			{
 //				refStructureModel.addNewStructure(pos);
-				if (refStructureModel.addCircumferencePoint(pos) == false)
+				if (refStructureManager.addCircumferencePoint(pos) == false)
 				{
 					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(refRenWin.getComponent()),
 							"Could not fit ellipse to specified points.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -127,10 +129,10 @@ public class EllipsePicker extends Picker
 
 		// Determine what was picked
 		vtkActor pickedActor = structurePicker.GetActor();
-		if (pickedActor == refStructureModel.getBoundaryActor())
+		if (pickedActor == refStructureManager.getBoundaryActor())
 		{
 			int cellId = structurePicker.GetCellId();
-			int pointId = refStructureModel.getPolygonIdFromBoundaryCellId(cellId);
+			int pointId = refStructureManager.getPolygonIdFromBoundaryCellId(cellId);
 			currVertexId = pointId;
 		}
 	}
@@ -147,6 +149,7 @@ public class EllipsePicker extends Picker
 		// Bail if we are not in the proper edit mode or there is no vertex being edited
 		if (currEditMode != EditMode.DRAGGABLE || currVertexId < 0)
 			return;
+		EllipsePolygon tmpItem = refStructureManager.getStructure(currVertexId);
 
 		// Bail if the left button is not pressed
 //		if (e.getButton() != MouseEvent.BUTTON1)
@@ -165,13 +168,13 @@ public class EllipsePicker extends Picker
 			double[] lastDragPosition = smallBodyPicker.GetPickPosition();
 
 			if (aEvent.isControlDown() || aEvent.isShiftDown())
-				refStructureModel.changeRadiusOfPolygon(currVertexId, lastDragPosition);
+				refStructureManager.changeRadiusOfPolygon(tmpItem, lastDragPosition);
 			else if (changeFlatteningKeyPressed)
-				refStructureModel.changeFlatteningOfPolygon(currVertexId, lastDragPosition);
+				refStructureManager.changeFlatteningOfPolygon(tmpItem, lastDragPosition);
 			else if (changeAngleKeyPressed)
-				refStructureModel.changeAngleOfPolygon(currVertexId, lastDragPosition);
+				refStructureManager.changeAngleOfPolygon(tmpItem, lastDragPosition);
 			else
-				refStructureModel.movePolygon(currVertexId, lastDragPosition);
+				refStructureManager.movePolygon(tmpItem, lastDragPosition);
 		}
 	}
 
@@ -179,12 +182,12 @@ public class EllipsePicker extends Picker
 	public void mouseMoved(MouseEvent aEvent)
 	{
 		int pickSucceeded = doPick(aEvent, structurePicker, refRenWin);
-		int numActivePoints = refStructureModel.getNumberOfCircumferencePoints();
+		int numActivePoints = refStructureManager.getNumberOfCircumferencePoints();
 
 		// Only allow dragging if we are not in the middle of drawing a
 		// new ellipse, i.e. if number of circumference points is zero.
 		if (numActivePoints == 0 && pickSucceeded == 1
-				&& structurePicker.GetActor() == refStructureModel.getBoundaryActor())
+				&& structurePicker.GetActor() == refStructureManager.getBoundaryActor())
 			currEditMode = EditMode.DRAGGABLE;
 		else
 			currEditMode = EditMode.CLICKABLE;
@@ -203,8 +206,8 @@ public class EllipsePicker extends Picker
 
 		if (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE)
 		{
-			int[] selectedStructures = refStructureModel.getSelectedStructures();
-			refStructureModel.removeStructures(selectedStructures);
+			Set<EllipsePolygon> pickS = refStructureManager.getSelectedItems();
+			refStructureManager.removeStructures(pickS);
 		}
 	}
 

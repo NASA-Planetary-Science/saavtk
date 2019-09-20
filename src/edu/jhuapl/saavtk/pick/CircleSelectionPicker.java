@@ -9,6 +9,7 @@ import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
+import edu.jhuapl.saavtk.model.structure.EllipsePolygon;
 import vtk.vtkActor;
 import vtk.vtkCellPicker;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
@@ -18,7 +19,7 @@ public class CircleSelectionPicker extends Picker
 	// Reference vars
 	private ModelManager refModelManager;
 	private PolyhedralModel refSmallBodyModel;
-	private AbstractEllipsePolygonModel refStructureModel;
+	private AbstractEllipsePolygonModel refStructureManager;
 	private vtkJoglPanelComponent refRenWin;
 
 	// VTK vars
@@ -27,12 +28,12 @@ public class CircleSelectionPicker extends Picker
 	// State vars
 	private int currVertexId;
 
-	public CircleSelectionPicker(Renderer renderer, ModelManager modelManager)
+	public CircleSelectionPicker(Renderer aRenderer, ModelManager aModelManager)
 	{
-		refModelManager = modelManager;
-		refSmallBodyModel = (PolyhedralModel) modelManager.getPolyhedralModel();
-		refStructureModel = (AbstractEllipsePolygonModel) modelManager.getModel(ModelNames.CIRCLE_SELECTION);
-		refRenWin = renderer.getRenderWindowPanel();
+		refModelManager = aModelManager;
+		refSmallBodyModel = aModelManager.getPolyhedralModel();
+		refStructureManager = (AbstractEllipsePolygonModel) aModelManager.getModel(ModelNames.CIRCLE_SELECTION);
+		refRenWin = aRenderer.getRenderWindowPanel();
 
 		smallBodyPicker = PickUtilEx.formSmallBodyPicker(refSmallBodyModel);
 
@@ -61,7 +62,7 @@ public class CircleSelectionPicker extends Picker
 
         currVertexId = -1;
 
-        refStructureModel.removeAllStructures();
+        refStructureManager.removeAllStructures();
 
         int pickSucceeded = doPick(e, smallBodyPicker, refRenWin);
 
@@ -75,8 +76,8 @@ public class CircleSelectionPicker extends Picker
                 double[] pos = smallBodyPicker.GetPickPosition();
                 if (e.getClickCount() == 1)
                 {
-                    refStructureModel.addNewStructure(pos);
-                    currVertexId = refStructureModel.getNumberOfStructures()-1;
+                    refStructureManager.addNewStructure(pos);
+                    currVertexId = refStructureManager.getNumItems()-1;
                 }
             }
         }
@@ -94,10 +95,11 @@ public class CircleSelectionPicker extends Picker
 		// Bail if there is no vertex being edited
 		if (currVertexId < 0)
 			return;
+		EllipsePolygon tmpItem = refStructureManager.getStructure(currVertexId);
 		
 //		if (aEvent.getButton() != MouseEvent.BUTTON1)
 //			return;
-		
+ 		
 		// Bail if we failed to pick something
 		int pickSucceeded = doPick(aEvent, smallBodyPicker, refRenWin);
 		if (pickSucceeded != 1)
@@ -110,7 +112,7 @@ public class CircleSelectionPicker extends Picker
 		{
 			double[] lastDragPosition = smallBodyPicker.GetPickPosition();
 
-			refStructureModel.changeRadiusOfPolygon(currVertexId, lastDragPosition);
+			refStructureManager.changeRadiusOfPolygon(tmpItem, lastDragPosition);
 		}
 	}
 

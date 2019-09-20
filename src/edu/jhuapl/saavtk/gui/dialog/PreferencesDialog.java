@@ -92,11 +92,11 @@ public class PreferencesDialog extends javax.swing.JDialog
 
 //            mouseWheelMotionFactorSpinner.setValue(renderer.getMouseWheelMotionFactor());
 
-            int[] color = viewManager.getCurrentView().getModelManager().getCommonData().getSelectionColor();
+            Color color = viewManager.getCurrentView().getModelManager().getCommonData().getSelectionColor();
             updateColorLabel(color, selectionColorLabel);
 
-            color = viewManager.getCurrentView().getRenderer().getBackgroundColor();
-            updateColorLabel(color, backgroundColorLabel);
+            int[] rgbArr = viewManager.getCurrentView().getRenderer().getBackgroundColor();
+            updateColorLabel(rgbArr, backgroundColorLabel);
 
             RenderPanel renderPanel = (RenderPanel) viewManager.getCurrentView().getRenderer().getRenderWindowPanel();
             AxesPanel axesPanel = renderPanel.getAxesPanel();
@@ -179,15 +179,15 @@ public class PreferencesDialog extends javax.swing.JDialog
 
 //            renderer.setMouseWheelMotionFactor((Double)mouseWheelMotionFactorSpinner.getValue());
 
-            int[] color = getColorFromLabel(selectionColorLabel);
+            Color color = getColorInstanceFromLabel(selectionColorLabel);
             v.getModelManager().getCommonData().setSelectionColor(color);
 
-            color = getColorFromLabel(backgroundColorLabel);
-            renderer.setBackgroundColor(color);
+            int[] rgbArr = getColorFromLabel(backgroundColorLabel);
+            renderer.setBackgroundColor(rgbArr);
 
             RenderPanel renderPanel = (RenderPanel) v.getRenderer().getRenderWindowPanel();
             AxesPanel axesPanel = renderPanel.getAxesPanel();
-            axesPanel.getRenderer().SetBackground(color[0] / 255.0, color[1] / 255.0, color[2] / 255.0);
+            axesPanel.getRenderer().SetBackground(rgbArr[0] / 255.0, rgbArr[1] / 255.0, rgbArr[2] / 255.0);
             axesPanel.Render();
 
             /*
