@@ -385,7 +385,7 @@ public class LineModel<G1 extends Line> extends ControlPointsStructureModel<G1>
 		if (prop != lineActor)
 			return "";
 
-		Line tmpItem = getAllItems().get(cellId);
+		Line tmpItem = getStructure(cellId);
 		if (tmpItem == null)
 			return "";
 

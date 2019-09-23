@@ -65,10 +65,19 @@ public abstract class StructureManager<G1 extends Structure> extends SaavtkItemM
 
 	public abstract void removeAllStructures();
 
-	// TODO: Add comments...
+	/**
+	 * Returns the structure at the specified index.
+	 * <P>
+	 * Returns null if there are no items in the manager.
+	 * <P>
+	 */
 	public G1 getStructure(int aIdx)
 	{
-		return getAllItems().get(aIdx);
+		List<G1> tmpL = getAllItems();
+		if (aIdx >= tmpL.size())
+			return null;
+
+		return tmpL.get(aIdx);
 	}
 
 	public abstract G1 getStructureFromCellId(int aCellId, vtkProp aProp);
