@@ -215,7 +215,12 @@ abstract public class AbstractEllipsePolygonModel extends StructureManager<Ellip
 				vtkPolyData intRegPD = aItem.vInteriorRegPD;
 				vtkPolyData intDecPD = aItem.vInteriorDecPD;
 				if (aItem.getVisible() == false)
-					continue;
+				{
+					extRegPD = vEmptyPD;
+					extDecPD = vEmptyPD;
+					intRegPD = vEmptyPD;
+					intDecPD = vEmptyPD;
+				}
 
 				drawM.put(aItem, new VtkDrawState(extCurrCntDec, extCurrCntReg, intCurrCntDec, intCurrCntReg));
 				extCurrCntDec += extDecPD.GetNumberOfCells();
@@ -627,10 +632,15 @@ abstract public class AbstractEllipsePolygonModel extends StructureManager<Ellip
 		int numberCellsSoFar = 0;
 		for (int i = 0; i < getAllItems().size(); ++i)
 		{
+			// Skip over invisible items
+			EllipsePolygon tmpItem = getAllItems().get(i);
+			if (tmpItem.getVisible() == false)
+				continue;
+
 			if (interior)
-				numberCellsSoFar += getAllItems().get(i).vInteriorRegPD.GetNumberOfCells();
+				numberCellsSoFar += tmpItem.vInteriorRegPD.GetNumberOfCells();
 			else
-				numberCellsSoFar += getAllItems().get(i).vExteriorRegPD.GetNumberOfCells();
+				numberCellsSoFar += tmpItem.vExteriorRegPD.GetNumberOfCells();
 			if (cellId < numberCellsSoFar)
 				return i;
 		}
@@ -1231,7 +1241,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureManager<Ellip
 
 	/**
 	 * Class used to track the VTK (index) state associated with a structure.
-	 * 
+	 *
 	 * @author lopeznr1
 	 */
 	class VtkDrawState
