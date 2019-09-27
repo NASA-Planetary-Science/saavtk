@@ -18,7 +18,7 @@ public class StructuresPopupManager extends PopupManager
 {
     private ModelManager modelManager;
     private HashMap<Model, PopupMenu> modelToPopupMap =
-            new HashMap<>();
+            new HashMap<>(); 
 
     public StructuresPopupManager(ModelManager modelManager, Renderer renderer)
     {
@@ -27,16 +27,16 @@ public class StructuresPopupManager extends PopupManager
         PopupMenu popupMenu = new LinesPopupMenu(modelManager, renderer);
         registerPopup(modelManager.getModel(ModelNames.LINE_STRUCTURES), popupMenu);
 
-        popupMenu = new PolygonsPopupMenu(modelManager, renderer);
+        popupMenu = new StructuresPopupMenu<>(modelManager, renderer, ModelNames.POLYGON_STRUCTURES);
         registerPopup(modelManager.getModel(ModelNames.POLYGON_STRUCTURES), popupMenu);
 
-        popupMenu = new CirclesPopupMenu(modelManager, renderer);
+        popupMenu = new StructuresPopupMenu<>(modelManager, renderer, ModelNames.CIRCLE_STRUCTURES);
         registerPopup(modelManager.getModel(ModelNames.CIRCLE_STRUCTURES), popupMenu);
 
-        popupMenu = new EllipsesPopupMenu(modelManager, renderer);
+        popupMenu = new StructuresPopupMenu<>(modelManager, renderer, ModelNames.ELLIPSE_STRUCTURES);
         registerPopup(modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES), popupMenu);
 
-        popupMenu = new PointsPopupMenu(modelManager, renderer);
+        popupMenu = new StructuresPopupMenu<>(modelManager, renderer, ModelNames.POINT_STRUCTURES);
         registerPopup(modelManager.getModel(ModelNames.POINT_STRUCTURES), popupMenu);
 
         try

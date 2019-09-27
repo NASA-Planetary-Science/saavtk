@@ -10,7 +10,7 @@ import java.io.FileWriter;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -37,7 +37,6 @@ import crucible.crust.metadata.api.MetadataManager;
 import crucible.crust.settings.api.Configuration;
 import crucible.crust.settings.api.Content;
 import crucible.crust.settings.api.ContentKey;
-import crucible.crust.settings.api.KeyValueCollection;
 import crucible.crust.settings.api.SettableValue;
 import crucible.crust.settings.api.Value;
 import crucible.crust.settings.api.Version;
@@ -47,14 +46,15 @@ import crucible.crust.settings.impl.SettableValues;
 import crucible.crust.settings.impl.Values;
 import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
 import edu.jhuapl.saavtk.model.ColoringData;
+import edu.jhuapl.saavtk.model.CommonData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Point3D;
 import edu.jhuapl.saavtk.util.ProgressListener;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
+import glum.item.ItemEventType;
 import vtk.vtkActor;
 import vtk.vtkCaptionActor2D;
 import vtk.vtkCellArray;
@@ -70,51 +70,114 @@ import vtk.vtkUnsignedCharArray;
 /**
  * Model of line structures drawn on a body.
  */
-public class LineModel extends ControlPointsStructureModel implements PropertyChangeListener, MetadataManager
+public class LineModel<G1 extends Line> extends ControlPointsStructureModel<G1>
+		implements PropertyChangeListener, MetadataManager
 {
 	public enum Mode
 	{
-		DEFAULT,
-		PROFILE,
-		CLOSED
+		DEFAULT, PROFILE, CLOSED
 	}
 
-	private final List<Line> lines = new ArrayList<>();
-	private final Configuration configuration;
-
-	public ImmutableList<Line> getLines()
-	{
-		return ImmutableList.copyOf(lines);
-	}
-
-	private vtkPolyData linesPolyData;
-	private vtkPolyData decimatedLinesPolyData;
-	private vtkPolyData activationPolyData;
-
-	private List<vtkProp> actors = new ArrayList<>();
-	private vtkPolyDataMapper lineMapper;
-	private vtkPolyDataMapper decimatedLineMapper;
-	private vtkPolyDataMapper lineActivationMapper;
-	private vtkActor lineActor;
-	private vtkActor lineActivationActor;
-	private PolyhedralModel smallBodyModel;
-	private int activatedLine = -1;
-	private int currentLineVertex = -1000;
-	private int[] selectedStructures = {};
-	private int maximumVerticesPerLine = Integer.MAX_VALUE;
-	private vtkIdList idList;
-	private vtkIdList decimatedIdList;
-	private int maxPolygonId = 0;
-
-	private vtkPolyData emptyPolyData;
-
-	private Mode mode = Mode.DEFAULT;
-
+	// Constants
 	private static final String LINES = "lines";
 	private static final String SHAPE_MODEL_NAME = "shapemodel";
-	private static final int[] redColor = { 255, 0, 0, 255 }; // RGBA red
-	private static final int[] greenColor = { 0, 255, 0, 255 }; // RGBA green
-	private static final int[] blueColor = { 0, 0, 255, 255 }; // RGBA blue
+	private static final Color redColor = Color.RED;
+	private static final Color greenColor = Color.GREEN;
+	private static final Color blueColor = Color.BLUE;
+
+	// Ref vars
+	private final PolyhedralModel refSmallBodyModel;
+
+	// State vars
+	private final Mode mode;
+	private double offset;
+	private double lineWidth;
+	private G1 activatedLine;
+	private int currentLineVertex = -1000;
+
+	private int maximumVerticesPerLine = Integer.MAX_VALUE;
+	private int maxPolygonId = 0;
+
+	// VTK vars
+	private vtkPolyData vLinesRegPD;
+	private vtkPolyData vLinesDecPD;
+	private vtkPolyData vActivationPD;
+
+	private List<vtkProp> actorL = new ArrayList<>();
+	private vtkPolyDataMapper vLineMapperRegPDM;
+	private vtkPolyDataMapper vLineMapperDecPDM;
+	private vtkPolyDataMapper vLineActivationMapperPDM;
+	private vtkActor lineActor;
+	private vtkActor lineActivationActor;
+	private vtkIdList vIdRegIL;
+	private vtkIdList vIdDecIL;
+
+	private vtkPolyData vEmptyPD;
+
+	/**
+	 * Standard Constructor
+	 */
+	public LineModel(PolyhedralModel aSmallBodyModel, Mode aMode)
+	{
+		refSmallBodyModel = aSmallBodyModel;
+		activatedLine = null;
+		mode = aMode;
+		offset = getDefaultOffset();
+
+		if (hasProfileMode())
+			setMaximumVerticesPerLine(2);
+
+		refSmallBodyModel.addPropertyChangeListener(this);
+
+		vIdRegIL = new vtkIdList();
+		vIdDecIL = new vtkIdList();
+
+		lineActor = new SaavtkLODActor();
+		vtkProperty lineProperty = lineActor.GetProperty();
+
+		lineWidth = 2.0;
+		lineProperty.SetLineWidth(lineWidth);
+
+		if (hasProfileMode())
+			lineProperty.SetLineWidth(3.0);
+
+		lineActivationActor = new vtkActor();
+		vtkProperty lineActivationProperty = lineActivationActor.GetProperty();
+		lineActivationProperty.SetColor(1.0, 0.0, 0.0);
+		lineActivationProperty.SetPointSize(7.0);
+
+		// Initialize an empty polydata for resetting
+		vEmptyPD = new vtkPolyData();
+		vtkPoints points = new vtkPoints();
+		vtkCellArray cells = new vtkCellArray();
+		vtkUnsignedCharArray colors = new vtkUnsignedCharArray();
+		colors.SetNumberOfComponents(4);
+		vEmptyPD.SetPoints(points);
+		vEmptyPD.SetLines(cells);
+		vEmptyPD.SetVerts(cells);
+		vtkCellData cellData = vEmptyPD.GetCellData();
+		cellData.SetScalars(colors);
+
+		vLinesRegPD = new vtkPolyData();
+		vLinesDecPD = new vtkPolyData();
+		vLinesRegPD.DeepCopy(vEmptyPD);
+		vLinesDecPD.DeepCopy(vEmptyPD);
+
+		vActivationPD = new vtkPolyData();
+		vActivationPD.DeepCopy(vEmptyPD);
+
+		vLineMapperRegPDM = new vtkPolyDataMapper();
+		vLineMapperDecPDM = new vtkPolyDataMapper();
+
+		vLineActivationMapperPDM = new vtkPolyDataMapper();
+		vLineActivationMapperPDM.SetInputData(vActivationPD);
+		vLineActivationMapperPDM.Update();
+
+		lineActivationActor.SetMapper(vLineActivationMapperPDM);
+		lineActivationActor.Modified();
+
+		actorL.add(lineActivationActor);
+	}
 
 	public LineModel(PolyhedralModel smallBodyModel)
 	{
@@ -126,68 +189,6 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		this(smallBodyModel, profileMode ? Mode.PROFILE : Mode.DEFAULT);
 	}
 
-	public LineModel(PolyhedralModel smallBodyModel, Mode mode)
-	{
-		this.smallBodyModel = smallBodyModel;
-		this.mode = mode;
-
-		if (hasProfileMode())
-			setMaximumVerticesPerLine(2);
-
-		this.smallBodyModel.addPropertyChangeListener(this);
-
-		idList = new vtkIdList();
-		decimatedIdList = new vtkIdList();
-
-		lineActor = new SaavtkLODActor();
-		vtkProperty lineProperty = lineActor.GetProperty();
-
-		lineProperty.SetLineWidth(2.0);
-
-		if (hasProfileMode())
-			lineProperty.SetLineWidth(3.0);
-
-		lineActivationActor = new vtkActor();
-		vtkProperty lineActivationProperty = lineActivationActor.GetProperty();
-		lineActivationProperty.SetColor(1.0, 0.0, 0.0);
-		lineActivationProperty.SetPointSize(7.0);
-
-		// Initialize an empty polydata for resetting
-		emptyPolyData = new vtkPolyData();
-		vtkPoints points = new vtkPoints();
-		vtkCellArray cells = new vtkCellArray();
-		vtkUnsignedCharArray colors = new vtkUnsignedCharArray();
-		colors.SetNumberOfComponents(4);
-		emptyPolyData.SetPoints(points);
-		emptyPolyData.SetLines(cells);
-		emptyPolyData.SetVerts(cells);
-		vtkCellData cellData = emptyPolyData.GetCellData();
-		cellData.SetScalars(colors);
-
-		linesPolyData = new vtkPolyData();
-		decimatedLinesPolyData = new vtkPolyData();
-		linesPolyData.DeepCopy(emptyPolyData);
-		decimatedLinesPolyData.DeepCopy(emptyPolyData);
-
-		activationPolyData = new vtkPolyData();
-		activationPolyData.DeepCopy(emptyPolyData);
-
-		lineMapper = new vtkPolyDataMapper();
-		decimatedLineMapper = new vtkPolyDataMapper();
-
-		lineActivationMapper = new vtkPolyDataMapper();
-		lineActivationMapper.SetInputData(activationPolyData);
-		lineActivationMapper.Update();
-
-		lineActivationActor.SetMapper(lineActivationMapper);
-		lineActivationActor.Modified();
-
-		actors.add(lineActivationActor);
-
-		this.configuration = createConfiguration(lines);
-		this.configuration.getCollection().getValue(OFFSET_KEY).setValue(getDefaultOffset());
-	}
-
 	protected String getType()
 	{
 		return LINES;
@@ -196,10 +197,10 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	public Element toXmlDomElement(Document dom)
 	{
 		Element rootEle = dom.createElement(getType());
-		if (smallBodyModel.getModelName() != null)
-			rootEle.setAttribute(SHAPE_MODEL_NAME, smallBodyModel.getModelName());
+		if (refSmallBodyModel.getModelName() != null)
+			rootEle.setAttribute(SHAPE_MODEL_NAME, refSmallBodyModel.getModelName());
 
-		for (Line lin : this.lines)
+		for (Line lin : getAllItems())
 		{
 			rootEle.appendChild(lin.toXmlDomElement(dom));
 		}
@@ -209,14 +210,15 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 	public void fromXmlDomElement(Element element, boolean append)
 	{
+		List<G1> tmpL = new ArrayList<>(getAllItems());
 		if (!append)
-			this.lines.clear();
+			tmpL.clear();
 
 		String shapeModelName = null;
 		if (element.hasAttribute(SHAPE_MODEL_NAME))
 			shapeModelName = element.getAttribute(SHAPE_MODEL_NAME);
 
-		Line dummyLine = (Line) createStructure();
+		Line dummyLine = createStructure();
 		NodeList nl = element.getElementsByTagName(dummyLine.getType());
 		if (nl != null && nl.getLength() > 0)
 		{
@@ -224,44 +226,50 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 			{
 				Element el = (Element) nl.item(i);
 
-				Line lin = (Line) createStructure();
+				G1 tmpItem = createStructure();
 
-				lin.fromXmlDomElement(smallBodyModel, el, shapeModelName, append);
+				tmpItem.fromXmlDomElement(refSmallBodyModel, el, shapeModelName, append);
 
-				this.lines.add(lin);
-				setStructureLabel(lines.size() - 1, lines.get(lines.size() - 1).getLabel());
+				tmpL.add(tmpItem);
+				setStructureLabel(tmpItem, tmpItem.getLabel());
 			}
 		}
-		lineActor.SetMapper(lineMapper);
+
+		setAllItems(tmpL);
+		lineActor.SetMapper(vLineMapperRegPDM);
 		updatePolyData();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
+	@Override
 	protected void updatePolyData()
 	{
-		actors.clear();
+		actorL.clear();
 
-		linesPolyData.DeepCopy(emptyPolyData);
-		vtkPoints points = linesPolyData.GetPoints();
-		vtkCellArray lineCells = linesPolyData.GetLines();
-		vtkCellData cellData = linesPolyData.GetCellData();
+		vLinesRegPD.DeepCopy(vEmptyPD);
+		vtkPoints points = vLinesRegPD.GetPoints();
+		vtkCellArray lineCells = vLinesRegPD.GetLines();
+		vtkCellData cellData = vLinesRegPD.GetCellData();
 		vtkUnsignedCharArray colors = (vtkUnsignedCharArray) cellData.GetScalars();
 
+		List<G1> tmpL = getAllItems();
+
+		Color pickColor = null;
+		CommonData commonData = getCommonData();
+		if (commonData != null)
+			pickColor = commonData.getSelectionColor();
+
 		int c = 0;
-		for (int j = 0; j < this.lines.size(); ++j)
+		for (Line aItem : tmpL)
 		{
-			Line lin = this.lines.get(j);
+			Color tmpColor = aItem.getColor();
+			if (pickColor != null && getSelectedItems().contains(aItem) == true)
+				tmpColor = pickColor;
 
-			int[] color = lin.getColor();
-
-			if (Arrays.binarySearch(this.selectedStructures, j) >= 0)
-				color = getCommonData().getSelectionColor();
-
-			int size = lin.xyzPointList.size();
+			int size = aItem.xyzPointList.size();
 			if (mode == Mode.CLOSED && size > 2)
-				idList.SetNumberOfIds(size + 1);
+				vIdRegIL.SetNumberOfIds(size + 1);
 			else
-				idList.SetNumberOfIds(size);
+				vIdRegIL.SetNumberOfIds(size);
 
 			int startId = 0;
 			for (int i = 0; i < size; ++i)
@@ -269,50 +277,47 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 				if (i == 0)
 					startId = c;
 
-				points.InsertNextPoint(lin.xyzPointList.get(i).xyz);
-				if (lin.getHidden())
-					idList.SetId(i, 0); // set to degenerate line if hidden
+				points.InsertNextPoint(aItem.xyzPointList.get(i).xyz);
+				if (aItem.getVisible() == false)
+					vIdRegIL.SetId(i, 0); // set to degenerate line if hidden
 				else
-					idList.SetId(i, c);
+					vIdRegIL.SetId(i, c);
 				++c;
 			}
 
 			if (mode == Mode.CLOSED && size > 2)
 			{
-				if (lin.getHidden())
-					idList.SetId(size, 0);
+				if (aItem.getVisible() == false)
+					vIdRegIL.SetId(size, 0);
 				else
-					idList.SetId(size, startId);
+					vIdRegIL.SetId(size, startId);
 			}
 
-			lineCells.InsertNextCell(idList);
-			colors.InsertNextTuple4(color[0], color[1], color[2], 255);
+			lineCells.InsertNextCell(vIdRegIL);
+			colors.InsertNextTuple4(tmpColor.getRed(), tmpColor.getGreen(), tmpColor.getBlue(), 255);
 
 		}
 
 		// Repeat for decimated data
-		decimatedLinesPolyData.DeepCopy(emptyPolyData);
-		vtkPoints decimatedPoints = decimatedLinesPolyData.GetPoints();
-		vtkCellArray decimatedLineCells = decimatedLinesPolyData.GetLines();
-		vtkCellData decimatedCellData = decimatedLinesPolyData.GetCellData();
+		vLinesDecPD.DeepCopy(vEmptyPD);
+		vtkPoints decimatedPoints = vLinesDecPD.GetPoints();
+		vtkCellArray decimatedLineCells = vLinesDecPD.GetLines();
+		vtkCellData decimatedCellData = vLinesDecPD.GetCellData();
 		vtkUnsignedCharArray decimatedColors = (vtkUnsignedCharArray) decimatedCellData.GetScalars();
 
 		c = 0;
-		for (int j = 0; j < this.lines.size(); ++j)
+		for (Line aItem : tmpL)
 		{
-			Line lin = this.lines.get(j);
+			Color tmpColor = aItem.getColor();
+			if (pickColor != null && getSelectedItems().contains(aItem) == true)
+				tmpColor = pickColor;
 
-			int[] color = lin.getColor();
-
-			if (Arrays.binarySearch(this.selectedStructures, j) >= 0)
-				color = getCommonData().getSelectionColor();
-
-			int size = lin.controlPointIds.size();
-			//int size = lin.xyzPointList.size();
+			int size = aItem.controlPointIds.size();
+			// int size = lin.xyzPointList.size();
 			if (mode == Mode.CLOSED && size > 2)
-				decimatedIdList.SetNumberOfIds(size + 1);
+				vIdDecIL.SetNumberOfIds(size + 1);
 			else
-				decimatedIdList.SetNumberOfIds(size);
+				vIdDecIL.SetNumberOfIds(size);
 
 			int startId = 0;
 			for (int i = 0; i < size; ++i)
@@ -320,94 +325,75 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 				if (i == 0)
 					startId = c;
 
-				decimatedPoints.InsertNextPoint(lin.xyzPointList.get(lin.controlPointIds.get(i)).xyz);
-				if (lin.getHidden())
-					decimatedIdList.SetId(i, 0); // set to degenerate line if hidden
+				decimatedPoints.InsertNextPoint(aItem.xyzPointList.get(aItem.controlPointIds.get(i)).xyz);
+				if (aItem.getVisible() == false)
+					vIdDecIL.SetId(i, 0); // set to degenerate line if hidden
 				else
-					decimatedIdList.SetId(i, c);
+					vIdDecIL.SetId(i, c);
 				++c;
 			}
 
 			if (mode == Mode.CLOSED && size > 2)
 			{
-				if (lin.getHidden())
-					decimatedIdList.SetId(size, 0);
+				if (aItem.getVisible() == false)
+					vIdDecIL.SetId(size, 0);
 				else
-					decimatedIdList.SetId(size, startId);
+					vIdDecIL.SetId(size, startId);
 			}
 
-			decimatedLineCells.InsertNextCell(decimatedIdList);
-			decimatedColors.InsertNextTuple4(color[0], color[1], color[2], 255);
+			decimatedLineCells.InsertNextCell(vIdDecIL);
+			decimatedColors.InsertNextTuple4(tmpColor.getRed(), tmpColor.getGreen(), tmpColor.getBlue(), 255);
 		}
 
 		// Setup mapper, actor, etc.
 		double offset = getOffset();
-		smallBodyModel.shiftPolyLineInNormalDirection(linesPolyData, offset);
-		smallBodyModel.shiftPolyLineInNormalDirection(decimatedLinesPolyData, offset);
+		refSmallBodyModel.shiftPolyLineInNormalDirection(vLinesRegPD, offset);
+		refSmallBodyModel.shiftPolyLineInNormalDirection(vLinesDecPD, offset);
 
-		lineMapper.SetInputData(linesPolyData);
-		decimatedLineMapper.SetInputData(decimatedLinesPolyData);
-		lineMapper.Update();
-		decimatedLineMapper.Update();
+		vLineMapperRegPDM.SetInputData(vLinesRegPD);
+		vLineMapperDecPDM.SetInputData(vLinesDecPD);
+		vLineMapperRegPDM.Update();
+		vLineMapperDecPDM.Update();
 
-		if (!actors.contains(lineActor))
-			actors.add(lineActor);
+		if (!actorL.contains(lineActor))
+			actorL.add(lineActor);
 
-		for (int j = 0; j < this.lines.size(); ++j)
+		c = 0;
+		for (G1 aItem : tmpL)
 		{
-			vtkCaptionActor2D caption = updateStructure(lines.get(j));
+			aItem.vDrawId = c;
+			c++;
+
+			vtkCaptionActor2D caption = updateStructure(aItem);
 			if (caption != null)
-			{
-				actors.add(caption);
-			}
+				actorL.add(caption);
 		}
+
+		// Notify model change listeners
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	@Override
 	public List<vtkProp> getProps()
 	{
-		return actors;
+		return actorL;
 	}
 
 	@Override
-	public String getClickStatusBarText(vtkProp prop, int cellId, @SuppressWarnings("unused") double[] pickPosition)
+	public String getClickStatusBarText(vtkProp prop, int cellId, double[] pickPosition)
 	{
-		if (prop == lineActor)
-		{
-			Line lin = this.lines.get(cellId);
-			if (lin != null)
-				return lin.getClickStatusBarText();
-			else
-				return "";
-		}
-		else
-		{
+		if (prop != lineActor)
 			return "";
-		}
+
+		Line tmpItem = getStructure(cellId);
+		if (tmpItem == null)
+			return "";
+
+		return tmpItem.getClickStatusBarText();
 	}
 
 	@Override
-	public int getNumberOfStructures()
-	{
-		return lines.size();
-	}
-
-	@Override
-	public Structure getStructure(int cellId)
-	{
-		return lines.get(cellId);
-	}
-
-	public Line getActivatedLine()
-	{
-		if (activatedLine >= 0 && activatedLine < lines.size())
-			return lines.get(activatedLine);
-		else
-			return null;
-	}
-
-	@Override
-	public int getActivatedStructureIndex()
+	public G1 getActivatedStructure()
 	{
 		return activatedLine;
 	}
@@ -425,133 +411,135 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 	/**
 	 * Return the total number of points in all the lines combined.
-	 * 
+	 *
 	 * @return
 	 */
 	public int getTotalNumberOfPoints()
 	{
 		int numberOfPoints = 0;
-		for (Line lin : this.lines)
+		for (Line aItem : getAllItems())
 		{
-			numberOfPoints += lin.getControlPoints().size();
+			numberOfPoints += aItem.getControlPoints().size();
 		}
 		return numberOfPoints;
 	}
 
 	@Override
-	public Structure addNewStructure()
+	public G1 addNewStructure()
 	{
-		Line lin = (Line) createStructure();
-		lines.add(lin);
-		activateStructure(lines.size() - 1);
+		G1 retItem = createStructure();
 
-		lineActor.SetMapper(lineMapper);
-		((SaavtkLODActor) lineActor).setLODMapper(decimatedLineMapper);
+		List<G1> fullL = new ArrayList<>(getAllItems());
+		fullL.add(retItem);
+		setAllItems(fullL);
+
+		activateStructure(retItem);
+
+		lineActor.SetMapper(vLineMapperRegPDM);
+		((SaavtkLODActor) lineActor).setLODMapper(vLineMapperDecPDM);
 		lineActor.Modified();
 
-		this.pcs.firePropertyChange(Properties.STRUCTURE_ADDED, null, null);
-		return lin;
+		return retItem;
 	}
 
 	@Override
-	public void updateActivatedStructureVertex(int vertexId, double[] newPoint)
+	public void updateActivatedStructureVertex(int aVertexId, double[] aNewPoint)
 	{
-		Line lin = lines.get(activatedLine);
+		int numVertices = activatedLine.getControlPoints().size();
 
-		int numVertices = lin.getControlPoints().size();
-
-		LatLon ll = MathUtil.reclat(newPoint);
-		lin.setControlPoint(vertexId, ll);
+		LatLon ll = MathUtil.reclat(aNewPoint);
+		activatedLine.setControlPoint(aVertexId, ll);
 
 		// If we're modifying the last vertex
-		if (vertexId == numVertices - 1)
+		if (aVertexId == numVertices - 1)
 		{
-			lin.updateSegment(smallBodyModel, vertexId - 1);
+			activatedLine.updateSegment(refSmallBodyModel, aVertexId - 1);
 			if (mode == Mode.CLOSED)
-				lin.updateSegment(smallBodyModel, vertexId);
+				activatedLine.updateSegment(refSmallBodyModel, aVertexId);
 		}
 		// If we're modifying the first vertex
-		else if (vertexId == 0)
+		else if (aVertexId == 0)
 		{
 			if (mode == Mode.CLOSED)
-				lin.updateSegment(smallBodyModel, numVertices - 1);
-			lin.updateSegment(smallBodyModel, vertexId);
+				activatedLine.updateSegment(refSmallBodyModel, numVertices - 1);
+			activatedLine.updateSegment(refSmallBodyModel, aVertexId);
 		}
 		// If we're modifying a middle vertex
 		else
 		{
-			lin.updateSegment(smallBodyModel, vertexId - 1);
-			lin.updateSegment(smallBodyModel, vertexId);
+			activatedLine.updateSegment(refSmallBodyModel, aVertexId - 1);
+			activatedLine.updateSegment(refSmallBodyModel, aVertexId);
 		}
 
 		updatePolyData();
 
 		updateLineActivation();
 
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-		this.pcs.firePropertyChange(Properties.VERTEX_POSITION_CHANGED, null, activatedLine);
+		notifyListeners(this, ItemEventType.ItemsMutated);
+		pcs.firePropertyChange(Properties.VERTEX_POSITION_CHANGED, null, activatedLine);
 	}
 
 	@Override
-	public void insertVertexIntoActivatedStructure(double[] newPoint)
+	public void insertVertexIntoActivatedStructure(double[] aNewPoint)
 	{
-		if (activatedLine < 0)
+		if (activatedLine == null)
 			return;
 
-		Line lin = lines.get(activatedLine);
+		Line tmpLine = activatedLine;
 
-		if (lin.controlPointIds.size() == maximumVerticesPerLine)
+		if (tmpLine.controlPointIds.size() == maximumVerticesPerLine)
 			return;
 
-		if (currentLineVertex < -1 || currentLineVertex >= lin.controlPointIds.size())
+		if (currentLineVertex < -1 || currentLineVertex >= tmpLine.controlPointIds.size())
 			System.out.println("Error: currentLineVertex is invalid");
 
-		LatLon ll = MathUtil.reclat(newPoint);
+		LatLon ll = MathUtil.reclat(aNewPoint);
 
-		lin.addControlPoint(currentLineVertex + 1, ll);
+		tmpLine.addControlPoint(currentLineVertex + 1, ll);
 
-		// Remove points BETWEEN the 2 control points (If we're adding a point in the middle)
-		if (currentLineVertex < lin.controlPointIds.size() - 1)
+		// Remove points BETWEEN the 2 control points (If adding a point in the middle)
+		if (currentLineVertex < tmpLine.controlPointIds.size() - 1)
 		{
-			int id1 = lin.controlPointIds.get(currentLineVertex);
-			int id2 = lin.controlPointIds.get(currentLineVertex + 1);
+			int id1 = tmpLine.controlPointIds.get(currentLineVertex);
+			int id2 = tmpLine.controlPointIds.get(currentLineVertex + 1);
 			int numberPointsRemoved = id2 - id1 - 1;
 			for (int i = 0; i < id2 - id1 - 1; ++i)
 			{
-				lin.xyzPointList.remove(id1 + 1);
+				tmpLine.xyzPointList.remove(id1 + 1);
 			}
 
-			lin.xyzPointList.add(id1 + 1, new Point3D(newPoint));
-			lin.controlPointIds.add(currentLineVertex + 1, id1 + 1);
+			tmpLine.xyzPointList.add(id1 + 1, new Point3D(aNewPoint));
+			tmpLine.controlPointIds.add(currentLineVertex + 1, id1 + 1);
 
-			// Shift the control points ids from currentLineVertex+2 till the end by the right amount.
-			for (int i = currentLineVertex + 2; i < lin.controlPointIds.size(); ++i)
+			// Shift the control points ids from currentLineVertex+2 till the end by the
+			// right amount.
+			for (int i = currentLineVertex + 2; i < tmpLine.controlPointIds.size(); ++i)
 			{
-				lin.controlPointIds.set(i, lin.controlPointIds.get(i) - (numberPointsRemoved - 1));
+				tmpLine.controlPointIds.set(i, tmpLine.controlPointIds.get(i) - (numberPointsRemoved - 1));
 			}
 		}
 		else
 		{
-			lin.xyzPointList.add(new Point3D(newPoint));
-			lin.controlPointIds.add(lin.xyzPointList.size() - 1);
+			tmpLine.xyzPointList.add(new Point3D(aNewPoint));
+			tmpLine.controlPointIds.add(tmpLine.xyzPointList.size() - 1);
 		}
 
-		if (lin.controlPointIds.size() >= 2)
+		if (tmpLine.controlPointIds.size() >= 2)
 		{
 			if (currentLineVertex < 0)
 			{
 				// Do nothing
 			}
-			else if (currentLineVertex < lin.controlPointIds.size() - 2)
+			else if (currentLineVertex < tmpLine.controlPointIds.size() - 2)
 			{
-				lin.updateSegment(smallBodyModel, currentLineVertex);
-				lin.updateSegment(smallBodyModel, currentLineVertex + 1);
+				tmpLine.updateSegment(refSmallBodyModel, currentLineVertex);
+				tmpLine.updateSegment(refSmallBodyModel, currentLineVertex + 1);
 			}
 			else
 			{
-				lin.updateSegment(smallBodyModel, currentLineVertex);
+				tmpLine.updateSegment(refSmallBodyModel, currentLineVertex);
 				if (mode == Mode.CLOSED)
-					lin.updateSegment(smallBodyModel, currentLineVertex + 1);
+					tmpLine.updateSegment(refSmallBodyModel, currentLineVertex + 1);
 			}
 		}
 
@@ -561,324 +549,286 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		updateLineActivation();
 
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-		this.pcs.firePropertyChange(Properties.VERTEX_INSERTED_INTO_LINE, null, activatedLine);
+		notifyListeners(this, ItemEventType.ItemsMutated);
+		pcs.firePropertyChange(Properties.VERTEX_INSERTED_INTO_LINE, null, activatedLine);
 	}
 
 	@Override
 	public void removeCurrentStructureVertex()
 	{
-		Line lin = lines.get(activatedLine);
+		Line tmpLine = activatedLine;
 
-		if (currentLineVertex < 0 || currentLineVertex >= lin.controlPointIds.size())
+		if (currentLineVertex < 0 || currentLineVertex >= tmpLine.controlPointIds.size())
 			return;
 
 		int vertexId = currentLineVertex;
 
-		lin.removeControlPoint(vertexId);
+		tmpLine.removeControlPoint(vertexId);
 
 		// If not in CLOSED mode:
-		// If one of the end points is being removed, then we only need to remove the line connecting the
-		// end point to the adjacent point. If we're removing a non-end point, we need to remove the line
-		// segments connecting the 2 adjacent control points and in addition, we need to draw a new line
-		// connecting the 2 adjacent control points.
+		// If one of the end points is being removed, then we only need to remove the
+		// line connecting the end point to the adjacent point. If we're removing a
+		// non-end point, we need to remove the line segments connecting the 2 adjacent
+		// control points and in addition, we need to draw a new line connecting the 2
+		// adjacent control points.
 		//
 		// But if in CLOSED mode:
-		// We always need to remove 2 adjacent segments to the control point that was removed and draw a
-		// new line connecting the 2 adjacent control point.
-		if (lin.controlPointIds.size() > 1)
+		// We always need to remove 2 adjacent segments to the control point that was
+		// removed and draw a new line connecting the 2 adjacent control point.
+		if (tmpLine.controlPointIds.size() > 1)
 		{
 			// Remove initial point
 			if (vertexId == 0)
 			{
-				int id2 = lin.controlPointIds.get(vertexId + 1);
+				int id2 = tmpLine.controlPointIds.get(vertexId + 1);
 				int numberPointsRemoved = id2;
 				for (int i = 0; i < numberPointsRemoved; ++i)
 				{
-					lin.xyzPointList.remove(0);
+					tmpLine.xyzPointList.remove(0);
 				}
-				lin.controlPointIds.remove(vertexId);
+				tmpLine.controlPointIds.remove(vertexId);
 
-				for (int i = 0; i < lin.controlPointIds.size(); ++i)
-					lin.controlPointIds.set(i, lin.controlPointIds.get(i) - numberPointsRemoved);
+				for (int i = 0; i < tmpLine.controlPointIds.size(); ++i)
+					tmpLine.controlPointIds.set(i, tmpLine.controlPointIds.get(i) - numberPointsRemoved);
 
 				if (mode == Mode.CLOSED)
 				{
-					int id = lin.controlPointIds.get(lin.controlPointIds.size() - 1);
-					numberPointsRemoved = lin.xyzPointList.size() - id - 1;
+					int id = tmpLine.controlPointIds.get(tmpLine.controlPointIds.size() - 1);
+					numberPointsRemoved = tmpLine.xyzPointList.size() - id - 1;
 					;
 					for (int i = 0; i < numberPointsRemoved; ++i)
 					{
-						lin.xyzPointList.remove(id + 1);
+						tmpLine.xyzPointList.remove(id + 1);
 					}
 
 					// redraw segment connecting last point to first
-					lin.updateSegment(smallBodyModel, lin.controlPointIds.size() - 1);
+					tmpLine.updateSegment(refSmallBodyModel, tmpLine.controlPointIds.size() - 1);
 				}
 			}
 			// Remove final point
-			else if (vertexId == lin.controlPointIds.size() - 1)
+			else if (vertexId == tmpLine.controlPointIds.size() - 1)
 			{
 				if (mode == Mode.CLOSED)
 				{
-					int id = lin.controlPointIds.get(lin.controlPointIds.size() - 1);
-					int numberPointsRemoved = lin.xyzPointList.size() - id - 1;
+					int id = tmpLine.controlPointIds.get(tmpLine.controlPointIds.size() - 1);
+					int numberPointsRemoved = tmpLine.xyzPointList.size() - id - 1;
 					;
 					for (int i = 0; i < numberPointsRemoved; ++i)
 					{
-						lin.xyzPointList.remove(id + 1);
+						tmpLine.xyzPointList.remove(id + 1);
 					}
 				}
 
-				int id1 = lin.controlPointIds.get(vertexId - 1);
-				int id2 = lin.controlPointIds.get(vertexId);
+				int id1 = tmpLine.controlPointIds.get(vertexId - 1);
+				int id2 = tmpLine.controlPointIds.get(vertexId);
 				int numberPointsRemoved = id2 - id1;
 				for (int i = 0; i < numberPointsRemoved; ++i)
 				{
-					lin.xyzPointList.remove(id1 + 1);
+					tmpLine.xyzPointList.remove(id1 + 1);
 				}
-				lin.controlPointIds.remove(vertexId);
+				tmpLine.controlPointIds.remove(vertexId);
 
 				if (mode == Mode.CLOSED)
 				{
 					// redraw segment connecting last point to first
-					lin.updateSegment(smallBodyModel, lin.controlPointIds.size() - 1);
+					tmpLine.updateSegment(refSmallBodyModel, tmpLine.controlPointIds.size() - 1);
 				}
 			}
 			// Remove a middle point
 			else
 			{
 				// Remove points BETWEEN the 2 adjacent control points
-				int id1 = lin.controlPointIds.get(vertexId - 1);
-				int id2 = lin.controlPointIds.get(vertexId + 1);
+				int id1 = tmpLine.controlPointIds.get(vertexId - 1);
+				int id2 = tmpLine.controlPointIds.get(vertexId + 1);
 				int numberPointsRemoved = id2 - id1 - 1;
 				for (int i = 0; i < numberPointsRemoved; ++i)
 				{
-					lin.xyzPointList.remove(id1 + 1);
+					tmpLine.xyzPointList.remove(id1 + 1);
 				}
-				lin.controlPointIds.remove(vertexId);
+				tmpLine.controlPointIds.remove(vertexId);
 
-				for (int i = vertexId; i < lin.controlPointIds.size(); ++i)
-					lin.controlPointIds.set(i, lin.controlPointIds.get(i) - numberPointsRemoved);
+				for (int i = vertexId; i < tmpLine.controlPointIds.size(); ++i)
+					tmpLine.controlPointIds.set(i, tmpLine.controlPointIds.get(i) - numberPointsRemoved);
 
-				lin.updateSegment(smallBodyModel, vertexId - 1);
+				tmpLine.updateSegment(refSmallBodyModel, vertexId - 1);
 			}
 		}
-		else if (lin.controlPointIds.size() == 1)
+		else if (tmpLine.controlPointIds.size() == 1)
 		{
-			lin.controlPointIds.remove(vertexId);
-			lin.xyzPointList.clear();
+			tmpLine.controlPointIds.remove(vertexId);
+			tmpLine.xyzPointList.clear();
 		}
 
 		--currentLineVertex;
-		if (currentLineVertex < 0 && lin.controlPointIds.size() > 0)
+		if (currentLineVertex < 0 && tmpLine.controlPointIds.size() > 0)
 			currentLineVertex = 0;
 
 		updatePolyData();
 
 		updateLineActivation();
 
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-		this.pcs.firePropertyChange(Properties.VERTEX_REMOVED_FROM_LINE, null, activatedLine);
+		notifyListeners(this, ItemEventType.ItemsMutated);
+		pcs.firePropertyChange(Properties.VERTEX_REMOVED_FROM_LINE, null, activatedLine);
 	}
 
 	@Override
-	public void removeStructure(int cellId)
+	public void removeStructures(Collection<G1> aItemC)
 	{
-		Structure structure = lines.get(cellId);
-		structure.setHidden(true);
-		updateStructure(structure);
-
-		lines.remove(cellId);
-
-		updatePolyData();
-
-		if (hasProfileMode())
-			updateLineActivation();
-
-		if (cellId == activatedLine)
-			activateStructure(-1);
-
-		this.pcs.firePropertyChange(Properties.STRUCTURE_REMOVED, null, cellId);
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-	}
-
-	@Override
-	public void removeStructures(int[] indices)
-	{
-		if (indices == null || indices.length == 0)
+		if (aItemC.isEmpty() == true)
 			return;
 
-		Arrays.sort(indices);
-		for (int i = indices.length - 1; i >= 0; --i)
+		// Update VTK state
+		for (G1 aItem : aItemC)
 		{
-			Structure structure = lines.get(indices[i]);
-			structure.setHidden(true);
-			updateStructure(structure);
-			selectedStructures = removeSelectedStructureIndex(indices[i]);
-			lines.remove(indices[i]);
-			this.pcs.firePropertyChange(Properties.STRUCTURE_REMOVED, null, indices[i]);
+			aItem.setVisible(false);
+			updateStructure(aItem);
+
+			pcs.firePropertyChange(Properties.STRUCTURE_REMOVED, null, aItem);
 		}
+
+		List<G1> fullL = new ArrayList<>(getAllItems());
+		fullL.removeAll(aItemC);
+		setAllItems(fullL);
 
 		updatePolyData();
 
 		if (hasProfileMode())
 			updateLineActivation();
 
-		if (Arrays.binarySearch(indices, activatedLine) < 0)
-			activateStructure(-1);
-
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-	}
-	
-	private int[] removeSelectedStructureIndex(int index)
-	{
-		int[] updatedIndices = new int[getSelectedStructures().length-1];
-		int i=0;
-		for (int idx : getSelectedStructures())
-		{
-			if (idx != index)
-			{
-				updatedIndices[i++] = idx;
-			}
-		}
-		return updatedIndices;
+		if (aItemC.contains(activatedLine) == true)
+			activateStructure(null);
 	}
 
 	@Override
 	public void removeAllStructures()
 	{
-		for (Structure structure : lines)
+		for (G1 aItem : getAllItems())
 		{
-			structure.setHidden(true);
-			updateStructure(structure);
+			aItem.setVisible(false);
+			updateStructure(aItem);
 		}
-		lines.clear();
 
+		setAllItems(ImmutableList.of());
 		updatePolyData();
 
 		if (hasProfileMode())
 			updateLineActivation();
 
-		activateStructure(-1);
+		activateStructure(null);
 
-		this.pcs.firePropertyChange(Properties.ALL_STRUCTURES_REMOVED, null, null);
+		pcs.firePropertyChange(Properties.ALL_STRUCTURES_REMOVED, null, null);
 	}
 
 	@Override
 	public PolyhedralModel getPolyhedralModel()
 	{
-		return smallBodyModel;
+		return refSmallBodyModel;
 	}
 
 	@Override
 	public void moveActivationVertex(int vertexId, double[] newPoint)
 	{
-		vtkPoints points = activationPolyData.GetPoints();
+		vtkPoints points = vActivationPD.GetPoints();
 		points.SetPoint(vertexId, newPoint);
-		activationPolyData.Modified();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		vActivationPD.Modified();
+
+		notifyListeners(this, ItemEventType.ItemsMutated);
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	protected void updateLineActivation()
 	{
 		if (hasProfileMode())
 		{
-			activationPolyData.DeepCopy(emptyPolyData);
-			vtkPoints points = activationPolyData.GetPoints();
-			vtkCellArray vert = activationPolyData.GetVerts();
-			vtkCellData cellData = activationPolyData.GetCellData();
+			vActivationPD.DeepCopy(vEmptyPD);
+			vtkPoints points = vActivationPD.GetPoints();
+			vtkCellArray vert = vActivationPD.GetVerts();
+			vtkCellData cellData = vActivationPD.GetCellData();
 			vtkUnsignedCharArray colors = (vtkUnsignedCharArray) cellData.GetScalars();
 
-			idList.SetNumberOfIds(1);
+			vIdRegIL.SetNumberOfIds(1);
 
 			int count = 0;
-			int numLines = getNumberOfStructures();
-			for (int j = 0; j < numLines; ++j)
+			for (Line aItem : getAllItems())
 			{
-				Line lin = lines.get(j);
-
-				for (int i = 0; i < lin.controlPointIds.size(); ++i)
+				for (int i = 0; i < aItem.controlPointIds.size(); ++i)
 				{
-					int idx = lin.controlPointIds.get(i);
+					int idx = aItem.controlPointIds.get(i);
 
-					points.InsertNextPoint(lin.xyzPointList.get(idx).xyz);
-					idList.SetId(0, count++);
-					vert.InsertNextCell(idList);
+					points.InsertNextPoint(aItem.xyzPointList.get(idx).xyz);
+					vIdRegIL.SetId(0, count++);
+					vert.InsertNextCell(vIdRegIL);
+
+					Color tmpColor = redColor;
 					if (i == 0)
-						colors.InsertNextTuple4(greenColor[0], greenColor[1], greenColor[2], greenColor[3]);
-					else
-						colors.InsertNextTuple4(redColor[0], redColor[1], redColor[2], redColor[3]);
+						tmpColor = greenColor;
+					colors.InsertNextTuple4(tmpColor.getRed(), tmpColor.getGreen(), tmpColor.getBlue(), tmpColor.getAlpha());
 				}
 			}
 
-			smallBodyModel.shiftPolyLineInNormalDirection(activationPolyData, smallBodyModel.getMinShiftAmount());
-
+			refSmallBodyModel.shiftPolyLineInNormalDirection(vActivationPD, refSmallBodyModel.getMinShiftAmount());
 		}
 		else
 		{
-			if (activatedLine == -1)
+			Line tmpLine = activatedLine;
+			if (tmpLine == null)
 			{
-				if (actors.contains(lineActivationActor))
-					actors.remove(lineActivationActor);
+				if (actorL.contains(lineActivationActor))
+					actorL.remove(lineActivationActor);
 
+				pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 				return;
 			}
 
-			Line lin = lines.get(activatedLine);
-
-			activationPolyData.DeepCopy(emptyPolyData);
-			vtkPoints points = activationPolyData.GetPoints();
-			vtkCellArray vert = activationPolyData.GetVerts();
-			vtkCellData cellData = activationPolyData.GetCellData();
+			vActivationPD.DeepCopy(vEmptyPD);
+			vtkPoints points = vActivationPD.GetPoints();
+			vtkCellArray vert = vActivationPD.GetVerts();
+			vtkCellData cellData = vActivationPD.GetCellData();
 			vtkUnsignedCharArray colors = (vtkUnsignedCharArray) cellData.GetScalars();
 
-			int numPoints = lin.controlPointIds.size();
+			int numPoints = tmpLine.controlPointIds.size();
 
 			points.SetNumberOfPoints(numPoints);
 
-			idList.SetNumberOfIds(1);
+			vIdRegIL.SetNumberOfIds(1);
 
 			for (int i = 0; i < numPoints; ++i)
 			{
-				int idx = lin.controlPointIds.get(i);
-				points.SetPoint(i, lin.xyzPointList.get(idx).xyz);
-				idList.SetId(0, i);
-				vert.InsertNextCell(idList);
-				if (i == this.currentLineVertex)
-					colors.InsertNextTuple4(blueColor[0], blueColor[1], blueColor[2], blueColor[3]);
-				else
-					colors.InsertNextTuple4(redColor[0], redColor[1], redColor[2], redColor[3]);
+				int idx = tmpLine.controlPointIds.get(i);
+				points.SetPoint(i, tmpLine.xyzPointList.get(idx).xyz);
+				vIdRegIL.SetId(0, i);
+				vert.InsertNextCell(vIdRegIL);
+
+				Color tmpColor = redColor;
+				if (i == currentLineVertex)
+					tmpColor = blueColor;
+				colors.InsertNextTuple4(tmpColor.getRed(), tmpColor.getGreen(), tmpColor.getBlue(), tmpColor.getAlpha());
 			}
 
-			smallBodyModel.shiftPolyLineInNormalDirection(activationPolyData, getOffset());
+			refSmallBodyModel.shiftPolyLineInNormalDirection(vActivationPD, getOffset());
 
-			if (!actors.contains(lineActivationActor))
-				actors.add(lineActivationActor);
+			if (!actorL.contains(lineActivationActor))
+				actorL.add(lineActivationActor);
 		}
+
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	@Override
-	public void activateStructure(int cellId)
+	public void activateStructure(G1 aItem)
 	{
-		if (activatedLine == cellId)
+		if (aItem == activatedLine)
 			return;
 
-		activatedLine = cellId;
+		activatedLine = aItem;
 
-		if (cellId >= 0)
-		{
-			Line lin = lines.get(activatedLine);
-			currentLineVertex = lin.controlPointIds.size() - 1;
-		}
-		else
-		{
-			currentLineVertex = -1000;
-		}
+		currentLineVertex = -1000;
+		if (aItem != null)
+			currentLineVertex = aItem.controlPointIds.size() - 1;
 
 		updateLineActivation();
 
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		notifyListeners(this, ItemEventType.ItemsMutated);
 	}
 
 	@Override
@@ -888,22 +838,22 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 		updateLineActivation();
 
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		notifyListeners(this, ItemEventType.ItemsMutated);
 	}
 
 	@Override
 	public void loadModel(File file, boolean append, ProgressListener listener) throws Exception
 	{
-		//get the factory
+		// get the factory
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
-		//Using factory get an instance of document builder
+		// Using factory get an instance of document builder
 		DocumentBuilder db = dbf.newDocumentBuilder();
 
-		//parse using builder to get DOM representation of the XML file
+		// parse using builder to get DOM representation of the XML file
 		Document dom = db.parse(file);
 
-		//get the root element
+		// get the root element
 		Element docEle = dom.getDocumentElement();
 
 		if (getType().equals(docEle.getTagName()))
@@ -913,13 +863,13 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public void saveModel(File file) throws Exception
 	{
-		//get an instance of factory
+		// get an instance of factory
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
-		//get an instance of builder
+		// get an instance of builder
 		DocumentBuilder db = dbf.newDocumentBuilder();
 
-		//create an instance of DOM
+		// create an instance of DOM
 		Document dom = db.newDocument();
 
 		dom.appendChild(toXmlDomElement(dom));
@@ -956,42 +906,24 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	}
 
 	@Override
-	public int getStructureIndexFromCellId(int cellId, vtkProp prop)
+	public G1 getStructureFromCellId(int aCellId, vtkProp aProp)
 	{
-		if (prop == lineActor)
-			return cellId;
-		else if (prop == lineActivationActor)
+		if (aProp == lineActor)
+			return getStructure(aCellId);
+		else if (aProp == lineActivationActor)
 			return activatedLine;
 		else
-			return -1;
-	}
-
-	@Override
-	public void selectStructures(int[] indices)
-	{
-		this.selectedStructures = indices.clone();
-		updatePolyData();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-	}
-
-	@Override
-	public int[] getSelectedStructures()
-	{
-		return selectedStructures;
+			return null;
 	}
 
 	public void redrawAllStructures()
 	{
-		for (Line lin : this.lines)
-		{
-			lin.updateAllSegments(smallBodyModel);
-		}
+		for (Line aItem : getAllItems())
+			aItem.updateAllSegments(refSmallBodyModel);
 
 		updatePolyData();
 
 		updateLineActivation();
-
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	@Override
@@ -1009,24 +941,6 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	}
 
 	@Override
-	public void setStructureColor(int idx, int[] color)
-	{
-		lines.get(idx).setColor(color);
-		updatePolyData();
-		this.pcs.firePropertyChange(Properties.COLOR_CHANGED, null, idx);
-	}
-
-	protected vtkPolyData getActivationPolyData()
-	{
-		return activationPolyData;
-	}
-
-	protected vtkPolyData getEmptyPolyData()
-	{
-		return emptyPolyData;
-	}
-
-	@Override
 	public boolean hasProfileMode()
 	{
 		return mode == Mode.PROFILE;
@@ -1035,18 +949,16 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	/**
 	 * PROFILE MODE ONLY!! Get the vertex id of the line the specified vertex
 	 * belongs. Only 0 or 1 can be returned.
-	 * 
+	 *
 	 * @param idx
 	 * @return
 	 */
 	@Override
 	public int getVertexIdFromActivationCellId(int idx)
 	{
-		int numLines = getNumberOfStructures();
-		for (int j = 0; j < numLines; ++j)
+		for (Line aItem : getAllItems())
 		{
-			Line lin = lines.get(j);
-			int size = lin.controlPointIds.size();
+			int size = aItem.controlPointIds.size();
 
 			if (idx == 0)
 			{
@@ -1067,49 +979,49 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 	/**
 	 * PROFILE MODE ONLY!! Get which line the specified vertex belongs to
-	 * 
+	 *
 	 * @param idx
 	 * @return
 	 */
 	@Override
-	public int getStructureIdFromActivationCellId(int idx)
+	public G1 getStructureFromActivationCellId(int idx)
 	{
 		int count = 0;
-		int numLines = getNumberOfStructures();
-		for (int j = 0; j < numLines; ++j)
+		for (G1 tmpItem : getAllItems())
 		{
-			Line lin = lines.get(j);
-			int size = lin.controlPointIds.size();
+			int size = tmpItem.controlPointIds.size();
 			count += size;
 			if (idx < count)
-				return j;
+				return tmpItem;
 		}
 
-		return -1;
+		return null;
 	}
 
 	@Override
 	public double getDefaultOffset()
 	{
-		return 5.0 * smallBodyModel.getMinShiftAmount();
+		return 5.0 * refSmallBodyModel.getMinShiftAmount();
 	}
 
 	@Override
-	public void setOffset(double offset)
+	public void setOffset(double aOffset)
 	{
-		configuration.getCollection().getValue(OFFSET_KEY).setValue(offset);
+		offset = aOffset;
 
 		updatePolyData();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+
+		notifyListeners(this, ItemEventType.ItemsMutated);
 	}
 
 	@Override
 	public double getOffset()
 	{
-		return configuration.getCollection().getValue(OFFSET_KEY).getValue();
+		return offset;
 	}
 
-	public void generateProfile(List<Point3D> xyzPointList, List<Double> profileValues, List<Double> profileDistances, int coloringIndex) throws Exception
+	public void generateProfile(List<Point3D> xyzPointList, List<Double> profileValues, List<Double> profileDistances,
+			int coloringIndex) throws Exception
 	{
 		profileValues.clear();
 		profileDistances.clear();
@@ -1119,9 +1031,9 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		// of the height at that point
 		//
 		// To compute the distance, assume we have a straight line connecting the first
-		// and last points of xyzPointList. For each point, p, in xyzPointList, find the point
-		// on the line closest to p. The distance from p to the start of the line is what
-		// is placed in heights. Use SPICE's nplnpt function for this.
+		// and last points of xyzPointList. For each point, p, in xyzPointList, find the
+		// point on the line closest to p. The distance from p to the start of the line
+		// is what is placed in heights. Use SPICE's nplnpt function for this.
 
 		double[] first = xyzPointList.get(0).xyz;
 		double[] last = xyzPointList.get(xyzPointList.size() - 1).xyz;
@@ -1155,7 +1067,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 			if (coloringIndex >= 0)
 			{
 				// Base the value off the plate coloring
-				val = 1000.0 * smallBodyModel.getColoringValue(coloringIndex, p.xyz);
+				val = 1000.0 * refSmallBodyModel.getColoringValue(coloringIndex, p.xyz);
 			}
 			else
 			{
@@ -1166,22 +1078,15 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		}
 	}
 
-	/**
-	 * Save out a file which contains the value of the various coloring data as a
-	 * function of distance along the profile. A profile is path with only 2 control
-	 * points.
-	 */
 	@Override
-	public void saveProfile(int cellId, File file) throws Exception
+	public void saveProfile(Line aItem, File aFile) throws Exception
 	{
-		Line lin = this.lines.get(cellId);
-
-		if (lin.controlPointIds.size() != 2)
+		if (aItem.controlPointIds.size() != 2)
 			throw new Exception("Line must contain exactly 2 control points.");
 
 		final String lineSeparator = System.getProperty("line.separator");
 
-		FileWriter fstream = new FileWriter(file);
+		FileWriter fstream = new FileWriter(aFile);
 		BufferedWriter out = new BufferedWriter(fstream);
 
 		// write header
@@ -1193,7 +1098,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		out.write(",Longitude (deg)");
 		out.write(",Radius (m)");
 
-		List<ColoringData> colorings = smallBodyModel.getAllColoringData();
+		List<ColoringData> colorings = refSmallBodyModel.getAllColoringData();
 		for (ColoringData coloring : colorings)
 		{
 			String units = coloring.getUnits();
@@ -1206,16 +1111,16 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 		}
 		out.write(lineSeparator);
 
-		List<Point3D> xyzPointList = lin.xyzPointList;
+		List<Point3D> xyzPointList = aItem.xyzPointList;
 
 		// For each point in xyzPointList, find the cell containing that
 		// point and then, using barycentric coordinates find the value
 		// of the height at that point
 		//
 		// To compute the distance, assume we have a straight line connecting the first
-		// and last points of xyzPointList. For each point, p, in xyzPointList, find the point
-		// on the line closest to p. The distance from p to the start of the line is what
-		// is placed in heights. Use SPICE's nplnpt function for this.
+		// and last points of xyzPointList. For each point, p, in xyzPointList, find the
+		// point on the line closest to p. The distance from p to the start of the line
+		// is what is placed in heights. Use SPICE's nplnpt function for this.
 
 		double[] first = xyzPointList.get(0).xyz;
 		double[] last = xyzPointList.get(xyzPointList.size() - 1).xyz;
@@ -1241,7 +1146,7 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 
 			out.write(String.valueOf(distance));
 
-			double[] vals = smallBodyModel.getAllColoringValues(p.xyz);
+			double[] vals = refSmallBodyModel.getAllColoringValues(p.xyz);
 
 			out.write("," + 1000.0 * p.xyz[0]);
 			out.write("," + 1000.0 * p.xyz[1]);
@@ -1264,208 +1169,143 @@ public class LineModel extends ControlPointsStructureModel implements PropertyCh
 	@Override
 	public double getLineWidth()
 	{
-		return configuration.getCollection().getValue(LINE_WIDTH_KEY).getValue();
+		return lineWidth;
 	}
 
 	@Override
-	public void setLineWidth(double width)
+	public void setLineWidth(double aWidth)
 	{
-		if (width >= 1.0)
+		if (aWidth >= 1.0)
 		{
+			lineWidth = aWidth;
 			vtkProperty lineProperty = lineActor.GetProperty();
-			lineProperty.SetLineWidth(width);
-			configuration.getCollection().getValue(LINE_WIDTH_KEY).setValue(lineProperty.GetLineWidth());
+			lineProperty.SetLineWidth(lineWidth);
+
+			notifyListeners(this, ItemEventType.ItemsMutated);
 			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 		}
 	}
 
 	@Override
-	public void setVisible(boolean b)
+	public double[] getStructureCenter(G1 aItem)
 	{
-		boolean needToUpdate = false;
-		for (Line line : lines)
-		{
-			if (line.getHidden() == b)
-			{
-				line.setHidden(!b);
-				updateStructure(line);
-				needToUpdate = true;
-			}
-		}
-		if (needToUpdate)
-		{
-			updatePolyData();
-			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-		}
+		return aItem.getCentroid(refSmallBodyModel);
 	}
 
 	@Override
-	public boolean isLabelVisible(int aIdx)
+	public double[] getStructureNormal(G1 aItem)
 	{
-		return !lines.get(aIdx).getLabelHidden();
+		double[] center = getStructureCenter(aItem);
+		return refSmallBodyModel.getNormalAtPoint(center);
 	}
 
 	@Override
-	public void setLabelVisible(int[] aIdxArr, boolean aIsVisible)
+	public double getStructureSize(G1 aItem)
 	{
-		for (int aIdx : aIdxArr)
-		{
-			Structure tmpStruct = lines.get(aIdx);
-			tmpStruct.setLabelHidden(!aIsVisible);
-			updateStructure(tmpStruct);
-		}
-
-		updatePolyData();
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		return aItem.getSize(refSmallBodyModel);
 	}
 
-	@Override
-	public Color getStructureColor(int aIdx)
+	protected G1 createStructure()
 	{
-		int[] rgbArr = lines.get(aIdx).getColor();
-		return new Color(rgbArr[0], rgbArr[1], rgbArr[2]);
-	}
+		Line retLine = new Line(++maxPolygonId);
+		if (mode == Mode.PROFILE)
+			;
+//			retLine.setLineWidth(3.0);
 
-	@Override
-	public void setStructureColor(int[] aIdxArr, Color aColor)
-	{
-		int[] rgbArr = { aColor.getRed(), aColor.getGreen(), aColor.getBlue() };
-		for (int aIdx : aIdxArr)
-			lines.get(aIdx).setColor(rgbArr);
-
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-	}
-
-	@Override
-	public boolean isStructureVisible(int aIdx)
-	{
-		return !lines.get(aIdx).getHidden();
-	}
-
-	@Override
-	public void setStructureVisible(int[] aIdxArr, boolean aIsVisible)
-	{
-		for (int aIdx : aIdxArr)
-		{
-			Line tmpStruct = lines.get(aIdx);
-			tmpStruct.setHidden(!aIsVisible);
-		}
-
-		updatePolyData();
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-	}
-
-	@Override
-	public double[] getStructureCenter(int id)
-	{
-		return lines.get(id).getCentroid(smallBodyModel);
-	}
-
-	@Override
-	public double[] getStructureNormal(int id)
-	{
-		double[] center = getStructureCenter(id);
-		return smallBodyModel.getNormalAtPoint(center);
-	}
-
-	@Override
-	public double getStructureSize(int id)
-	{
-		return lines.get(id).getSize(smallBodyModel);
-	}
-
-	protected StructureModel.Structure createStructure()
-	{
-		return Line.of(++maxPolygonId);
-	}
-
-	@Override
-	public void setStructureLabel(int aIdx, String aLabel)
-	{
-		Structure tmpStruct = lines.get(aIdx);
-		tmpStruct.setLabel(aLabel);
-
-		// Clear the caption if the string is empty or null
-		tmpStruct.setLabelHidden(aLabel == null || aLabel.equals(""));
-		updateStructure(tmpStruct);
-
-		updatePolyData();
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, aIdx);
-	}
-
-	@Override
-	public void showBorders()
-	{
-		for (int index : selectedStructures)
-		{
-			vtkCaptionActor2D v = updateStructure(lines.get(index));
-			if (v != null)
-			{
-				v.SetBorder(1 - v.GetBorder());
-			}
-		}
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-	}
-
-	@Override
-	protected vtkCaptionActor2D getCaption(int aIndex)
-	{
-		return updateStructure(lines.get(aIndex));
+		return (G1) retLine;
 	}
 
 	private static final Version CONFIGURATION_VERSION = Version.of(1, 0);
 	private static final ContentKey<SettableValue<Double>> OFFSET_KEY = SettableValues.key("offset");
 	private static final ContentKey<SettableValue<Double>> LINE_WIDTH_KEY = SettableValues.key("lineWidth");
-	private static final ContentKey<Value<List<Line>>> LINES_KEY = Values.fixedKey("lineStructures");
-
-	public static Configuration createConfiguration(List<Line> lines)
-	{
-		KeyValueCollections.Builder<Content> builder = KeyValueCollections.instance().builder();
-
-		builder.put(LINE_WIDTH_KEY, SettableValues.instance().of(2.));
-		builder.put(OFFSET_KEY, SettableValues.instance().of(Double.class, null));
-		builder.put(LINES_KEY, SettableValues.instance().of(lines));
-
-		return Configurations.instance().of(CONFIGURATION_VERSION, builder.build());
-	}
+	private final ContentKey<Value<List<G1>>> LINES_KEY = Values.fixedKey("lineStructures");
 
 	@Override
 	public Metadata store()
 	{
+		KeyValueCollections.Builder<Content> builder = KeyValueCollections.instance().builder();
+
+		builder.put(LINE_WIDTH_KEY, SettableValues.instance().of(lineWidth));
+		builder.put(OFFSET_KEY, SettableValues.instance().of(offset));
+		builder.put(LINES_KEY, SettableValues.instance().of(getAllItems()));
+
+		Configuration configuration = Configurations.instance().of(CONFIGURATION_VERSION, builder.build());
+
 		return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration.getCollection()).store();
 	}
 
 	@Override
 	public void retrieve(Metadata source)
 	{
-		KeyValueCollection<Content> collection = configuration.getCollection();
+//		int evaluateMe().evaluateMe..evaluateMe;
+//		KeyValueCollection<Content> collection = configuration.getCollection();
 
 		double lineWidth = source.get(Key.of(LINE_WIDTH_KEY.getId()));
 		double offset = source.get(Key.of(OFFSET_KEY.getId()));
 
-		List<Line> sourceLines = source.get(Key.of(LINES_KEY.getId()));
-		List<Line> lines = collection.getValue(LINES_KEY).getValue();
+		List<G1> sourceLines = source.get(Key.of(LINES_KEY.getId()));
 
 		removeAllStructures();
 
-		lines.addAll(sourceLines);
-		for (int index = 0; index < lines.size(); ++index)
+		for (G1 line : sourceLines)
 		{
-			Line line = lines.get(index);
-			line.updateAllSegments(smallBodyModel);
+			line.updateAllSegments(refSmallBodyModel);
 			if (line instanceof Polygon)
 			{
 				Polygon polygon = (Polygon) line;
-				polygon.setShowInterior(smallBodyModel, polygon.getContent(Polygon.SHOW_INTERIOR_KEY).getValue());
+				polygon.setShowInterior(refSmallBodyModel, source.get(Key.of(Polygon.SHOW_INTERIOR_KEY.getId())));
 			}
 		}
+
+		setAllItems(sourceLines);
 
 		setLineWidth(lineWidth);
 		setOffset(offset);
 
-		lineActor.SetMapper(lineMapper);
+		lineActor.SetMapper(vLineMapperRegPDM);
 		updatePolyData();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+	}
+
+	@Override
+	protected void updateVtkColorsFor(Collection<G1> aItemC, boolean aSendNotification)
+	{
+		Color pickColor = null;
+		CommonData commonData = getCommonData();
+		if (commonData != null)
+			pickColor = commonData.getSelectionColor();
+
+		// Gather VTK vars of interest
+		vtkCellData regCD = vLinesRegPD.GetCellData();
+		vtkUnsignedCharArray regColorUCA = (vtkUnsignedCharArray) regCD.GetScalars();
+
+		vtkCellData decCD = vLinesDecPD.GetCellData();
+		vtkUnsignedCharArray decColorUCA = (vtkUnsignedCharArray) decCD.GetScalars();
+
+		// Update internal VTK state
+		for (G1 aItem : aItemC)
+		{
+			// Skip to next if not visible
+			if (aItem.getVisible() == false)
+				continue;
+
+			// Skip to next as VTK draw state has not been initialized
+			if (aItem.vDrawId == -1)
+				continue;
+
+			// Update the color related state
+			Color tmpColor = aItem.getColor();
+			if (pickColor != null && getSelectedItems().contains(aItem) == true)
+				tmpColor = pickColor;
+
+			int tmpId = aItem.vDrawId;
+			VtkUtil.setColorOnUCA4(regColorUCA, tmpId, tmpColor);
+			VtkUtil.setColorOnUCA4(decColorUCA, tmpId, tmpColor);
+		}
+
+		regColorUCA.Modified();
+		decColorUCA.Modified();
+
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 }

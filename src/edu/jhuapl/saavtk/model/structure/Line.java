@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.model.structure;
 
+import java.awt.Color;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +18,6 @@ import crucible.crust.metadata.impl.InstanceGetter;
 import crucible.crust.settings.api.Configuration;
 import crucible.crust.settings.api.Content;
 import crucible.crust.settings.api.ContentKey;
-import crucible.crust.settings.api.KeyValueCollection;
 import crucible.crust.settings.api.SettableValue;
 import crucible.crust.settings.api.Value;
 import crucible.crust.settings.api.Version;
@@ -27,7 +27,8 @@ import crucible.crust.settings.impl.SettableValues;
 import crucible.crust.settings.impl.Values;
 import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.StructureModel;
+import edu.jhuapl.saavtk.structure.Structure;
+import edu.jhuapl.saavtk.structure.io.StructureLoadUtil;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Point3D;
@@ -35,40 +36,57 @@ import vtk.vtkCaptionActor2D;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
 
-public abstract class Line extends StructureModel.Structure
+public class Line implements Structure
 {
-	public static Line of(int id)
-	{
-		final ArrayList<LatLon> controlPoints = new ArrayList<>();
-		final Configuration configuration = createConfiguration(id, controlPoints);
+	// Constants
+	public static final String PATH = "path";
+	public static final String LENGTH = "length";
+	protected static final DecimalFormat decimalFormatter = new DecimalFormat("#.###");
 
-		return new Line(controlPoints) {
-
-			@Override
-			public Configuration getConfiguration()
-			{
-				return configuration;
-			}
-
-		};
-	}
+	// State vars
+	private int id;
+	private String name = "default";
+	private String label = "";
 
 	// Note that controlPoints is what gets stored in the saved file.
-	private final List<LatLon> controlPoints;
+	private final List<LatLon> controlPointL;
 
-	// Note xyzPointList is what's displayed. There will usually be more of these points than
-	// controlPoints in order to ensure the line is right above the surface of the asteroid.
+	private Color color;
+	private Color labelColor;
+	private int labelFontSize;
+	private boolean visible;
+	private boolean labelVisible;
+
+	// Note xyzPointList is what's displayed. There will usually be more of these
+	// points than controlPoints in order to ensure the line is right above the
+	// surface of the asteroid.
 	public List<Point3D> xyzPointList = new ArrayList<>();
 	public List<Integer> controlPointIds = new ArrayList<>();
 
-	private static final int[] purpleColor = { 255, 0, 255, 255 }; // RGBA purple
-	protected static final DecimalFormat decimalFormatter = new DecimalFormat("#.###");
+	// VTK vars
+	private vtkCaptionActor2D vCaption;
+	protected int vDrawId;
 
-	private vtkCaptionActor2D caption;
-	private static int maxId = 0;
+	/**
+	 * Standard Constructor
+	 */
+	public Line(int aId)
+	{
+		id = aId;
+		name = "default";
+		label = "";
 
-	public static final String PATH = "path";
-	public static final String LENGTH = "length";
+		controlPointL = new ArrayList<>();
+
+		color = Color.MAGENTA;
+		labelColor = Color.BLACK;
+		labelFontSize = 16;
+		visible = true;
+		labelVisible = true;
+
+		vCaption = null;
+		vDrawId = -1;
+	}
 
 	public static final ContentKey<SettableValue<Integer>> ID = SettableValues.key("id");
 	public static final ContentKey<SettableValue<String>> NAME = SettableValues.key("name");
@@ -80,73 +98,63 @@ public abstract class Line extends StructureModel.Structure
 	public static final ContentKey<SettableValue<Boolean>> HIDDEN = SettableValues.key("hidden");
 	public static final ContentKey<SettableValue<Boolean>> LABEL_HIDDEN = SettableValues.key("labelHidden");
 
-	protected Line(List<LatLon> controlPoints)
-	{
-		this.controlPoints = controlPoints;
-	}
-
-	public <C extends Content> C getContent(ContentKey<C> key)
-	{
-		return getConfiguration().getCollection().getValue(key);
-	}
-
 	@Override
 	public int getId()
 	{
-		return getContent(ID).getValue();
+		return id;
 	}
 
-	private void setId(int id)
+	private void setId(int aId)
 	{
-		getContent(ID).setValue(id);
+		id = aId;
 	}
 
 	@Override
 	public String getLabel()
 	{
-		return getContent(LABEL).getValue();
+		return label;
 	}
 
 	@Override
-	public void setLabel(String label)
+	public void setLabel(String aLabel)
 	{
-		getContent(LABEL).setValue(label);
+		label = aLabel;
 	}
 
 	@Override
-	public int[] getLabelColor()
+	public Color getLabelColor()
 	{
-		return getContent(LABEL_COLOR).getValue();
+		return labelColor;
 	}
 
 	@Override
-	public void setLabelColor(int[] labelColor)
+	public void setLabelColor(Color aColor)
 	{
-		getContent(LABEL_COLOR).setValue(labelColor);
+		labelColor = aColor;
 	}
 
 	@Override
 	public int getLabelFontSize()
 	{
-		return getContent(LABEL_FONT_SIZE).getValue();
+		return labelFontSize;
 	}
 
 	@Override
-	public void setLabelFontSize(int fontSize)
+	public void setLabelFontSize(int aFontSize)
 	{
-		getContent(LABEL_FONT_SIZE).setValue(fontSize);
+		labelFontSize = aFontSize;
 	}
 
 	@Override
 	public String getName()
 	{
-		return getContent(NAME).getValue();
+		return name;
 	}
 
 	@Override
-	public void setName(String name)
+	public void setName(String aName)
 	{
-		getContent(NAME).setValue(name);
+		name = aName;
 	}
 
 	@Override
@@ -162,42 +170,42 @@ public abstract class Line extends StructureModel.Structure
 	}
 
 	@Override
-	public int[] getColor()
+	public Color getColor()
 	{
-		return getContent(COLOR).getValue().clone();
+		return color;
 	}
 
 	@Override
-	public void setColor(int[] color)
+	public void setColor(Color aColor)
 	{
-		getContent(COLOR).setValue(color.clone());
+		color = aColor;
 	}
 
 	public ImmutableList<LatLon> getControlPoints()
 	{
-		return ImmutableList.copyOf(controlPoints);
+		return ImmutableList.copyOf(controlPointL);
 	}
 
 	public void setControlPoint(int index, LatLon controlPoint)
 	{
-		Preconditions.checkArgument(index >= 0 && index < controlPoints.size());
+		Preconditions.checkArgument(index >= 0 && index < controlPointL.size());
 
-		controlPoints.set(index, controlPoint);
+		controlPointL.set(index, controlPoint);
 	}
 
 	public void addControlPoint(int index, LatLon controlPoint)
 	{
 		// One past last is OK for this one.
-		Preconditions.checkArgument(index >= 0 && index <= controlPoints.size());
+		Preconditions.checkArgument(index >= 0 && index <= controlPointL.size());
 
-		controlPoints.add(index, controlPoint);
+		controlPointL.add(index, controlPoint);
 	}
 
 	public void removeControlPoint(int index)
 	{
-		Preconditions.checkArgument(index >= 0 && index < controlPoints.size());
+		Preconditions.checkArgument(index >= 0 && index < controlPointL.size());
 
-		controlPoints.remove(index);
+		controlPointL.remove(index);
 	}
 
 	public Element toXmlDomElement(Document dom)
@@ -206,12 +214,12 @@ public abstract class Line extends StructureModel.Structure
 		linEle.setAttribute(ID.getId(), String.valueOf(getId()));
 		linEle.setAttribute(NAME.getId(), getName());
 		linEle.setAttribute(LABEL.getId(), getLabel());
-		//        String labelcolorStr=labelcolor[0] + "," + labelcolor[1] + "," + labelcolor[2];
-		//        linEle.setAttribute(LABELCOLOR, labelcolorStr);
+//		String labelcolorStr=labelcolor[0] + "," + labelcolor[1] + "," + labelcolor[2];
+//		linEle.setAttribute(LABELCOLOR, labelcolorStr);
 		linEle.setAttribute(LENGTH, String.valueOf(getPathLength()));
 
-		int[] color = getColor();
-		String colorStr = color[0] + "," + color[1] + "," + color[2];
+		Color color = getColor();
+		String colorStr = color.getRed() + "," + color.getGreen() + "," + color.getBlue();
 		linEle.setAttribute(COLOR.getId(), colorStr);
 
 		String vertices = "";
@@ -236,9 +244,11 @@ public abstract class Line extends StructureModel.Structure
 		return linEle;
 	}
 
+	private static int maxId = 0;
+
 	public void fromXmlDomElement(PolyhedralModel smallBodyModel, Element element, String shapeModelName, boolean append)
 	{
-		controlPoints.clear();
+		controlPointL.clear();
 		controlPointIds.clear();
 		xyzPointList.clear();
 
@@ -295,20 +305,22 @@ public abstract class Line extends StructureModel.Structure
 			return;
 		tokens = tmp.split(",");
 
-		int[] color = { Integer.parseInt(tokens[0]), Integer.parseInt(tokens[1]), Integer.parseInt(tokens[2]) };
-		setColor(color);
+		int rVal = Integer.parseInt(tokens[0]);
+		int gVal = Integer.parseInt(tokens[1]);
+		int bVal = Integer.parseInt(tokens[2]);
+		setColor(new Color(rVal, gVal, bVal));
 
-		//        String[] labelColors=element.getAttribute(LABELCOLOR).split(",");
-		//        labelcolor[0] = Double.parseDouble(labelColors[0]);
-		//        labelcolor[1] = Double.parseDouble(labelColors[1]);
-		//        labelcolor[2] = Double.parseDouble(labelColors[2]);
-
+//		String[] labelColors=element.getAttribute(LABELCOLOR).split(",");
+//		labelcolor[0] = Double.parseDouble(labelColors[0]);
+//		labelcolor[1] = Double.parseDouble(labelColors[1]);
+//		labelcolor[2] = Double.parseDouble(labelColors[2]);
 	}
 
 	@Override
 	public String getClickStatusBarText()
 	{
-		return "Path, Id = " + getId() + ", Length = " + decimalFormatter.format(getPathLength()) + " km" + ", Number of Vertices = " + getControlPoints().size();
+		return "Path, Id = " + getId() + ", Length = " + decimalFormatter.format(getPathLength()) + " km"
+				+ ", Number of Vertices = " + getControlPoints().size();
 	}
 
 	public double getPathLength()
@@ -336,7 +348,7 @@ public abstract class Line extends StructureModel.Structure
 		controlPointIds.clear();
 		xyzPointList.clear();
 
-		int numberSegments = isClosed() ? controlPoints.size() : controlPoints.size();
+		int numberSegments = isClosed() ? controlPointL.size() : controlPointL.size();
 
 		for (int index = 0; index < numberSegments; ++index)
 		{
@@ -380,7 +392,8 @@ public abstract class Line extends StructureModel.Structure
 		xyzPointList.set(id2, new Point3D(pt2));
 
 		vtkPoints points = null;
-		if (Math.abs(ll1.lat - ll2.lat) < 1e-8 && Math.abs(ll1.lon - ll2.lon) < 1e-8 && Math.abs(ll1.rad - ll2.rad) < 1e-8)
+		if (Math.abs(ll1.lat - ll2.lat) < 1e-8 && Math.abs(ll1.lon - ll2.lon) < 1e-8
+				&& Math.abs(ll1.rad - ll2.rad) < 1e-8)
 		{
 			points = new vtkPoints();
 			points.InsertNextPoint(pt1);
@@ -474,27 +487,27 @@ public abstract class Line extends StructureModel.Structure
 	}
 
 	@Override
-	public boolean getHidden()
+	public boolean getVisible()
 	{
-		return getContent(HIDDEN).getValue();
+		return visible;
 	}
 
 	@Override
-	public boolean getLabelHidden()
+	public boolean getLabelVisible()
 	{
-		return getContent(LABEL_HIDDEN).getValue();
+		return labelVisible;
 	}
 
 	@Override
-	public void setHidden(boolean b)
+	public void setVisible(boolean aBool)
 	{
-		getContent(HIDDEN).setValue(b);
+		visible = aBool;
 	}
 
 	@Override
-	public void setLabelHidden(boolean b)
+	public void setLabelVisible(boolean aBool)
 	{
-		getContent(LABEL_HIDDEN).setValue(b);
+		labelVisible = aBool;
 	}
 
 	public int getNumberOfPoints()
@@ -515,36 +528,39 @@ public abstract class Line extends StructureModel.Structure
 	@Override
 	public vtkCaptionActor2D getCaption()
 	{
-		return caption;
+		return vCaption;
 	}
 
 	@Override
-	public void setCaption(vtkCaptionActor2D caption)
+	public void setCaption(vtkCaptionActor2D aCaption)
 	{
-		this.caption = caption;
+		vCaption = aCaption;
 	}
-
-	protected abstract Configuration getConfiguration();
 
 	private static final Version CONFIGURATION_VERSION = Version.of(1, 0);
 	private static final SettableValues settableValues = SettableValues.instance();
 
-	protected static Configuration createConfiguration(int id, List<LatLon> controlPoints)
+	protected static Configuration formConfigurationFor(Line aLine)
 	{
+		int[] intArr;
+
 		KeyValueCollections.Builder<Content> builder = KeyValueCollections.instance().builder();
 
-		builder.put(ID, settableValues.of(id));
-		builder.put(NAME, settableValues.of("default"));
-		// Note: it is correct to use settableValues to instantiate the setting for VERTICES. This is because
-		// the list of controlPoints is final but mutable. If one used just "Values", the set of vertices would
-		// not be saved in the file because it would not be considered "stateful".
-		builder.put(VERTICES, settableValues.of(controlPoints));
-		builder.put(COLOR, settableValues.of(purpleColor.clone()));
-		builder.put(LABEL, settableValues.of(""));
-		builder.put(LABEL_COLOR, settableValues.of(BLACK_INT_ARRAY.clone()));
-		builder.put(LABEL_FONT_SIZE, settableValues.of(16));
-		builder.put(HIDDEN, settableValues.of(false));
-		builder.put(LABEL_HIDDEN, settableValues.of(false));
+		builder.put(ID, settableValues.of(aLine.id));
+		builder.put(NAME, settableValues.of(aLine.name));
+		// Note: it is correct to use settableValues to instantiate the setting for
+		// VERTICES. This is because the list of controlPoints is final but mutable. If
+		// one used just "Values", the set of vertices would not be saved in the file
+		// because it would not be considered "stateful".
+		builder.put(VERTICES, settableValues.of(aLine.controlPointL));
+		intArr = StructureLoadUtil.convertColorToRgba(aLine.color);
+		builder.put(COLOR, settableValues.of(intArr));
+		builder.put(LABEL, settableValues.of(aLine.label));
+		intArr = StructureLoadUtil.convertColorToRgba(aLine.labelColor);
+		builder.put(LABEL_COLOR, settableValues.of(intArr));
+		builder.put(LABEL_FONT_SIZE, settableValues.of(aLine.labelFontSize));
+		builder.put(HIDDEN, settableValues.of(!aLine.visible));
+		builder.put(LABEL_HIDDEN, settableValues.of(!aLine.labelVisible));
 
 		return Configurations.instance().of(CONFIGURATION_VERSION, builder.build());
 	}
@@ -560,13 +576,14 @@ public abstract class Line extends StructureModel.Structure
 
 			InstanceGetter.defaultInstanceGetter().register(LINE_STRUCTURE_PROXY_KEY, source -> {
 				int id = source.get(Key.of(ID.getId()));
-				Line result = of(id);
+				Line result = new Line(id);
 				unpackMetadata(source, result);
 
 				return result;
 			}, Line.class, line -> {
-				Configuration configuration = line.getConfiguration();
-				return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration.getCollection()).store();
+				Configuration configuration = formConfigurationFor(line);
+				return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration.getCollection())
+						.store();
 			});
 
 			proxyInitialized = true;
@@ -575,21 +592,22 @@ public abstract class Line extends StructureModel.Structure
 
 	protected static void unpackMetadata(Metadata source, Line line)
 	{
-		KeyValueCollection<Content> collection = line.getConfiguration().getCollection();
+		int[] intArr;
 
-		collection.getValue(NAME).setValue(source.get(Key.of(NAME.getId())));
-		collection.getValue(COLOR).setValue(source.get(Key.of(COLOR.getId())));
+		line.name = source.get(Key.of(NAME.getId()));
+		intArr = source.get(Key.of(COLOR.getId()));
+		line.color = StructureLoadUtil.convertRgbaToColor(intArr);
 
 		List<LatLon> sourceControlPoints = source.get(Key.of(VERTICES.getId()));
-		List<LatLon> controlPoints = collection.getValue(VERTICES).getValue();
+		line.controlPointL.addAll(sourceControlPoints);
 
-		controlPoints.addAll(sourceControlPoints);
-
-		collection.getValue(LABEL).setValue(source.get(Key.of(LABEL.getId())));
-		collection.getValue(LABEL_COLOR).setValue(source.get(Key.of(LABEL_COLOR.getId())));
-		collection.getValue(LABEL_FONT_SIZE).setValue(source.get(Key.of(LABEL_FONT_SIZE.getId())));
-		collection.getValue(HIDDEN).setValue(source.get(Key.of(HIDDEN.getId())));
-		collection.getValue(LABEL_HIDDEN).setValue(source.get(Key.of(LABEL_HIDDEN.getId())));
-
+		line.label = source.get(Key.of(LABEL.getId()));
+		intArr = source.get(Key.of(LABEL_COLOR.getId()));
+		line.labelColor = StructureLoadUtil.convertRgbaToColor(intArr);
+		line.labelFontSize = source.get(Key.of(LABEL_FONT_SIZE.getId()));
+		line.visible = source.get(Key.of(HIDDEN.getId()));
+		line.visible = !line.visible;
+		line.labelVisible = source.get(Key.of(LABEL_HIDDEN.getId()));
+		line.labelVisible = !line.labelVisible;
 	}
 }

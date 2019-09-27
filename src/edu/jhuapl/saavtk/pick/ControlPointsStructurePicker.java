@@ -24,12 +24,12 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
  * points per path (since saving out a profile are not supported for paths with
  * more than 2 control points).
  */
-public class ControlPointsStructurePicker extends Picker
+public class ControlPointsStructurePicker<G1 extends Line> extends Picker
 {
 	// Reference vars
 	private ModelManager refModelManager;
 	private PolyhedralModel refSmallBodyModel;
-	private ControlPointsStructureModel refStructureModel;
+	private ControlPointsStructureModel<G1> refStructureModel;
 	private vtkJoglPanelComponent refRenWin;
 
 	// VTK vars
@@ -47,7 +47,7 @@ public class ControlPointsStructurePicker extends Picker
 	{
 		refModelManager = modelManager;
 		refSmallBodyModel = (PolyhedralModel) modelManager.getPolyhedralModel();
-		refStructureModel = (ControlPointsStructureModel) modelManager.getModel(structureName);
+		refStructureModel = (ControlPointsStructureModel<G1>) modelManager.getModel(structureName);
 		refRenWin = renderer.getRenderWindowPanel();
 
 		smallBodyPicker = PickUtilEx.formSmallBodyPicker(refSmallBodyModel);
@@ -59,14 +59,14 @@ public class ControlPointsStructurePicker extends Picker
 		lastDragPosition = null;
 	}
 
-   @Override
-   public int getCursorType()
-   {
+	@Override
+	public int getCursorType()
+	{
 		if (currEditMode == EditMode.DRAGGABLE)
 			return Cursor.HAND_CURSOR;
 
 		return Cursor.CROSSHAIR_CURSOR;
-   }
+	}
 
 	@Override
 	public boolean isExclusiveMode()
@@ -107,23 +107,22 @@ public class ControlPointsStructurePicker extends Picker
 	}
 
 	@Override
-    public void mousePressed(MouseEvent aEvent)
-    {
-        // If we pressed a vertex of an existing structure, begin dragging that vertex.
-        // If we pressed a point on the body, begin adding a new control point.
+	public void mousePressed(MouseEvent aEvent)
+	{
+		// If we pressed a vertex of an existing structure, begin dragging that vertex.
+		// If we pressed a point on the body, begin adding a new control point.
 
+		currVertexId = -1;
+		lastDragPosition = null;
 
-        currVertexId = -1;
-        lastDragPosition = null;
-        
-  		// Bail if we are not ready to do a drag operation
-  		if (currEditMode != EditMode.DRAGGABLE)
-  			return;
+		// Bail if we are not ready to do a drag operation
+		if (currEditMode != EditMode.DRAGGABLE)
+			return;
 
-  		// Bail if either mouse button 1 or button 3 are not pressed
-  		if (aEvent.getButton() != MouseEvent.BUTTON1 && aEvent.getButton() != MouseEvent.BUTTON3)
-  			return;
-  		
+		// Bail if either mouse button 1 or button 3 are not pressed
+		if (aEvent.getButton() != MouseEvent.BUTTON1 && aEvent.getButton() != MouseEvent.BUTTON3)
+			return;
+
 		// Bail if we failed to pick something
 		int pickSucceeded = doPick(aEvent, structurePicker, refRenWin);
 		if (pickSucceeded != 1)
@@ -139,8 +138,8 @@ public class ControlPointsStructurePicker extends Picker
 
 				if (profileMode)
 				{
-					int lineId = refStructureModel.getStructureIdFromActivationCellId(currVertexId);
-					refStructureModel.activateStructure(lineId);
+					G1 tmpItem = refStructureModel.getStructureFromActivationCellId(currVertexId);
+					refStructureModel.activateStructure(tmpItem);
 				}
 
 				refStructureModel.selectCurrentStructureVertex(currVertexId);
@@ -149,10 +148,10 @@ public class ControlPointsStructurePicker extends Picker
 			{
 				currVertexId = -1;
 				if (profileMode)
-					refStructureModel.activateStructure(-1);
+					refStructureModel.activateStructure(null);
 			}
 		}
-    }
+	}
 
 	@Override
 	public void mouseReleased(MouseEvent aEvent)
@@ -208,7 +207,7 @@ public class ControlPointsStructurePicker extends Picker
 		boolean profileModeOkToDrag = true;
 		if (profileMode)
 		{
-			int lineId = refStructureModel.getNumberOfStructures() - 1;
+			int lineId = refStructureModel.getNumItems() - 1;
 			if (lineId >= 0)
 			{
 				Line line = (Line) refStructureModel.getStructure(lineId);

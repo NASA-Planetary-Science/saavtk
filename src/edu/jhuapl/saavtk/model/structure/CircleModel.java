@@ -1,5 +1,7 @@
 package edu.jhuapl.saavtk.model.structure;
 
+import java.awt.Color;
+
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Properties;
@@ -37,8 +39,7 @@ public class CircleModel extends AbstractEllipsePolygonModel
         this.smallBodyModel = smallBodyModel;
 
         setInteriorOpacity(0.0);
-        int[] color = {255, 0, 255};
-        setDefaultColor(color);
+        setDefaultColor(Color.MAGENTA);
 
         activationPolyData = new vtkPolyData();
         vtkPoints points = new vtkPoints();

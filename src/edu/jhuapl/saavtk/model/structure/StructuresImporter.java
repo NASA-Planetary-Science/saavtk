@@ -6,19 +6,19 @@ import java.nio.file.Path;
 import java.util.Collection;
 
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
-import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.esri.LineSegment;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
 import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
 import edu.jhuapl.saavtk.model.structure.esri.ShapefileUtil;
+import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.util.Point3D;
 
 @Deprecated // ... for the moment... see AbstractStructureMappingControlPanel... nested class LoadEsriShapeFileAction
 public class StructuresImporter
 {
 
-	public static void importFromShapefile(StructureModel model, Path shapeFile, GenericPolyhedralModel body) throws IOException
+	public static void importFromShapefile(StructureManager<?> model, Path shapeFile, GenericPolyhedralModel body) throws IOException
 	{
 		if (model instanceof PointModel)
 		{
@@ -27,7 +27,7 @@ public class StructuresImporter
 		}
 		if (model instanceof LineModel)
 		{
-			importFromShapeFile((LineModel) model, shapeFile, body);
+			importFromShapeFile((LineModel<Line>) model, shapeFile, body);
 			return;
 		}
 		if (model instanceof AbstractEllipsePolygonModel)
@@ -37,65 +37,62 @@ public class StructuresImporter
 		}
 	}
 
-	public static void importFromShapefile(PointModel model, Path shapeFile) throws IOException
+	public static void importFromShapefile(PointModel aPointManager, Path shapeFile) throws IOException
 	{
 		Collection<PointStructure> sc = ShapefileUtil.readPointStructures(shapeFile);
 		for (PointStructure s : sc)
 		{
-			Color c = s.getPointStyle().getColor();
-			int[] color = new int[] { c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha() };
+			Color color = s.getPointStyle().getColor();
 			String label = s.getLabel();
 			if (label == null)
 				label = "";
 			//
-			model.addNewStructure(s.getCentroid().toArray());
-			int id = model.getNumberOfStructures() - 1;
-			model.setStructureColor(id, color);
-			model.setStructureLabel(id, label);
+			aPointManager.addNewStructure(s.getCentroid().toArray());
+			int id = aPointManager.getNumItems() - 1;
+			EllipsePolygon tmpItem = aPointManager.getStructure(id);
+			
+			aPointManager.setStructureColor(tmpItem, color);
+			aPointManager.setStructureLabel(tmpItem, label);
 		}
 	}
 
-	public static void importFromShapeFile(LineModel model, Path shapeFile, GenericPolyhedralModel body) throws IOException
+	public static void importFromShapeFile(LineModel<Line> aLineManager, Path shapeFile, GenericPolyhedralModel body) throws IOException
 	{
 		Collection<LineStructure> sc = ShapefileUtil.readLineStructures(shapeFile);
 		for (LineStructure s : sc)
 		{
-			
-			//
-			Color c = s.getLineStyle().getColor();
-			int[] color = new int[] { c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha() };
+			Color color = s.getLineStyle().getColor();
 			double w = s.getLineStyle().getWidth();
 			String label = s.getLabel();
 			if (label == null)
 				label = "";
 			//
-			model.addNewStructure();
-			int id = model.getNumberOfStructures() - 1;
-			Line line = (Line) model.getStructure(id);
+			aLineManager.addNewStructure();
+			int id = aLineManager.getNumItems() - 1;
+			Line tmpItem = aLineManager.getStructure(id);
 			for (int i = 0; i < s.getNumberOfSegments(); i++)
 			{
 				//List<LineSegment> subsegments=forceCylindricalProjection(s.getSegment(i), body, Math.sqrt(body.getMeanCellArea()));
 				//for (int j=0; j<subsegments.size(); j++)
 				//{
 					LineSegment seg = s.getSegment(i);
-					line.xyzPointList.add(new Point3D(seg.getStart().toArray()));
+					tmpItem.xyzPointList.add(new Point3D(seg.getStart().toArray()));
 						if (i == s.getNumberOfSegments() - 1)
-					line.xyzPointList.add(new Point3D(seg.getEnd().toArray()));
+					tmpItem.xyzPointList.add(new Point3D(seg.getEnd().toArray()));
 				//}
 			}
-			model.setStructureColor(id, color);
-			model.setStructureLabel(id, label);
-			model.setLineWidth(w);
+			aLineManager.setStructureColor(tmpItem, color);
+			aLineManager.setStructureLabel(tmpItem, label);
+			aLineManager.setLineWidth(w);
 		}
 	}
 
-	public static void importFromShapeFile(AbstractEllipsePolygonModel model, Path shapeFile, GenericPolyhedralModel body) throws IOException
+	public static void importFromShapeFile(AbstractEllipsePolygonModel aEllipseManager, Path shapeFile, GenericPolyhedralModel body) throws IOException
 	{
 		Collection<EllipseStructure> sc = ShapefileUtil.readEllipseStructures(shapeFile, body);
 		for (EllipseStructure s : sc)
 		{
-			Color c = s.getLineStyle().getColor();
-			int[] color = new int[] { c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha() };
+			Color color = s.getLineStyle().getColor();
 			double w = s.getLineStyle().getWidth();
 			String label = s.getLabel();
 			if (label == null)
@@ -113,16 +110,18 @@ public class StructuresImporter
 			double majorRadius = s.getParameters().majorRadius;
 			double flattening = s.getParameters().flattening;
 			double angle = s.getParameters().angle;
-			//
-			model.addNewStructure(center, majorRadius, flattening, angle);
-			int id = model.getNumberOfStructures() - 1;
-			model.setStructureColor(id, color);
-			model.setStructureLabel(id, label);
-			model.setLineWidth(w);
+
+			aEllipseManager.addNewStructure(center, majorRadius, flattening, angle);
+			int id = aEllipseManager.getNumItems() - 1;
+			EllipsePolygon tmpItem = aEllipseManager.getStructure(id);
+			
+			aEllipseManager.setStructureColor(tmpItem, color);
+			aEllipseManager.setStructureLabel(tmpItem, label);
+			aEllipseManager.setLineWidth(w);
 		}
 
 		/*	vtkAppendPolyData append=new vtkAppendPolyData();
-			for (int i=0; i<model.getNumberOfStructures(); i++)
+			for (int i=0; i<model.getNumItems(); i++)
 				append.AddInputData(model.getPolygons().get(i).boundaryPolyData);
 			append.Update();
 			
@@ -133,7 +132,7 @@ public class StructuresImporter
 			writer.Write();
 			
 			vtkAppendPolyData append2=new vtkAppendPolyData();
-			for (int i=0; i<model.getNumberOfStructures(); i++)
+			for (int i=0; i<model.getNumItems(); i++)
 				append2.AddInputData(model.getPolygons().get(i).interiorPolyData);
 			append2.Update();
 		

@@ -43,20 +43,20 @@ public class EllipseStructure extends LineStructure
 	public static List<EllipseStructure> fromSbmtStructure(AbstractEllipsePolygonModel crappySbmtStructureModel)
 	{
 		List<EllipseStructure> structures = Lists.newArrayList();
-		for (int i = 0; i < crappySbmtStructureModel.getNumberOfStructures(); i++)
+		for (int i = 0; i < crappySbmtStructureModel.getNumItems(); i++)
 		{
 			EllipsePolygon poly = (EllipsePolygon) crappySbmtStructureModel.getStructure(i);
-			int[] c = poly.getColor();
+			Color c = poly.getColor();
 			double w = crappySbmtStructureModel.getLineWidth();
-			LineStyle style = new LineStyle(new Color(c[0], c[1], c[2]), w);
+			LineStyle style = new LineStyle(c, w);
 			String label = poly.getLabel();
 			//
 
-			vtkCellArray cells = poly.getBoundaryPolyData().GetLines();
+			vtkCellArray cells = poly.getVtkExteriorPolyData().GetLines();
 			List<LineSegment> segments = Lists.newArrayList();
 			for (int j = 0; j < cells.GetNumberOfCells(); j++)
 			{
-				vtkPoints points = poly.getBoundaryPolyData().GetCell(j).GetPoints();
+				vtkPoints points = poly.getVtkExteriorPolyData().GetCell(j).GetPoints();
 				if (points.GetNumberOfPoints() < 2)
 					continue;
 				for (int k = 0; k < points.GetNumberOfPoints() - 1; k++)

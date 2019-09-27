@@ -8,15 +8,15 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableList;
 
 import crucible.crust.metadata.api.Key;
 import crucible.crust.metadata.api.Metadata;
@@ -27,14 +27,15 @@ import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.CommonData;
 import edu.jhuapl.saavtk.model.FacetColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.StructureModel;
-import edu.jhuapl.saavtk.util.IdPair;
+import edu.jhuapl.saavtk.structure.StructureManager;
+import edu.jhuapl.saavtk.structure.io.StructureLoadUtil;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
 import edu.jhuapl.saavtk.util.ProgressListener;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
+import glum.item.ItemEventType;
 import glum.util.ThreadUtil;
 import vtk.vtkActor;
 import vtk.vtkAppendPolyData;
@@ -53,7 +54,7 @@ import vtk.vtkUnsignedCharArray;
 /**
  * Model of regular polygon structures drawn on a body.
  */
-abstract public class AbstractEllipsePolygonModel extends StructureModel
+abstract public class AbstractEllipsePolygonModel extends StructureManager<EllipsePolygon>
 		implements PropertyChangeListener, MetadataManager
 {
 	// Attributes
@@ -62,41 +63,40 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 	private final String type;
 
 	// State vars
-	private ImmutableSet<Integer> pickIdxS;
-	private final List<EllipsePolygon> polygons;
-
-	// VTK vars
-	private final List<vtkProp> actors;
-	private vtkPolyData boundaryPolyData;
-	private vtkPolyData decimatedBoundaryPolyData;
-	private vtkAppendPolyData boundaryAppendFilter;
-	private vtkAppendPolyData decimatedBoundaryAppendFilter;
-	private vtkPolyDataMapper boundaryMapper;
-	private vtkPolyDataMapper decimatedBoundaryMapper;
-	private vtkActor boundaryActor;
-
-	private vtkPolyData interiorPolyData;
-	private vtkPolyData decimatedInteriorPolyData;
-	private vtkAppendPolyData interiorAppendFilter;
-	private vtkAppendPolyData decimatedInteriorAppendFilter;
-	private vtkPolyDataMapper interiorMapper;
-	private vtkPolyDataMapper decimatedInteriorMapper;
-	private vtkActor interiorActor;
-
-	private vtkUnsignedCharArray boundaryColors;
-	private vtkUnsignedCharArray decimatedBoundaryColors;
-	private vtkUnsignedCharArray interiorColors;
-	private vtkUnsignedCharArray decimatedInteriorColors;
-
-	private vtkPolyData emptyPolyData;
+	private Map<EllipsePolygon, VtkDrawState> drawM;
 	private double defaultRadius;
 	private final double maxRadius;
 	private final int numberOfSides;
-	private int[] defaultColor = { 0, 191, 255 };
+	private Color defaultColor = new Color(0, 191, 255);
 	private double interiorOpacity = 0.3;
 	private int maxPolygonId = 0;
 	private double offset;
 	private double lineWidth;
+
+	// VTK vars
+	private final List<vtkProp> actorL;
+	private vtkPolyData vExteriorRegPD;
+	private vtkPolyData vExteriorDecPD;
+	private vtkAppendPolyData vExteriorFilterRegAPD;
+	private vtkAppendPolyData vExteriorFilterDecAPD;
+	private vtkPolyDataMapper vExteriorRegPDM;
+	private vtkPolyDataMapper vExteriorDecPDM;
+	private SaavtkLODActor vExteriorActor;
+
+	private vtkPolyData vInteriorRegPD;
+	private vtkPolyData vInteriorDecPD;
+	private vtkAppendPolyData vInteriorFilterRegAPD;
+	private vtkAppendPolyData vInteriorFilterDecAPD;
+	private vtkPolyDataMapper vInteriorRegPDM;
+	private vtkPolyDataMapper vInteriorDecPDM;
+	private SaavtkLODActor vInteriorActor;
+
+	private vtkUnsignedCharArray vExteriorColorsRegUCA;
+	private vtkUnsignedCharArray vExteriorColorsDecUCA;
+	private vtkUnsignedCharArray vInteriorColorsRegUCA;
+	private vtkUnsignedCharArray vInteriorColorsDecUCA;
+
+	private vtkPolyData vEmptyPD;
 
 	public enum Mode
 	{
@@ -109,8 +109,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 		mode = aMode;
 		type = aType;
 
-		pickIdxS = ImmutableSet.of();
-		polygons = new ArrayList<>();
+		drawM = new HashMap<>();
 
 		offset = getDefaultOffset();
 
@@ -119,72 +118,59 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 
 		smallBodyModel.addPropertyChangeListener(this);
 
-		emptyPolyData = new vtkPolyData();
+		vEmptyPD = new vtkPolyData();
 
 		numberOfSides = aNumberOfSides;
 
-		actors = new ArrayList<>();
-		boundaryColors = new vtkUnsignedCharArray();
-		decimatedBoundaryColors = new vtkUnsignedCharArray();
-		boundaryColors.SetNumberOfComponents(3);
-		decimatedBoundaryColors.SetNumberOfComponents(3);
+		vExteriorColorsRegUCA = new vtkUnsignedCharArray();
+		vExteriorColorsDecUCA = new vtkUnsignedCharArray();
+		vExteriorColorsRegUCA.SetNumberOfComponents(3);
+		vExteriorColorsDecUCA.SetNumberOfComponents(3);
 
-		interiorColors = new vtkUnsignedCharArray();
-		decimatedInteriorColors = new vtkUnsignedCharArray();
-		interiorColors.SetNumberOfComponents(3);
-		decimatedInteriorColors.SetNumberOfComponents(3);
+		vInteriorColorsRegUCA = new vtkUnsignedCharArray();
+		vInteriorColorsDecUCA = new vtkUnsignedCharArray();
+		vInteriorColorsRegUCA.SetNumberOfComponents(3);
+		vInteriorColorsDecUCA.SetNumberOfComponents(3);
 
-		boundaryPolyData = new vtkPolyData();
-		decimatedBoundaryPolyData = new vtkPolyData();
-		boundaryAppendFilter = new vtkAppendPolyData();
-		boundaryAppendFilter.UserManagedInputsOn();
-		decimatedBoundaryAppendFilter = new vtkAppendPolyData();
-		decimatedBoundaryAppendFilter.UserManagedInputsOn();
-		boundaryMapper = new vtkPolyDataMapper();
-		decimatedBoundaryMapper = new vtkPolyDataMapper();
-		boundaryActor = new SaavtkLODActor();
-		vtkProperty boundaryProperty = boundaryActor.GetProperty();
+		vExteriorRegPD = new vtkPolyData();
+		vExteriorDecPD = new vtkPolyData();
+		vExteriorFilterRegAPD = new vtkAppendPolyData();
+		vExteriorFilterRegAPD.UserManagedInputsOn();
+		vExteriorFilterDecAPD = new vtkAppendPolyData();
+		vExteriorFilterDecAPD.UserManagedInputsOn();
+		vExteriorRegPDM = new vtkPolyDataMapper();
+		vExteriorDecPDM = new vtkPolyDataMapper();
+		vExteriorActor = new SaavtkLODActor();
+		vtkProperty boundaryProperty = vExteriorActor.GetProperty();
 		boundaryProperty.LightingOff();
 		lineWidth = 2.;
 		boundaryProperty.SetLineWidth(lineWidth);
 
-		actors.add(boundaryActor);
-
-		interiorPolyData = new vtkPolyData();
-		decimatedInteriorPolyData = new vtkPolyData();
-		interiorAppendFilter = new vtkAppendPolyData();
-		interiorAppendFilter.UserManagedInputsOn();
-		decimatedInteriorAppendFilter = new vtkAppendPolyData();
-		decimatedInteriorAppendFilter.UserManagedInputsOn();
-		interiorMapper = new vtkPolyDataMapper();
-		decimatedInteriorMapper = new vtkPolyDataMapper();
-		interiorActor = new SaavtkLODActor();
-		vtkProperty interiorProperty = interiorActor.GetProperty();
+		vInteriorRegPD = new vtkPolyData();
+		vInteriorDecPD = new vtkPolyData();
+		vInteriorFilterRegAPD = new vtkAppendPolyData();
+		vInteriorFilterRegAPD.UserManagedInputsOn();
+		vInteriorFilterDecAPD = new vtkAppendPolyData();
+		vInteriorFilterDecAPD.UserManagedInputsOn();
+		vInteriorRegPDM = new vtkPolyDataMapper();
+		vInteriorDecPDM = new vtkPolyDataMapper();
+		vInteriorActor = new SaavtkLODActor();
+		vtkProperty interiorProperty = vInteriorActor.GetProperty();
 		interiorProperty.LightingOff();
 		interiorProperty.SetOpacity(interiorOpacity);
 		// interiorProperty.SetLineWidth(2.0);
 
-		actors.add(interiorActor);
+		actorL = new ArrayList<>();
 	}
 
-	public void setDefaultColor(int[] color)
+	public void setDefaultColor(Color aColor)
 	{
-		this.defaultColor = color.clone();
+		defaultColor = aColor;
 	}
 
-	public int[] getDefaultColor()
+	public Color getDefaultColor()
 	{
 		return defaultColor;
-	}
-
-	public void setPolygonColor(int i, int[] color)
-	{
-		this.polygons.get(i).setColor(color);
-	}
-
-	public int[] getPolygonColor(int i)
-	{
-		return this.polygons.get(i).getColor();
 	}
 
 	public double getInteriorOpacity()
@@ -194,109 +180,107 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 
 	public void setInteriorOpacity(double opacity)
 	{
-		this.interiorOpacity = opacity;
-		interiorActor.GetProperty().SetOpacity(opacity);
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		interiorOpacity = opacity;
+		vInteriorActor.GetProperty().SetOpacity(opacity);
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
-	private void updatePolyData()
+	@Override
+	protected void updatePolyData()
 	{
-		actors.clear();
+		actorL.clear();
 
-		if (polygons.size() > 0)
+		List<EllipsePolygon> tmpL = getAllItems();
+		for (EllipsePolygon aItem : tmpL)
+			aItem.updateVtkState(smallBodyModel);
+
+		if (tmpL.size() > 0)
 		{
-			boundaryAppendFilter.SetNumberOfInputs(polygons.size());
-			decimatedBoundaryAppendFilter.SetNumberOfInputs(polygons.size());
-			interiorAppendFilter.SetNumberOfInputs(polygons.size());
-			decimatedInteriorAppendFilter.SetNumberOfInputs(polygons.size());
+			vExteriorFilterRegAPD.SetNumberOfInputs(tmpL.size());
+			vExteriorFilterDecAPD.SetNumberOfInputs(tmpL.size());
+			vInteriorFilterRegAPD.SetNumberOfInputs(tmpL.size());
+			vInteriorFilterDecAPD.SetNumberOfInputs(tmpL.size());
 
-			for (int i = 0; i < polygons.size(); ++i)
+			// Keep track of the begin idx for each item (and corresponding PolyData)
+			drawM = new HashMap<>();
+			int extCurrCntDec = 0;
+			int extCurrCntReg = 0;
+			int intCurrCntDec = 0;
+			int intCurrCntReg = 0;
+			int idx = 0;
+			for (EllipsePolygon aItem : tmpL)
 			{
-				vtkPolyData poly = polygons.get(i).boundaryPolyData;
-				if (poly != null)
-					boundaryAppendFilter.SetInputDataByNumber(i, poly);
-				poly = polygons.get(i).decimatedBoundaryPolyData;
-				if (poly != null)
-					decimatedBoundaryAppendFilter.SetInputDataByNumber(i, poly);
-				poly = polygons.get(i).interiorPolyData;
-				if (poly != null)
-					interiorAppendFilter.SetInputDataByNumber(i, poly);
-				poly = polygons.get(i).decimatedInteriorPolyData;
-				if (poly != null)
-					decimatedInteriorAppendFilter.SetInputDataByNumber(i, poly);
+				vtkPolyData extRegPD = aItem.vExteriorRegPD;
+				vtkPolyData extDecPD = aItem.vExteriorDecPD;
+				vtkPolyData intRegPD = aItem.vInteriorRegPD;
+				vtkPolyData intDecPD = aItem.vInteriorDecPD;
+				if (aItem.getVisible() == false)
+				{
+					extRegPD = vEmptyPD;
+					extDecPD = vEmptyPD;
+					intRegPD = vEmptyPD;
+					intDecPD = vEmptyPD;
+				}
+
+				drawM.put(aItem, new VtkDrawState(extCurrCntDec, extCurrCntReg, intCurrCntDec, intCurrCntReg));
+				extCurrCntDec += extDecPD.GetNumberOfCells();
+				extCurrCntReg += extRegPD.GetNumberOfCells();
+				intCurrCntDec += intDecPD.GetNumberOfCells();
+				intCurrCntReg += intRegPD.GetNumberOfCells();
+
+				vExteriorFilterRegAPD.SetInputDataByNumber(idx, extRegPD);
+				vExteriorFilterDecAPD.SetInputDataByNumber(idx, extDecPD);
+				vInteriorFilterRegAPD.SetInputDataByNumber(idx, intRegPD);
+				vInteriorFilterDecAPD.SetInputDataByNumber(idx, intDecPD);
+
+				idx++;
 			}
-			for (int j = 0; j < polygons.size(); ++j)
+
+			for (EllipsePolygon aItem : tmpL)
 			{
-				vtkCaptionActor2D caption = updateStructure(polygons.get(j));
+				vtkCaptionActor2D caption = updateStructure(aItem);
 				if (caption != null)
-				{
-					actors.add(caption);
-				}
+					actorL.add(caption);
 			}
 
-			boundaryAppendFilter.Update();
-			decimatedBoundaryAppendFilter.Update();
-			interiorAppendFilter.Update();
-			decimatedInteriorAppendFilter.Update();
+			vExteriorFilterRegAPD.Update();
+			vExteriorFilterDecAPD.Update();
+			vInteriorFilterRegAPD.Update();
+			vInteriorFilterDecAPD.Update();
 
-			vtkPolyData boundaryAppendFilterOutput = boundaryAppendFilter.GetOutput();
-			vtkPolyData decimatedBoundaryAppendFilterOutput = decimatedBoundaryAppendFilter.GetOutput();
-			vtkPolyData interiorAppendFilterOutput = interiorAppendFilter.GetOutput();
-			vtkPolyData decimatedInteriorAppendFilterOutput = decimatedInteriorAppendFilter.GetOutput();
-			boundaryPolyData.DeepCopy(boundaryAppendFilterOutput);
-			decimatedBoundaryPolyData.DeepCopy(decimatedBoundaryAppendFilterOutput);
-			interiorPolyData.DeepCopy(interiorAppendFilterOutput);
-			decimatedInteriorPolyData.DeepCopy(decimatedInteriorAppendFilterOutput);
+			vtkPolyData boundaryAppendFilterOutput = vExteriorFilterRegAPD.GetOutput();
+			vtkPolyData decimatedBoundaryAppendFilterOutput = vExteriorFilterDecAPD.GetOutput();
+			vtkPolyData interiorAppendFilterOutput = vInteriorFilterRegAPD.GetOutput();
+			vtkPolyData decimatedInteriorAppendFilterOutput = vInteriorFilterDecAPD.GetOutput();
+			vExteriorRegPD.DeepCopy(boundaryAppendFilterOutput);
+			vExteriorDecPD.DeepCopy(decimatedBoundaryAppendFilterOutput);
+			vInteriorRegPD.DeepCopy(interiorAppendFilterOutput);
+			vInteriorDecPD.DeepCopy(decimatedInteriorAppendFilterOutput);
 
-			smallBodyModel.shiftPolyLineInNormalDirection(boundaryPolyData, offset);
-			smallBodyModel.shiftPolyLineInNormalDirection(decimatedBoundaryPolyData, offset);
-			PolyDataUtil.shiftPolyDataInNormalDirection(interiorPolyData, offset);
-			PolyDataUtil.shiftPolyDataInNormalDirection(decimatedInteriorPolyData, offset);
+			smallBodyModel.shiftPolyLineInNormalDirection(vExteriorRegPD, offset);
+			smallBodyModel.shiftPolyLineInNormalDirection(vExteriorDecPD, offset);
+			PolyDataUtil.shiftPolyDataInNormalDirection(vInteriorRegPD, offset);
+			PolyDataUtil.shiftPolyDataInNormalDirection(vInteriorDecPD, offset);
 
-			boundaryColors.SetNumberOfTuples(boundaryPolyData.GetNumberOfCells());
-			decimatedBoundaryColors.SetNumberOfTuples(decimatedBoundaryPolyData.GetNumberOfCells());
-			interiorColors.SetNumberOfTuples(interiorPolyData.GetNumberOfCells());
-			decimatedInteriorColors.SetNumberOfTuples(decimatedInteriorPolyData.GetNumberOfCells());
-			for (int i = 0; i < polygons.size(); ++i)
-			{
-				int[] color = polygons.get(i).getColor();
+			vExteriorColorsRegUCA.SetNumberOfTuples(vExteriorRegPD.GetNumberOfCells());
+			vExteriorColorsDecUCA.SetNumberOfTuples(vExteriorDecPD.GetNumberOfCells());
+			vInteriorColorsRegUCA.SetNumberOfTuples(vInteriorRegPD.GetNumberOfCells());
+			vInteriorColorsDecUCA.SetNumberOfTuples(vInteriorDecPD.GetNumberOfCells());
 
-				if (pickIdxS.contains(i) == true)
-				{
-					CommonData commonData = getCommonData();
-					if (commonData != null)
-						color = commonData.getSelectionColor();
-				}
+			updateVtkColorsFor(tmpL, false);
 
-				IdPair range = this.getCellIdRangeOfPolygon(i, false);
-				for (int j = range.id1; j < range.id2; ++j)
-					boundaryColors.SetTuple3(j, color[0], color[1], color[2]);
+			vtkCellData boundaryCellData = vExteriorRegPD.GetCellData();
+			vtkCellData decimatedBoundaryCellData = vExteriorDecPD.GetCellData();
+			vtkCellData interiorCellData = vInteriorRegPD.GetCellData();
+			vtkCellData decimatedInteriorCellData = vInteriorDecPD.GetCellData();
 
-				range = this.getCellIdRangeOfDecimatedPolygon(i, false);
-				for (int j = range.id1; j < range.id2; ++j)
-					decimatedBoundaryColors.SetTuple3(j, color[0], color[1], color[2]);
+			actorL.add(vInteriorActor);
+			actorL.add(vExteriorActor);
 
-				range = this.getCellIdRangeOfPolygon(i, true);
-				for (int j = range.id1; j < range.id2; ++j)
-					interiorColors.SetTuple3(j, color[0], color[1], color[2]);
-
-				range = this.getCellIdRangeOfDecimatedPolygon(i, true);
-				for (int j = range.id1; j < range.id2; ++j)
-					decimatedInteriorColors.SetTuple3(j, color[0], color[1], color[2]);
-
-			}
-			vtkCellData boundaryCellData = boundaryPolyData.GetCellData();
-			vtkCellData decimatedBoundaryCellData = decimatedBoundaryPolyData.GetCellData();
-			vtkCellData interiorCellData = interiorPolyData.GetCellData();
-			vtkCellData decimatedInteriorCellData = decimatedInteriorPolyData.GetCellData();
-
-			actors.add(interiorActor);
-			actors.add(boundaryActor);
-
-			boundaryCellData.SetScalars(boundaryColors);
-			decimatedBoundaryCellData.SetScalars(decimatedBoundaryColors);
-			interiorCellData.SetScalars(interiorColors);
-			decimatedInteriorCellData.SetScalars(decimatedInteriorColors);
+			boundaryCellData.SetScalars(vExteriorColorsRegUCA);
+			decimatedBoundaryCellData.SetScalars(vExteriorColorsDecUCA);
+			interiorCellData.SetScalars(vInteriorColorsRegUCA);
+			decimatedInteriorCellData.SetScalars(vInteriorColorsDecUCA);
 
 			boundaryAppendFilterOutput.Delete();
 			decimatedBoundaryAppendFilterOutput.Delete();
@@ -309,91 +293,81 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 		}
 		else
 		{
-			boundaryPolyData.DeepCopy(emptyPolyData);
-			decimatedBoundaryPolyData.DeepCopy(emptyPolyData);
-			interiorPolyData.DeepCopy(emptyPolyData);
-			decimatedInteriorPolyData.DeepCopy(emptyPolyData);
+			vExteriorRegPD.DeepCopy(vEmptyPD);
+			vExteriorDecPD.DeepCopy(vEmptyPD);
+			vInteriorRegPD.DeepCopy(vEmptyPD);
+			vInteriorDecPD.DeepCopy(vEmptyPD);
 		}
 
-		boundaryMapper.SetInputData(boundaryPolyData);
-		decimatedBoundaryMapper.SetInputData(decimatedBoundaryPolyData);
-		interiorMapper.SetInputData(interiorPolyData);
-		decimatedInteriorMapper.SetInputData(decimatedInteriorPolyData);
+		vExteriorRegPDM.SetInputData(vExteriorRegPD);
+		vExteriorDecPDM.SetInputData(vExteriorDecPD);
+		vInteriorRegPDM.SetInputData(vInteriorRegPD);
+		vInteriorDecPDM.SetInputData(vInteriorDecPD);
 
-		boundaryActor.SetMapper(boundaryMapper);
-		((SaavtkLODActor) boundaryActor).setLODMapper(decimatedBoundaryMapper);
-		interiorActor.SetMapper(interiorMapper);
-		((SaavtkLODActor) interiorActor).setLODMapper(decimatedInteriorMapper);
+		vExteriorActor.SetMapper(vExteriorRegPDM);
+		vExteriorActor.setLODMapper(vExteriorDecPDM);
+		vInteriorActor.SetMapper(vInteriorRegPDM);
+		vInteriorActor.setLODMapper(vInteriorDecPDM);
 
-		boundaryActor.Modified();
-		interiorActor.Modified();
+		vExteriorActor.Modified();
+		vInteriorActor.Modified();
+
+		// Notify model change listeners
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	@Override
 	public List<vtkProp> getProps()
 	{
-		return actors;
+		return actorL;
 	}
 
 	@Override
-	public String getClickStatusBarText(vtkProp prop, int cellId, @SuppressWarnings("unused") double[] pickPosition)
+	public String getClickStatusBarText(vtkProp prop, int cellId, double[] pickPosition)
 	{
-		if (prop == boundaryActor || prop == interiorActor)
-		{
-			int polygonId = this.getPolygonIdFromCellId(cellId, prop == interiorActor);
-			if (polygonId == -1)
-				return "";
+		if (prop != vExteriorActor && prop != vInteriorActor)
+			return "";
 
-			EllipsePolygon pol = polygons.get(polygonId);
-			return pol.getClickStatusBarText();
-		}
+		EllipsePolygon tmpItem = getStructureFromCellId(cellId, prop);
+		if (tmpItem == null)
+			return "";
 
-		return "";
-	}
-
-	@Override
-	public int getNumberOfStructures()
-	{
-		return polygons.size();
-	}
-
-	@Override
-	public Structure getStructure(int polygonId)
-	{
-		return polygons.get(polygonId);
+		return tmpItem.getClickStatusBarText();
 	}
 
 	public vtkActor getBoundaryActor()
 	{
-		return boundaryActor;
+		return vExteriorActor;
 	}
 
 	public vtkActor getInteriorActor()
 	{
-		return interiorActor;
+		return vInteriorActor;
 	}
 
 	@Override
-	public Structure addNewStructure()
+	public EllipsePolygon addNewStructure()
 	{
-		return null;
+		throw new UnsupportedOperationException();
 	}
 
 	public void addNewStructure(double[] aCenter, double aRadius, double aFlattening, double aAngle)
 	{
-		EllipsePolygon pol = new EllipsePolygon(numberOfSides, type, defaultColor, mode, ++maxPolygonId, "");
-		pol.setAngle(aAngle);
-		pol.setCenter(aCenter);
-		pol.setFlattening(aFlattening);
-		pol.setRadius(aRadius);
-		polygons.add(pol);
+		EllipsePolygon tmpItem = new EllipsePolygon(numberOfSides, type, defaultColor, mode, ++maxPolygonId, "");
+		tmpItem.setAngle(aAngle);
+		tmpItem.setCenter(aCenter);
+		tmpItem.setFlattening(aFlattening);
+		tmpItem.setRadius(aRadius);
 
-		pol.updateVtkState(smallBodyModel);
-		pickIdxS = ImmutableSet.of(polygons.size() - 1);
+		List<EllipsePolygon> fullL = new ArrayList<>(getAllItems());
+		fullL.add(tmpItem);
+
+		List<EllipsePolygon> pickL = ImmutableList.of(tmpItem);
+
+		setAllItems(fullL);
+		setSelectedItems(pickL);
+
 		updatePolyData();
-
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-		this.pcs.firePropertyChange(Properties.STRUCTURE_ADDED, null, null);
 	}
 
 	public void addNewStructure(double[] pos)
@@ -402,67 +376,36 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 	}
 
 	@Override
-	public void removeStructure(int polygonId)
+	public void removeStructures(Collection<EllipsePolygon> aItemC)
 	{
-		Structure structure = polygons.get(polygonId);
-		structure.setHidden(true);
-		updateStructure(structure);
-
-		polygons.remove(polygonId);
-
-		updatePolyData();
-
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-		this.pcs.firePropertyChange(Properties.STRUCTURE_REMOVED, null, polygonId);
-	}
-
-	@Override
-	public void removeStructures(int[] aIdxArr)
-	{
-		if (aIdxArr == null || aIdxArr.length == 0)
+		if (aItemC.isEmpty() == true)
 			return;
 
-		// Update the set of selected indexes
-		Set<Integer> tmpIdxS = StructureLoadUtil.convertIntArrToSet(aIdxArr);
-		Set<Integer> diffIdxS = Sets.difference(pickIdxS, tmpIdxS);
-		pickIdxS = ImmutableSet.copyOf(diffIdxS);
-
 		// Update VTK state
-		Arrays.sort(aIdxArr);
-		for (int i = aIdxArr.length - 1; i >= 0; --i)
+		for (EllipsePolygon aItem : aItemC)
 		{
-			Structure structure = polygons.get(aIdxArr[i]);
-			structure.setHidden(true);
-			updateStructure(structure);
-
-			polygons.remove(aIdxArr[i]);
-
-			this.pcs.firePropertyChange(Properties.STRUCTURE_REMOVED, null, aIdxArr[i]);
+			aItem.clearVtkState();
+			pcs.firePropertyChange(Properties.STRUCTURE_REMOVED, null, aItem);
 		}
 
-		updatePolyData();
+		List<EllipsePolygon> fullL = new ArrayList<>(getAllItems());
+		fullL.removeAll(aItemC);
+		setAllItems(fullL);
 
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		updatePolyData();
 	}
 
 	@Override
 	public void removeAllStructures()
 	{
-		// Update the set of selected indexes
-		pickIdxS = ImmutableSet.of();
-
 		// Update VTK state
-		for (Structure structures : polygons)
-		{
-			structures.setHidden(true);
-			updateStructure(structures);
-		}
-		polygons.clear();
+		for (EllipsePolygon aItem : getAllItems())
+			aItem.clearVtkState();
+
+		setAllItems(ImmutableList.of());
 
 		updatePolyData();
-
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-		this.pcs.firePropertyChange(Properties.ALL_STRUCTURES_REMOVED, null, null);
+		pcs.firePropertyChange(Properties.ALL_STRUCTURES_REMOVED, null, null);
 	}
 
 	@Override
@@ -471,38 +414,33 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 		return smallBodyModel;
 	}
 
-	public void movePolygon(int polygonId, double[] aCenter)
+	public void movePolygon(EllipsePolygon aItem, double[] aCenter)
 	{
-		EllipsePolygon pol = polygons.get(polygonId);
-		pol.setCenter(aCenter);
-		pol.updateVtkState(smallBodyModel);
-		updatePolyData();
+		aItem.setCenter(aCenter);
 
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		updatePolyData();
+		notifyListeners(this, ItemEventType.ItemsMutated);
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	/**
 	 * Move the polygon to the specified latitude and longitude.
 	 *
-	 * @param polygonId
-	 * @param latitude - in radians
+	 * @param aItem
+	 * @param latitude  - in radians
 	 * @param longitude - in radians
 	 */
-	public void movePolygon(int polygonId, double latitude, double longitude)
+	public void movePolygon(EllipsePolygon aItem, double latitude, double longitude)
 	{
 		double[] newCenter = new double[3];
 		smallBodyModel.getPointAndCellIdFromLatLon(latitude, longitude, newCenter);
-		double[] center = getStructureCenter(polygonId);
+		double[] center = getStructureCenter(aItem);
 
+		// there is sometimes a radial offset (parallel to both center and newCenter)
+		// that needs to be corrected
 		Vector3D centerVec = new Vector3D(center);
 		Vector3D newCenterVec = new Vector3D(newCenter);
-		newCenterVec = newCenterVec.scalarMultiply(centerVec.getNorm() / newCenterVec.getNorm());// there is sometimes a
-																									// radial offset
-																									// (parallel to both
-																									// center and
-																									// newCenter) that
-																									// needs to be
-																									// corrected
+		newCenterVec = newCenterVec.scalarMultiply(centerVec.getNorm() / newCenterVec.getNorm());
 
 		// System.out.println(newCenterVec+" "+centerVec+"
 		// "+newCenterVec.crossProduct(centerVec));
@@ -510,26 +448,27 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 		// LatLon ll2=MathUtil.reclat(newCenterVec.toArray());
 		// System.out.println(Math.toDegrees(ll.lat)+" "+Math.toDegrees(ll.lon)+"
 		// "+Math.toDegrees(ll2.lat)+" "+Math.toDegrees(ll2.lon));
-		movePolygon(polygonId, newCenterVec.toArray());
+		movePolygon(aItem, newCenterVec.toArray());
 	}
 
-	public void changeRadiusOfPolygon(int polygonId, double[] newPointOnPerimeter)
+	public void changeRadiusOfPolygon(EllipsePolygon aItem, double[] aNewPointOnPerimeter)
 	{
-		EllipsePolygon pol = polygons.get(polygonId);
-		double[] center = pol.getCenter();
-		double newRadius =
-				Math.sqrt((center[0] - newPointOnPerimeter[0]) * (center[0] - newPointOnPerimeter[0]) + (center[1] - newPointOnPerimeter[1]) * (center[1] - newPointOnPerimeter[1])
-						+ (center[2] - newPointOnPerimeter[2]) * (center[2] - newPointOnPerimeter[2]));
+		double[] center = aItem.getCenter();
+		double newRadius = Math.sqrt((center[0] - aNewPointOnPerimeter[0]) * (center[0] - aNewPointOnPerimeter[0])
+				+ (center[1] - aNewPointOnPerimeter[1]) * (center[1] - aNewPointOnPerimeter[1])
+				+ (center[2] - aNewPointOnPerimeter[2]) * (center[2] - aNewPointOnPerimeter[2]));
 		if (newRadius > maxRadius)
 			newRadius = maxRadius;
 
-		pol.setRadius(newRadius);
-		pol.updateVtkState(smallBodyModel);
+		aItem.setRadius(newRadius);
+
 		updatePolyData();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		notifyListeners(this, ItemEventType.ItemsMutated);
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
-	protected double computeFlatteningOfPolygon(double[] center, double radius, double angle, double[] newPointOnPerimeter)
+	protected double computeFlatteningOfPolygon(double[] center, double radius, double angle,
+			double[] newPointOnPerimeter)
 	{
 		// The following math does this: we need to find the direction of
 		// the semimajor axis of the ellipse. Then once we have that
@@ -583,19 +522,32 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 		return newFlattening;
 	}
 
-	public void changeFlatteningOfPolygon(int polygonId, double[] newPointOnPerimeter)
+	public void changeFlatteningOfPolygon(EllipsePolygon aItem, double[] aNewPointOnPerimeter)
 	{
-		EllipsePolygon pol = polygons.get(polygonId);
-
-		double tmpFlattening = computeFlatteningOfPolygon(pol.getCenter(), pol.getRadius(), pol.getAngle(), newPointOnPerimeter);
-		pol.setFlattening(tmpFlattening);
-		pol.updateVtkState(smallBodyModel);
+		double tmpFlattening = computeFlatteningOfPolygon(aItem.getCenter(), aItem.getRadius(), aItem.getAngle(),
+				aNewPointOnPerimeter);
+		aItem.setFlattening(tmpFlattening);
 
 		updatePolyData();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		notifyListeners(this, ItemEventType.ItemsMutated);
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
-	protected double computeAngleOfPolygon(double[] center, double[] newPointOnPerimeter)
+	// TODO: Better comments
+	// TODO: Perhaps this should act on the Structure level
+	public int getPolygonIdFromBoundaryCellId(int cellId)
+	{
+		return getPolygonIdFromCellId(cellId, false);
+	}
+
+	// TODO: Better comments
+	// TODO: Perhaps this should act on the Structure level
+	public int getPolygonIdFromInteriorCellId(int cellId)
+	{
+		return getPolygonIdFromCellId(cellId, true);
+	}
+
+	protected double computeAngleOfPolygon(double[] aCenter, double[] aNewPointOnPerimeter)
 	{
 		// The following math does this: we need to find the direction of
 		// the semimajor axis of the ellipse. Then once we have that
@@ -606,7 +558,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 		// This angular distance is what we rotate the ellipse by.
 
 		// First compute cross product of normal and z axis
-		double[] normal = smallBodyModel.getNormalAtPoint(center);
+		double[] normal = smallBodyModel.getNormalAtPoint(aCenter);
 		double[] zaxis = { 0.0, 0.0, 1.0 };
 		double[] cross = new double[3];
 		MathUtil.vcrss(zaxis, normal, cross);
@@ -614,7 +566,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 		double sepAngle = MathUtil.vsep(normal, zaxis) * 180.0 / Math.PI;
 
 		vtkTransform transform = new vtkTransform();
-		transform.Translate(center);
+		transform.Translate(aCenter);
 		transform.RotateWXYZ(sepAngle, cross);
 
 		double[] xaxis = { 1.0, 0.0, 0.0 };
@@ -624,9 +576,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 		// Project newPoint onto the plane perpendicular to the
 		// normal of the shape model.
 		double[] projPoint = new double[3];
-		MathUtil.vprjp(newPointOnPerimeter, normal, center, projPoint);
+		MathUtil.vprjp(aNewPointOnPerimeter, normal, aCenter, projPoint);
 		double[] projDir = new double[3];
-		MathUtil.vsub(projPoint, center, projDir);
+		MathUtil.vsub(projPoint, aCenter, projDir);
 		MathUtil.vhat(projDir, projDir);
 
 		// Compute angular distance between projected direction and transformed x-axis
@@ -646,31 +598,26 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 		return newAngle;
 	}
 
-	public void changeAngleOfPolygon(int polygonId, double[] newPointOnPerimeter)
+	public void changeAngleOfPolygon(EllipsePolygon aItem, double[] aNewPointOnPerimeter)
 	{
-		EllipsePolygon pol = polygons.get(polygonId);
+		double tmpAngle = computeAngleOfPolygon(aItem.getCenter(), aNewPointOnPerimeter);
+		aItem.setAngle(tmpAngle);
 
-		double tmpAngle = computeAngleOfPolygon(pol.getCenter(), newPointOnPerimeter);
-		pol.setAngle(tmpAngle);
-		pol.updateVtkState(smallBodyModel);
 		updatePolyData();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		notifyListeners(this, ItemEventType.ItemsMutated);
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	public void changeRadiusOfAllPolygons(double aRadius)
 	{
-		for (EllipsePolygon pol : polygons)
-		{
-			pol.setRadius(aRadius);
-			pol.updateVtkState(smallBodyModel);
-		}
+		for (EllipsePolygon aItem : getAllItems())
+			aItem.setRadius(aRadius);
 
 		updatePolyData();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	@Override
-	public void activateStructure(@SuppressWarnings("unused") int idx)
+	public void activateStructure(EllipsePolygon aItem)
 	{
 		// Do nothing. RegularPolygonModel does not support activation.
 	}
@@ -683,66 +630,21 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 	private int getPolygonIdFromCellId(int cellId, boolean interior)
 	{
 		int numberCellsSoFar = 0;
-		for (int i = 0; i < polygons.size(); ++i)
+		for (int i = 0; i < getAllItems().size(); ++i)
 		{
+			// Skip over invisible items
+			EllipsePolygon tmpItem = getAllItems().get(i);
+			if (tmpItem.getVisible() == false)
+				continue;
+
 			if (interior)
-				numberCellsSoFar += polygons.get(i).interiorPolyData.GetNumberOfCells();
+				numberCellsSoFar += tmpItem.vInteriorRegPD.GetNumberOfCells();
 			else
-				numberCellsSoFar += polygons.get(i).boundaryPolyData.GetNumberOfCells();
+				numberCellsSoFar += tmpItem.vExteriorRegPD.GetNumberOfCells();
 			if (cellId < numberCellsSoFar)
 				return i;
 		}
 		return -1;
-	}
-
-	public int getPolygonIdFromBoundaryCellId(int cellId)
-	{
-		return this.getPolygonIdFromCellId(cellId, false);
-	}
-
-	public int getPolygonIdFromInteriorCellId(int cellId)
-	{
-		return this.getPolygonIdFromCellId(cellId, true);
-	}
-
-	private IdPair getCellIdRangeOfPolygon(int polygonId, boolean interior)
-	{
-		int startCell = 0;
-		for (int i = 0; i < polygonId; ++i)
-		{
-			if (interior)
-				startCell += polygons.get(i).interiorPolyData.GetNumberOfCells();
-			else
-				startCell += polygons.get(i).boundaryPolyData.GetNumberOfCells();
-		}
-
-		int endCell = startCell;
-		if (interior)
-			endCell += polygons.get(polygonId).interiorPolyData.GetNumberOfCells();
-		else
-			endCell += polygons.get(polygonId).boundaryPolyData.GetNumberOfCells();
-
-		return new IdPair(startCell, endCell);
-	}
-
-	private IdPair getCellIdRangeOfDecimatedPolygon(int polygonId, boolean interior)
-	{
-		int startCell = 0;
-		for (int i = 0; i < polygonId; ++i)
-		{
-			if (interior)
-				startCell += polygons.get(i).decimatedInteriorPolyData.GetNumberOfCells();
-			else
-				startCell += polygons.get(i).decimatedBoundaryPolyData.GetNumberOfCells();
-		}
-
-		int endCell = startCell;
-		if (interior)
-			endCell += polygons.get(polygonId).decimatedInteriorPolyData.GetNumberOfCells();
-		else
-			endCell += polygons.get(polygonId).decimatedBoundaryPolyData.GetNumberOfCells();
-
-		return new IdPair(startCell, endCell);
 	}
 
 	@Override
@@ -771,16 +673,16 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 		// Finish on the AWT
 		ThreadUtil.invokeAndWaitOnAwt(() -> {
 			// Update our list of polygons
+			List<EllipsePolygon> fullL = new ArrayList<>(getAllItems());
 			if (aAppend == false)
-				polygons.clear();
-			polygons.addAll(tmpPolyL);
+				fullL.clear();
+			fullL.addAll(tmpPolyL);
 
+			setAllItems(fullL);
 			updatePolyData();
 
 			if (aListener != null)
 				aListener.setProgress(100);
-
-			pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 		});
 	}
 
@@ -790,7 +692,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 		FileWriter fstream = new FileWriter(file);
 		BufferedWriter out = new BufferedWriter(fstream);
 
-		for (EllipsePolygon pol : polygons)
+		for (EllipsePolygon pol : getAllItems())
 		{
 			String name = pol.getName();
 			if (name.length() == 0)
@@ -805,7 +707,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 			if (lon < 0.0)
 				lon += 360.0;
 
-			String str = "" + pol.getId() + "\t" + name + "\t" + pol.getCenter()[0] + "\t" + pol.getCenter()[1] + "\t" + pol.getCenter()[2] + "\t" + lat + "\t" + lon + "\t" + llr.rad;
+			String str = "" + pol.getId() + "\t" + name + "\t" + pol.getCenter()[0] + "\t" + pol.getCenter()[1] + "\t"
+					+ pol.getCenter()[2] + "\t" + lat + "\t" + lon + "\t" + llr.rad;
 
 			str += "\t";
 
@@ -817,12 +720,12 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 					str += "\t";
 			}
 
-			str += "\t" + 2.0 * pol.radius; // save out as diameter, not radius
+			str += "\t" + 2.0 * pol.getRadius(); // save out as diameter, not radius
 
 			str += "\t" + pol.getFlattening() + "\t" + pol.getAngle();
 
-			int[] colorArr = pol.getColor();
-			str += "\t" + colorArr[0] + "," + colorArr[1] + "," + colorArr[2];
+			Color color = pol.getColor();
+			str += "\t" + color.getRed() + "," + color.getGreen() + "," + color.getBlue();
 
 			if (mode == Mode.ELLIPSE_MODE)
 			{
@@ -848,9 +751,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 	}
 
 	@Override
-	public int getActivatedStructureIndex()
+	public EllipsePolygon getActivatedStructure()
 	{
-		return -1;
+		return null;
 	}
 
 	@Override
@@ -866,54 +769,30 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 
 	public void setDefaultRadius(double radius)
 	{
-		this.defaultRadius = radius;
+		defaultRadius = radius;
 	}
 
 	@Override
-	public void selectStructures(int[] aIdxArr)
+	public EllipsePolygon getStructureFromCellId(int aCellId, vtkProp aProp)
 	{
-		// Keep track of the actual *changed* selection
-		Set<Integer> origIdxS = pickIdxS;
-		Set<Integer> targIdxS = StructureLoadUtil.convertIntArrToSet(aIdxArr);
-		Set<Integer> diffIdxS = Sets.symmetricDifference(origIdxS, targIdxS);
-		
-		// Update our internal state
-		pickIdxS = ImmutableSet.copyOf(targIdxS);
-		
-		updateVtkColorsForStructures(diffIdxS);
-	}
+		int tmpIdx = -1;
+		if (aProp == vExteriorActor)
+			tmpIdx = getPolygonIdFromCellId(aCellId, false);
+		else if (aProp == vInteriorActor)
+			tmpIdx = getPolygonIdFromCellId(aCellId, true);
 
-	@Override
-	public int[] getSelectedStructures()
-	{
-		return StructureLoadUtil.convertIntSetToArr(pickIdxS);
-	}
+		if (tmpIdx != -1)
+			return getStructure(tmpIdx);
 
-	@Override
-	public int getStructureIndexFromCellId(int cellId, vtkProp prop)
-	{
-		if (prop == boundaryActor)
-		{
-			return getPolygonIdFromBoundaryCellId(cellId);
-		}
-		else if (prop == interiorActor)
-		{
-			return getPolygonIdFromInteriorCellId(cellId);
-		}
-
-		return -1;
+		return null;
 	}
 
 	public void redrawAllStructures()
 	{
-		for (EllipsePolygon pol : polygons)
-		{
-			pol.updateVtkState(smallBodyModel);
-		}
+		for (EllipsePolygon aItem : getAllItems())
+			aItem.vIsStale = true;
 
 		updatePolyData();
-
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	@Override
@@ -923,14 +802,6 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 		{
 			redrawAllStructures();
 		}
-	}
-
-	@Override
-	public void setStructureColor(int idx, int[] color)
-	{
-		polygons.get(idx).setColor(color);
-		updatePolyData();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	private double[] getStandardColoringValuesAtPolygon(EllipsePolygon pol) throws IOException
@@ -998,8 +869,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 					if (elevationIndex != -1)
 						allValues[elevationIndex] = 0.; // Accumulate weighted sum in situ.
 
-					vtkCellArray lines = pol.boundaryPolyData.GetLines();
-					vtkPoints points = pol.boundaryPolyData.GetPoints();
+					vtkCellArray lines = pol.vExteriorRegPD.GetLines();
+					vtkPoints points = pol.vExteriorRegPD.GetPoints();
 
 					vtkIdTypeArray idArray = lines.GetData();
 					int size = idArray.GetNumberOfTuples();
@@ -1088,7 +959,8 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 		double[] center = transform.TransformDoublePoint(pol.getCenter());
 
 		// project gravity into xy plane
-		double[] gravityPoint = { center[0] + gravityVector[0], center[1] + gravityVector[1], center[2] + gravityVector[2], };
+		double[] gravityPoint = { center[0] + gravityVector[0], center[1] + gravityVector[1],
+				center[2] + gravityVector[2], };
 		double[] projGravityPoint = new double[3];
 		MathUtil.vprjp(gravityPoint, zaxis, center, projGravityPoint);
 		double[] projGravityVector = new double[3];
@@ -1152,7 +1024,7 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 		this.offset = offset;
 
 		updatePolyData();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		notifyListeners(this, ItemEventType.ItemsMutated);
 	}
 
 	@Override
@@ -1168,179 +1040,72 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 	}
 
 	@Override
-	public void setLineWidth(double width)
+	public void setLineWidth(double aWidth)
 	{
-		if (width >= 1.0)
+		if (aWidth >= 1.0)
 		{
-			this.lineWidth = width;
-			vtkProperty boundaryProperty = boundaryActor.GetProperty();
-			boundaryProperty.SetLineWidth(width);
-			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+			lineWidth = aWidth;
+			vtkProperty boundaryProperty = vExteriorActor.GetProperty();
+			boundaryProperty.SetLineWidth(lineWidth);
+
+			notifyListeners(this, ItemEventType.ItemsMutated);
+			pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 		}
 	}
 
 	@Override
-	public void setVisible(boolean b)
+	public void savePlateDataInsideStructure(EllipsePolygon aItem, File file) throws IOException
 	{
-		boolean needToUpdate = false;
-		for (EllipsePolygon pol : polygons)
-		{
-			if (pol.getHidden() == b)
-			{
-				pol.setHidden(!b);
-				updateStructure(pol);
-				pol.updateVtkState(smallBodyModel);
-				needToUpdate = true;
-			}
-		}
-		if (needToUpdate)
-		{
-			updatePolyData();
-			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-		}
-	}
-
-	@Override
-	public boolean isLabelVisible(int aIdx)
-	{
-		return !polygons.get(aIdx).getLabelHidden();
-	}
-
-	@Override
-	public void setLabelVisible(int[] aIdxArr, boolean aIsVisible)
-	{
-		for (int aIdx : aIdxArr)
-		{
-			Structure tmpStruct = polygons.get(aIdx);
-			tmpStruct.setLabelHidden(!aIsVisible);
-			updateStructure(tmpStruct);
-		}
-
-		updatePolyData();
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-	}
-
-	@Override
-	public Color getStructureColor(int aIdx)
-	{
-		int[] rgbArr = polygons.get(aIdx).getColor();
-		return new Color(rgbArr[0], rgbArr[1], rgbArr[2]);
-	}
-
-	@Override
-	public void setStructureColor(int[] aIdxArr, Color aColor)
-	{
-		int[] rgbArr = { aColor.getRed(), aColor.getGreen(), aColor.getBlue() };
-		for (int aIdx : aIdxArr)
-			polygons.get(aIdx).setColor(rgbArr);
-
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-	}
-
-	@Override
-	public boolean isStructureVisible(int aIdx)
-	{
-		return !polygons.get(aIdx).getHidden();
-	}
-
-	@Override
-	public void setStructureVisible(int[] aIdxArr, boolean aIsVisible)
-	{
-		for (int aIdx : aIdxArr)
-		{
-			EllipsePolygon tmpStruct = polygons.get(aIdx);
-			tmpStruct.setHidden(!aIsVisible);
-
-			tmpStruct.updateVtkState(smallBodyModel);
-		}
-
-		updatePolyData();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-	}
-
-	@Override
-	public void savePlateDataInsideStructure(int idx, File file) throws IOException
-	{
-		vtkPolyData polydata = polygons.get(idx).interiorPolyData;
+		vtkPolyData polydata = aItem.vInteriorRegPD;
 		smallBodyModel.savePlateDataInsidePolydata(polydata, file);
 	}
-	
-	public void savePlateDataInsideStructure(int[] idx, File file) throws IOException
+
+	@Override
+	public void savePlateDataInsideStructure(Collection<EllipsePolygon> aItemC, File file) throws IOException
 	{
 		vtkAppendPolyData appendFilter = new vtkAppendPolyData();
-		for (int i = 0; i < idx.length; i++)
-			appendFilter.AddInputData(polygons.get(idx[i]).interiorPolyData);
+
+		for (EllipsePolygon aItem : aItemC)
+			appendFilter.AddInputData(aItem.vInteriorRegPD);
 		appendFilter.Update();
-		//vtkPolyData polydata = polygons.get(idx).interiorPolyData;
+		// vtkPolyData polydata = aItem.interiorPolyData;
 		smallBodyModel.savePlateDataInsidePolydata(appendFilter.GetOutput(), file);
 	}
 
 	@Override
-	public FacetColoringData[] getPlateDataInsideStructure(int idx)
+	public FacetColoringData[] getPlateDataInsideStructure(EllipsePolygon aItem)
 	{
-		vtkPolyData polydata = polygons.get(idx).interiorPolyData;
+		vtkPolyData polydata = aItem.vInteriorRegPD;
 		return smallBodyModel.getPlateDataInsidePolydata(polydata);
 	}
-	
+
 	@Override
-	public FacetColoringData[] getPlateDataInsideStructure(int[] idx)
+	public FacetColoringData[] getPlateDataInsideStructure(Collection<EllipsePolygon> aItemC)
 	{
 		vtkAppendPolyData appendFilter = new vtkAppendPolyData();
-		for (int i = 0; i < idx.length; i++)
-			appendFilter.AddInputData(polygons.get(idx[i]).interiorPolyData);
+		for (EllipsePolygon aItem : aItemC)
+			appendFilter.AddInputData(aItem.vInteriorRegPD);
 		appendFilter.Update();
 		return smallBodyModel.getPlateDataInsidePolydata(appendFilter.GetOutput());
 	}
 
 	@Override
-	public double[] getStructureCenter(int id)
+	public double[] getStructureCenter(EllipsePolygon aItem)
 	{
-		return polygons.get(id).getCenter();
+		return aItem.getCenter();
 	}
 
 	@Override
-	public double[] getStructureNormal(int id)
+	public double[] getStructureNormal(EllipsePolygon aItem)
 	{
-		double[] center = getStructureCenter(id);
+		double[] center = getStructureCenter(aItem);
 		return smallBodyModel.getNormalAtPoint(center);
 	}
 
 	@Override
-	public double getStructureSize(int id)
+	public double getStructureSize(EllipsePolygon aItem)
 	{
-		return 2.0 * polygons.get(id).radius;
-	}
-
-	@Override
-	public void setStructureLabel(int aIdx, String aLabel)
-	{
-		Structure tmpStruct = polygons.get(aIdx);
-		tmpStruct.setLabel(aLabel);
-
-		// Clear the caption if the string is empty or null
-		tmpStruct.setLabelHidden(aLabel == null || aLabel.equals(""));
-		updateStructure(tmpStruct);
-
-		updatePolyData();
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, aIdx);
-	}
-
-	@Override
-	public void showBorders()
-	{
-		for (int aIdx : pickIdxS)
-		{
-			vtkCaptionActor2D v = updateStructure(polygons.get(aIdx));
-			if (v != null)
-				v.SetBorder(1 - v.GetBorder());
-		}
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-	}
-
-	@Override
-	protected vtkCaptionActor2D getCaption(int aIndex)
-	{
-		return updateStructure(polygons.get(aIndex));
+		return 2.0 * aItem.getRadius();
 	}
 
 	private static final Key<List<EllipsePolygon>> ELLIPSE_POLYGON_KEY = Key.of("ellipses");
@@ -1356,11 +1121,23 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 	{
 		SettableMetadata result = SettableMetadata.of(Version.of(1, 0));
 
-		result.put(ELLIPSE_POLYGON_KEY, polygons);
+		result.put(ELLIPSE_POLYGON_KEY, getAllItems());
 		result.put(DEFAULT_RADIUS_KEY, defaultRadius);
-		result.put(DEFAULT_COLOR_KEY, defaultColor);
+		result.put(DEFAULT_COLOR_KEY, StructureLoadUtil.convertColorToRgba(defaultColor));
 		result.put(INTERIOR_OPACITY_KEY, interiorOpacity);
-		result.put(SELECTED_STRUCTURES_KEY, getSelectedStructures());
+
+		List<EllipsePolygon> fullL = getAllItems();
+		Set<EllipsePolygon> pickS = getSelectedItems();
+		int[] idArr = new int[pickS.size()];// List<Integer> idL = new ArrayList<>();
+		int cntA = 0;
+		for (EllipsePolygon aItem : pickS)
+		{
+			int tmpIdx = fullL.indexOf(aItem);
+			idArr[cntA] = tmpIdx;
+			cntA++;
+		}
+		result.put(SELECTED_STRUCTURES_KEY, idArr);
+
 		result.put(LINE_WIDTH_KEY, lineWidth);
 		result.put(OFFSET_KEY, offset);
 
@@ -1370,9 +1147,9 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 	@Override
 	public void retrieve(Metadata source)
 	{
-		// The order of these operations is significant to try to keep the object state consistent.
-		// First get everything from the metadata into local variables. Don't touch the model yet
-		// in case there's a problem.
+		// The order of these operations is significant to try to keep the object state
+		// consistent. First get everything from the metadata into local variables.
+		// Don't touch the model yet in case there's a problem.
 		double defaultRadius = source.get(DEFAULT_RADIUS_KEY);
 		int[] defaultColor = source.get(DEFAULT_COLOR_KEY);
 		double interiorOpacity = source.get(INTERIOR_OPACITY_KEY);
@@ -1381,80 +1158,107 @@ abstract public class AbstractEllipsePolygonModel extends StructureModel
 		double offset = source.get(OFFSET_KEY);
 		List<EllipsePolygon> restoredPolygons = source.get(ELLIPSE_POLYGON_KEY);
 
-		// Now set the state of the individual restored polygons, again without directly changing the model.
-		// TODO Note that the smallBodyModel is changed here though -- need to make sure this doesn't cause
-		// problems if something throws before the whole retrieve operation is done.
-		for (EllipsePolygon polygon : restoredPolygons)
-		{
-			polygon.updateVtkState(smallBodyModel);
-		}
-
-		// Now we're committed. Get rid of whatever's currently in this model and then add the restored polygons.
-		polygons.clear();
-
+		// Now we're committed. Get rid of whatever's currently in this model and then
+		// add the restored polygons.
 		// Finally, change the rest of the fields.
 		this.defaultRadius = defaultRadius;
-		this.defaultColor = defaultColor;
+		this.defaultColor = StructureLoadUtil.convertRgbaToColor(defaultColor);
 		this.interiorOpacity = interiorOpacity;
 		this.offset = offset;
 
-		Set<Integer> targIdxS = StructureLoadUtil.convertIntArrToSet(selectedStructures);
-		pickIdxS = ImmutableSet.copyOf(targIdxS);
+		List<EllipsePolygon> pickL = new ArrayList<>();
+		for (int aIdx : selectedStructures)
+			pickL.add(restoredPolygons.get(aIdx));
 
 		// Put the restored polygons in the list.
-		polygons.addAll(restoredPolygons);
+		setAllItems(restoredPolygons);
+		setSelectedItems(pickL);
 
 		// Sync everything up.
 		updatePolyData();
 		setLineWidth(lineWidth);
+	}
 
-		AbstractEllipsePolygonModel.this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+	@Override
+	protected void updateVtkColorsFor(Collection<EllipsePolygon> aItemC, boolean aSendNotification)
+	{
+		Color pickColor = null;
+		CommonData commonData = getCommonData();
+		if (commonData != null)
+			pickColor = commonData.getSelectionColor();
+
+		// Update internal VTK state
+		for (EllipsePolygon aItem : aItemC)
+		{
+			// Skip to next if not visible
+			if (aItem.getVisible() == false)
+				continue;
+
+			// Skip to next if no associated draw state
+			VtkDrawState vDrawState = drawM.get(aItem);
+			if (vDrawState == null)
+				continue;
+
+			// Update the color related state
+			Color tmpColor = aItem.getColor();
+			if (pickColor != null && getSelectedItems().contains(aItem) == true)
+				tmpColor = pickColor;
+
+			int begIdx, endIdx;
+
+			begIdx = vDrawState.extBegIdxReg;
+			endIdx = begIdx + aItem.vExteriorRegPD.GetNumberOfCells();
+			for (int aIdx = begIdx; aIdx < endIdx; aIdx++)
+				VtkUtil.setColorOnUCA3(vExteriorColorsRegUCA, aIdx, tmpColor);
+
+			begIdx = vDrawState.extBegIdxDec;
+			endIdx = begIdx + aItem.vExteriorDecPD.GetNumberOfCells();
+			for (int aIdx = begIdx; aIdx < endIdx; aIdx++)
+				VtkUtil.setColorOnUCA3(vExteriorColorsDecUCA, aIdx, tmpColor);
+
+			begIdx = vDrawState.intBegIdxReg;
+			endIdx = begIdx + aItem.vInteriorRegPD.GetNumberOfCells();
+			for (int aIdx = begIdx; aIdx < endIdx; aIdx++)
+				VtkUtil.setColorOnUCA3(vInteriorColorsRegUCA, aIdx, tmpColor);
+
+			begIdx = vDrawState.intBegIdxDec;
+			endIdx = begIdx + aItem.vInteriorDecPD.GetNumberOfCells();
+			for (int aIdx = begIdx; aIdx < endIdx; aIdx++)
+				VtkUtil.setColorOnUCA3(vInteriorColorsDecUCA, aIdx, tmpColor);
+		}
+
+		// Bail if notification is not needed
+		if (aSendNotification == false)
+			return;
+
+		vExteriorColorsRegUCA.Modified();
+		vExteriorColorsDecUCA.Modified();
+		vInteriorColorsRegUCA.Modified();
+		vInteriorColorsDecUCA.Modified();
+
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	/**
-	 * Helper method that will update the VTK state for the structures corresponding
-	 * to the specified indexes.
-	 * 
-	 * @param aIdxC The collection of indexes corresponding to the structures of
-	 *              interest.
+	 * Class used to track the VTK (index) state associated with a structure.
+	 *
+	 * @author lopeznr1
 	 */
-	private void updateVtkColorsForStructures(Collection<Integer> aIdxC)
+	class VtkDrawState
 	{
-		int[] pickColorArr = null;
-		CommonData commonData = getCommonData();
-		if (commonData != null)
-			pickColorArr = commonData.getSelectionColor();
-
-		// Update internal VTK state
-		for (int i : aIdxC)
+		public VtkDrawState(int aExtBegIdxDec, int aExtBegIdxReg, int aIntBegIdxDec, int aIntBegIdxReg)
 		{
-			int[] colorArr = polygons.get(i).getColor();
-			if (pickColorArr != null && pickIdxS.contains(i) == true)
-				colorArr = pickColorArr;
-
-			IdPair range = this.getCellIdRangeOfPolygon(i, false);
-			for (int j = range.id1; j < range.id2; ++j)
-				boundaryColors.SetTuple3(j, colorArr[0], colorArr[1], colorArr[2]);
-
-			range = this.getCellIdRangeOfDecimatedPolygon(i, false);
-			for (int j = range.id1; j < range.id2; ++j)
-				decimatedBoundaryColors.SetTuple3(j, colorArr[0], colorArr[1], colorArr[2]);
-
-			range = this.getCellIdRangeOfPolygon(i, true);
-			for (int j = range.id1; j < range.id2; ++j)
-				interiorColors.SetTuple3(j, colorArr[0], colorArr[1], colorArr[2]);
-
-			range = this.getCellIdRangeOfDecimatedPolygon(i, true);
-			for (int j = range.id1; j < range.id2; ++j)
-				decimatedInteriorColors.SetTuple3(j, colorArr[0], colorArr[1], colorArr[2]);
+			extBegIdxDec = aExtBegIdxDec;
+			extBegIdxReg = aExtBegIdxReg;
+			intBegIdxDec = aIntBegIdxDec;
+			intBegIdxReg = aIntBegIdxReg;
 		}
 
-		boundaryColors.Modified();
-		decimatedBoundaryColors.Modified();
-		interiorColors.Modified();
-		decimatedInteriorColors.Modified();
-
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		// State vars
+		final int extBegIdxDec;
+		final int extBegIdxReg;
+		final int intBegIdxDec;
+		final int intBegIdxReg;
 	}
 
 }
