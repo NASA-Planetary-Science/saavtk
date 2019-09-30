@@ -170,8 +170,8 @@ public class Polygon extends Line
 			ContentKey<Content> contentKey = (ContentKey<Content>) key;
 			builder.put(contentKey, collection.getValue(contentKey));
 		}
-		builder.put(AREA_KEY, SettableValues.instance().of(0.));
-		builder.put(SHOW_INTERIOR_KEY, SettableValues.instance().of(Boolean.FALSE));
+		builder.put(AREA_KEY, SettableValues.instance().of(aPolygon.surfaceArea));
+		builder.put(SHOW_INTERIOR_KEY, SettableValues.instance().of(aPolygon.showInterior));
 
 		return Configurations.instance().of(lineConfiguration.getVersion(), builder.build());
 	}

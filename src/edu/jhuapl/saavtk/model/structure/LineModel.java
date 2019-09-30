@@ -1253,7 +1253,8 @@ public class LineModel<G1 extends Line> extends ControlPointsStructureModel<G1>
 			if (line instanceof Polygon)
 			{
 				Polygon polygon = (Polygon) line;
-				polygon.setShowInterior(refSmallBodyModel, source.get(Key.of(Polygon.SHOW_INTERIOR_KEY.getId())));
+				if (source.hasKey(Key.of(Polygon.SHOW_INTERIOR_KEY.getId())) == true)
+					polygon.setShowInterior(refSmallBodyModel, source.get(Key.of(Polygon.SHOW_INTERIOR_KEY.getId())));
 			}
 		}
 
