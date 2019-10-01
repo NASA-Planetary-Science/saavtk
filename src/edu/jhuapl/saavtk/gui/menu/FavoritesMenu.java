@@ -10,8 +10,10 @@ import javax.swing.JSeparator;
 
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
+import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.FileStateListenerTracker;
+import edu.jhuapl.saavtk.util.SafeURLPaths;
 
 public class FavoritesMenu extends JMenu
 {
@@ -57,7 +59,13 @@ public class FavoritesMenu extends JMenu
             if (!view.getUniqueName().equals(manager.getDefaultBodyToLoad()))
             {
                 JMenuItem menuItem = new FavoritesMenuItem(view);
-                String urlString = view.getConfig().getShapeModelFileNames()[0];
+                String urlString = (view.getConfigURL() == null) ? view.getShapeModelName() : view.getConfigURL();
+            	if (view.getUniqueName().contains("Custom"))
+            	{
+            		SafeURLPaths safeUrlPaths = SafeURLPaths.instance();
+            		urlString = safeUrlPaths.getUrl(safeUrlPaths.getString(Configuration.getImportedShapeModelsDir(), view.getShapeModelName()));
+            	}
+//                String urlString = view.getConfig().getShapeModelFileNames()[0];
                 fileStateTracker.addStateChangeListener(urlString, state -> {
                     menuItem.setEnabled(state.isAccessible());
                 });
@@ -75,7 +83,13 @@ public class FavoritesMenu extends JMenu
         {
             View defaultToLoad = manager.getView(manager.getDefaultBodyToLoad());
             JMenuItem menuItem = new FavoritesMenuItem(defaultToLoad);
-            String urlString = defaultToLoad.getShapeModelName();
+//            String urlString = defaultToLoad.getShapeModelName();
+            String urlString = (defaultToLoad.getConfigURL() == null) ? defaultToLoad.getShapeModelName() : defaultToLoad.getConfigURL();
+        	if (defaultToLoad.getUniqueName().contains("Custom"))
+        	{
+        		SafeURLPaths safeUrlPaths = SafeURLPaths.instance();
+        		urlString = safeUrlPaths.getUrl(safeUrlPaths.getString(Configuration.getImportedShapeModelsDir(), defaultToLoad.getShapeModelName()));
+        	}
             fileStateTracker.addStateChangeListener(urlString, state -> {
                 menuItem.setEnabled(state.isAccessible());
             });
