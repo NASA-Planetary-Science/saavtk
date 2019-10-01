@@ -187,6 +187,12 @@ public class RecentlyViewed extends JMenu
 
     protected void removeListeners(View view)
     {
-        fileStateTracker.removeStateChangeListeners(view.getConfig().getShapeModelFileNames()[0]);
+    	String urlString = (view.getConfigURL() == null) ? view.getShapeModelName() : view.getConfigURL();
+    	if (view.getUniqueName().contains("Custom"))
+    	{
+    		SafeURLPaths safeUrlPaths = SafeURLPaths.instance();
+    		urlString = safeUrlPaths.getUrl(safeUrlPaths.getString(Configuration.getImportedShapeModelsDir(), view.getShapeModelName()));
+    	}
+        fileStateTracker.removeStateChangeListeners(urlString);
     }
 }
