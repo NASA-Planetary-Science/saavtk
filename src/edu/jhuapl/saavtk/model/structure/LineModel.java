@@ -25,8 +25,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import org.jfree.data.Value;
-import org.jfree.data.Values;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -36,11 +34,17 @@ import com.google.common.collect.ImmutableList;
 import crucible.crust.metadata.api.Key;
 import crucible.crust.metadata.api.Metadata;
 import crucible.crust.metadata.api.MetadataManager;
-import crucible.crust.settings.api.ContentKey;
-import crucible.crust.settings.api.SettableValue;
-import crucible.crust.settings.impl.Configurations;
-import crucible.crust.settings.impl.KeyValueCollections;
-import crucible.crust.settings.impl.SettableValues;
+import crucible.crust.settings.api.Configurable;
+import crucible.crust.settings.api.ControlKey;
+import crucible.crust.settings.api.SettableStored;
+import crucible.crust.settings.api.Stored;
+import crucible.crust.settings.api.Versionable;
+import crucible.crust.settings.api.Viewable;
+import crucible.crust.settings.impl.ConfigurableFactory;
+import crucible.crust.settings.impl.KeyedFactory;
+import crucible.crust.settings.impl.SettableStoredFactory;
+import crucible.crust.settings.impl.StoredFactory;
+import crucible.crust.settings.impl.Version;
 import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
 import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.CommonData;
@@ -1205,35 +1209,35 @@ public class LineModel<G1 extends Line> extends ControlPointsStructureModel<G1> 
         Line retLine = new Line(++maxPolygonId);
         if (mode == Mode.PROFILE)
             ;
-//			retLine.setLineWidth(3.0);
+//          retLine.setLineWidth(3.0);
 
         return (G1) retLine;
     }
 
-    private static final Version CONFIGURATION_VERSION = Version.of(1, 0);
-    private static final ContentKey<SettableValue<Double>> OFFSET_KEY = SettableValues.key("offset");
-    private static final ContentKey<SettableValue<Double>> LINE_WIDTH_KEY = SettableValues.key("lineWidth");
-    private final ContentKey<Value<List<G1>>> LINES_KEY = Values.fixedKey("lineStructures");
+    private static final Versionable CONFIGURATION_VERSION = Version.of(1, 0);
+    private static final ControlKey<SettableStored<Double>> OFFSET_KEY = SettableStoredFactory.key("offset");
+    private static final ControlKey<SettableStored<Double>> LINE_WIDTH_KEY = SettableStoredFactory.key("lineWidth");
+    private final ControlKey<Stored<List<G1>>> LINES_KEY = StoredFactory.key("lineStructures");
 
     @Override
     public Metadata store()
     {
-        KeyValueCollections.Builder<Content> builder = KeyValueCollections.instance().builder();
+        KeyedFactory.Builder<Viewable> builder = KeyedFactory.instance().builder();
 
-        builder.put(LINE_WIDTH_KEY, SettableValues.instance().of(lineWidth));
-        builder.put(OFFSET_KEY, SettableValues.instance().of(offset));
-        builder.put(LINES_KEY, SettableValues.instance().of(getAllItems()));
+        builder.put(LINE_WIDTH_KEY, SettableStoredFactory.instance().of(lineWidth));
+        builder.put(OFFSET_KEY, SettableStoredFactory.instance().of(offset));
+        builder.put(LINES_KEY, SettableStoredFactory.instance().of(getAllItems()));
 
-        Configuration configuration = Configurations.instance().of(CONFIGURATION_VERSION, builder.build());
+        Configurable configuration = ConfigurableFactory.instance().of(CONFIGURATION_VERSION, builder.build());
 
-        return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration.getCollection()).store();
+        return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration).store();
     }
 
     @Override
     public void retrieve(Metadata source)
     {
-//		int evaluateMe().evaluateMe..evaluateMe;
-//		KeyValueCollection<Content> collection = configuration.getCollection();
+//      int evaluateMe().evaluateMe..evaluateMe;
+//      KeyValueCollection<Viewable> collection = configuration.getCollection();
 
         double lineWidth = source.get(Key.of(LINE_WIDTH_KEY.getId()));
         double offset = source.get(Key.of(OFFSET_KEY.getId()));

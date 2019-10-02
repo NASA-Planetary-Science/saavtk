@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-import org.jfree.data.Value;
-import org.jfree.data.Values;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -17,11 +15,17 @@ import com.google.common.collect.ImmutableList;
 import crucible.crust.metadata.api.Key;
 import crucible.crust.metadata.api.Metadata;
 import crucible.crust.metadata.impl.InstanceGetter;
-import crucible.crust.settings.api.ContentKey;
-import crucible.crust.settings.api.SettableValue;
-import crucible.crust.settings.impl.Configurations;
-import crucible.crust.settings.impl.KeyValueCollections;
-import crucible.crust.settings.impl.SettableValues;
+import crucible.crust.settings.api.Configurable;
+import crucible.crust.settings.api.ControlKey;
+import crucible.crust.settings.api.SettableStored;
+import crucible.crust.settings.api.Stored;
+import crucible.crust.settings.api.Versionable;
+import crucible.crust.settings.api.Viewable;
+import crucible.crust.settings.impl.ConfigurableFactory;
+import crucible.crust.settings.impl.KeyedFactory;
+import crucible.crust.settings.impl.SettableStoredFactory;
+import crucible.crust.settings.impl.StoredFactory;
+import crucible.crust.settings.impl.Version;
 import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.structure.Structure;
@@ -85,15 +89,15 @@ public class Line implements Structure
         vDrawId = -1;
     }
 
-    public static final ContentKey<SettableValue<Integer>> ID = SettableValues.key("id");
-    public static final ContentKey<SettableValue<String>> NAME = SettableValues.key("name");
-    public static final ContentKey<Value<List<LatLon>>> VERTICES = Values.fixedKey("vertices");
-    public static final ContentKey<SettableValue<int[]>> COLOR = SettableValues.key("color");
-    public static final ContentKey<SettableValue<String>> LABEL = SettableValues.key("label");
-    public static final ContentKey<SettableValue<int[]>> LABEL_COLOR = SettableValues.key("labelColor");
-    public static final ContentKey<SettableValue<Integer>> LABEL_FONT_SIZE = SettableValues.key("labelFontSize");
-    public static final ContentKey<SettableValue<Boolean>> HIDDEN = SettableValues.key("hidden");
-    public static final ContentKey<SettableValue<Boolean>> LABEL_HIDDEN = SettableValues.key("labelHidden");
+    public static final ControlKey<SettableStored<Integer>> ID = SettableStoredFactory.key("id");
+    public static final ControlKey<SettableStored<String>> NAME = SettableStoredFactory.key("name");
+    public static final ControlKey<Stored<List<LatLon>>> VERTICES = StoredFactory.key("vertices");
+    public static final ControlKey<SettableStored<int[]>> COLOR = SettableStoredFactory.key("color");
+    public static final ControlKey<SettableStored<String>> LABEL = SettableStoredFactory.key("label");
+    public static final ControlKey<SettableStored<int[]>> LABEL_COLOR = SettableStoredFactory.key("labelColor");
+    public static final ControlKey<SettableStored<Integer>> LABEL_FONT_SIZE = SettableStoredFactory.key("labelFontSize");
+    public static final ControlKey<SettableStored<Boolean>> HIDDEN = SettableStoredFactory.key("hidden");
+    public static final ControlKey<SettableStored<Boolean>> LABEL_HIDDEN = SettableStoredFactory.key("labelHidden");
 
     @Override
     public int getId()
@@ -211,8 +215,8 @@ public class Line implements Structure
         linEle.setAttribute(ID.getId(), String.valueOf(getId()));
         linEle.setAttribute(NAME.getId(), getName());
         linEle.setAttribute(LABEL.getId(), getLabel());
-//		String labelcolorStr=labelcolor[0] + "," + labelcolor[1] + "," + labelcolor[2];
-//		linEle.setAttribute(LABELCOLOR, labelcolorStr);
+//      String labelcolorStr=labelcolor[0] + "," + labelcolor[1] + "," + labelcolor[2];
+//      linEle.setAttribute(LABELCOLOR, labelcolorStr);
         linEle.setAttribute(LENGTH, String.valueOf(getPathLength()));
 
         Color color = getColor();
@@ -307,10 +311,10 @@ public class Line implements Structure
         int bVal = Integer.parseInt(tokens[2]);
         setColor(new Color(rVal, gVal, bVal));
 
-//		String[] labelColors=element.getAttribute(LABELCOLOR).split(",");
-//		labelcolor[0] = Double.parseDouble(labelColors[0]);
-//		labelcolor[1] = Double.parseDouble(labelColors[1]);
-//		labelcolor[2] = Double.parseDouble(labelColors[2]);
+//      String[] labelColors=element.getAttribute(LABELCOLOR).split(",");
+//      labelcolor[0] = Double.parseDouble(labelColors[0]);
+//      labelcolor[1] = Double.parseDouble(labelColors[1]);
+//      labelcolor[2] = Double.parseDouble(labelColors[2]);
     }
 
     @Override
@@ -534,14 +538,14 @@ public class Line implements Structure
         vCaption = aCaption;
     }
 
-    private static final Version CONFIGURATION_VERSION = Version.of(1, 0);
-    private static final SettableValues settableValues = SettableValues.instance();
+    private static final Versionable CONFIGURATION_VERSION = Version.of(1, 0);
+    private static final SettableStoredFactory settableValues = SettableStoredFactory.instance();
 
-    protected static Configuration formConfigurationFor(Line aLine)
+    protected static Configurable formConfigurationFor(Line aLine)
     {
         int[] intArr;
 
-        KeyValueCollections.Builder<Content> builder = KeyValueCollections.instance().builder();
+        KeyedFactory.Builder<Viewable> builder = KeyedFactory.instance().builder();
 
         builder.put(ID, settableValues.of(aLine.id));
         builder.put(NAME, settableValues.of(aLine.name));
@@ -559,7 +563,7 @@ public class Line implements Structure
         builder.put(HIDDEN, settableValues.of(!aLine.visible));
         builder.put(LABEL_HIDDEN, settableValues.of(!aLine.labelVisible));
 
-        return Configurations.instance().of(CONFIGURATION_VERSION, builder.build());
+        return ConfigurableFactory.instance().of(CONFIGURATION_VERSION, builder.build());
     }
 
     private static final Key<Line> LINE_STRUCTURE_PROXY_KEY = Key.of("Line (structure)");
@@ -578,8 +582,8 @@ public class Line implements Structure
 
                 return result;
             }, Line.class, line -> {
-                Configuration configuration = formConfigurationFor(line);
-                return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration.getCollection()).store();
+                Configurable configuration = formConfigurationFor(line);
+                return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration).store();
             });
 
             proxyInitialized = true;

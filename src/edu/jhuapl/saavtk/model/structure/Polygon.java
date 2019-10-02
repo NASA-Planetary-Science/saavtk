@@ -6,12 +6,13 @@ import org.w3c.dom.Element;
 import crucible.crust.metadata.api.Key;
 import crucible.crust.metadata.api.Metadata;
 import crucible.crust.metadata.impl.InstanceGetter;
-import crucible.crust.settings.api.ContentKey;
-import crucible.crust.settings.api.KeyValueCollection;
-import crucible.crust.settings.api.SettableValue;
-import crucible.crust.settings.impl.Configurations;
-import crucible.crust.settings.impl.KeyValueCollections;
-import crucible.crust.settings.impl.SettableValues;
+import crucible.crust.settings.api.Configurable;
+import crucible.crust.settings.api.ControlKey;
+import crucible.crust.settings.api.SettableStored;
+import crucible.crust.settings.api.Viewable;
+import crucible.crust.settings.impl.ConfigurableFactory;
+import crucible.crust.settings.impl.KeyedFactory;
+import crucible.crust.settings.impl.SettableStoredFactory;
 import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -156,22 +157,21 @@ public class Polygon extends Line
         return true;
     }
 
-    private static Configuration formConfigurationFor(Polygon aPolygon)
+    private static Configurable formConfigurationFor(Polygon aPolygon)
     {
-        Configuration lineConfiguration = Line.formConfigurationFor(aPolygon);
-        KeyValueCollection<Content> collection = lineConfiguration.getCollection();
+        Configurable lineConfiguration = Line.formConfigurationFor(aPolygon);
 
-        KeyValueCollections.Builder<Content> builder = KeyValueCollections.instance().builder();
-        for (ContentKey<? extends Content> key : collection.getKeys())
+        KeyedFactory.Builder<Viewable> builder = KeyedFactory.instance().builder();
+        for (ControlKey<? extends Viewable> key : lineConfiguration.getKeys())
         {
             @SuppressWarnings("unchecked")
-            ContentKey<Content> contentKey = (ContentKey<Content>) key;
-            builder.put(contentKey, collection.getValue(contentKey));
+            ControlKey<Viewable> contentKey = (ControlKey<Viewable>) key;
+            builder.put(contentKey, lineConfiguration.getItem(contentKey));
         }
-        builder.put(AREA_KEY, SettableValues.instance().of(aPolygon.surfaceArea));
-        builder.put(SHOW_INTERIOR_KEY, SettableValues.instance().of(aPolygon.showInterior));
+        builder.put(AREA_KEY, SettableStoredFactory.instance().of(aPolygon.surfaceArea));
+        builder.put(SHOW_INTERIOR_KEY, SettableStoredFactory.instance().of(aPolygon.showInterior));
 
-        return Configurations.instance().of(lineConfiguration.getVersion(), builder.build());
+        return ConfigurableFactory.instance().of(lineConfiguration.getVersion(), builder.build());
     }
 
     private static final Key<Polygon> POLYGON_STRUCTURE_PROXY_KEY = Key.of("Polygon");
@@ -190,17 +190,17 @@ public class Polygon extends Line
 
                 return result;
             }, Polygon.class, polygon -> {
-//                Configuration configuration = polygon.getConfiguration();
-                Configuration configuration = formConfigurationFor(polygon);
-                return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration.getCollection()).store();
+//                Configurable configuration = polygon.getConfiguration();
+                Configurable configuration = formConfigurationFor(polygon);
+                return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration).store();
             });
 
             proxyInitialized = true;
         }
     }
 
-    public static final ContentKey<SettableValue<Double>> AREA_KEY = SettableValues.key("area");
-    public static final ContentKey<SettableValue<Boolean>> SHOW_INTERIOR_KEY = SettableValues.key("showInterior");
+    public static final ControlKey<SettableStored<Double>> AREA_KEY = SettableStoredFactory.key("area");
+    public static final ControlKey<SettableStored<Boolean>> SHOW_INTERIOR_KEY = SettableStoredFactory.key("showInterior");
 
     protected static void unpackMetadata(Metadata source, Polygon polygon)
     {
