@@ -5,8 +5,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.text.DecimalFormat;
 import java.util.List;
@@ -45,8 +43,6 @@ import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.model.structure.PointModel;
-import edu.jhuapl.saavtk.pick.DefaultPicker;
-import edu.jhuapl.saavtk.pick.PickEvent;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.pick.PickManagerListener;
 import edu.jhuapl.saavtk.pick.PickUtil;
@@ -60,7 +56,6 @@ import edu.jhuapl.saavtk.structure.gui.action.SaveEsriShapeFileAction;
 import edu.jhuapl.saavtk.structure.gui.action.SaveSbmtStructuresFileAction;
 import edu.jhuapl.saavtk.structure.gui.action.SaveVtkFileAction;
 import edu.jhuapl.saavtk.util.ColorIcon;
-import edu.jhuapl.saavtk.util.Properties;
 import glum.gui.GuiUtil;
 import glum.gui.component.GNumberFieldSlider;
 import glum.gui.icon.EmptyIcon;
@@ -326,7 +321,7 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		refPickManager.addListener(this);
 
 		// TODO: This registration should be done by the refStructureManager
-		handleDefaultPickerManagement(refPickManager.getDefaultPicker(), aModelManager);
+		refStructureManager.registerDefaultPickerHandler(refPickManager.getDefaultPicker());
 	}
 
 	/**
@@ -569,39 +564,6 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 //		Set<G1> pickS = refStructureManager.getSelectedItems();
 //		structureModel.setLineWidth(pickS, lineWidth);
 		refStructureManager.setLineWidth(lineWidth);
-	}
-
-	/**
-	 * TODO: This should be moved to the StructureManager...
-	 * <P>
-	 * TODO: We should be notified of the "DefaultPicker" through different means
-	 * and not rely on unrelated third party registration of StructurePanel...
-	 */
-	private void handleDefaultPickerManagement(DefaultPicker aDefaultPicker, ModelManager aModelManager)
-	{
-		aDefaultPicker.addPropertyChangeListener(new PropertyChangeListener() {
-
-			@Override
-			public void propertyChange(PropertyChangeEvent aEvent)
-			{
-				// If we're editing, say, a path, return immediately.
-				if (refStructureManager.supportsActivation() && editB.isSelected() == true)
-					return;
-
-				// Bail if not the right event type
-				if (Properties.MODEL_PICKED.equals(aEvent.getPropertyName()) == false)
-					return;
-
-				// Bail if the picked item is not associated with our ItemManager
-				PickEvent pickEvent = (PickEvent) aEvent.getNewValue();
-				boolean isPass = aModelManager.getModel(pickEvent.getPickedProp()) == refStructureManager;
-				if (isPass == false)
-					return;
-
-				// Delegate
-				refStructureManager.handlePickAction(pickEvent);
-			}
-		});
 	}
 
 	/**

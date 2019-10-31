@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.structure;
 
 import java.awt.Color;
+import java.awt.event.InputEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,7 +17,10 @@ import edu.jhuapl.saavtk.model.FacetColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.SaavtkItemManager;
 import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
-import edu.jhuapl.saavtk.pick.PickEvent;
+import edu.jhuapl.saavtk.pick.DefaultPicker;
+import edu.jhuapl.saavtk.pick.PickListener;
+import edu.jhuapl.saavtk.pick.PickMode;
+import edu.jhuapl.saavtk.pick.PickTarget;
 import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.util.ProgressListener;
 import edu.jhuapl.saavtk.util.Properties;
@@ -45,7 +49,7 @@ import vtk.vtkProp;
  * Currently (VTK) rendering of {@link Structure}s is supported, however that
  * capability may eventually be removed and placed in a separate class/module.
  */
-public abstract class StructureManager<G1 extends Structure> extends SaavtkItemManager<G1>
+public abstract class StructureManager<G1 extends Structure> extends SaavtkItemManager<G1> implements PickListener
 {
 	// State vars
 	private int defFontSize = 16;
@@ -301,23 +305,23 @@ public abstract class StructureManager<G1 extends Structure> extends SaavtkItemM
 		notifyListeners(this, ItemEventType.ItemsMutated);
 	}
 
-	/**
-	 * Method that will process the specified {@link PickEvent}.
-	 * <P>
-	 * The selected items will be updated to reflect the PickEvent action.
-	 */
-	public void handlePickAction(PickEvent aPickEvent)
+	@Override
+	public void handlePickAction(InputEvent aEvent, PickMode aMode, PickTarget aPrimaryTarg, PickTarget aSurfaceTarg)
 	{
-		// Bail if the 1st button was not pushed
-		if (aPickEvent.getMouseEvent().getButton() != 1)
+		// Bail if we are not the target model
+		if (aPrimaryTarg.getModel() != this)
+			return;
+
+		// Respond only to active events
+		if (aMode != PickMode.Active)
 			return;
 
 		// Determine if this is a modified action
-		boolean isModifyKey = PickUtil.isModifyKey(aPickEvent.getMouseEvent());
+		boolean isModifyKey = PickUtil.isModifyKey(aEvent);
 
 		// Retrieve the clicked item
-		int cellId = aPickEvent.getPickedCellId();
-		vtkProp prop = aPickEvent.getPickedProp();
+		int cellId = aPrimaryTarg.getCellId();
+		vtkProp prop = aPrimaryTarg.getActor();
 		G1 tmpItem = getStructureFromCellId(cellId, prop);
 
 		// Determine the items that will be marked as selected
@@ -332,7 +336,7 @@ public abstract class StructureManager<G1 extends Structure> extends SaavtkItemM
 		// Update the selected items
 		setSelectedItems(tmpL);
 
-		Object source = aPickEvent.getMouseEvent().getSource();
+		Object source = aEvent.getSource();
 		notifyListeners(source, ItemEventType.ItemsSelected);
 	}
 
@@ -400,6 +404,8 @@ public abstract class StructureManager<G1 extends Structure> extends SaavtkItemM
 		super.setSelectedItems(aItemL);
 
 		updateVtkColorsFor(diffS, true);
+
+		notifyVtkStateChange();
 	}
 
 	@Override
@@ -422,6 +428,15 @@ public abstract class StructureManager<G1 extends Structure> extends SaavtkItemM
 			updatePolyData();
 			notifyListeners(this, ItemEventType.ItemsMutated);
 		}
+	}
+
+	/**
+	 * TODO: We should be registered with the "DefaultPicker" through different
+	 * means and not rely on unrelated third party registration...
+	 */
+	public void registerDefaultPickerHandler(DefaultPicker aDefaultPicker)
+	{
+		aDefaultPicker.addListener(this);
 	}
 
 	/**
@@ -520,6 +535,18 @@ public abstract class StructureManager<G1 extends Structure> extends SaavtkItemM
 		retCaption.SetCaption(aLabel);
 
 		return retCaption;
+	}
+
+	/**
+	 * Helper method that notifies the relevant system that our internal VTK state
+	 * has been changed.
+	 * <P>
+	 * This is currently accomplished via firing off a
+	 * {@link Properties#MODEL_CHANGED} event.
+	 */
+	private void notifyVtkStateChange()
+	{
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 }
