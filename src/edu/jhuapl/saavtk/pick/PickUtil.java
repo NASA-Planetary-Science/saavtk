@@ -2,6 +2,7 @@ package edu.jhuapl.saavtk.pick;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,6 +11,8 @@ import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
+import edu.jhuapl.saavtk.gui.StatusBar;
+import edu.jhuapl.saavtk.gui.StatusBarDefaultPickHandler;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
@@ -17,7 +20,17 @@ import edu.jhuapl.saavtk.pick.PickManager.PickMode;
 import edu.jhuapl.saavtk.util.Configuration;
 
 /**
- * Utility class for Picker related code.
+ * Utility class for configuration of Picker related code.
+ * <P>
+ * Please note the following:
+ * <UL>
+ * <LI>The method {@link #formNonDefaultPickerMap(Renderer, ModelManager)} is
+ * marked for removal.
+ * <LI>The method {@link #setPickingEnabled(boolean)} should be investigated
+ * further and eventually removed if possible.
+ * <UL>
+ * 
+ * @author lopeznr1
  */
 public class PickUtil
 {
@@ -39,17 +52,35 @@ public class PickUtil
 	 * Utility method that forms the default collection of non-default Pickers to
 	 * their corresponding PickMode.
 	 */
-	public static Map<PickMode, Picker> formNonDefaultPickerMap(Renderer aRenderer, ModelManager aModelManager)
+	@Deprecated
+	protected static Map<PickMode, Picker> formNonDefaultPickerMap(Renderer aRenderer, ModelManager aModelManager)
 	{
 		Map<PickMode, Picker> retMap;
 
 		retMap = new HashMap<>();
 		if (aModelManager.getModel(ModelNames.LINE_STRUCTURES) != null)
-			retMap.put(PickMode.LINE_DRAW, new ControlPointsStructurePicker<>(aRenderer, aModelManager, ModelNames.LINE_STRUCTURES));
+			retMap.put(PickMode.LINE_DRAW,
+					new ControlPointsStructurePicker<>(aRenderer, aModelManager, ModelNames.LINE_STRUCTURES));
 		if (aModelManager.getModel(ModelNames.CIRCLE_STRUCTURES) != null)
 			retMap.put(PickMode.CIRCLE_SELECTION, new CircleSelectionPicker(aRenderer, aModelManager));
 
 		return retMap;
+	}
+
+	/**
+	 * Registers a {@link StatusBarDefaultPickHandler} with the
+	 * {@link PickManager}'s {@link DefaultPicker}.
+	 * <P>
+	 * The installed {@link StatusBarDefaultPickHandler} will handle updates
+	 * relevant to the status bar.
+	 */
+	public static void installDefaultPickHandler(PickManager aPickManager, StatusBar aStatusBar, Renderer aRenderer,
+			ModelManager aModelManager)
+	{
+		DefaultPicker tmpDefaultPicker = aPickManager.getDefaultPicker();
+		StatusBarDefaultPickHandler tmpStatusBarHandler = new StatusBarDefaultPickHandler(tmpDefaultPicker, aStatusBar,
+				aRenderer, aModelManager);
+		tmpDefaultPicker.addListener(tmpStatusBarHandler);
 	}
 
 	/**
@@ -62,7 +93,7 @@ public class PickUtil
 	 * For Apple systems the primary modifier key is defined as the meta key
 	 * (Command) button.
 	 */
-	public static boolean isModifyKey(MouseEvent aEvent)
+	public static boolean isModifyKey(InputEvent aEvent)
 	{
 		if (Configuration.isMac() == true && aEvent.isMetaDown() == true)
 			return true;
