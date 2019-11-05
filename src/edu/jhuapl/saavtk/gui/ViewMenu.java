@@ -25,8 +25,6 @@ import javax.swing.JSlider;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import edu.jhuapl.saavtk.config.ViewConfig;
-import edu.jhuapl.saavtk.gui.dialog.ShapeModelImporterDialog;
 import edu.jhuapl.saavtk.gui.dialog.ShapeModelImporterManagerDialog;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
@@ -35,6 +33,7 @@ import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.pick.Picker;
 import edu.jhuapl.saavtk.util.Properties;
 
+@SuppressWarnings("serial")
 public class ViewMenu extends JMenu implements PropertyChangeListener
 {
 	protected ViewManager rootPanel;
@@ -121,9 +120,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 			if (i == 0)
 				mi.setSelected(true);
 
-			ViewConfig smallBodyConfig = view.getConfig();
-
-			addMenuItem(mi, smallBodyConfig);
+			add(mi);
 		}
 
 		setSubMenuEnabledState(this);
@@ -151,11 +148,6 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 		return enable;
 	}
 
-	protected void addMenuItem(JMenuItem mi, ViewConfig config)
-	{
-		add(mi);
-	}
-	
 	protected void reloadCustomMenuItems()
 	{
 		customImageMenu.removeAll();
@@ -181,7 +173,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 	{
 		// First create a list of the custom menu items and remove them
 		// from the menu.
-		List<JMenuItem> customMenuItems = new ArrayList<JMenuItem>();
+		List<JMenuItem> customMenuItems = new ArrayList<>();
 		int numberItems = customImageMenu.getItemCount();
 		for (int i = numberItems - 1; i >= 0; --i)
 		{
@@ -416,7 +408,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 
 		public double convertSliderValueToPickTolerance(int val)
 		{
-			return Picker.MAXIMUM_PICK_TOLERANCE - (double) (slider.getValue() - slider.getMinimum()) / (double) (slider.getMaximum() - slider.getMinimum()) * (Picker.MAXIMUM_PICK_TOLERANCE - Picker.MINIMUM_PICK_TOLERANCE);
+			return Picker.MAXIMUM_PICK_TOLERANCE - (double) (val - slider.getMinimum()) / (double) (slider.getMaximum() - slider.getMinimum()) * (Picker.MAXIMUM_PICK_TOLERANCE - Picker.MINIMUM_PICK_TOLERANCE);
 		}
 
 		@Override
