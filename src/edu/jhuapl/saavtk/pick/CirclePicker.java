@@ -3,6 +3,7 @@ package edu.jhuapl.saavtk.pick;
 import java.awt.Cursor;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.util.Set;
 
 import javax.swing.JOptionPane;
 
@@ -13,6 +14,7 @@ import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.CircleModel;
+import edu.jhuapl.saavtk.model.structure.EllipsePolygon;
 import vtk.vtkActor;
 import vtk.vtkCellPicker;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
@@ -22,7 +24,7 @@ public class CirclePicker extends Picker
 	// Reference vars
 	private ModelManager refModelManager;
 	private PolyhedralModel refSmallBodyModel;
-	private CircleModel refStructureModel;
+	private CircleModel refStructureManager;
 	private vtkJoglPanelComponent refRenWin;
 
 	// VTK vars
@@ -33,15 +35,15 @@ public class CirclePicker extends Picker
 	private EditMode currEditMode;
 	private int currVertexId;
 
-	public CirclePicker(Renderer renderer, ModelManager modelManager)
+	public CirclePicker(Renderer aRenderer, ModelManager aModelManager)
 	{
-		refModelManager = modelManager;
-		refSmallBodyModel = (PolyhedralModel) modelManager.getPolyhedralModel();
-		refStructureModel = (CircleModel) modelManager.getModel(ModelNames.CIRCLE_STRUCTURES);
-		refRenWin = renderer.getRenderWindowPanel();
+		refModelManager = aModelManager;
+		refSmallBodyModel = aModelManager.getPolyhedralModel();
+		refStructureManager = (CircleModel) aModelManager.getModel(ModelNames.CIRCLE_STRUCTURES);
+		refRenWin = aRenderer.getRenderWindowPanel();
 
 		smallBodyPicker = PickUtilEx.formSmallBodyPicker(refSmallBodyModel);
-		structurePicker = PickUtilEx.formStructurePicker(refStructureModel.getBoundaryActor());
+		structurePicker = PickUtilEx.formStructurePicker(refStructureManager.getBoundaryActor());
 
 		currEditMode = EditMode.CLICKABLE;
 		currVertexId = -1;
@@ -75,7 +77,7 @@ public class CirclePicker extends Picker
 		// Bail if mouse button 1 is not pressed
 		if (aEvent.getButton() != MouseEvent.BUTTON1)
 		{
-			refStructureModel.resetCircumferencePoints();
+			refStructureManager.resetCircumferencePoints();
 			return;
 		}
 
@@ -93,7 +95,7 @@ public class CirclePicker extends Picker
 			if (aEvent.getClickCount() == 1)
 			{
 //				refStructureModel.addNewStructure(pos);
-				if (refStructureModel.addCircumferencePoint(pos) == false)
+				if (refStructureManager.addCircumferencePoint(pos) == false)
 				{
 					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(refRenWin.getComponent()),
 							"Could not fit circle to specified points.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -123,10 +125,10 @@ public class CirclePicker extends Picker
 
 		// Determine what was picked
 		vtkActor pickedActor = structurePicker.GetActor();
-		if (pickedActor == refStructureModel.getBoundaryActor())
+		if (pickedActor == refStructureManager.getBoundaryActor())
 		{
 			int cellId = structurePicker.GetCellId();
-			int pointId = refStructureModel.getPolygonIdFromBoundaryCellId(cellId);
+			int pointId = refStructureManager.getPolygonIdFromBoundaryCellId(cellId);
 			currVertexId = pointId;
 		}
 	}
@@ -143,6 +145,7 @@ public class CirclePicker extends Picker
 		// Bail if we are not in the proper edit mode or there is no vertex being edited
 		if (currEditMode != EditMode.DRAGGABLE || currVertexId < 0)
 			return;
+		EllipsePolygon tmpItem = refStructureManager.getStructure(currVertexId);
 
 		// Bail if we failed to pick something
 		int pickSucceeded = doPick(aEvent, smallBodyPicker, refRenWin);
@@ -157,9 +160,9 @@ public class CirclePicker extends Picker
 			double[] lastDragPosition = smallBodyPicker.GetPickPosition();
 
 			if (aEvent.isControlDown() || aEvent.isShiftDown())
-				refStructureModel.changeRadiusOfPolygon(currVertexId, lastDragPosition);
+				refStructureManager.changeRadiusOfPolygon(tmpItem, lastDragPosition);
 			else
-				refStructureModel.movePolygon(currVertexId, lastDragPosition);
+				refStructureManager.movePolygon(tmpItem, lastDragPosition);
 		}
 	}
 
@@ -167,12 +170,12 @@ public class CirclePicker extends Picker
 	public void mouseMoved(MouseEvent aEvent)
 	{
 		int pickSucceeded = doPick(aEvent, structurePicker, refRenWin);
-		int numActivePoints = refStructureModel.getNumberOfCircumferencePoints();
+		int numActivePoints = refStructureManager.getNumberOfCircumferencePoints();
 
 		// Only allow dragging if we are not in the middle of drawing a
 		// a new circle, i.e. if number of circumference points is zero.
 		if (numActivePoints == 0 && pickSucceeded == 1
-				&& structurePicker.GetActor() == refStructureModel.getBoundaryActor())
+				&& structurePicker.GetActor() == refStructureManager.getBoundaryActor())
 			currEditMode = EditMode.DRAGGABLE;
 		else
 			currEditMode = EditMode.CLICKABLE;
@@ -186,8 +189,8 @@ public class CirclePicker extends Picker
 		int keyCode = aEvent.getKeyCode();
 		if (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE)
 		{
-			int[] selectedStructures = refStructureModel.getSelectedStructures();
-			refStructureModel.removeStructures(selectedStructures);
+			Set<EllipsePolygon> pickS = refStructureManager.getSelectedItems();
+			refStructureManager.removeStructures(pickS);
 		}
 	}
 }

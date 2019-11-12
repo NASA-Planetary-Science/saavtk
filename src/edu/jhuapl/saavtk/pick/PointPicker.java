@@ -3,6 +3,7 @@ package edu.jhuapl.saavtk.pick;
 import java.awt.Cursor;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.util.Set;
 
 import edu.jhuapl.saavtk.gui.GuiUtil;
 import edu.jhuapl.saavtk.gui.render.Renderer;
@@ -10,6 +11,7 @@ import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.structure.EllipsePolygon;
 import edu.jhuapl.saavtk.model.structure.PointModel;
 import vtk.vtkActor;
 import vtk.vtkCellPicker;
@@ -20,7 +22,7 @@ public class PointPicker extends Picker
 	// Reference vars
 	private ModelManager refModelManager;
 	private PolyhedralModel refSmallBodyModel;
-	private PointModel refStructureModel;
+	private PointModel refStructureManager;
 	private vtkJoglPanelComponent refRenWin;
 
 	// VTK vars
@@ -31,15 +33,15 @@ public class PointPicker extends Picker
 	private EditMode currEditMode;
 	private int currVertexId;
 
-	public PointPicker(Renderer renderer, ModelManager modelManager)
+	public PointPicker(Renderer aRenderer, ModelManager aModelManager)
 	{
-		refModelManager = modelManager;
-		refSmallBodyModel = (PolyhedralModel) modelManager.getPolyhedralModel();
-		refStructureModel = (PointModel) modelManager.getModel(ModelNames.POINT_STRUCTURES);
-		refRenWin = renderer.getRenderWindowPanel();
+		refModelManager = aModelManager;
+		refSmallBodyModel = aModelManager.getPolyhedralModel();
+		refStructureManager = (PointModel) aModelManager.getModel(ModelNames.POINT_STRUCTURES);
+		refRenWin = aRenderer.getRenderWindowPanel();
 
 		smallBodyPicker = PickUtilEx.formSmallBodyPicker(refSmallBodyModel);
-		structurePicker = PickUtilEx.formStructurePicker(refStructureModel.getInteriorActor());
+		structurePicker = PickUtilEx.formStructurePicker(refStructureManager.getInteriorActor());
 
 		currEditMode = EditMode.CLICKABLE;
 		currVertexId = -1;
@@ -87,7 +89,7 @@ public class PointPicker extends Picker
 			// TODO: Is this conditional really necessary?
 			if (aEvent.getClickCount() == 1)
 			{
-				refStructureModel.addNewStructure(pos);
+				refStructureManager.addNewStructure(pos);
 			}
 		}
 	}
@@ -113,10 +115,10 @@ public class PointPicker extends Picker
 
 		vtkActor pickedActor = structurePicker.GetActor();
 
-		if (pickedActor == refStructureModel.getInteriorActor())
+		if (pickedActor == refStructureManager.getInteriorActor())
 		{
 			int cellId = structurePicker.GetCellId();
-			int pointId = refStructureModel.getPolygonIdFromInteriorCellId(cellId);
+			int pointId = refStructureManager.getPolygonIdFromInteriorCellId(cellId);
 			currVertexId = pointId;
 		}
 	}
@@ -133,6 +135,7 @@ public class PointPicker extends Picker
 		// Bail if we are not in the proper edit mode or there is no vertex being edited
 		if (currEditMode != EditMode.DRAGGABLE || currVertexId < 0)
 			return;
+		EllipsePolygon tmpItem = refStructureManager.getStructure(currVertexId);
 
 		// Bail if the left button is not pressed
 //		if (e.getButton() != MouseEvent.BUTTON1)
@@ -151,9 +154,9 @@ public class PointPicker extends Picker
 			double[] lastDragPosition = smallBodyPicker.GetPickPosition();
 
 			if (aEvent.isControlDown() || aEvent.isShiftDown())
-				refStructureModel.changeRadiusOfPolygon(currVertexId, lastDragPosition);
+				refStructureManager.changeRadiusOfPolygon(tmpItem, lastDragPosition);
 			else
-				refStructureModel.movePolygon(currVertexId, lastDragPosition);
+				refStructureManager.movePolygon(tmpItem, lastDragPosition);
 		}
 	}
 
@@ -162,7 +165,7 @@ public class PointPicker extends Picker
 	{
 		int pickSucceeded = doPick(aEvent, structurePicker, refRenWin);
 
-		if (pickSucceeded == 1 && structurePicker.GetActor() == refStructureModel.getInteriorActor())
+		if (pickSucceeded == 1 && structurePicker.GetActor() == refStructureManager.getInteriorActor())
 			currEditMode = EditMode.DRAGGABLE;
 		else
 			currEditMode = EditMode.CLICKABLE;
@@ -176,8 +179,8 @@ public class PointPicker extends Picker
 		int keyCode = aEvent.getKeyCode();
 		if (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE)
 		{
-			int[] selectedStructures = refStructureModel.getSelectedStructures();
-			refStructureModel.removeStructures(selectedStructures);
+			Set<EllipsePolygon> pickS = refStructureManager.getSelectedItems();
+			refStructureManager.removeStructures(pickS);
 		}
 	}
 

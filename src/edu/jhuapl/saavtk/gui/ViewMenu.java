@@ -37,10 +37,10 @@ import edu.jhuapl.saavtk.util.Properties;
 
 public class ViewMenu extends JMenu implements PropertyChangeListener
 {
-	private ViewManager rootPanel;
-	private RecentlyViewed viewed;
-	private JMenu customImageMenu;
-	private ShapeModelImporterManagerDialog shapeModelImportedDialog;
+	protected ViewManager rootPanel;
+	protected RecentlyViewed viewed;
+	protected JMenu customImageMenu;
+	protected ShapeModelImporterManagerDialog shapeModelImportedDialog;
 
 	public ViewManager getRootPanel()
 	{
@@ -309,7 +309,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 		}
 	}
 
-	class ImportShapeModelsAction extends AbstractAction
+	protected class ImportShapeModelsAction extends AbstractAction
 	{
 		public ImportShapeModelsAction()
 		{
@@ -330,7 +330,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 		}
 	}
 
-	class ShowBodyAction extends AbstractAction
+	protected class ShowBodyAction extends AbstractAction
 	{
 		private View view;
 
@@ -352,7 +352,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
 		}
 	}
 
-	class EnableLODsAction extends AbstractAction
+	protected class EnableLODsAction extends AbstractAction
 	{
 		public EnableLODsAction()
 		{

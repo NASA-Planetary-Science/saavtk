@@ -45,15 +45,7 @@ public class PickUtil
 
 		retMap = new HashMap<>();
 		if (aModelManager.getModel(ModelNames.LINE_STRUCTURES) != null)
-			retMap.put(PickMode.LINE_DRAW, new ControlPointsStructurePicker(aRenderer, aModelManager, ModelNames.LINE_STRUCTURES));
-		if (aModelManager.getModel(ModelNames.POLYGON_STRUCTURES) != null)
-			retMap.put(PickMode.POLYGON_DRAW, new ControlPointsStructurePicker(aRenderer, aModelManager, ModelNames.POLYGON_STRUCTURES));
-		if (aModelManager.getModel(ModelNames.CIRCLE_STRUCTURES) != null)
-			retMap.put(PickMode.CIRCLE_DRAW, new CirclePicker(aRenderer, aModelManager));
-		if (aModelManager.getModel(ModelNames.ELLIPSE_STRUCTURES) != null)
-			retMap.put(PickMode.ELLIPSE_DRAW, new EllipsePicker(aRenderer, aModelManager));
-		if (aModelManager.getModel(ModelNames.POINT_STRUCTURES) != null)
-			retMap.put(PickMode.POINT_DRAW, new PointPicker(aRenderer, aModelManager));
+			retMap.put(PickMode.LINE_DRAW, new ControlPointsStructurePicker<>(aRenderer, aModelManager, ModelNames.LINE_STRUCTURES));
 		if (aModelManager.getModel(ModelNames.CIRCLE_STRUCTURES) != null)
 			retMap.put(PickMode.CIRCLE_SELECTION, new CircleSelectionPicker(aRenderer, aModelManager));
 

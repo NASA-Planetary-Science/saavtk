@@ -59,9 +59,10 @@ public class Configuration
 
     // Flag indicating if this version of the tool is APL in-house only ("private")
     private static boolean APLVersion = false;
-    private static boolean userPasswordAccepted = false;
+    private static volatile boolean userPasswordAccepted = false;
     private static URL restrictedAccessRoot = null;
     private static Iterable<Path> passwordFilesToTry = null;
+    private static final AtomicBoolean authenticationSuccessful = new AtomicBoolean(false);
 
     // Uncomment the following to enable the startup script (which can be changed by
     // the user)
@@ -127,6 +128,11 @@ public class Configuration
         if (!passwordFilesToTry.iterator().hasNext())
         {
             throw new IllegalArgumentException();
+        }
+
+        if (authenticationSuccessful.get())
+        {
+            return;
         }
 
         Configuration.restrictedAccessRoot = restrictedAccessRoot;
@@ -196,19 +202,24 @@ public class Configuration
             info = FileCache.refreshStateInfo(restrictedAccessString);
         }
 
-        FileCache.instance().queryAllInBackground(true);
-
         Configuration.userPasswordAccepted = userPasswordAccepted;
+
+        authenticationSuccessful.set(userPasswordAccepted || foundEmptyPasswordFile);
+
+        FileCache.instance().queryAllInBackground(true);
     }
 
     private static boolean promptUserForPassword(final String restrictedAccessUrl, final Path passwordFile, final boolean updateMode)
     {
-        if (isHeadless())
+        // Prevent re-issuing prompts after valid credentials were used once.
+        if (authenticationSuccessful.get() && !updateMode)
+        {
+            return true;
+        }
+        else if (isHeadless())
         {
             return false;
         }
-
-        AtomicBoolean validPasswordEntered = new AtomicBoolean(false);
 
         try
         {
@@ -277,7 +288,7 @@ public class Configuration
                                 repromptUser = true;
                                 continue;
                             }
-                            validPasswordEntered.set(true);
+                            authenticationSuccessful.set(status == UrlStatus.ACCESSIBLE);
                         }
                         try
                         {
@@ -310,7 +321,7 @@ public class Configuration
             e.printStackTrace();
         }
 
-        return validPasswordEntered.get();
+        return authenticationSuccessful.get();
     }
 
     public static void setupPasswordAuthentication(final String username, final char[] password)
@@ -330,6 +341,10 @@ public class Configuration
         }
         try
         {
+            // Clear out any previous credentials.
+            java.net.Authenticator.setDefault(null);
+
+            // Now try to set up authentication using the new credentials.
             java.net.Authenticator.setDefault(new java.net.Authenticator() {
                 final Map<String, Integer> triedCount = new HashMap<>();
 
@@ -344,15 +359,11 @@ public class Configuration
                         triedCount.put(urlString, count + 1);
                         return new java.net.PasswordAuthentication(username, password);
                     }
-                    // Oddly enough, this does the trick to prevent repeatedly trying a wrong
-                    // password,
-                    // while throwing a RuntimeException doesn't work. It appears that null is
-                    // interpreted
-                    // as meaning the user failed to provide credentials, so it just returns an
-                    // appropriate
-                    // HTTP code back up the stack. Nice!
-                    // By contrast, the RuntimeException was not catchable because the authorization
-                    // attempt
+                    // Oddly enough, returning null (eee below) prevents repeatedly trying a wrong
+                    // password, while throwing a RuntimeException doesn't work. It appears that
+                    // null is interpreted as meaning the user failed to provide credentials, so it
+                    // just returns an appropriate HTTP code back up the stack. Nice! By contrast,
+                    // the RuntimeException was not catchable because the authorization attempt
                     // occurred in a different thread.
                     return null;
                 }

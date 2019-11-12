@@ -5,25 +5,82 @@ import java.util.Map;
 
 import com.google.common.base.Preconditions;
 
+/**
+ * This class was originally an enumeration (ShapeModelAuthor), but was later
+ * modified to allow new members to be added dynamically. Enum-like methods were
+ * provided for the benefit of existing code. The code prevents two shape model
+ * types with the same identifier string.
+ * 
+ * This class is not thread-safe.
+ */
 public final class ShapeModelType
 {
     private static final Map<String, ShapeModelType> SHAPE_MODEL_IDENTIFIERS = new HashMap<>();
 
+    /**
+     * Return the ShapeModelType object associated with the provided identifier
+     * parameter.
+     * 
+     * Deprecated in favor of the provide method, which creates a new ShapeModelType
+     * if it is missing.
+     * 
+     * @param identifier of the ShapeModelType object
+     * @return the ShapeModelType object
+     * @throws IllegalArgumentException if there is no associated ShapeModelType.
+     */
+    @Deprecated
     public static ShapeModelType valueOf(String identifier)
     {
-        Preconditions.checkArgument(SHAPE_MODEL_IDENTIFIERS.containsKey(identifier));
+        Preconditions.checkArgument(SHAPE_MODEL_IDENTIFIERS.containsKey(identifier), "Cannot find a ShapeModelType object for identifier " + identifier);
         return SHAPE_MODEL_IDENTIFIERS.get(identifier);
     }
 
-    public static ShapeModelType create(String identifier)
+    /**
+     * Create and return a new ShapeModelType object identified with the provided
+     * identifier string.
+     * 
+     * @param identifier of the ShapeModelType object
+     * @return the ShapeModelType object
+     * @throws IllegalArgumentException if there is already a ShapeModelType object
+     *             associated with the identifier
+     */
+    private static ShapeModelType create(String identifier)
     {
         Preconditions.checkNotNull(identifier);
-        Preconditions.checkArgument(!SHAPE_MODEL_IDENTIFIERS.containsKey(identifier));
+        Preconditions.checkArgument(!SHAPE_MODEL_IDENTIFIERS.containsKey(identifier), "Already have a ShapeModelType object for identifier " + identifier);
 
         ShapeModelType result = new ShapeModelType(identifier);
         SHAPE_MODEL_IDENTIFIERS.put(identifier, result);
 
         return result;
+    }
+
+    /**
+     * Provide a ShapeModelType object for the given identifier parameter. If a
+     * ShapeModelType object already exists for this identity, it is simply
+     * returned, otherwise it is created first.
+     * 
+     * @param identifier of the ShapeModelType object
+     * @return the ShapeModelType object
+     */
+    public static ShapeModelType provide(String identifier)
+    {
+        Preconditions.checkNotNull(identifier);
+
+        ShapeModelType result = SHAPE_MODEL_IDENTIFIERS.get(identifier);
+        if (result == null)
+        {
+            result = new ShapeModelType(identifier);
+            SHAPE_MODEL_IDENTIFIERS.put(identifier, result);
+        }
+
+        return result;
+    }
+
+    public static boolean contains(String identifier)
+    {
+        Preconditions.checkNotNull(identifier);
+        return SHAPE_MODEL_IDENTIFIERS.containsKey(identifier);
     }
 
     public static final ShapeModelType GASKELL = create("Gaskell");
@@ -81,6 +138,7 @@ public final class ShapeModelType
     public static final ShapeModelType ALTWG_SPO_v20190612 = create("ALTWG-SPO-v20190612");
     public static final ShapeModelType MU69_TEST5H_1_FINAL_ORIENTED = create("mu69_test5h_1_final_oriented");
     public static final ShapeModelType NIMMO = create("Nimmo");
+    public static final ShapeModelType WEAVER = create("Weaver");
 
     private final String identifier;
 

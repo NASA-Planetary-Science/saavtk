@@ -1,5 +1,7 @@
 package edu.jhuapl.saavtk.model.structure;
 
+import java.awt.Color;
+
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 
 
@@ -12,8 +14,7 @@ public class PointModel extends AbstractEllipsePolygonModel
     {
         super(smallBodyModel, 4, Mode.POINT_MODE, "point");
         setInteriorOpacity(1.0);
-        int[] color = {255, 0, 255};
-        setDefaultColor(color);
+        setDefaultColor(Color.MAGENTA);
         // Size the radius relative to a circle whose area equals the minimum cell area.
         // Overall multiplier found experimentally to be good for getting the points big enough.
         final double multiplier = 2.;

@@ -184,7 +184,7 @@ public abstract class ViewManager extends JPanel
                 System.err.println("\nDefault model " + defaultModelName + " is not available.");
                 for (View view : getAllViews())
                 {
-                    if (view.getConfig().isAccessible())
+                    if (view.isAccessible())
                     {
                         initialView = view;
                         break;
@@ -489,11 +489,11 @@ public abstract class ViewManager extends JPanel
      * @param uniqueName name of the view
      * @return the view with the name, or null if it's not found, or not accessible
      */
-    View getBuiltInView(String uniqueName)
+    protected View getBuiltInView(String uniqueName)
     {
         for (View view : getBuiltInViews())
         {
-            if (view.getUniqueName().equals(uniqueName) && view.getConfig().isAccessible())
+            if (view.getUniqueName().equals(uniqueName) && view.isAccessible())
             {
                 return view;
             }

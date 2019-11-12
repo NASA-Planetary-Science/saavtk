@@ -66,7 +66,7 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 		defaultMin = Double.NaN;
 		defaultMax = Double.NaN;
 
-		cColormap = Colormaps.getNewInstanceOfBuiltInColormap(Colormaps.getDefaultColormapName());
+		cColormap = Colormaps.getNewInstanceOfBuiltInColormap(Colormaps.getCurrentColormapName());
 
 		// Instantiate the various GUI controls
 		colormapComboBox = new JComboBox<>();
@@ -77,7 +77,7 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 		{
 			Colormap cmap = Colormaps.getNewInstanceOfBuiltInColormap(aStr);
 			colormapComboBox.addItem(cmap);
-			if (cmap.getName().equals(Colormaps.getDefaultColormapName()))
+			if (cmap.getName().equals(Colormaps.getCurrentColormapName()))
 				colormapComboBox.setSelectedItem(cmap);
 		}
 		colormapComboBox.addActionListener(this);

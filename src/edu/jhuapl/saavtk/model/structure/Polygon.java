@@ -1,22 +1,18 @@
 package edu.jhuapl.saavtk.model.structure;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import crucible.crust.metadata.api.Key;
 import crucible.crust.metadata.api.Metadata;
 import crucible.crust.metadata.impl.InstanceGetter;
-import crucible.crust.settings.api.Configuration;
-import crucible.crust.settings.api.Content;
-import crucible.crust.settings.api.ContentKey;
-import crucible.crust.settings.api.KeyValueCollection;
-import crucible.crust.settings.api.SettableValue;
-import crucible.crust.settings.impl.Configurations;
-import crucible.crust.settings.impl.KeyValueCollections;
-import crucible.crust.settings.impl.SettableValues;
+import crucible.crust.settings.api.Configurable;
+import crucible.crust.settings.api.ControlKey;
+import crucible.crust.settings.api.SettableStored;
+import crucible.crust.settings.api.Viewable;
+import crucible.crust.settings.impl.ConfigurableFactory;
+import crucible.crust.settings.impl.KeyedFactory;
+import crucible.crust.settings.impl.SettableStoredFactory;
 import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -28,36 +24,36 @@ import vtk.vtkPolyData;
 import vtk.vtkQuadricClustering;
 import vtk.vtkSelectPolyData;
 
-public abstract class Polygon extends Line
+public class Polygon extends Line
 {
-    public static Polygon of(int id)
-    {
-        final ArrayList<LatLon> controlPoints = new ArrayList<>();
-        final Configuration configuration = createConfiguration(id, controlPoints);
+    // State vars
+    private boolean showInterior;
+    private double surfaceArea;
 
-        return new Polygon(controlPoints) {
-
-            @Override
-            public Configuration getConfiguration()
-            {
-                return configuration;
-            }
-
-        };
-    }
-
-    public vtkPolyData interiorPolyData;
-    public vtkPolyData decimatedInteriorPolyData;
+    // VTK vars
+    protected vtkPolyData vInteriorRegPD;
+    protected final vtkPolyData vInteriorDecPD;
 
     private static final String POLYGON = "polygon";
     private static final String AREA = "area";
 
-    protected Polygon(List<LatLon> controlPoints)
+    /**
+     * Standard Constructor
+     */
+    public Polygon(int aId)
     {
-        super(controlPoints);
+        super(aId);
 
-        interiorPolyData = new vtkPolyData();
-        decimatedInteriorPolyData = new vtkPolyData();
+        showInterior = false;
+        surfaceArea = 0.0;
+
+        vInteriorRegPD = new vtkPolyData();
+        vInteriorDecPD = new vtkPolyData();
+    }
+
+    public boolean isShowInterior()
+    {
+        return showInterior;
     }
 
     @Override
@@ -69,20 +65,21 @@ public abstract class Polygon extends Line
     @Override
     public String getInfo()
     {
-        double surfaceArea = getContent(AREA_KEY).getValue();
-        return "Area: " + decimalFormatter.format(surfaceArea) + " km^2, Length: " + decimalFormatter.format(getPathLength()) + " km, " + getControlPoints().size() + " vertices";
+        return "Area: " + decimalFormatter.format(surfaceArea) + " km^2, Length: "
+                + decimalFormatter.format(getPathLength()) + " km, " + getControlPoints().size() + " vertices";
     }
 
     @Override
     public String getClickStatusBarText()
     {
-        double surfaceArea = getContent(AREA_KEY).getValue();
-        return "Polygon, Id = " + getId() + ", Length = " + decimalFormatter.format(getPathLength()) + " km" + ", Surface Area = " + decimalFormatter.format(surfaceArea) + " km^2" + ", Number of Vertices = " + getControlPoints().size();
+        return "Polygon, Id = " + getId() + ", Length = " + decimalFormatter.format(getPathLength()) + " km"
+                + ", Surface Area = " + decimalFormatter.format(surfaceArea) + " km^2" + ", Number of Vertices = "
+                + getControlPoints().size();
     }
 
-    public void setShowInterior(PolyhedralModel smallBodyModel, boolean showInterior)
+    public void setShowInterior(PolyhedralModel smallBodyModel, boolean aShowInterior)
     {
-        getContent(SHOW_INTERIOR_KEY).setValue(showInterior);
+        showInterior = aShowInterior;
 
         updateInteriorPolydata(smallBodyModel);
 
@@ -90,67 +87,57 @@ public abstract class Polygon extends Line
         {
             // Decimate interiorPolyData for LODs
             vtkQuadricClustering decimator = new vtkQuadricClustering();
-            decimator.SetInputData(interiorPolyData);
+            decimator.SetInputData(vInteriorRegPD);
             decimator.AutoAdjustNumberOfDivisionsOn();
             decimator.CopyCellDataOn();
             decimator.Update();
-            decimatedInteriorPolyData.DeepCopy(decimator.GetOutput());
+            vInteriorDecPD.DeepCopy(decimator.GetOutput());
             decimator.Delete();
         }
         else
         {
-            PolyDataUtil.clearPolyData(interiorPolyData);
-            PolyDataUtil.clearPolyData(decimatedInteriorPolyData);
+            PolyDataUtil.clearPolyData(vInteriorRegPD);
+            PolyDataUtil.clearPolyData(vInteriorDecPD);
         }
     }
 
     protected void updateInteriorPolydata(PolyhedralModel smallBodyModel)
     {
-        SettableValue<Double> areaValue = getContent(AREA_KEY);
-        double surfaceArea = areaValue.getValue();
+        // Bail if no interior
+        if (isShowInterior() == false)
+            return;
 
-        if (isShowInterior())
+        vtkPoints pts = new vtkPoints();
+        for (int i = 0; i < xyzPointList.size(); i++)
         {
-            vtkPoints pts = new vtkPoints();
-            for (int i = 0; i < xyzPointList.size(); i++)
-            {
-                pts.InsertNextPoint(xyzPointList.get(i).xyz);
-            }
-
-            // Clean the poly data here before selecting the interior facets.
-            vtkCleanPolyData cleanPoly = new vtkCleanPolyData();
-            cleanPoly.SetInputData(smallBodyModel.getSmallBodyPolyData());
-            cleanPoly.Update();
-            vtkPolyData cleanPolyData = cleanPoly.GetOutput();
-
-            vtkSelectPolyData loop = new vtkSelectPolyData();
-            loop.SetInputData(cleanPolyData);
-            loop.SetLoop(pts);
-            loop.GenerateSelectionScalarsOn();
-            loop.SetSelectionModeToSmallestRegion();
-            loop.Update();
-            vtkClipPolyData clipper = new vtkClipPolyData();
-            clipper.SetInputData(loop.GetOutput());
-            clipper.InsideOutOn();
-            clipper.GenerateClipScalarsOff();
-            clipper.Update();
-            interiorPolyData = clipper.GetOutput();
-            surfaceArea = PolyDataUtil.computeSurfaceArea(interiorPolyData);
+            pts.InsertNextPoint(xyzPointList.get(i).xyz);
         }
 
-        areaValue.setValue(surfaceArea);
-    }
+        // Clean the poly data here before selecting the interior facets.
+        vtkCleanPolyData cleanPoly = new vtkCleanPolyData();
+        cleanPoly.SetInputData(smallBodyModel.getSmallBodyPolyData());
+        cleanPoly.Update();
+        vtkPolyData cleanPolyData = cleanPoly.GetOutput();
 
-    public boolean isShowInterior()
-    {
-        return getContent(SHOW_INTERIOR_KEY).getValue();
+        vtkSelectPolyData loop = new vtkSelectPolyData();
+        loop.SetInputData(cleanPolyData);
+        loop.SetLoop(pts);
+        loop.GenerateSelectionScalarsOn();
+        loop.SetSelectionModeToSmallestRegion();
+        loop.Update();
+        vtkClipPolyData clipper = new vtkClipPolyData();
+        clipper.SetInputData(loop.GetOutput());
+        clipper.InsideOutOn();
+        clipper.GenerateClipScalarsOff();
+        clipper.Update();
+        vInteriorRegPD = clipper.GetOutput();
+        surfaceArea = PolyDataUtil.computeSurfaceArea(vInteriorRegPD);
     }
 
     @Override
     public Element toXmlDomElement(Document dom)
     {
         Element element = super.toXmlDomElement(dom);
-        double surfaceArea = getContent(AREA_KEY).getValue();
         element.setAttribute(AREA, String.valueOf(surfaceArea));
 
         return element;
@@ -161,8 +148,7 @@ public abstract class Polygon extends Line
     {
         super.fromXmlDomElement(smallBodyModel, element, shapeModelName, append);
 
-        double surfaceArea = element.hasAttribute(AREA) ? surfaceArea = Double.parseDouble(element.getAttribute(AREA)) : null;
-        getContent(AREA_KEY).setValue(surfaceArea);
+        surfaceArea = element.hasAttribute(AREA) ? surfaceArea = Double.parseDouble(element.getAttribute(AREA)) : null;
     }
 
     @Override
@@ -171,27 +157,24 @@ public abstract class Polygon extends Line
         return true;
     }
 
-    protected static Configuration createConfiguration(int id, List<LatLon> controlPoints)
+    private static Configurable formConfigurationFor(Polygon aPolygon)
     {
-        Configuration lineConfiguration = Line.createConfiguration(id, controlPoints);
-        KeyValueCollection<Content> collection = lineConfiguration.getCollection();
+        Configurable lineConfiguration = Line.formConfigurationFor(aPolygon);
 
-        KeyValueCollections.Builder<Content> builder = KeyValueCollections.instance().builder();
-        for (ContentKey<? extends Content> key : collection.getKeys())
+        KeyedFactory.Builder<Viewable> builder = KeyedFactory.instance().builder();
+        for (ControlKey<? extends Viewable> key : lineConfiguration.getKeys())
         {
             @SuppressWarnings("unchecked")
-            ContentKey<Content> contentKey = (ContentKey<Content>) key;
-            builder.put(contentKey, collection.getValue(contentKey));
+            ControlKey<Viewable> contentKey = (ControlKey<Viewable>) key;
+            builder.put(contentKey, lineConfiguration.getItem(contentKey));
         }
-        builder.put(AREA_KEY, SettableValues.instance().of(0.));
-        builder.put(SHOW_INTERIOR_KEY, SettableValues.instance().of(Boolean.FALSE));
+        builder.put(AREA_KEY, SettableStoredFactory.instance().of(aPolygon.surfaceArea));
+        builder.put(SHOW_INTERIOR_KEY, SettableStoredFactory.instance().of(aPolygon.showInterior));
 
-        return Configurations.instance().of(lineConfiguration.getVersion(), builder.build());
+        return ConfigurableFactory.instance().of(lineConfiguration.getVersion(), builder.build());
     }
 
     private static final Key<Polygon> POLYGON_STRUCTURE_PROXY_KEY = Key.of("Polygon");
-    public static final ContentKey<SettableValue<Double>> AREA_KEY = SettableValues.key("area");
-    public static final ContentKey<SettableValue<Boolean>> SHOW_INTERIOR_KEY = SettableValues.key("showInterior");
     private static boolean proxyInitialized = false;
 
     public static void initializeSerializationProxy()
@@ -202,35 +185,33 @@ public abstract class Polygon extends Line
 
             InstanceGetter.defaultInstanceGetter().register(POLYGON_STRUCTURE_PROXY_KEY, source -> {
                 int id = source.get(Key.of(ID.getId()));
-                Polygon result = of(id);
+                Polygon result = new Polygon(id);
                 unpackMetadata(source, result);
 
                 return result;
             }, Polygon.class, polygon -> {
-                Configuration configuration = polygon.getConfiguration();
-                return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration.getCollection()).store();
+//                Configurable configuration = polygon.getConfiguration();
+                Configurable configuration = formConfigurationFor(polygon);
+                return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration).store();
             });
 
             proxyInitialized = true;
         }
     }
 
+    public static final ControlKey<SettableStored<Double>> AREA_KEY = SettableStoredFactory.key("area");
+    public static final ControlKey<SettableStored<Boolean>> SHOW_INTERIOR_KEY = SettableStoredFactory.key("showInterior");
+
     protected static void unpackMetadata(Metadata source, Polygon polygon)
     {
         Line.unpackMetadata(source, polygon);
 
-        KeyValueCollection<Content> collection = polygon.getConfiguration().getCollection();
-
         Key<Double> areaKey = Key.of(AREA_KEY.getId());
         if (source.hasKey(areaKey))
-        {
-            collection.getValue(AREA_KEY).setValue(source.get(areaKey));
-        }
+            polygon.surfaceArea = source.get(areaKey);
 
         Key<Boolean> showInteriorKey = Key.of(SHOW_INTERIOR_KEY.getId());
         if (source.hasKey(showInteriorKey))
-        {
-            collection.getValue(SHOW_INTERIOR_KEY).setValue(source.get(showInteriorKey));
-        }
+            polygon.showInterior = source.get(showInteriorKey);
     }
 }

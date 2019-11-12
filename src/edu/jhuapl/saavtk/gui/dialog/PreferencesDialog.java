@@ -11,8 +11,8 @@
 package edu.jhuapl.saavtk.gui.dialog;
 
 import java.awt.Color;
-import java.util.List;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -20,6 +20,7 @@ import javax.swing.JOptionPane;
 import com.google.common.base.Joiner;
 import com.google.common.primitives.Ints;
 
+import edu.jhuapl.saavtk.colormap.Colormaps;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.render.RenderPanel;
@@ -32,14 +33,15 @@ import edu.jhuapl.saavtk.util.ColorIcon;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.Preferences;
 
-
-public class PreferencesDialog extends javax.swing.JDialog {
+public class PreferencesDialog extends javax.swing.JDialog
+{
 
     private ViewManager viewManager;
     private static final double MAX_TOLERANCE = 0.01;
 
     /** Creates new form SettingsDialog */
-    public PreferencesDialog(java.awt.Frame parent, boolean modal) {
+    public PreferencesDialog(java.awt.Frame parent, boolean modal)
+    {
         super(parent, modal);
         initComponents();
         setTitle("Preferences");
@@ -50,7 +52,9 @@ public class PreferencesDialog extends javax.swing.JDialog {
         this.viewManager = viewManager;
     }
 
-    public void setVisible(boolean b) {
+    @Override
+    public void setVisible(boolean b)
+    {
         if (b)
         {
             Renderer renderer = viewManager.getCurrentView().getRenderer();
@@ -68,11 +72,13 @@ public class PreferencesDialog extends javax.swing.JDialog {
 //            showAxesCheckBox.setSelected(renderer.getShowOrientationAxes());
 //            interactiveCheckBox.setSelected(renderer.getOrientationAxesInteractive());
 
-/*            if (renderer.getDefaultInteractorStyleType() == Renderer.InteractorStyleType.JOYSTICK_CAMERA)
-                joystickRadioButton.setSelected(true);
-            else
-                trackballRadioButton.setSelected(true);*/
-            
+            /*
+             * if (renderer.getDefaultInteractorStyleType() ==
+             * Renderer.InteractorStyleType.JOYSTICK_CAMERA)
+             * joystickRadioButton.setSelected(true); else
+             * trackballRadioButton.setSelected(true);
+             */
+
             joystickRadioButton.setEnabled(false);
             trackballRadioButton.setEnabled(false);
 
@@ -86,26 +92,30 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
 //            mouseWheelMotionFactorSpinner.setValue(renderer.getMouseWheelMotionFactor());
 
-            int[] color = viewManager.getCurrentView().getModelManager().getCommonData().getSelectionColor();
+            Color color = viewManager.getCurrentView().getModelManager().getCommonData().getSelectionColor();
             updateColorLabel(color, selectionColorLabel);
 
-            color = viewManager.getCurrentView().getRenderer().getBackgroundColor();
-            updateColorLabel(color, backgroundColorLabel);
+            int[] rgbArr = viewManager.getCurrentView().getRenderer().getBackgroundColor();
+            updateColorLabel(rgbArr, backgroundColorLabel);
 
-            RenderPanel renderPanel=(RenderPanel)viewManager.getCurrentView().getRenderer().getRenderWindowPanel();
-            AxesPanel axesPanel=renderPanel.getAxesPanel();
-            
-/*            updateColorLabel(axesPanel.getxColor(), xAxisColorLabel);
-            updateColorLabel(axesPanel.getyColor(), yAxisColorLabel);
-            updateColorLabel(axesPanel.getzColor(), zAxisColorLabel);
+            RenderPanel renderPanel = (RenderPanel) viewManager.getCurrentView().getRenderer().getRenderWindowPanel();
+            AxesPanel axesPanel = renderPanel.getAxesPanel();
 
-            updateColorLabel(axesPanel.getFontColor(), fontColorLabel);
+            defaultColorMapSelection.setSelectedItem(Colormaps.getCurrentColormapName());
 
-            axesSizeSpinner.setValue(axesPanel.getShaftlength());
-            axesLineWidthSpinner.setValue(axesPanel.getLinewidth());
-            axesFontSpinner.setValue(axesPanel.getFontsize());
-            axesConeLengthSpinner.setValue(axesPanel.getConelength());
-            axesConeRadiusSpinner.setValue(axesPanel.getConeradius());*/
+            /*
+             * updateColorLabel(axesPanel.getxColor(), xAxisColorLabel);
+             * updateColorLabel(axesPanel.getyColor(), yAxisColorLabel);
+             * updateColorLabel(axesPanel.getzColor(), zAxisColorLabel);
+             * 
+             * updateColorLabel(axesPanel.getFontColor(), fontColorLabel);
+             * 
+             * axesSizeSpinner.setValue(axesPanel.getShaftlength());
+             * axesLineWidthSpinner.setValue(axesPanel.getLinewidth());
+             * axesFontSpinner.setValue(axesPanel.getFontsize());
+             * axesConeLengthSpinner.setValue(axesPanel.getConelength());
+             * axesConeRadiusSpinner.setValue(axesPanel.getConeradius());
+             */
 
             updateEnabledItems();
         }
@@ -145,21 +155,20 @@ public class PreferencesDialog extends javax.swing.JDialog {
                 renderer.setLighting(LightingType.FIXEDLIGHT);
             }
 
-            renderer.setLightIntensity((Double)intensitySpinner.getValue());
+            renderer.setLightIntensity((Double) intensitySpinner.getValue());
 
-            LatLon position = new LatLon(
-                    Double.parseDouble(latitudeTextField.getText()),
-                    Double.parseDouble(longitudeTextField.getText()),
-                    Double.parseDouble(distanceTextField.getText()));
+            LatLon position = new LatLon(Double.parseDouble(latitudeTextField.getText()), Double.parseDouble(longitudeTextField.getText()), Double.parseDouble(distanceTextField.getText()));
 
             renderer.setFixedLightPosition(position);
 //            renderer.setShowOrientationAxes(showAxesCheckBox.isSelected());
 //            renderer.setOrientationAxesInteractive(interactiveCheckBox.isSelected());
 
-/*            if (joystickRadioButton.isSelected())
-                renderer.setDefaultInteractorStyleType(InteractorStyleType.JOYSTICK_CAMERA);
-            else
-                renderer.setDefaultInteractorStyleType(InteractorStyleType.TRACKBALL_CAMERA);*/
+            /*
+             * if (joystickRadioButton.isSelected())
+             * renderer.setDefaultInteractorStyleType(InteractorStyleType.JOYSTICK_CAMERA);
+             * else
+             * renderer.setDefaultInteractorStyleType(InteractorStyleType.TRACKBALL_CAMERA);
+             */
 
             PolyhedralModel smallBodyModel = v.getModelManager().getPolyhedralModel();
             smallBodyModel.setShowScaleBar(showScaleBarCheckBox.isSelected());
@@ -170,58 +179,59 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
 //            renderer.setMouseWheelMotionFactor((Double)mouseWheelMotionFactorSpinner.getValue());
 
-            int [] color = getColorFromLabel(selectionColorLabel);
+            Color color = getColorInstanceFromLabel(selectionColorLabel);
             v.getModelManager().getCommonData().setSelectionColor(color);
 
-            color = getColorFromLabel(backgroundColorLabel);
-            renderer.setBackgroundColor(color);
+            int[] rgbArr = getColorFromLabel(backgroundColorLabel);
+            renderer.setBackgroundColor(rgbArr);
 
-            RenderPanel renderPanel = (RenderPanel)v.getRenderer().getRenderWindowPanel();
-            AxesPanel axesPanel=renderPanel.getAxesPanel();
-            axesPanel.getRenderer().SetBackground(color[0] / 255.0, color[1] / 255.0, color[2] / 255.0);
+            RenderPanel renderPanel = (RenderPanel) v.getRenderer().getRenderWindowPanel();
+            AxesPanel axesPanel = renderPanel.getAxesPanel();
+            axesPanel.getRenderer().SetBackground(rgbArr[0] / 255.0, rgbArr[1] / 255.0, rgbArr[2] / 255.0);
             axesPanel.Render();
 
-/*            axesPanel.setxColor(getColorInstanceFromLabel(xAxisColorLabel));
-            axesPanel.setyColor(getColorInstanceFromLabel(yAxisColorLabel));
-            axesPanel.setzColor(getColorInstanceFromLabel(zAxisColorLabel));
-            axesPanel.setFontColor(getColorInstanceFromLabel(fontColorLabel));
-            axesPanel.setConelength((Double)axesConeLengthSpinner.getValue());
-            axesPanel.setConeradius((Double)axesConeRadiusSpinner.getValue());
-            axesPanel.setFontsize((Integer)axesFontSpinner.getValue());
-            axesPanel.setLinewidth((Double)axesLineWidthSpinner.getValue());
-            axesPanel.setShaftlength((Double)axesSizeSpinner.getValue());*/
+            /*
+             * axesPanel.setxColor(getColorInstanceFromLabel(xAxisColorLabel));
+             * axesPanel.setyColor(getColorInstanceFromLabel(yAxisColorLabel));
+             * axesPanel.setzColor(getColorInstanceFromLabel(zAxisColorLabel));
+             * axesPanel.setFontColor(getColorInstanceFromLabel(fontColorLabel));
+             * axesPanel.setConelength((Double)axesConeLengthSpinner.getValue());
+             * axesPanel.setConeradius((Double)axesConeRadiusSpinner.getValue());
+             * axesPanel.setFontsize((Integer)axesFontSpinner.getValue());
+             * axesPanel.setLinewidth((Double)axesLineWidthSpinner.getValue());
+             * axesPanel.setShaftlength((Double)axesSizeSpinner.getValue());
+             */
         }
     }
 
     private double getToleranceFromSliderValue(int value)
     {
-        return MAX_TOLERANCE * (double)value / (double)pickToleranceSlider.getMaximum();
+        return MAX_TOLERANCE * value / pickToleranceSlider.getMaximum();
     }
 
     private int getSliderValueFromTolerance(double tolerance)
     {
-        return (int)((double)pickToleranceSlider.getMaximum()
+        return (int) (pickToleranceSlider.getMaximum()
                 * tolerance / MAX_TOLERANCE);
     }
 
     private void updateColorLabel(int[] color, JLabel label)
     {
         int[] c = color;
-        label.setText("["+c[0]+","+c[1]+","+c[2]+"]");
+        label.setText("[" + c[0] + "," + c[1] + "," + c[2] + "]");
         label.setIcon(new ColorIcon(new Color(c[0], c[1], c[2])));
     }
-    
+
     private void updateColorLabel(Color color, JLabel label)
     {
-    	int[] c=new int[]{color.getRed(),color.getGreen(),color.getBlue()};
-    	updateColorLabel(c, label);
+        int[] c = new int[] { color.getRed(), color.getGreen(), color.getBlue() };
+        updateColorLabel(c, label);
     }
 
     private void showColorChooser(JLabel label)
     {
         int[] initialColor = getColorFromLabel(label);
-        Color color = ColorChooser.showColorChooser(
-                JOptionPane.getFrameForComponent(this),initialColor);
+        Color color = ColorChooser.showColorChooser(JOptionPane.getFrameForComponent(this), initialColor);
 
         if (color == null)
             return;
@@ -236,7 +246,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
     private int[] getColorFromLabel(JLabel label)
     {
-        Color color = ((ColorIcon)label.getIcon()).getColor();
+        Color color = ((ColorIcon) label.getIcon()).getColor();
         int[] c = new int[3];
         c[0] = color.getRed();
         c[1] = color.getGreen();
@@ -246,17 +256,19 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
     private Color getColorInstanceFromLabel(JLabel label)
     {
-        return ((ColorIcon)label.getIcon()).getColor();
+        return ((ColorIcon) label.getIcon()).getColor();
     }
 
-    /** This method is called from within the constructor to
-     * initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is
-     * always regenerated by the Form Editor.
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
      */
     @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
-    private void initComponents() {
+    // <editor-fold defaultstate="collapsed" desc="Generated
+    // Code">//GEN-BEGIN:initComponents
+    private void initComponents()
+    {
         java.awt.GridBagConstraints gridBagConstraints;
 
         lightingButtonGroup = new javax.swing.ButtonGroup();
@@ -307,6 +319,8 @@ public class PreferencesDialog extends javax.swing.JDialog {
         jLabel9 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
 //        mouseWheelMotionFactorSpinner = new javax.swing.JSpinner();
+        defaultColorMapLabel = new javax.swing.JLabel("Default color map name");
+        defaultColorMapSelection = new javax.swing.JComboBox<>();
         selectionColorLabel = new javax.swing.JLabel();
         selectionColorButton = new javax.swing.JButton();
         jPanel10 = new javax.swing.JPanel();
@@ -349,7 +363,9 @@ public class PreferencesDialog extends javax.swing.JDialog {
         headlightRadioButton.setText("Headlight");
         headlightRadioButton.setToolTipText("A Headlight is a single light always positioned at the virtual camera. It's intensity can be changed below.");
         headlightRadioButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt)
+            {
                 headlightRadioButtonActionPerformed(evt);
             }
         });
@@ -388,7 +404,9 @@ public class PreferencesDialog extends javax.swing.JDialog {
         lightKitRadioButton.setText("Light Kit");
         lightKitRadioButton.setToolTipText("A Light Kit is a set of several lights of various strengths positioned to provide suitable illumination for most situations.");
         lightKitRadioButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt)
+            {
                 lightKitRadioButtonActionPerformed(evt);
             }
         });
@@ -403,7 +421,9 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
         applyToCurrentButton.setText("Apply to Current View");
         applyToCurrentButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt)
+            {
                 applyToCurrentButtonActionPerformed(evt);
             }
         });
@@ -415,7 +435,9 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
         applyToAllButton.setText("Apply to All Views");
         applyToAllButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt)
+            {
                 applyToAllButtonActionPerformed(evt);
             }
         });
@@ -427,7 +449,9 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
         closeButton.setText("Close");
         closeButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt)
+            {
                 closeButtonActionPerformed(evt);
             }
         });
@@ -438,7 +462,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 33;
+        gridBagConstraints.gridy = 36;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.weighty = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(15, 0, 0, 0);
@@ -505,7 +529,9 @@ public class PreferencesDialog extends javax.swing.JDialog {
         fixedLightRadioButton.setText("Fixed Light");
         fixedLightRadioButton.setToolTipText("A Fixed Light is a light fixed in space that does not move with the virtual camera. Its intensity and positon can be changed below.");
         fixedLightRadioButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt)
+            {
                 fixedLightRadioButtonActionPerformed(evt);
             }
         });
@@ -710,7 +736,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 29;
+        gridBagConstraints.gridy = 32;
         gridBagConstraints.gridwidth = 4;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.insets = new java.awt.Insets(15, 4, 5, 0);
@@ -733,22 +759,43 @@ public class PreferencesDialog extends javax.swing.JDialog {
 //        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
 //        jPanel11.add(mouseWheelMotionFactorSpinner, gridBagConstraints);
 
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 31;
+        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 0);
+        jPanel11.add(defaultColorMapLabel, gridBagConstraints);
+
+        for (String colorMapName : Colormaps.getAllBuiltInColormapNames())
+        {
+            defaultColorMapSelection.addItem(colorMapName);
+        }
+        defaultColorMapSelection.setSelectedItem(Colormaps.getCurrentColormapName());
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 31;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        jPanel11.add(defaultColorMapSelection, gridBagConstraints);
+
         selectionColorLabel.setText("Default");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 30;
+        gridBagConstraints.gridy = 33;
         gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 0);
         jPanel11.add(selectionColorLabel, gridBagConstraints);
 
         selectionColorButton.setText("Change...");
         selectionColorButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt)
+            {
                 selectionColorButtonActionPerformed(evt);
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 30;
+        gridBagConstraints.gridy = 33;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         jPanel11.add(selectionColorButton, gridBagConstraints);
@@ -791,7 +838,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 31;
+        gridBagConstraints.gridy = 34;
         gridBagConstraints.gridwidth = 4;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.insets = new java.awt.Insets(15, 4, 5, 0);
@@ -800,220 +847,180 @@ public class PreferencesDialog extends javax.swing.JDialog {
         backgroundColorLabel.setText("Default");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 32;
+        gridBagConstraints.gridy = 35;
         gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 0);
         jPanel11.add(backgroundColorLabel, gridBagConstraints);
 
         backgroundColorButton.setText("Change...");
         backgroundColorButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt)
+            {
                 backgroundColorButtonActionPerformed(evt);
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 32;
+        gridBagConstraints.gridy = 35;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         jPanel11.add(backgroundColorButton, gridBagConstraints);
 
-/*        jLabel20.setText("X Axis Color");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 11;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
-        jPanel11.add(jLabel20, gridBagConstraints);
-
-        xAxisColorButton.setText("Change...");
-        xAxisColorButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                xAxisColorButtonActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 3;
-        gridBagConstraints.gridy = 11;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
-        jPanel11.add(xAxisColorButton, gridBagConstraints);
-
-        jLabel21.setText("Y Axis Color");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 12;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
-        jPanel11.add(jLabel21, gridBagConstraints);
-
-        jLabel22.setText("Z Axis Color");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 13;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
-        jPanel11.add(jLabel22, gridBagConstraints);
-
-        yAxisColorButton.setText("Change...");
-        yAxisColorButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                yAxisColorButtonActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 3;
-        gridBagConstraints.gridy = 12;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
-        jPanel11.add(yAxisColorButton, gridBagConstraints);
-
-        zAxisColorButton.setText("Change...");
-        zAxisColorButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                zAxisColorButtonActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 3;
-        gridBagConstraints.gridy = 13;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
-        jPanel11.add(zAxisColorButton, gridBagConstraints);
-
-        xAxisColorLabel.setText("Default");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 11;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
-        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 0);
-        jPanel11.add(xAxisColorLabel, gridBagConstraints);
-
-        yAxisColorLabel.setText("Default");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 12;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
-        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 0);
-        jPanel11.add(yAxisColorLabel, gridBagConstraints);
-
-        zAxisColorLabel.setText("Default");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 13;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
-        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 0);
-        jPanel11.add(zAxisColorLabel, gridBagConstraints);
-
-        jLabel15.setText("Size");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 15;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 4);
-        jPanel11.add(jLabel15, gridBagConstraints);
-
-        axesSizeSpinner.setModel(new javax.swing.SpinnerNumberModel(0.2d, 0.0d, 1.0d, 0.1d));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 15;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.ipadx = 50;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        jPanel11.add(axesSizeSpinner, gridBagConstraints);
-
-        jLabel16.setText("Line Width");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 16;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 4);
-        jPanel11.add(jLabel16, gridBagConstraints);
-
-        axesLineWidthSpinner.setModel(new javax.swing.SpinnerNumberModel(1.0d, 1.0d, 128.0d, 1.0d));
-        axesLineWidthSpinner.setMinimumSize(new java.awt.Dimension(41, 28));
-        axesLineWidthSpinner.setPreferredSize(new java.awt.Dimension(41, 28));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 16;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.ipadx = 50;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        jPanel11.add(axesLineWidthSpinner, gridBagConstraints);
-
-        jLabel17.setText("Font Size");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 17;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 4);
-        jPanel11.add(jLabel17, gridBagConstraints);
-
-        jLabel18.setText("Cone Length");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 18;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 4);
-        jPanel11.add(jLabel18, gridBagConstraints);
-
-        jLabel19.setText("Cone Radius");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 19;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 4);
-        jPanel11.add(jLabel19, gridBagConstraints);
-
-        axesFontSpinner.setModel(new javax.swing.SpinnerNumberModel(12, 4, 128, 1));
-        axesFontSpinner.setMinimumSize(new java.awt.Dimension(41, 28));
-        axesFontSpinner.setPreferredSize(new java.awt.Dimension(41, 28));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 17;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.ipadx = 50;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        jPanel11.add(axesFontSpinner, gridBagConstraints);
-
-        axesConeLengthSpinner.setModel(new javax.swing.SpinnerNumberModel(0.2d, 0.0d, 1.0d, 0.1d));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 18;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.ipadx = 50;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        jPanel11.add(axesConeLengthSpinner, gridBagConstraints);
-
-        axesConeRadiusSpinner.setModel(new javax.swing.SpinnerNumberModel(0.4d, 0.0d, 1.0d, 0.1d));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 19;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.ipadx = 50;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        jPanel11.add(axesConeRadiusSpinner, gridBagConstraints);
-
-        jLabel11.setText("Font Color");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 14;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
-        jPanel11.add(jLabel11, gridBagConstraints);
-
-        fontColorLabel.setText("Default");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 14;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
-        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 0);
-        jPanel11.add(fontColorLabel, gridBagConstraints);
-
-        fontColorButton.setText("Change...");
-        fontColorButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                fontColorButtonActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 3;
-        gridBagConstraints.gridy = 14;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
-        jPanel11.add(fontColorButton, gridBagConstraints);
-*/
+        /*
+         * jLabel20.setText("X Axis Color"); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
+         * gridBagConstraints.gridy = 11; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.EAST; jPanel11.add(jLabel20, gridBagConstraints);
+         * 
+         * xAxisColorButton.setText("Change..."); xAxisColorButton.addActionListener(new
+         * java.awt.event.ActionListener() { public void
+         * actionPerformed(java.awt.event.ActionEvent evt) {
+         * xAxisColorButtonActionPerformed(evt); } }); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 3;
+         * gridBagConstraints.gridy = 11; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.LINE_START; jPanel11.add(xAxisColorButton,
+         * gridBagConstraints);
+         * 
+         * jLabel21.setText("Y Axis Color"); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
+         * gridBagConstraints.gridy = 12; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.EAST; jPanel11.add(jLabel21, gridBagConstraints);
+         * 
+         * jLabel22.setText("Z Axis Color"); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
+         * gridBagConstraints.gridy = 13; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.EAST; jPanel11.add(jLabel22, gridBagConstraints);
+         * 
+         * yAxisColorButton.setText("Change..."); yAxisColorButton.addActionListener(new
+         * java.awt.event.ActionListener() { public void
+         * actionPerformed(java.awt.event.ActionEvent evt) {
+         * yAxisColorButtonActionPerformed(evt); } }); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 3;
+         * gridBagConstraints.gridy = 12; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.LINE_START; jPanel11.add(yAxisColorButton,
+         * gridBagConstraints);
+         * 
+         * zAxisColorButton.setText("Change..."); zAxisColorButton.addActionListener(new
+         * java.awt.event.ActionListener() { public void
+         * actionPerformed(java.awt.event.ActionEvent evt) {
+         * zAxisColorButtonActionPerformed(evt); } }); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 3;
+         * gridBagConstraints.gridy = 13; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.LINE_START; jPanel11.add(zAxisColorButton,
+         * gridBagConstraints);
+         * 
+         * xAxisColorLabel.setText("Default"); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 2;
+         * gridBagConstraints.gridy = 11; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.LINE_START; gridBagConstraints.insets = new
+         * java.awt.Insets(0, 4, 0, 0); jPanel11.add(xAxisColorLabel,
+         * gridBagConstraints);
+         * 
+         * yAxisColorLabel.setText("Default"); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 2;
+         * gridBagConstraints.gridy = 12; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.LINE_START; gridBagConstraints.insets = new
+         * java.awt.Insets(0, 4, 0, 0); jPanel11.add(yAxisColorLabel,
+         * gridBagConstraints);
+         * 
+         * zAxisColorLabel.setText("Default"); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 2;
+         * gridBagConstraints.gridy = 13; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.LINE_START; gridBagConstraints.insets = new
+         * java.awt.Insets(0, 4, 0, 0); jPanel11.add(zAxisColorLabel,
+         * gridBagConstraints);
+         * 
+         * jLabel15.setText("Size"); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
+         * gridBagConstraints.gridy = 15; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.EAST; gridBagConstraints.insets = new
+         * java.awt.Insets(0, 0, 0, 4); jPanel11.add(jLabel15, gridBagConstraints);
+         * 
+         * axesSizeSpinner.setModel(new javax.swing.SpinnerNumberModel(0.2d, 0.0d, 1.0d,
+         * 0.1d)); gridBagConstraints = new java.awt.GridBagConstraints();
+         * gridBagConstraints.gridx = 2; gridBagConstraints.gridy = 15;
+         * gridBagConstraints.gridwidth = 2; gridBagConstraints.ipadx = 50;
+         * gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+         * jPanel11.add(axesSizeSpinner, gridBagConstraints);
+         * 
+         * jLabel16.setText("Line Width"); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
+         * gridBagConstraints.gridy = 16; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.EAST; gridBagConstraints.insets = new
+         * java.awt.Insets(0, 0, 0, 4); jPanel11.add(jLabel16, gridBagConstraints);
+         * 
+         * axesLineWidthSpinner.setModel(new javax.swing.SpinnerNumberModel(1.0d, 1.0d,
+         * 128.0d, 1.0d)); axesLineWidthSpinner.setMinimumSize(new
+         * java.awt.Dimension(41, 28)); axesLineWidthSpinner.setPreferredSize(new
+         * java.awt.Dimension(41, 28)); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 2;
+         * gridBagConstraints.gridy = 16; gridBagConstraints.gridwidth = 2;
+         * gridBagConstraints.ipadx = 50; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.WEST; jPanel11.add(axesLineWidthSpinner,
+         * gridBagConstraints);
+         * 
+         * jLabel17.setText("Font Size"); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
+         * gridBagConstraints.gridy = 17; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.EAST; gridBagConstraints.insets = new
+         * java.awt.Insets(0, 0, 0, 4); jPanel11.add(jLabel17, gridBagConstraints);
+         * 
+         * jLabel18.setText("Cone Length"); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
+         * gridBagConstraints.gridy = 18; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.EAST; gridBagConstraints.insets = new
+         * java.awt.Insets(0, 0, 0, 4); jPanel11.add(jLabel18, gridBagConstraints);
+         * 
+         * jLabel19.setText("Cone Radius"); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
+         * gridBagConstraints.gridy = 19; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.EAST; gridBagConstraints.insets = new
+         * java.awt.Insets(0, 0, 0, 4); jPanel11.add(jLabel19, gridBagConstraints);
+         * 
+         * axesFontSpinner.setModel(new javax.swing.SpinnerNumberModel(12, 4, 128, 1));
+         * axesFontSpinner.setMinimumSize(new java.awt.Dimension(41, 28));
+         * axesFontSpinner.setPreferredSize(new java.awt.Dimension(41, 28));
+         * gridBagConstraints = new java.awt.GridBagConstraints();
+         * gridBagConstraints.gridx = 2; gridBagConstraints.gridy = 17;
+         * gridBagConstraints.gridwidth = 2; gridBagConstraints.ipadx = 50;
+         * gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+         * jPanel11.add(axesFontSpinner, gridBagConstraints);
+         * 
+         * axesConeLengthSpinner.setModel(new javax.swing.SpinnerNumberModel(0.2d, 0.0d,
+         * 1.0d, 0.1d)); gridBagConstraints = new java.awt.GridBagConstraints();
+         * gridBagConstraints.gridx = 2; gridBagConstraints.gridy = 18;
+         * gridBagConstraints.gridwidth = 2; gridBagConstraints.ipadx = 50;
+         * gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+         * jPanel11.add(axesConeLengthSpinner, gridBagConstraints);
+         * 
+         * axesConeRadiusSpinner.setModel(new javax.swing.SpinnerNumberModel(0.4d, 0.0d,
+         * 1.0d, 0.1d)); gridBagConstraints = new java.awt.GridBagConstraints();
+         * gridBagConstraints.gridx = 2; gridBagConstraints.gridy = 19;
+         * gridBagConstraints.gridwidth = 2; gridBagConstraints.ipadx = 50;
+         * gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+         * jPanel11.add(axesConeRadiusSpinner, gridBagConstraints);
+         * 
+         * jLabel11.setText("Font Color"); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
+         * gridBagConstraints.gridy = 14; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.EAST; jPanel11.add(jLabel11, gridBagConstraints);
+         * 
+         * fontColorLabel.setText("Default"); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 2;
+         * gridBagConstraints.gridy = 14; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.LINE_START; gridBagConstraints.insets = new
+         * java.awt.Insets(0, 4, 0, 0); jPanel11.add(fontColorLabel,
+         * gridBagConstraints);
+         * 
+         * fontColorButton.setText("Change..."); fontColorButton.addActionListener(new
+         * java.awt.event.ActionListener() { public void
+         * actionPerformed(java.awt.event.ActionEvent evt) {
+         * fontColorButtonActionPerformed(evt); } }); gridBagConstraints = new
+         * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 3;
+         * gridBagConstraints.gridy = 14; gridBagConstraints.anchor =
+         * java.awt.GridBagConstraints.LINE_START; jPanel11.add(fontColorButton,
+         * gridBagConstraints);
+         */
         jScrollPane1.setViewportView(jPanel11);
 
         getContentPane().add(jScrollPane1);
@@ -1021,11 +1028,25 @@ public class PreferencesDialog extends javax.swing.JDialog {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void applyToCurrentButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_applyToCurrentButtonActionPerformed
+    private void applyToCurrentButtonActionPerformed(java.awt.event.ActionEvent evt)
+    {// GEN-FIRST:event_applyToCurrentButtonActionPerformed
         applyToView(viewManager.getCurrentView());
-    }//GEN-LAST:event_applyToCurrentButtonActionPerformed
+    }// GEN-LAST:event_applyToCurrentButtonActionPerformed
 
-    private void applyToAllButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_applyToAllButtonActionPerformed
+    private void applyToAllButtonActionPerformed(java.awt.event.ActionEvent evt)
+    {// GEN-FIRST:event_applyToAllButtonActionPerformed
+
+        // View-independent preferences.
+        Object colormapSelection = defaultColorMapSelection.getSelectedItem();
+
+        // Ensure colormapSelection is a (possibly null) string:
+        if (colormapSelection != null)
+        {
+            colormapSelection = colormapSelection.toString();
+        }
+
+        Colormaps.setCurrentColormapName((String) colormapSelection);
+
         List<View> views = viewManager.getAllViews();
         for (View v : views)
         {
@@ -1048,20 +1069,23 @@ public class PreferencesDialog extends javax.swing.JDialog {
         }
 
 //        if (joystickRadioButton.isSelected())
- //           preferencesMap.put(Preferences.INTERACTOR_STYLE_TYPE, InteractorStyleType.JOYSTICK_CAMERA.toString());
- //       else
- //           preferencesMap.put(Preferences.INTERACTOR_STYLE_TYPE, InteractorStyleType.TRACKBALL_CAMERA.toString());
+        // preferencesMap.put(Preferences.INTERACTOR_STYLE_TYPE,
+        // InteractorStyleType.JOYSTICK_CAMERA.toString());
+        // else
+        // preferencesMap.put(Preferences.INTERACTOR_STYLE_TYPE,
+        // InteractorStyleType.TRACKBALL_CAMERA.toString());
 
-        preferencesMap.put(Preferences.LIGHT_INTENSITY, ((Double)intensitySpinner.getValue()).toString());
+        preferencesMap.put(Preferences.LIGHT_INTENSITY, ((Double) intensitySpinner.getValue()).toString());
         preferencesMap.put(Preferences.FIXEDLIGHT_LATITUDE, Double.valueOf(latitudeTextField.getText()).toString());
         preferencesMap.put(Preferences.FIXEDLIGHT_LONGITUDE, Double.valueOf(longitudeTextField.getText()).toString());
         preferencesMap.put(Preferences.FIXEDLIGHT_DISTANCE, Double.valueOf(distanceTextField.getText()).toString());
 //        preferencesMap.put(Preferences.SHOW_AXES, ((Boolean)showAxesCheckBox.isSelected()).toString());
 //        preferencesMap.put(Preferences.INTERACTIVE_AXES, ((Boolean)interactiveCheckBox.isSelected()).toString());
-        preferencesMap.put(Preferences.SHOW_SCALE_BAR, ((Boolean)showScaleBarCheckBox.isSelected()).toString());
-        preferencesMap.put(Preferences.LIGHT_INTENSITY, ((Double)intensitySpinner.getValue()).toString());
+        preferencesMap.put(Preferences.SHOW_SCALE_BAR, ((Boolean) showScaleBarCheckBox.isSelected()).toString());
+        preferencesMap.put(Preferences.LIGHT_INTENSITY, ((Double) intensitySpinner.getValue()).toString());
         preferencesMap.put(Preferences.PICK_TOLERANCE, Double.valueOf(getToleranceFromSliderValue(pickToleranceSlider.getValue())).toString());
 //        preferencesMap.put(Preferences.MOUSE_WHEEL_MOTION_FACTOR, ((Double)mouseWheelMotionFactorSpinner.getValue()).toString());
+        preferencesMap.put(Preferences.DEFAULT_COLORMAP_NAME, (String) colormapSelection);
         preferencesMap.put(Preferences.SELECTION_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(selectionColorLabel))));
         preferencesMap.put(Preferences.BACKGROUND_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(backgroundColorLabel))));
 //        preferencesMap.put(Preferences.AXES_XAXIS_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(xAxisColorLabel))));
@@ -1074,31 +1098,37 @@ public class PreferencesDialog extends javax.swing.JDialog {
 //        preferencesMap.put(Preferences.AXES_LINE_WIDTH, ((Integer)axesLineWidthSpinner.getValue()).toString());
 //        preferencesMap.put(Preferences.AXES_SIZE, ((Integer)axesSizeSpinner.getValue()).toString());
         Preferences.getInstance().put(preferencesMap);
-    }//GEN-LAST:event_applyToAllButtonActionPerformed
+    }// GEN-LAST:event_applyToAllButtonActionPerformed
 
-    private void closeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_closeButtonActionPerformed
+    private void closeButtonActionPerformed(java.awt.event.ActionEvent evt)
+    {// GEN-FIRST:event_closeButtonActionPerformed
         setVisible(false);
-    }//GEN-LAST:event_closeButtonActionPerformed
+    }// GEN-LAST:event_closeButtonActionPerformed
 
-    private void lightKitRadioButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_lightKitRadioButtonActionPerformed
+    private void lightKitRadioButtonActionPerformed(java.awt.event.ActionEvent evt)
+    {// GEN-FIRST:event_lightKitRadioButtonActionPerformed
         updateEnabledItems();
-    }//GEN-LAST:event_lightKitRadioButtonActionPerformed
+    }// GEN-LAST:event_lightKitRadioButtonActionPerformed
 
-    private void headlightRadioButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_headlightRadioButtonActionPerformed
+    private void headlightRadioButtonActionPerformed(java.awt.event.ActionEvent evt)
+    {// GEN-FIRST:event_headlightRadioButtonActionPerformed
         updateEnabledItems();
-    }//GEN-LAST:event_headlightRadioButtonActionPerformed
+    }// GEN-LAST:event_headlightRadioButtonActionPerformed
 
-    private void fixedLightRadioButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fixedLightRadioButtonActionPerformed
+    private void fixedLightRadioButtonActionPerformed(java.awt.event.ActionEvent evt)
+    {// GEN-FIRST:event_fixedLightRadioButtonActionPerformed
         updateEnabledItems();
-    }//GEN-LAST:event_fixedLightRadioButtonActionPerformed
+    }// GEN-LAST:event_fixedLightRadioButtonActionPerformed
 
-    private void selectionColorButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_selectionColorButtonActionPerformed
+    private void selectionColorButtonActionPerformed(java.awt.event.ActionEvent evt)
+    {// GEN-FIRST:event_selectionColorButtonActionPerformed
         showColorChooser(selectionColorLabel);
-    }//GEN-LAST:event_selectionColorButtonActionPerformed
+    }// GEN-LAST:event_selectionColorButtonActionPerformed
 
-    private void backgroundColorButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backgroundColorButtonActionPerformed
+    private void backgroundColorButtonActionPerformed(java.awt.event.ActionEvent evt)
+    {// GEN-FIRST:event_backgroundColorButtonActionPerformed
         showColorChooser(backgroundColorLabel);
-    }//GEN-LAST:event_backgroundColorButtonActionPerformed
+    }// GEN-LAST:event_backgroundColorButtonActionPerformed
 
 //    private void xAxisColorButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_xAxisColorButtonActionPerformed
 //        showColorChooser(xAxisColorLabel);
@@ -1112,9 +1142,10 @@ public class PreferencesDialog extends javax.swing.JDialog {
 //        showColorChooser(zAxisColorLabel);
 //    }//GEN-LAST:event_zAxisColorButtonActionPerformed
 
-    private void fontColorButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fontColorButtonActionPerformed
+    private void fontColorButtonActionPerformed(java.awt.event.ActionEvent evt)
+    {// GEN-FIRST:event_fontColorButtonActionPerformed
         showColorChooser(fontColorLabel);
-    }//GEN-LAST:event_fontColorButtonActionPerformed
+    }// GEN-LAST:event_fontColorButtonActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton applyToAllButton;
@@ -1186,6 +1217,8 @@ public class PreferencesDialog extends javax.swing.JDialog {
     private javax.swing.JFormattedTextField longitudeTextField;
 //    private javax.swing.JSpinner mouseWheelMotionFactorSpinner;
     private javax.swing.JSlider pickToleranceSlider;
+    private javax.swing.JLabel defaultColorMapLabel;
+    private javax.swing.JComboBox<String> defaultColorMapSelection;
     private javax.swing.JButton selectionColorButton;
     private javax.swing.JLabel selectionColorLabel;
 //    private javax.swing.JCheckBox showAxesCheckBox;

@@ -3,6 +3,7 @@ package edu.jhuapl.saavtk.popup;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.io.File;
+import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.JMenuItem;
@@ -12,30 +13,28 @@ import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
+import edu.jhuapl.saavtk.model.structure.Line;
 import edu.jhuapl.saavtk.model.structure.LineModel;
 
-public class LinesPopupMenu extends StructuresPopupMenu
+public class LinesPopupMenu extends StructuresPopupMenu<Line>
 {
-    private LineModel model = null;
     private JMenuItem saveProfileAction;
 
     public LinesPopupMenu(ModelManager modelManager, Renderer renderer)
     {
-        super((LineModel)modelManager.getModel(ModelNames.LINE_STRUCTURES), modelManager.getPolyhedralModel(), renderer, false, false, false);
-
-        this.model = (LineModel)modelManager.getModel(ModelNames.LINE_STRUCTURES);
+   	 super(modelManager, renderer, ModelNames.LINE_STRUCTURES);
 
         saveProfileAction = new JMenuItem(new SaveProfileAction());
         saveProfileAction.setText("Save Profile...");
-        this.add(saveProfileAction);
+        add(saveProfileAction);
     }
 
-    @Override
+    @Override 
     public void show(Component invoker, int x, int y)
     {
         // Disable certain items if more than one structure is selected
-        boolean exactlyOne = model.getSelectedStructures().length == 1;
-        saveProfileAction.setEnabled(exactlyOne);
+        boolean isEnabled = getManager().getSelectedItems().size() == 1;
+        saveProfileAction.setEnabled(isEnabled);
 
         super.show(invoker, x, y);
     }
@@ -44,15 +43,15 @@ public class LinesPopupMenu extends StructuresPopupMenu
     {
         public void actionPerformed(ActionEvent e)
         {
-            int[] selectedStructures = model.getSelectedStructures();
-            if (selectedStructures.length != 1)
+      	  List<Line> pickL = getManager().getSelectedItems().asList();
+            if (pickL.size() != 1)
                 return;
 
             try
             {
                 File file = CustomFileChooser.showSaveDialog(getInvoker(), "Save Profile", "profile.csv");
                 if (file != null)
-                    model.saveProfile(selectedStructures[0], file);
+               	 ((LineModel<?>)getManager()).saveProfile(pickL.get(0), file);
             }
             catch (Exception e1)
             {
