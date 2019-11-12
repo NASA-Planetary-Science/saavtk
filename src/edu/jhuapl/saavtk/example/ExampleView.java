@@ -19,6 +19,7 @@ import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.model.structure.PointModel;
 import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.pick.PickManager;
+import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.popup.StructuresPopupManager;
 import edu.jhuapl.saavtk.structure.gui.StructureTabbedPane;
 
@@ -161,7 +162,9 @@ public class ExampleView extends View
     @Override
     protected void setupPickManager()
     {
-        setPickManager(new PickManager(getRenderer(), getStatusBar(), getModelManager(), getPopupManager()));
+        PickManager tmpPickManager = new PickManager(getRenderer(), getModelManager(), getPopupManager());
+        PickUtil.installDefaultPickHandler(getPickManager(), getStatusBar(), getRenderer(), getModelManager());
+        setPickManager(tmpPickManager);
     }
 
     @Override
