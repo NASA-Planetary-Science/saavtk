@@ -1,5 +1,7 @@
 package edu.jhuapl.saavtk.util;
 
+import java.util.Arrays;
+
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 public class Frustum
@@ -187,4 +189,12 @@ public class Frustum
         uv[0] = (uv[0] - umin) / (umax - umin);
         uv[1] = (uv[1] - vmin) / (vmax - vmin);
     }
+
+
+	@Override
+	public String toString()
+	{
+		return "Frustum [origin=" + Arrays.toString(origin) + ", ul=" + Arrays.toString(ul) + ", ur="
+				+ Arrays.toString(ur) + ", ll=" + Arrays.toString(ll) + ", lr=" + Arrays.toString(lr) + "]";
+	}
 }
