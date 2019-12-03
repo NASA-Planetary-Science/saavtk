@@ -42,9 +42,26 @@ public class PointDiameterPanel extends JPanel implements ChangeListener
 		add(radiusLabel);
 
 		double diameter = 2.0 * pointModel.getDefaultRadius();
-		double max = 100.0 * diameter;
+		double currVal = diameter;
+		double minVal = 0.00001;
+		double maxVal = 100.0 * diameter;
 		double step = computeStepSize(diameter);
-		SpinnerModel model = new SpinnerNumberModel(diameter, 0.00001, max, step);
+
+		// TODO: Fix this hack to resolve ticket: #2034
+		// TODO: This defect appears as early as 2019Mar19
+		// TODO: This logic should be checked to ensure no new defects are introduced
+		if (minVal > maxVal)
+		{
+			double oldMinVal = minVal;
+			minVal = maxVal;
+			maxVal = oldMinVal;
+		}
+		if (currVal < minVal)
+			minVal = currVal;
+		if (currVal > maxVal)
+			maxVal = currVal;
+
+		SpinnerModel model = new SpinnerNumberModel(currVal, minVal, maxVal, step);
 
 		spinner = new JSpinner(model);
 		spinner.setEditor(new JSpinner.NumberEditor(spinner, "0.00000"));
