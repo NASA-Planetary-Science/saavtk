@@ -15,7 +15,6 @@ import java.util.Map;
 import javax.swing.JComponent;
 import javax.swing.event.MouseInputListener;
 
-import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.popup.PopupManager;
@@ -40,15 +39,17 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
  */
 public class PickManager
 {
+	/**
+	 * TODO: This enum will eventually go away as we transition away from a shared
+	 * (coupled) Picker system to a decoupled Picker system.
+	 */
 	public enum PickMode
 	{
 		DEFAULT,
+
 		CIRCLE_SELECTION,
-		POLYGON_DRAW,
+
 		LINE_DRAW,
-		CIRCLE_DRAW,
-		ELLIPSE_DRAW,
-		POINT_DRAW,
 	}
 
 	// Ref vars
@@ -65,17 +66,19 @@ public class PickManager
 	private boolean currExclusiveMode;
 	private double pickTolerance;
 
-	public PickManager(Renderer aRenderer, PopupManager aPopupManager, Map<PickMode, Picker> aNonDefaultPickers,
-			DefaultPicker aDefaultPicker)
+	/**
+	 * Standard Constructor
+	 */
+	public PickManager(Renderer aRenderer, ModelManager aModelManager, PopupManager aPopupManager)
 	{
 		refRenderer = aRenderer;
 		refRenWin = aRenderer.getRenderWindowPanel();
 		refPopupManager = aPopupManager;
 
 		listenerL = new ArrayList<>();
-		nondefaultPickers = aNonDefaultPickers;
+		nondefaultPickers = PickUtil.formNonDefaultPickerMap(aRenderer, aModelManager);
 		activePicker = NonePicker.Instance;
-		defaultPicker = aDefaultPicker;
+		defaultPicker = new DefaultPicker(aRenderer, aModelManager, aPopupManager);
 		pickMode = PickMode.DEFAULT;
 		currExclusiveMode = false;
 		pickTolerance = Picker.DEFAULT_PICK_TOLERANCE;
@@ -87,12 +90,6 @@ public class PickManager
 
 		// Register for events of interest
 		registerEventHandler();
-	}
-
-	public PickManager(Renderer aRenderer, StatusBar aStatusBar, ModelManager aModelManager, PopupManager aPopupManager)
-	{
-		this(aRenderer, aPopupManager, PickUtil.formNonDefaultPickerMap(aRenderer, aModelManager),
-				new DefaultPicker(aRenderer, aStatusBar, aModelManager, aPopupManager));
 	}
 
 	/**
@@ -128,7 +125,7 @@ public class PickManager
 	 * <P>
 	 * This method will eventually go away. Please use
 	 * {@link #setActivePicker(Picker)}
-	 * 
+	 *
 	 * @param aMode
 	 */
 	@Deprecated

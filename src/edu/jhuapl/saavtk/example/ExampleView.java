@@ -6,7 +6,6 @@ import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.panel.PolyhedralModelControlPanel;
-import edu.jhuapl.saavtk.gui.panel.StructuresControlPanel;
 import edu.jhuapl.saavtk.model.Graticule;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelNames;
@@ -20,7 +19,9 @@ import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.model.structure.PointModel;
 import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.pick.PickManager;
+import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.popup.StructuresPopupManager;
+import edu.jhuapl.saavtk.structure.gui.StructureTabbedPane;
 
 /**
  * A view is a container which contains a control panel and renderer as well as
@@ -97,7 +98,7 @@ public class ExampleView extends View
         // allModels.putAll(ModelFactory.createLidarModels(smallBodyModel));
         // }
 
-        allModels.put(ModelNames.LINE_STRUCTURES, new LineModel(smallBodyModel));
+        allModels.put(ModelNames.LINE_STRUCTURES, new LineModel<>(smallBodyModel));
         allModels.put(ModelNames.POLYGON_STRUCTURES, new PolygonModel(smallBodyModel));
         allModels.put(ModelNames.CIRCLE_STRUCTURES, new CircleModel(smallBodyModel));
         allModels.put(ModelNames.ELLIPSE_STRUCTURES, new EllipseModel(smallBodyModel));
@@ -136,7 +137,7 @@ public class ExampleView extends View
         // addTab(getConfig().lidarInstrumentName.toString(), component);
         // }
 
-        addTab("Structures", new StructuresControlPanel(getModelManager(), getPickManager(), getStatusBar()));
+        addTab("Structures", new StructureTabbedPane(getModelManager(), getPickManager(), getRenderer(), getStatusBar()));
 
         // if (!getConfig().customTemporary)
         // {
@@ -161,7 +162,9 @@ public class ExampleView extends View
     @Override
     protected void setupPickManager()
     {
-        setPickManager(new PickManager(getRenderer(), getStatusBar(), getModelManager(), getPopupManager()));
+        PickManager tmpPickManager = new PickManager(getRenderer(), getModelManager(), getPopupManager());
+        PickUtil.installDefaultPickHandler(getPickManager(), getStatusBar(), getRenderer(), getModelManager());
+        setPickManager(tmpPickManager);
     }
 
     @Override

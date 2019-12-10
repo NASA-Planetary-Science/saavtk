@@ -1,25 +1,74 @@
-package edu.jhuapl.saavtk.model.structure;
+package edu.jhuapl.saavtk.structure.io;
 
+import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import edu.jhuapl.saavtk.model.ModelNames;
+import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
+import edu.jhuapl.saavtk.model.structure.CircleModel;
+import edu.jhuapl.saavtk.model.structure.EllipseModel;
+import edu.jhuapl.saavtk.model.structure.EllipsePolygon;
+import edu.jhuapl.saavtk.model.structure.LineModel;
+import edu.jhuapl.saavtk.model.structure.PointModel;
+import edu.jhuapl.saavtk.model.structure.PolygonModel;
+import edu.jhuapl.saavtk.structure.Structure;
+import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.util.FileUtil;
 
 /**
- * Collection of utility methods to support loading of SBMT structures.
+ * Collection of utility methods to support loading of SBMT structures and
+ * related objects.
  * <P>
  * Note some of the methods in this class are transitional and will eventually
- * go away.
+ * go away. Other methods have been refactored out so as to keep serialization
+ * code separate from model based classes.
+ *
+ * @author lopeznr1
  */
 public class StructureLoadUtil
 {
+	/**
+	 * Utility method to convert a Color into an int array of 4 elements: RGBA.
+	 * <P>
+	 * This method is a transitional method and may eventually go away.
+	 */
+	@Deprecated
+	public static int[] convertColorToRgba(Color aColor)
+	{
+		int r = aColor.getRed();
+		int g = aColor.getGreen();
+		int b = aColor.getBlue();
+		int a = aColor.getAlpha();
+		int[] retArr = { r, g, b, a };
+		return retArr;
+	}
+
+	/**
+	 * Utility method to convert an int array of 3 or 4 elements into a Color. Order
+	 * of elements is assumed to be RGB (and optional alpha). Each element should
+	 * have a value in the range of [0 - 255].
+	 * <P>
+	 * This method is a transitional method and may eventually go away.
+	 */
+	@Deprecated
+	public static Color convertRgbaToColor(int[] aArr)
+	{
+		int rVal = aArr[0];
+		int gVal = aArr[1];
+		int bVal = aArr[2];
+		int aVal = 255;
+		if (aArr.length >= 4)
+			aVal = aArr[3];
+
+		return new Color(rVal, gVal, bVal, aVal);
+	}
+
 	/**
 	 * Utility method to load in a list of {@link EllipsePolygon}s from the
 	 * specified input file.
@@ -29,7 +78,7 @@ public class StructureLoadUtil
 	 * have it's VTK state data initialized via updatePolygon().
 	 */
 	public static List<EllipsePolygon> loadEllipsePolygons(File aFile, Mode aMode, double aDefaultRadius,
-			int[] aDefaultColor, int aNumberOfSides, String aType) throws IOException
+			Color aDefaultColor, int aNumberOfSides, String aType) throws IOException
 	{
 		Pattern workPattern = Pattern.compile("([^\"]\\S*|\".+?\")\\s*");
 
@@ -65,7 +114,7 @@ public class StructureLoadUtil
 
 			// Vars that we will need initialized
 			String label = "";
-			int colorArr[] = null;
+			Color color = null;
 			double radius;
 			double flattening;
 			double angle;
@@ -93,7 +142,7 @@ public class StructureLoadUtil
 					angle = 0.0;
 				}
 				int colorIdx = 15;
-				colorArr = transformStringToColorArr(words[colorIdx]);
+				color = transformStringToColorArr(words[colorIdx]);
 
 				if (words[words.length - 1].startsWith("\"")) // labels in quotations
 				{
@@ -137,7 +186,7 @@ public class StructureLoadUtil
 					if (words.length == 17)
 						colorIdx = 15;
 
-					colorArr = transformStringToColorArr(words[colorIdx]);
+					color = transformStringToColorArr(words[colorIdx]);
 				}
 
 				// Second to last word is the label, last string is the color
@@ -169,23 +218,67 @@ public class StructureLoadUtil
 			}
 
 			// Utilize the defaultColor if failed to read one in
-			if (colorArr == null)
-				colorArr = aDefaultColor;
+			if (color == null)
+				color = aDefaultColor;
 
 			// Synthesize the EllipsePolygon
-			EllipsePolygon tmpPoly = new EllipsePolygon(aNumberOfSides, aType, colorArr, aMode, id, label);
+			EllipsePolygon tmpPoly = new EllipsePolygon(aNumberOfSides, aType, color, aMode, id, label);
 			tmpPoly.setAngle(angle);
 			tmpPoly.setCenter(center);
 			tmpPoly.setFlattening(flattening);
 			tmpPoly.setRadius(radius);
 			tmpPoly.setName(name);
 			tmpPoly.setLabel(label);
-			tmpPoly.setLabelHidden(label == null || label.equals(""));
+			boolean tmpBool = label != null && label.equals("") == false;
+			tmpPoly.setLabelVisible(tmpBool);
 
 			retL.add(tmpPoly);
 		}
 
 		return retL;
+	}
+
+	/**
+	 * Utility method that will load a list of {@link Structure}s from the specified
+	 * file and return a manager ({@link StructureManager}) which contains the list of
+	 * structures.
+	 *
+	 * @param aFile The file of interest.
+	 * @param aName Enum which describes the type of structures stored in the file.
+	 * @param aBody {@link PolyhedralModel} where the structures will be associated
+	 *              with.
+	 * @return
+	 * @throws Exception
+	 */
+	public static StructureManager<?> loadStructureManagerFromFile(File aFile, ModelNames aName, PolyhedralModel aBody)
+			throws Exception
+	{
+		StructureManager<?> retManager = null;
+		switch (aName)
+		{
+			case CIRCLE_STRUCTURES:
+				retManager = new CircleModel(aBody);
+				break;
+			case ELLIPSE_STRUCTURES:
+				retManager = new EllipseModel(aBody);
+				break;
+			case POINT_STRUCTURES:
+				retManager = new PointModel(aBody);
+				break;
+			case POLYGON_STRUCTURES:
+				retManager = new PolygonModel(aBody);
+				break;
+			case LINE_STRUCTURES:
+				retManager = new LineModel<>(aBody);
+				break;
+			default:
+				throw new Error(aName.name() + " is not a valid structures type");
+		}
+
+		retManager.loadModel(aFile, false, null);
+		if (retManager.getNumItems() == 0)
+			throw new Exception("No valid " + aName.name() + " found");
+		return retManager;
 	}
 
 	/**
@@ -198,53 +291,20 @@ public class StructureLoadUtil
 	 * If the string is improperly formatted then null will be returned. On failure
 	 * to parse the integers a NumberFormatException will be thrown.
 	 */
-	public static int[] transformStringToColorArr(String aStr)
+	public static Color transformStringToColorArr(String aStr)
 	{
-		int[] retArr = null;
+		Color retColor = null;
 
 		String[] strArr = aStr.split(",");
 		if (strArr.length == 3)
 		{
-			retArr = new int[3];
-			retArr[0] = Integer.parseInt(strArr[0]);
-			retArr[1] = Integer.parseInt(strArr[1]);
-			retArr[2] = Integer.parseInt(strArr[2]);
+			int rVal = Integer.parseInt(strArr[0]);
+			int gVal = Integer.parseInt(strArr[1]);
+			int bVal = Integer.parseInt(strArr[2]);
+			retColor = new Color(rVal, gVal, bVal);
 		}
 
-		return retArr;
-	}
-
-	/**
-	 * Utility method to convert an array of ints to a Set of Integers.
-	 * <P>
-	 * This method is a transitional method and will eventually go away.
-	 */
-	public static Set<Integer> convertIntArrToSet(int[] aIdxArr)
-	{
-		Set<Integer> retS = new HashSet<>();
-		for (int aIdx : aIdxArr)
-			retS.add(aIdx);
-
-		return retS;
-	}
-
-	/**
-	 * Utility method to convert a Set of Integers into an array of ints.
-	 * <P>
-	 * This method is a transitional method and will eventually go away.
-	 */
-	public static int[] convertIntSetToArr(Set<Integer> aIdxS)
-	{
-		int[] retArr = new int[aIdxS.size()];
-
-		int c1 = 0;
-		for (int aIdx : aIdxS)
-		{
-			retArr[c1] = aIdx;
-			c1++;
-		}
-
-		return retArr;
+		return retColor;
 	}
 
 }

@@ -2,9 +2,12 @@ package edu.jhuapl.saavtk.gui.render.camera;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.util.MathUtil;
+import vtk.vtkCamera;
 import vtk.vtkFloatArray;
 
 /**
@@ -91,15 +94,17 @@ public class CameraUtil
 	}
 
 	/**
-	 * Utility method that returns true if the angle between the 2 specified vectors is less than 90 degrees.
+	 * Utility method that returns true if the angle between the 2 specified vectors
+	 * is less than 90 degrees.
 	 */
 	public static boolean isAcuteAngle(Vector3D aVectA, Vector3D aVectB)
 	{
 		// The equation of the angle between 2 vectors is given by:
 		// cos(theta) = (vectA dot vectB) / (||vectA|| * ||vectB||)
 		//
-		// Note however that we do not need to calculate the actual actual angle (theta) just the sign
-		// of the expression cos(theta) to determine if we are looking at acute or obtuse angles.
+		// Note however that we do not need to calculate the actual actual angle (theta)
+		// just the sign of the expression cos(theta) to determine if we are looking at
+		// acute or obtuse angles.
 		double tmpVal = aVectA.dotProduct(aVectB);
 		if (tmpVal > 0)
 			return true;
@@ -108,12 +113,14 @@ public class CameraUtil
 	}
 
 	/**
-	 * Utility method to determine if the specified PolyhedralModel is a true polyhedron or just a multipolygon surface.
+	 * Utility method to determine if the specified PolyhedralModel is a true
+	 * polyhedron or just a multipolygon surface.
 	 */
 	public static boolean isPolyhedron(GenericPolyhedralModel aPolyModel)
 	{
-		// Determine if we have a model that is a polyhedral model or a polygonal surface. We do this
-		// by evaluating the angle between the (individual) normals and the "center" normal.
+		// Determine if we have a model that is a polyhedral model or a polygonal
+		// surface. We do this by evaluating the angle between the (individual)
+		// normals and the "center" normal.
 		Vector3D centerVect = CameraUtil.calcCenterPoint(aPolyModel);
 		vtkFloatArray tmpVFA = aPolyModel.getCellNormals();
 
@@ -128,20 +135,26 @@ public class CameraUtil
 			double[] tmp = tmpVFA.GetTuple3(c1);
 			Vector3D evalVect = new Vector3D(tmp[0], tmp[1], tmp[2]);
 
-			// Evaluate whether the angle between the center normal and the individual normal is
-			// acute or obtuse. Acute angles correspond to normals that are on the same side.
+			// Evaluate whether the angle between the center normal and the individual
+			// normal is acute or obtuse. Acute angles correspond to normals that are
+			// on the same side.
 			if (isAcuteAngle(centerVect, evalVect) == false)
 				numNormsObtuse++;
 		}
 
-		// Heuristic: Assume the shape model is a polyhedron if the number of (obtuse) normals away from the
-		// "center" normal exceed a ratio of 7%
+		// Heuristic: Assume the shape model is a polyhedron if the number of (obtuse)
+		// normals away from the "center" normal exceed a ratio of 7%
 		double ratio = (numNormsObtuse + 0.0) / numNorms;
 		boolean isPolyhedron = ratio > 0.07;
 
-		System.err.println(String.format("[CustomShapeModel: %s] numNorms: %d numSameSides: %d numDiffSides: %d  Ratio diff: %1.2f\n", aPolyModel.hashCode(), numNorms, (numNorms - numNormsObtuse), numNormsObtuse, ratio));
+		// Debug
+		if (isDebug() == true)
+			System.err.println(String.format(
+					"[CustomShapeModel: %s] numNorms: %d numSameSides: %d numDiffSides: %d  Ratio diff: %1.2f\n",
+					aPolyModel.hashCode(), numNorms, (numNorms - numNormsObtuse), numNormsObtuse, ratio));
+
 		return isPolyhedron;
-    }
+	}
 
 	/**
 	 * Utility method that forms a CoordinateSystem from the specified normal and
@@ -297,6 +310,62 @@ public class CameraUtil
 
 		// Delegate
 		CameraUtil.setOrientationInDirectionOfAxis(aCamera, aAxisType, distance);
+	}
+
+	/**
+	 * Utility method to configure the camera to focus on the specified position,
+	 * aFocalPos. The camera will be moved to a point directly above the focus
+	 * position along the normal as specified by aFocalNorm.
+	 * <P>
+	 * TODO: Rework to make specific to {@link Camera} rather than {@link Renderer}
+	 */
+	public static void setFocalPosition(Renderer aRenderer, Vector3D aFocalPos, Vector3D aFocalNorm)
+	{
+		vtkCamera tmpCamera = aRenderer.getRenderWindowPanel().getActiveCamera();
+
+		double flyToRange = aFocalPos.getNorm();
+
+		Vector3D cPos = new Vector3D(tmpCamera.GetPosition());
+		double cRange = cPos.getNorm();
+
+		// Use law of cosines based on the current camera position and the fly-to
+		// position to determine how far above the new spot to put the camera.
+		double newAltitude = Math
+				.sqrt(Math.abs(cRange * cRange + flyToRange * flyToRange - 2 * aFocalPos.dotProduct(cPos)));
+
+		tmpCamera.SetFocalPoint(aFocalPos.toArray());
+		tmpCamera.SetPosition(aFocalPos.add(aFocalNorm.scalarMultiply(newAltitude)).toArray());
+
+		aRenderer.getRenderWindowPanel().Render();
+	}
+
+	/**
+	 * Utility method that spins the view along the boresight of the current camera
+	 * so that the Z axis of the body is up.
+	 * <P>
+	 * TODO: Rework to make specific to {@link Camera} rather than {@link Renderer}
+	 */
+	public static void spinBoresightForNormalAxisZ(Renderer aRenderer)
+	{
+		vtkCamera tmpCamera = aRenderer.getRenderWindowPanel().getActiveCamera();
+//		Camera tmpCamera = refRenderer.getCamera();
+
+		double[] position = tmpCamera.GetPosition();
+		double[] focalPoint = tmpCamera.GetFocalPoint();
+		double viewAngle = tmpCamera.GetViewAngle();
+
+		double[] dir = { focalPoint[0] - position[0], focalPoint[1] - position[1], focalPoint[2] - position[2] };
+		MathUtil.vhat(dir, dir);
+
+		double[] zAxis = { 0.0, 0.0, 1.0 };
+		double[] upVector = new double[3];
+		MathUtil.vcrss(dir, zAxis, upVector);
+
+		if (upVector[0] != 0.0 || upVector[1] != 0.0 || upVector[2] != 0.0)
+		{
+			MathUtil.vcrss(upVector, dir, upVector);
+			aRenderer.setCameraOrientation(position, focalPoint, upVector, viewAngle);
+		}
 	}
 
 	/**

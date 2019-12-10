@@ -18,6 +18,8 @@ public abstract class ViewConfig implements Cloneable
 	public ShapeModelType author; // e.g. Gaskell
 	public String version; // e.g. 2.0
 	public ShapeModelBody body; // e.g. EROS or ITOKAWA
+    public boolean hasFlybyData; // for flyby path data
+    public boolean hasStateHistory; // for bodies with state history tabs
 
 	public boolean useMinimumReferencePotential = false; // uses average otherwise
 	public boolean hasCustomBodyCubeSize = false;
@@ -221,50 +223,105 @@ public abstract class ViewConfig implements Cloneable
 		if (this == obj)
 			return true;
 		if (obj == null)
+		{
+//			System.out.println("ViewConfig: equals: obj is null");
 			return false;
-		if (getClass() != obj.getClass())
-			return false;
+		}
+//		if (getClass() != obj.getClass())
+//		{
+//			System.out.println("ViewConfig: equals: classes are not equals " + getClass() + " and " + obj.getClass());
+//			return false;
+//		}
 		ViewConfig other = (ViewConfig) obj;
 		if (author == null)
 		{
 			if (other.author != null)
+			{
+//				System.out.println("ViewConfig: equals: author null and other not null");
 				return false;
-		} else if (!author.equals(other.author))
+			}
+		} 
+		else if (!author.equals(other.author))
+		{
+//			System.out.println("ViewConfig: equals: author don't match " + author + " and " + other.author);
 			return false;
+		}
 		if (body != other.body)
+		{
+//			System.out.println("ViewConfig: equals: body don't match " + body + " and " + other.body);
 			return false;
+		}
 		if (Double.doubleToLongBits(customBodyCubeSize) != Double.doubleToLongBits(other.customBodyCubeSize))
+		{
+//			System.out.println("ViewConfig: equals: custom body cube size don't match " + customBodyCubeSize + " " + other.customBodyCubeSize + " for " + other.author + "/" + other.body + " " + other.version);
 			return false;
+		}
 		if (customTemporary != other.customTemporary)
+		{
+//			System.out.println("ViewConfig: equals: custom temporary don't match");
 			return false;
+		}
 		if (hasCustomBodyCubeSize != other.hasCustomBodyCubeSize)
+		{
+//			System.out.println("ViewConfig: equals: has custom body cube size don't match");
 			return false;
+		}
 		if (modelLabel == null)
 		{
 			if (other.modelLabel != null)
+			{
+//				System.out.println("ViewConfig: equals: model label null; other is not");
 				return false;
-		} else if (!modelLabel.equals(other.modelLabel))
+			}
+		} 
+		else if (!modelLabel.equals(other.modelLabel))
+		{
+//			System.out.println("ViewConfig: equals: model labels don't match");
 			return false;
+		}
 		if (smallBodyLabelPerResolutionLevel == null)
 		{
 			if (other.smallBodyLabelPerResolutionLevel != null)
+			{
+//				System.out.println("ViewConfig: equals: small body label per res null; other not");
 				return false;
+			}
 		} else if (!smallBodyLabelPerResolutionLevel.equals(other.smallBodyLabelPerResolutionLevel))
+		{
+//			System.out.println("ViewConfig: equals: small body label per res don't match " + smallBodyLabelPerResolutionLevel + " " + smallBodyLabelPerResolutionLevel + " for " + author + "/" + body + " " + version + " for " + other.author + "/" + other.body + " " + other.version);
 			return false;
+		}
 		if (smallBodyNumberOfPlatesPerResolutionLevel == null)
 		{
 			if (other.smallBodyNumberOfPlatesPerResolutionLevel != null)
+			{
+//				System.out.println("ViewConfig: equals: number of plates per res null; other not");
 				return false;
+			}
 		} else if (!smallBodyNumberOfPlatesPerResolutionLevel.equals(other.smallBodyNumberOfPlatesPerResolutionLevel))
+		{
+//			System.out.println("ViewConfig: equals: number of plates per level don't match");
 			return false;
+		}
 		if (useMinimumReferencePotential != other.useMinimumReferencePotential)
+		{
+//			System.out.println("ViewConfig: equals: use min ref potential don't match");
 			return false;
+		}
 		if (version == null)
 		{
 			if (other.version != null)
+			{
+//				System.out.println("ViewConfig: equals: version null; other not");
 				return false;
+			}
 		} else if (!version.equals(other.version))
+		{
+//			System.out.println("ViewConfig: equals: versions dont' match " + version + " other " + other.version );
 			return false;
+		}
+		
+//		System.out.println("ViewConfig: equals: match!!!");
 		return true;
 	}
 }

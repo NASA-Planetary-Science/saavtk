@@ -14,9 +14,9 @@ import javax.swing.border.BevelBorder;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 
-import vtk.vtkProp;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.util.Properties;
+import vtk.vtkProp;
 
 public class StatusBar extends JPanel implements PropertyChangeListener
 {
@@ -35,11 +35,6 @@ public class StatusBar extends JPanel implements PropertyChangeListener
     private int rightCellId;
     private double[] rightPickPosition;
 
-    public StatusBar()
-    {
-    	this(true);
-    }
-    
     public StatusBar(boolean selectableLeftLabel)
     {
     	this.selectableLeftLabel = selectableLeftLabel;
@@ -193,4 +188,5 @@ public class StatusBar extends JPanel implements PropertyChangeListener
         	}
         }
     }
+	
 }
