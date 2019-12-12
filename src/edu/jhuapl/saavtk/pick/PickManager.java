@@ -47,9 +47,7 @@ public class PickManager
 	{
 		DEFAULT,
 
-		CIRCLE_SELECTION,
-
-		LINE_DRAW,
+		CIRCLE_SELECTION;
 	}
 
 	// Ref vars
@@ -59,12 +57,14 @@ public class PickManager
 
 	// State vars
 	private List<PickManagerListener> listenerL;
-	private Map<PickMode, Picker> nondefaultPickers;
 	private Picker activePicker;
 	private DefaultPicker defaultPicker;
 	private PickMode pickMode;
 	private boolean currExclusiveMode;
 	private double pickTolerance;
+
+	@Deprecated
+	private Map<PickMode, Picker> nondefaultPickers;
 
 	/**
 	 * Standard Constructor
@@ -76,12 +76,13 @@ public class PickManager
 		refPopupManager = aPopupManager;
 
 		listenerL = new ArrayList<>();
-		nondefaultPickers = PickUtil.formNonDefaultPickerMap(aRenderer, aModelManager);
 		activePicker = NonePicker.Instance;
 		defaultPicker = new DefaultPicker(aRenderer, aModelManager, aPopupManager);
 		pickMode = PickMode.DEFAULT;
 		currExclusiveMode = false;
 		pickTolerance = Picker.DEFAULT_PICK_TOLERANCE;
+
+		nondefaultPickers = PickUtil.formNonDefaultPickerMap(aRenderer, aModelManager);
 
 		// Set the pick tolerance to the default value
 		double tmpPickTolerance = Preferences.getInstance().getAsDouble(Preferences.PICK_TOLERANCE,
