@@ -337,7 +337,7 @@ public class UrlAccessManager
         {
             UrlState state = result.getState();
             UrlStatus status = state.getStatus();
-            if (status == UrlStatus.UNKNOWN || forceUpdate)
+            if (status == UrlStatus.UNKNOWN || status == UrlStatus.CONNECTION_ERROR || forceUpdate)
             {
                 Debug.out().println("Querying server about " + url);
                 try

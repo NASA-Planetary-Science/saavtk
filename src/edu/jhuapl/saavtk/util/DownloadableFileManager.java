@@ -4,7 +4,7 @@ import java.awt.EventQueue;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
-import java.net.ConnectException;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -216,27 +216,60 @@ public class DownloadableFileManager
                 // Do not check the root URL itself.
                 continue;
             }
-            try
+
+            boolean doCheck = true;
+            boolean unknownHost = false;
+            while (doCheck)
             {
-                URL url = urlManager.getUrl(urlString);
-                doQuery(url, forceUpdate);
+                try
+                {
+                    URL url = urlManager.getUrl(urlString);
+                    doQuery(url, forceUpdate);
+                    doCheck = false;
+                }
+                catch (SocketException ignored)
+                {
+                    Debug.err().println("SocketException on " + urlString);
+                }
+                catch (SocketTimeoutException ignored)
+                {
+                    Debug.err().println("Timeout on " + urlString);
+                }
+                catch (UnknownHostException ignored)
+                {
+                    unknownHost = true;
+                    doCheck = false;
+                    Debug.err().println("Unknown host exception on " + urlString);
+                }
+                catch (Exception e)
+                {
+                    doCheck = false;
+                    e.printStackTrace(Debug.err());
+                }
+
+                if (doCheck)
+                {
+                    // 50 seconds is the result of heuristic tuning. It seems to be a good length of
+                    // time to wait before trying again to get info about the URL. Much less
+                    // time and two back-to-back time-outs become likely (which effectively doubles
+                    // the pause length). On the other hand, pausing longer than 50 s does not
+                    // seem to reduce the number of timeouts, thus 50 seems to be the "sweet spot".
+                    try
+                    {
+                        Debug.err().println("Pausing before retrying " + urlString);
+                        Thread.sleep(50000);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        // Ignore.
+                    }
+                }
             }
-            catch (@SuppressWarnings("unused") SocketTimeoutException ignored)
+
+            // If host is unknown, stop trying to check accessibility.
+            if (unknownHost)
             {
-                // Hit a time-out. Likely the rest will also, so break now and come back to this
-                // later.
-                Debug.err().println("Timeout on " + urlString);
                 break;
-            }
-            catch (@SuppressWarnings("unused") ConnectException | UnknownHostException ignored)
-            {
-                Debug.err().println("Unknown host exception on " + urlString);
-                break;
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace(Debug.err());
-                continue;
             }
         }
     }
