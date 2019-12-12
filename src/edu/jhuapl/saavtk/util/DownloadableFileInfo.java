@@ -90,7 +90,6 @@ public class DownloadableFileInfo
             case UNKNOWN:
                 result = true;
                 break;
-            case HTTP_ERROR:
             default:
                 result = fileState.getStatus() != FileStatus.ACCESSIBLE;
                 break;
