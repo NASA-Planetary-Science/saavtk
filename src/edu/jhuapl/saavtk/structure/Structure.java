@@ -2,63 +2,91 @@ package edu.jhuapl.saavtk.structure;
 
 import java.awt.Color;
 
-import edu.jhuapl.saavtk.model.PolyhedralModel;
-import vtk.vtkCaptionActor2D;
-
 /**
  * Interface that defines a structure.
  * <P>
- * TODO: Issues to correct:
- * <UL>
- * <LI>Add comments for all methods.
- * <LI>Remove VTK specific logic
- * <LI>Reduce / eliminate ability to mutate (public scope)
- * </UL>
+ * A structure should provide minimal functionality relating to it's attributes.
+ *
+ * @author lopeznr1
  */
 public interface Structure
 {
-	public String getClickStatusBarText();
-
+	/**
+	 * Returns the structures id.
+	 * <P>
+	 * This value may NOT be unique.
+	 */
 	public int getId();
 
-	public String getName();
-
-	public void setName(String name);
-
-	public String getType();
-
 	/**
-	 * Provides a short description of the structure's various attributes.
+	 * Returns the structure's color.
 	 */
-	public String getInfo();
-
 	public Color getColor();
 
-	public void setColor(Color aColor);
-
-	public void setLabel(String label);
-
+	/**
+	 * Returns the structure's label.
+	 * <P>
+	 * The label may optionally be displayed next to visual representations of this
+	 * structure.
+	 */
 	public String getLabel();
 
+	/**
+	 * Returns the {@link FontAttr} associated with the label.
+	 */
+	public FontAttr getLabelFontAttr();
+
+	/**
+	 * Returns the "official" name of the structure. May be null.
+	 */
+	public String getName();
+
+	/**
+	 * Returns a unique identifier of the associated shape model.
+	 */
+	public String getShapeModelId();
+
+	/**
+	 * Returns the source of the structure. May be null.
+	 */
+	public Object getSource();
+
+	/**
+	 * Returns true if the structure should be rendered.
+	 */
 	public boolean getVisible();
 
-	public boolean getLabelVisible();
+	/**
+	 * Sets the structure's color.
+	 */
+	public void setColor(Color aColor);
 
-	public Color getLabelColor();
+	/**
+	 * Sets the structure's label.
+	 * <P>
+	 * The label may optionally be displayed next to visual representations of this
+	 * structure.
+	 */
+	public void setLabel(String aLabel);
 
-	public void setLabelColor(Color aColor);
+	/**
+	 * Sets the {@link FontAttr} associated with the label.
+	 */
+	public void setLabelFontAttr(FontAttr aAttr);
 
-	public int getLabelFontSize();
+	/**
+	 * Sets the "official" name of the structure. May be null.
+	 */
+	public void setName(String aName);
 
-	public void setLabelFontSize(int fontSize);
+	/**
+	 * Sets in the unique identifier of the associated shape model.
+	 */
+	public void setShapeModelId(String aShapeModelId);
 
-	public void setVisible(boolean b);
+	/**
+	 * Sets whether the structure should be rendered.
+	 */
+	public void setVisible(boolean aBool);
 
-	public void setLabelVisible(boolean aBool);
-
-	public double[] getCentroid(PolyhedralModel smallBodyModel);
-
-	public vtkCaptionActor2D getCaption();
-
-	public void setCaption(vtkCaptionActor2D caption);
 }
