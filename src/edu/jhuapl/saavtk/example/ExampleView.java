@@ -137,7 +137,7 @@ public class ExampleView extends View
         // addTab(getConfig().lidarInstrumentName.toString(), component);
         // }
 
-        addTab("Structures", new StructureTabbedPane(getModelManager(), getPickManager(), getRenderer(), getStatusBar()));
+        addTab("Structures", new StructureTabbedPane(getModelManager(), getPickManager(), getRenderer(), getStatusBar(), getPopupManager()));
 
         // if (!getConfig().customTemporary)
         // {

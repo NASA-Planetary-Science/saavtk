@@ -1,7 +1,6 @@
 package edu.jhuapl.saavtk.model.structure;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import java.util.ArrayList;
 
 import crucible.crust.metadata.api.Key;
 import crucible.crust.metadata.api.Metadata;
@@ -14,204 +13,65 @@ import crucible.crust.settings.impl.ConfigurableFactory;
 import crucible.crust.settings.impl.KeyedFactory;
 import crucible.crust.settings.impl.SettableStoredFactory;
 import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
-import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.LatLon;
-import edu.jhuapl.saavtk.util.PolyDataUtil;
-import vtk.vtkCleanPolyData;
-import vtk.vtkClipPolyData;
-import vtk.vtkPoints;
-import vtk.vtkPolyData;
-import vtk.vtkQuadricClustering;
-import vtk.vtkSelectPolyData;
 
-public class Polygon extends Line
+public class Polygon
 {
-    // State vars
-    private boolean showInterior;
-    private double surfaceArea;
+	private static Configurable formConfigurationFor(edu.jhuapl.saavtk.structure.Polygon aPolygon)
+	{
+		Configurable lineConfiguration = Line.formConfigurationFor(aPolygon);
 
-    // VTK vars
-    protected vtkPolyData vInteriorRegPD;
-    protected final vtkPolyData vInteriorDecPD;
+		KeyedFactory.Builder<Viewable> builder = KeyedFactory.instance().builder();
+		for (ControlKey<? extends Viewable> key : lineConfiguration.getKeys())
+		{
+			@SuppressWarnings("unchecked")
+			ControlKey<Viewable> contentKey = (ControlKey<Viewable>) key;
+			builder.put(contentKey, lineConfiguration.getItem(contentKey));
+		}
+		builder.put(AREA_KEY, SettableStoredFactory.instance().of(aPolygon.getSurfaceArea()));
+		builder.put(SHOW_INTERIOR_KEY, SettableStoredFactory.instance().of(aPolygon.getShowInterior()));
 
-    private static final String POLYGON = "polygon";
-    private static final String AREA = "area";
+		return ConfigurableFactory.instance().of(lineConfiguration.getVersion(), builder.build());
+	}
 
-    /**
-     * Standard Constructor
-     */
-    public Polygon(int aId)
-    {
-        super(aId);
+	private static final Key<edu.jhuapl.saavtk.structure.Polygon> POLYGON_STRUCTURE_PROXY_KEY = Key.of("Polygon");
+	private static boolean proxyInitialized = false;
 
-        showInterior = false;
-        surfaceArea = 0.0;
+	public static void initializeSerializationProxy()
+	{
+		if (!proxyInitialized)
+		{
+			LatLon.initializeSerializationProxy();
 
-        vInteriorRegPD = new vtkPolyData();
-        vInteriorDecPD = new vtkPolyData();
-    }
+			InstanceGetter.defaultInstanceGetter().register(POLYGON_STRUCTURE_PROXY_KEY, source -> {
+				int id = source.get(Key.of(Line.ID.getId()));
+				edu.jhuapl.saavtk.structure.Polygon result = new edu.jhuapl.saavtk.structure.Polygon(id, null, new ArrayList<>());
+				unpackMetadata(source, result);
 
-    public boolean isShowInterior()
-    {
-        return showInterior;
-    }
+				return result;
+			}, edu.jhuapl.saavtk.structure.Polygon.class, polygon -> {
+				Configurable configuration = formConfigurationFor(polygon);
+				return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration).store();
+			});
 
-    @Override
-    public String getType()
-    {
-        return POLYGON;
-    }
+			proxyInitialized = true;
+		}
+	}
 
-    @Override
-    public String getInfo()
-    {
-        return "Area: " + decimalFormatter.format(surfaceArea) + " km^2, Length: "
-                + decimalFormatter.format(getPathLength()) + " km, " + getControlPoints().size() + " vertices";
-    }
+	public static final ControlKey<SettableStored<Double>> AREA_KEY = SettableStoredFactory.key("area");
+	public static final ControlKey<SettableStored<Boolean>> SHOW_INTERIOR_KEY = SettableStoredFactory
+			.key("showInterior");
 
-    @Override
-    public String getClickStatusBarText()
-    {
-        return "Polygon, Id = " + getId() + ", Length = " + decimalFormatter.format(getPathLength()) + " km"
-                + ", Surface Area = " + decimalFormatter.format(surfaceArea) + " km^2" + ", Number of Vertices = "
-                + getControlPoints().size();
-    }
+	protected static void unpackMetadata(Metadata source, edu.jhuapl.saavtk.structure.Polygon polygon)
+	{
+		Line.unpackMetadata(source, polygon);
 
-    public void setShowInterior(PolyhedralModel smallBodyModel, boolean aShowInterior)
-    {
-        showInterior = aShowInterior;
+		Key<Double> areaKey = Key.of(AREA_KEY.getId());
+		if (source.hasKey(areaKey))
+			polygon.setSurfaceArea(source.get(areaKey));
 
-        updateInteriorPolydata(smallBodyModel);
-
-        if (showInterior)
-        {
-            // Decimate interiorPolyData for LODs
-            vtkQuadricClustering decimator = new vtkQuadricClustering();
-            decimator.SetInputData(vInteriorRegPD);
-            decimator.AutoAdjustNumberOfDivisionsOn();
-            decimator.CopyCellDataOn();
-            decimator.Update();
-            vInteriorDecPD.DeepCopy(decimator.GetOutput());
-            decimator.Delete();
-        }
-        else
-        {
-            PolyDataUtil.clearPolyData(vInteriorRegPD);
-            PolyDataUtil.clearPolyData(vInteriorDecPD);
-        }
-    }
-
-    protected void updateInteriorPolydata(PolyhedralModel smallBodyModel)
-    {
-        // Bail if no interior
-        if (isShowInterior() == false)
-            return;
-
-        vtkPoints pts = new vtkPoints();
-        for (int i = 0; i < xyzPointList.size(); i++)
-        {
-            pts.InsertNextPoint(xyzPointList.get(i).xyz);
-        }
-
-        // Clean the poly data here before selecting the interior facets.
-        vtkCleanPolyData cleanPoly = new vtkCleanPolyData();
-        cleanPoly.SetInputData(smallBodyModel.getSmallBodyPolyData());
-        cleanPoly.Update();
-        vtkPolyData cleanPolyData = cleanPoly.GetOutput();
-
-        vtkSelectPolyData loop = new vtkSelectPolyData();
-        loop.SetInputData(cleanPolyData);
-        loop.SetLoop(pts);
-        loop.GenerateSelectionScalarsOn();
-        loop.SetSelectionModeToSmallestRegion();
-        loop.Update();
-        vtkClipPolyData clipper = new vtkClipPolyData();
-        clipper.SetInputData(loop.GetOutput());
-        clipper.InsideOutOn();
-        clipper.GenerateClipScalarsOff();
-        clipper.Update();
-        vInteriorRegPD = clipper.GetOutput();
-        surfaceArea = PolyDataUtil.computeSurfaceArea(vInteriorRegPD);
-    }
-
-    @Override
-    public Element toXmlDomElement(Document dom)
-    {
-        Element element = super.toXmlDomElement(dom);
-        element.setAttribute(AREA, String.valueOf(surfaceArea));
-
-        return element;
-    }
-
-    @Override
-    public void fromXmlDomElement(PolyhedralModel smallBodyModel, Element element, String shapeModelName, boolean append)
-    {
-        super.fromXmlDomElement(smallBodyModel, element, shapeModelName, append);
-
-        surfaceArea = element.hasAttribute(AREA) ? surfaceArea = Double.parseDouble(element.getAttribute(AREA)) : null;
-    }
-
-    @Override
-    protected boolean isClosed()
-    {
-        return true;
-    }
-
-    private static Configurable formConfigurationFor(Polygon aPolygon)
-    {
-        Configurable lineConfiguration = Line.formConfigurationFor(aPolygon);
-
-        KeyedFactory.Builder<Viewable> builder = KeyedFactory.instance().builder();
-        for (ControlKey<? extends Viewable> key : lineConfiguration.getKeys())
-        {
-            @SuppressWarnings("unchecked")
-            ControlKey<Viewable> contentKey = (ControlKey<Viewable>) key;
-            builder.put(contentKey, lineConfiguration.getItem(contentKey));
-        }
-        builder.put(AREA_KEY, SettableStoredFactory.instance().of(aPolygon.surfaceArea));
-        builder.put(SHOW_INTERIOR_KEY, SettableStoredFactory.instance().of(aPolygon.showInterior));
-
-        return ConfigurableFactory.instance().of(lineConfiguration.getVersion(), builder.build());
-    }
-
-    private static final Key<Polygon> POLYGON_STRUCTURE_PROXY_KEY = Key.of("Polygon");
-    private static boolean proxyInitialized = false;
-
-    public static void initializeSerializationProxy()
-    {
-        if (!proxyInitialized)
-        {
-            LatLon.initializeSerializationProxy();
-
-            InstanceGetter.defaultInstanceGetter().register(POLYGON_STRUCTURE_PROXY_KEY, source -> {
-                int id = source.get(Key.of(ID.getId()));
-                Polygon result = new Polygon(id);
-                unpackMetadata(source, result);
-
-                return result;
-            }, Polygon.class, polygon -> {
-//                Configurable configuration = polygon.getConfiguration();
-                Configurable configuration = formConfigurationFor(polygon);
-                return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration).store();
-            });
-
-            proxyInitialized = true;
-        }
-    }
-
-    public static final ControlKey<SettableStored<Double>> AREA_KEY = SettableStoredFactory.key("area");
-    public static final ControlKey<SettableStored<Boolean>> SHOW_INTERIOR_KEY = SettableStoredFactory.key("showInterior");
-
-    protected static void unpackMetadata(Metadata source, Polygon polygon)
-    {
-        Line.unpackMetadata(source, polygon);
-
-        Key<Double> areaKey = Key.of(AREA_KEY.getId());
-        if (source.hasKey(areaKey))
-            polygon.surfaceArea = source.get(areaKey);
-
-        Key<Boolean> showInteriorKey = Key.of(SHOW_INTERIOR_KEY.getId());
-        if (source.hasKey(showInteriorKey))
-            polygon.showInterior = source.get(showInteriorKey);
-    }
+		Key<Boolean> showInteriorKey = Key.of(SHOW_INTERIOR_KEY.getId());
+		if (source.hasKey(showInteriorKey))
+			polygon.setShowInterior(source.get(showInteriorKey));
+	}
 }

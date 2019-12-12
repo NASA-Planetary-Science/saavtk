@@ -13,13 +13,7 @@ public interface Properties
 
     final String MSI_IMAGE_BACKPLANE_GENERATION_UPDATE = "msi-image-backplane-generation-update";
     final String MODEL_RESOLUTION_CHANGED = "model-resolution-changed";
-    final String VERTEX_INSERTED_INTO_LINE = "vertex-inserted-into-line";
-    final String VERTEX_REMOVED_FROM_LINE = "vertex-removed-from-line";
-    final String VERTEX_POSITION_CHANGED = "vertex-position-changed";
 
-    final String STRUCTURE_REMOVED = "structure-removed";
-    final String ALL_STRUCTURES_REMOVED = "all-structure-removed";
-    final String COLOR_CHANGED = "color-changed";
     final String SPECTRUM_REGION_CHANGED = "spectrum-region-changed";
 
     final String CUSTOM_MODEL_ADDED = "custom-model-added";
