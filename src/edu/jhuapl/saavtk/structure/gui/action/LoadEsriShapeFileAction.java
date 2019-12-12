@@ -1,8 +1,10 @@
 package edu.jhuapl.saavtk.structure.gui.action;
 
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.AbstractAction;
@@ -20,18 +22,18 @@ import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
-import edu.jhuapl.saavtk.model.structure.Line;
 import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.model.structure.PointModel;
-import edu.jhuapl.saavtk.model.structure.Polygon;
 import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.model.structure.esri.FeatureUtil;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
 import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
+import edu.jhuapl.saavtk.structure.PolyLine;
+import edu.jhuapl.saavtk.structure.Polygon;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
-import edu.jhuapl.saavtk.structure.gui.StructurePanel;
 import edu.jhuapl.saavtk.structure.io.BennuStructuresEsriIO;
+import edu.jhuapl.saavtk.structure.io.StructureMiscUtil;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 
@@ -50,15 +52,15 @@ public class LoadEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 	private static final long serialVersionUID = 1L;
 
 	// Ref vars
-	private final StructurePanel<G1> refParent;
+	private final Component refParent;
 	private final StructureManager<G1> refStructureManager;
 	private final ModelManager refModelManager;
 	private final StatusBar refStatusBar;
 
-	public LoadEsriShapeFileAction(StructurePanel<G1> aParent, StructureManager<G1> aManager, ModelManager aModelManager,
-			StatusBar aStatusBar)
+	public LoadEsriShapeFileAction(Component aParent, String aName, StructureManager<G1> aManager,
+			ModelManager aModelManager, StatusBar aStatusBar)
 	{
-		super("ESRI Shapefile Datastore...");
+		super(aName);
 
 		refParent = aParent;
 		refStructureManager = aManager;
@@ -129,7 +131,7 @@ public class LoadEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 //			//System.out.println("prefix=" +prefix);
 
 //			if (structureModel == modelManager.getModel(ModelNames.ELLIPSE_STRUCTURES))
-//			{ 
+//			{
 //				if (filePath.toFile().exists())
 //				{
 //					FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.ellipseType);
@@ -180,99 +182,130 @@ public class LoadEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 						updateStatusBar(f, m, flist.size());
 						PointStructure ps = FeatureUtil.createPointStructureFrom((SimpleFeature) flist.get(m),
 								(GenericPolyhedralModel) refModelManager.getModel(ModelNames.SMALL_BODY));
-						model.addNewStructure(ps.getCentroid().toArray());
+						model.addNewStructure(ps.getCentroid());
 					}
-					model.activateStructure(null);
 				}
 			}
 			else if (refStructureManager == refModelManager.getModel(ModelNames.LINE_STRUCTURES))
 			{
-				if (filePath.toFile().exists())
+				if (filePath.toFile().exists() == false)
+					return;
+
+				// Load the file
+				FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.lineType);
+				FeatureIterator<Feature> it = features.features();
+				List<Feature> flist = Lists.newArrayList();
+				while (it.hasNext())
 				{
-					LineModel<Line> model = (LineModel) refModelManager.getModel(ModelNames.LINE_STRUCTURES);
-					FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.lineType);
-					FeatureIterator<Feature> it = features.features();
-					List<Feature> flist = Lists.newArrayList();
-					while (it.hasNext())
-					{
-						flist.add(it.next());
-					}
-					it.close();
-					for (int m = 0; m < flist.size(); m++)
-					{
-						Feature f = flist.get(m);
-						updateStatusBar(f, m, flist.size());
-						// System.out.println("reading line structure: "+f);
-						LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f,
-								(GenericPolyhedralModel) refModelManager.getModel(ModelNames.SMALL_BODY));
-
-						Line tmpItem = model.addNewStructure();
-						model.activateStructure(tmpItem);
-						for (int i = 0; i <= ls.getNumberOfSegments(); i++)
-						{
-							// subdivide segment
-
-							double[] pt;
-							if (i == ls.getNumberOfSegments())
-								pt = ls.getSegment(i - 1).getEnd().toArray();
-							else
-								pt = ls.getSegment(i).getStart().toArray();
-							LatLon latlon = MathUtil.reclat(pt);
-							// System.out.println(latlon.lat + " " + latlon.lon);
-							GenericPolyhedralModel body = (GenericPolyhedralModel) refModelManager
-									.getModel(ModelNames.SMALL_BODY);
-							double[] intersectPoint = new double[3];
-							body.getPointAndCellIdFromLatLon(latlon.lat, latlon.lon, intersectPoint);
-							model.insertVertexIntoActivatedStructure(intersectPoint);
-						}
-
-					}
-					it.close();
-					model.activateStructure(null);
+					flist.add(it.next());
 				}
+				it.close();
+
+				// Retrieve the LineManager and the current list of installed lines
+				// Note that lines are appended to the LineManager rather than replaced
+				LineModel<PolyLine> tmpManager = (LineModel) refModelManager.getModel(ModelNames.LINE_STRUCTURES);
+				List<PolyLine> fullL = new ArrayList<>(tmpManager.getAllItems());
+				int nextId = StructureMiscUtil.calcNextId(tmpManager);
+
+				// Transform (ESRI) features to SBMT lines
+				for (int m = 0; m < flist.size(); m++)
+				{
+					Feature f = flist.get(m);
+					updateStatusBar(f, m, flist.size());
+					// System.out.println("reading line structure: "+f);
+					LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f,
+							(GenericPolyhedralModel) refModelManager.getModel(ModelNames.SMALL_BODY));
+
+					// Synthesize the control points
+					List<LatLon> controlPointL = new ArrayList<>();
+					for (int i = 0; i <= ls.getNumberOfSegments(); i++)
+					{
+						// subdivide segment
+						double[] pt;
+						if (i == ls.getNumberOfSegments())
+							pt = ls.getSegment(i - 1).getEnd().toArray();
+						else
+							pt = ls.getSegment(i).getStart().toArray();
+						LatLon latlon = MathUtil.reclat(pt);
+						// System.out.println(latlon.lat + " " + latlon.lon);
+						GenericPolyhedralModel body = (GenericPolyhedralModel) refModelManager
+								.getModel(ModelNames.SMALL_BODY);
+						double[] intersectPoint = new double[3];
+						body.getPointAndCellIdFromLatLon(latlon.lat, latlon.lon, intersectPoint);
+
+						LatLon tmpLL = MathUtil.reclat(intersectPoint);
+						controlPointL.add(tmpLL);
+					}
+
+					// Instantiate the line
+					PolyLine tmpItem = new PolyLine(nextId, null, controlPointL);
+					fullL.add(tmpItem);
+					nextId++;
+				}
+
+				// Install the lines
+				tmpManager.setAllItems(fullL);
 			}
 			else if (refStructureManager == refModelManager.getModel(ModelNames.POLYGON_STRUCTURES))
 			{
+				if (filePath.toFile().exists() == false)
+					return;
 				// System.out.println(filePath+" "+filePath.toFile().exists());
-				if (filePath.toFile().exists())
+
+				// Load the file
+				FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.lineType);
+				FeatureIterator<Feature> it = features.features();
+				List<Feature> flist = Lists.newArrayList();
+				while (it.hasNext())
 				{
-					PolygonModel model = (PolygonModel) refModelManager.getModel(ModelNames.POLYGON_STRUCTURES);
-					FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.lineType);
-					FeatureIterator<Feature> it = features.features();
-					List<Feature> flist = Lists.newArrayList();
-					while (it.hasNext())
-					{
-						flist.add(it.next());
-					}
-					it.close();
-					for (int m = 0; m < flist.size(); m++)
-					{
-						Feature f = flist.get(m);
-						updateStatusBar(f, m, flist.size());
-						LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f,
-								(GenericPolyhedralModel) refModelManager.getModel(ModelNames.SMALL_BODY));
-						Polygon tmpItem = model.addNewStructure();
-						model.activateStructure(tmpItem);
-						for (int i = 0; i < ls.getNumberOfSegments(); i++)
-						{
-							double[] pt;
-							if (i == ls.getNumberOfSegments())
-								pt = ls.getSegment(i - 1).getEnd().toArray();
-							else
-								pt = ls.getSegment(i).getStart().toArray();
-							LatLon latlon = MathUtil.reclat(pt);
-							GenericPolyhedralModel body = (GenericPolyhedralModel) refModelManager
-									.getModel(ModelNames.SMALL_BODY);
-							double[] intersectPoint = new double[3];
-							body.getPointAndCellIdFromLatLon(latlon.lat, latlon.lon, intersectPoint);
-							model.insertVertexIntoActivatedStructure(intersectPoint);
-						}
-
-					}
-					it.close();
-					model.activateStructure(null);
-
+					flist.add(it.next());
 				}
+				it.close();
+
+				// Retrieve the PolygonManager and the current list of installed lines
+				// Note that polygons are appended to the LineManager rather than replaced
+				PolygonModel tmpManager = (PolygonModel) refModelManager.getModel(ModelNames.POLYGON_STRUCTURES);
+				List<Polygon> fullL = new ArrayList<>(tmpManager.getAllItems());
+				int nextId = StructureMiscUtil.calcNextId(tmpManager);
+
+				// Transform (ESRI) features to SBMT lines
+				for (int m = 0; m < flist.size(); m++)
+				{
+					Feature f = flist.get(m);
+					updateStatusBar(f, m, flist.size());
+					// System.out.println("reading line structure: "+f);
+					LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f,
+							(GenericPolyhedralModel) refModelManager.getModel(ModelNames.SMALL_BODY));
+
+					// Synthesize the control points
+					List<LatLon> controlPointL = new ArrayList<>();
+					for (int i = 0; i <= ls.getNumberOfSegments(); i++)
+					{
+						// subdivide segment
+						double[] pt;
+						if (i == ls.getNumberOfSegments())
+							pt = ls.getSegment(i - 1).getEnd().toArray();
+						else
+							pt = ls.getSegment(i).getStart().toArray();
+						LatLon latlon = MathUtil.reclat(pt);
+						// System.out.println(latlon.lat + " " + latlon.lon);
+						GenericPolyhedralModel body = (GenericPolyhedralModel) refModelManager
+								.getModel(ModelNames.SMALL_BODY);
+						double[] intersectPoint = new double[3];
+						body.getPointAndCellIdFromLatLon(latlon.lat, latlon.lon, intersectPoint);
+
+						LatLon tmpLL = MathUtil.reclat(intersectPoint);
+						controlPointL.add(tmpLL);
+					}
+
+					// Instantiate the polygon
+					Polygon tmpItem = new Polygon(nextId, null, controlPointL);
+					fullL.add(tmpItem);
+					nextId++;
+				}
+
+				// Install the polygons
+				tmpManager.setAllItems(fullL);
 			}
 		}
 	}
