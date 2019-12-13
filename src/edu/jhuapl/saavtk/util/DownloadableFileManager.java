@@ -73,7 +73,7 @@ public class DownloadableFileManager
         this.listenerMap = new HashMap<>();
         this.accessMonitor = Executors.newCachedThreadPool();
         this.enableMonitor = Boolean.FALSE;
-        this.sleepInterval = 5000;
+        this.sleepInterval = 50000;
     }
 
     public synchronized void startAccessMonitor()
@@ -217,9 +217,10 @@ public class DownloadableFileManager
                 continue;
             }
 
-            boolean doCheck = true;
             boolean unknownHost = false;
-            while (doCheck)
+            boolean doCheck = true;
+            int maximumNumberTries = 3;
+            for (int index = 0; index < maximumNumberTries && doCheck; ++index)
             {
                 try
                 {
