@@ -16,6 +16,7 @@ import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -123,7 +124,7 @@ public class DownloadableFileManager
 
                     if (!doAccessCheckOnServer())
                     {
-                        Debug.err().println("URL status check on server failed; falling back to file-by-file check");
+//                        Debug.err().println("URL status check on server failed; falling back to file-by-file check");
                         queryAll(forceUpdate);
                     }
 
@@ -141,9 +142,22 @@ public class DownloadableFileManager
         }
     }
 
+    /**
+     * Attempt to use a server-side script to check accessibility of all the URLs
+     * known to this manager.
+     * 
+     * This implementation iterates through the whole collection of URLs, sending
+     * them in batches to the server-side script. This is for two reasons: 1) the
+     * server has a limit on the size of string that can be passed and 2) it is
+     * useful to get
+     * 
+     * @return true if all the access checks succeeded, false if any checks failed.
+     *         Note this is checking whether the checks themselves succeeeded, not
+     *         whether or not the checked URLs are accessible.
+     */
     protected boolean doAccessCheckOnServer()
     {
-        boolean result = false;
+        boolean result = true;
 
         String checkFileAccessScriptName = SafeURLPaths.instance().getString(Configuration.getQueryRootURL(), "checkfileaccess.php");
         URL getUserAccessPhp;
@@ -155,6 +169,44 @@ public class DownloadableFileManager
         {
             throw new AssertionError(e);
         }
+
+        Set<String> urlSet;
+        synchronized (this.downloadInfoCache)
+        {
+            urlSet = ImmutableSet.copyOf(downloadInfoCache.keySet());
+        }
+
+        Iterator<String> iterator = urlSet.iterator();
+        while (iterator.hasNext())
+        {
+            if (!doAccessCheckOnServer(getUserAccessPhp, iterator, 32))
+            {
+                result = false;
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Iterate over the provided {@link #iterator} of URLs as Strings. For each, use
+     * the {@link #getUserAccessPhp} script to check accessibility. Check at most
+     * {@link #maximumQueryCount} URLs.
+     * 
+     * @param getUserAccessPhp the URL of the server-side script for performing the
+     *            check
+     * @param iterator that traverses the URLs (as strings) to check
+     * @param maximumQueryCount the maximum number of URLs that will be checked in a
+     *            single call to the script
+     * @return true if the access check succeeded, false if not. Note this indicates
+     *         whether the check itself succeeeded, not whether or not the checked
+     *         URLs are accessible.
+     * 
+     */
+    protected boolean doAccessCheckOnServer(URL getUserAccessPhp, Iterator<String> iterator, int maximumQueryCount)
+    {
+        boolean result = false;
 
         URLConnection conn = null;
         try
@@ -172,12 +224,6 @@ public class DownloadableFileManager
                 URL dataRootUrl = Configuration.getDataRootURL();
                 String dataRootUrlString = dataRootUrl.toString();
 
-                Set<String> urlSet;
-                synchronized (this.downloadInfoCache)
-                {
-                    urlSet = ImmutableSet.copyOf(downloadInfoCache.keySet());
-                }
-
                 StringBuilder sb = new StringBuilder();
                 sb.append("rootURL=").append(rootUrlString);
                 sb.append("&userName=").append(Configuration.getUserName());
@@ -186,20 +232,25 @@ public class DownloadableFileManager
                 sb.append("&stdin=");
 
                 boolean first = true;
-                int n = 0;
-                for (String url : urlSet)
+                for (int index = 0; index < maximumQueryCount; ++index)
                 {
+                    if (!iterator.hasNext())
+                    {
+                        break;
+                    }
+                    String url = iterator.next().replace(":", "|");
+                    if (!url.matches(".*\\S.*"))
+                    {
+                        continue;
+                    }
+
                     if (!first)
                     {
                         sb.append("\n");
                     }
                     first = false;
-                    sb.append(url.replaceFirst(dataRootUrlString, ""));
-                    if (n > 64)
-                    {
-                        break;
-                    }
-                    ++n;
+
+                    sb.append(url);
                 }
                 wr.write(sb.toString());
                 wr.flush();
@@ -225,12 +276,12 @@ public class DownloadableFileManager
                 }
             }
             result = true;
-            Debug.err().println("Successfully ran URL status check on server");
+//            Debug.err().println("Successfully ran URL status check on server");
         }
         catch (IOException e)
         {
-            Debug.err().println("Could not open connection to " + checkFileAccessScriptName);
-            e.printStackTrace(Debug.err());
+//            Debug.err().println("Could not open connection to " + getUserAccessPhp);
+//            e.printStackTrace(Debug.err());
         }
         finally
         {
