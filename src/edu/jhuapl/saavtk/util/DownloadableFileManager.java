@@ -2,11 +2,17 @@ package edu.jhuapl.saavtk.util;
 
 import java.awt.EventQueue;
 import java.beans.PropertyChangeListener;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -23,6 +29,7 @@ import com.google.common.collect.ImmutableSet;
 import edu.jhuapl.saavtk.util.DownloadableFileInfo.DownloadableFileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileState;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
+import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
 public class DownloadableFileManager
 {
@@ -73,7 +80,7 @@ public class DownloadableFileManager
         this.listenerMap = new HashMap<>();
         this.accessMonitor = Executors.newCachedThreadPool();
         this.enableMonitor = Boolean.FALSE;
-        this.sleepInterval = 50000;
+        this.sleepInterval = 10000;
     }
 
     public synchronized void startAccessMonitor()
@@ -114,13 +121,17 @@ public class DownloadableFileManager
                         }
                     }
 
-                    queryAll(forceUpdate);
+                    if (!doAccessCheckOnServer())
+                    {
+                        Debug.err().println("URL status check on server failed; falling back to file-by-file check");
+                        queryAll(forceUpdate);
+                    }
 
                     try
                     {
                         Thread.sleep(sleepInterval);
                     }
-                    catch (@SuppressWarnings("unused") InterruptedException ignored)
+                    catch (InterruptedException ignored)
                     {
 
                     }
@@ -128,6 +139,108 @@ public class DownloadableFileManager
 
             });
         }
+    }
+
+    protected boolean doAccessCheckOnServer()
+    {
+        boolean result = false;
+
+        String checkFileAccessScriptName = SafeURLPaths.instance().getString(Configuration.getQueryRootURL(), "checkfileaccess.php");
+        URL getUserAccessPhp;
+        try
+        {
+            getUserAccessPhp = new URL(checkFileAccessScriptName);
+        }
+        catch (MalformedURLException e)
+        {
+            throw new AssertionError(e);
+        }
+
+        URLConnection conn = null;
+        try
+        {
+            conn = getUserAccessPhp.openConnection();
+            conn.setDoOutput(true);
+            conn.setUseCaches(false);
+            conn.setRequestProperty("User-Agent", "Mozilla/4.0");
+
+            // Make query string that contains all the URLs currently in the cache.
+            try (OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream()))
+            {
+                URL rootUrl = Configuration.getRootURL();
+                String rootUrlString = rootUrl.toString();
+                URL dataRootUrl = Configuration.getDataRootURL();
+                String dataRootUrlString = dataRootUrl.toString();
+
+                Set<String> urlSet;
+                synchronized (this.downloadInfoCache)
+                {
+                    urlSet = ImmutableSet.copyOf(downloadInfoCache.keySet());
+                }
+
+                StringBuilder sb = new StringBuilder();
+                sb.append("rootURL=").append(rootUrlString);
+                sb.append("&userName=").append(Configuration.getUserName());
+                sb.append("&password=").append(Configuration.getPassword());
+                sb.append("&args=");
+                sb.append("&stdin=");
+
+                boolean first = true;
+                int n = 0;
+                for (String url : urlSet)
+                {
+                    if (!first)
+                    {
+                        sb.append("\n");
+                    }
+                    first = false;
+                    sb.append(url.replaceFirst(dataRootUrlString, ""));
+                    if (n > 64)
+                    {
+                        break;
+                    }
+                    ++n;
+                }
+                wr.write(sb.toString());
+                wr.flush();
+            }
+
+            try (InputStreamReader isr = new InputStreamReader(conn.getInputStream()))
+            {
+                BufferedReader in = new BufferedReader(isr);
+                String line;
+                while ((line = in.readLine()) != null)
+                {
+                    String[] splitLine = line.split(",");
+                    if (splitLine.length > 3)
+                    {
+                        String urlString = splitLine[0];
+                        UrlStatus status = UrlStatus.valueOf(splitLine[1]);
+                        long contentLength = Long.parseLong(splitLine[2]);
+                        long lastModified = Long.parseLong(splitLine[3]);
+
+                        UrlInfo urlInfo = urlManager.getInfo(urlString);
+                        urlInfo.update(status, contentLength, lastModified);
+                    }
+                }
+            }
+            result = true;
+            Debug.err().println("Successfully ran URL status check on server");
+        }
+        catch (IOException e)
+        {
+            Debug.err().println("Could not open connection to " + checkFileAccessScriptName);
+            e.printStackTrace(Debug.err());
+        }
+        finally
+        {
+            if (conn instanceof HttpURLConnection)
+            {
+                ((HttpURLConnection) conn).disconnect();
+            }
+        }
+
+        return result;
     }
 
     public synchronized void stopAccessMonitor()
@@ -519,6 +632,50 @@ public class DownloadableFileManager
         }
 
         return result;
+    }
+
+    public static void main(String[] args)
+    {
+        try
+        {
+            URL getUserAccessPhp = new URL(Configuration.getQueryRootURL() + "/" + "checkfileaccess.php");
+            URLConnection conn = null;
+            try
+            {
+                conn = getUserAccessPhp.openConnection();
+                conn.setDoOutput(true);
+                conn.setUseCaches(false);
+                conn.setRequestProperty("User-Agent", "Mozilla/4.0");
+                try (OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream()))
+                {
+                    wr.write("rootURL=http://sbmt.jhuapl.edu/sbmt/prod&userName=sbmt-test&password=wide-open&args=&stdin=/prometheus/gaskell/Gaskell_Prometheus_v7.8.json\n/GASKELL/EROS/Gaskell_433_Eros_v7.8.json");
+                    wr.flush();
+                }
+
+                try (InputStreamReader isr = new InputStreamReader(conn.getInputStream()))
+                {
+                    BufferedReader in = new BufferedReader(isr);
+                    String line;
+                    while ((line = in.readLine()) != null)
+                    {
+                        System.out.println(line);
+                    }
+
+                }
+            }
+            finally
+            {
+                if (conn instanceof HttpURLConnection)
+                {
+                    ((HttpURLConnection) conn).disconnect();
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
     }
 
 }
