@@ -63,8 +63,8 @@ public class Configuration
     private static URL restrictedAccessRoot = null;
     private static Iterable<Path> passwordFilesToTry = null;
     private static final AtomicBoolean authenticationSuccessful = new AtomicBoolean(false);
-    private static volatile String userName = null;
-    private static volatile char[] password = null;
+    private static volatile String userName = "";
+    private static volatile char[] password = "".toCharArray();
 
     // Uncomment the following to enable the startup script (which can be changed by
     // the user)
