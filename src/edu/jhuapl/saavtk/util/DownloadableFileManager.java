@@ -185,7 +185,16 @@ public class DownloadableFileManager
         Iterator<String> iterator = urlSet.iterator();
         while (iterator.hasNext())
         {
-            if (!doAccessCheckOnServer(getUserAccessPhp, iterator, 32, forceUpdate))
+            // Experimented with different numbers of URLs to include in each query.
+            // At the time this code was written, the maximum number seemed to be
+            // between 106 and 112. It is likely the limit is in the total number of
+            // characters permitted in the string passed through the web server to the PHP
+            // script. While this scales with the number of URLs, it clearly also depends on
+            // the length of the individual URL strings. This could of course change if,
+            // say, new models are added that have longer names or if the path structure
+            // under the data root directory changes. Thus, going with 64 for now -- a power
+            // of 2 that is safely well below the experimental limit.
+            if (!doAccessCheckOnServer(getUserAccessPhp, iterator, 64, forceUpdate))
             {
                 result = false;
                 break;
