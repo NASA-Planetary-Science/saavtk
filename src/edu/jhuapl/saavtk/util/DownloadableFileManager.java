@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.jhuapl.saavtk.util.DownloadableFileInfo.DownloadableFileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileState;
+import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
@@ -72,6 +73,7 @@ public class DownloadableFileManager
     private final ExecutorService accessMonitor;
     private volatile Boolean enableMonitor;
     private volatile long sleepInterval;
+    private volatile boolean disableAccessChecksOnServer;
 
     protected DownloadableFileManager(UrlAccessManager urlManager, FileAccessManager fileManager)
     {
@@ -82,6 +84,7 @@ public class DownloadableFileManager
         this.accessMonitor = Executors.newCachedThreadPool();
         this.enableMonitor = Boolean.FALSE;
         this.sleepInterval = 10000;
+        this.disableAccessChecksOnServer = false;
     }
 
     public synchronized void startAccessMonitor()
@@ -122,7 +125,7 @@ public class DownloadableFileManager
                         }
                     }
 
-                    if (!doAccessCheckOnServer())
+                    if (disableAccessChecksOnServer || !doAccessCheckOnServer(forceUpdate))
                     {
 //                        Debug.err().println("URL status check on server failed; falling back to file-by-file check");
                         queryAll(forceUpdate);
@@ -149,13 +152,16 @@ public class DownloadableFileManager
      * This implementation iterates through the whole collection of URLs, sending
      * them in batches to the server-side script. This is for two reasons: 1) the
      * server has a limit on the size of string that can be passed and 2) it is
-     * useful to get
+     * useful to get items in batches to avoid all-or-nothing checks.
+     * 
+     * @param forceUpdate force FileInfo portion of the update. The server-side
+     *            update (UrlInfo) is performed in any case.
      * 
      * @return true if all the access checks succeeded, false if any checks failed.
      *         Note this is checking whether the checks themselves succeeeded, not
      *         whether or not the checked URLs are accessible.
      */
-    protected boolean doAccessCheckOnServer()
+    protected boolean doAccessCheckOnServer(boolean forceUpdate)
     {
         boolean result = true;
 
@@ -179,7 +185,7 @@ public class DownloadableFileManager
         Iterator<String> iterator = urlSet.iterator();
         while (iterator.hasNext())
         {
-            if (!doAccessCheckOnServer(getUserAccessPhp, iterator, 32))
+            if (!doAccessCheckOnServer(getUserAccessPhp, iterator, 32, forceUpdate))
             {
                 result = false;
                 break;
@@ -199,12 +205,15 @@ public class DownloadableFileManager
      * @param iterator that traverses the URLs (as strings) to check
      * @param maximumQueryCount the maximum number of URLs that will be checked in a
      *            single call to the script
+     * @param forceUpdate force FileInfo portion of the update. The server-side
+     *            update (UrlInfo) is performed in any case.
+     * 
      * @return true if the access check succeeded, false if not. Note this indicates
      *         whether the check itself succeeeded, not whether or not the checked
      *         URLs are accessible.
      * 
      */
-    protected boolean doAccessCheckOnServer(URL getUserAccessPhp, Iterator<String> iterator, int maximumQueryCount)
+    protected boolean doAccessCheckOnServer(URL getUserAccessPhp, Iterator<String> iterator, int maximumQueryCount, boolean forceUpdate)
     {
         boolean result = false;
 
@@ -238,7 +247,9 @@ public class DownloadableFileManager
                     {
                         break;
                     }
-                    String url = iterator.next().replace(":", "|");
+                    // Encode colons as pipes. This is to get the query string through the web
+                    // server, which rejects queries containing colons.
+                    String url = iterator.next().replaceFirst(dataRootUrlString, "").replace(":", "|");
                     if (!url.matches(".*\\S.*"))
                     {
                         continue;
@@ -262,6 +273,10 @@ public class DownloadableFileManager
                 String line;
                 while ((line = in.readLine()) != null)
                 {
+                    if (line.matches(("^<html>.*Request Rejected.*")))
+                    {
+                        throw new IOException("Request for file was rejected by the server.");
+                    }
                     String[] splitLine = line.split(",");
                     if (splitLine.length > 3)
                     {
@@ -270,8 +285,18 @@ public class DownloadableFileManager
                         long contentLength = Long.parseLong(splitLine[2]);
                         long lastModified = Long.parseLong(splitLine[3]);
 
+                        // Update UrlInfo aspect.
                         UrlInfo urlInfo = urlManager.getInfo(urlString);
                         urlInfo.update(status, contentLength, lastModified);
+
+                        // Update FileInfo aspect.
+                        DownloadableFileState state = getState(urlString);
+                        FileState fileState = state.getFileState();
+                        if (forceUpdate || fileState.getStatus().equals(FileStatus.UNKNOWN))
+                        {
+                            FileInfo fileInfo = fileManager.getInfo(fileState.getFile());
+                            fileInfo.update();
+                        }
                     }
                 }
             }
@@ -280,8 +305,8 @@ public class DownloadableFileManager
         }
         catch (IOException e)
         {
-//            Debug.err().println("Could not open connection to " + getUserAccessPhp);
-//            e.printStackTrace(Debug.err());
+            Debug.err().println("Exception perofmring server-side check: could not open connection to " + getUserAccessPhp);
+            e.printStackTrace(Debug.err());
         }
         finally
         {
@@ -334,7 +359,7 @@ public class DownloadableFileManager
         return getInfo(urlManager.getUrl(urlString)).getState();
     }
 
-    public FileAccessQuerier getQuerier(String urlString, boolean forceUpdate)
+    public DownloadableFileAccessQuerier getQuerier(String urlString, boolean forceUpdate)
     {
         Preconditions.checkNotNull(urlString);
 
@@ -344,7 +369,7 @@ public class DownloadableFileManager
         File file = state.getFileState().getFile();
         FileInfo fileInfo = fileManager.getInfo(file);
 
-        return FileAccessQuerier.of(urlInfo, fileInfo, forceUpdate, urlManager.isServerAccessEnabled());
+        return DownloadableFileAccessQuerier.of(urlInfo, fileInfo, forceUpdate, urlManager.isServerAccessEnabled());
     }
 
     public DownloadableFileState query(String urlString, boolean forceUpdate)
@@ -646,13 +671,13 @@ public class DownloadableFileManager
         return result;
     }
 
-    protected DownloadableFileInfo doQuery(URL url, boolean forceUpdate) throws IOException, InterruptedException
+    protected DownloadableFileInfo doQuery(URL url, boolean forceUpdate) throws IOException
     {
         Preconditions.checkNotNull(url);
 
         DownloadableFileInfo result = getInfo(url);
 
-        FileAccessQuerier querier = getQuerier(url.toString(), forceUpdate);
+        DownloadableFileAccessQuerier querier = getQuerier(url.toString(), forceUpdate);
         querier.query();
 
         result.update(querier.getDownloadableFileState());
