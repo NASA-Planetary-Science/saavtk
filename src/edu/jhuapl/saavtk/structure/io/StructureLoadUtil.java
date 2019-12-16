@@ -126,7 +126,7 @@ public class StructureLoadUtil
 
 			// Perform heuristics
 			tmpMode = Mode.ELLIPSE_MODE;
-			if (isAllCircles == true && isAllRadiusConst == false)
+			if (isAllCircles == true && (isAllRadiusConst == false || tmpL.size() == 1))
 				tmpMode = Mode.CIRCLE_MODE;
 			else if (isAllCircles == true && isAllRadiusConst == true)
 				tmpMode = Mode.POINT_MODE;
