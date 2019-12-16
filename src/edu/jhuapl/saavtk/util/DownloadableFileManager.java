@@ -316,7 +316,7 @@ public class DownloadableFileManager
         }
         catch (IOException e)
         {
-            Debug.err().println("Exception perofmring server-side check: could not open connection to " + getUserAccessPhp);
+            Debug.err().println("Exception performing server-side check: could not open connection to " + getUserAccessPhp);
             e.printStackTrace(Debug.err());
         }
         finally
