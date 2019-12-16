@@ -16,16 +16,16 @@ import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.util.DownloadableFileInfo.DownloadableFileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileState;
@@ -68,23 +68,27 @@ public class DownloadableFileManager
 
     private final UrlAccessManager urlManager;
     private final FileAccessManager fileManager;
-    private final ConcurrentMap<String, DownloadableFileInfo> downloadInfoCache;
+    private final Map<String, DownloadableFileInfo> downloadInfoCache;
+    private final List<String> urlList;
     private final Map<String, Map<StateListener, PropertyChangeListener>> listenerMap;
     private final ExecutorService accessMonitor;
     private volatile Boolean enableMonitor;
     private volatile long sleepInterval;
     private volatile boolean disableAccessChecksOnServer;
+    private volatile int maximumQueryLength;
 
     protected DownloadableFileManager(UrlAccessManager urlManager, FileAccessManager fileManager)
     {
         this.urlManager = urlManager;
         this.fileManager = fileManager;
         this.downloadInfoCache = new ConcurrentHashMap<>();
+        this.urlList = new LinkedList<>();
         this.listenerMap = new HashMap<>();
         this.accessMonitor = Executors.newCachedThreadPool();
         this.enableMonitor = Boolean.FALSE;
         this.sleepInterval = 10000;
         this.disableAccessChecksOnServer = false;
+        this.maximumQueryLength = 5000; // Empirically determined.
     }
 
     public synchronized void startAccessMonitor()
@@ -176,25 +180,16 @@ public class DownloadableFileManager
             throw new AssertionError(e);
         }
 
-        Set<String> urlSet;
+        ImmutableList<String> urlList;
         synchronized (this.downloadInfoCache)
         {
-            urlSet = ImmutableSet.copyOf(downloadInfoCache.keySet());
+            urlList = ImmutableList.copyOf(this.urlList);
         }
 
-        Iterator<String> iterator = urlSet.iterator();
+        ListIterator<String> iterator = urlList.listIterator();
         while (iterator.hasNext())
         {
-            // Experimented with different numbers of URLs to include in each query.
-            // At the time this code was written, the maximum number seemed to be
-            // between 106 and 112. It is likely the limit is in the total number of
-            // characters permitted in the string passed through the web server to the PHP
-            // script. While this scales with the number of URLs, it clearly also depends on
-            // the length of the individual URL strings. This could of course change if,
-            // say, new models are added that have longer names or if the path structure
-            // under the data root directory changes. Thus, going with 64 for now -- a power
-            // of 2 that is safely well below the experimental limit.
-            if (!doAccessCheckOnServer(getUserAccessPhp, iterator, 64, forceUpdate))
+            if (!doAccessCheckOnServer(getUserAccessPhp, iterator, forceUpdate))
             {
                 result = false;
                 break;
@@ -222,7 +217,7 @@ public class DownloadableFileManager
      *         URLs are accessible.
      * 
      */
-    protected boolean doAccessCheckOnServer(URL getUserAccessPhp, Iterator<String> iterator, int maximumQueryCount, boolean forceUpdate)
+    protected boolean doAccessCheckOnServer(URL getUserAccessPhp, ListIterator<String> iterator, boolean forceUpdate)
     {
         boolean result = false;
 
@@ -250,18 +245,25 @@ public class DownloadableFileManager
                 sb.append("&stdin=");
 
                 boolean first = true;
-                for (int index = 0; index < maximumQueryCount; ++index)
+                while (iterator.hasNext())
                 {
-                    if (!iterator.hasNext())
-                    {
-                        break;
-                    }
                     // Encode colons as pipes. This is to get the query string through the web
                     // server, which rejects queries containing colons.
                     String url = iterator.next().replaceFirst(dataRootUrlString, "").replace(":", "|");
                     if (!url.matches(".*\\S.*"))
                     {
                         continue;
+                    }
+
+                    // Make sure the maximum query length would not be exceeded with the current URL
+                    // plus a newline. For purposes of ensuring this doesn't happen, newline
+                    // is counted as two characters (CR?LF).
+                    if ((sb.length() + url.length() + 2) >= maximumQueryLength)
+                    {
+                        // Move back one position so this URL is included in the next batch of queries.
+                        // Then exit the loop so this query will go forward.
+                        iterator.previous();
+                        break;
                     }
 
                     if (!first)
@@ -401,13 +403,13 @@ public class DownloadableFileManager
         URL rootUrl = urlManager.getRootUrl();
         String rootUrlString = rootUrl.toString();
 
-        Set<String> urlSet;
+        ImmutableList<String> urlList;
         synchronized (this.downloadInfoCache)
         {
-            urlSet = ImmutableSet.copyOf(downloadInfoCache.keySet());
+            urlList = ImmutableList.copyOf(this.urlList);
         }
 
-        for (String urlString : urlSet)
+        for (String urlString : urlList)
         {
             if (urlString.equals(rootUrlString))
             {
@@ -673,6 +675,7 @@ public class DownloadableFileManager
 
                 result = downloadableInfo;
 
+                urlList.add(urlString);
                 downloadInfoCache.put(urlString, result);
             }
         }
