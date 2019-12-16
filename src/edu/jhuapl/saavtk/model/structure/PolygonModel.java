@@ -316,6 +316,10 @@ public class PolygonModel extends LineModel<Polygon>
 	 */
 	protected void configurePolygonInterior(Polygon aItem, boolean aIsShown)
 	{
+		// Bail if no valid item
+		if (aItem == null)
+			return;
+
 		// Bail if nothing changes
 		if (aItem.getShowInterior() == aIsShown)
 			return;
