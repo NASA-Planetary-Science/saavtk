@@ -35,7 +35,6 @@ import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
 import glum.item.ItemEventType;
 import glum.task.Task;
-import glum.util.ThreadUtil;
 import vtk.vtkActor;
 import vtk.vtkAppendPolyData;
 import vtk.vtkCellData;
@@ -253,23 +252,7 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 				aItem.setRadius(defaultRadius);
 		}
 
-		// Init the VTK state
-		int tmpCnt = 0;
-		for (Ellipse aItem : aItemL)
-		{
-			VtkEllipsePainter tmpPainter = getOrCreateVtkMainPainterFor(aItem);
-			tmpPainter.vtkUpdateState();
-
-			aTask.setProgress(tmpCnt, aItemL.size());
-			tmpCnt++;
-		}
-
-		// Finish on the AWT
-		ThreadUtil.invokeAndWaitOnAwt(() -> {
-			setAllItems(aItemL);
-			updatePolyData();
-		});
-
+		super.installItems(aTask, aItemL);
 	}
 
 	public vtkActor getBoundaryActor()
@@ -851,8 +834,6 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 		setAllItems(restoredPolygons);
 		setSelectedItems(pickL);
 
-		// Sync everything up.
-		updatePolyData();
 		setLineWidth(lineWidth);
 	}
 

@@ -2,10 +2,14 @@ package edu.jhuapl.saavtk.structure.io;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
+import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.model.structure.Line;
 import edu.jhuapl.saavtk.structure.Ellipse;
@@ -15,6 +19,8 @@ import edu.jhuapl.saavtk.structure.Polygon;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.structure.gui.load.InstallMode;
+import edu.jhuapl.saavtk.structure.util.ControlPointUtil;
+import edu.jhuapl.saavtk.util.LatLon;
 import glum.item.IdGenerator;
 import glum.item.IncrIdGenerator;
 import glum.task.Task;
@@ -114,6 +120,10 @@ public class StructureMiscUtil
 	public static <G1 extends Structure> void installStructures(Task aTask, StructureManager<G1> aManager,
 			List<G1> aItemL, InstallMode aMode)
 	{
+		// Bail if aTask is aborted
+		if (aTask.isActive() == false)
+			return;
+
 		// Gather the list of current installed items
 		List<G1> origItemL = new ArrayList<>();
 		if (aMode != InstallMode.ReplaceAll)
@@ -157,6 +167,48 @@ public class StructureMiscUtil
 		// Install the items
 		List<G1> fullItemL = new ArrayList<>(mergeMM.values());
 		aManager.installItems(aTask, fullItemL);
+	}
+
+	/**
+	 * Utility method that will project the control points associated with specified
+	 * list of structures onto the provided shape model.
+	 * <P>
+	 * Throws a {@link RuntimeException} if the structure type is not recognized.
+	 */
+	public static void projectControlPointsToShapeModel(PolyhedralModel aSmallBody, List<? extends Structure> aItemL)
+	{
+		String refShapeModelName = aSmallBody.getModelName();
+
+		for (Structure aItem : aItemL)
+		{
+			String tmpShapeModelName = aItem.getShapeModelId();
+			if (Objects.equals(refShapeModelName, tmpShapeModelName) == false)
+			{
+				// Update the structure's control points
+				if (aItem instanceof PolyLine)
+				{
+					PolyLine tmpItem = (PolyLine) aItem;
+					List<LatLon> tmpControlPointL = tmpItem.getControlPoints();
+					tmpControlPointL = ControlPointUtil.shiftControlPointsToNearestPointOnBody(aSmallBody, tmpControlPointL);
+					tmpItem.setControlPoints(tmpControlPointL);
+				}
+				else if (aItem instanceof Ellipse)
+				{
+					Ellipse tmpItem = (Ellipse) aItem;
+					Vector3D tmpPos = tmpItem.getCenter();
+					double[] tmpPosArr = aSmallBody.findClosestPoint(tmpPos.toArray());
+					tmpPos = new Vector3D(tmpPosArr);
+					tmpItem.setCenter(tmpPos);
+				}
+				else
+				{
+					throw new RuntimeException("Structure type is not recognized: " + aItem.getClass());
+				}
+
+				// Update the structure's associated shape model
+				aItem.setShapeModelId(refShapeModelName);
+			}
+		}
 	}
 
 	/**

@@ -129,8 +129,7 @@ public class StructureMainPanel extends JPanel implements ActionListener
 			loadDialog.setLocationRelativeTo(this);
 		}
 
-		// Delegate load logic
-//		// Prompt the user for how to load the structures
+		// Prompt the user for how to load the structures
 		loadPanel.setStructuresToLoad(fullL);
 		loadDialog.setVisible(true);
 

@@ -47,7 +47,6 @@ import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
 import glum.item.ItemEventType;
-import glum.task.Task;
 import vtk.vtkActor;
 import vtk.vtkCellArray;
 import vtk.vtkCellData;
@@ -670,35 +669,6 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	}
 
 	@Override
-	public void installItems(Task aTask, List<G1> aItemL)
-	{
-		// Process the content of the file
-		int tmpCnt = 0;
-		for (G1 aItem : aItemL)
-		{
-			VtkPolyLinePainter<G1> tmpPainter = getOrCreateVtkPainterFor(aItem, refSmallBody).getMainPainter();
-
-			// Shift the points if necessary
-			String shapeModelName = aItem.getShapeModelId();
-			if (shapeModelName == null || shapeModelName.equals(refSmallBody.getModelName()) == false)
-			{
-				// Update the control points
-				List<LatLon> tmpControlPointL = aItem.getControlPoints();
-				tmpControlPointL = ControlPointUtil.shiftControlPointsToNearestPointOnBody(refSmallBody, tmpControlPointL);
-				aItem.setControlPoints(tmpControlPointL);
-			}
-
-			tmpPainter.updateAllSegments();
-
-			aTask.setProgress(tmpCnt, aItemL.size());
-			tmpCnt++;
-		}
-
-		// Install the items
-		setAllItems(aItemL);
-	}
-
-	@Override
 	public boolean supportsActivation()
 	{
 		return true;
@@ -963,8 +933,6 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 
 		for (G1 aItem : sourceLines)
 		{
-			VtkPolyLinePainter<G1> tmpPainter = getOrCreateVtkPainterFor(aItem, refSmallBody).getMainPainter();
-			tmpPainter.updateAllSegments();
 			if (aItem instanceof Polygon)
 			{
 				Polygon polygon = (Polygon) aItem;
@@ -981,8 +949,6 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 
 		setLineWidth(lineWidth);
 		setOffset(offset);
-
-		updatePolyData();
 	}
 
 	@Override
@@ -1013,8 +979,12 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 			if (aItem.getVisible() == false)
 				continue;
 
+			// Skip to next if not rendered
+			VtkPolyLinePainter<?> tmpPainter = getVtkMainPainter(aItem);
+			if (tmpPainter == null)
+				continue;
+
 			// Skip to next as VTK draw state has not been initialized
-			VtkPolyLinePainter<?> tmpPainter = getOrCreateVtkPainterFor(aItem, refSmallBody).getMainPainter();
 			if (tmpPainter.getVtkDrawId() == -1)
 				continue;
 
@@ -1095,7 +1065,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 
 			VtkPolyLinePainter<?> tmpPainter = getVtkMainPainter(aItem);
 			if (tmpPainter != null)
-				tmpPainter.updateAllSegments();
+				tmpPainter.markStale();
 		}
 		notifyListeners(this, ItemEventType.ItemsMutated);
 

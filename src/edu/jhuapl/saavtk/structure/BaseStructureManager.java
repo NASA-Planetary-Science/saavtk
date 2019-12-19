@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +29,8 @@ import edu.jhuapl.saavtk.structure.vtk.VtkUtil;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.vtk.VtkResource;
 import glum.item.ItemEventType;
+import glum.task.Task;
+import glum.util.ThreadUtil;
 import vtk.vtkProp;
 
 /**
@@ -152,6 +155,36 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 
 		Object source = aEvent.getSource();
 		notifyListeners(source, ItemEventType.ItemsSelected);
+	}
+
+	@Override
+	public void installItems(Task aTask, List<G1> aItemL)
+	{
+		// Determine the set of new items
+		Set<G1> currS = new HashSet<>(getAllItems());
+		Set<G1> fullS = new LinkedHashSet<>(aItemL);
+		Set<G1> newS = Sets.difference(fullS, currS);
+
+		// Init the VTK state of the new items
+		int tmpCnt = 0;
+		for (G1 aItem : newS)
+		{
+			// Bail if aTask is aborted
+			if (aTask.isActive() == false)
+			{
+				ThreadUtil.invokeAndWaitOnAwt(() -> setAllItems(getAllItems()));
+				return;
+			}
+
+			VtkCompositePainter<?, ?> tmpPainter = getOrCreateVtkPainterFor(aItem, refSmallBody);
+			tmpPainter.vtkUpdateState();
+
+			aTask.setProgress(tmpCnt, newS.size());
+			tmpCnt++;
+		}
+
+		// Finish on the AWT
+		ThreadUtil.invokeAndWaitOnAwt(() -> setAllItems(aItemL));
 	}
 
 	@Override

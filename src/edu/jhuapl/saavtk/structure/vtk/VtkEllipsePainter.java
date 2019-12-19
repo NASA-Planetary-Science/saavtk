@@ -112,7 +112,7 @@ public class VtkEllipsePainter implements VtkResource
 	@Override
 	public void vtkUpdateState()
 	{
-		// Bail if the not stale
+		// Bail if not stale
 		if (vIsStale == false)
 			return;
 		vIsStale = false;

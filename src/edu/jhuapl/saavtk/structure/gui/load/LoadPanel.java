@@ -12,11 +12,13 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.SwingUtilities;
 
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
+import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.structure.Ellipse;
 import edu.jhuapl.saavtk.structure.PolyLine;
@@ -25,7 +27,7 @@ import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.structure.io.StructureMiscUtil;
 import glum.gui.GuiUtil;
-import glum.task.SilentTask;
+import glum.task.PartialTask;
 import glum.task.Task;
 import net.miginfocom.swing.MigLayout;
 
@@ -53,6 +55,7 @@ public class LoadPanel extends JPanel implements ActionListener
 
 	// Ref vars
 	private final JDialog refDialog;
+	private final PolyhedralModel refSmallBody;
 
 	private final StructureManager<PolyLine> refPathStructureManager;
 	private final StructureManager<Polygon> refPolyStructureManager;
@@ -68,6 +71,7 @@ public class LoadPanel extends JPanel implements ActionListener
 	private JRadioButton replaceCollideRB;
 	private JRadioButton appendWithOrignalRB;
 	private JRadioButton appendWithUniqueRB;
+	private JCheckBox projToBodyCB;
 
 	private JCheckBox circleCountCB;
 	private JCheckBox ellipseCountCB;
@@ -75,10 +79,12 @@ public class LoadPanel extends JPanel implements ActionListener
 	private JCheckBox pathCountCB;
 	private JCheckBox pointCountCB;
 
+	private LoadTask loadTask;
 	private JLabel statusL;
 
-	private JButton cancelB;
 	private JButton acceptB;
+	private JButton cancelB;
+	private JButton closeB;
 
 	/**
 	 * Standard Constructor
@@ -88,6 +94,8 @@ public class LoadPanel extends JPanel implements ActionListener
 	{
 		refDialog = aDialog;
 		refDialog.setContentPane(this);
+		refDialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+		refSmallBody = aModelManager.getPolyhedralModel();
 
 		refPathStructureManager = (StructureManager<PolyLine>) aModelManager.getModel(ModelNames.LINE_STRUCTURES);
 		refPolyStructureManager = (StructureManager<Polygon>) aModelManager.getModel(ModelNames.POLYGON_STRUCTURES);
@@ -99,11 +107,13 @@ public class LoadPanel extends JPanel implements ActionListener
 
 		setLayout(new MigLayout("", "", "[]"));
 
-		replaceAllRB = GuiUtil.createJRadioButton("Replace all structures", this);
-		replaceAllRB.setSelected(true);
-		replaceCollideRB = GuiUtil.createJRadioButton("Replace structures with colliding ids", this);
 		appendWithOrignalRB = GuiUtil.createJRadioButton("Append structures with original ids", this);
+		appendWithOrignalRB.setSelected(true);
 		appendWithUniqueRB = GuiUtil.createJRadioButton("Append structures with unique ids", this);
+		replaceAllRB = GuiUtil.createJRadioButton("Replace all structures", this);
+		replaceCollideRB = GuiUtil.createJRadioButton("Replace structures with colliding ids", this);
+		projToBodyCB = GuiUtil.createJCheckBox("Project to body", this);
+		projToBodyCB.setToolTipText("Project structures to the surface of the shape model.");
 
 		pathCountCB = GuiUtil.createJCheckBox("Paths: ", this);
 		polygonCountCB = GuiUtil.createJCheckBox("Polygons: ", this);
@@ -120,10 +130,15 @@ public class LoadPanel extends JPanel implements ActionListener
 		statusL = new JLabel(ERR_MSG_NO_STRUCTURES_SELECTED);
 		add(statusL, "growx,span,wrap");
 
-		cancelB = GuiUtil.formButton(this, "Cancel");
+		JLabel progL = new JLabel();
+		loadTask = new LoadTask(progL);
 		acceptB = GuiUtil.formButton(this, "Accept");
+		cancelB = GuiUtil.formButton(this, "Cancel");
+		closeB = GuiUtil.formButton(this, "Close");
+		add(progL, "");
 		add(cancelB, "align right,span,split");
-		add(acceptB, "gap right 3");
+		add(acceptB, "");
+		add(closeB, "gap right 3");
 
 		refDialog.pack();
 	}
@@ -136,7 +151,9 @@ public class LoadPanel extends JPanel implements ActionListener
 		boolean isEnabled;
 
 		fullL = ImmutableList.copyOf(aItemL);
+		loadTask.reset();
 
+		// Update GUI state of various tasks
 		int cntPath = StructureMiscUtil.getPathsFrom(fullL).size();
 		isEnabled = cntPath > 0;
 		pathCountCB.setEnabled(isEnabled);
@@ -167,6 +184,9 @@ public class LoadPanel extends JPanel implements ActionListener
 		pointCountCB.setSelected(isEnabled);
 		pointCountCB.setText("Points: " + cntPoint);
 
+		GuiUtil.setEnabled(true, appendWithOrignalRB, appendWithUniqueRB, replaceAllRB, replaceCollideRB);
+		GuiUtil.setEnabled(true, projToBodyCB);
+
 		updateGui();
 	}
 
@@ -177,7 +197,9 @@ public class LoadPanel extends JPanel implements ActionListener
 		if (source == acceptB)
 			doActionAccept();
 		if (source == cancelB)
-			refDialog.setVisible(false);
+			doActionCancel();
+		if (source == closeB)
+			doActionClose();
 
 		updateGui();
 	}
@@ -187,15 +209,44 @@ public class LoadPanel extends JPanel implements ActionListener
 	 */
 	private void doActionAccept()
 	{
+		// Progress the task out of the init state
+		loadTask.markInitDone();
+
+		// Update UI to reflect the active load
+		acceptB.setEnabled(false);
+		GuiUtil.setEnabled(false, appendWithOrignalRB, appendWithUniqueRB, replaceAllRB, replaceCollideRB);
+		GuiUtil.setEnabled(false, circleCountCB, ellipseCountCB, pointCountCB, pathCountCB, polygonCountCB);
+		GuiUtil.setEnabled(false, projToBodyCB);
 
 		// Retrieve the user configured mode and selected structures
 		InstallMode tmpMode = getLoadMode();
-
 		List<Structure> loadL = getLoadItems();
 
 		// Install the various structures
-		Thread tmpThread = new Thread(() -> installStructures(loadL, tmpMode));
+		Thread tmpThread = new Thread(() -> installStructures(loadL, loadTask, tmpMode));
 		tmpThread.start();
+	}
+
+	/**
+	 * Helper method to handle the accept action.
+	 */
+	private void doActionCancel()
+	{
+		if (loadTask.isInit() == true)
+			refDialog.setVisible(false);
+
+		loadTask.abort();
+	}
+
+	/**
+	 * Helper method to handle the close action.
+	 */
+	private void doActionClose()
+	{
+		refDialog.setVisible(false);
+
+		loadTask.reset();
+		loadTask.abort();
 	}
 
 	/**
@@ -221,10 +272,12 @@ public class LoadPanel extends JPanel implements ActionListener
 		GuiUtil.linkRadioButtons(replaceAllRB, replaceCollideRB, appendWithOrignalRB, appendWithUniqueRB);
 
 		JPanel retPanel = new JPanel(new MigLayout("", "", "[]"));
-		retPanel.add(replaceAllRB, "wrap");
-		retPanel.add(replaceCollideRB, "wrap");
 		retPanel.add(appendWithOrignalRB, "wrap");
 		retPanel.add(appendWithUniqueRB, "wrap");
+		retPanel.add(replaceCollideRB, "wrap");
+		retPanel.add(replaceAllRB, "wrap");
+
+		retPanel.add(projToBodyCB, "gapy 7 0");
 
 		return retPanel;
 	}
@@ -270,8 +323,12 @@ public class LoadPanel extends JPanel implements ActionListener
 	 * Helper method that take the provided structures (of various types) and
 	 * install the structures into the appropriate managers.
 	 */
-	private void installStructures(List<Structure> aFullL, InstallMode aMode)
+	private void installStructures(List<Structure> aFullL, Task aTask, InstallMode aMode)
 	{
+		// Project the structures onto the surface of the shape model
+		if (projToBodyCB.isSelected() == true)
+			StructureMiscUtil.projectControlPointsToShapeModel(refSmallBody, aFullL);
+
 		// Split structures into various type
 		// TODO: Eventually this step should not be needed
 		List<PolyLine> tmpPathL = StructureMiscUtil.getPathsFrom(aFullL);
@@ -280,14 +337,47 @@ public class LoadPanel extends JPanel implements ActionListener
 		List<Ellipse> tmpEllipseL = StructureMiscUtil.getEllipsesFrom(aFullL, Mode.ELLIPSE_MODE);
 		List<Ellipse> tmpPointL = StructureMiscUtil.getEllipsesFrom(aFullL, Mode.POINT_MODE);
 
-		Task tmpTask = new SilentTask();
-		StructureMiscUtil.installStructures(tmpTask, refPathStructureManager, tmpPathL, aMode);
-		StructureMiscUtil.installStructures(tmpTask, refPolyStructureManager, tmpPolyL, aMode);
-		StructureMiscUtil.installStructures(tmpTask, refCircleStructureManager, tmpCircleL, aMode);
-		StructureMiscUtil.installStructures(tmpTask, refEllipseStructureManager, tmpEllipseL, aMode);
-		StructureMiscUtil.installStructures(tmpTask, refPointStructureManager, tmpPointL, aMode);
+		double fullCnt = aFullL.size();
 
-		refDialog.setVisible(false);
+		double progOff = 0;
+		double progTot = tmpPathL.size() / fullCnt;
+		Task tmpTask = new PartialTask(aTask, progOff, progTot);
+		StructureMiscUtil.installStructures(tmpTask, refPathStructureManager, tmpPathL, aMode);
+		if (aTask.isActive() == false)
+			return;
+
+		progOff += progTot;
+		progTot = tmpPolyL.size() / fullCnt;
+		tmpTask = new PartialTask(aTask, progOff, progTot);
+		StructureMiscUtil.installStructures(tmpTask, refPolyStructureManager, tmpPolyL, aMode);
+		if (aTask.isActive() == false)
+			return;
+
+		progOff += progTot;
+		progTot = tmpCircleL.size() / fullCnt;
+		tmpTask = new PartialTask(aTask, progOff, progTot);
+		StructureMiscUtil.installStructures(tmpTask, refCircleStructureManager, tmpCircleL, aMode);
+		if (aTask.isActive() == false)
+			return;
+
+		progOff += progTot;
+		progTot = tmpEllipseL.size() / fullCnt;
+		tmpTask = new PartialTask(aTask, progOff, progTot);
+		StructureMiscUtil.installStructures(tmpTask, refEllipseStructureManager, tmpEllipseL, aMode);
+		if (aTask.isActive() == false)
+			return;
+
+		progOff += progTot;
+		progTot = tmpPointL.size() / fullCnt;
+		tmpTask = new PartialTask(aTask, progOff, progTot);
+		StructureMiscUtil.installStructures(tmpTask, refPointStructureManager, tmpPointL, aMode);
+		if (aTask.isActive() == false)
+			return;
+
+		progOff += progTot;
+		aTask.setProgress(progOff);
+		aTask.abort();
+		SwingUtilities.invokeLater(() -> updateGui());
 	}
 
 	/**
@@ -317,7 +407,16 @@ public class LoadPanel extends JPanel implements ActionListener
 		statusL.setForeground(fgColor);
 
 		boolean isEnabled = errMsg == null;
+		isEnabled &= loadTask.isInit() == true;
 		acceptB.setEnabled(isEnabled);
+
+		isEnabled = loadTask.isDone() == false;
+		cancelB.setEnabled(isEnabled);
+
+		isEnabled = loadTask.isDone() == true;
+		closeB.setEnabled(isEnabled);
+
+		loadTask.forceUpdate();
 	}
 
 }

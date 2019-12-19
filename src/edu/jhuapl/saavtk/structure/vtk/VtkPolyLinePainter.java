@@ -8,8 +8,8 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.structure.PolyLineMode;
 import edu.jhuapl.saavtk.structure.PolyLine;
+import edu.jhuapl.saavtk.structure.PolyLineMode;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.vtk.VtkResource;
@@ -25,6 +25,10 @@ import vtk.vtkPolyData;
  * <LI>Closed / Unclosed
  * <LI>Draw color
  * <LI>TODO: Outline width
+ * <LI>TODO: Clean up logic that handles mutation of xyzPointL and
+ * controlPointIdL
+ * <LI>TODO: Clean up very convoluted processing in
+ * {@link #updateSegmentAt(int, List)}
  * </UL>
  * Note this class will update the reference {@link PolyLine}'s "path length"
  * during relevant VTK state updates.
@@ -41,11 +45,12 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 	// Note xyzPointList is what's displayed. There will usually be more of these
 	// points than controlPointL in order to ensure the line is right above the
 	// surface of the asteroid.
-	protected ImmutableList<Vector3D> xyzPointL = ImmutableList.of();
-	protected List<Integer> controlPointIdL = new ArrayList<>();
+	protected ImmutableList<Vector3D> xyzPointL;
+	protected List<Integer> controlPointIdL;
 
 	// VTK vars
 	private int vDrawId;
+	private boolean vIsStale;
 
 	/**
 	 * Standard Constructor
@@ -56,7 +61,11 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 		refItem = aItem;
 		refMode = aMode;
 
+		xyzPointL = ImmutableList.of();
+		controlPointIdL = new ArrayList<>();
+
 		vDrawId = -1;
+		vIsStale = true;
 	}
 
 	public List<Integer> getControlPointIdList()
@@ -86,6 +95,7 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 		vDrawId = aId;
 	}
 
+	// TODO: Add javadoc + clean up logic
 	public void addControlPoint(int aIdx, Vector3D aPoint)
 	{
 		List<Vector3D> tmpPointL = new ArrayList<>(xyzPointL);
@@ -127,14 +137,14 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 			}
 			else if (evalIdx < controlPointIdL.size() - 2)
 			{
-				updateSegment(evalIdx, tmpPointL);
-				updateSegment(evalIdx + 1, tmpPointL);
+				updateSegmentAt(evalIdx, tmpPointL);
+				updateSegmentAt(evalIdx + 1, tmpPointL);
 			}
 			else
 			{
-				updateSegment(evalIdx, tmpPointL);
+				updateSegmentAt(evalIdx, tmpPointL);
 				if (refMode == PolyLineMode.CLOSED)
-					updateSegment(evalIdx + 1, tmpPointL);
+					updateSegmentAt(evalIdx + 1, tmpPointL);
 			}
 		}
 
@@ -142,6 +152,7 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 		updatePathLength();
 	}
 
+	// TODO: Add javadoc + clean up logic
 	public void delControlPoint(int aIdx)
 	{
 		List<Vector3D> tmpPointL = new ArrayList<>(xyzPointL);
@@ -164,9 +175,8 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 				int id2 = controlPointIdL.get(aIdx + 1);
 				int numberPointsRemoved = id2;
 				for (int i = 0; i < numberPointsRemoved; ++i)
-				{
 					tmpPointL.remove(0);
-				}
+
 				controlPointIdL.remove(aIdx);
 
 				for (int i = 0; i < controlPointIdL.size(); ++i)
@@ -176,14 +186,11 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 				{
 					int id = controlPointIdL.get(controlPointIdL.size() - 1);
 					numberPointsRemoved = tmpPointL.size() - id - 1;
-					;
 					for (int i = 0; i < numberPointsRemoved; ++i)
-					{
 						tmpPointL.remove(id + 1);
-					}
 
 					// redraw segment connecting last point to first
-					updateSegment(controlPointIdL.size() - 1, tmpPointL);
+					updateSegmentAt(controlPointIdL.size() - 1, tmpPointL);
 				}
 			}
 			// Remove final point
@@ -193,11 +200,8 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 				{
 					int id = controlPointIdL.get(controlPointIdL.size() - 1);
 					int numberPointsRemoved = tmpPointL.size() - id - 1;
-					;
 					for (int i = 0; i < numberPointsRemoved; ++i)
-					{
 						tmpPointL.remove(id + 1);
-					}
 				}
 
 				int id1 = controlPointIdL.get(aIdx - 1);
@@ -212,7 +216,7 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 				if (refMode == PolyLineMode.CLOSED)
 				{
 					// redraw segment connecting last point to first
-					updateSegment(controlPointIdL.size() - 1, tmpPointL);
+					updateSegmentAt(controlPointIdL.size() - 1, tmpPointL);
 				}
 			}
 			// Remove a middle point
@@ -231,7 +235,7 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 				for (int i = aIdx; i < controlPointIdL.size(); ++i)
 					controlPointIdL.set(i, controlPointIdL.get(i) - numberPointsRemoved);
 
-				updateSegment(aIdx - 1, tmpPointL);
+				updateSegmentAt(aIdx - 1, tmpPointL);
 			}
 		}
 		else if (controlPointIdL.size() == 1)
@@ -244,6 +248,7 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 		updatePathLength();
 	}
 
+	// TODO: Add javadoc + clean up logic
 	public void updateControlPoint(int aIdx, Vector3D aPoint)
 	{
 		int numVertices = refItem.getControlPoints().size();
@@ -259,51 +264,34 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 		// If we're modifying the last vertex
 		else if (aIdx == numVertices - 1)
 		{
-			updateSegment(aIdx - 1, tmpPointL);
+			updateSegmentAt(aIdx - 1, tmpPointL);
 			if (refMode == PolyLineMode.CLOSED)
-				updateSegment(aIdx, tmpPointL);
+				updateSegmentAt(aIdx, tmpPointL);
 		}
 		// If we're modifying the first vertex
 		else if (aIdx == 0)
 		{
 			if (refMode == PolyLineMode.CLOSED)
-				updateSegment(numVertices - 1, tmpPointL);
-			updateSegment(aIdx, tmpPointL);
+				updateSegmentAt(numVertices - 1, tmpPointL);
+			updateSegmentAt(aIdx, tmpPointL);
 		}
 		// If we're modifying a middle vertex
 		else
 		{
-			updateSegment(aIdx - 1, tmpPointL);
-			updateSegment(aIdx, tmpPointL);
+			updateSegmentAt(aIdx - 1, tmpPointL);
+			updateSegmentAt(aIdx, tmpPointL);
 		}
 
 		xyzPointL = ImmutableList.copyOf(tmpPointL);
 		updatePathLength();
 	}
 
-	public void updateAllSegments()
+	/**
+	 * Notification that the VTK state is stale.
+	 */
+	public void markStale()
 	{
-		controlPointIdL.clear();
-		List<Vector3D> tmpPointL = new ArrayList<>();
-
-		int numSegments = refItem.getControlPoints().size();
-		for (int aIdx = 0; aIdx < numSegments; ++aIdx)
-		{
-			controlPointIdL.add(tmpPointL.size());
-
-			// Note, this point will be replaced with the correct values
-			// when we call updateSegment
-			tmpPointL.add(Vector3D.ZERO);
-
-			if (aIdx > 0)
-				updateSegment(aIdx - 1, tmpPointL);
-		}
-
-		if (refItem.isClosed() == true)
-			updateSegment(controlPointIdL.size() - 1, tmpPointL);
-
-		xyzPointL = ImmutableList.copyOf(tmpPointL);
-		updatePathLength();
+		vIsStale = true;
 	}
 
 	@Override
@@ -315,10 +303,16 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 	@Override
 	public void vtkUpdateState()
 	{
-		if (refItem.getControlPoints().size() == controlPointIdL.size())
-			return;
+		// Flag as stale if the number of control points has changed
+		if (refItem.getControlPoints().size() != controlPointIdL.size())
+			vIsStale = true;
 
-		updateAllSegments();
+		// Bail if not stale
+		if (vIsStale == false)
+			return;
+		vIsStale = false;
+
+		updateSegmentAll();
 	}
 
 	/**
@@ -345,12 +339,40 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 	}
 
 	/**
+	 * Helper method to update all the individual segments.
+	 */
+	private void updateSegmentAll()
+	{
+		controlPointIdL.clear();
+		List<Vector3D> tmpPointL = new ArrayList<>();
+
+		int numSegments = refItem.getControlPoints().size();
+		for (int aIdx = 0; aIdx < numSegments; ++aIdx)
+		{
+			controlPointIdL.add(tmpPointL.size());
+
+			// Note, this point will be replaced with the correct values
+			// when we call updateSegment
+			tmpPointL.add(Vector3D.ZERO);
+
+			if (aIdx > 0)
+				updateSegmentAt(aIdx - 1, tmpPointL);
+		}
+
+		if (refItem.isClosed() == true)
+			updateSegmentAt(controlPointIdL.size() - 1, tmpPointL);
+
+		xyzPointL = ImmutableList.copyOf(tmpPointL);
+		updatePathLength();
+	}
+
+	/**
 	 * Helper method to update the individual segment at the specified index.
 	 * <P>
 	 * The specified index provides one end point and the next incremental index
 	 * will be utilized as the other end point.
 	 */
-	private void updateSegment(int aBegIdx, List<Vector3D> aPointL)
+	private void updateSegmentAt(int aBegIdx, List<Vector3D> aPointL)
 	{
 		int nextIdx = aBegIdx + 1;
 		if (nextIdx == refItem.getControlPoints().size())
@@ -368,21 +390,23 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 		aPointL.set(id1, new Vector3D(pt1));
 		aPointL.set(id2, new Vector3D(pt2));
 
-		vtkPoints points = null;
+		// TODO: The logic below is convoluted and there may be issues
+		vtkPolyData vTmpPD = null;
+		vtkPoints vTmpP = null;
 		if (Math.abs(ll1.lat - ll2.lat) < 1e-8 && Math.abs(ll1.lon - ll2.lon) < 1e-8
 				&& Math.abs(ll1.rad - ll2.rad) < 1e-8)
 		{
-			points = new vtkPoints();
-			points.InsertNextPoint(pt1);
-			points.InsertNextPoint(pt2);
+			vTmpP = new vtkPoints();
+			vTmpP.InsertNextPoint(pt1);
+			vTmpP.InsertNextPoint(pt2);
 		}
 		else
 		{
-			vtkPolyData poly = refSmallBody.drawPath(pt1, pt2);
-			if (poly == null)
+			vTmpPD = refSmallBody.drawPath(pt1, pt2);
+			if (vTmpPD == null)
 				return;
 
-			points = poly.GetPoints();
+			vTmpP = vTmpPD.GetPoints();
 		}
 
 		// Remove points BETWEEN the 2 control points
@@ -390,24 +414,23 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 		if (nextIdx == 0)
 			numberPointsToRemove = aPointL.size() - id1 - 1;
 		for (int i = 0; i < numberPointsToRemove; ++i)
-		{
 			aPointL.remove(id1 + 1);
-		}
 
 		// Set the new points
-		int numNewPoints = points.GetNumberOfPoints();
+		int numNewPoints = vTmpP.GetNumberOfPoints();
 		for (int i = 1; i < numNewPoints - 1; ++i)
-		{
-			aPointL.add(id1 + i, new Vector3D(points.GetPoint(i)));
-		}
+			aPointL.add(id1 + i, new Vector3D(vTmpP.GetPoint(i)));
 
 		// Shift the control points ids from segment+1 till the end by the right amount.
 		int shiftAmount = id1 + numNewPoints - 1 - id2;
 		for (int i = aBegIdx + 1; i < controlPointIdL.size(); ++i)
-		{
 			controlPointIdL.set(i, controlPointIdL.get(i) + shiftAmount);
-		}
 
+		// Release VTK mem
+		if (vTmpPD != null)
+			vTmpPD.Delete();
+		else
+			vTmpP.Delete();
 	}
 
 }
