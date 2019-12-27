@@ -2,7 +2,6 @@ package edu.jhuapl.saavtk.util;
 
 import org.apache.commons.io.FilenameUtils;
 
-import vtk.vtkNativeLibrary;
 import vtk.vtkOBJReader;
 import vtk.vtkPolyDataWriter;
 
@@ -10,7 +9,7 @@ public class ConvertObjToVtk
 {
     static
     {
-        vtkNativeLibrary.LoadAllNativeLibraries();
+        NativeLibraryLoader.loadVtkLibraries();
     }
 
     public static void main(String[] args)

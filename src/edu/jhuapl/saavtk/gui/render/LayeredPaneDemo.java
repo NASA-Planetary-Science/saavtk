@@ -10,8 +10,8 @@ import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
 
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
+import edu.jhuapl.saavtk.util.NativeLibraryLoader;
 import vtk.vtkActor;
-import vtk.vtkNativeLibrary;
 import vtk.vtkPolyDataMapper;
 import vtk.vtkSphereSource;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
@@ -21,7 +21,7 @@ public class LayeredPaneDemo extends JPanel
 
     static
     {
-        vtkNativeLibrary.LoadAllNativeLibraries();
+        NativeLibraryLoader.loadAllVtkLibraries();
     }
 
     static vtkJoglPanelComponent renderObject = new vtkJoglPanelComponent();

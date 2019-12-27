@@ -28,8 +28,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
+import edu.jhuapl.saavtk.util.NativeLibraryLoader;
 import vtk.vtkExtractEdges;
-import vtk.vtkNativeLibrary;
 import vtk.vtkOBJReader;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
@@ -108,8 +108,8 @@ public class ShapefileUtil
     {
         Collection<SimpleFeature> sfc = read(shapeFile);
         Set<PointStructure> ps = Sets.newHashSet();
-//		for (SimpleFeature sf : sfc)
-//			ps.add(FeatureUtil.createPointStructureFrom(sf, body));
+//      for (SimpleFeature sf : sfc)
+//          ps.add(FeatureUtil.createPointStructureFrom(sf, body));
         return ps;
     }
 
@@ -119,8 +119,8 @@ public class ShapefileUtil
         Set<LineStructure> ls = Sets.newHashSet();
         for (SimpleFeature sf : sfc)
         {
-//			LineStructure s=FeatureUtil.createLineStructureFrom(sf);
-//			ls.add(s);
+//          LineStructure s=FeatureUtil.createLineStructureFrom(sf);
+//          ls.add(s);
         }
         return ls;
     }
@@ -191,7 +191,7 @@ public class ShapefileUtil
 
         List<LineStructure> lines = Lists.newArrayList();
         int nLines = 10;
-//		int nPointsPerLine = 5;
+//      int nPointsPerLine = 5;
         for (int i = 0; i < nLines; i++)
         {
             Vector3D start = StructureUtil.randomVector3D();
@@ -199,25 +199,25 @@ public class ShapefileUtil
             lines.add(new LineStructure(Lists.newArrayList(new LineSegment(start, end))));
         }
 
-//		List<PatchStructure> patches = Lists.newArrayList();
-//		int nPolygons = 10;
-//		int nPointsPerPolygon = 5;
-//		for (int i = 0; i < nPolygons; i++)
-//			patches.add(new PatchStructure(StructureUtil.random(nPointsPerPolygon)));
+//      List<PatchStructure> patches = Lists.newArrayList();
+//      int nPolygons = 10;
+//      int nPointsPerPolygon = 5;
+//      for (int i = 0; i < nPolygons; i++)
+//          patches.add(new PatchStructure(StructureUtil.random(nPointsPerPolygon)));
 
         try
         {
             Path pointsShapeFile = Paths.get("/Users/zimmemi1/Desktop/shape/myPoints.shp");
             ShapefileUtil.writePointStructures(points, pointsShapeFile);
             Collection<PointStructure> pointsRead = ShapefileUtil.readPointStructures(pointsShapeFile);
-//			for (PointStructure ps : pointsRead)
-//				System.out.println(ps);
+//          for (PointStructure ps : pointsRead)
+//              System.out.println(ps);
 
             Path linesShapeFile = Paths.get("/Users/zimmemi1/Desktop/shape/myLines.shp");
             ShapefileUtil.writeLineStructures(lines, linesShapeFile);
             Collection<LineStructure> linesRead = ShapefileUtil.readLineStructures(linesShapeFile);
-//			for (LineStructure ls : linesRead)
-//				System.out.println(ls);
+//          for (LineStructure ls : linesRead)
+//              System.out.println(ls);
 
             /*
              * Path patchesShapeFile =
@@ -237,7 +237,7 @@ public class ShapefileUtil
 
     public static void test2()
     {
-        vtkNativeLibrary.LoadAllNativeLibraries();
+        NativeLibraryLoader.loadVtkLibraries();
 
         vtkOBJReader reader = new vtkOBJReader();
         reader.SetFileName("/Users/zimmemi1/monkey.obj");
@@ -296,14 +296,14 @@ public class ShapefileUtil
             Path pointsShapeFile = Paths.get("/Users/zimmemi1/Desktop/shape/myPoints.shp");
             ShapefileUtil.writePointStructures(points, pointsShapeFile);
             Collection<PointStructure> pointsRead = ShapefileUtil.readPointStructures(pointsShapeFile);
-//			for (PointStructure ps : pointsRead)
-//				System.out.println(ps);
+//          for (PointStructure ps : pointsRead)
+//              System.out.println(ps);
 
             Path linesShapeFile = Paths.get("/Users/zimmemi1/Desktop/shape/myLines.shp");
             ShapefileUtil.writeLineStructures(lines, linesShapeFile);
             Collection<LineStructure> linesRead = ShapefileUtil.readLineStructures(linesShapeFile);
-//			for (LineStructure ls : linesRead)
-//				System.out.println(ls);
+//          for (LineStructure ls : linesRead)
+//              System.out.println(ls);
 
             /*
              * Path patchesShapeFile =

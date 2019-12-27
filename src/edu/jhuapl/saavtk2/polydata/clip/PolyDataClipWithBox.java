@@ -1,8 +1,8 @@
 package edu.jhuapl.saavtk2.polydata.clip;
 
+import edu.jhuapl.saavtk.util.NativeLibraryLoader;
 import vtk.vtkDoubleArray;
 import vtk.vtkImplicitFunction;
-import vtk.vtkNativeLibrary;
 import vtk.vtkPlanes;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
@@ -62,7 +62,7 @@ public class PolyDataClipWithBox extends PolyDataClip
 
     public static void main(String[] args)
     {
-        vtkNativeLibrary.LoadAllNativeLibraries();
+        NativeLibraryLoader.loadVtkLibraries();
 
         vtkSphereSource source = new vtkSphereSource();
         source.Update();

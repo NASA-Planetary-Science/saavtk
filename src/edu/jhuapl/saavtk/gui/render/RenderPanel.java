@@ -22,9 +22,9 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.gui.MainWindow;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
+import edu.jhuapl.saavtk.util.NativeLibraryLoader;
 import vtk.vtkActor;
 import vtk.vtkConeSource;
-import vtk.vtkNativeLibrary;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
 import vtk.vtkRenderer;
@@ -220,7 +220,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements ComponentListe
 
     public static void main(String[] args) throws InterruptedException
     {
-        vtkNativeLibrary.LoadAllNativeLibraries();
+        NativeLibraryLoader.loadAllVtkLibraries();
         RenderView renderView = new RenderView();
         SwingUtilities.invokeLater(new Runnable() {
             @Override

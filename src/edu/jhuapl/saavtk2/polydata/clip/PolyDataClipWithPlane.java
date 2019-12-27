@@ -3,8 +3,8 @@ package edu.jhuapl.saavtk2.polydata.clip;
 import org.apache.commons.math3.geometry.euclidean.threed.Plane;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import edu.jhuapl.saavtk.util.NativeLibraryLoader;
 import vtk.vtkImplicitFunction;
-import vtk.vtkNativeLibrary;
 import vtk.vtkPlane;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataWriter;
@@ -33,7 +33,7 @@ public class PolyDataClipWithPlane extends PolyDataClip
 
     public static void main(String[] args)
     {
-        vtkNativeLibrary.LoadAllNativeLibraries();
+        NativeLibraryLoader.loadVtkLibraries();
 
         vtkSphereSource source = new vtkSphereSource();
         source.Update();

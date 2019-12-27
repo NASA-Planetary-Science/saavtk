@@ -1,7 +1,7 @@
 package edu.jhuapl.saavtk.io.readers;
 
+import edu.jhuapl.saavtk.util.NativeLibraryLoader;
 import vtk.vtkDoubleArray;
-import vtk.vtkNativeLibrary;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
 import vtk.vtkPolyVertex;
@@ -26,16 +26,16 @@ public class IpwgPlyReader extends PlyReader
         colors.SetNumberOfTuples(npts);
         colors.SetName("rgb");
 
-//		Stopwatch sw=new Stopwatch();
-//		sw.start();
+//      Stopwatch sw=new Stopwatch();
+//      sw.start();
         for (int i = 0; i < data.size(); i++)
         {
-//			if (sw.elapsedMillis()>4000)
-//			{
-//				sw.reset();
-//				sw.start();
-//				System.out.println(i+"/"+data.size());
-//			}
+//          if (sw.elapsedMillis()>4000)
+//          {
+//              sw.reset();
+//              sw.start();
+//              System.out.println(i+"/"+data.size());
+//          }
             double[] tuple = data.get(i);
             points.SetPoint(i, tuple[0], tuple[1], tuple[2]);
             verts.GetPointIds().SetId(i, i);
@@ -67,7 +67,7 @@ public class IpwgPlyReader extends PlyReader
 
     public static void main(String[] args)
     {
-        vtkNativeLibrary.LoadAllNativeLibraries();
+        NativeLibraryLoader.loadVtkLibraries();
         IpwgPlyReader reader = new IpwgPlyReader();
         reader.SetFileName("/Users/steelrj1/Documents/PROJECTS/SBMT/ipwg/Eros161_B.ply");
         reader.Update();

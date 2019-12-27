@@ -2,11 +2,11 @@ package edu.jhuapl.saavtk2.polydata.clip;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import edu.jhuapl.saavtk.util.NativeLibraryLoader;
 import edu.jhuapl.saavtk2.polydata.transform.PolyDataTranslate;
 import vtk.vtkCubeSource;
 import vtk.vtkImplicitFunction;
 import vtk.vtkImplicitPolyDataDistance;
-import vtk.vtkNativeLibrary;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataWriter;
 import vtk.vtkSphereSource;
@@ -28,7 +28,7 @@ public class PolyDataClipWithPolyData extends PolyDataClip
 
     public static void main(String[] args)
     {
-        vtkNativeLibrary.LoadAllNativeLibraries();
+        NativeLibraryLoader.loadVtkLibraries();
 
         vtkSphereSource sphereSource = new vtkSphereSource();
         sphereSource.Update();

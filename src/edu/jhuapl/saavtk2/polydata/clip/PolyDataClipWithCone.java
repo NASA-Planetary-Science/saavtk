@@ -3,10 +3,10 @@ package edu.jhuapl.saavtk2.polydata.clip;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import edu.jhuapl.saavtk.util.NativeLibraryLoader;
 import vtk.vtkCone;
 import vtk.vtkImplicitBoolean;
 import vtk.vtkImplicitFunction;
-import vtk.vtkNativeLibrary;
 import vtk.vtkPlane;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataWriter;
@@ -58,7 +58,7 @@ public class PolyDataClipWithCone extends PolyDataClip
 
     public static void main(String[] args)
     {
-        vtkNativeLibrary.LoadAllNativeLibraries();
+        NativeLibraryLoader.loadVtkLibraries();
 
         vtkSphereSource source = new vtkSphereSource();
         source.SetThetaResolution(360);
