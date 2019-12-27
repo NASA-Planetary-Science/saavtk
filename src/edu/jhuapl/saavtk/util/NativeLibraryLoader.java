@@ -2,12 +2,11 @@ package edu.jhuapl.saavtk.util;
 
 import vtk.vtkNativeLibrary;
 
-
 public class NativeLibraryLoader
 {
     /**
-     * Loads in the vtk shared libraries. This needs to be called before any vtk classes
-     * are used. This has been tested with vtk version 5.6.0 only.
+     * Loads in the vtk shared libraries. This needs to be called before any vtk
+     * classes are used. This has been tested with vtk version 5.6.0 only.
      *
      */
     static public void loadVtkLibraries()
@@ -18,8 +17,8 @@ public class NativeLibraryLoader
         // already loaded in. Failure to do so may result in linking errors when
         // loading in the vtk shared libraries (especially vtkRenderingJava).
         // The following dummy thread seems to do the trick.
-        javax.swing.SwingUtilities.invokeLater(new Runnable()
-        {
+        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+            @Override
             public void run()
             {
                 // do nothing
@@ -27,13 +26,17 @@ public class NativeLibraryLoader
         });
 
         System.loadLibrary("jawt"); // For some reason this is not loaded automatically
-        for (vtkNativeLibrary lib : vtkNativeLibrary.values()) {
-            try {
-                if (lib.IsBuilt()) {
+        for (vtkNativeLibrary lib : vtkNativeLibrary.values())
+        {
+            try
+            {
+                if (lib.IsBuilt())
+                {
                     lib.LoadLibrary();
                 }
             }
-            catch (UnsatisfiedLinkError e) {
+            catch (UnsatisfiedLinkError e)
+            {
                 e.printStackTrace();
             }
         }
@@ -41,8 +44,10 @@ public class NativeLibraryLoader
 
     static public void loadVtkLibrariesHeadless()
     {
-        for (vtkNativeLibrary lib : vtkNativeLibrary.values()) {
-            try {
+        for (vtkNativeLibrary lib : vtkNativeLibrary.values())
+        {
+            try
+            {
                 if (lib.IsBuilt() && !lib.GetLibraryName().startsWith("vtkRendering")
                         && !lib.GetLibraryName().startsWith("vtkViews")
                         && !lib.GetLibraryName().startsWith("vtkInteraction")
@@ -52,20 +57,23 @@ public class NativeLibraryLoader
                         && !lib.GetLibraryName().startsWith("vtkIOExport")
                         && !lib.GetLibraryName().startsWith("vtkIOImport")
                         && !lib.GetLibraryName().startsWith("vtkIOMINC")
-//                        && !lib.GetLibraryName().startsWith("vtkFiltersHybrid")
+                        // && !lib.GetLibraryName().startsWith("vtkFiltersHybrid")
                         && !lib.GetLibraryName().startsWith("vtkFiltersParallel")
-                        && !lib.GetLibraryName().startsWith("vtkGeovis")) {
+                        && !lib.GetLibraryName().startsWith("vtkGeovis"))
+                {
                     lib.LoadLibrary();
                 }
             }
-            catch (UnsatisfiedLinkError e) {
+            catch (UnsatisfiedLinkError e)
+            {
                 e.printStackTrace();
             }
         }
     }
-    
-	static public void loadSpiceLibraries() {
-		System.loadLibrary("JNISpice");
-	}
+
+    static public void loadSpiceLibraries()
+    {
+        System.loadLibrary("JNISpice");
+    }
 
 }
