@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.util;
 
 import java.awt.EventQueue;
+import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -81,7 +82,7 @@ public class Configuration
     {
         if (headless == null)
         {
-            headless = Boolean.parseBoolean(System.getProperty("java.awt.headless"));
+            headless = GraphicsEnvironment.isHeadless();
         }
 
         return headless;
