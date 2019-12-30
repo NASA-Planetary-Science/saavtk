@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.util;
 
 import java.awt.EventQueue;
+import java.awt.HeadlessException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import vtk.vtkNativeLibrary;
@@ -72,13 +73,18 @@ public class NativeLibraryLoader
      * {@link RuntimeException} before even trying to set up VTK.
      * 
      * @throws UnsatisfiedLinkError if any of the native libraries failed to load.
+     * @throws HeadlessException if the runtime environment is headless.
      * @throws RuntimeException if the AWT cannot be initialized.
-     *
      */
     public static void loadAllVtkLibraries()
     {
         if (isVtkInitialized.compareAndSet(false, true))
         {
+            if (Configuration.isHeadless())
+            {
+                throw new HeadlessException("Cannot load all VTK libraries in a headless environment");
+            }
+
             // Note made during refactoring in late 2019 (Redmine issue #2045).
             // The code below for ensuring the AWT was initialized appears to be
             // unnecessary. It is possible an earlier version of VTK needed it. Leaving it
