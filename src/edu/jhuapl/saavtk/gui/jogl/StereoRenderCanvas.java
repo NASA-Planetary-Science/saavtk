@@ -89,7 +89,7 @@ public class StereoRenderCanvas extends vtksbmtJoglCanvas
 
     public static void main(String[] args)
     {
-        NativeLibraryLoader.loadVtkLibraries();
+        NativeLibraryLoader.loadAllVtkLibraries();
 
         vtkConeSource source = new vtkConeSource();
         source.Update();
