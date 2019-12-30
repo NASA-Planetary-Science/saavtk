@@ -639,7 +639,7 @@ class vtksbmtInteractorStyle extends vtkInteractorStyle implements MouseListener
 
     public static void main(String[] args)
     {
-        NativeLibraryLoader.loadVtkLibraries();
+        NativeLibraryLoader.loadAllVtkLibraries();
         vtksbmtJoglCanvas canvas = new vtksbmtJoglCanvas();
         canvas.setInteractorStyle(new vtksbmtInteractorStyle(canvas));
 
