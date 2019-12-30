@@ -21,6 +21,8 @@ public class ExampleRunnable implements Runnable
     @Override
     public void run()
     {
+        NativeLibraryLoader.loadAllVtkLibraries();
+
         ExampleViewConfig.initialize();
 
         String tempShapeModelPath = null;
@@ -42,8 +44,6 @@ public class ExampleRunnable implements Runnable
 
 //        if (tempShapeModelPath == null)
 //            tempShapeModelPath = "data/brain.obj";
-
-        NativeLibraryLoader.loadVtkLibraries();
 
         vtkJavaGarbageCollector garbageCollector = new vtkJavaGarbageCollector();
         // garbageCollector.SetDebug(true);
