@@ -44,7 +44,7 @@ public class NativeLibraryLoader
     {
         if (Configuration.isHeadless())
         {
-            loadVtkLibrariesHeadless();
+            loadHeadlessVtkLibraries();
         }
         else
         {
@@ -165,7 +165,7 @@ public class NativeLibraryLoader
      * @throws UnsatisfiedLinkError if any of the native libraries failed to load.
      *
      */
-    public static void loadVtkLibrariesHeadless()
+    public static void loadHeadlessVtkLibraries()
     {
         if (isVtkInitialized.compareAndSet(false, true))
         {
