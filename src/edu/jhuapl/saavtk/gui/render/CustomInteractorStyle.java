@@ -13,6 +13,7 @@ public class CustomInteractorStyle extends vtkInteractorStyleTrackballCamera
 	private Vector3D rotationConstraintAxis;
 	private Vector3D rotationOrigin;
 	private double motionFactor;
+	private boolean zoomOnly;
 
 	public CustomInteractorStyle(vtkRenderWindowInteractor aInteractor)
 	{
@@ -41,6 +42,18 @@ public class CustomInteractorStyle extends vtkInteractorStyleTrackballCamera
 		else
 			aAxis = Vector3D.ZERO;
 
+		rotationConstraintAxis = aAxis;
+		rotationOrigin = aOrigin;
+	}
+	
+	public void setZoomOnly(boolean zoomOnly)
+	{
+		this.zoomOnly = zoomOnly;
+	}
+	
+	public void setZoomOnly(boolean zoomOnly, Vector3D aAxis, Vector3D aOrigin)
+	{
+		this.zoomOnly = zoomOnly;
 		rotationConstraintAxis = aAxis;
 		rotationOrigin = aOrigin;
 	}
@@ -80,7 +93,10 @@ public class CustomInteractorStyle extends vtkInteractorStyleTrackballCamera
 
 			vtkCamera activeCamera = GetCurrentRenderer().GetActiveCamera();
 			Vector3D pos = new Vector3D(activeCamera.GetPosition());
-			Rotation rot = new Rotation(rotationConstraintAxis, rxf);
+			double angle = rxf;
+			if (zoomOnly == true)
+				angle = 0;
+			Rotation rot = new Rotation(rotationConstraintAxis, angle);
 			Vector3D newPos = rot.applyTo(pos.subtract(rotationOrigin)).add(rotationOrigin);
 			activeCamera.SetPosition(newPos.toArray());
 			activeCamera.SetViewUp(rot.applyTo(new Vector3D(activeCamera.GetViewUp())).toArray());

@@ -211,7 +211,20 @@ public class RenderPanel extends vtkJoglPanelComponent implements ComponentListe
 	public void constrainRotationAxis(Vector3D aAxis, Vector3D aOrigin)
 	{
 		// Delegate
+		interactorStyle.setZoomOnly(false);
 		interactorStyle.setRotationConstraint(aAxis, aOrigin);
+	}
+	
+	public void setZoomOnly(boolean zoomOnly, Vector3D aAxis, Vector3D aOrigin)
+	{
+		// Delegate
+		interactorStyle.setZoomOnly(zoomOnly, aAxis, aOrigin);
+	}
+	
+	public void setZoomOnly(boolean zoomOnly)
+	{
+		// Delegate
+		interactorStyle.setZoomOnly(zoomOnly);
 	}
 
 	@Override

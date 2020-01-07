@@ -150,6 +150,7 @@ public class Renderer extends JPanel implements ActionListener
 		toolbar = new RenderToolbar(mainCanvas, camera);
 
 		trackballCameraInteractorStyle = new vtkInteractorStyleTrackballCamera();
+		trackballCameraInteractorStyle.AutoAdjustCameraClippingRangeOn();
 
 		setBackgroundColor(new int[] { 0, 0, 0 });// Preferences.getInstance().getAsIntArray(Preferences.BACKGROUND_COLOR,
 																// new int[]{0, 0, 0}));
@@ -553,7 +554,7 @@ public class Renderer extends JPanel implements ActionListener
 		cam.SetFocalPoint(frame.focalPoint[0], frame.focalPoint[1], frame.focalPoint[2]);
 		cam.SetPosition(frame.position[0], frame.position[1], frame.position[2]);
 		cam.SetViewUp(frame.upDirection[0], frame.upDirection[1], frame.upDirection[2]);
-
+		cam.OrthogonalizeViewUp();
 		mainCanvas.getVTKLock().unlock();
 
 		mainCanvas.resetCameraClippingRange();
@@ -565,10 +566,12 @@ public class Renderer extends JPanel implements ActionListener
 		//        orientationWidget.EnabledOff();
 		mainCanvas.getVTKLock().lock();
 		vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
+		System.out.println("Renderer: setCameraOrientation: position " + new Vector3D(position));
 		cam.SetPosition(position);
 		cam.SetFocalPoint(focalPoint);
 		cam.SetViewUp(upVector);
 		cam.SetViewAngle(viewAngle);
+		cam.OrthogonalizeViewUp();
 		mainCanvas.getVTKLock().unlock();
 		mainCanvas.resetCameraClippingRange();
 		//        orientationWidget.EnabledOn();
