@@ -566,7 +566,6 @@ public class Renderer extends JPanel implements ActionListener
 		//        orientationWidget.EnabledOff();
 		mainCanvas.getVTKLock().lock();
 		vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
-		System.out.println("Renderer: setCameraOrientation: position " + new Vector3D(position));
 		cam.SetPosition(position);
 		cam.SetFocalPoint(focalPoint);
 		cam.SetViewUp(upVector);
@@ -743,7 +742,7 @@ public class Renderer extends JPanel implements ActionListener
 		mainCanvas.resetCameraClippingRange();
 		mainCanvas.Render();
 	}
-
+	
 	public void viewDeactivating()
 	{
 		mainCanvas.getAxesFrame().setVisible(false);
