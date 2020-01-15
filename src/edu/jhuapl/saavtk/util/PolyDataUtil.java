@@ -2558,7 +2558,7 @@ public class PolyDataUtil
 
 		in.close();
 
-		addPointNormalsToShapeModel(polydata);
+		addPointNormalsToShapeModel(polydata, true);
 
 		return polydata;
 	}
@@ -2637,7 +2637,7 @@ public class PolyDataUtil
 
 		in.close();
 
-		addPointNormalsToShapeModel(polydata);
+		addPointNormalsToShapeModel(polydata, true);
 
 		return polydata;
 	}
@@ -2868,7 +2868,7 @@ public class PolyDataUtil
 		////writer.SetFileTypeToBinary();
 		//writer.Write();
 
-		addPointNormalsToShapeModel(body);
+		addPointNormalsToShapeModel(body, true);
 
 		return body;
 	}
@@ -3055,7 +3055,7 @@ public class PolyDataUtil
 				}
 			}
 
-		addPointNormalsToShapeModel(body);
+		addPointNormalsToShapeModel(body, true);
 
 		return body;
 	}
@@ -3073,7 +3073,7 @@ public class PolyDataUtil
 
 		smallBodyReader.Delete();
 
-		addPointNormalsToShapeModel(shapeModel);
+		addPointNormalsToShapeModel(shapeModel, true);
 
 		return shapeModel;
 	}
@@ -3091,8 +3091,7 @@ public class PolyDataUtil
 
 		smallBodyReader.Delete();
 
-		addPointNormalsToShapeModel(shapeModel);
-
+		addPointNormalsToShapeModel(shapeModel, false);
 		return shapeModel;
 	}
 
@@ -3109,7 +3108,7 @@ public class PolyDataUtil
 
 		smallBodyReader.Delete();
 
-		addPointNormalsToShapeModel(shapeModel);
+		addPointNormalsToShapeModel(shapeModel, true);
 
 		return shapeModel;
 	}
@@ -3127,7 +3126,7 @@ public class PolyDataUtil
 
 		smallBodyReader.Delete();
 
-		addPointNormalsToShapeModel(shapeModel);
+		addPointNormalsToShapeModel(shapeModel, true);
 
 		return shapeModel;
 	}
@@ -3266,17 +3265,7 @@ public class PolyDataUtil
 				}
 			}
 
-		vtkPolyDataNormals normalsFilter = new vtkPolyDataNormals();
-		normalsFilter.SetInputData(shapeModel);
-		normalsFilter.SetComputeCellNormals(0);
-		normalsFilter.SetComputePointNormals(1);
-		normalsFilter.SplittingOff();
-		normalsFilter.FlipNormalsOn();
-		normalsFilter.Update();
-
-		vtkPolyData normalsFilterOutput = normalsFilter.GetOutput();
-		shapeModel.DeepCopy(normalsFilterOutput);
-
+		addPointNormalsToShapeModel(shapeModel, true);
 		return shapeModel;
 	}
 
@@ -3344,12 +3333,12 @@ public class PolyDataUtil
 			throw new RuntimeException("Error: Unrecognized extension in file name " + filename);
 		}
 
-		addPointNormalsToShapeModel(shapeModel);
+//		addPointNormalsToShapeModel(shapeModel, true);
 
 		return shapeModel;
 	}
 
-	public static void addPointNormalsToShapeModel(vtkPolyData polydata)
+	public static void addPointNormalsToShapeModel(vtkPolyData polydata, boolean flip)
 	{
 		if (polydata.GetPointData().GetNormals() == null)
 		{
@@ -3359,13 +3348,14 @@ public class PolyDataUtil
 			normalsFilter.SetComputeCellNormals(0);
 			normalsFilter.SetComputePointNormals(1);
 			normalsFilter.SplittingOff();
-			normalsFilter.AutoOrientNormalsOn();
-			normalsFilter.ConsistencyOn();
+			if (flip) 
+				normalsFilter.FlipNormalsOn();
+			else
+				normalsFilter.FlipNormalsOff();
 			normalsFilter.Update();
 
-			vtkPolyData normalsOutput = normalsFilter.GetOutput();
-			polydata.ShallowCopy(normalsOutput);
-
+			vtkPolyData normalsFilterOutput = normalsFilter.GetOutput();
+			polydata.DeepCopy(normalsFilterOutput);
 			normalsFilter.Delete();
 		}
 	}
