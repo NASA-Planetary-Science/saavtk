@@ -2558,7 +2558,7 @@ public class PolyDataUtil
 
 		in.close();
 
-		addPointNormalsToShapeModel(polydata, true);
+		addPointNormalsToShapeModel(polydata);
 
 		return polydata;
 	}
@@ -2637,7 +2637,7 @@ public class PolyDataUtil
 
 		in.close();
 
-		addPointNormalsToShapeModel(polydata, true);
+		addPointNormalsToShapeModel(polydata);
 
 		return polydata;
 	}
@@ -2868,7 +2868,7 @@ public class PolyDataUtil
 		////writer.SetFileTypeToBinary();
 		//writer.Write();
 
-		addPointNormalsToShapeModel(body, true);
+		addPointNormalsToShapeModel(body);
 
 		return body;
 	}
@@ -3055,7 +3055,7 @@ public class PolyDataUtil
 				}
 			}
 
-		addPointNormalsToShapeModel(body, true);
+		addPointNormalsToShapeModel(body);
 
 		return body;
 	}
@@ -3073,7 +3073,7 @@ public class PolyDataUtil
 
 		smallBodyReader.Delete();
 
-		addPointNormalsToShapeModel(shapeModel, true);
+		addPointNormalsToShapeModel(shapeModel);
 
 		return shapeModel;
 	}
@@ -3091,7 +3091,7 @@ public class PolyDataUtil
 
 		smallBodyReader.Delete();
 
-		addPointNormalsToShapeModel(shapeModel, false);
+		addPointNormalsToShapeModel(shapeModel);
 		return shapeModel;
 	}
 
@@ -3108,7 +3108,7 @@ public class PolyDataUtil
 
 		smallBodyReader.Delete();
 
-		addPointNormalsToShapeModel(shapeModel, true);
+		addPointNormalsToShapeModel(shapeModel);
 
 		return shapeModel;
 	}
@@ -3126,7 +3126,7 @@ public class PolyDataUtil
 
 		smallBodyReader.Delete();
 
-		addPointNormalsToShapeModel(shapeModel, true);
+		addPointNormalsToShapeModel(shapeModel);
 
 		return shapeModel;
 	}
@@ -3250,22 +3250,22 @@ public class PolyDataUtil
 				// Add upper left triangle
 				if (i0 >= 0 && i1 >= 0 && i2 >= 0)
 				{
-					idList.SetId(0, i0);
+					idList.SetId(0, i1);
 					idList.SetId(1, i2);
-					idList.SetId(2, i1);
+					idList.SetId(2, i0);
 					polys.InsertNextCell(idList);
 				}
 				// Add bottom right triangle
 				if (i2 >= 0 && i1 >= 0 && i3 >= 0)
 				{
-					idList.SetId(0, i2);
-					idList.SetId(1, i3);
-					idList.SetId(2, i1);
+					idList.SetId(0, i1);
+					idList.SetId(1, i2);
+					idList.SetId(2, i3);
 					polys.InsertNextCell(idList);
 				}
 			}
 
-		addPointNormalsToShapeModel(shapeModel, true);
+		addPointNormalsToShapeModel(shapeModel);
 		return shapeModel;
 	}
 
@@ -3338,7 +3338,7 @@ public class PolyDataUtil
 		return shapeModel;
 	}
 
-	public static void addPointNormalsToShapeModel(vtkPolyData polydata, boolean flip)
+	public static void addPointNormalsToShapeModel(vtkPolyData polydata)
 	{
 		if (polydata.GetPointData().GetNormals() == null)
 		{
@@ -3348,10 +3348,7 @@ public class PolyDataUtil
 			normalsFilter.SetComputeCellNormals(0);
 			normalsFilter.SetComputePointNormals(1);
 			normalsFilter.SplittingOff();
-			if (flip) 
-				normalsFilter.FlipNormalsOn();
-			else
-				normalsFilter.FlipNormalsOff();
+			normalsFilter.FlipNormalsOff();
 			normalsFilter.Update();
 
 			vtkPolyData normalsFilterOutput = normalsFilter.GetOutput();
