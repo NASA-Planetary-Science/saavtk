@@ -2655,6 +2655,7 @@ public class PolyDataUtil
 	 */
 	public static vtkPolyData loadLLRShapeModel(String filename, boolean westLongitude) throws Exception
 	{
+
 		// We need to load the file in 2 passes. In the first pass
 		// we figure out the latitude/longitude spacing (both assumed same),
 		// which column is latitude, and which column is longitude.
@@ -2784,9 +2785,9 @@ public class PolyDataUtil
 
 					if (i0 >= 0 && i1 >= 0 && i2 >= 0)
 					{
-						idList.SetId(0, i0);
+						idList.SetId(0, i2);
 						idList.SetId(1, i1);
-						idList.SetId(2, i2);
+						idList.SetId(2, i0);
 						polys.InsertNextCell(idList);
 					}
 					else
@@ -2807,9 +2808,9 @@ public class PolyDataUtil
 
 					if (i0 >= 0 && i1 >= 0 && i2 >= 0)
 					{
-						idList.SetId(0, i0);
+						idList.SetId(0, i2);
 						idList.SetId(1, i1);
-						idList.SetId(2, i2);
+						idList.SetId(2, i0);
 						polys.InsertNextCell(idList);
 					}
 					else
@@ -2837,9 +2838,9 @@ public class PolyDataUtil
 					// Add upper left triangle
 					if (i0 >= 0 && i1 >= 0 && i2 >= 0)
 					{
-						idList.SetId(0, i0);
+						idList.SetId(0, i2);
 						idList.SetId(1, i1);
-						idList.SetId(2, i2);
+						idList.SetId(2, i0);
 						polys.InsertNextCell(idList);
 					}
 					else
@@ -2850,9 +2851,9 @@ public class PolyDataUtil
 					// Add bottom right triangle
 					if (i2 >= 0 && i1 >= 0 && i3 >= 0)
 					{
-						idList.SetId(0, i2);
+						idList.SetId(0, i3);
 						idList.SetId(1, i1);
-						idList.SetId(2, i3);
+						idList.SetId(2, i2);
 						polys.InsertNextCell(idList);
 					}
 					else
@@ -2885,6 +2886,7 @@ public class PolyDataUtil
 	 */
 	public static vtkPolyData loadLLR2ShapeModel(String filename, boolean westLongitude) throws Exception
 	{
+
 		double latLonSpacing = 1.0;
 		int latIndex = 1;
 		int lonIndex = 0;
@@ -2977,9 +2979,9 @@ public class PolyDataUtil
 
 					if (i0 >= 0 && i1 >= 0 && i2 >= 0)
 					{
-						idList.SetId(0, i0);
+						idList.SetId(0, i2);
 						idList.SetId(1, i1);
-						idList.SetId(2, i2);
+						idList.SetId(2, i0);
 						polys.InsertNextCell(idList);
 					}
 					else
@@ -3000,9 +3002,9 @@ public class PolyDataUtil
 
 					if (i0 >= 0 && i1 >= 0 && i2 >= 0)
 					{
-						idList.SetId(0, i0);
+						idList.SetId(0, i2);
 						idList.SetId(1, i1);
-						idList.SetId(2, i2);
+						idList.SetId(2, i0);
 						polys.InsertNextCell(idList);
 					}
 					else
@@ -3030,9 +3032,9 @@ public class PolyDataUtil
 					// Add upper left triangle
 					if (i0 >= 0 && i1 >= 0 && i2 >= 0)
 					{
-						idList.SetId(0, i0);
+						idList.SetId(0, i2);
 						idList.SetId(1, i1);
-						idList.SetId(2, i2);
+						idList.SetId(2, i0);
 						polys.InsertNextCell(idList);
 					}
 					else
@@ -3043,9 +3045,9 @@ public class PolyDataUtil
 					// Add bottom right triangle
 					if (i2 >= 0 && i1 >= 0 && i3 >= 0)
 					{
-						idList.SetId(0, i2);
+						idList.SetId(0, i3);
 						idList.SetId(1, i1);
-						idList.SetId(2, i3);
+						idList.SetId(2, i2);
 						polys.InsertNextCell(idList);
 					}
 					else
