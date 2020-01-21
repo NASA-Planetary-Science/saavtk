@@ -221,12 +221,12 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	}
 
 	@Override
-	public void setAllItems(List<G1> aItemL)
+	public void setAllItems(Collection<G1> aItemC)
 	{
 		// Clear relevant state vars
 		propM = new HashMap<>();
 
-		super.setAllItems(aItemL);
+		super.setAllItems(aItemC);
 
 		updateLineActivation();
 	}
