@@ -20,7 +20,6 @@ class LoadTask extends SilentTask
 	// State vars
 	private long begTime;
 	private long endTime;
-	private boolean isAborted;
 	private boolean isInit;
 
 	/**
@@ -32,7 +31,6 @@ class LoadTask extends SilentTask
 
 		begTime = 0L;
 		endTime = 0L;
-		isAborted = false;
 		isInit = true;
 	}
 
@@ -45,14 +43,6 @@ class LoadTask extends SilentTask
 			endTime = System.currentTimeMillis();
 		String tmpMsg = formInfoMsg();
 		refInfoL.setText(tmpMsg);
-	}
-
-	/**
-	 * Returns true if the task has been aborted.
-	 */
-	public boolean isAborted()
-	{
-		return isAborted;
 	}
 
 	/**
@@ -85,6 +75,7 @@ class LoadTask extends SilentTask
 	 */
 	public void markInitDone()
 	{
+		begTime = System.currentTimeMillis();
 		isInit = false;
 	}
 
@@ -94,7 +85,6 @@ class LoadTask extends SilentTask
 		super.abort();
 
 		isInit = false;
-		isAborted = true;
 		SwingUtilities.invokeLater(() -> forceUpdate());
 	}
 
@@ -105,7 +95,6 @@ class LoadTask extends SilentTask
 
 		begTime = System.currentTimeMillis();
 		endTime = 0L;
-		isAborted = false;
 		isInit = true;
 	}
 

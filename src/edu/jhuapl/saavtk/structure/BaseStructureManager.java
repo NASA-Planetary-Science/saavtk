@@ -26,7 +26,6 @@ import edu.jhuapl.saavtk.pick.PickTarget;
 import edu.jhuapl.saavtk.structure.vtk.VtkCompositePainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkLabelPainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkUtil;
-import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.vtk.VtkResource;
 import glum.item.ItemEventType;
 import glum.task.Task;
@@ -188,16 +187,6 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 	}
 
 	@Override
-	public final void removeItems(List<G1> aItemL)
-	{
-		// TODO: Note eventually glum library will be updated to a less specific method
-		// declaration rather than the current (more specific) declaration.
-
-		// Delegate
-		this.removeItems((Collection<G1>) aItemL);
-	}
-
-	@Override
 	public void removeItems(Collection<G1> aItemC)
 	{
 		if (aItemC.isEmpty() == true)
@@ -209,26 +198,26 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 	}
 
 	@Override
-	public void setAllItems(List<G1> aItemL)
+	public void setAllItems(Collection<G1> aItemC)
 	{
 		// Clear out unused painters in vPainterM
-		VtkUtil.flushResourceMap(vPainterM, aItemL);
+		VtkUtil.flushResourceMap(vPainterM, aItemC);
 
-		super.setAllItems(aItemL);
+		super.setAllItems(aItemC);
 
 		updatePolyData();
 	}
 
 	@Override
-	public void setSelectedItems(List<G1> aItemL)
+	public void setSelectedItems(Collection<G1> aItemC)
 	{
 		// Keep track of the actual *changed* selection
 		Set<G1> origS = getSelectedItems();
-		Set<G1> targS = new HashSet<>(aItemL);
+		Set<G1> targS = new HashSet<>(aItemC);
 		Set<G1> diffS = Sets.symmetricDifference(origS, targS);
 
 		// Update our internal state
-		super.setSelectedItems(aItemL);
+		super.setSelectedItems(aItemC);
 
 		updateVtkColorsFor(diffS, true);
 	}
@@ -289,8 +278,8 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 				tmpPainter.markStale();
 		}
 
+		updatePolyData();
 		notifyListeners(this, ItemEventType.ItemsMutated);
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	@Override
@@ -309,8 +298,8 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 				tmpPainter.markStale();
 		}
 
+		updatePolyData();
 		notifyListeners(this, ItemEventType.ItemsMutated);
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	@Override
@@ -329,8 +318,8 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 				tmpPainter.markStale();
 		}
 
+		updatePolyData();
 		notifyListeners(this, ItemEventType.ItemsMutated);
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	@Override
