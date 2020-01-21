@@ -1,8 +1,8 @@
 package edu.jhuapl.saavtk.structure.vtk;
 
 import java.awt.Color;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
@@ -32,19 +32,19 @@ public class VtkUtil
 	 * Note the updated map will not have any new entries - rather stale entries
 	 * will just be removed.
 	 *
-	 * @param aValidL    The list of valid items. The {@link VtkResource}s
+	 * @param aValidC    The list of valid items. The {@link VtkResource}s
 	 *                   corresponding to the items in this list will not be
 	 *                   disposed.
 	 * @param aResourceM A mapping of items to corresponding {@link VtkResource}.
 	 */
-	public static <G1, G2 extends VtkResource> void flushResourceMap(Map<G1, G2> aResourceM, List<G1> aValidL)
+	public static <G1, G2 extends VtkResource> void flushResourceMap(Map<G1, G2> aResourceM, Collection<G1> aValidC)
 	{
 		// Copy the map to allow us to use it as a working map
 		Map<G1, G2> oldM = new HashMap<>(aResourceM);
 
 		// Reconstruct the provided map, resourceM
 		aResourceM.clear();
-		for (G1 aItem : aValidL)
+		for (G1 aItem : aValidC)
 		{
 			// Skip to next if no item was previously installed
 			G2 tmpResource = oldM.remove(aItem);
