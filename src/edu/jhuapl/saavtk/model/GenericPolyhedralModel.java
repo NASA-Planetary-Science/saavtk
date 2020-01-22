@@ -931,7 +931,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     
     public void sortPolydata(vtkCamera camera)
     {
-    	System.out.println("GenericPolyhedralModel: sortPolydata: sorting");
     	vtkDepthSortPolyData depthSorter = new vtkDepthSortPolyData();
 		depthSorter.SetInputData(smallBodyPolyData);
 		depthSorter.SetDirectionToBackToFront();

@@ -174,7 +174,6 @@ public class Renderer extends JPanel implements ActionListener
 		camera.addListener((aEvent) -> { mainCanvas.Render(); }); 
 		
 		boolean useDepthPeeling = IsDepthPeelingSupported(mainCanvas.getRenderWindow(), mainCanvas.getRenderer(), true);
-		System.out.println("Renderer: Renderer: depth peeling enabled = " + useDepthPeeling);
 		
         ((GenericPolyhedralModel)tmpPolyModel).sortPolydata(mainCanvas.getActiveCamera());
 
