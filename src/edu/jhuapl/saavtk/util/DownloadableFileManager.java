@@ -4,10 +4,10 @@ import java.awt.EventQueue;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -27,6 +27,7 @@ import java.util.concurrent.Executors;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import edu.jhuapl.saavtk.util.CloseableUrlConnection.HttpRequestMethod;
 import edu.jhuapl.saavtk.util.DownloadableFileInfo.DownloadableFileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
@@ -265,26 +266,12 @@ public class DownloadableFileManager
      */
     protected boolean doAccessCheckOnServer(URL getUserAccessPhp, ListIterator<String> iterator, boolean forceUpdate) throws IOException
     {
-        URLConnection conn = null;
-        try
-        {
-            conn = getUserAccessPhp.openConnection();
-            conn.setDoOutput(true);
-            conn.setUseCaches(false);
-            conn.setRequestProperty("User-Agent", "Mozilla/4.0");
-        }
-        catch (IOException e)
-        {
-            // Rethrow this -- this is a "fatal" error that probably indicates either the
-            // script is missing on the server, or there are internet access problems.
-            // Either way it means the whole server-side check is out of the question at
-            // this time.
-            throw new IOException("Exception while performing server-side check: could not open connection to " + getUserAccessPhp, e);
-        }
+        boolean result = true;
 
-        boolean result;
-        try
+        try (CloseableUrlConnection closeableConn = CloseableUrlConnection.of(getUserAccessPhp, HttpRequestMethod.GET))
         {
+            URLConnection conn = closeableConn.getConnection();
+            conn.setDoOutput(true);
             // Make query string that contains a batch of URLs currently in the cache.
             try (OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream()))
             {
@@ -339,10 +326,17 @@ public class DownloadableFileManager
             try (InputStreamReader isr = new InputStreamReader(conn.getInputStream()))
             {
                 BufferedReader in = new BufferedReader(isr);
-                String line;
-                while ((line = in.readLine()) != null)
+
+                while (in.ready())
                 {
-                    if (line.matches(("^<html>.*Request Rejected.*")))
+                    String line = in.readLine();
+                    if (line == null)
+                    {
+                        Debug.err().println("Server-side access check returned null");
+                        result = false;
+                        break;
+                    }
+                    else if (line.matches(("^<html>.*Request Rejected.*")))
                     {
                         throw new IOException("Request for URL info was rejected by the server:\n" + line);
                     }
@@ -369,23 +363,11 @@ public class DownloadableFileManager
                     }
                 }
             }
-            result = true;
-        }
-        catch (Exception e)
-        {
-            // This exception was thrown after an initially successful connection to the
-            // server-side script. It means this particular query failed, but this could be
-            // for a variety of reasons. Thus, just swallow this error, but return false to
-            // indicate failure.
-            Debug.err().println("Error while checking URL accessibility with server-side script:");
-            e.printStackTrace(Debug.err());
-            result = false;
-        }
-        finally
-        {
-            if (conn instanceof HttpURLConnection)
+            catch (FileNotFoundException e)
             {
-                ((HttpURLConnection) conn).disconnect();
+                Debug.err().println("Server-side access check failed");
+                e.printStackTrace(Debug.err());
+                result = false;
             }
         }
 
@@ -834,11 +816,10 @@ public class DownloadableFileManager
     {
         try
         {
-            URL getUserAccessPhp = new URL(Configuration.getQueryRootURL() + "/" + "checkfileaccess.php");
-            URLConnection conn = null;
-            try
+            URL getUserAccessPhp = new URL("http://sbmt.jhuapl.edu/sbmtspud/prod/query/" + "checkfileaccess.php");
+            try (CloseableUrlConnection closeableConn = CloseableUrlConnection.of(getUserAccessPhp, HttpRequestMethod.GET))
             {
-                conn = getUserAccessPhp.openConnection();
+                URLConnection conn = closeableConn.getConnection();
                 conn.setDoOutput(true);
                 conn.setUseCaches(false);
                 conn.setRequestProperty("User-Agent", "Mozilla/4.0");
@@ -851,19 +832,11 @@ public class DownloadableFileManager
                 try (InputStreamReader isr = new InputStreamReader(conn.getInputStream()))
                 {
                     BufferedReader in = new BufferedReader(isr);
-                    String line;
-                    while ((line = in.readLine()) != null)
+                    while (in.ready())
                     {
+                        String line = in.readLine();
                         System.out.println(line);
                     }
-
-                }
-            }
-            finally
-            {
-                if (conn instanceof HttpURLConnection)
-                {
-                    ((HttpURLConnection) conn).disconnect();
                 }
             }
         }
