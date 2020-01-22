@@ -7,6 +7,8 @@ import java.util.Set;
 
 import javax.swing.JOptionPane;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import edu.jhuapl.saavtk.gui.GuiUtil;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.Model;
@@ -14,7 +16,7 @@ import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.CircleModel;
-import edu.jhuapl.saavtk.model.structure.EllipsePolygon;
+import edu.jhuapl.saavtk.structure.Ellipse;
 import vtk.vtkActor;
 import vtk.vtkCellPicker;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
@@ -145,7 +147,7 @@ public class CirclePicker extends Picker
 		// Bail if we are not in the proper edit mode or there is no vertex being edited
 		if (currEditMode != EditMode.DRAGGABLE || currVertexId < 0)
 			return;
-		EllipsePolygon tmpItem = refStructureManager.getStructure(currVertexId);
+		Ellipse tmpItem = refStructureManager.getItem(currVertexId);
 
 		// Bail if we failed to pick something
 		int pickSucceeded = doPick(aEvent, smallBodyPicker, refRenWin);
@@ -157,7 +159,8 @@ public class CirclePicker extends Picker
 
 		if (model == refSmallBodyModel)
 		{
-			double[] lastDragPosition = smallBodyPicker.GetPickPosition();
+			double[] lastDragPositionArr = smallBodyPicker.GetPickPosition();
+			Vector3D lastDragPosition = new Vector3D(lastDragPositionArr);
 
 			if (aEvent.isControlDown() || aEvent.isShiftDown())
 				refStructureManager.changeRadiusOfPolygon(tmpItem, lastDragPosition);
@@ -189,8 +192,8 @@ public class CirclePicker extends Picker
 		int keyCode = aEvent.getKeyCode();
 		if (keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_BACK_SPACE)
 		{
-			Set<EllipsePolygon> pickS = refStructureManager.getSelectedItems();
-			refStructureManager.removeStructures(pickS);
+			Set<Ellipse> pickS = refStructureManager.getSelectedItems();
+			refStructureManager.removeItems(pickS);
 		}
 	}
 }

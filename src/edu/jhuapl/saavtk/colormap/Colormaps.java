@@ -28,8 +28,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import edu.jhuapl.saavtk.colormap.RgbColormap.ColorSpace;
+import edu.jhuapl.saavtk.util.NativeLibraryLoader;
 import edu.jhuapl.saavtk.util.Preferences;
-import vtk.vtkNativeLibrary;
 
 /**
  * This is an all static method class for managing a global/static map of (@link
@@ -399,7 +399,7 @@ public class Colormaps
      */
     public static void main(String[] args)
     {
-        vtkNativeLibrary.LoadAllNativeLibraries();
+        NativeLibraryLoader.loadAllVtkLibraries();
         initialize();
         JFrame frame = new JFrame();
         frame.setVisible(true);

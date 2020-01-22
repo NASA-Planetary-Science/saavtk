@@ -5,10 +5,8 @@ import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import com.google.common.collect.Lists;
-
-import edu.jhuapl.saavtk.model.structure.EllipsePolygon;
 import edu.jhuapl.saavtk.model.structure.PointModel;
+import edu.jhuapl.saavtk.structure.Ellipse;
 
 public class PointStructure implements Structure
 {
@@ -33,6 +31,7 @@ public class PointStructure implements Structure
 		this.pointStyle = pointStyle;
 	}
 
+	@Override
 	public String getLabel()
 	{
 		return label;
@@ -58,11 +57,11 @@ public class PointStructure implements Structure
 	public static List<PointStructure> fromSbmtStructure(PointModel aPointManager)
 	{
 		List<PointStructure> retL = new ArrayList<>();
-		for (EllipsePolygon aItem : aPointManager.getAllItems())
+		for (Ellipse aItem : aPointManager.getAllItems())
 		{
-			retL.add(new PointStructure(new Vector3D(aPointManager.getStructureCenter(aItem))));
+			retL.add(new PointStructure(aPointManager.getCenter(aItem)));
 		}
 		return retL;
 	}
-	
+
 }

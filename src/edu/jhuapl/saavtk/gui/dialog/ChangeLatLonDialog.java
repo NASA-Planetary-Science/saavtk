@@ -14,7 +14,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
-import edu.jhuapl.saavtk.model.structure.EllipsePolygon;
+import edu.jhuapl.saavtk.structure.Ellipse;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -28,7 +28,7 @@ public class ChangeLatLonDialog<G1 extends Structure> extends JDialog implements
 {
 	// Ref vars
 	private AbstractEllipsePolygonModel refManager;
-	private EllipsePolygon refItem;
+	private Ellipse refItem;
 
 	// Gui vars
 	private JButton applyButton;
@@ -39,15 +39,15 @@ public class ChangeLatLonDialog<G1 extends Structure> extends JDialog implements
 
 	/**
 	 * Standard Constructor
-	 * 
+	 *
 	 * @param aManager Reference StructureManager of type
 	 *                 {@link AbstractEllipsePolygonModel}.
-	 * @param aItem    Reference structure of type {@link EllipsePolygon}
+	 * @param aItem    Reference structure of type {@link Ellipse}
 	 */
 	public ChangeLatLonDialog(StructureManager<G1> aManager, G1 aItem)
 	{
 		refManager = (AbstractEllipsePolygonModel) aManager;
-		refItem = (EllipsePolygon) aItem;
+		refItem = (Ellipse) aItem;
 
 		setTitle("Change Latitude/Longitude");
 
@@ -107,7 +107,7 @@ public class ChangeLatLonDialog<G1 extends Structure> extends JDialog implements
 
 			refManager.movePolygon(refItem, (Math.PI / 180.0) * latitude, (Math.PI / 180.0) * longitude);
 
-			double[] center = refManager.getStructureCenter(refItem);
+			double[] center = refManager.getCenter(refItem).toArray();
 
 			LatLon ll = MathUtil.reclat(center);
 
@@ -131,7 +131,7 @@ public class ChangeLatLonDialog<G1 extends Structure> extends JDialog implements
 	@Override
 	public void setVisible(boolean aBool)
 	{
-		double[] center = refManager.getStructureCenter(refItem);
+		double[] center = refManager.getCenter(refItem).toArray();
 
 		LatLon ll = MathUtil.reclat(center);
 

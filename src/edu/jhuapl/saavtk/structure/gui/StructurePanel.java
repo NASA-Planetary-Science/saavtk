@@ -35,23 +35,28 @@ import edu.jhuapl.saavtk.gui.dialog.NormalOffsetChangerDialog;
 import edu.jhuapl.saavtk.gui.funk.PopupButton;
 import edu.jhuapl.saavtk.gui.table.ColorCellEditor;
 import edu.jhuapl.saavtk.gui.table.ColorCellRenderer;
+import edu.jhuapl.saavtk.gui.table.SourceRenderer;
 import edu.jhuapl.saavtk.gui.table.TablePopupHandler;
 import edu.jhuapl.saavtk.gui.util.IconUtil;
 import edu.jhuapl.saavtk.gui.util.ToolTipUtil;
+import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
+import edu.jhuapl.saavtk.model.structure.CircleModel;
 import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.model.structure.PointModel;
+import edu.jhuapl.saavtk.model.structure.PolygonModel;
+import edu.jhuapl.saavtk.pick.ControlPointsPicker;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.pick.PickManagerListener;
 import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.pick.Picker;
 import edu.jhuapl.saavtk.popup.PopupMenu;
+import edu.jhuapl.saavtk.structure.ControlPointsHandler;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
-import edu.jhuapl.saavtk.structure.gui.action.LoadEsriShapeFileAction;
-import edu.jhuapl.saavtk.structure.gui.action.LoadSbmtStructuresFileAction;
 import edu.jhuapl.saavtk.structure.gui.action.SaveEsriShapeFileAction;
 import edu.jhuapl.saavtk.structure.gui.action.SaveSbmtStructuresFileAction;
 import edu.jhuapl.saavtk.structure.gui.action.SaveVtkFileAction;
@@ -65,6 +70,7 @@ import glum.gui.panel.itemList.ItemHandler;
 import glum.gui.panel.itemList.ItemListPanel;
 import glum.gui.panel.itemList.ItemProcessor;
 import glum.gui.panel.itemList.query.QueryComposer;
+import glum.gui.table.NumberRenderer;
 import glum.item.ItemEventListener;
 import glum.item.ItemEventType;
 import glum.item.ItemManagerUtil;
@@ -78,7 +84,7 @@ import net.miginfocom.swing.MigLayout;
  * <LI>Display a list of structures in a table.
  * <LI>Allow user to show, hide, add, edit, or delete structures
  * <LI>Allow user to load or save structures.
- * <LI>
+ * <UL>
  *
  * @author lopeznr1
  */
@@ -99,7 +105,6 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 	private File structuresFile;
 
 	// GUI vars
-	private JLabel structuresFileL;
 	private ItemListPanel<G1> itemILP;
 	private JFrame profileWindow;
 
@@ -112,17 +117,17 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 	private JButton structColorB, structHideB, structShowB;
 	private JButton labelColorB, labelHideB, labelShowB;
 	private JButton changeOffsetB;
+	private JLabel fontSizeL, lineWidthL;
 	private GNumberFieldSlider fontSizeNFS;
 	private GNumberFieldSlider lineWidthNFS;
 
 	private PopupButton saveB;
-	private PopupButton loadB;
 
 	/**
 	 * Standard Constructor
 	 */
 	public StructurePanel(ModelManager aModelManager, StructureManager<G1> aStructureManager, PickManager aPickManager,
-			Picker aPicker, StatusBar aStatusBar)
+			Picker aPicker, StatusBar aStatusBar, PopupMenu aPopupMenu)
 	{
 		refModelManager = aModelManager;
 		refStructureManager = aStructureManager;
@@ -133,33 +138,16 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 
 		changeOffsetDialog = null;
 
-		loadB = new PopupButton("Load...");
 		saveB = new PopupButton("Save...");
 
-		loadB.getPopup().add(new JMenuItem(new LoadSbmtStructuresFileAction<>(this, refStructureManager)));
-		JMenuItem esriLoadMI = loadB.getPopup()
-				.add(new JMenuItem(new LoadEsriShapeFileAction<>(this, refStructureManager, refModelManager, aStatusBar)));
-		if (!(refStructureManager instanceof PointModel) && !(refStructureManager instanceof LineModel))
-		{
-			// don't let user import esri shapes as ellipses or circles; these require extra
-			// information in order to be upgraded (downgraded?) to "SBMT" structures ...
-			// instead they can use the polygons tab
-			esriLoadMI.setEnabled(false);
-			esriLoadMI.setToolTipText("ESRI circles and ellipses can be imported using the Polygons tab");
-		}
-
-		saveB.getPopup().add(new JMenuItem(new SaveSbmtStructuresFileAction<>(this, refStructureManager)));
+		saveB.getPopup().add(new JMenuItem(new SaveSbmtStructuresFileAction<>(this, refStructureManager, //
+				refModelManager.getPolyhedralModel())));
 		saveB.getPopup().add(new JMenuItem(new SaveEsriShapeFileAction<>(this, refStructureManager, refModelManager)));
 		saveB.getPopup().add(new JMenuItem(new SaveVtkFileAction<>(refStructureManager)));
 
 		setLayout(new MigLayout("", "", "[]"));
 
-		JLabel fileNameL = new JLabel("File: ");
-		structuresFileL = new JLabel("<no file loaded>");
-		add(fileNameL, "span,split");
-		add(structuresFileL, "growx,pushx,w 100:100:");
-		add(loadB, "sg g0");
-		add(saveB, "sg g0,wrap");
+		add(saveB, "align right,span,split,wrap");
 
 		// Table header
 		selectInvertB = GuiUtil.formButton(this, IconUtil.getSelectInvert());
@@ -181,11 +169,44 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		QueryComposer<LookUp> tmpComposer = new QueryComposer<>();
 		tmpComposer.addAttribute(LookUp.IsVisible, Boolean.class, "Show", 40);
 		tmpComposer.addAttribute(LookUp.Color, Color.class, "Color", 50);
-		tmpComposer.addAttribute(LookUp.Id, Integer.class, "Id", "1,987");
-		tmpComposer.addAttribute(LookUp.Type, String.class, "Type", "-Ellipses-");
+		tmpComposer.addAttribute(LookUp.Id, Integer.class, "Id", "98");
+		tmpComposer.addAttribute(LookUp.Type, String.class, "Type", "Polygon");
 		tmpComposer.addAttribute(LookUp.Name, String.class, "Name", null);
-		tmpComposer.addAttribute(LookUp.Details, String.class, "Details", null);
 		tmpComposer.addAttribute(LookUp.Label, String.class, "Label", null);
+		if (aStructureManager instanceof AbstractEllipsePolygonModel)
+		{
+			String maxStr = "Diam.: km"; // "9,876.987"
+			tmpComposer.addAttribute(LookUp.Diameter, Double.class, "Diam: km", maxStr);
+			tmpComposer.setRenderer(LookUp.Diameter, new NumberRenderer("#.####", "---"));
+			tmpComposer.getItem(LookUp.Diameter).maxSize *= 2;
+			boolean isPointManager = aStructureManager instanceof PointModel;
+			if (isPointManager == false && aStructureManager instanceof CircleModel == false)
+			{
+				tmpComposer.addAttribute(LookUp.Angle, Double.class, "Angle", maxStr);
+				tmpComposer.setRenderer(LookUp.Angle, new NumberRenderer("#.###", "---"));
+				tmpComposer.addAttribute(LookUp.Flattening, Double.class, "Flat.", "0.2020");
+				tmpComposer.setRenderer(LookUp.Flattening, new NumberRenderer("#.####", "---"));
+				tmpComposer.getItem(LookUp.Flattening).maxSize *= 2;
+			}
+		}
+		else
+		{
+			String maxStr = "Len.: km"; // "9,876.987"
+			tmpComposer.addAttribute(LookUp.Length, Double.class, "Len: km", maxStr);
+			tmpComposer.setRenderer(LookUp.Length, new NumberRenderer("#.###", "---"));
+			tmpComposer.getItem(LookUp.Length).maxSize *= 2;
+			tmpComposer.addAttribute(LookUp.VertexCount, Integer.class, "# pts", "999");
+			tmpComposer.getItem(LookUp.VertexCount).maxSize *= 2;
+			if (aStructureManager instanceof PolygonModel)
+			{
+				String tmpStr = "Area: km" + (char) 0x00B2;
+				tmpComposer.addAttribute(LookUp.Area, Double.class, tmpStr, maxStr);
+				tmpComposer.setRenderer(LookUp.Area, new NumberRenderer("#.###", "---"));
+				tmpComposer.getItem(LookUp.Area).maxSize *= 2;
+			}
+		}
+		tmpComposer.addAttribute(LookUp.Source, String.class, "Source", null);
+		tmpComposer.getItem(LookUp.Source).defaultSize *= 4;
 
 		tmpComposer.setEditor(LookUp.IsVisible, new BooleanCellEditor());
 		tmpComposer.setRenderer(LookUp.IsVisible, new BooleanCellRenderer());
@@ -193,8 +214,8 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		tmpComposer.setRenderer(LookUp.Color, new ColorCellRenderer(false));
 		tmpComposer.setEditor(LookUp.Name, new DefaultCellEditor(new JTextField()));
 		tmpComposer.setEditor(LookUp.Label, new DefaultCellEditor(new JTextField()));
-		tmpComposer.getItem(LookUp.Id).maxSize *= 2;
-		tmpComposer.getItem(LookUp.Details).defaultSize *= 3;
+		tmpComposer.setRenderer(LookUp.Source, new SourceRenderer());
+		tmpComposer.getItem(LookUp.Id).maxSize *= 3;
 		tmpComposer.getItem(LookUp.Name).defaultSize *= 2;
 		tmpComposer.getItem(LookUp.Label).defaultSize *= 2;
 
@@ -203,10 +224,9 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		itemILP = new ItemListPanel<>(tmpIH, tmpIP, true);
 		itemILP.setSortingEnabled(true);
 
-		PopupMenu structuresPopupMenu = refPickManager.getPopupManager().getPopup(refStructureManager);
 		JTable structureTable = itemILP.getTable();
 		structureTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		structureTable.addMouseListener(new TablePopupHandler(refStructureManager, structuresPopupMenu));
+		structureTable.addMouseListener(new TablePopupHandler(refStructureManager, aPopupMenu));
 		add(new JScrollPane(structureTable), "growx,growy,pushx,pushy,span,wrap");
 
 		// Specialized code to handle deletion via the keyboard
@@ -290,13 +310,16 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		}
 		add(openProfilePlotB, "sg g5,wrap");
 
-		fontSizeNFS = new GNumberFieldSlider(this, "Font Size:", 8, 120);
-		fontSizeNFS.setNumSteps(67);
+		fontSizeL = new JLabel("Font Size:");
+		fontSizeNFS = new GNumberFieldSlider(this, 8, 120, new DecimalFormat("0"));
+		fontSizeNFS.setIntegralSteps();
 		fontSizeNFS.setNumColumns(3);
-		add(fontSizeNFS, "growx,sg g6,span,wrap");
+		add(fontSizeL, "sg g6,span,split");
+		add(fontSizeNFS, "growx,sg g7,wrap");
 
-		lineWidthNFS = new GNumberFieldSlider(this, "Line Width:", 1, 100);
-		lineWidthNFS.setNumSteps(100);
+		lineWidthL = new JLabel("Line Width:");
+		lineWidthNFS = new GNumberFieldSlider(this, 1, 100, new DecimalFormat("0"));
+		lineWidthNFS.setIntegralSteps();
 		lineWidthNFS.setNumColumns(3);
 
 		// Create the pointDiameterPanel if the StructureManager is of type PointModel
@@ -308,10 +331,10 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		if (pointDiameterPanel != null)
 			add(pointDiameterPanel, "span");
 		else
-			add(lineWidthNFS, "growx,sg g6,span");
-
-		// Hack to force fontSizeNFS label to have the same size as lineWidthNFS
-		fontSizeNFS.getLabelComponent().setPreferredSize(lineWidthNFS.getLabelComponent().getPreferredSize());
+		{
+			add(lineWidthL, "sg g6,span,split");
+			add(lineWidthNFS, "growx,sg g7");
+		}
 
 		updateControlGui();
 
@@ -330,17 +353,6 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 	public File getStructureFile()
 	{
 		return structuresFile;
-	}
-
-	/**
-	 * Notifies the panel of the file that is associated with the loaded
-	 * {@link Structure}s.
-	 */
-	public void notifyFileLoaded(File aFile)
-	{
-		structuresFileL.setText(aFile.getName());
-		structuresFileL.setToolTipText(aFile.getAbsolutePath());
-		structuresFile = aFile;
 	}
 
 	@Override
@@ -363,7 +375,7 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 			doDeleteSelectedStructures();
 		else if (source == labelColorB)
 		{
-			Color defColor = refStructureManager.getLabelColor(pickL.get(0));
+			Color defColor = pickL.get(0).getLabelFontAttr().getColor();
 			Color tmpColor = JColorChooser.showDialog(this, "Color Chooser Dialog", defColor);
 			if (tmpColor == null)
 				return;
@@ -376,23 +388,23 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 			refStructureManager.setLabelVisible(pickL, true);
 		else if (source == structColorB)
 		{
-			Color defColor = refStructureManager.getStructureColor(pickL.get(0));
+			Color defColor = refStructureManager.getColor(pickL.get(0));
 			Color tmpColor = JColorChooser.showDialog(this, "Color Chooser Dialog", defColor);
 			if (tmpColor == null)
 				return;
 
-			refStructureManager.setStructureColor(pickL, tmpColor);
+			refStructureManager.setColor(pickL, tmpColor);
 		}
 		else if (source == structHideB)
-			refStructureManager.setStructureVisible(pickL, false);
+			refStructureManager.setIsVisible(pickL, false);
 		else if (source == structShowB)
-			refStructureManager.setStructureVisible(pickL, true);
+			refStructureManager.setIsVisible(pickL, true);
 		else if (source == changeOffsetB)
 		{
 			// Lazy init
 			if (changeOffsetDialog == null)
 			{
-				changeOffsetDialog = new NormalOffsetChangerDialog(refStructureManager);
+				changeOffsetDialog = new NormalOffsetChangerDialog((Model) refStructureManager);
 				changeOffsetDialog.setLocationRelativeTo(JOptionPane.getFrameForComponent(this));
 			}
 
@@ -413,13 +425,13 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		{
 			ImmutableSet<G1> currPickS = refStructureManager.getSelectedItems();
 
-			G1 tmpItem = null;
-			if (currPickS.size() > 0)
-				tmpItem = currPickS.asList().get(currPickS.size() - 1);
-
 			// Scroll only if the selection source was not from our refStructureManager
 			if (aSource != refStructureManager)
 			{
+				G1 tmpItem = null;
+				if (currPickS.size() > 0)
+					tmpItem = currPickS.asList().get(currPickS.size() - 1);
+
 				// Scroll only if the previous pickL does not contains all of
 				// selected items. This means that an item was deselected and
 				// we should not scroll on deselections.
@@ -428,6 +440,11 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 
 				prevPickS = currPickS;
 			}
+
+			// Switch to the appropriate activation structure (if necessary)
+			boolean isEditMode = refPicker == refPickManager.getActivePicker();
+			if (isEditMode == true)
+				updateActivatedItem();
 		}
 
 		updateControlGui();
@@ -439,22 +456,8 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		boolean tmpBool = refPicker == refPickManager.getActivePicker();
 		editB.setSelected(tmpBool);
 
-		// Clear the activated structure if not in edit mode
-		if (tmpBool == false)
-			refStructureManager.activateStructure(null);
-
-		// TODO: In the future the structure table should never be disabled
-		// When refStructureManager supports activation then update table enable state
-		if (refStructureManager.supportsActivation() == true)
-		{
-			JTable structuresTable = itemILP.getTable();
-
-			if (tmpBool == true)
-				structuresTable.setEnabled(false);
-			else
-				structuresTable.setEnabled(true);
-		}
-
+		// Update the activated structure
+		updateActivatedItem();
 		updateControlGui();
 	}
 
@@ -463,14 +466,12 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 	 */
 	private void doActionCreate()
 	{
-		// Ensure all structures are visible (in case any are hidden)
-		refStructureManager.setVisible(true);
+		refStructureManager.setSelectedItems(ImmutableList.of());
 
-		G1 tmpItem = refStructureManager.addNewStructure();
+		ControlPointsPicker<?> workPicker = (ControlPointsPicker<?>) refPicker;
+		workPicker.startNewItem();
+
 		refPickManager.setActivePicker(refPicker);
-
-		List<G1> tmp2L = ImmutableList.of(tmpItem);
-		refStructureManager.setSelectedItems(tmp2L);
 	}
 
 	/**
@@ -480,25 +481,11 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 	{
 		boolean isEditMode = editB.isSelected();
 
-		// Force everything to be visible - in case the user hid anything
-		if (isEditMode == true)
-			refStructureManager.setVisible(true);
-
 		// Switch to the proper picker
 		Picker tmpPicker = null;
 		if (isEditMode == true)
 			tmpPicker = refPicker;
 		refPickManager.setActivePicker(tmpPicker);
-
-		// Activate the relevant structure
-		if (refStructureManager.supportsActivation() == true)
-		{
-			G1 tmpItem = null;
-			List<G1> pickL = refStructureManager.getSelectedItems().asList();
-			if (isEditMode == true && pickL.size() == 1)
-				tmpItem = pickL.get(0);
-			refStructureManager.activateStructure(tmpItem);
-		}
 	}
 
 	/**
@@ -520,10 +507,9 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 
 		// Update internal state vars
 		refPickManager.setActivePicker(null);
-		refStructureManager.activateStructure(null);
 
 		// Remove the structures
-		refStructureManager.removeStructures(pickS);
+		refStructureManager.removeItems(pickS);
 
 		// Update GUI
 		updateControlGui();
@@ -567,6 +553,31 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 	}
 
 	/**
+	 * Helper method that updates the manager to reflect the activated item.
+	 * <P>
+	 * Note: Currently not all {@link StructureManager}s support activation.
+	 */
+	@SuppressWarnings("unchecked")
+	private void updateActivatedItem()
+	{
+		// Bail if the StructureManager does not support ControlPoints
+		if (refStructureManager instanceof ControlPointsHandler == false)
+			return;
+
+		// Activate a structure if the following is true:
+		// - We are in edit mode
+		// - There is only 1 selected structure
+		boolean isEditMode = refPicker == refPickManager.getActivePicker();
+
+		G1 tmpItem = null;
+		ImmutableSet<G1> currPickS = refStructureManager.getSelectedItems();
+		if (currPickS.size() == 1 && isEditMode == true)
+			tmpItem = currPickS.asList().get(0);
+
+		((ControlPointsHandler<G1>) refStructureManager).setActivatedItem(tmpItem);
+	}
+
+	/**
 	 * Helper method to update the colored icons/text for labelIconB and structIconB
 	 */
 	private void updateColoredButtons()
@@ -585,9 +596,9 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		{
 			// Determine label color attributes
 			boolean isMixed = false;
-			Color tmpColor = refStructureManager.getLabelColor(pickL.get(0));
+			Color tmpColor = pickL.get(0).getLabelFontAttr().getColor();
 			for (G1 aItem : pickL)
-				isMixed |= Objects.equals(tmpColor, refStructureManager.getLabelColor(aItem)) == false;
+				isMixed |= Objects.equals(tmpColor, aItem.getLabelFontAttr().getColor()) == false;
 
 			if (isMixed == false)
 				labelIcon = new ColorIcon(tmpColor, Color.BLACK, iconW, iconH);
@@ -596,9 +607,9 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 
 			// Determine structure color attributes
 			isMixed = false;
-			tmpColor = refStructureManager.getStructureColor(pickL.get(0));
+			tmpColor = refStructureManager.getColor(pickL.get(0));
 			for (G1 aItem : pickL)
-				isMixed |= Objects.equals(tmpColor, refStructureManager.getStructureColor(aItem)) == false;
+				isMixed |= Objects.equals(tmpColor, refStructureManager.getColor(aItem)) == false;
 
 			if (isMixed == false)
 				structIcon = new ColorIcon(tmpColor, Color.BLACK, iconW, iconH);
@@ -630,32 +641,41 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		isEnabled = cntPickItems > 0;
 		selectNoneB.setEnabled(isEnabled);
 		deleteB.setEnabled(isEnabled);
+		labelTitleL.setEnabled(isEnabled);
 		labelColorB.setEnabled(isEnabled);
+		structTitleL.setEnabled(isEnabled);
 		structColorB.setEnabled(isEnabled);
 
-		isEnabled = refStructureManager.supportsActivation() == false | pickL.size() == 1;
+		isEnabled = refStructureManager.supportsActivation() == false | cntFullItems > 0;
 		editB.setEnabled(isEnabled);
 
 		isEnabled = cntFullItems > 0 && cntPickItems < cntFullItems;
 		selectAllB.setEnabled(isEnabled);
 
-		isEnabled = cntPickItems > 0 && editB.isSelected() == false;
-		labelTitleL.setEnabled(isEnabled);
-		labelHideB.setEnabled(isEnabled);
-		labelShowB.setEnabled(isEnabled);
-//		labelColorB.setEnabled(isEnabled);
-		structTitleL.setEnabled(isEnabled);
-		structHideB.setEnabled(isEnabled);
-		structShowB.setEnabled(isEnabled);
-//		structColorB.setEnabled(isEnabled);
+		int numItemsVisibleStruct = 0;
+		int numItemsVisibleLabel = 0;
+		for (G1 aItem : pickL)
+		{
+			if (aItem.getVisible() == true)
+				numItemsVisibleStruct++;
+			if (aItem.getLabelFontAttr().getIsVisible() == true)
+				numItemsVisibleLabel++;
+		}
+
+		isEnabled = cntPickItems > 0;
+		labelHideB.setEnabled(isEnabled && numItemsVisibleLabel > 0);
+		labelShowB.setEnabled(isEnabled && numItemsVisibleLabel < pickL.size());
+		structHideB.setEnabled(isEnabled && numItemsVisibleStruct > 0);
+		structShowB.setEnabled(isEnabled && numItemsVisibleStruct < pickL.size());
 		updateColoredButtons();
 
 		isEnabled = cntPickItems > 0;
+		fontSizeL.setEnabled(isEnabled);
 		fontSizeNFS.setEnabled(isEnabled);
 
 		int fontSize = -1;
 		if (cntPickItems > 0)
-			fontSize = refStructureManager.getLabelFontSize(pickL.get(0));
+			fontSize = pickL.get(0).getLabelFontAttr().getSize();
 		fontSizeNFS.setValue(fontSize);
 
 		double lineWidth = -1;
