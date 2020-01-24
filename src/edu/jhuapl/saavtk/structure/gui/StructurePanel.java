@@ -117,6 +117,7 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 	private JButton structColorB, structHideB, structShowB;
 	private JButton labelColorB, labelHideB, labelShowB;
 	private JButton changeOffsetB;
+	private JLabel fontSizeL, lineWidthL;
 	private GNumberFieldSlider fontSizeNFS;
 	private GNumberFieldSlider lineWidthNFS;
 
@@ -309,13 +310,16 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		}
 		add(openProfilePlotB, "sg g5,wrap");
 
-		fontSizeNFS = new GNumberFieldSlider(this, "Font Size:", 8, 120);
-		fontSizeNFS.setNumSteps(67);
+		fontSizeL = new JLabel("Font Size:");
+		fontSizeNFS = new GNumberFieldSlider(this, 8, 120, new DecimalFormat("0"));
+		fontSizeNFS.setIntegralSteps();
 		fontSizeNFS.setNumColumns(3);
-		add(fontSizeNFS, "growx,sg g6,span,wrap");
+		add(fontSizeL, "sg g6,span,split");
+		add(fontSizeNFS, "growx,sg g7,wrap");
 
-		lineWidthNFS = new GNumberFieldSlider(this, "Line Width:", 1, 100);
-		lineWidthNFS.setNumSteps(100);
+		lineWidthL = new JLabel("Line Width:");
+		lineWidthNFS = new GNumberFieldSlider(this, 1, 100, new DecimalFormat("0"));
+		lineWidthNFS.setIntegralSteps();
 		lineWidthNFS.setNumColumns(3);
 
 		// Create the pointDiameterPanel if the StructureManager is of type PointModel
@@ -327,10 +331,10 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		if (pointDiameterPanel != null)
 			add(pointDiameterPanel, "span");
 		else
-			add(lineWidthNFS, "growx,sg g6,span");
-
-		// Hack to force fontSizeNFS label to have the same size as lineWidthNFS
-		fontSizeNFS.getLabelComponent().setPreferredSize(lineWidthNFS.getLabelComponent().getPreferredSize());
+		{
+			add(lineWidthL, "sg g6,span,split");
+			add(lineWidthNFS, "growx,sg g7");
+		}
 
 		updateControlGui();
 
@@ -666,6 +670,7 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		updateColoredButtons();
 
 		isEnabled = cntPickItems > 0;
+		fontSizeL.setEnabled(isEnabled);
 		fontSizeNFS.setEnabled(isEnabled);
 
 		int fontSize = -1;

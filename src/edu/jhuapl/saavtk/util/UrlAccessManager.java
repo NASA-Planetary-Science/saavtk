@@ -28,6 +28,12 @@ import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 public class UrlAccessManager
 {
     protected static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
+    private static volatile boolean silenceInfoMessages = false;
+
+    public static void setSilenceInfoMessages(boolean enable)
+    {
+        silenceInfoMessages = enable;
+    }
 
     /**
      * Create a new UrlAccessManager using the arguments as the root level URL for
@@ -47,12 +53,18 @@ public class UrlAccessManager
         try
         {
             result.queryRootUrl();
-            System.out.println("Connected to server at " + rootUrl);
+            if (!silenceInfoMessages)
+            {
+                System.out.println("Connected to server at " + rootUrl);
+            }
         }
         catch (Exception e)
         {
-            System.err.println("Unable to connect to server. Disabling online access.");
-            e.printStackTrace();
+            if (!silenceInfoMessages)
+            {
+                System.err.println("Unable to connect to server. Disabling online access.");
+                e.printStackTrace();
+            }
         }
 
         return result;
@@ -325,7 +337,7 @@ public class UrlAccessManager
         {
             UrlState state = result.getState();
             UrlStatus status = state.getStatus();
-            if (status == UrlStatus.UNKNOWN || forceUpdate)
+            if (status == UrlStatus.UNKNOWN || status == UrlStatus.CONNECTION_ERROR || forceUpdate)
             {
                 Debug.out().println("Querying server about " + url);
                 try

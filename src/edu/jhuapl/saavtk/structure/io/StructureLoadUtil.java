@@ -155,10 +155,13 @@ public class StructureLoadUtil
 	 * Note the returned list of {@link Ellipse}s will not have any initialized VTK
 	 * state data. Each returned {@link Ellipse} will need to have it's VTK state
 	 * data initialized via updatePolygon().
+	 * <P>
+	 * This method originated from (~2019Oct07):
+	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
 	 */
 	private static List<Ellipse> loadEllipses(File aFile, Mode aMode) throws IOException
 	{
-		Pattern workPattern = Pattern.compile("([^\"]\\S*|\".+?\")\\s*");
+		Pattern workPattern = Pattern.compile("([^\"]\\S*|\".*?\")\\s*");
 
 		List<String> lineL = FileUtil.getFileLinesAsStringList(aFile.getAbsolutePath());
 		List<Ellipse> retL = new ArrayList<>();
