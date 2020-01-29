@@ -317,7 +317,7 @@ public class DownloadableFileManager
                 sb.append("rootURL=").append(rootUrlString);
                 sb.append("&userName=").append(URLEncoder.encode(Configuration.getUserName(), getURLEncoding()));
                 sb.append("&password=").append(URLEncoder.encode(String.valueOf(Configuration.getPassword()), getURLEncoding()));
-                sb.append("&args=");
+                sb.append("&args=-encode");
                 sb.append("&stdin=");
 //                sb = new StringBuilder(URLEncoder.encode(sb.toString(), getURLEncoding()));
 
