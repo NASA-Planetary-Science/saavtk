@@ -293,23 +293,23 @@ public class DownloadableFileManager
     {
         boolean result = true;
 
-        String queryString;
         try (CloseableUrlConnection closeableConn = CloseableUrlConnection.of(getUserAccessPhp, HttpRequestMethod.GET))
         {
             URLConnection conn = closeableConn.getConnection();
             conn.setDoOutput(true);
             // Make query string that contains a batch of URLs currently in the cache.
+            String queryString;
             try (OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream()))
             {
                 URL rootUrl = Configuration.getRootURL();
-                String rootUrlString = rootUrl.toString().replace(":", "|");
+                String rootUrlString = rootUrl.toString();
                 URL dataRootUrl = Configuration.getDataRootURL();
                 String dataRootUrlString = dataRootUrl.toString();
 
                 StringBuilder sb = new StringBuilder();
-                sb.append("rootURL=").append(escape(rootUrlString));
-                sb.append("&userName=").append(escape(Configuration.getUserName()));
-                sb.append("&password=").append(escape(String.valueOf(Configuration.getPassword())));
+                sb.append("rootURL=").append(rootUrlString);
+                sb.append("&userName=").append(Configuration.getUserName());
+                sb.append("&password=").append(Configuration.getPassword());
                 sb.append("&args=");
                 sb.append("&stdin=");
 
@@ -320,7 +320,7 @@ public class DownloadableFileManager
                     // server, which rejects queries containing colons. These get decoded back to
                     // colons by the server-side script. This is still necessary even though we are
                     // also encoding HTML in general.
-                    String url = escape(iterator.next().replaceFirst(dataRootUrlString, "")).replace(":", "|");
+                    String url = iterator.next().replaceFirst(dataRootUrlString, "").replace(":", "|");
                     if (!url.matches(".*\\S.*"))
                     {
                         continue;
@@ -354,10 +354,10 @@ public class DownloadableFileManager
             try (InputStreamReader isr = new InputStreamReader(conn.getInputStream()))
             {
                 BufferedReader in = new BufferedReader(isr);
-                boolean wasReady = false;
+                boolean someOutput = false;
                 while (in.ready())
                 {
-                    wasReady = true;
+                    someOutput = true;
                     String line = in.readLine();
                     if (line == null)
                     {
@@ -394,7 +394,7 @@ public class DownloadableFileManager
                         }
                     }
                 }
-                if (!wasReady)
+                if (!someOutput)
                 {
                     result = false;
                 }
@@ -408,12 +408,6 @@ public class DownloadableFileManager
         }
 
         return result;
-    }
-
-    protected String escape(String input)
-    {
-        // return StringEscapeUtils.escapeHtml4(input);
-        return input;
     }
 
     public synchronized void stopAccessMonitor()
