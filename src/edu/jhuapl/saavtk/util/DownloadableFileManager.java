@@ -208,11 +208,16 @@ public class DownloadableFileManager
     /**
      * Attempt to use a server-side script to check accessibility of all the URLs
      * known to this manager.
-     * 
+     * <p>
      * This implementation iterates through the whole collection of URLs, sending
      * them in batches to the server-side script. This is for two reasons: 1) the
      * server has a limit on the size of string that can be passed and 2) it is
      * useful to get items in batches to avoid all-or-nothing checks.
+     * <p>
+     * VERY IMPORTANT: this method needs to be kept in synch with the way clients
+     * work to accept the queries, run them on the server and return the results. In
+     * particular, this method expects the server to have a script named
+     * "checkfileaccess.php" in the query root directory.
      * 
      * @param forceUpdate force FileInfo portion of the update. The server-side
      *            update (UrlInfo) is performed in any case.
@@ -265,6 +270,11 @@ public class DownloadableFileManager
      * Iterate over the provided {@link #iterator} of URLs as Strings. For each, use
      * the {@link #getUserAccessPhp} script to check accessibility. Check at most
      * {@link #maximumQueryCount} URLs.
+     * <p>
+     * VERY IMPORTANT: this method needs to be kept in synch with the way clients
+     * work to accept the queries, run them on the server and return the results. In
+     * particular, this method escapes HTTP code, which must be "unescaped" by the
+     * script that checks the files on the server.
      * 
      * @param getUserAccessPhp the URL of the server-side script for performing the
      *            check
