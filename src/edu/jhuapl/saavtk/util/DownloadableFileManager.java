@@ -23,6 +23,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.commons.text.StringEscapeUtils;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -75,8 +79,10 @@ public class DownloadableFileManager
     private final ExecutorService accessMonitor;
     private volatile boolean enableMonitor;
     private volatile long sleepIntervalBetweenChecks;
-    private volatile boolean enableAccessChecksOnServer;
+    private final AtomicBoolean enableAccessChecksOnServer;
     private volatile int maximumQueryLength;
+    private final AtomicInteger consecutiveServerSideCheckExceptionCount;
+    private static final int maximumConsecutiveServerSideCheckExceptions = 1;
 
     protected DownloadableFileManager(UrlAccessManager urlManager, FileAccessManager fileManager)
     {
@@ -90,8 +96,9 @@ public class DownloadableFileManager
         this.sleepIntervalBetweenChecks = 5000;
         // Currently no option to change this field through a method call; this is just
         // for debugging:
-        this.enableAccessChecksOnServer = true;
+        this.enableAccessChecksOnServer = new AtomicBoolean(Boolean.TRUE);
         this.maximumQueryLength = 10000; // Set to match the limit imposed by the web server.
+        this.consecutiveServerSideCheckExceptionCount = new AtomicInteger();
     }
 
     /**
@@ -150,12 +157,18 @@ public class DownloadableFileManager
 
                     try
                     {
+                        if (consecutiveServerSideCheckExceptionCount.get() >= maximumConsecutiveServerSideCheckExceptions)
+                        {
+                            Debug.err().println("URL status check on server failed too many times. Falling back to file-by-file check.");
+                            enableAccessChecksOnServer.set(false);
+                        }
+
                         // Only call doAccessCheckOnServer if web access is currently enabled.
-                        if (enableAccessChecksOnServer && currentlyEnabled)
+                        if (enableAccessChecksOnServer.get() && currentlyEnabled)
                         {
                             if (!doAccessCheckOnServer(forceUpdate))
                             {
-                                Debug.err().println("URL status check on server failed; falling back on file-by-file check");
+                                Debug.err().println("URL status check on server did not complete. Falling back to file-by-file check.");
                                 queryAll(forceUpdate);
                             }
                         }
@@ -166,12 +179,16 @@ public class DownloadableFileManager
                             // accessibility checks.
                             queryAll(forceUpdate);
                         }
+
+                        consecutiveServerSideCheckExceptionCount.set(0);
+                        enableAccessChecksOnServer.set(true);
                     }
                     catch (Exception e)
                     {
                         // Probably this indicates a problem with the internet connection. This will be
                         // tested the next time the loop executes.
                         e.printStackTrace(Debug.err());
+                        consecutiveServerSideCheckExceptionCount.incrementAndGet();
                     }
 
                     try
@@ -268,6 +285,7 @@ public class DownloadableFileManager
     {
         boolean result = true;
 
+        String queryString;
         try (CloseableUrlConnection closeableConn = CloseableUrlConnection.of(getUserAccessPhp, HttpRequestMethod.GET))
         {
             URLConnection conn = closeableConn.getConnection();
@@ -292,7 +310,8 @@ public class DownloadableFileManager
                 {
                     // Encode colons as pipes. This is to get the query string through the web
                     // server, which rejects queries containing colons. These get decoded back to
-                    // colons by the server-side script.
+                    // colons by the server-side script. This is still necessary even though we are
+                    // also encoding HTML in general.
                     String url = iterator.next().replaceFirst(dataRootUrlString, "").replace(":", "|");
                     if (!url.matches(".*\\S.*"))
                     {
@@ -318,7 +337,8 @@ public class DownloadableFileManager
 
                     sb.append(url);
                 }
-                wr.write(sb.toString());
+                queryString = StringEscapeUtils.escapeHtml4(sb.toString());
+                wr.write(queryString);
                 wr.flush();
             }
 
@@ -338,7 +358,10 @@ public class DownloadableFileManager
                     }
                     else if (line.matches(("^<html>.*Request Rejected.*")))
                     {
-                        throw new IOException("Request for URL info was rejected by the server:\n" + line);
+                        Debug.err().println("Request for URL info was rejected by the server: " + queryString);
+//                        Debug.err().println("Request for URL info was rejected by the server.");
+                        result = false;
+                        break;
                     }
                     String[] splitLine = line.split(",");
                     if (splitLine.length > 3)
