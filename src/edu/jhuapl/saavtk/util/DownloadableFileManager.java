@@ -13,6 +13,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -38,7 +39,8 @@ import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
 public class DownloadableFileManager
 {
-    private static Boolean headless = null;
+    private static final String UrlEncoding = "UTF-8";
+    private static volatile Boolean headless = null;
     private static volatile boolean silenceInfoMessages = false;
 
     public interface StateListener
@@ -67,6 +69,11 @@ public class DownloadableFileManager
     public static void setSilenceInfoMessages(boolean enable)
     {
         silenceInfoMessages = enable;
+    }
+
+    public static String getURLEncoding()
+    {
+        return UrlEncoding;
     }
 
     private final UrlAccessManager urlManager;
@@ -308,23 +315,21 @@ public class DownloadableFileManager
 
                 StringBuilder sb = new StringBuilder();
                 sb.append("rootURL=").append(rootUrlString);
-                sb.append("&userName=").append(Configuration.getUserName());
-                sb.append("&password=").append(Configuration.getPassword());
+                sb.append("&userName=").append(URLEncoder.encode(Configuration.getUserName(), getURLEncoding()));
+                sb.append("&password=").append(URLEncoder.encode(String.valueOf(Configuration.getPassword()), getURLEncoding()));
                 sb.append("&args=");
                 sb.append("&stdin=");
+//                sb = new StringBuilder(URLEncoder.encode(sb.toString(), getURLEncoding()));
 
                 boolean first = true;
                 while (iterator.hasNext())
                 {
-                    // Encode colons as pipes. This is to get the query string through the web
-                    // server, which rejects queries containing colons. These get decoded back to
-                    // colons by the server-side script. This is still necessary even though we are
-                    // also encoding HTML in general.
-                    String url = iterator.next().replaceFirst(dataRootUrlString, "").replace(":", "|");
+                    String url = iterator.next().replaceFirst(dataRootUrlString, "");
                     if (!url.matches(".*\\S.*"))
                     {
                         continue;
                     }
+                    url = URLEncoder.encode(url, getURLEncoding());
 
                     // Make sure the maximum query length would not be exceeded with the current URL
                     // plus a newline. For purposes of ensuring this doesn't happen, newline
@@ -396,6 +401,7 @@ public class DownloadableFileManager
                 }
                 if (!someOutput)
                 {
+                    Debug.err().println("Server=side access check returned empty list");
                     result = false;
                 }
             }
