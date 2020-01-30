@@ -298,7 +298,7 @@ public class DownloadableFileManager
      */
     protected boolean doAccessCheckOnServer(URL getUserAccessPhp, ListIterator<String> iterator, boolean forceUpdate) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
 
         try (CloseableUrlConnection closeableConn = CloseableUrlConnection.of(getUserAccessPhp, HttpRequestMethod.GET))
         {
@@ -367,14 +367,11 @@ public class DownloadableFileManager
                     if (line == null)
                     {
                         Debug.err().println("Server-side access check returned null");
-                        result = false;
                         break;
                     }
                     else if (line.matches(("^<html>.*Request Rejected.*")))
                     {
                         Debug.err().println("Request for URL info was rejected by the server: " + queryString);
-//                        Debug.err().println("Request for URL info was rejected by the server.");
-                        result = false;
                         break;
                     }
                     String[] splitLine = line.split(",");
@@ -397,19 +394,19 @@ public class DownloadableFileManager
                             FileInfo fileInfo = fileManager.getInfo(fileState.getFile());
                             fileInfo.update();
                         }
+
+                        result = true;
                     }
                 }
                 if (!someOutput)
                 {
                     Debug.err().println("Server=side access check returned empty list");
-                    result = false;
                 }
             }
             catch (FileNotFoundException e)
             {
                 Debug.err().println("Server-side access check failed");
                 e.printStackTrace(Debug.err());
-                result = false;
             }
         }
 
