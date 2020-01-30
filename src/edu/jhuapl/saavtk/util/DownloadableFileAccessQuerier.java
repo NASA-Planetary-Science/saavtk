@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import com.google.common.base.Preconditions;
 
-import edu.jhuapl.saavtk.util.DownloadableFileInfo.DownloadableFileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
 

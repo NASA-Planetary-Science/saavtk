@@ -28,7 +28,6 @@ import org.apache.commons.io.input.CountingInputStream;
 
 import com.google.common.base.Preconditions;
 
-import edu.jhuapl.saavtk.util.DownloadableFileInfo.DownloadableFileState;
 import edu.jhuapl.saavtk.util.FileCache.FileInfo.YesOrNo;
 import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;

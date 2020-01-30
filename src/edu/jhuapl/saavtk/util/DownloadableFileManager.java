@@ -28,7 +28,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.util.CloseableUrlConnection.HttpRequestMethod;
-import edu.jhuapl.saavtk.util.DownloadableFileInfo.DownloadableFileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
@@ -654,7 +653,7 @@ public class DownloadableFileManager
             if (!propertyListenerMap.containsKey(listener))
             {
                 PropertyChangeListener propertyListener = e -> {
-                    if (e.getPropertyName().equals(DownloadableFileInfo.STATE_PROPERTY))
+                    if (e.getPropertyName().equals(DownloadableFileState.STATE_PROPERTY))
                     {
                         if (isHeadless())
                         {
