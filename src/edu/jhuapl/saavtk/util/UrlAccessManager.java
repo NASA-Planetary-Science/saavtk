@@ -6,12 +6,12 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
@@ -71,13 +71,13 @@ public class UrlAccessManager
     }
 
     private final URL rootUrl;
-    private final ConcurrentMap<String, UrlInfo> urlInfoCache;
+    private final LinkedHashMap<String, UrlInfo> urlInfoCache;
     private final AtomicBoolean enableServerAccess;
 
     protected UrlAccessManager(URL rootUrl)
     {
         this.rootUrl = rootUrl;
-        this.urlInfoCache = new ConcurrentHashMap<>();
+        this.urlInfoCache = new LinkedHashMap<>();
         this.enableServerAccess = new AtomicBoolean(true);
     }
 
@@ -140,6 +140,14 @@ public class UrlAccessManager
         catch (MalformedURLException e)
         {
             throw new IllegalArgumentException(e);
+        }
+    }
+
+    public ImmutableList<String> getUrlList()
+    {
+        synchronized (this.urlInfoCache)
+        {
+            return ImmutableList.copyOf(urlInfoCache.keySet());
         }
     }
 
@@ -345,7 +353,7 @@ public class UrlAccessManager
                     UrlAccessQuerier querier = UrlAccessQuerier.of(result, forceUpdate, serverAccessEnabled);
                     querier.query();
                 }
-                catch (@SuppressWarnings("unused") Exception ignored)
+                catch (Exception ignored)
                 {
                     result.update(UrlState.of(url));
                 }

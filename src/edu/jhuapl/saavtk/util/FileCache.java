@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.util;
 
+import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.File;
@@ -295,8 +296,9 @@ public final class FileCache
 
     public static void addServerUrlPropertyChangeListener(PropertyChangeListener listener)
     {
-        DownloadableFileInfo rootInfo = instance().getRootInfo();
-        rootInfo.addPropertyChangeListener(listener);
+        instance().addRootStateListener(state -> {
+            listener.propertyChange(new PropertyChangeEvent(instance(), DownloadableFileState.STATE_PROPERTY, null, state));
+        });
     }
 
     private FileCache()

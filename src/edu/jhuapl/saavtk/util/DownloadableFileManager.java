@@ -17,11 +17,8 @@ import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -77,8 +74,6 @@ public class DownloadableFileManager
 
     private final UrlAccessManager urlManager;
     private final FileAccessManager fileManager;
-    private final Map<String, DownloadableFileInfo> downloadInfoCache;
-    private final List<String> urlList;
     private final Map<String, Map<StateListener, PropertyChangeListener>> listenerMap;
     private final ExecutorService accessMonitor;
     private volatile boolean enableMonitor;
@@ -86,14 +81,12 @@ public class DownloadableFileManager
     private final AtomicBoolean enableAccessChecksOnServer;
     private volatile int maximumQueryLength;
     private final AtomicInteger consecutiveServerSideCheckExceptionCount;
-    private static final int maximumConsecutiveServerSideCheckExceptions = 1;
+    private static final int maximumConsecutiveServerSideCheckExceptions = 2;
 
     protected DownloadableFileManager(UrlAccessManager urlManager, FileAccessManager fileManager)
     {
         this.urlManager = urlManager;
         this.fileManager = fileManager;
-        this.downloadInfoCache = new ConcurrentHashMap<>();
-        this.urlList = new LinkedList<>();
         this.listenerMap = new HashMap<>();
         this.accessMonitor = Executors.newCachedThreadPool();
         this.enableMonitor = false;
@@ -209,6 +202,11 @@ public class DownloadableFileManager
         }
     }
 
+    public synchronized void stopAccessMonitor()
+    {
+        enableMonitor = false;
+    }
+
     /**
      * Attempt to use a server-side script to check accessibility of all the URLs
      * known to this manager.
@@ -247,11 +245,7 @@ public class DownloadableFileManager
             throw new AssertionError(e);
         }
 
-        ImmutableList<String> urlList;
-        synchronized (this.downloadInfoCache)
-        {
-            urlList = ImmutableList.copyOf(this.urlList);
-        }
+        ImmutableList<String> urlList = urlManager.getUrlList();
 
         ListIterator<String> iterator = urlList.listIterator();
         while (iterator.hasNext())
@@ -412,11 +406,6 @@ public class DownloadableFileManager
         return result;
     }
 
-    public synchronized void stopAccessMonitor()
-    {
-        enableMonitor = false;
-    }
-
     public boolean isServerAccessEnabled()
     {
         return urlManager.isServerAccessEnabled();
@@ -427,9 +416,19 @@ public class DownloadableFileManager
         urlManager.setEnableServerAccess(enableServerAccess);
     }
 
-    public DownloadableFileInfo getRootInfo()
+    public DownloadableFileState getRootState()
     {
-        return getInfo(urlManager.getRootUrl());
+        return getState(urlManager.getRootUrl().toString());
+    }
+
+    public void addRootStateListener(StateListener stateListener)
+    {
+        addStateListener(urlManager.getRootUrl().toString(), stateListener);
+    }
+
+    public void removeRootStateListener(StateListener stateListener)
+    {
+        removeStateListener(urlManager.getRootUrl().toString(), stateListener);
     }
 
     public boolean isAccessible(String urlString)
@@ -444,23 +443,18 @@ public class DownloadableFileManager
 
     public File getFile(String urlString)
     {
-        return getInfo(getUrl(urlString)).getState().getFileState().getFile();
+        return getFileInfo(urlString).getState().getFile();
     }
 
     public DownloadableFileState getState(String urlString)
     {
-        return getInfo(urlManager.getUrl(urlString)).getState();
+        return DownloadableFileState.of(urlManager.getInfo(urlString).getState(), getFileInfo(urlString).getState());
     }
 
     public DownloadableFileAccessQuerier getQuerier(String urlString, boolean forceUpdate)
     {
-        Preconditions.checkNotNull(urlString);
-
         UrlInfo urlInfo = urlManager.getInfo(urlString);
-
-        DownloadableFileState state = getState(urlString);
-        File file = state.getFileState().getFile();
-        FileInfo fileInfo = fileManager.getInfo(file);
+        FileInfo fileInfo = getFileInfo(urlString);
 
         return DownloadableFileAccessQuerier.of(urlInfo, fileInfo, forceUpdate, urlManager.isServerAccessEnabled());
     }
@@ -469,7 +463,7 @@ public class DownloadableFileManager
     {
         try
         {
-            return doQuery(urlManager.getUrl(urlString), forceUpdate).getState();
+            return doQuery(urlManager.getUrl(urlString), forceUpdate);
         }
         catch (Exception e)
         {
@@ -532,11 +526,7 @@ public class DownloadableFileManager
         URL rootUrl = urlManager.getRootUrl();
         String rootUrlString = rootUrl.toString();
 
-        ImmutableList<String> urlList;
-        synchronized (this.downloadInfoCache)
-        {
-            urlList = ImmutableList.copyOf(this.urlList);
-        }
+        ImmutableList<String> urlList = urlManager.getUrlList();
 
         for (String urlString : urlList)
         {
@@ -612,13 +602,8 @@ public class DownloadableFileManager
 
     public FileDownloader getDownloader(String urlString, boolean forceDownload)
     {
-        Preconditions.checkNotNull(urlString);
-
-        URL url = urlManager.getUrl(urlString);
         UrlInfo urlInfo = urlManager.getInfo(urlString);
-        Path downloadPath = urlManager.getDownloadPath(url);
-
-        FileInfo fileInfo = fileManager.getInfo(downloadPath);
+        FileInfo fileInfo = getFileInfo(urlString);
 
         return FileDownloader.of(urlInfo, fileInfo, forceDownload);
     }
@@ -672,13 +657,14 @@ public class DownloadableFileManager
         Preconditions.checkNotNull(urlString);
         Preconditions.checkNotNull(listener);
 
-        URL url = urlManager.getUrl(urlString);
+        UrlInfo urlInfo = urlManager.getInfo(urlString);
+        URL url = urlInfo.getState().getUrl();
 
         // Reset the string so that it has a canonically consistent value no matter how
         // messy the supplied argument was.
         urlString = url.toString();
 
-        DownloadableFileInfo info = getInfo(url);
+        FileInfo fileInfo = getFileInfo(urlString);
 
         synchronized (this.listenerMap)
         {
@@ -692,32 +678,53 @@ public class DownloadableFileManager
             if (!propertyListenerMap.containsKey(listener))
             {
                 PropertyChangeListener propertyListener = e -> {
-                    if (e.getPropertyName().equals(DownloadableFileState.STATE_PROPERTY))
+                    String propertyName = e.getPropertyName();
+                    Object propertyValue = e.getNewValue();
+
+                    DownloadableFileState state;
+                    if (DownloadableFileState.STATE_PROPERTY.equals(propertyName))
                     {
-                        if (isHeadless())
-                        {
-                            listener.respond((DownloadableFileState) e.getNewValue());
-                        }
-                        else
-                        {
-                            EventQueue.invokeLater(() -> {
-                                listener.respond((DownloadableFileState) e.getNewValue());
-                            });
-                        }
+                        state = (DownloadableFileState) e.getNewValue();
+                    }
+                    else if (UrlInfo.STATE_PROPERTY.equals(propertyName))
+                    {
+                        state = DownloadableFileState.of((UrlState) propertyValue, fileInfo.getState());
+                    }
+                    else if (FileInfo.STATE_PROPERTY.equals(propertyName))
+                    {
+                        state = DownloadableFileState.of(urlInfo.getState(), (FileState) propertyValue);
+                    }
+                    else
+                    {
+                        return;
+                    }
+
+                    if (isHeadless())
+                    {
+                        listener.respond(state);
+                    }
+                    else
+                    {
+                        EventQueue.invokeLater(() -> {
+                            listener.respond(state);
+                        });
                     }
                 };
-                propertyListenerMap.put(listener, propertyListener);
-                info.addPropertyChangeListener(propertyListener);
 
+                propertyListenerMap.put(listener, propertyListener);
+                urlInfo.addPropertyChangeListener(propertyListener);
+                fileInfo.addPropertyChangeListener(propertyListener);
+
+                DownloadableFileState state = DownloadableFileState.of(urlInfo.getState(), fileInfo.getState());
                 // Immediately "fire" just the newly added listener.
                 if (isHeadless())
                 {
-                    listener.respond(info.getState());
+                    listener.respond(state);
                 }
                 else
                 {
                     EventQueue.invokeLater(() -> {
-                        listener.respond(info.getState());
+                        listener.respond(state);
                     });
                 }
             }
@@ -729,13 +736,14 @@ public class DownloadableFileManager
         Preconditions.checkNotNull(urlString);
         Preconditions.checkNotNull(listener);
 
-        URL url = urlManager.getUrl(urlString);
+        UrlInfo urlInfo = urlManager.getInfo(urlString);
+        URL url = urlInfo.getState().getUrl();
 
         // Reset the string so that it has a canonically consistent value no matter how
         // messy the supplied argument was.
         urlString = url.toString();
 
-        DownloadableFileInfo info = getInfo(url);
+        FileInfo fileInfo = getFileInfo(urlString);
 
         synchronized (this.listenerMap)
         {
@@ -745,84 +753,28 @@ public class DownloadableFileManager
                 PropertyChangeListener propertyListener = propertyListenerMap.get(listener);
                 if (propertyListener != null)
                 {
-                    info.removePropertyChangeListener(propertyListener);
+                    urlInfo.removePropertyChangeListener(propertyListener);
+                    fileInfo.removePropertyChangeListener(propertyListener);
                     propertyListenerMap.remove(listener);
                 }
             }
         }
     }
 
-    protected DownloadableFileInfo getInfo(URL url)
+    protected FileInfo getFileInfo(String urlString)
     {
-        DownloadableFileInfo result;
-        String urlString = url.toString();
-        synchronized (this.downloadInfoCache)
-        {
-            result = downloadInfoCache.get(urlString);
-            if (result == null)
-            {
-                UrlInfo urlInfo = urlManager.getInfo(url);
-                Path downloadPath = urlManager.getDownloadPath(url);
-                FileInfo fileInfo = fileManager.getInfo(downloadPath.toString());
-
-                File file = fileInfo.getState().getFile();
-
-                final DownloadableFileInfo downloadableInfo = DownloadableFileInfo.of(url, file);
-
-                urlInfo.addPropertyChangeListener(e -> {
-                    if (e.getPropertyName().equals(UrlInfo.STATE_PROPERTY))
-                    {
-                        if (isHeadless())
-                        {
-                            downloadableInfo.update((UrlState) e.getNewValue());
-                        }
-                        else
-                        {
-                            EventQueue.invokeLater(() -> {
-                                downloadableInfo.update((UrlState) e.getNewValue());
-                            });
-                        }
-                    }
-                });
-
-                fileInfo.addPropertyChangeListener(e -> {
-                    if (e.getPropertyName().equals(FileInfo.STATE_PROPERTY))
-                    {
-                        if (isHeadless())
-                        {
-                            downloadableInfo.update((FileState) e.getNewValue());
-                        }
-                        else
-                        {
-                            EventQueue.invokeLater(() -> {
-                                downloadableInfo.update((FileState) e.getNewValue());
-                            });
-                        }
-                    }
-                });
-
-                result = downloadableInfo;
-
-                urlList.add(urlString);
-                downloadInfoCache.put(urlString, result);
-            }
-        }
-
-        return result;
+        Path urlPath = urlManager.getDownloadPath(urlString);
+        return fileManager.getInfo(urlPath);
     }
 
-    protected DownloadableFileInfo doQuery(URL url, boolean forceUpdate) throws IOException
+    protected DownloadableFileState doQuery(URL url, boolean forceUpdate) throws IOException
     {
         Preconditions.checkNotNull(url);
-
-        DownloadableFileInfo result = getInfo(url);
 
         DownloadableFileAccessQuerier querier = getQuerier(url.toString(), forceUpdate);
         querier.query();
 
-        result.update(querier.getDownloadableFileState());
-
-        return result;
+        return querier.getDownloadableFileState();
     }
 
     protected static boolean isHeadless()
