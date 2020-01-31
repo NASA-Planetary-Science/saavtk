@@ -13,6 +13,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -23,6 +24,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -35,7 +38,8 @@ import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
 public class DownloadableFileManager
 {
-    private static Boolean headless = null;
+    private static final String UrlEncoding = "UTF-8";
+    private static volatile Boolean headless = null;
     private static volatile boolean silenceInfoMessages = false;
 
     public interface StateListener
@@ -66,6 +70,11 @@ public class DownloadableFileManager
         silenceInfoMessages = enable;
     }
 
+    public static String getURLEncoding()
+    {
+        return UrlEncoding;
+    }
+
     private final UrlAccessManager urlManager;
     private final FileAccessManager fileManager;
     private final Map<String, DownloadableFileInfo> downloadInfoCache;
@@ -74,8 +83,10 @@ public class DownloadableFileManager
     private final ExecutorService accessMonitor;
     private volatile boolean enableMonitor;
     private volatile long sleepIntervalBetweenChecks;
-    private volatile boolean enableAccessChecksOnServer;
+    private final AtomicBoolean enableAccessChecksOnServer;
     private volatile int maximumQueryLength;
+    private final AtomicInteger consecutiveServerSideCheckExceptionCount;
+    private static final int maximumConsecutiveServerSideCheckExceptions = 1;
 
     protected DownloadableFileManager(UrlAccessManager urlManager, FileAccessManager fileManager)
     {
@@ -89,8 +100,9 @@ public class DownloadableFileManager
         this.sleepIntervalBetweenChecks = 5000;
         // Currently no option to change this field through a method call; this is just
         // for debugging:
-        this.enableAccessChecksOnServer = true;
+        this.enableAccessChecksOnServer = new AtomicBoolean(Boolean.TRUE);
         this.maximumQueryLength = 10000; // Set to match the limit imposed by the web server.
+        this.consecutiveServerSideCheckExceptionCount = new AtomicInteger();
     }
 
     /**
@@ -149,12 +161,18 @@ public class DownloadableFileManager
 
                     try
                     {
+                        if (consecutiveServerSideCheckExceptionCount.get() >= maximumConsecutiveServerSideCheckExceptions)
+                        {
+                            Debug.err().println("URL status check on server failed too many times. Falling back to file-by-file check.");
+                            enableAccessChecksOnServer.set(false);
+                        }
+
                         // Only call doAccessCheckOnServer if web access is currently enabled.
-                        if (enableAccessChecksOnServer && currentlyEnabled)
+                        if (enableAccessChecksOnServer.get() && currentlyEnabled)
                         {
                             if (!doAccessCheckOnServer(forceUpdate))
                             {
-                                Debug.err().println("URL status check on server failed; falling back on file-by-file check");
+                                Debug.err().println("URL status check on server did not complete. Falling back to file-by-file check.");
                                 queryAll(forceUpdate);
                             }
                         }
@@ -165,12 +183,16 @@ public class DownloadableFileManager
                             // accessibility checks.
                             queryAll(forceUpdate);
                         }
+
+                        consecutiveServerSideCheckExceptionCount.set(0);
+                        enableAccessChecksOnServer.set(true);
                     }
                     catch (Exception e)
                     {
                         // Probably this indicates a problem with the internet connection. This will be
                         // tested the next time the loop executes.
                         e.printStackTrace(Debug.err());
+                        consecutiveServerSideCheckExceptionCount.incrementAndGet();
                     }
 
                     try
@@ -190,11 +212,16 @@ public class DownloadableFileManager
     /**
      * Attempt to use a server-side script to check accessibility of all the URLs
      * known to this manager.
-     * 
+     * <p>
      * This implementation iterates through the whole collection of URLs, sending
      * them in batches to the server-side script. This is for two reasons: 1) the
      * server has a limit on the size of string that can be passed and 2) it is
      * useful to get items in batches to avoid all-or-nothing checks.
+     * <p>
+     * VERY IMPORTANT: this method needs to be kept in synch with the way clients
+     * work to accept the queries, run them on the server and return the results. In
+     * particular, this method expects the server to have a script named
+     * "checkfileaccess.php" in the query root directory.
      * 
      * @param forceUpdate force FileInfo portion of the update. The server-side
      *            update (UrlInfo) is performed in any case.
@@ -247,6 +274,11 @@ public class DownloadableFileManager
      * Iterate over the provided {@link #iterator} of URLs as Strings. For each, use
      * the {@link #getUserAccessPhp} script to check accessibility. Check at most
      * {@link #maximumQueryCount} URLs.
+     * <p>
+     * VERY IMPORTANT: this method needs to be kept in synch with the way clients
+     * work to accept the queries, run them on the server and return the results. In
+     * particular, this method escapes HTTP code, which must be "unescaped" by the
+     * script that checks the files on the server.
      * 
      * @param getUserAccessPhp the URL of the server-side script for performing the
      *            check
@@ -265,13 +297,14 @@ public class DownloadableFileManager
      */
     protected boolean doAccessCheckOnServer(URL getUserAccessPhp, ListIterator<String> iterator, boolean forceUpdate) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
 
         try (CloseableUrlConnection closeableConn = CloseableUrlConnection.of(getUserAccessPhp, HttpRequestMethod.GET))
         {
             URLConnection conn = closeableConn.getConnection();
             conn.setDoOutput(true);
             // Make query string that contains a batch of URLs currently in the cache.
+            String queryString;
             try (OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream()))
             {
                 URL rootUrl = Configuration.getRootURL();
@@ -281,22 +314,21 @@ public class DownloadableFileManager
 
                 StringBuilder sb = new StringBuilder();
                 sb.append("rootURL=").append(rootUrlString);
-                sb.append("&userName=").append(Configuration.getUserName());
-                sb.append("&password=").append(Configuration.getPassword());
-                sb.append("&args=");
+                sb.append("&userName=").append(URLEncoder.encode(Configuration.getUserName(), getURLEncoding()));
+                sb.append("&password=").append(URLEncoder.encode(String.valueOf(Configuration.getPassword()), getURLEncoding()));
+                sb.append("&args=-encode");
                 sb.append("&stdin=");
+//                sb = new StringBuilder(URLEncoder.encode(sb.toString(), getURLEncoding()));
 
                 boolean first = true;
                 while (iterator.hasNext())
                 {
-                    // Encode colons as pipes. This is to get the query string through the web
-                    // server, which rejects queries containing colons. These get decoded back to
-                    // colons by the server-side script.
-                    String url = iterator.next().replaceFirst(dataRootUrlString, "").replace(":", "|");
+                    String url = iterator.next().replaceFirst(dataRootUrlString, "");
                     if (!url.matches(".*\\S.*"))
                     {
                         continue;
                     }
+                    url = URLEncoder.encode(url, getURLEncoding());
 
                     // Make sure the maximum query length would not be exceeded with the current URL
                     // plus a newline. For purposes of ensuring this doesn't happen, newline
@@ -317,7 +349,8 @@ public class DownloadableFileManager
 
                     sb.append(url);
                 }
-                wr.write(sb.toString());
+                queryString = sb.toString();
+                wr.write(queryString);
                 wr.flush();
             }
 
@@ -325,19 +358,20 @@ public class DownloadableFileManager
             try (InputStreamReader isr = new InputStreamReader(conn.getInputStream()))
             {
                 BufferedReader in = new BufferedReader(isr);
-
+                boolean someOutput = false;
                 while (in.ready())
                 {
+                    someOutput = true;
                     String line = in.readLine();
                     if (line == null)
                     {
                         Debug.err().println("Server-side access check returned null");
-                        result = false;
                         break;
                     }
                     else if (line.matches(("^<html>.*Request Rejected.*")))
                     {
-                        throw new IOException("Request for URL info was rejected by the server:\n" + line);
+                        Debug.err().println("Request for URL info was rejected by the server: " + queryString);
+                        break;
                     }
                     String[] splitLine = line.split(",");
                     if (splitLine.length > 3)
@@ -359,14 +393,19 @@ public class DownloadableFileManager
                             FileInfo fileInfo = fileManager.getInfo(fileState.getFile());
                             fileInfo.update();
                         }
+
+                        result = true;
                     }
+                }
+                if (!someOutput)
+                {
+                    Debug.err().println("Server=side access check returned empty list");
                 }
             }
             catch (FileNotFoundException e)
             {
                 Debug.err().println("Server-side access check failed");
                 e.printStackTrace(Debug.err());
-                result = false;
             }
         }
 
