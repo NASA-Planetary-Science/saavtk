@@ -23,7 +23,7 @@ import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
 public final class FileCache
 {
-    private static volatile boolean silenceInfoMessages = false;
+    private static volatile boolean enableInfoMessages = true;
 
     // TODO this should extend Exception and thus be checked.
     public static class NoInternetAccessException extends RuntimeException
@@ -107,12 +107,13 @@ public final class FileCache
 
     private static DownloadableFileManager downloadableManager = null;
 
-    public static void setSilenceInfoMessages(boolean enable)
+    public static void enableInfoMessages(boolean enable)
     {
-        silenceInfoMessages = enable;
-        DownloadableFileManager.setSilenceInfoMessages(enable);
-        FileDownloader.setSilenceInfoMessages(enable);
-        UrlAccessManager.setSilenceInfoMessages(enable);
+        enableInfoMessages = enable;
+
+        DownloadableFileManager.enableInfoMessages(enable);
+        FileDownloader.enableInfoMessages(enable);
+        UrlAccessManager.enableInfoMessages(enable);
     }
 
     public static boolean isEnableDebug()
@@ -187,7 +188,7 @@ public final class FileCache
         {
             if (exception != null)
             {
-                if (!silenceInfoMessages)
+                if (enableInfoMessages)
                 {
                     System.err.println("Warning: cached file exists, but unable to update cache from URL: " + url);
                     System.err.println("Ignored the following exception:");

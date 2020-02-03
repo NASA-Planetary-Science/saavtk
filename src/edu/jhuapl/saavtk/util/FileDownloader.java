@@ -25,16 +25,16 @@ import edu.jhuapl.saavtk.util.file.ZipFileUnzipper;
 public abstract class FileDownloader implements Runnable
 {
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
-    private static volatile boolean silenceInfoMessages = false;
+    private static volatile boolean enableInfoMessages = true;
     private static volatile boolean enableDebug;
 
     public static final String DOWNLOAD_PROGRESS = "downloadProgress";
     public static final String DOWNLOAD_DONE = "downloadDone";
     public static final String DOWNLOAD_CANCELED = "downloadCanceled";
 
-    public static void setSilenceInfoMessages(boolean enable)
+    public static void enableInfoMessages(boolean enable)
     {
-        silenceInfoMessages = enable;
+        enableInfoMessages = enable;
     }
 
     public static void enableDebug(boolean enable)
@@ -154,7 +154,7 @@ public abstract class FileDownloader implements Runnable
                 if (isDownloadable())
                 {
                     download(closeableConnection);
-                    if (!silenceInfoMessages)
+                    if (enableInfoMessages)
                     {
                         System.out.println("Downloaded file from " + url);
                     }
@@ -166,7 +166,7 @@ public abstract class FileDownloader implements Runnable
             }
             else
             {
-                if (isDownloadable() && !silenceInfoMessages)
+                if (isDownloadable() && enableInfoMessages)
                 {
                     System.out.println("File cache is up to date. Skipped download from " + url);
                 }

@@ -28,12 +28,12 @@ import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 public class UrlAccessManager
 {
     protected static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
-    private static volatile boolean silenceInfoMessages = false;
+    private static volatile boolean enableInfoMessages = true;
     private static volatile boolean enableDebug = false;;
 
-    public static void setSilenceInfoMessages(boolean enable)
+    public static void enableInfoMessages(boolean enable)
     {
-        silenceInfoMessages = enable;
+        enableInfoMessages = enable;
     }
 
     public static void enableDebug(boolean enable)
@@ -64,14 +64,14 @@ public class UrlAccessManager
         try
         {
             result.queryRootUrl();
-            if (!silenceInfoMessages)
+            if (enableInfoMessages)
             {
                 System.out.println("Connected to server at " + rootUrl);
             }
         }
         catch (Exception e)
         {
-            if (!silenceInfoMessages)
+            if (enableInfoMessages)
             {
                 System.err.println("Unable to connect to server. Disabling online access.");
                 e.printStackTrace();

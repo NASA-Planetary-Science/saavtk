@@ -37,7 +37,7 @@ public class DownloadableFileManager
 {
     private static final String UrlEncoding = "UTF-8";
     private static volatile Boolean headless = null;
-    private static volatile boolean silenceInfoMessages = false;
+    private static volatile boolean enableInfoMessages = true;
     private static volatile boolean enableDebug = false;
 
     public interface StateListener
@@ -63,9 +63,9 @@ public class DownloadableFileManager
         return new DownloadableFileManager(urlManager, fileManager);
     }
 
-    public static void setSilenceInfoMessages(boolean enable)
+    public static void enableInfoMessages(boolean enable)
     {
-        silenceInfoMessages = enable;
+        enableInfoMessages = enable;
     }
 
     public static boolean isEnableDebug()
@@ -156,7 +156,7 @@ public class DownloadableFileManager
                     // Maybe print diagnotic info.
                     if (forceUpdate)
                     {
-                        if (!silenceInfoMessages)
+                        if (enableInfoMessages)
                         {
                             System.out.println(currentlyEnabled ? //
                             "Connected to server. Re-enabling online access." : //
