@@ -63,6 +63,16 @@ public class DownloadableFileManager
         return new DownloadableFileManager(urlManager, fileManager);
     }
 
+    /**
+     * Enable or disable user-oriented diagnostic messages related to the file
+     * cache, the state of internet access and/or remote file accessibility. This is
+     * similar to, but distinct from, {@link #enableDebug(boolean)}.
+     * <p>
+     * If this method is never called, informational messages will be shown, i.e.,
+     * this property is TRUE by default.
+     * 
+     * @param enable if true, show diagnostic statements, if false, don't
+     */
     public static void enableInfoMessages(boolean enable)
     {
         enableInfoMessages = enable;
@@ -73,6 +83,18 @@ public class DownloadableFileManager
         return enableDebug;
     }
 
+    /**
+     * Enable or disable developer-oriented debugging messages related to the file
+     * cache. This uses the {@link Debug} facility to show/suppress these messages
+     * but ignores its global enable/disable state. This method may be called
+     * multiple times at runtime to show/suppress specific messages. This is similar
+     * to, but distinct from, {@link #enableInfoMessages(boolean)}.
+     * <p>
+     * If this method is never called, cache-related debugging messages will not be
+     * shown, i.e., this property is FALSE by default.
+     * 
+     * @param enable if true, show file cache debugging statements, if false, don't
+     */
     public static void enableDebug(boolean enable)
     {
         enableDebug = enable;
