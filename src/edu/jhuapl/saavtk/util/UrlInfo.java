@@ -5,6 +5,8 @@ import java.beans.PropertyChangeSupport;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.concurrent.atomic.AtomicReference;
@@ -26,6 +28,7 @@ public class UrlInfo
         NOT_AUTHORIZED, // Connection made, but user is not authorized.
         NOT_FOUND, // Connection made, but resource was not found.
         HTTP_ERROR, // Connection made, but HTTP error code was returned. Future access unknown.
+        CONNECTION_ERROR, // Connection was not made, e.g., interruption or timeout.
         INVALID_URL, // URL itself is flawed. Future access will fail.
         UNKNOWN, // Have not succesfully obtained information about the URL.
     }
@@ -205,6 +208,11 @@ public class UrlInfo
                     {
                         // This indicates the request method isn't supported. That should not happen.
                         throw new AssertionError(e);
+                    }
+                    catch (SocketException | SocketTimeoutException e)
+                    {
+                        update(UrlStatus.CONNECTION_ERROR, contentLength, lastModified);
+                        throw e;
                     }
                 }
                 else

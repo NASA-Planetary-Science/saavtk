@@ -3,13 +3,15 @@ package edu.jhuapl.saavtk.pick;
 import java.awt.Cursor;
 import java.awt.event.MouseEvent;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
-import edu.jhuapl.saavtk.model.structure.EllipsePolygon;
+import edu.jhuapl.saavtk.structure.Ellipse;
 import vtk.vtkActor;
 import vtk.vtkCellPicker;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
@@ -55,7 +57,8 @@ public class CircleSelectionPicker extends Picker
 		return false;
 	}
 
-   public void mousePressed(MouseEvent e)
+   @Override
+	public void mousePressed(MouseEvent e)
     {
         //if (e.getButton() != MouseEvent.BUTTON1)
         //    return;
@@ -76,7 +79,7 @@ public class CircleSelectionPicker extends Picker
                 double[] pos = smallBodyPicker.GetPickPosition();
                 if (e.getClickCount() == 1)
                 {
-                    refStructureManager.addNewStructure(pos);
+                    refStructureManager.addNewStructure(new Vector3D(pos));
                     currVertexId = refStructureManager.getNumItems()-1;
                 }
             }
@@ -95,11 +98,11 @@ public class CircleSelectionPicker extends Picker
 		// Bail if there is no vertex being edited
 		if (currVertexId < 0)
 			return;
-		EllipsePolygon tmpItem = refStructureManager.getStructure(currVertexId);
-		
+		Ellipse tmpItem = refStructureManager.getItem(currVertexId);
+
 //		if (aEvent.getButton() != MouseEvent.BUTTON1)
 //			return;
- 		
+
 		// Bail if we failed to pick something
 		int pickSucceeded = doPick(aEvent, smallBodyPicker, refRenWin);
 		if (pickSucceeded != 1)
@@ -110,7 +113,8 @@ public class CircleSelectionPicker extends Picker
 
 		if (model == refSmallBodyModel)
 		{
-			double[] lastDragPosition = smallBodyPicker.GetPickPosition();
+			double[] lastDragPositionArr = smallBodyPicker.GetPickPosition();
+			Vector3D lastDragPosition = new Vector3D(lastDragPositionArr);
 
 			refStructureManager.changeRadiusOfPolygon(tmpItem, lastDragPosition);
 		}

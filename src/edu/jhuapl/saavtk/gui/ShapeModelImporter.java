@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 
 import org.apache.commons.io.FileUtils;
 
+import edu.jhuapl.saavtk.io.readers.StlReader;
 import edu.jhuapl.saavtk.model.ShapeModel;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.FileUtil;
@@ -28,7 +29,8 @@ public class ShapeModelImporter
         OBJ,
         VTK,
         FIT,
-        FITS
+        FITS,
+        STL
     }
 
     /**
@@ -177,6 +179,13 @@ public class ShapeModelImporter
                 }
 
                 configMap.put(ShapeModel.CUSTOM_SHAPE_MODEL_FORMAT, ShapeModel.FIT_FORMAT);
+            }
+            else if (format == FormatType.STL)
+            {
+            	StlReader reader = new StlReader();
+            	reader.SetFileName(modelPath);
+            	reader.Update();
+            	shapePoly = reader.GetOutput();
             }
         }
 

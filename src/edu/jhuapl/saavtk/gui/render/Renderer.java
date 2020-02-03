@@ -56,6 +56,7 @@ import vtk.vtkPNMWriter;
 import vtk.vtkPostScriptWriter;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
+import vtk.vtkRenderWindow;
 import vtk.vtkRenderer;
 import vtk.vtkScalarBarActor;
 import vtk.vtkTIFFWriter;
@@ -172,6 +173,11 @@ public class Renderer extends JPanel implements ActionListener
 		
 		// Cause the RenderPanel to be rendered whenever the camera changes
 		camera.addListener((aEvent) -> { mainCanvas.Render(); }); 
+		
+		boolean useDepthPeeling = IsDepthPeelingSupported(mainCanvas.getRenderWindow(), mainCanvas.getRenderer(), true);
+		
+        ((GenericPolyhedralModel)tmpPolyModel).sortPolydata(mainCanvas.getActiveCamera());
+
 	}
 
 	/**
@@ -299,7 +305,7 @@ public class Renderer extends JPanel implements ActionListener
 			return;
 		renderWindow.Render();
 	}
-
+	
 	public void onStartInteraction()
 	{
 		showLODs();
@@ -1060,5 +1066,102 @@ public class Renderer extends JPanel implements ActionListener
 		else
 			mainCanvas.mouseOff();
 	}
+	
+	
+	
+	
+	
+	/**
+	 * Find out whether this box supports depth peeling. Depth peeling requires
+	 * a variety of openGL extensions and appropriate drivers.
+	 * @param renderWindow a valid openGL-supporting render window
+	 * @param renderer a valid renderer instance
+	 * @param doItOffscreen do the test off screen which means that nothing is
+	 * rendered to screen (this requires the box to support off screen rendering)
+	 * @return TRUE if depth peeling is supported, FALSE otherwise (which means
+	 * that another strategy must be used for correct rendering of translucent
+	 * geometry, e.g. CPU-based depth sorting)
+	 */
+	public boolean IsDepthPeelingSupported(vtkRenderWindow renderWindow,
+	                             vtkRenderer renderer,
+	                             boolean doItOffScreen)
+	{
+	  if (renderWindow == null|| renderer == null)
+	  {
+	    return false;
+	  }
+
+	  boolean success = true;
+
+	  // Save original renderer / render window state
+	  boolean origOffScreenRendering = renderWindow.GetOffScreenRendering() == 1;
+	  boolean origAlphaBitPlanes = renderWindow.GetAlphaBitPlanes() == 1;
+	  int origMultiSamples = renderWindow.GetMultiSamples();
+	  boolean origUseDepthPeeling = renderer.GetUseDepthPeeling() == 1;
+	  int origMaxPeels = renderer.GetMaximumNumberOfPeels();
+	  double origOcclusionRatio = renderer.GetOcclusionRatio();
+
+	  // Activate off screen rendering on demand
+	  renderWindow.SetOffScreenRendering(doItOffScreen == true ? 1 : 0);
+
+	  // Setup environment for depth peeling (with some default parametrization)
+	  success = success && SetupEnvironmentForDepthPeeling(renderWindow, renderer,
+	                                                       100, 0.1);
+
+	  // Do a test render
+	  renderWindow.Render();
+
+	  // Check whether depth peeling was used
+	  success = success && (renderer.GetLastRenderingUsedDepthPeeling() == 1 ? true : false);
+
+	  // recover original state
+	  renderWindow.SetOffScreenRendering(origOffScreenRendering == true ? 1 : 0);
+	  renderWindow.SetAlphaBitPlanes(origAlphaBitPlanes == true ? 1 : 0);
+	  renderWindow.SetMultiSamples(origMultiSamples);
+	  renderer.SetUseDepthPeeling(origUseDepthPeeling == true ? 1 : 0);
+	  renderer.SetMaximumNumberOfPeels(origMaxPeels);
+	  renderer.SetOcclusionRatio(origOcclusionRatio);
+
+	  return success;
+	}
+	
+	/**
+	 * Setup the rendering environment for depth peeling (general depth peeling
+	 * support is requested).
+	 * @see IsDepthPeelingSupported()
+	 * @param renderWindow a valid openGL-supporting render window
+	 * @param renderer a valid renderer instance
+	 * @param maxNoOfPeels maximum number of depth peels (multi-pass rendering)
+	 * @param occulusionRation the occlusion ration (0.0 means a perfect image,
+	 * >0.0 means a non-perfect image which in general results in faster rendering)
+	 * @return TRUE if depth peeling could be set up
+	 */
+	boolean SetupEnvironmentForDepthPeeling(
+	  vtkRenderWindow renderWindow,
+	  vtkRenderer renderer, int maxNoOfPeels,
+	  double occlusionRatio)
+	{
+		if (renderWindow == null|| renderer == null)
+	    return false;
+
+	  // 1. Use a render window with alpha bits (as initial value is 0 (false)):
+	  renderWindow.SetAlphaBitPlanes(1);
+
+	  // 2. Force to not pick a framebuffer with a multisample buffer
+	  // (as initial value is 8):
+	  renderWindow.SetMultiSamples(0);
+
+	  // 3. Choose to use depth peeling (if supported) (initial value is 0 (false)):
+	  renderer.SetUseDepthPeeling(1);
+
+	  // 4. Set depth peeling parameters
+	  // - Set the maximum number of rendering passes (initial value is 4):
+	  renderer.SetMaximumNumberOfPeels(maxNoOfPeels);
+	  // - Set the occlusion ratio (initial value is 0.0, exact image):
+	  renderer.SetOcclusionRatio(occlusionRatio);
+
+	  return true;
+	}
+
 
 }

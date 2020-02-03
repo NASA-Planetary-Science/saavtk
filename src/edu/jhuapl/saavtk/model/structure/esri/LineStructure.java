@@ -7,8 +7,8 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
 
-import edu.jhuapl.saavtk.model.structure.Line;
 import edu.jhuapl.saavtk.model.structure.LineModel;
+import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.util.MathUtil;
 
 public class LineStructure implements Structure
@@ -31,7 +31,7 @@ public class LineStructure implements Structure
 		this.controlPoints = controlPoints;
 		this.centroid = StructureUtil.centroidOfSegments(segments);
 		this.lineStyle = new LineStyle();
-		this.pointStyle=new PointStyle();
+		this.pointStyle = new PointStyle();
 	}
 
 	public int getNumberOfSegments()
@@ -56,8 +56,6 @@ public class LineStructure implements Structure
 		return centroid;
 	}
 
-	
-	
 	public LineStyle getLineStyle()
 	{
 		return lineStyle;
@@ -96,24 +94,27 @@ public class LineStructure implements Structure
 		return controlPoints.get(i);
 	}
 
-	public static List<LineStructure> fromSbmtStructure(LineModel model)
+	public static <G1 extends PolyLine> List<LineStructure> fromSbmtStructure(LineModel<G1> model)
 	{
 		List<LineStructure> structures = Lists.newArrayList();
 		for (int i = 0; i < model.getNumItems(); i++)
 		{
-			Line poly = (Line) model.getStructure(i);
+			G1 poly = model.getItem(i);
+			List<Vector3D> xyzPointL = model.getXyzPointsFor(poly);
 
 			List<LineSegment> segments = Lists.newArrayList();
-			for (int j = 0; j < poly.getNumberOfPoints() - 1; j++)
+			for (int j = 0; j < xyzPointL.size() - 1; j++)
 			{
-				segments.add(new LineSegment(poly.getPoint(j), poly.getPoint(j+1)));
+				Vector3D begPt = xyzPointL.get(j);
+				Vector3D endPt = xyzPointL.get(j + 1);
+				segments.add(new LineSegment(begPt, endPt));
 			}
 
 			List<Vector3D> controlPoints = Lists.newArrayList();
 			for (int m = 0; m < controlPoints.size(); m++)
 				controlPoints.add(new Vector3D(MathUtil.latrec(poly.getControlPoints().get(m))));
 
-			LineStructure ls=new LineStructure(segments, controlPoints);
+			LineStructure ls = new LineStructure(segments, controlPoints);
 			Color c = poly.getColor();
 			double w = model.getLineWidth();
 			LineStyle style = new LineStyle(c, w);

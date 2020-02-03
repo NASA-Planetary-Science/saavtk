@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.util;
 
 import java.awt.EventQueue;
+import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -28,7 +29,6 @@ import org.apache.commons.io.FileUtils;
 
 import com.google.common.base.Preconditions;
 
-import edu.jhuapl.saavtk.util.DownloadableFileInfo.DownloadableFileState;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
 /**
@@ -63,6 +63,8 @@ public class Configuration
     private static URL restrictedAccessRoot = null;
     private static Iterable<Path> passwordFilesToTry = null;
     private static final AtomicBoolean authenticationSuccessful = new AtomicBoolean(false);
+    private static volatile String userName = "";
+    private static volatile char[] password = "".toCharArray();
 
     // Uncomment the following to enable the startup script (which can be changed by
     // the user)
@@ -81,7 +83,7 @@ public class Configuration
     {
         if (headless == null)
         {
-            headless = Boolean.parseBoolean(System.getProperty("java.awt.headless"));
+            headless = GraphicsEnvironment.isHeadless();
         }
 
         return headless;
@@ -175,6 +177,8 @@ public class Configuration
                                 if (info.getUrlState().getStatus() == UrlStatus.ACCESSIBLE)
                                 {
                                     userPasswordAccepted = true;
+                                    Configuration.userName = userName;
+                                    Configuration.password = password;
                                     break;
                                 }
                             }
@@ -185,7 +189,7 @@ public class Configuration
                         foundEmptyPasswordFile = true;
                     }
                 }
-                catch (@SuppressWarnings("unused") IOException e)
+                catch (IOException e)
                 {
                     // Ignore -- maybe the next one will work.
                 }
@@ -198,7 +202,9 @@ public class Configuration
         }
         if (!userPasswordAccepted)
         {
-            setupPasswordAuthentication("public", "wide-open".toCharArray(), maximumNumberTries);
+            userName = "public";
+            password = "wide-open".toCharArray();
+            setupPasswordAuthentication(userName, password, maximumNumberTries);
             info = FileCache.refreshStateInfo(restrictedAccessString);
         }
 
@@ -289,6 +295,11 @@ public class Configuration
                                 continue;
                             }
                             authenticationSuccessful.set(status == UrlStatus.ACCESSIBLE);
+                            if (status == UrlStatus.ACCESSIBLE)
+                            {
+                                Configuration.userName = name;
+                                Configuration.password = password;
+                            }
                         }
                         try
                         {
@@ -401,6 +412,16 @@ public class Configuration
     public static boolean wasUserPasswordAccepted()
     {
         return userPasswordAccepted;
+    }
+
+    public static String getUserName()
+    {
+        return userName;
+    }
+
+    public static char[] getPassword()
+    {
+        return password;
     }
 
     /**

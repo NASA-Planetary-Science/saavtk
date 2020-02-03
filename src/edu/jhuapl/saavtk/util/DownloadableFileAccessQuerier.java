@@ -4,23 +4,22 @@ import java.io.IOException;
 
 import com.google.common.base.Preconditions;
 
-import edu.jhuapl.saavtk.util.DownloadableFileInfo.DownloadableFileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
 
-public class FileAccessQuerier extends UrlAccessQuerier
+public class DownloadableFileAccessQuerier extends UrlAccessQuerier
 {
-    public static FileAccessQuerier of(UrlInfo urlInfo, FileInfo fileInfo, boolean forceUpdate, boolean serverAccessEnabled)
+    public static DownloadableFileAccessQuerier of(UrlInfo urlInfo, FileInfo fileInfo, boolean forceUpdate, boolean serverAccessEnabled)
     {
         Preconditions.checkNotNull(urlInfo);
         Preconditions.checkNotNull(fileInfo);
 
-        return new FileAccessQuerier(urlInfo, fileInfo, forceUpdate, serverAccessEnabled);
+        return new DownloadableFileAccessQuerier(urlInfo, fileInfo, forceUpdate, serverAccessEnabled);
     }
 
     private final FileInfo fileInfo;
 
-    protected FileAccessQuerier(UrlInfo urlInfo, FileInfo fileInfo, boolean forceUpdate, boolean serverAccessEnabled)
+    protected DownloadableFileAccessQuerier(UrlInfo urlInfo, FileInfo fileInfo, boolean forceUpdate, boolean serverAccessEnabled)
     {
         super(urlInfo, forceUpdate, serverAccessEnabled);
         this.fileInfo = fileInfo;

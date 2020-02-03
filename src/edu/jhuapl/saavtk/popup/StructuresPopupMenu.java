@@ -24,6 +24,9 @@ import edu.jhuapl.saavtk.model.FacetColoringData;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.structure.PlateUtil;
+import edu.jhuapl.saavtk.model.structure.PolygonModel;
+import edu.jhuapl.saavtk.structure.Polygon;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.util.MathUtil;
@@ -42,7 +45,6 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 	private JMenuItem changeLatLonAction;
 	private JMenuItem exportPlateDataAction;
 	private JMenuItem plateStatisticsAction;
-	private JMenuItem editAction;
 	private JMenuItem centerStructureMenuItem;
 	private JMenuItem centerStructurePreserveDistanceMenuItem;
 	private JMenuItem displayInteriorMenuItem;
@@ -75,10 +77,6 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 		boolean showDisplayInterior = aModelNames == ModelNames.POLYGON_STRUCTURES;
 
 		// Set up the UI
-		editAction = new JMenuItem(new EditAction());
-		editAction.setText("Edit");
-		// this.add(mi); // don't show for now
-
 		JMenuItem changeColorAction = new JMenuItem(new ChangeColorAction());
 		changeColorAction.setText("Change Color...");
 		this.add(changeColorAction);
@@ -112,9 +110,9 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 		changeLabelColorButton.setText("Change Label Color");
 		labelProperties.add(changeLabelColorButton);
 
-		setLabelBorder = new JCheckBoxMenuItem(new showLabelBorderAction());
-		setLabelBorder.setText("Show the label border");
-		labelProperties.add(setLabelBorder);
+//		setLabelBorder = new JCheckBoxMenuItem(new showLabelBorderAction());
+//		setLabelBorder.setText("Show the label border");
+//		labelProperties.add(setLabelBorder);
 
 		JMenuItem deleteAction = new JMenuItem(new DeleteAction());
 		deleteAction.setText("Delete");
@@ -170,7 +168,6 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 
 		// Update the enable state of various UI elements
 		boolean isEnabled = pickS.size() == 1;
-		editAction.setEnabled(isEnabled);
 		centerStructureMenuItem.setEnabled(isEnabled);
 		centerStructurePreserveDistanceMenuItem.setEnabled(isEnabled);
 		if (changeLatLonAction != null)
@@ -187,32 +184,23 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 		if (plateStatisticsAction != null)
 			plateStatisticsAction.setEnabled(havePlateData);
 
-//        isEnabled = false;
-//        for (G1 aItem : pickS)
-//      	  isEnabled |= aItem.getLabelHidden() == true;
-//        hideLabelButton.setSelected(isEnabled);
-//
-		isEnabled = false;
-		for (G1 aItem : pickS)
-			isEnabled |= refManager.isShowStructureInterior(aItem);
-		if (displayInteriorMenuItem != null)
-			displayInteriorMenuItem.setSelected(isEnabled);
-//      	  isEnabled |= aItem.getLabelHidden() == true;
+//		isEnabled = false;
+//		for (G1 aItem : pickS)
+//			isEnabled |= aItem.getLabelHidden() == true;
+//		hideLabelButton.setSelected(isEnabled);
 
 		// If any of the selected structures are displaying interior then show
 		// the display interior menu item as unchecked. Otherwise show it checked.
 		if (displayInteriorMenuItem != null)
 		{
-			displayInteriorMenuItem.setSelected(true);
+			PolygonModel tmpManager = (PolygonModel) refManager;
+			Set<Polygon> pickS2 = tmpManager.getSelectedItems();
 
-			for (G1 aItem : pickS)
-			{
-				if (refManager.isShowStructureInterior(aItem) == false)
-				{
-					displayInteriorMenuItem.setSelected(false);
-					break;
-				}
-			}
+			isEnabled = true;
+			for (Polygon aItem : pickS2)
+				isEnabled &= tmpManager.getShowInterior(aItem);
+
+			displayInteriorMenuItem.setSelected(isEnabled);
 		}
 
 		super.show(invoker, x, y);
@@ -222,17 +210,6 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 	public void showPopup(MouseEvent e, vtkProp pickedProp, int pickedCellId, double[] pickedPosition)
 	{
 		show(e.getComponent(), e.getX(), e.getY());
-	}
-
-	protected class EditAction extends AbstractAction
-	{
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{
-			List<G1> pickL = refManager.getSelectedItems().asList();
-			if (pickL.size() == 1)
-				refManager.activateStructure(pickL.get(0));
-		}
 	}
 
 	protected class ChangeColorAction extends AbstractAction
@@ -250,7 +227,7 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 				return;
 
 			for (G1 aItem : pickL)
-				refManager.setStructureColor(aItem, color);
+				refManager.setColor(aItem, color);
 		}
 	}
 
@@ -261,7 +238,7 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 		{
 			Set<G1> pickS = refManager.getSelectedItems();
 			boolean isVisible = !hideMenuItem.isSelected();
-			refManager.setStructureVisible(pickS, isVisible);
+			refManager.setIsVisible(pickS, isVisible);
 		}
 	}
 
@@ -271,7 +248,7 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 		public void actionPerformed(ActionEvent e)
 		{
 			Set<G1> pickS = refManager.getSelectedItems();
-			refManager.removeStructures(pickS);
+			refManager.removeItems(pickS);
 		}
 	}
 
@@ -293,8 +270,8 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 			G1 tmpItem = pickL.get(0);
 
 			double viewAngle = renderer.getCameraViewAngle();
-			double[] focalPoint = refManager.getStructureCenter(tmpItem);
-			double[] normal = refManager.getStructureNormal(tmpItem);
+			double[] focalPoint = refManager.getCenter(tmpItem).toArray();
+			double[] normal = refManager.getNormal(tmpItem).toArray();
 			vtkAbstractComponent renWin = renderer.getRenderWindowPanel();
 
 			double distanceToStructure = 0.0;
@@ -307,7 +284,7 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 			}
 			else
 			{
-				double size = refManager.getStructureSize(tmpItem);
+				double size = refManager.getDiameter(tmpItem);
 				distanceToStructure = size / Math.tan(Math.toRadians(viewAngle) / 2.0);
 			}
 
@@ -355,10 +332,8 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 			{
 				try
 				{
-					List<G1> pickL = refManager.getSelectedItems().asList();
-					refManager.savePlateDataInsideStructure(pickL.get(0), file);
-//					if (selectedStructures.length == 1)
-//						model.savePlateDataInsideStructure(selectedStructures[0], file);
+					Set<G1> pickS = refManager.getSelectedItems();
+					PlateUtil.savePlateDataInsideStructure(smallBodyModel, refManager, pickS, file);
 				}
 				catch (Exception e1)
 				{
@@ -379,9 +354,7 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 		{
 			Set<G1> pickS = refManager.getSelectedItems();
 
-//			if (selectedStructures.length == 1)
-//			{
-			FacetColoringData[] data = refManager.getPlateDataInsideStructure(pickS);
+			FacetColoringData[] data = PlateUtil.getPlateDataInsideStructure(smallBodyModel, refManager, pickS);
 			try
 			{
 				ColoringInfoWindow window = new ColoringInfoWindow(data);
@@ -392,8 +365,6 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 				e1.printStackTrace();
 			}
 		}
-//		}
-
 	}
 
 	protected class SetLabelAction extends AbstractAction
@@ -417,7 +388,7 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 				return;
 
 			for (G1 aItem : pickL)
-				refManager.setStructureLabel(aItem, newVal);
+				refManager.setLabel(aItem, newVal);
 		}
 	}
 
@@ -482,7 +453,7 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 			if (optIdx == -1)
 				return;
 
-			refManager.setLabelFontType(pickL, options[optIdx]);
+			refManager.setLabelFontFamily(pickL, options[optIdx]);
 		}
 	}
 
@@ -514,17 +485,10 @@ public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			Set<G1> pickS = refManager.getSelectedItems();
-			refManager.setShowStructuresInterior(pickS, displayInteriorMenuItem.isSelected());
+			PolygonModel tmpManager = (PolygonModel) refManager;
+			Set<Polygon> pickS = tmpManager.getSelectedItems();
+			tmpManager.setShowInterior(pickS, displayInteriorMenuItem.isSelected());
 		}
 	}
 
-	protected class showLabelBorderAction extends AbstractAction
-	{
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{
-			refManager.showBorders();
-		}
-	}
 }

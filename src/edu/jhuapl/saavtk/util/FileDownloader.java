@@ -15,7 +15,6 @@ import java.util.UUID;
 import com.google.common.base.Preconditions;
 
 import edu.jhuapl.saavtk.util.CloseableUrlConnection.HttpRequestMethod;
-import edu.jhuapl.saavtk.util.DownloadableFileInfo.DownloadableFileState;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
 import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 import edu.jhuapl.saavtk.util.file.StreamGunzipper;
@@ -26,10 +25,16 @@ import edu.jhuapl.saavtk.util.file.ZipFileUnzipper;
 public abstract class FileDownloader implements Runnable
 {
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
+    private static volatile boolean silenceInfoMessages = false;
 
     public static final String DOWNLOAD_PROGRESS = "downloadProgress";
     public static final String DOWNLOAD_DONE = "downloadDone";
     public static final String DOWNLOAD_CANCELED = "downloadCanceled";
+
+    public static void setSilenceInfoMessages(boolean enable)
+    {
+        silenceInfoMessages = enable;
+    }
 
     public static FileDownloader of(UrlInfo urlInfo, FileInfo fileInfo, boolean forceDownload)
     {
@@ -138,7 +143,10 @@ public abstract class FileDownloader implements Runnable
                 if (isDownloadable())
                 {
                     download(closeableConnection);
-                    System.out.println("Downloaded file from " + url);
+                    if (!silenceInfoMessages)
+                    {
+                        System.out.println("Downloaded file from " + url);
+                    }
                 }
                 else
                 {
@@ -147,7 +155,7 @@ public abstract class FileDownloader implements Runnable
             }
             else
             {
-                if (isDownloadable())
+                if (isDownloadable() && !silenceInfoMessages)
                 {
                     System.out.println("File cache is up to date. Skipped download from " + url);
                 }

@@ -37,7 +37,7 @@ import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
 import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
 import edu.jhuapl.saavtk.model.structure.esri.ShapefileUtil;
 import edu.jhuapl.saavtk.structure.StructureManager;
-import edu.jhuapl.saavtk.structure.io.StructureLoadUtil;
+import edu.jhuapl.saavtk.structure.io.StructureLegacyUtil;
 import edu.jhuapl.saavtk.util.Configuration;
 
 public class FileMenu extends JMenu
@@ -497,7 +497,7 @@ public class FileMenu extends JMenu
 				if (fname.endsWith("circles"))
 					try
 					{
-						model = StructureLoadUtil.loadStructureManagerFromFile(files[i], ModelNames.CIRCLE_STRUCTURES, body);
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.CIRCLE_STRUCTURES, body);
 						ShapefileUtil.writeEllipseStructures(Lists.newArrayList(EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) model)), opath.resolve(oname));
 
 					}
@@ -512,7 +512,7 @@ public class FileMenu extends JMenu
 				else if (fname.endsWith("ellipses"))
 					try
 					{
-						model = StructureLoadUtil.loadStructureManagerFromFile(files[i], ModelNames.ELLIPSE_STRUCTURES, body);
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.ELLIPSE_STRUCTURES, body);
 						ShapefileUtil.writeEllipseStructures(Lists.newArrayList(EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) model)), opath.resolve(oname));
 					}
 					catch (IOException ex)
@@ -526,7 +526,7 @@ public class FileMenu extends JMenu
 				else if (fname.endsWith("points"))
 					try
 					{
-						model = StructureLoadUtil.loadStructureManagerFromFile(files[i], ModelNames.POINT_STRUCTURES, body);
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.POINT_STRUCTURES, body);
 						ShapefileUtil.writePointStructures(Lists.newArrayList(PointStructure.fromSbmtStructure((PointModel) model)), opath.resolve(oname));
 
 					}
@@ -543,7 +543,7 @@ public class FileMenu extends JMenu
 				{
 					try
 					{
-						model = StructureLoadUtil.loadStructureManagerFromFile(files[i], ModelNames.POLYGON_STRUCTURES, body);
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.POLYGON_STRUCTURES, body);
 						ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure((LineModel<?>) model), opath.resolve(oname));
 
 					}
@@ -555,7 +555,7 @@ public class FileMenu extends JMenu
 					{
 						try
 						{
-							model = StructureLoadUtil.loadStructureManagerFromFile(files[i], ModelNames.LINE_STRUCTURES, body);
+							model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.LINE_STRUCTURES, body);
 							ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure((LineModel<?>) model), opath.resolve(oname));
 						}
 						catch (Exception e1)
@@ -570,7 +570,7 @@ public class FileMenu extends JMenu
 				else if (fname.endsWith("polygons")) // user can employ the .polygons extension instead of .xml... this if clause also catches the case where the file itself is named "polygons"
 					try
 					{
-						model = StructureLoadUtil.loadStructureManagerFromFile(files[i], ModelNames.POLYGON_STRUCTURES, body);
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.POLYGON_STRUCTURES, body);
 						ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure((LineModel<?>) model), opath.resolve(oname));
 					}
 					catch (IOException ex)
@@ -584,7 +584,7 @@ public class FileMenu extends JMenu
 				else if (fname.endsWith("paths")) // user can employ the .paths extension instead of .xml... this if clause also catches the case where the file itself is named "polygons"
 					try
 					{
-						model = StructureLoadUtil.loadStructureManagerFromFile(files[i], ModelNames.LINE_STRUCTURES, body);
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.LINE_STRUCTURES, body);
 						ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure((LineModel<?>) model), opath.resolve(oname));
 					}
 					catch (IOException ex)

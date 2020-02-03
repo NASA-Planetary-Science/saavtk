@@ -8,82 +8,163 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import edu.jhuapl.saavtk.model.ModelNames;
-import edu.jhuapl.saavtk.model.PolyhedralModel;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.w3c.dom.Element;
+
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
-import edu.jhuapl.saavtk.model.structure.CircleModel;
-import edu.jhuapl.saavtk.model.structure.EllipseModel;
-import edu.jhuapl.saavtk.model.structure.EllipsePolygon;
-import edu.jhuapl.saavtk.model.structure.LineModel;
-import edu.jhuapl.saavtk.model.structure.PointModel;
-import edu.jhuapl.saavtk.model.structure.PolygonModel;
+import edu.jhuapl.saavtk.structure.Ellipse;
+import edu.jhuapl.saavtk.structure.FontAttr;
 import edu.jhuapl.saavtk.structure.Structure;
-import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.util.FileUtil;
 
 /**
  * Collection of utility methods to support loading of SBMT structures and
  * related objects.
  * <P>
- * Note some of the methods in this class are transitional and will eventually
- * go away. Other methods have been refactored out so as to keep serialization
- * code separate from model based classes.
+ * Most (if not all) SBMT structure file formats should be loaded via the method
+ * {@link #loadStructures(File)}.
+ * <P>
+ * Internally, heuristics are used to determine the appropriate deserializer for
+ * a specific file.
  *
  * @author lopeznr1
  */
 public class StructureLoadUtil
 {
 	/**
-	 * Utility method to convert a Color into an int array of 4 elements: RGBA.
+	 * Utility method that will load the structures from the specified file.
 	 * <P>
-	 * This method is a transitional method and may eventually go away.
+	 * Returns the list of loaded structures. Note that the returned list may not
+	 * consist of various structure types.
+	 * <P>
+	 * This method supports the loading the following structure file types:
+	 * <UL>
+	 * <LI>SBMT CSV Structures
+	 * <LI>SBMT XML Structures
+	 * <LI>TODO: Add support for: ESRI Structures
+	 * </UL>
 	 */
-	@Deprecated
-	public static int[] convertColorToRgba(Color aColor)
+	public static List<Structure> loadStructures(File aFile) throws IOException
 	{
-		int r = aColor.getRed();
-		int g = aColor.getGreen();
-		int b = aColor.getBlue();
-		int a = aColor.getAlpha();
-		int[] retArr = { r, g, b, a };
-		return retArr;
+		// Attempt to load the structure as a hard-edge structure
+		List<Structure> retL;
+		try
+		{
+			retL = loadHardEdgeStructures(aFile);
+		}
+		catch (Exception aExp)
+		{
+			// Attempt to load the structure as a round-edge structure
+			try
+			{
+				retL = loadRoundEdgeStructures(aFile);
+			}
+			catch (Exception aExp2)
+			{
+				System.err.println("[StructureLoadUtil] Failed to load file: " + aFile + " Skipping...");
+				retL = new ArrayList<>();
+			}
+		}
+
+		return retL;
 	}
 
 	/**
-	 * Utility method to convert an int array of 3 or 4 elements into a Color. Order
-	 * of elements is assumed to be RGB (and optional alpha). Each element should
-	 * have a value in the range of [0 - 255].
+	 * Helper method for loading structures from an XML file.
 	 * <P>
-	 * This method is a transitional method and may eventually go away.
+	 * Currently only hard-edge structures are stored in an XML file.
 	 */
-	@Deprecated
-	public static Color convertRgbaToColor(int[] aArr)
+	private static List<Structure> loadHardEdgeStructures(File aFile) throws IOException
 	{
-		int rVal = aArr[0];
-		int gVal = aArr[1];
-		int bVal = aArr[2];
-		int aVal = 255;
-		if (aArr.length >= 4)
-			aVal = aArr[3];
+		// Load the XML file
+		Element rootElement = XmlLoadUtil.loadRoot(aFile);
+		if (rootElement == null)
+			throw new IOException("No root element in XML doc!");
 
-		return new Color(rVal, gVal, bVal, aVal);
+		List<Structure> retL = XmlLoadUtil.loadPolyLinesFromElement(aFile, rootElement);
+
+		// Install the associated shape model name
+		String shapeModelName = XmlLoadUtil.getShapeModelNameFrom(rootElement);
+		for (Structure aItem : retL)
+			aItem.setShapeModelId(shapeModelName);
+
+		return retL;
 	}
 
 	/**
-	 * Utility method to load in a list of {@link EllipsePolygon}s from the
-	 * specified input file.
+	 * Helper method for loading structures from a SBMT text file.
 	 * <P>
-	 * Note the returned list of {@link EllipsePolygon}s will not have any
-	 * initialized VTK state data. Each returned {@link EllipsePolygon} will need to
-	 * have it's VTK state data initialized via updatePolygon().
+	 * Currently only round-edge structures are stored in plain SBMT structure text
+	 * files.
 	 */
-	public static List<EllipsePolygon> loadEllipsePolygons(File aFile, Mode aMode, double aDefaultRadius,
-			Color aDefaultColor, int aNumberOfSides, String aType) throws IOException
+	private static List<Structure> loadRoundEdgeStructures(File aFile) throws IOException
 	{
-		Pattern workPattern = Pattern.compile("([^\"]\\S*|\".+?\")\\s*");
+		List<Structure> retL;
+		Mode tmpMode = null;
+
+		// Load the Ellipse file
+		List<Ellipse> tmpL = null;
+		try
+		{
+			tmpL = StructureLoadUtil.loadEllipses(aFile, Mode.ELLIPSE_MODE);
+
+			double initRadius = Double.NaN;
+			if (tmpL.size() > 0)
+				initRadius = tmpL.get(0).getRadius();
+
+			// Determine if we loaded ellipses, circles, or points
+			// This is possible since all items in the same file must be the same type
+			boolean isAllRadiusConst = true;
+			boolean isAllCircles = true;
+			for (Ellipse aItem : tmpL)
+			{
+				isAllCircles &= aItem.getAngle() == 0.0;
+				isAllCircles &= aItem.getFlattening() == 1.0;
+
+				isAllRadiusConst &= aItem.getRadius() == initRadius;
+			}
+
+			// Perform heuristics
+			tmpMode = Mode.ELLIPSE_MODE;
+			if (isAllCircles == true && (isAllRadiusConst == false || tmpL.size() == 1))
+				tmpMode = Mode.CIRCLE_MODE;
+			else if (isAllCircles == true && isAllRadiusConst == true)
+				tmpMode = Mode.POINT_MODE;
+		}
+		catch (Exception aExp)
+		{
+			// Must be points or unsupported
+			tmpL = StructureLoadUtil.loadEllipses(aFile, Mode.POINT_MODE);
+
+			tmpMode = Mode.POINT_MODE;
+		}
+
+		// Transform to the proper formats
+		retL = new ArrayList<>();
+		for (Ellipse aItem : tmpL)
+			retL.add(new Ellipse(aItem.getId(), aFile, tmpMode, aItem.getCenter(), aItem.getRadius(), aItem.getAngle(),
+					aItem.getFlattening(), aItem.getColor(), aItem.getLabel()));
+
+		return retL;
+	}
+
+	/**
+	 * Utility method to load in a list of {@link Ellipse}s from the specified input
+	 * file.
+	 * <P>
+	 * Note the returned list of {@link Ellipse}s will not have any initialized VTK
+	 * state data. Each returned {@link Ellipse} will need to have it's VTK state
+	 * data initialized via updatePolygon().
+	 * <P>
+	 * This method originated from (~2019Oct07):
+	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
+	 */
+	private static List<Ellipse> loadEllipses(File aFile, Mode aMode) throws IOException
+	{
+		Pattern workPattern = Pattern.compile("([^\"]\\S*|\".*?\")\\s*");
 
 		List<String> lineL = FileUtil.getFileLinesAsStringList(aFile.getAbsolutePath());
-		List<EllipsePolygon> retL = new ArrayList<>();
+		List<Ellipse> retL = new ArrayList<>();
 		for (String aLine : lineL)
 		{
 			// Skip over empty lines / line comments
@@ -107,10 +188,10 @@ public class StructureLoadUtil
 			int id = Integer.parseInt(words[0]);
 			String name = words[1];
 
-			double[] center = new double[3];
-			center[0] = Double.parseDouble(words[2]);
-			center[1] = Double.parseDouble(words[3]);
-			center[2] = Double.parseDouble(words[4]);
+			double xVal = Double.parseDouble(words[2]);
+			double yVal = Double.parseDouble(words[3]);
+			double zVal = Double.parseDouble(words[4]);
+			Vector3D center = new Vector3D(xVal, yVal, zVal);
 
 			// Vars that we will need initialized
 			String label = "";
@@ -156,10 +237,9 @@ public class StructureLoadUtil
 				if (words.length < 16)
 				{
 					// OLD VERSION of file
+					radius = Double.NaN;
 					if (aMode == Mode.CIRCLE_MODE || aMode == Mode.ELLIPSE_MODE)
 						radius = Double.parseDouble(words[8]) / 2.0; // read in diameter not radius
-					else
-						radius = aDefaultRadius;
 				}
 				else
 				{
@@ -217,68 +297,18 @@ public class StructureLoadUtil
 				// }
 			}
 
-			// Utilize the defaultColor if failed to read one in
-			if (color == null)
-				color = aDefaultColor;
+			// Synthesize the Ellipse
+			Ellipse tmpItem = new Ellipse(id, aFile, aMode, center, radius, angle, flattening, color, label);
+			tmpItem.setName(name);
+			tmpItem.setLabel(label);
+			FontAttr tmpFA = tmpItem.getLabelFontAttr();
+			tmpFA = new FontAttr(tmpFA.getFace(), tmpFA.getColor(), tmpFA.getSize(), false);
+			tmpItem.setLabelFontAttr(tmpFA);
 
-			// Synthesize the EllipsePolygon
-			EllipsePolygon tmpPoly = new EllipsePolygon(aNumberOfSides, aType, color, aMode, id, label);
-			tmpPoly.setAngle(angle);
-			tmpPoly.setCenter(center);
-			tmpPoly.setFlattening(flattening);
-			tmpPoly.setRadius(radius);
-			tmpPoly.setName(name);
-			tmpPoly.setLabel(label);
-			boolean tmpBool = label != null && label.equals("") == false;
-			tmpPoly.setLabelVisible(tmpBool);
-
-			retL.add(tmpPoly);
+			retL.add(tmpItem);
 		}
 
 		return retL;
-	}
-
-	/**
-	 * Utility method that will load a list of {@link Structure}s from the specified
-	 * file and return a manager ({@link StructureManager}) which contains the list of
-	 * structures.
-	 *
-	 * @param aFile The file of interest.
-	 * @param aName Enum which describes the type of structures stored in the file.
-	 * @param aBody {@link PolyhedralModel} where the structures will be associated
-	 *              with.
-	 * @return
-	 * @throws Exception
-	 */
-	public static StructureManager<?> loadStructureManagerFromFile(File aFile, ModelNames aName, PolyhedralModel aBody)
-			throws Exception
-	{
-		StructureManager<?> retManager = null;
-		switch (aName)
-		{
-			case CIRCLE_STRUCTURES:
-				retManager = new CircleModel(aBody);
-				break;
-			case ELLIPSE_STRUCTURES:
-				retManager = new EllipseModel(aBody);
-				break;
-			case POINT_STRUCTURES:
-				retManager = new PointModel(aBody);
-				break;
-			case POLYGON_STRUCTURES:
-				retManager = new PolygonModel(aBody);
-				break;
-			case LINE_STRUCTURES:
-				retManager = new LineModel<>(aBody);
-				break;
-			default:
-				throw new Error(aName.name() + " is not a valid structures type");
-		}
-
-		retManager.loadModel(aFile, false, null);
-		if (retManager.getNumItems() == 0)
-			throw new Exception("No valid " + aName.name() + " found");
-		return retManager;
 	}
 
 	/**
@@ -291,7 +321,7 @@ public class StructureLoadUtil
 	 * If the string is improperly formatted then null will be returned. On failure
 	 * to parse the integers a NumberFormatException will be thrown.
 	 */
-	public static Color transformStringToColorArr(String aStr)
+	private static Color transformStringToColorArr(String aStr)
 	{
 		Color retColor = null;
 

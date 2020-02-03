@@ -22,9 +22,9 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.gui.MainWindow;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
+import edu.jhuapl.saavtk.util.NativeLibraryLoader;
 import vtk.vtkActor;
 import vtk.vtkConeSource;
-import vtk.vtkNativeLibrary;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
 import vtk.vtkRenderer;
@@ -124,8 +124,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements ComponentListe
 		 * axesFrame.getRootPane().setBorder(null); } });
 		 */
 
-		axesFrame.addWindowListener(new WindowAdapter()
-		{
+        axesFrame.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent aEvent)
 			{
@@ -133,8 +132,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements ComponentListe
 			}
 		});
 
-		axesFrame.addComponentListener(new ComponentAdapter()
-		{
+        axesFrame.addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized(ComponentEvent e)
 			{
@@ -201,8 +199,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements ComponentListe
 
 	@Override
 	public void componentShown(ComponentEvent e)
-	{
-	}
+    {}
 
 	/**
 	 * Configures the RenderPanel so that rotation is constrained to the specified
@@ -236,7 +233,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements ComponentListe
 
 	public static void main(String[] args) throws InterruptedException
 	{
-		vtkNativeLibrary.LoadAllNativeLibraries();
+        NativeLibraryLoader.loadAllVtkLibraries();
 		RenderView renderView = new RenderView();
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override
@@ -329,13 +326,11 @@ public class RenderPanel extends vtkJoglPanelComponent implements ComponentListe
 		 * 
 		 * }
 		 * 
-		 * @Override public void componentMoved(ComponentEvent e) { if
-		 * (location==null) location=e.getComponent().getLocationOnScreen(); int
-		 * dx=(int)(e.getComponent().getLocationOnScreen().getX()-location.getX(
-		 * )); int
-		 * dy=(int)(e.getComponent().getLocationOnScreen().getY()-location.getY(
-		 * )); axesFrame.setLocationRelativeTo(window);
-		 * axesFrame.setLocation(dx, dy); }
+         * @Override public void componentMoved(ComponentEvent e) { if (location==null)
+         * location=e.getComponent().getLocationOnScreen(); int
+         * dx=(int)(e.getComponent().getLocationOnScreen().getX()-location.getX( )); int
+         * dy=(int)(e.getComponent().getLocationOnScreen().getY()-location.getY( ));
+         * axesFrame.setLocationRelativeTo(window); axesFrame.setLocation(dx, dy); }
 		 * 
 		 * @Override public void componentHidden(ComponentEvent e) { // TODO
 		 * Auto-generated method stub

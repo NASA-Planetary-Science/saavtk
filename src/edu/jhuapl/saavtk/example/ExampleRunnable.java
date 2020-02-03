@@ -5,30 +5,35 @@ import java.util.concurrent.TimeUnit;
 import javax.swing.JPopupMenu;
 import javax.swing.ToolTipManager;
 
-import vtk.vtkJavaGarbageCollector;
 import edu.jhuapl.saavtk.gui.MainWindow;
 import edu.jhuapl.saavtk.util.NativeLibraryLoader;
+import vtk.vtkJavaGarbageCollector;
 
 public class ExampleRunnable implements Runnable
 {
     private String[] args;
+
     public ExampleRunnable(String[] args)
     {
         this.args = args;
     }
 
+    @Override
     public void run()
     {
+        NativeLibraryLoader.loadAllVtkLibraries();
+
         ExampleViewConfig.initialize();
 
         String tempShapeModelPath = null;
         // Parse options that come first
         int nargs = args.length;
         int i = 0;
-        for (; i < nargs; ++i) {
+        for (; i < nargs; ++i)
+        {
             if (args[i].equals("--model") && i < nargs + 1)
             {
-                tempShapeModelPath = args[i+1];
+                tempShapeModelPath = args[i + 1];
             }
             else
             {
@@ -40,10 +45,8 @@ public class ExampleRunnable implements Runnable
 //        if (tempShapeModelPath == null)
 //            tempShapeModelPath = "data/brain.obj";
 
-        NativeLibraryLoader.loadVtkLibraries();
-
         vtkJavaGarbageCollector garbageCollector = new vtkJavaGarbageCollector();
-        //garbageCollector.SetDebug(true);
+        // garbageCollector.SetDebug(true);
         garbageCollector.SetScheduleTime(5, TimeUnit.SECONDS);
         garbageCollector.SetAutoGarbageCollection(true);
 
@@ -52,7 +55,7 @@ public class ExampleRunnable implements Runnable
         ToolTipManager.sharedInstance().setDismissDelay(600000); // 10 minutes
 
         MainWindow frame = new ExampleMainWindow(tempShapeModelPath);
-        //MainWindow.setMainWindow(frame);
+        // MainWindow.setMainWindow(frame);
         frame.setVisible(true);
     }
 

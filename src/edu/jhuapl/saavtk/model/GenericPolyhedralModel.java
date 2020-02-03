@@ -38,6 +38,7 @@ import edu.jhuapl.saavtk.util.SafeURLPaths;
 import edu.jhuapl.saavtk.util.SmallBodyCubes;
 import vtk.vtkActor;
 import vtk.vtkActor2D;
+import vtk.vtkCamera;
 import vtk.vtkCell;
 import vtk.vtkCellArray;
 import vtk.vtkCellData;
@@ -45,6 +46,7 @@ import vtk.vtkCellDataToPointData;
 import vtk.vtkContourFilter;
 import vtk.vtkCoordinate;
 import vtk.vtkDataArray;
+import vtk.vtkDepthSortPolyData;
 import vtk.vtkFloatArray;
 import vtk.vtkGenericCell;
 import vtk.vtkIdList;
@@ -925,6 +927,24 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
                 smallBodyActors.remove(smallBodyActor);
             this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
         }
+    }
+    
+    public void sortPolydata(vtkCamera camera)
+    {
+    	vtkDepthSortPolyData depthSorter = new vtkDepthSortPolyData();
+		depthSorter.SetInputData(smallBodyPolyData);
+		depthSorter.SetDirectionToBackToFront();
+//		depthSorter.SetVector(1, 1, 1);
+		depthSorter.SetCamera(camera);
+		smallBodyMapper.SetInputConnection(depthSorter.GetOutputPort());
+		depthSorter.Update();
+    	
+        smallBodyMapper = new vtkPolyDataMapper();
+        smallBodyMapper.SetInputData(smallBodyPolyData);
+        vtkLookupTable lookupTable = new vtkLookupTable();
+        smallBodyMapper.SetLookupTable(lookupTable);
+        smallBodyMapper.UseLookupTableScalarRangeOn();
+
     }
 
     public vtkPolyData computeFrustumIntersection(double[] origin, double[] ul, double[] ur, double[] lr, double[] ll)

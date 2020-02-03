@@ -4,14 +4,18 @@ import javax.swing.JTabbedPane;
 
 import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.render.Renderer;
+import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
+import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.pick.CirclePicker;
-import edu.jhuapl.saavtk.pick.ControlPointsStructurePicker;
+import edu.jhuapl.saavtk.pick.ControlPointsPicker;
 import edu.jhuapl.saavtk.pick.EllipsePicker;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.pick.Picker;
 import edu.jhuapl.saavtk.pick.PointPicker;
+import edu.jhuapl.saavtk.popup.PopupManager;
+import edu.jhuapl.saavtk.popup.PopupMenu;
 import edu.jhuapl.saavtk.structure.StructureManager;
 
 /**
@@ -30,24 +34,26 @@ public class StructureTabbedPane extends JTabbedPane
 	private final ModelManager refModelManager;
 	private final PickManager refPickManager;
 	private final Renderer refRenderer;
+	private final PopupManager refPopupManager;
 	private final StatusBar statusBar;
 
 	/**
 	 * Standard Constructor
 	 */
 	public StructureTabbedPane(ModelManager aModelManager, PickManager aPickManager, Renderer aRenderer,
-			StatusBar aStatusBar)
+			StatusBar aStatusBar, PopupManager aPopupManager)
 	{
 		refModelManager = aModelManager;
 		refPickManager = aPickManager;
 		refRenderer = aRenderer;
+		refPopupManager = aPopupManager;
 		statusBar = aStatusBar;
 
-		StructurePanel<?> linePanel = (formStructurePanel(ModelNames.LINE_STRUCTURES));
-		StructurePanel<?> polygonPanel = (formStructurePanel(ModelNames.POLYGON_STRUCTURES));
-		StructurePanel<?> circlePanel = (formStructurePanel(ModelNames.CIRCLE_STRUCTURES));
-		StructurePanel<?> ellipsePanel = (formStructurePanel(ModelNames.ELLIPSE_STRUCTURES));
-		StructurePanel<?> pointsPanel = (formStructurePanel(ModelNames.POINT_STRUCTURES));
+		StructurePanel<?> linePanel = formStructurePanel(ModelNames.LINE_STRUCTURES);
+		StructurePanel<?> polygonPanel = formStructurePanel(ModelNames.POLYGON_STRUCTURES);
+		StructurePanel<?> circlePanel = formStructurePanel(ModelNames.CIRCLE_STRUCTURES);
+		StructurePanel<?> ellipsePanel = formStructurePanel(ModelNames.ELLIPSE_STRUCTURES);
+		StructurePanel<?> pointsPanel = formStructurePanel(ModelNames.POINT_STRUCTURES);
 
 		addTab("Paths", linePanel);
 		addTab("Polygons", polygonPanel);
@@ -64,10 +70,14 @@ public class StructureTabbedPane extends JTabbedPane
 	 */
 	private StructurePanel<?> formStructurePanel(ModelNames aModelNames)
 	{
+		StructureManager<?> tmpStructureManager = (StructureManager<?>) refModelManager.getModel(aModelNames);
+		PopupMenu tmpPopupMenu = refPopupManager.getPopup((Model) tmpStructureManager);
+
 		// Instantiate the appropriate Picker
 		Picker tmpPicker = null;
 		if (aModelNames == ModelNames.LINE_STRUCTURES || aModelNames == ModelNames.POLYGON_STRUCTURES)
-			tmpPicker = new ControlPointsStructurePicker<>(refRenderer, refModelManager, aModelNames);
+			tmpPicker = new ControlPointsPicker<>(refRenderer, refPickManager, refModelManager,
+					(LineModel<?>) tmpStructureManager);
 		else if (aModelNames == ModelNames.CIRCLE_STRUCTURES)
 			tmpPicker = new CirclePicker(refRenderer, refModelManager);
 		else if (aModelNames == ModelNames.ELLIPSE_STRUCTURES)
@@ -77,10 +87,8 @@ public class StructureTabbedPane extends JTabbedPane
 		else
 			throw new RuntimeException("Unrecognized ModelName: " + aModelNames);
 
-		StructureManager<?> tmpStructureManager = (StructureManager<?>) refModelManager.getModel(aModelNames);
-
 		StructurePanel<?> retPanel = new StructurePanel<>(refModelManager, tmpStructureManager, refPickManager, tmpPicker,
-				statusBar);
+				statusBar, tmpPopupMenu);
 		return retPanel;
 	}
 

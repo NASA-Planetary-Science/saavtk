@@ -8,9 +8,10 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
-import edu.jhuapl.saavtk.model.structure.EllipsePolygon;
+import edu.jhuapl.saavtk.structure.Ellipse;
 import vtk.vtkCellArray;
 import vtk.vtkPoints;
+import vtk.vtkPolyData;
 
 public class EllipseStructure extends LineStructure
 {
@@ -45,18 +46,19 @@ public class EllipseStructure extends LineStructure
 		List<EllipseStructure> structures = Lists.newArrayList();
 		for (int i = 0; i < crappySbmtStructureModel.getNumItems(); i++)
 		{
-			EllipsePolygon poly = (EllipsePolygon) crappySbmtStructureModel.getStructure(i);
+			Ellipse poly = crappySbmtStructureModel.getItem(i);
 			Color c = poly.getColor();
 			double w = crappySbmtStructureModel.getLineWidth();
 			LineStyle style = new LineStyle(c, w);
 			String label = poly.getLabel();
 			//
 
-			vtkCellArray cells = poly.getVtkExteriorPolyData().GetLines();
+			vtkPolyData tmpPolyData = crappySbmtStructureModel.getVtkExteriorPolyDataFor(poly);
+			vtkCellArray cells = tmpPolyData.GetLines();
 			List<LineSegment> segments = Lists.newArrayList();
 			for (int j = 0; j < cells.GetNumberOfCells(); j++)
 			{
-				vtkPoints points = poly.getVtkExteriorPolyData().GetCell(j).GetPoints();
+				vtkPoints points = tmpPolyData.GetCell(j).GetPoints();
 				if (points.GetNumberOfPoints() < 2)
 					continue;
 				for (int k = 0; k < points.GetNumberOfPoints() - 1; k++)
@@ -67,8 +69,7 @@ public class EllipseStructure extends LineStructure
 				}
 			}
 
-			Parameters params = new Parameters(new Vector3D(poly.getCenter()), poly.getRadius(), poly.getFlattening(),
-					poly.getAngle());
+			Parameters params = new Parameters(poly.getCenter(), poly.getRadius(), poly.getFlattening(), poly.getAngle());
 			EllipseStructure es = new EllipseStructure(segments, params);
 			es.setLineStyle(style);
 			es.setLabel(label);

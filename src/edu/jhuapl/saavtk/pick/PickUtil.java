@@ -2,7 +2,6 @@ package edu.jhuapl.saavtk.pick;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.InputEvent;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +28,7 @@ import edu.jhuapl.saavtk.util.Configuration;
  * <LI>The method {@link #setPickingEnabled(boolean)} should be investigated
  * further and eventually removed if possible.
  * <UL>
- * 
+ *
  * @author lopeznr1
  */
 public class PickUtil
@@ -55,12 +54,7 @@ public class PickUtil
 	@Deprecated
 	protected static Map<PickMode, Picker> formNonDefaultPickerMap(Renderer aRenderer, ModelManager aModelManager)
 	{
-		Map<PickMode, Picker> retMap;
-
-		retMap = new HashMap<>();
-		if (aModelManager.getModel(ModelNames.LINE_STRUCTURES) != null)
-			retMap.put(PickMode.LINE_DRAW,
-					new ControlPointsStructurePicker<>(aRenderer, aModelManager, ModelNames.LINE_STRUCTURES));
+		Map<PickMode, Picker> retMap = new HashMap<>();
 		if (aModelManager.getModel(ModelNames.CIRCLE_STRUCTURES) != null)
 			retMap.put(PickMode.CIRCLE_SELECTION, new CircleSelectionPicker(aRenderer, aModelManager));
 
@@ -81,26 +75,6 @@ public class PickUtil
 		StatusBarDefaultPickHandler tmpStatusBarHandler = new StatusBarDefaultPickHandler(tmpDefaultPicker, aStatusBar,
 				aRenderer, aModelManager);
 		tmpDefaultPicker.addListener(tmpStatusBarHandler);
-	}
-
-	/**
-	 * Returns true if the specified MouseEvent has the "primary" modifier key
-	 * activated.
-	 * <P>
-	 * For Linux and Windows systems the primary modifier key is defined as control
-	 * key (Ctrl) button.
-	 * <P>
-	 * For Apple systems the primary modifier key is defined as the meta key
-	 * (Command) button.
-	 */
-	public static boolean isModifyKey(InputEvent aEvent)
-	{
-		if (Configuration.isMac() == true && aEvent.isMetaDown() == true)
-			return true;
-		else if (Configuration.isMac() == false && aEvent.isControlDown() == true)
-			return true;
-
-		return false;
 	}
 
 	// We do not rely on the OS for the popup trigger in the renderer (as explained

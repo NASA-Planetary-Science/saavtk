@@ -2,6 +2,8 @@ package edu.jhuapl.saavtk.model.structure;
 
 import java.awt.Color;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Properties;
@@ -80,7 +82,7 @@ public class CircleModel extends AbstractEllipsePolygonModel
 
         if (!getProps().contains(activationActor))
         	getProps().add(activationActor);
-        
+
         if (numPoints < 2)
         {
             vtkIdList idList = new vtkIdList();
@@ -148,12 +150,13 @@ public class CircleModel extends AbstractEllipsePolygonModel
             pt2 = transform.TransformDoublePoint(pt2);
             pt3 = transform.TransformDoublePoint(pt3);
 
-            double[] center = new double[3];
-            double radius = Math.sqrt(tri.Circumcircle(pt1, pt2, pt3, center));
+            double[] centerArr = new double[3];
+            double radius = Math.sqrt(tri.Circumcircle(pt1, pt2, pt3, centerArr));
             // Note Circumcircle ignores z component, so set it here.
-            center[2] = pt1[2];
+            centerArr[2] = pt1[2];
 
-            center = transform.GetInverse().TransformDoublePoint(center);
+            centerArr = transform.GetInverse().TransformDoublePoint(centerArr);
+            Vector3D center = new Vector3D(centerArr);
 
             setDefaultRadius(radius);
             addNewStructure(center);
@@ -190,11 +193,12 @@ public class CircleModel extends AbstractEllipsePolygonModel
         return activationPolyData.GetNumberOfPoints();
     }
 
-    public void removeAllStructures()
+    @Override
+	public void removeAllStructures()
     {
         super.removeAllStructures();
         this.resetCircumferencePoints();
     }
-    
-   
+
+
 }

@@ -10,17 +10,28 @@ import edu.jhuapl.saavtk.structure.Structure;
  */
 enum LookUp
 {
-	IsVisible,
-
 	Id,
+
+	Source,
 
 	Type,
 
-	Name,
-
-	Details,
+	IsVisible,
 
 	Color,
 
-	Label
+	Name,
+
+	Label,
+
+	// Enums specific to hard-edge items
+	Length,
+	Area,
+	VertexCount,
+
+	// Enums specific to round-edge items
+	Angle,
+	Diameter,
+	Flattening,
+
 }
