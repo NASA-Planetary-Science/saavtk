@@ -38,6 +38,7 @@ public class DownloadableFileManager
     private static final String UrlEncoding = "UTF-8";
     private static volatile Boolean headless = null;
     private static volatile boolean silenceInfoMessages = false;
+    private static volatile boolean enableDebug = false;
 
     public interface StateListener
     {
@@ -65,6 +66,21 @@ public class DownloadableFileManager
     public static void setSilenceInfoMessages(boolean enable)
     {
         silenceInfoMessages = enable;
+    }
+
+    public static boolean isEnableDebug()
+    {
+        return enableDebug;
+    }
+
+    public static void enableDebug(boolean enable)
+    {
+        enableDebug = enable;
+    }
+
+    protected static Debug debug()
+    {
+        return Debug.of(enableDebug);
     }
 
     public static String getURLEncoding()
@@ -148,7 +164,7 @@ public class DownloadableFileManager
                         }
                         if (exception != null)
                         {
-                            exception.printStackTrace(Debug.err());
+                            exception.printStackTrace(debug().err());
                         }
                     }
 
@@ -156,7 +172,7 @@ public class DownloadableFileManager
                     {
                         if (consecutiveServerSideCheckExceptionCount.get() >= maximumConsecutiveServerSideCheckExceptions)
                         {
-                            Debug.err().println("URL status check on server failed too many times. Falling back to file-by-file check.");
+                            debug().err().println("URL status check on server failed too many times. Falling back to file-by-file check.");
                             enableAccessChecksOnServer.set(false);
                         }
 
@@ -165,7 +181,7 @@ public class DownloadableFileManager
                         {
                             if (!doAccessCheckOnServer(forceUpdate))
                             {
-                                Debug.err().println("URL status check on server did not complete. Falling back to file-by-file check.");
+                                debug().err().println("URL status check on server did not complete. Falling back to file-by-file check.");
                                 queryAll(forceUpdate);
                             }
                         }
@@ -184,7 +200,7 @@ public class DownloadableFileManager
                     {
                         // Probably this indicates a problem with the internet connection. This will be
                         // tested the next time the loop executes.
-                        e.printStackTrace(Debug.err());
+                        e.printStackTrace(debug().err());
                         consecutiveServerSideCheckExceptionCount.incrementAndGet();
                     }
 
@@ -258,7 +274,7 @@ public class DownloadableFileManager
         }
 //        if (result)
 //        {
-//            Debug.err().println("Successfully ran URL status check on server");
+//            debug().getErr().println("Successfully ran URL status check on server");
 //        }
 
         return result;
@@ -359,12 +375,12 @@ public class DownloadableFileManager
                     String line = in.readLine();
                     if (line == null)
                     {
-                        Debug.err().println("Server-side access check returned null");
+                        debug().err().println("Server-side access check returned null");
                         break;
                     }
                     else if (line.matches(("^<html>.*Request Rejected.*")))
                     {
-                        Debug.err().println("Request for URL info was rejected by the server: " + queryString);
+                        debug().err().println("Request for URL info was rejected by the server: " + queryString);
                         break;
                     }
                     String[] splitLine = line.split(",");
@@ -393,13 +409,13 @@ public class DownloadableFileManager
                 }
                 if (!someOutput)
                 {
-                    Debug.err().println("Server=side access check returned empty list");
+                    debug().err().println("Server=side access check returned empty list");
                 }
             }
             catch (FileNotFoundException e)
             {
-                Debug.err().println("Server-side access check failed");
-                e.printStackTrace(Debug.err());
+                debug().err().println("Server-side access check failed");
+                e.printStackTrace(debug().err());
             }
         }
 
@@ -548,22 +564,22 @@ public class DownloadableFileManager
                 }
                 catch (SocketException ignored)
                 {
-                    Debug.err().println("SocketException on " + urlString);
+                    debug().err().println("SocketException on " + urlString);
                 }
                 catch (SocketTimeoutException ignored)
                 {
-                    Debug.err().println("Timeout on " + urlString);
+                    debug().err().println("Timeout on " + urlString);
                 }
                 catch (UnknownHostException ignored)
                 {
                     unknownHost = true;
                     doCheck = false;
-                    Debug.err().println("Unknown host exception on " + urlString);
+                    debug().err().println("Unknown host exception on " + urlString);
                 }
                 catch (Exception e)
                 {
                     doCheck = false;
-                    e.printStackTrace(Debug.err());
+                    e.printStackTrace(debug().err());
                 }
 
                 if (doCheck)
@@ -575,7 +591,7 @@ public class DownloadableFileManager
                     // seem to reduce the number of timeouts, thus 50 seems to be the "sweet spot".
                     try
                     {
-                        Debug.err().println("Pausing before retrying " + urlString);
+                        debug().err().println("Pausing before retrying " + urlString);
                         Thread.sleep(sleepIntervalAfterFailure);
                     }
                     catch (InterruptedException e)

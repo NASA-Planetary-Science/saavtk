@@ -115,6 +115,24 @@ public final class FileCache
         UrlAccessManager.setSilenceInfoMessages(enable);
     }
 
+    public static boolean isEnableDebug()
+    {
+        return DownloadableFileManager.isEnableDebug();
+    }
+
+    /**
+     * Enable or disable developer-oriented debugging messages related to the file
+     * cache. This uses the {@link Debug} facility to show/suppress these messages
+     * but ignores its global enable/disable state. This method may be called
+     * multiple times at runtime to show/suppress specific messages.
+     * 
+     * @param enable if true, show file cache debugging statements, if false, don't
+     */
+    public static void enableDebug(boolean enable)
+    {
+        DownloadableFileManager.enableDebug(enable);
+    }
+
     public static DownloadableFileManager instance()
     {
         if (downloadableManager == null)

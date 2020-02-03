@@ -26,6 +26,7 @@ public abstract class FileDownloader implements Runnable
 {
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
     private static volatile boolean silenceInfoMessages = false;
+    private static volatile boolean enableDebug;
 
     public static final String DOWNLOAD_PROGRESS = "downloadProgress";
     public static final String DOWNLOAD_DONE = "downloadDone";
@@ -34,6 +35,16 @@ public abstract class FileDownloader implements Runnable
     public static void setSilenceInfoMessages(boolean enable)
     {
         silenceInfoMessages = enable;
+    }
+
+    public static void enableDebug(boolean enable)
+    {
+        enableDebug = enable;
+    }
+
+    protected static Debug debug()
+    {
+        return Debug.of(enableDebug);
     }
 
     public static FileDownloader of(UrlInfo urlInfo, FileInfo fileInfo, boolean forceDownload)
@@ -130,7 +141,7 @@ public abstract class FileDownloader implements Runnable
             return;
         }
 
-//        Debug.out().println("Querying FS and server before maybe downloading " + url);
+//        debug().getOut().println("Querying FS and server before maybe downloading " + url);
 
         fileInfo.update();
 
@@ -150,7 +161,7 @@ public abstract class FileDownloader implements Runnable
                 }
                 else
                 {
-                    Debug.out().println("Debug: unable to download " + file);
+                    debug().out().println("Debug: unable to download " + file);
                 }
             }
             else
@@ -163,7 +174,7 @@ public abstract class FileDownloader implements Runnable
         }
         catch (Exception e)
         {
-            Debug.out().println("Failed attempt to download file " + url);
+            debug().out().println("Failed attempt to download file " + url);
             throw e;
         }
     }
@@ -241,7 +252,7 @@ public abstract class FileDownloader implements Runnable
 
     protected void download(CloseableUrlConnection closeableConnection) throws IOException, InterruptedException
     {
-//        Debug.out().println("Downloading " + urlInfo.getState().getUrl());
+//        debug().getOut().println("Downloading " + urlInfo.getState().getUrl());
 
         URLConnection connection = closeableConnection.getConnection();
 
@@ -308,7 +319,7 @@ public abstract class FileDownloader implements Runnable
         }
         catch (Exception e)
         {
-            if (!Debug.isEnabled())
+            if (!enableDebug)
             {
                 Files.deleteIfExists(tmpFilePath);
             }
