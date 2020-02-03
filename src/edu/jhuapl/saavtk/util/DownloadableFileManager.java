@@ -418,11 +418,10 @@ public class DownloadableFileManager
                         urlInfo.update(status, contentLength, lastModified);
 
                         // Update FileInfo aspect.
-                        DownloadableFileState state = getState(urlString);
-                        FileState fileState = state.getFileState();
+                        FileInfo fileInfo = getFileInfo(urlString);
+                        FileState fileState = fileInfo.getState();
                         if (forceUpdate || fileState.getStatus().equals(FileStatus.UNKNOWN))
                         {
-                            FileInfo fileInfo = fileManager.getInfo(fileState.getFile());
                             fileInfo.update();
                         }
 
