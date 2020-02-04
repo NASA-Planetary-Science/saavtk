@@ -140,12 +140,12 @@ public class DownloadableFileManager
      * The access monitor runs on a dedicated background thread continually to check
      * accessibility of all the URLs managed by this manager. Checks are performed
      * in one of two ways:
-     * 
+     * <p>
      * 1. Using the {@link #queryAll()} method, which queries the server URL-by-URL
      * for the accessibility of each one. The speed and robustness of these checks
      * is limited by the quality of the internet connection and may be impacted by
      * server load levels.
-     * 
+     * <p>
      * 2. Using a server-side script, checkfileaccess.php, which also uses the
      * {@link #queryAll()} method, but runs the checks in batches of URLs on the
      * server. This is faster and more reliable because it makes the many URL-by-URL
@@ -335,8 +335,7 @@ public class DownloadableFileManager
         {
             URLConnection conn = closeableConn.getConnection();
             conn.setDoOutput(true);
-            // Make query string that contains a batch of URLs currently in the cache.
-            String queryString;
+
             try (OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream()))
             {
                 URL rootUrl = Configuration.getRootURL();
@@ -355,17 +354,37 @@ public class DownloadableFileManager
                 boolean first = true;
                 while (iterator.hasNext())
                 {
-                    String url = iterator.next().replaceFirst(dataRootUrlString, "");
-                    if (!url.matches(".*\\S.*"))
+                    String url = iterator.next();
+
+                    // Skip any local file: URLs.
+                    if (SafeURLPaths.instance().hasFileProtocol(url))
                     {
+                        debug().err().println("This message to be removed when integrating issue #2060: skipping query for " + url);
                         continue;
                     }
-                    url = URLEncoder.encode(url, getURLEncoding());
+
+                    // For brevity, truncate the root prefix. The server-side script will add it
+                    // back.
+                    String shortUrl = url.replaceFirst(dataRootUrlString, "");
+                    if (shortUrl.equals(url))
+                    {
+                        // Did not match the root prefix, so this file is not under the root and the
+                        // server should not try to check it.
+                        continue;
+                    }
+
+                    if (!shortUrl.matches(".*\\S.*"))
+                    {
+                        // Don't check the root prefix path itself.
+                        continue;
+                    }
+
+                    shortUrl = URLEncoder.encode(shortUrl, getURLEncoding());
 
                     // Make sure the maximum query length would not be exceeded with the current URL
                     // plus a newline. For purposes of ensuring this doesn't happen, newline
                     // is counted as two characters (CR/LF).
-                    if ((sb.length() + url.length() + 2) >= maximumQueryLength)
+                    if ((sb.length() + shortUrl.length() + 2) >= maximumQueryLength)
                     {
                         // Move back one position so this URL is included in the next batch of queries.
                         // Then exit the loop so this query will go forward.
@@ -379,11 +398,12 @@ public class DownloadableFileManager
                     }
                     first = false;
 
-                    sb.append(url);
+                    sb.append(shortUrl);
                 }
-                queryString = sb.toString();
+                String queryString = sb.toString();
                 wr.write(queryString);
                 wr.flush();
+                debug().err().println("This message to be removed when integrating issue #2060: issuing query " + queryString);
             }
 
             // Now process the results of the query.
@@ -521,30 +541,33 @@ public class DownloadableFileManager
      * manager. This opens a new connection for each such check, so it is
      * time-consuming and generates a lot of queries. This is best performed on a
      * background threa or on the server itself.
-     * 
+     * <p>
+     * This check skips any/all local file:// URLs and URLs that do not reside under
+     * the top server URL.
+     * <p>
      * If server-side access is currrently disabled (most likely because of internet
      * connectivity problems), this method will skip ALL server queries rather than
      * try them all, thus generating many queries that are likely to fail.
-     * 
+     * <p>
      * This method also triggers file-system checks for the local accessibility of
      * cached files. It does these checks whether or not server-side access checking
-     * is currently enabled. Thus this method is safe and beneficial to call
+     * is currently enabled. Thus, this method is safe and beneficial to call
      * regardless of the state of the internet connection.
-     * 
+     * <p>
      * Because internet connections can be finicky, this method handles exceptions
      * in a specific way to reduce latency and improve odds of getting accurate
      * infomration for most URLs:
-     * 
+     * <p>
      * 1. If an {@link UnknownHostException} is thrown when checking any one URL, no
      * further URLs will be checked and the method will return. This exception is
      * interpreted to mean that there is no (reliable) internet connection.
-     * 
+     * <p>
      * 2. If a {@link SocketException} or {@link SocketTimeoutException} is thrown,
      * the method will pause for the number of milliseconds indicated by the
      * sleepInterval parameter before retrying the check. It will do this up to the
      * limit set by the maximumNumberTries parameter. After that it will go on to
      * the next URL.
-     * 
+     * <p>
      * 3. If any other {@link Exception} type is thrown when checking any URL, the
      * method will go on to check the next URL.
      * 
