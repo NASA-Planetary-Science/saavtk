@@ -402,7 +402,7 @@ public class DownloadableFileManager
                     }
                     else if (line.matches(("^<html>.*Request Rejected.*")))
                     {
-                        debug().err().println("Request for URL info was rejected by the server: " + queryString);
+                        debug().err().println("Request rejected for URL info from server-side script " + conn.getURL());
                         break;
                     }
                     String[] splitLine = line.split(",");
