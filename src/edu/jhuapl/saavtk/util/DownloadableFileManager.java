@@ -359,7 +359,6 @@ public class DownloadableFileManager
                     // Skip any local file: URLs.
                     if (SafeURLPaths.instance().hasFileProtocol(url))
                     {
-                        System.err.println("This message to be removed when integrating issue #2060: skipping query for " + url);
                         continue;
                     }
 
@@ -403,7 +402,6 @@ public class DownloadableFileManager
                 String queryString = sb.toString();
                 wr.write(queryString);
                 wr.flush();
-                System.err.println("This message to be removed when integrating issue #2060: issuing query " + queryString);
             }
 
             // Now process the results of the query.
