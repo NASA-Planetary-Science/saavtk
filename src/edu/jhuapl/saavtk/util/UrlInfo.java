@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 public class UrlInfo
 {
     public static final String STATE_PROPERTY = "urlInfoState";
+    private static volatile boolean enableDebug = false;
 
     public enum UrlStatus
     {
@@ -140,6 +141,16 @@ public class UrlInfo
 
     }
 
+    public static void enableDebug(boolean enable)
+    {
+        enableDebug = enable;
+    }
+
+    protected static Debug debug()
+    {
+        return Debug.of(enableDebug);
+    }
+
     public static UrlInfo of(URL url)
     {
         return new UrlInfo(url);
@@ -200,7 +211,7 @@ public class UrlInfo
                         }
                         else
                         {
-                            Debug.err().println("Received response code " + code + " for URL " + state.getUrl());
+                            debug().err().println("Received response code " + code + " for URL " + state.getUrl());
                             status = UrlStatus.HTTP_ERROR;
                         }
                     }

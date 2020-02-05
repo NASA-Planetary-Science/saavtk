@@ -25,15 +25,26 @@ import edu.jhuapl.saavtk.util.file.ZipFileUnzipper;
 public abstract class FileDownloader implements Runnable
 {
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
-    private static volatile boolean silenceInfoMessages = false;
+    private static volatile boolean enableInfoMessages = true;
+    private static volatile boolean enableDebug;
 
     public static final String DOWNLOAD_PROGRESS = "downloadProgress";
     public static final String DOWNLOAD_DONE = "downloadDone";
     public static final String DOWNLOAD_CANCELED = "downloadCanceled";
 
-    public static void setSilenceInfoMessages(boolean enable)
+    public static void enableInfoMessages(boolean enable)
     {
-        silenceInfoMessages = enable;
+        enableInfoMessages = enable;
+    }
+
+    public static void enableDebug(boolean enable)
+    {
+        enableDebug = enable;
+    }
+
+    protected static Debug debug()
+    {
+        return Debug.of(enableDebug);
     }
 
     public static FileDownloader of(UrlInfo urlInfo, FileInfo fileInfo, boolean forceDownload)
@@ -130,7 +141,7 @@ public abstract class FileDownloader implements Runnable
             return;
         }
 
-//        Debug.out().println("Querying FS and server before maybe downloading " + url);
+//        debug().getOut().println("Querying FS and server before maybe downloading " + url);
 
         fileInfo.update();
 
@@ -143,19 +154,19 @@ public abstract class FileDownloader implements Runnable
                 if (isDownloadable())
                 {
                     download(closeableConnection);
-                    if (!silenceInfoMessages)
+                    if (enableInfoMessages)
                     {
                         System.out.println("Downloaded file from " + url);
                     }
                 }
                 else
                 {
-                    Debug.out().println("Debug: unable to download " + file);
+                    debug().out().println("Debug: unable to download " + file);
                 }
             }
             else
             {
-                if (isDownloadable() && !silenceInfoMessages)
+                if (isDownloadable() && enableInfoMessages)
                 {
                     System.out.println("File cache is up to date. Skipped download from " + url);
                 }
@@ -163,7 +174,7 @@ public abstract class FileDownloader implements Runnable
         }
         catch (Exception e)
         {
-            Debug.out().println("Failed attempt to download file " + url);
+            debug().out().println("Failed attempt to download file " + url);
             throw e;
         }
     }
@@ -241,7 +252,7 @@ public abstract class FileDownloader implements Runnable
 
     protected void download(CloseableUrlConnection closeableConnection) throws IOException, InterruptedException
     {
-//        Debug.out().println("Downloading " + urlInfo.getState().getUrl());
+//        debug().getOut().println("Downloading " + urlInfo.getState().getUrl());
 
         URLConnection connection = closeableConnection.getConnection();
 
@@ -308,7 +319,7 @@ public abstract class FileDownloader implements Runnable
         }
         catch (Exception e)
         {
-            if (!Debug.isEnabled())
+            if (!enableDebug)
             {
                 Files.deleteIfExists(tmpFilePath);
             }
