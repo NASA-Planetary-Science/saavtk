@@ -88,10 +88,6 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
     {
         customImageMenu = new JMenu("Custom Shape Models");
         this.add(customImageMenu);
-        // Import shape models
-        // if (Configuration.isAPLVersion())
-        // {
-        // this.addSeparator();
 
         JMenuItem mi = new JMenuItem(new ImportShapeModelsAction());
         customImageMenu.add(mi);
@@ -304,7 +300,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
     {
         public ImportShapeModelsAction()
         {
-            super("Import Shape Models...");
+            super("Manage Custom Models...");
         }
 
         @Override

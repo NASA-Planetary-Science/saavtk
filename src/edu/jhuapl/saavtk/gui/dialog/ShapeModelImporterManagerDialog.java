@@ -29,7 +29,7 @@ public class ShapeModelImporterManagerDialog extends javax.swing.JDialog
     /** Creates new form ShapeModelManagerDialog */
     public ShapeModelImporterManagerDialog(java.awt.Frame parent)
     {
-        super(parent, "Import Shape Models", false);
+        super(parent, "Custom Model Manager", false);
         initComponents();
 
         modelList.setModel(new DefaultListModel());
