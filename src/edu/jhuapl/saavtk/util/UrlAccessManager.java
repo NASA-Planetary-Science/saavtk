@@ -28,11 +28,22 @@ import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 public class UrlAccessManager
 {
     protected static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
-    private static volatile boolean silenceInfoMessages = false;
+    private static volatile boolean enableInfoMessages = true;
+    private static volatile boolean enableDebug = false;;
 
-    public static void setSilenceInfoMessages(boolean enable)
+    public static void enableInfoMessages(boolean enable)
     {
-        silenceInfoMessages = enable;
+        enableInfoMessages = enable;
+    }
+
+    public static void enableDebug(boolean enable)
+    {
+        enableDebug = enable;
+    }
+
+    protected static Debug debug()
+    {
+        return Debug.of(enableDebug);
     }
 
     /**
@@ -53,14 +64,14 @@ public class UrlAccessManager
         try
         {
             result.queryRootUrl();
-            if (!silenceInfoMessages)
+            if (enableInfoMessages)
             {
                 System.out.println("Connected to server at " + rootUrl);
             }
         }
         catch (Exception e)
         {
-            if (!silenceInfoMessages)
+            if (enableInfoMessages)
             {
                 System.err.println("Unable to connect to server. Disabling online access.");
                 e.printStackTrace();
@@ -347,7 +358,7 @@ public class UrlAccessManager
             UrlStatus status = state.getStatus();
             if (status == UrlStatus.UNKNOWN || status == UrlStatus.CONNECTION_ERROR || forceUpdate)
             {
-                Debug.out().println("Querying server about " + url);
+                debug().out().println("Querying server about " + url);
                 try
                 {
                     UrlAccessQuerier querier = UrlAccessQuerier.of(result, forceUpdate, serverAccessEnabled);
@@ -360,7 +371,7 @@ public class UrlAccessManager
             }
             else if (status == UrlStatus.INVALID_URL)
             {
-                Debug.out().println("Skipping server query about invalid url " + url);
+                debug().out().println("Skipping server query about invalid url " + url);
             }
         }
 
@@ -375,7 +386,7 @@ public class UrlAccessManager
 
     public static void main(String[] args)
     {
-        Debug.setEnabled(true);
+        enableDebug(true);
         boolean checkStuff = false;
         if (checkStuff)
         {

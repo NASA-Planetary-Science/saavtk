@@ -37,7 +37,8 @@ public class DownloadableFileManager
 {
     private static final String UrlEncoding = "UTF-8";
     private static volatile Boolean headless = null;
-    private static volatile boolean silenceInfoMessages = false;
+    private static volatile boolean enableInfoMessages = true;
+    private static volatile boolean enableDebug = false;
 
     public interface StateListener
     {
@@ -62,9 +63,46 @@ public class DownloadableFileManager
         return new DownloadableFileManager(urlManager, fileManager);
     }
 
-    public static void setSilenceInfoMessages(boolean enable)
+    /**
+     * Enable or disable user-oriented diagnostic messages related to the file
+     * cache, the state of internet access and/or remote file accessibility. This is
+     * similar to, but distinct from, {@link #enableDebug(boolean)}.
+     * <p>
+     * If this method is never called, informational messages will be shown, i.e.,
+     * this property is TRUE by default.
+     * 
+     * @param enable if true, show diagnostic statements, if false, don't
+     */
+    public static void enableInfoMessages(boolean enable)
     {
-        silenceInfoMessages = enable;
+        enableInfoMessages = enable;
+    }
+
+    public static boolean isEnableDebug()
+    {
+        return enableDebug;
+    }
+
+    /**
+     * Enable or disable developer-oriented debugging messages related to the file
+     * cache. This uses the {@link Debug} facility to show/suppress these messages
+     * but ignores its global enable/disable state. This method may be called
+     * multiple times at runtime to show/suppress specific messages. This is similar
+     * to, but distinct from, {@link #enableInfoMessages(boolean)}.
+     * <p>
+     * If this method is never called, cache-related debugging messages will not be
+     * shown, i.e., this property is FALSE by default.
+     * 
+     * @param enable if true, show file cache debugging statements, if false, don't
+     */
+    public static void enableDebug(boolean enable)
+    {
+        enableDebug = enable;
+    }
+
+    protected static Debug debug()
+    {
+        return Debug.of(enableDebug);
     }
 
     public static String getURLEncoding()
@@ -102,12 +140,12 @@ public class DownloadableFileManager
      * The access monitor runs on a dedicated background thread continually to check
      * accessibility of all the URLs managed by this manager. Checks are performed
      * in one of two ways:
-     * 
+     * <p>
      * 1. Using the {@link #queryAll()} method, which queries the server URL-by-URL
      * for the accessibility of each one. The speed and robustness of these checks
      * is limited by the quality of the internet connection and may be impacted by
      * server load levels.
-     * 
+     * <p>
      * 2. Using a server-side script, checkfileaccess.php, which also uses the
      * {@link #queryAll()} method, but runs the checks in batches of URLs on the
      * server. This is faster and more reliable because it makes the many URL-by-URL
@@ -140,7 +178,7 @@ public class DownloadableFileManager
                     // Maybe print diagnotic info.
                     if (forceUpdate)
                     {
-                        if (!silenceInfoMessages)
+                        if (enableInfoMessages)
                         {
                             System.out.println(currentlyEnabled ? //
                             "Connected to server. Re-enabling online access." : //
@@ -148,7 +186,7 @@ public class DownloadableFileManager
                         }
                         if (exception != null)
                         {
-                            exception.printStackTrace(Debug.err());
+                            exception.printStackTrace(debug().err());
                         }
                     }
 
@@ -156,7 +194,7 @@ public class DownloadableFileManager
                     {
                         if (consecutiveServerSideCheckExceptionCount.get() >= maximumConsecutiveServerSideCheckExceptions)
                         {
-                            Debug.err().println("URL status check on server failed too many times. Falling back to file-by-file check.");
+                            debug().err().println("URL status check on server failed too many times. Falling back to file-by-file check.");
                             enableAccessChecksOnServer.set(false);
                         }
 
@@ -165,7 +203,7 @@ public class DownloadableFileManager
                         {
                             if (!doAccessCheckOnServer(forceUpdate))
                             {
-                                Debug.err().println("URL status check on server did not complete. Falling back to file-by-file check.");
+                                debug().err().println("URL status check on server did not complete. Falling back to file-by-file check.");
                                 queryAll(forceUpdate);
                             }
                         }
@@ -184,7 +222,7 @@ public class DownloadableFileManager
                     {
                         // Probably this indicates a problem with the internet connection. This will be
                         // tested the next time the loop executes.
-                        e.printStackTrace(Debug.err());
+                        e.printStackTrace(debug().err());
                         consecutiveServerSideCheckExceptionCount.incrementAndGet();
                     }
 
@@ -258,7 +296,7 @@ public class DownloadableFileManager
         }
 //        if (result)
 //        {
-//            Debug.err().println("Successfully ran URL status check on server");
+//            debug().getErr().println("Successfully ran URL status check on server");
 //        }
 
         return result;
@@ -297,8 +335,7 @@ public class DownloadableFileManager
         {
             URLConnection conn = closeableConn.getConnection();
             conn.setDoOutput(true);
-            // Make query string that contains a batch of URLs currently in the cache.
-            String queryString;
+
             try (OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream()))
             {
                 URL rootUrl = Configuration.getRootURL();
@@ -317,17 +354,36 @@ public class DownloadableFileManager
                 boolean first = true;
                 while (iterator.hasNext())
                 {
-                    String url = iterator.next().replaceFirst(dataRootUrlString, "");
-                    if (!url.matches(".*\\S.*"))
+                    String url = iterator.next();
+
+                    // Skip any local file: URLs.
+                    if (SafeURLPaths.instance().hasFileProtocol(url))
                     {
                         continue;
                     }
-                    url = URLEncoder.encode(url, getURLEncoding());
+
+                    // For brevity, truncate the root prefix. The server-side script will add it
+                    // back.
+                    String shortUrl = url.replaceFirst(dataRootUrlString, "");
+                    if (shortUrl.equals(url))
+                    {
+                        // Did not match the root prefix, so this file is not under the root and the
+                        // server should not try to check it.
+                        continue;
+                    }
+
+                    if (!shortUrl.matches(".*\\S.*"))
+                    {
+                        // Don't check the root prefix path itself.
+                        continue;
+                    }
+
+                    shortUrl = URLEncoder.encode(shortUrl, getURLEncoding());
 
                     // Make sure the maximum query length would not be exceeded with the current URL
                     // plus a newline. For purposes of ensuring this doesn't happen, newline
                     // is counted as two characters (CR/LF).
-                    if ((sb.length() + url.length() + 2) >= maximumQueryLength)
+                    if ((sb.length() + shortUrl.length() + 2) >= maximumQueryLength)
                     {
                         // Move back one position so this URL is included in the next batch of queries.
                         // Then exit the loop so this query will go forward.
@@ -341,9 +397,9 @@ public class DownloadableFileManager
                     }
                     first = false;
 
-                    sb.append(url);
+                    sb.append(shortUrl);
                 }
-                queryString = sb.toString();
+                String queryString = sb.toString();
                 wr.write(queryString);
                 wr.flush();
             }
@@ -359,12 +415,12 @@ public class DownloadableFileManager
                     String line = in.readLine();
                     if (line == null)
                     {
-                        Debug.err().println("Server-side access check returned null");
+                        debug().err().println("Server-side access check returned null");
                         break;
                     }
                     else if (line.matches(("^<html>.*Request Rejected.*")))
                     {
-//                        Debug.err().println("Request for URL info was rejected by the server: " + queryString);
+                        debug().err().println("Request rejected for URL info from server-side script " + conn.getURL());
                         break;
                     }
                     String[] splitLine = line.split(",");
@@ -380,11 +436,10 @@ public class DownloadableFileManager
                         urlInfo.update(status, contentLength, lastModified);
 
                         // Update FileInfo aspect.
-                        DownloadableFileState state = getState(urlString);
-                        FileState fileState = state.getFileState();
+                        FileInfo fileInfo = getFileInfo(urlString);
+                        FileState fileState = fileInfo.getState();
                         if (forceUpdate || fileState.getStatus().equals(FileStatus.UNKNOWN))
                         {
-                            FileInfo fileInfo = fileManager.getInfo(fileState.getFile());
                             fileInfo.update();
                         }
 
@@ -393,13 +448,13 @@ public class DownloadableFileManager
                 }
                 if (!someOutput)
                 {
-                    Debug.err().println("Server=side access check returned empty list");
+                    debug().err().println("Server=side access check returned empty list");
                 }
             }
             catch (FileNotFoundException e)
             {
-                Debug.err().println("Server-side access check failed");
-                e.printStackTrace(Debug.err());
+                debug().err().println("Server-side access check failed");
+                e.printStackTrace(debug().err());
             }
         }
 
@@ -484,30 +539,33 @@ public class DownloadableFileManager
      * manager. This opens a new connection for each such check, so it is
      * time-consuming and generates a lot of queries. This is best performed on a
      * background threa or on the server itself.
-     * 
+     * <p>
+     * This check skips any/all local file:// URLs and URLs that do not reside under
+     * the top server URL.
+     * <p>
      * If server-side access is currrently disabled (most likely because of internet
      * connectivity problems), this method will skip ALL server queries rather than
      * try them all, thus generating many queries that are likely to fail.
-     * 
+     * <p>
      * This method also triggers file-system checks for the local accessibility of
      * cached files. It does these checks whether or not server-side access checking
-     * is currently enabled. Thus this method is safe and beneficial to call
+     * is currently enabled. Thus, this method is safe and beneficial to call
      * regardless of the state of the internet connection.
-     * 
+     * <p>
      * Because internet connections can be finicky, this method handles exceptions
      * in a specific way to reduce latency and improve odds of getting accurate
      * infomration for most URLs:
-     * 
+     * <p>
      * 1. If an {@link UnknownHostException} is thrown when checking any one URL, no
      * further URLs will be checked and the method will return. This exception is
      * interpreted to mean that there is no (reliable) internet connection.
-     * 
+     * <p>
      * 2. If a {@link SocketException} or {@link SocketTimeoutException} is thrown,
      * the method will pause for the number of milliseconds indicated by the
      * sleepInterval parameter before retrying the check. It will do this up to the
      * limit set by the maximumNumberTries parameter. After that it will go on to
      * the next URL.
-     * 
+     * <p>
      * 3. If any other {@link Exception} type is thrown when checking any URL, the
      * method will go on to check the next URL.
      * 
@@ -548,22 +606,22 @@ public class DownloadableFileManager
                 }
                 catch (SocketException ignored)
                 {
-                    Debug.err().println("SocketException on " + urlString);
+                    debug().err().println("SocketException on " + urlString);
                 }
                 catch (SocketTimeoutException ignored)
                 {
-                    Debug.err().println("Timeout on " + urlString);
+                    debug().err().println("Timeout on " + urlString);
                 }
                 catch (UnknownHostException ignored)
                 {
                     unknownHost = true;
                     doCheck = false;
-                    Debug.err().println("Unknown host exception on " + urlString);
+                    debug().err().println("Unknown host exception on " + urlString);
                 }
                 catch (Exception e)
                 {
                     doCheck = false;
-                    e.printStackTrace(Debug.err());
+                    e.printStackTrace(debug().err());
                 }
 
                 if (doCheck)
@@ -575,7 +633,7 @@ public class DownloadableFileManager
                     // seem to reduce the number of timeouts, thus 50 seems to be the "sweet spot".
                     try
                     {
-                        Debug.err().println("Pausing before retrying " + urlString);
+                        debug().err().println("Pausing before retrying " + urlString);
                         Thread.sleep(sleepIntervalAfterFailure);
                     }
                     catch (InterruptedException e)
