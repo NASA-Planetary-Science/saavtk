@@ -145,7 +145,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     private double contourLineWidth = 1;
     private vtkPolyDataMapper linesMapper;
     private vtkActor linesActor;
-
+    
     // Heuristic to avoid computationally expensive paint operations when possible.
     private Map<String, Object> paintingAttributes = null;
 
@@ -934,17 +934,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     	vtkDepthSortPolyData depthSorter = new vtkDepthSortPolyData();
 		depthSorter.SetInputData(smallBodyPolyData);
 		depthSorter.SetDirectionToBackToFront();
-//		depthSorter.SetVector(1, 1, 1);
 		depthSorter.SetCamera(camera);
 		smallBodyMapper.SetInputConnection(depthSorter.GetOutputPort());
 		depthSorter.Update();
-    	
-        smallBodyMapper = new vtkPolyDataMapper();
-        smallBodyMapper.SetInputData(smallBodyPolyData);
-        vtkLookupTable lookupTable = new vtkLookupTable();
-        smallBodyMapper.SetLookupTable(lookupTable);
-        smallBodyMapper.UseLookupTableScalarRangeOn();
-
     }
 
     public vtkPolyData computeFrustumIntersection(double[] origin, double[] ul, double[] ur, double[] lr, double[] ll)
