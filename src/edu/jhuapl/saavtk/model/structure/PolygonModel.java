@@ -1,23 +1,27 @@
 package edu.jhuapl.saavtk.model.structure;
 
-import java.io.File;
-import java.io.IOException;
+import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
-import edu.jhuapl.saavtk.model.FacetColoringData;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.StructureModel;
+import edu.jhuapl.saavtk.structure.PolyLineMode;
+import edu.jhuapl.saavtk.structure.Polygon;
+import edu.jhuapl.saavtk.structure.util.ControlPointUtil;
+import edu.jhuapl.saavtk.structure.vtk.VtkPolyLinePainter;
+import edu.jhuapl.saavtk.structure.vtk.VtkPolygonPainter;
+import edu.jhuapl.saavtk.structure.vtk.VtkUtil;
 import edu.jhuapl.saavtk.util.IdPair;
+import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
 import vtk.vtkActor;
 import vtk.vtkAppendPolyData;
-import vtk.vtkCellArray;
 import vtk.vtkCellData;
-import vtk.vtkPoints;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
 import vtk.vtkProp;
@@ -27,71 +31,97 @@ import vtk.vtkUnsignedCharArray;
 /**
  * Model of polygon structures drawn on a body.
  */
-public class PolygonModel extends LineModel
+public class PolygonModel extends LineModel<Polygon>
 {
-	private vtkPolyData interiorPolyData;
-	private vtkPolyData decimatedInteriorPolyData;
-	private vtkAppendPolyData interiorAppendFilter;
-	private vtkAppendPolyData decimatedInteriorAppendFilter;
-	private vtkPolyDataMapper interiorMapper;
-	private vtkPolyDataMapper decimatedInteriorMapper;
-	private vtkActor interiorActor;
+	// Ref vars
+	private PolyhedralModel refSmallBody;
 
-	private vtkUnsignedCharArray interiorColors;
-	private vtkUnsignedCharArray decimatedInteriorColors;
-
-	private List<vtkProp> actors = new ArrayList<vtkProp>();
-
-	private PolyhedralModel smallBodyModel;
-
+	// State vars
 	private double interiorOpacity = 0.3;
-	private int maxPolygonId = 0;
 
-	private vtkPolyData emptyPolyData;
+	// VTK vars
+	private final vtkPolyData vInteriorRegPD;
+	private final vtkPolyData vInteriorDecPD;
+	private final vtkAppendPolyData vInteriorFilterRegAPD;
+	private final vtkAppendPolyData vInteriorFilterDecAPD;
+	private final vtkPolyDataMapper vInteriorMapperRegPDM;
+	private final vtkPolyDataMapper vInteriorMapperDecPDM;
+	private final vtkActor vInteriorActor;
+
+	private final vtkUnsignedCharArray vInteriorColorsRegUCA;
+	private final vtkUnsignedCharArray vInteriorColorsDecUCA;
+
+	private final vtkPolyData vEmptyPD;
 
 	private static final String POLYGONS = "polygons";
 
-	public PolygonModel(PolyhedralModel smallBodyModel)
+	/**
+	 * Standard Constructor
+	 */
+	public PolygonModel(PolyhedralModel aSmallBodyModel)
 	{
-		super(smallBodyModel, Mode.CLOSED);
+		super(aSmallBodyModel, PolyLineMode.CLOSED);
 
-		this.smallBodyModel = smallBodyModel;
+		refSmallBody = aSmallBodyModel;
 
-		interiorColors = new vtkUnsignedCharArray();
-		decimatedInteriorColors = new vtkUnsignedCharArray();
-		interiorColors.SetNumberOfComponents(3);
-		decimatedInteriorColors.SetNumberOfComponents(3);
+		vInteriorColorsRegUCA = new vtkUnsignedCharArray();
+		vInteriorColorsDecUCA = new vtkUnsignedCharArray();
+		vInteriorColorsRegUCA.SetNumberOfComponents(3);
+		vInteriorColorsDecUCA.SetNumberOfComponents(3);
 
-		interiorPolyData = new vtkPolyData();
-		decimatedInteriorPolyData = new vtkPolyData();
-		interiorAppendFilter = new vtkAppendPolyData();
-		decimatedInteriorAppendFilter = new vtkAppendPolyData();
-		interiorAppendFilter.UserManagedInputsOn();
-		decimatedInteriorAppendFilter.UserManagedInputsOn();
-		interiorMapper = new vtkPolyDataMapper();
-		decimatedInteriorMapper = new vtkPolyDataMapper();
-		interiorActor = new SaavtkLODActor();
-		vtkProperty interiorProperty = interiorActor.GetProperty();
+		vInteriorRegPD = new vtkPolyData();
+		vInteriorDecPD = new vtkPolyData();
+		vInteriorFilterRegAPD = new vtkAppendPolyData();
+		vInteriorFilterDecAPD = new vtkAppendPolyData();
+		vInteriorFilterRegAPD.UserManagedInputsOn();
+		vInteriorFilterDecAPD.UserManagedInputsOn();
+		vInteriorMapperRegPDM = new vtkPolyDataMapper();
+		vInteriorMapperDecPDM = new vtkPolyDataMapper();
+		vInteriorActor = new SaavtkLODActor();
+		vtkProperty interiorProperty = vInteriorActor.GetProperty();
 		interiorProperty.LightingOff();
 		interiorProperty.SetOpacity(interiorOpacity);
 
-		actors.add(interiorActor);
-
 		// Initialize an empty polydata for resetting
-		emptyPolyData = new vtkPolyData();
-		vtkPoints points = new vtkPoints();
-		vtkCellArray cells = new vtkCellArray();
-		vtkUnsignedCharArray colors = new vtkUnsignedCharArray();
-		colors.SetNumberOfComponents(4);
-		emptyPolyData.SetPoints(points);
-		emptyPolyData.SetLines(cells);
-		emptyPolyData.SetVerts(cells);
-		vtkCellData cellData = emptyPolyData.GetCellData();
-		cellData.SetScalars(colors);
+		vEmptyPD = VtkUtil.formEmptyPolyData();
+	}
+
+	/**
+	 * Returns if the specified polygons interior is being shown.
+	 */
+	public boolean getShowInterior(Polygon aItem)
+	{
+		return aItem.getShowInterior();
+	}
+
+	/**
+	 * Method that sets whether the list of polygons should show their interior.
+	 */
+	public void setShowInterior(Collection<Polygon> aItemC, boolean aIsShown)
+	{
+		for (Polygon aItem : aItemC)
+			configurePolygonInterior(aItem, aIsShown);
+
+		updatePolyData();
 	}
 
 	@Override
-	protected String getType()
+	public Polygon addItemWithControlPoints(int aId, List<Vector3D> aControlPointL)
+	{
+		// Create the item
+		List<LatLon> tmpLatLonL = ControlPointUtil.convertToLatLonList(aControlPointL);
+		Polygon retItem = new Polygon(aId, null, tmpLatLonL);
+
+		// Install the item
+		List<Polygon> fullL = new ArrayList<>(getAllItems());
+		fullL.add(retItem);
+		setAllItems(fullL);
+
+		return retItem;
+	}
+
+	@Override
+	public String getType()
 	{
 		return POLYGONS;
 	}
@@ -101,65 +131,69 @@ public class PolygonModel extends LineModel
 	{
 		super.updatePolyData();
 
-		int numberOfStructures = getNumberOfStructures();
+		int numberOfStructures = getNumItems();
 		if (numberOfStructures > 0)
 		{
-			interiorAppendFilter.SetNumberOfInputs(numberOfStructures);
-			decimatedInteriorAppendFilter.SetNumberOfInputs(numberOfStructures);
+			vInteriorFilterRegAPD.SetNumberOfInputs(numberOfStructures);
+			vInteriorFilterDecAPD.SetNumberOfInputs(numberOfStructures);
 
 			for (int i = 0; i < numberOfStructures; ++i)
 			{
-				Polygon polygon = getPolygon(i);
-				polygon.updateInteriorPolydata();
-				vtkPolyData poly = polygon.interiorPolyData;
-				vtkPolyData decimatedPoly = polygon.decimatedInteriorPolyData;
+				Polygon polygon = getItem(i);
 
-				if (polygon.hidden)
+				VtkPolygonPainter tmpPainter = getOrCreateMainPainter(polygon);
+
+				tmpPainter.updateInteriorPolydata();
+
+				vtkPolyData tmpInteriorRegPD = tmpPainter.getVtkInteriorRegPD();
+				vtkPolyData tmpInteriorDecPD = tmpPainter.getVtkInteriorDecPD();
+
+				if (polygon.getVisible() == false)
 				{
-					poly = emptyPolyData;
-					decimatedPoly = emptyPolyData;
+					tmpInteriorRegPD = vEmptyPD;
+					tmpInteriorDecPD = vEmptyPD;
 				}
 
-				if (poly != null)
-					interiorAppendFilter.SetInputDataByNumber(i, poly);
+				if (tmpInteriorRegPD != null)
+					vInteriorFilterRegAPD.SetInputDataByNumber(i, tmpInteriorRegPD);
 
-				if (decimatedPoly != null)
-					decimatedInteriorAppendFilter.SetInputDataByNumber(i, decimatedPoly);
+				if (tmpInteriorDecPD != null)
+					vInteriorFilterDecAPD.SetInputDataByNumber(i, tmpInteriorDecPD);
 			}
 
-			interiorAppendFilter.Update();
-			decimatedInteriorAppendFilter.Update();
+			vInteriorFilterRegAPD.Update();
+			vInteriorFilterDecAPD.Update();
 
-			vtkPolyData interiorAppendFilterOutput = interiorAppendFilter.GetOutput();
-			vtkPolyData decimatedInteriorAppendFilterOutput = decimatedInteriorAppendFilter.GetOutput();
-			interiorPolyData.DeepCopy(interiorAppendFilterOutput);
-			decimatedInteriorPolyData.DeepCopy(decimatedInteriorAppendFilterOutput);
+			vtkPolyData interiorAppendFilterOutput = vInteriorFilterRegAPD.GetOutput();
+			vtkPolyData decimatedInteriorAppendFilterOutput = vInteriorFilterDecAPD.GetOutput();
+			vInteriorRegPD.DeepCopy(interiorAppendFilterOutput);
+			vInteriorDecPD.DeepCopy(decimatedInteriorAppendFilterOutput);
 
-			PolyDataUtil.shiftPolyDataInNormalDirection(interiorPolyData, getOffset());
-			PolyDataUtil.shiftPolyDataInNormalDirection(decimatedInteriorPolyData, getOffset());
+			PolyDataUtil.shiftPolyDataInNormalDirection(vInteriorRegPD, getOffset());
+			PolyDataUtil.shiftPolyDataInNormalDirection(vInteriorDecPD, getOffset());
 
-			interiorColors.SetNumberOfTuples(interiorPolyData.GetNumberOfCells());
-			decimatedInteriorColors.SetNumberOfTuples(decimatedInteriorPolyData.GetNumberOfCells());
+			vInteriorColorsRegUCA.SetNumberOfTuples(vInteriorRegPD.GetNumberOfCells());
+			vInteriorColorsDecUCA.SetNumberOfTuples(vInteriorDecPD.GetNumberOfCells());
 			for (int i = 0; i < numberOfStructures; ++i)
 			{
-				int[] color = getPolygon(i).getColor();
+				Polygon tmpItem = getItem(i);
+				Color tmpColor = tmpItem.getColor();
+				if (getSelectedItems().contains(tmpItem) == true)
+					tmpColor = getCommonData().getSelectionColor();
 
-				if (Arrays.binarySearch(getSelectedStructures(), i) >= 0)
-					color = getCommonData().getSelectionColor();
-
-				IdPair range = this.getCellIdRangeOfPolygon(i);
+				IdPair range = getCellIdRangeOfPolygon(i);
 				for (int j = range.id1; j < range.id2; ++j)
-					interiorColors.SetTuple3(j, color[0], color[1], color[2]);
+					VtkUtil.setColorOnUCA3(vInteriorColorsRegUCA, j, tmpColor);
 
-				range = this.getCellIdRangeOfDecimatedPolygon(i);
+				range = getCellIdRangeOfDecimatedPolygon(i);
 				for (int j = range.id1; j < range.id2; ++j)
-					decimatedInteriorColors.SetTuple3(j, color[0], color[1], color[2]);
+					VtkUtil.setColorOnUCA3(vInteriorColorsDecUCA, j, tmpColor);
 			}
-			vtkCellData interiorCellData = interiorPolyData.GetCellData();
-			vtkCellData decimatedInteriorCellData = decimatedInteriorPolyData.GetCellData();
+			vtkCellData interiorCellData = vInteriorRegPD.GetCellData();
+			vtkCellData decimatedInteriorCellData = vInteriorDecPD.GetCellData();
 
-			interiorCellData.SetScalars(interiorColors);
-			decimatedInteriorCellData.SetScalars(decimatedInteriorColors);
+			interiorCellData.SetScalars(vInteriorColorsRegUCA);
+			decimatedInteriorCellData.SetScalars(vInteriorColorsDecUCA);
 
 			interiorAppendFilterOutput.Delete();
 			decimatedInteriorAppendFilterOutput.Delete();
@@ -168,113 +202,150 @@ public class PolygonModel extends LineModel
 		}
 		else
 		{
-			interiorPolyData.DeepCopy(emptyPolyData);
-			decimatedInteriorPolyData.DeepCopy(emptyPolyData);
+			vInteriorRegPD.DeepCopy(vEmptyPD);
+			vInteriorDecPD.DeepCopy(vEmptyPD);
 		}
 
-		interiorMapper.SetInputData(interiorPolyData);
-		interiorMapper.Update();
+		vInteriorMapperRegPDM.SetInputData(vInteriorRegPD);
+		vInteriorMapperRegPDM.Update();
 
-		decimatedInteriorMapper.SetInputData(decimatedInteriorPolyData);
-		decimatedInteriorMapper.Update();
+		vInteriorMapperDecPDM.SetInputData(vInteriorDecPD);
+		vInteriorMapperDecPDM.Update();
 
-		interiorActor.SetMapper(interiorMapper);
-		((SaavtkLODActor) interiorActor).setLODMapper(decimatedInteriorMapper);
-		interiorActor.Modified();
-	}
+		vInteriorActor.SetMapper(vInteriorMapperRegPDM);
+		((SaavtkLODActor) vInteriorActor).setLODMapper(vInteriorMapperDecPDM);
+		vInteriorActor.Modified();
 
-	@Override
-	public List<vtkProp> getProps()
-	{
-		List<vtkProp> allActors = new ArrayList<vtkProp>(actors);
-		allActors.addAll(super.getProps());
-		return allActors;
+		// Notify model change listeners
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 	}
 
 	@Override
 	public String getClickStatusBarText(vtkProp prop, int cellId, double[] pickPosition)
 	{
-		int polygonId = -1;
-		if (prop == super.getStructureActor())
-		{
-			polygonId = super.getStructureIndexFromCellId(cellId, prop);
-		}
-		else if (prop == interiorActor)
-		{
-			polygonId = this.getPolygonIdFromCellId(cellId);
-		}
-
-		if (polygonId >= 0)
-		{
-			Polygon pol = getPolygon(polygonId);
-			return pol.getClickStatusBarText();
-		}
-		else
-		{
+		// Bail if no item clicked on
+		Polygon tmpItem = getItemFromCellId(cellId, prop);
+		if (tmpItem == null)
 			return "";
-		}
-	}
 
-	public vtkActor getInteriorActor()
-	{
-		return interiorActor;
-	}
+		// Bail if no associated painter
+		VtkPolyLinePainter<?> tmpPainter = getVtkMainPainter(tmpItem);
+		if (tmpPainter == null)
+			return "";
 
-	@Override
-	public void updateActivatedStructureVertex(int vertexId, double[] newPoint)
-	{
-		Polygon pol = getActivatedPolygon();
-		pol.setShowInterior(false);
-
-		super.updateActivatedStructureVertex(vertexId, newPoint);
+		String retStr = "Polygon, Id = " + tmpItem.getId();
+		retStr += ", Length = " + decimalFormatter.format(tmpItem.getPathLength()) + " km";
+		retStr += ", Surface Area = " + decimalFormatter.format(tmpItem.getSurfaceArea()) + " km" + (char) 0x00B2;
+		retStr += ", Number of Vertices = " + tmpItem.getControlPoints().size();
+		return retStr;
 	}
 
 	@Override
-	public void insertVertexIntoActivatedStructure(double[] newPoint)
+	public List<vtkProp> getProps()
 	{
-		Polygon pol = getActivatedPolygon();
-		pol.setShowInterior(false);
+		List<vtkProp> retL = new ArrayList<>();
+		retL.add(vInteriorActor);
 
-		super.insertVertexIntoActivatedStructure(newPoint);
+		retL.addAll(super.getProps());
+		return retL;
 	}
 
 	@Override
-	public void removeCurrentStructureVertex()
+	public void addControlPoint(int aIdx, Vector3D aPoint)
 	{
-		Polygon pol = getActivatedPolygon();
-		pol.setShowInterior(false);
+		// Disable the polygon interior for performance reasons
+		configurePolygonInterior(getActivatedItem(), false);
 
-		super.removeCurrentStructureVertex();
+		super.addControlPoint(aIdx, aPoint);
 	}
 
 	@Override
-	public int getStructureIndexFromCellId(int cellId, vtkProp prop)
+	public void delControlPoint(int aIdx)
 	{
-		if (prop == interiorActor)
+		// Disable the polygon interior for performance reasons
+		configurePolygonInterior(getActivatedItem(), false);
+
+		super.delControlPoint(aIdx);
+	}
+
+	@Override
+	public void moveControlPoint(int aIdx, Vector3D aPoint, boolean aIsFinal)
+	{
+		// Disable the polygon interior for performance reasons
+		if (aIsFinal == true)
+			configurePolygonInterior(getActivatedItem(), false);
+
+		super.moveControlPoint(aIdx, aPoint, aIsFinal);
+	}
+
+	@Override
+	public Polygon getItemFromCellId(int aCellId, vtkProp aProp)
+	{
+		// A picker picking the actor of this model will return a cellId. But since
+		// there are many polygons, we need to be able to figure out which polygon was
+		// picked.
+
+		if (aProp == vInteriorActor)
 		{
-			return getPolygonIdFromCellId(cellId);
+			int cellCnt = 0;
+			for (Polygon aItem : getAllItems())
+			{
+				VtkPolygonPainter tmpPainter = getOrCreateMainPainter(aItem);
+				vtkPolyData tmpInteriorRegPD = tmpPainter.getVtkInteriorRegPD();
+
+				cellCnt += tmpInteriorRegPD.GetNumberOfCells();
+				if (aCellId < cellCnt)
+					return aItem;
+			}
 		}
 
-		return super.getStructureIndexFromCellId(cellId, prop);
+		return super.getItemFromCellId(aCellId, aProp);
+	}
+
+	@Override
+	public void setVisible(boolean b)
+	{
+		vInteriorActor.SetVisibility(b ? 1 : 0);
+		super.setVisible(b);
 	}
 
 	/**
-	 * A picker picking the actor of this model will return a cellId. But since
-	 * there are many polygons, we need to be able to figure out which polygon was
-	 * picked.
+	 * Helper method to set whether the specified polygon interior is shown.
+	 * <P>
+	 * The associated VTK state will be updated.
 	 */
-	private int getPolygonIdFromCellId(int cellId)
+	protected void configurePolygonInterior(Polygon aItem, boolean aIsShown)
 	{
-		int numberCellsSoFar = 0;
-		int size = getNumberOfStructures();
-		for (int i = 0; i < size; ++i)
-		{
-			numberCellsSoFar += getPolygon(i).interiorPolyData.GetNumberOfCells();
+		// Bail if no valid item
+		if (aItem == null)
+			return;
 
-			if (cellId < numberCellsSoFar)
-				return i;
-		}
-		return -1;
+		// Bail if nothing changes
+		if (aItem.getShowInterior() == aIsShown)
+			return;
+
+		// Retrieve the VTK painter
+		VtkPolygonPainter tmpPainter = getOrCreateMainPainter(aItem);
+
+		// Update the item and the associated painter
+		aItem.setShowInterior(aIsShown);
+		tmpPainter.setShowInterior(aIsShown);
+	}
+
+	/**
+	 * Helper method that will return the proper VTK painter for the specified item.
+	 * <P>
+	 * If the painter does not exist then it will be instantiated.
+	 */
+	protected VtkPolygonPainter getOrCreateMainPainter(Polygon aItem)
+	{
+		return (VtkPolygonPainter) getOrCreateVtkPainterFor(aItem, refSmallBody).getMainPainter();
+	}
+
+	@Override
+	protected VtkPolygonPainter createPainter(Polygon aItem)
+	{
+		return new VtkPolygonPainter(aItem, refSmallBody);
 	}
 
 	private IdPair getCellIdRangeOfPolygon(int polygonId)
@@ -282,11 +353,13 @@ public class PolygonModel extends LineModel
 		int startCell = 0;
 		for (int i = 0; i < polygonId; ++i)
 		{
-			startCell += getPolygon(i).interiorPolyData.GetNumberOfCells();
+			VtkPolygonPainter tmpPainter = getOrCreateMainPainter(getItem(i));
+			startCell += tmpPainter.getVtkInteriorRegPD().GetNumberOfCells();
 		}
 
 		int endCell = startCell;
-		endCell += getPolygon(polygonId).interiorPolyData.GetNumberOfCells();
+		VtkPolygonPainter tmpPainter = getOrCreateMainPainter(getItem(polygonId));
+		endCell += tmpPainter.getVtkInteriorRegPD().GetNumberOfCells();
 
 		return new IdPair(startCell, endCell);
 	}
@@ -296,98 +369,15 @@ public class PolygonModel extends LineModel
 		int startCell = 0;
 		for (int i = 0; i < polygonId; ++i)
 		{
-			startCell += getPolygon(i).decimatedInteriorPolyData.GetNumberOfCells();
+			VtkPolygonPainter tmpPainter = getOrCreateMainPainter(getItem(i));
+			startCell += tmpPainter.getVtkInteriorDecPD().GetNumberOfCells();
 		}
 
 		int endCell = startCell;
-		endCell += getPolygon(polygonId).decimatedInteriorPolyData.GetNumberOfCells();
+		VtkPolygonPainter tmpPainter = getOrCreateMainPainter(getItem(polygonId));
+		endCell += tmpPainter.getVtkInteriorDecPD().GetNumberOfCells();
 
 		return new IdPair(startCell, endCell);
-	}
-
-	@Override
-	public void setVisible(boolean b)
-	{
-		interiorActor.SetVisibility(b ? 1 : 0);
-		super.setVisible(b);
-	}
-
-	@Override
-	public void savePlateDataInsideStructure(int idx, File file) throws IOException
-	{
-		Polygon pol = getPolygon(idx);
-		if (pol.isShowInterior())
-		{
-			vtkPolyData polydata = getPolygon(idx).interiorPolyData;
-			smallBodyModel.savePlateDataInsidePolydata(polydata, file);
-		}
-		else
-		{
-			pol.setShowInterior(true);
-
-			vtkPolyData polydata = getPolygon(idx).interiorPolyData;
-			smallBodyModel.savePlateDataInsidePolydata(polydata, file);
-
-			pol.setShowInterior(false);
-		}
-	}
-
-	@Override
-	public FacetColoringData[] getPlateDataInsideStructure(int idx)
-	{
-		Polygon pol = getPolygon(idx);
-		if (pol.isShowInterior())
-		{
-			vtkPolyData polydata = getPolygon(idx).interiorPolyData;
-			return smallBodyModel.getPlateDataInsidePolydata(polydata);
-		}
-		else
-		{
-			pol.setShowInterior(true);
-
-			vtkPolyData polydata = getPolygon(idx).interiorPolyData;
-			FacetColoringData[] data = smallBodyModel.getPlateDataInsidePolydata(polydata);
-			pol.setShowInterior(false);
-			return data;
-		}
-	}
-
-	@Override
-	public void setShowStructuresInterior(int[] polygonIds, boolean show)
-	{
-		for (int i = 0; i < polygonIds.length; ++i)
-		{
-			Polygon pol = getPolygon(polygonIds[i]);
-			if (pol.isShowInterior() != show)
-			{
-				pol.setShowInterior(show);
-			}
-		}
-
-		updatePolyData();
-		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-	}
-
-	@Override
-	public boolean isShowStructureInterior(int id)
-	{
-		return getPolygon(id).isShowInterior();
-	}
-
-	@Override
-	protected StructureModel.Structure createStructure(PolyhedralModel smallBodyModel)
-	{
-		return new Polygon(smallBodyModel, ++maxPolygonId);
-	}
-
-	private Polygon getPolygon(int i)
-	{
-		return (Polygon) getStructure(i);
-	}
-
-	private Polygon getActivatedPolygon()
-	{
-		return (Polygon) getActivatedLine();
 	}
 
 }

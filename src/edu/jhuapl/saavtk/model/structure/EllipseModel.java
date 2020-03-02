@@ -1,6 +1,11 @@
 package edu.jhuapl.saavtk.model.structure;
 
+import java.awt.Color;
+
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.structure.util.EllipseUtil;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Properties;
 import vtk.vtkActor;
@@ -27,8 +32,7 @@ public class EllipseModel extends AbstractEllipsePolygonModel
         this.smallBodyModel = smallBodyModel;
 
         setInteriorOpacity(0.0);
-        int[] color = {255, 0, 255};
-        setDefaultColor(color);
+        setDefaultColor(Color.MAGENTA);
 
         activationPolyData = new vtkPolyData();
         vtkPoints points = new vtkPoints();
@@ -57,17 +61,17 @@ public class EllipseModel extends AbstractEllipsePolygonModel
      * count equals 3, am ellipse is created and the intermediate points are
      * deleted.
      *
-     * @param pt
+     * @param aPtArr
      * @return
      */
-    public boolean addCircumferencePoint(double[] pt)
+    public boolean addCircumferencePoint(double[] aPtArr)
     {
         vtkPoints points = activationPolyData.GetPoints();
         vtkCellArray vert = activationPolyData.GetVerts();
 
         int numPoints = points.GetNumberOfPoints();
 
-        
+
         if (!getProps().contains(activationActor))
         	getProps().add(activationActor);
 
@@ -77,18 +81,18 @@ public class EllipseModel extends AbstractEllipsePolygonModel
             idList.SetNumberOfIds(1);
             idList.SetId(0, numPoints);
 
-            points.InsertNextPoint(pt);
+            points.InsertNextPoint(aPtArr);
             vert.InsertNextCell(idList);
 
             idList.Delete();
 
             if (numPoints == 0)
             {
-                unshiftedPoint1 = pt.clone();
+                unshiftedPoint1 = aPtArr.clone();
             }
             if (numPoints == 1)
             {
-                unshiftedPoint2 = pt.clone();
+                unshiftedPoint2 = aPtArr.clone();
                 // Since we shift the points afterwards, reset the first
                 // point to the original unshifted position.
                 points.SetPoint(0, unshiftedPoint1);
@@ -104,11 +108,11 @@ public class EllipseModel extends AbstractEllipsePolygonModel
             // Take the 3 points and compute an ellipse that passes through them.
             // To do this, assume that the first 2 points lie on the end-points of the major axis
             // and that the third point lies on one of the end-points of the minor axis.
-            double[] pt1 = unshiftedPoint1;
-            double[] pt2 = unshiftedPoint2;
-            double[] pt3 = pt;
+            double[] pt1Arr = unshiftedPoint1;
+            double[] pt2Arr = unshiftedPoint2;
+            double[] pt3Arr = aPtArr;
 
-            double radius = 0.5 * MathUtil.distanceBetween(pt1, pt2);
+            double radius = 0.5 * MathUtil.distanceBetween(pt1Arr, pt2Arr);
             if (radius == 0.0)
             {
                 // Cannot fit an ellipse so reset and return
@@ -118,12 +122,15 @@ public class EllipseModel extends AbstractEllipsePolygonModel
 
             // First find the point on the asteroid that is midway between
             // the first 2 points. This is the center of the ellipse.
-            double[] center = new double[3];
-            MathUtil.midpointBetween(pt1, pt2, center);
+            double[] centerArr = new double[3];
+            MathUtil.midpointBetween(pt1Arr, pt2Arr, centerArr);
+            Vector3D center = new Vector3D(centerArr);
 
-            double angle = computeAngleOfPolygon(center, pt2);
+            Vector3D pt2 = new Vector3D(pt2Arr);
+            double angle = EllipseUtil.computeAngleOfPolygon(smallBodyModel, center, pt2);
 
-            double flattening = computeFlatteningOfPolygon(center, radius, angle, pt3);
+            Vector3D pt3 = new Vector3D(pt3Arr);
+            double flattening = EllipseUtil.computeFlatteningOfPolygon(smallBodyModel, center, radius, angle, pt3);
 
             addNewStructure(center, radius, flattening, angle);
 
@@ -158,7 +165,8 @@ public class EllipseModel extends AbstractEllipsePolygonModel
     {
         return activationPolyData.GetNumberOfPoints();
     }
-    public void removeAllStructures()
+    @Override
+	public void removeAllStructures()
     {
         super.removeAllStructures();
         this.resetCircumferencePoints();

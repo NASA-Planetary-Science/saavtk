@@ -6,6 +6,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.Set;
 
 import javax.swing.AbstractAction;
 import javax.swing.JCheckBoxMenuItem;
@@ -19,25 +21,30 @@ import edu.jhuapl.saavtk.gui.dialog.ColorChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.FacetColoringData;
+import edu.jhuapl.saavtk.model.ModelManager;
+import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.StructureModel;
-import edu.jhuapl.saavtk.model.structure.LineModel;
-import edu.jhuapl.saavtk.model.structure.StructuresExporter;
-import edu.jhuapl.saavtk.model.structure.esri.VtkFileUtil;
+import edu.jhuapl.saavtk.model.structure.PlateUtil;
+import edu.jhuapl.saavtk.model.structure.PolygonModel;
+import edu.jhuapl.saavtk.structure.Polygon;
+import edu.jhuapl.saavtk.structure.Structure;
+import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.util.MathUtil;
 import vtk.vtkCamera;
 import vtk.vtkProp;
 import vtk.rendering.vtkAbstractComponent;
 
-abstract public class StructuresPopupMenu extends PopupMenu
+public class StructuresPopupMenu<G1 extends Structure> extends PopupMenu
 {
-	private StructureModel model;
+	// Ref vars
+	private StructureManager<G1> refManager;
 	private PolyhedralModel smallBodyModel;
 	private Renderer renderer;
+
+	// Gui vars
 	private JMenuItem changeLatLonAction;
 	private JMenuItem exportPlateDataAction;
 	private JMenuItem plateStatisticsAction;
-	private JMenuItem editAction;
 	private JMenuItem centerStructureMenuItem;
 	private JMenuItem centerStructurePreserveDistanceMenuItem;
 	private JMenuItem displayInteriorMenuItem;
@@ -50,16 +57,26 @@ abstract public class StructuresPopupMenu extends PopupMenu
 	private JCheckBoxMenuItem setLabelBorder;
 	private JCheckBoxMenuItem hideMenuItem;
 
-	public StructuresPopupMenu(StructureModel model, PolyhedralModel smallBodyModel, Renderer renderer, boolean showChangeLatLon, boolean showExportPlateDataInsidePolygon, boolean showDisplayInterior)
+	public StructuresPopupMenu(ModelManager aModelManager, Renderer aRenderer, ModelNames aModelNames)
 	{
-		this.model = model;
-		this.smallBodyModel = smallBodyModel;
-		this.renderer = renderer;
+		refManager = (StructureManager<G1>) aModelManager.getModel(aModelNames);
+		smallBodyModel = aModelManager.getPolyhedralModel();
+		renderer = aRenderer;
 
-		editAction = new JMenuItem(new EditAction());
-		editAction.setText("Edit");
-		//this.add(mi); // don't show for now
+		// Determine the extended capabilities (based on structure type)
+		boolean showChangeLatLon = false;
+		showChangeLatLon |= aModelNames == ModelNames.POINT_STRUCTURES;
+		showChangeLatLon |= aModelNames == ModelNames.CIRCLE_STRUCTURES;
+		showChangeLatLon |= aModelNames == ModelNames.ELLIPSE_STRUCTURES;
 
+		boolean showExportPlateDataInsidePolygon = false;
+		showExportPlateDataInsidePolygon |= aModelNames == ModelNames.POLYGON_STRUCTURES;
+		showExportPlateDataInsidePolygon |= aModelNames == ModelNames.CIRCLE_STRUCTURES;
+		showExportPlateDataInsidePolygon |= aModelNames == ModelNames.ELLIPSE_STRUCTURES;
+
+		boolean showDisplayInterior = aModelNames == ModelNames.POLYGON_STRUCTURES;
+
+		// Set up the UI
 		JMenuItem changeColorAction = new JMenuItem(new ChangeColorAction());
 		changeColorAction.setText("Change Color...");
 		this.add(changeColorAction);
@@ -72,15 +89,14 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		setLabelButton.setText("Edit Label Text");
 		this.add(setLabelButton);
 
-		/*
-		 * hideLabelButton = new JCheckBoxMenuItem(new ShowLabelAction());
-		 * hideLabelButton.setText("Hide Label"); this.add(hideLabelButton);
-		 */
+//      hideLabelButton = new JCheckBoxMenuItem(new ShowLabelAction());
+//      hideLabelButton.setText("Hide Label"); this.add(hideLabelButton);
+
 		labelProperties = new JMenu();
 		labelProperties.setText("Edit Label Properties...");
 
 		// disable for now until bugs are fixed -turnerj1
-		//        this.add(labelProperties);
+		// this.add(labelProperties);
 
 		changeFontButton = new JMenuItem(new changeFontSizeAction());
 		changeFontButton.setText("Change Font Size");
@@ -94,9 +110,9 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		changeLabelColorButton.setText("Change Label Color");
 		labelProperties.add(changeLabelColorButton);
 
-		setLabelBorder = new JCheckBoxMenuItem(new showLabelBorderAction());
-		setLabelBorder.setText("Show the label border");
-		labelProperties.add(setLabelBorder);
+//		setLabelBorder = new JCheckBoxMenuItem(new showLabelBorderAction());
+//		setLabelBorder.setText("Show the label border");
+//		labelProperties.add(setLabelBorder);
 
 		JMenuItem deleteAction = new JMenuItem(new DeleteAction());
 		deleteAction.setText("Delete");
@@ -122,8 +138,8 @@ abstract public class StructuresPopupMenu extends PopupMenu
 			exportPlateDataAction = new JMenuItem(new ExportPlateDataInsidePolygon());
 			exportPlateDataAction.setText("Save plate data inside structure...");
 			this.add(exportPlateDataAction);
-			
-			plateStatisticsAction =new JMenuItem(new ShowPlateStatisticsInfo());
+
+			plateStatisticsAction = new JMenuItem(new ShowPlateStatisticsInfo());
 			plateStatisticsAction.setText("Show plate data statistics inside structure...");
 			this.add(plateStatisticsAction);
 		}
@@ -136,62 +152,55 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		}
 
 	}
-	
-	
+
+	/**
+	 * Returns the reference StructureManager
+	 */
+	protected StructureManager<G1> getManager()
+	{
+		return refManager;
+	}
+
 	@Override
 	public void show(Component invoker, int x, int y)
 	{
-		// Disable certain items if more than one structure is selected
-		boolean exactlyOne = model.getSelectedStructures().length == 1;
+		Set<G1> pickS = refManager.getSelectedItems();
 
-		if (editAction != null)
-			editAction.setEnabled(exactlyOne);
-
+		// Update the enable state of various UI elements
+		boolean isEnabled = pickS.size() == 1;
+		centerStructureMenuItem.setEnabled(isEnabled);
+		centerStructurePreserveDistanceMenuItem.setEnabled(isEnabled);
 		if (changeLatLonAction != null)
-			changeLatLonAction.setEnabled(exactlyOne);
+			changeLatLonAction.setEnabled(isEnabled);
 
+		isEnabled = false;
+		for (G1 aItem : pickS)
+			isEnabled |= aItem.getVisible() == false;
+		hideMenuItem.setSelected(isEnabled);
+
+		boolean havePlateData = smallBodyModel.isColoringDataAvailable();
 		if (exportPlateDataAction != null)
-			exportPlateDataAction.setEnabled(exactlyOne);
+			exportPlateDataAction.setEnabled(havePlateData);
+		if (plateStatisticsAction != null)
+			plateStatisticsAction.setEnabled(havePlateData);
 
-		if (centerStructureMenuItem != null)
-			centerStructureMenuItem.setEnabled(exactlyOne);
-
-		if (centerStructurePreserveDistanceMenuItem != null)
-			centerStructurePreserveDistanceMenuItem.setEnabled(exactlyOne);
-
-		// If any of the selected structures are visible then show
-		// the hide menu item as unchecked. Otherwise show it checked.
-		hideMenuItem.setSelected(true);
-		int[] selectedStructures = model.getSelectedStructures();
-		for (int i = 0; i < selectedStructures.length; ++i)
-		{
-			if (model.isStructureVisible(selectedStructures[i]) == true)
-			{
-				hideMenuItem.setSelected(false);
-				break;
-			}
-		}
-
-		/*
-		 * hideLabelButton.setSelected(true); for (int i=0; i<selectedStructures.length;
-		 * ++i) { if (!model.isLabelHidden(selectedStructures[i])) {
-		 * hideLabelButton.setSelected(false); break; } }
-		 */
+//		isEnabled = false;
+//		for (G1 aItem : pickS)
+//			isEnabled |= aItem.getLabelHidden() == true;
+//		hideLabelButton.setSelected(isEnabled);
 
 		// If any of the selected structures are displaying interior then show
 		// the display interior menu item as unchecked. Otherwise show it checked.
 		if (displayInteriorMenuItem != null)
 		{
-			displayInteriorMenuItem.setSelected(true);
-			selectedStructures = model.getSelectedStructures();
-			for (int i = 0; i < selectedStructures.length; ++i)
-			{
-				if (!model.isShowStructureInterior(selectedStructures[i]))
-				{
-					displayInteriorMenuItem.setSelected(false);
-					break;
-				}
-			}
+			PolygonModel tmpManager = (PolygonModel) refManager;
+			Set<Polygon> pickS2 = tmpManager.getSelectedItems();
+
+			isEnabled = true;
+			for (Polygon aItem : pickS2)
+				isEnabled &= tmpManager.getShowInterior(aItem);
+
+			displayInteriorMenuItem.setSelected(isEnabled);
 		}
 
 		super.show(invoker, x, y);
@@ -203,40 +212,22 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		show(e.getComponent(), e.getX(), e.getY());
 	}
 
-	protected class EditAction extends AbstractAction
-	{
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{
-			int[] selectedStructures = model.getSelectedStructures();
-			if (selectedStructures.length == 1)
-				model.activateStructure(selectedStructures[0]);
-		}
-	}
-
 	protected class ChangeColorAction extends AbstractAction
 	{
 		@Override
 		public void actionPerformed(ActionEvent actionEvent)
 		{
-			int[] selectedStructures = model.getSelectedStructures();
-			if (selectedStructures.length == 0)
+			List<G1> pickL = refManager.getSelectedItems().asList();
+			if (pickL.size() == 0)
 				return;
 
 			// Use the color of the first item as the default to show
-			Color color = ColorChooser.showColorChooser(getInvoker(), model.getStructure(selectedStructures[0]).getColor());
-
+			Color color = ColorChooser.showColorChooser(getInvoker(), pickL.get(0).getColor());
 			if (color == null)
 				return;
 
-			int[] c = new int[4];
-			c[0] = color.getRed();
-			c[1] = color.getGreen();
-			c[2] = color.getBlue();
-			c[3] = color.getAlpha();
-
-			for (int idx : selectedStructures)
-				model.setStructureColor(idx, c);
+			for (G1 aItem : pickL)
+				refManager.setColor(aItem, color);
 		}
 	}
 
@@ -245,9 +236,9 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			int[] selectedStructures = model.getSelectedStructures();
+			Set<G1> pickS = refManager.getSelectedItems();
 			boolean isVisible = !hideMenuItem.isSelected();
-			model.setStructureVisible(selectedStructures, isVisible);
+			refManager.setIsVisible(pickS, isVisible);
 		}
 	}
 
@@ -256,9 +247,8 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			int[] selectedStructures = model.getSelectedStructures();
-			for (int i = selectedStructures.length - 1; i >= 0; --i)
-				model.removeStructure(selectedStructures[i]);
+			Set<G1> pickS = refManager.getSelectedItems();
+			refManager.removeItems(pickS);
 		}
 	}
 
@@ -274,13 +264,14 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			int[] selectedStructures = model.getSelectedStructures();
-			if (selectedStructures.length != 1)
+			List<G1> pickL = refManager.getSelectedItems().asList();
+			if (pickL.size() != 1)
 				return;
+			G1 tmpItem = pickL.get(0);
 
 			double viewAngle = renderer.getCameraViewAngle();
-			double[] focalPoint = model.getStructureCenter(selectedStructures[0]);
-			double[] normal = model.getStructureNormal(selectedStructures[0]);
+			double[] focalPoint = refManager.getCenter(tmpItem).toArray();
+			double[] normal = refManager.getNormal(tmpItem).toArray();
 			vtkAbstractComponent renWin = renderer.getRenderWindowPanel();
 
 			double distanceToStructure = 0.0;
@@ -293,20 +284,15 @@ abstract public class StructuresPopupMenu extends PopupMenu
 			}
 			else
 			{
-				double size = model.getStructureSize(selectedStructures[0]);
+				double size = refManager.getDiameter(tmpItem);
 				distanceToStructure = size / Math.tan(Math.toRadians(viewAngle) / 2.0);
 			}
 
 			double[] newPos = { focalPoint[0] + distanceToStructure * normal[0],
-					focalPoint[1] + distanceToStructure * normal[1],
-					focalPoint[2] + distanceToStructure * normal[2]
-			};
+					focalPoint[1] + distanceToStructure * normal[1], focalPoint[2] + distanceToStructure * normal[2] };
 
 			// compute up vector
-			double[] dir = { focalPoint[0] - newPos[0],
-					focalPoint[1] - newPos[1],
-					focalPoint[2] - newPos[2]
-			};
+			double[] dir = { focalPoint[0] - newPos[0], focalPoint[1] - newPos[1], focalPoint[2] - newPos[2] };
 			MathUtil.vhat(dir, dir);
 			double[] zAxis = { 0.0, 0.0, 1.0 };
 			double[] upVector = new double[3];
@@ -326,13 +312,13 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		@Override
 		public void actionPerformed(ActionEvent actionEvent)
 		{
-			int[] selectedStructures = model.getSelectedStructures();
-			if (selectedStructures.length == 1)
-			{
-				ChangeLatLonDialog dialog = new ChangeLatLonDialog(model, selectedStructures[0]);
-				dialog.setLocationRelativeTo(JOptionPane.getFrameForComponent(getInvoker()));
-				dialog.setVisible(true);
-			}
+			List<G1> pickL = refManager.getSelectedItems().asList();
+			if (pickL.size() != 1)
+				return;
+
+			ChangeLatLonDialog<?> dialog = new ChangeLatLonDialog<>(refManager, pickL.get(0));
+			dialog.setLocationRelativeTo(JOptionPane.getFrameForComponent(getInvoker()));
+			dialog.setVisible(true);
 		}
 	}
 
@@ -346,41 +332,39 @@ abstract public class StructuresPopupMenu extends PopupMenu
 			{
 				try
 				{
-					int[] selectedStructures = model.getSelectedStructures();
-					if (selectedStructures.length == 1)
-						model.savePlateDataInsideStructure(selectedStructures[0], file);
+					Set<G1> pickS = refManager.getSelectedItems();
+					PlateUtil.savePlateDataInsideStructure(smallBodyModel, refManager, pickS, file);
 				}
 				catch (Exception e1)
 				{
-					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(getInvoker()), "Unable to save file to " + file.getAbsolutePath(), "Error Saving File", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(getInvoker()),
+							"Unable to save file to " + file.getAbsolutePath(), "Error Saving File",
+							JOptionPane.ERROR_MESSAGE);
 					e1.printStackTrace();
 				}
 			}
 		}
 	}
-	
+
 	protected class ShowPlateStatisticsInfo extends AbstractAction
 	{
 
 		@Override
-		public void actionPerformed(ActionEvent e) 
+		public void actionPerformed(ActionEvent e)
 		{
-			int[] selectedStructures = model.getSelectedStructures();
-			if (selectedStructures.length == 1)
+			Set<G1> pickS = refManager.getSelectedItems();
+
+			FacetColoringData[] data = PlateUtil.getPlateDataInsideStructure(smallBodyModel, refManager, pickS);
+			try
 			{
-				FacetColoringData[] data = model.getPlateDataInsideStructure(selectedStructures[0]);
-				try 
-				{
-					ColoringInfoWindow window = new ColoringInfoWindow(data);
-				} 
-				catch (IOException e1) 
-				{
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
+				ColoringInfoWindow window = new ColoringInfoWindow(data);
+			}
+			catch (IOException e1)
+			{
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
 			}
 		}
-		
 	}
 
 	protected class SetLabelAction extends AbstractAction
@@ -393,18 +377,18 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			int[] selectedStructures = model.getSelectedStructures();
-			if (selectedStructures[0] == -1)
+			List<G1> pickL = refManager.getSelectedItems().asList();
+			if (pickL.size() == 0)
 				return;
 
 			String infoMsg = "Enter structure label text. Leave blank to remove label.";
-			String oldVal = model.getStructure(selectedStructures[0]).getLabel();
+			String oldVal = pickL.get(0).getLabel();
 			String newVal = JOptionPane.showInputDialog(infoMsg, oldVal);
 			if (newVal == null)
 				return;
 
-			for (int idx : selectedStructures)
-				model.setStructureLabel(idx, newVal);
+			for (G1 aItem : pickL)
+				refManager.setLabel(aItem, newVal);
 		}
 	}
 
@@ -418,9 +402,12 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			int[] selectedStructures = model.getSelectedStructures();
+			Set<G1> pickS = refManager.getSelectedItems();
+			if (pickS.isEmpty() == true)
+				return;
+
 			boolean isVisible = hideLabelButton.isSelected() == false;
-			model.setLabelVisible(selectedStructures, isVisible);
+			refManager.setLabelVisible(pickS, isVisible);
 		}
 	}
 
@@ -434,13 +421,14 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			String option = JOptionPane.showInputDialog("Enter font size. Font is 12 by default.");
-			int op = Integer.parseInt(option);
-			int[] selectedStructures = model.getSelectedStructures();
-			if (selectedStructures.length == 0)
+			Set<G1> pickS = refManager.getSelectedItems();
+			if (pickS.isEmpty() == true)
 				return;
 
-			model.setLabelFontSize(selectedStructures, op);
+			String option = JOptionPane.showInputDialog("Enter font size. Font is 12 by default.");
+			int op = Integer.parseInt(option);
+
+			refManager.setLabelFontSize(pickS, op);
 		}
 	}
 
@@ -454,18 +442,18 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			int[] selectedStructures = model.getSelectedStructures();
-			if (selectedStructures.length == 0)
+			List<G1> pickL = refManager.getSelectedItems().asList();
+			if (pickL.isEmpty() == true)
 				return;
-			
+
 			// Prompt the user for a choice
 			String[] options = { "Times", "Arial", "Courier" };
 			int optIdx = JOptionPane.showOptionDialog(null, "Pick the font you wish to use", "Choose",
 					JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 			if (optIdx == -1)
 				return;
-			
-			model.setLabelFontType(selectedStructures, options[optIdx]);
+
+			refManager.setLabelFontFamily(pickL, options[optIdx]);
 		}
 	}
 
@@ -479,16 +467,16 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			int[] selectedStructures = model.getSelectedStructures();
-			if (selectedStructures.length == 0)
+			List<G1> pickL = refManager.getSelectedItems().asList();
+			if (pickL.isEmpty() == true)
 				return;
 
 			// Use the color of the first item as the default to show
-			Color color = ColorChooser.showColorChooser(getInvoker(), model.getStructure(selectedStructures[0]).getColor());
+			Color color = ColorChooser.showColorChooser(getInvoker(), pickL.get(0).getColor());
 			if (color == null)
 				return;
-			
-			model.setLabelColor(selectedStructures, color);
+
+			refManager.setLabelColor(pickL, color);
 		}
 	}
 
@@ -497,17 +485,10 @@ abstract public class StructuresPopupMenu extends PopupMenu
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			int[] selectedStructures = model.getSelectedStructures();
-			model.setShowStructuresInterior(selectedStructures, displayInteriorMenuItem.isSelected());
+			PolygonModel tmpManager = (PolygonModel) refManager;
+			Set<Polygon> pickS = tmpManager.getSelectedItems();
+			tmpManager.setShowInterior(pickS, displayInteriorMenuItem.isSelected());
 		}
 	}
 
-	protected class showLabelBorderAction extends AbstractAction
-	{
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{
-			model.showBorders();
-		}
-	}
 }

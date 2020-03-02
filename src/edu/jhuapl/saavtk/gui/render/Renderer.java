@@ -56,7 +56,9 @@ import vtk.vtkPNMWriter;
 import vtk.vtkPostScriptWriter;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
+import vtk.vtkRenderWindow;
 import vtk.vtkRenderer;
+import vtk.vtkScalarBarActor;
 import vtk.vtkTIFFWriter;
 import vtk.vtkWindowToImageFilter;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
@@ -170,6 +172,9 @@ public class Renderer extends JPanel implements ActionListener
 		
 		// Cause the RenderPanel to be rendered whenever the camera changes
 		camera.addListener((aEvent) -> { mainCanvas.Render(); }); 
+				
+        ((GenericPolyhedralModel)tmpPolyModel).sortPolydata(mainCanvas.getActiveCamera());
+
 	}
 
 	/**
@@ -253,13 +258,15 @@ public class Renderer extends JPanel implements ActionListener
 		HashSet<vtkProp> renderedProps = new HashSet<vtkProp>();
 		for (int i = 0; i < size; ++i)
 			renderedProps.add((vtkProp) propCollection.GetItemAsObject(i));
+
 		renderedProps.removeAll(props);
+
 		if (!renderedProps.isEmpty())
 		{
 			renderWindow.getVTKLock().lock();
 			for (vtkProp prop : renderedProps)
 			{
-				if (!(prop instanceof vtkCubeAxesActor2D))
+				if (!(prop instanceof vtkCubeAxesActor2D) && !(prop instanceof vtkScalarBarActor))
 					whichRenderer.RemoveViewProp(prop);
 			}
 			renderWindow.getVTKLock().unlock();
@@ -295,7 +302,7 @@ public class Renderer extends JPanel implements ActionListener
 			return;
 		renderWindow.Render();
 	}
-
+	
 	public void onStartInteraction()
 	{
 		showLODs();

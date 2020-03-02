@@ -13,8 +13,10 @@ import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
+import edu.jhuapl.saavtk.structure.Ellipse;
+import edu.jhuapl.saavtk.structure.Structure;
+import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import net.miginfocom.swing.MigLayout;
@@ -22,20 +24,30 @@ import net.miginfocom.swing.MigLayout;
 /**
  * The purpose of this dialog is to change
  */
-public class ChangeLatLonDialog extends JDialog implements ActionListener
+public class ChangeLatLonDialog<G1 extends Structure> extends JDialog implements ActionListener
 {
-	private StructureModel structureModel;
+	// Ref vars
+	private AbstractEllipsePolygonModel refManager;
+	private Ellipse refItem;
+
+	// Gui vars
 	private JButton applyButton;
 	private JButton okayButton;
 	private JButton cancelButton;
 	private JFormattedTextField latTextField;
 	private JFormattedTextField lonTextField;
-	private int structureIndex;
 
-	public ChangeLatLonDialog(StructureModel structureModel, int structureIndex)
+	/**
+	 * Standard Constructor
+	 *
+	 * @param aManager Reference StructureManager of type
+	 *                 {@link AbstractEllipsePolygonModel}.
+	 * @param aItem    Reference structure of type {@link Ellipse}
+	 */
+	public ChangeLatLonDialog(StructureManager<G1> aManager, G1 aItem)
 	{
-		this.structureModel = structureModel;
-		this.structureIndex = structureIndex;
+		refManager = (AbstractEllipsePolygonModel) aManager;
+		refItem = (Ellipse) aItem;
 
 		setTitle("Change Latitude/Longitude");
 
@@ -82,35 +94,32 @@ public class ChangeLatLonDialog extends JDialog implements ActionListener
 	{
 		if (e.getSource() == applyButton || e.getSource() == okayButton)
 		{
+			double latitude, longitude;
 			try
 			{
-				if (structureModel instanceof AbstractEllipsePolygonModel)
-				{
-
-					double latitude = Double.parseDouble(latTextField.getText());
-					double longitude = Double.parseDouble(lonTextField.getText());
-
-					((AbstractEllipsePolygonModel) structureModel).movePolygon(structureIndex, (Math.PI / 180.0) * latitude, (Math.PI / 180.0) * longitude);
-
-					double[] center = ((AbstractEllipsePolygonModel.EllipsePolygon) structureModel.getStructure(structureIndex)).center;
-
-					LatLon ll = MathUtil.reclat(center);
-
-					latitude = ll.lat;
-					longitude = ll.lon;
-					if (longitude < 0.0)
-						longitude += 2.0 * Math.PI;
-
-					// Reset the text fields in case the requested lat/lon change was not
-					// fully fulfilled.
-					latTextField.setValue((180.0 / Math.PI) * latitude);
-					lonTextField.setValue((180.0 / Math.PI) * longitude);
-				}
+				latitude = Double.parseDouble(latTextField.getText());
+				longitude = Double.parseDouble(lonTextField.getText());
 			}
 			catch (NumberFormatException ex)
 			{
 				return;
 			}
+
+			refManager.movePolygon(refItem, (Math.PI / 180.0) * latitude, (Math.PI / 180.0) * longitude);
+
+			double[] center = refManager.getCenter(refItem).toArray();
+
+			LatLon ll = MathUtil.reclat(center);
+
+			latitude = ll.lat;
+			longitude = ll.lon;
+			if (longitude < 0.0)
+				longitude += 2.0 * Math.PI;
+
+			// Reset the text fields in case the requested lat/lon change was not
+			// fully fulfilled.
+			latTextField.setValue((180.0 / Math.PI) * latitude);
+			lonTextField.setValue((180.0 / Math.PI) * longitude);
 		}
 
 		if (e.getSource() == okayButton || e.getSource() == cancelButton)
@@ -120,9 +129,9 @@ public class ChangeLatLonDialog extends JDialog implements ActionListener
 	}
 
 	@Override
-	public void setVisible(boolean b)
+	public void setVisible(boolean aBool)
 	{
-		double[] center = ((AbstractEllipsePolygonModel.EllipsePolygon) structureModel.getStructure(structureIndex)).center;
+		double[] center = refManager.getCenter(refItem).toArray();
 
 		LatLon ll = MathUtil.reclat(center);
 
@@ -134,6 +143,6 @@ public class ChangeLatLonDialog extends JDialog implements ActionListener
 		latTextField.setValue((180.0 / Math.PI) * latitude);
 		lonTextField.setValue((180.0 / Math.PI) * longitude);
 
-		super.setVisible(b);
+		super.setVisible(aBool);
 	}
 }

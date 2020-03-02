@@ -1,447 +1,117 @@
 package edu.jhuapl.saavtk.model.structure;
 
-import java.text.DecimalFormat;
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import crucible.crust.settings.api.Configuration;
-import crucible.crust.settings.api.ContentKey;
-import crucible.crust.settings.api.KeyValueCollection;
-import crucible.crust.settings.api.SettableValue;
-import crucible.crust.settings.api.Version;
-import crucible.crust.settings.impl.Configurations;
-import crucible.crust.settings.impl.KeyValueCollections;
-import crucible.crust.settings.impl.SettableValues;
-import crucible.crust.settings.impl.Utilities;
-import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.StructureModel;
+import crucible.crust.metadata.api.Key;
+import crucible.crust.metadata.api.Metadata;
+import crucible.crust.metadata.impl.InstanceGetter;
+import crucible.crust.settings.api.Configurable;
+import crucible.crust.settings.api.ControlKey;
+import crucible.crust.settings.api.SettableStored;
+import crucible.crust.settings.api.Stored;
+import crucible.crust.settings.api.Versionable;
+import crucible.crust.settings.api.Viewable;
+import crucible.crust.settings.impl.ConfigurableFactory;
+import crucible.crust.settings.impl.KeyedFactory;
+import crucible.crust.settings.impl.SettableStoredFactory;
+import crucible.crust.settings.impl.StoredFactory;
+import crucible.crust.settings.impl.Version;
+import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
+import edu.jhuapl.saavtk.structure.FontAttr;
+import edu.jhuapl.saavtk.structure.PolyLine;
+import edu.jhuapl.saavtk.structure.io.StructureLegacyUtil;
 import edu.jhuapl.saavtk.util.LatLon;
-import edu.jhuapl.saavtk.util.MathUtil;
-import edu.jhuapl.saavtk.util.Point3D;
-import vtk.vtkCaptionActor2D;
-import vtk.vtkPoints;
-import vtk.vtkPolyData;
 
-public class Line extends StructureModel.Structure
+public class Line
 {
-	private static final Version CONFIGURATION_VERSION = Version.of(1, 0);
-	private static final SettableValues settableValues = SettableValues.instance();
+	public static final ControlKey<SettableStored<Integer>> ID = SettableStoredFactory.key("id");
+	public static final ControlKey<SettableStored<String>> NAME = SettableStoredFactory.key("name");
+	public static final ControlKey<Stored<List<LatLon>>> VERTICES = StoredFactory.key("vertices");
+	public static final ControlKey<SettableStored<int[]>> COLOR = SettableStoredFactory.key("color");
+	public static final ControlKey<SettableStored<String>> LABEL = SettableStoredFactory.key("label");
+	public static final ControlKey<SettableStored<int[]>> LABEL_COLOR = SettableStoredFactory.key("labelColor");
+	public static final ControlKey<SettableStored<Integer>> LABEL_FONT_SIZE = SettableStoredFactory.key("labelFontSize");
+	public static final ControlKey<SettableStored<Boolean>> HIDDEN = SettableStoredFactory.key("hidden");
+	public static final ControlKey<SettableStored<Boolean>> LABEL_HIDDEN = SettableStoredFactory.key("labelHidden");
 
-	public static Configuration<KeyValueCollection<SettableValue<?>>> createConfiguration(int id, int[] color)
+	private static final Versionable CONFIGURATION_VERSION = Version.of(1, 0);
+	private static final SettableStoredFactory settableValues = SettableStoredFactory.instance();
+
+	protected static Configurable formConfigurationFor(PolyLine aLine)
 	{
-		KeyValueCollections.Builder<SettableValue<?>> builder = KeyValueCollections.instance().builder(Utilities.getSpecificType(SettableValue.class));
+		int[] intArr;
 
-		builder.put(ID, settableValues.of(id));
-		builder.put(NAME, settableValues.of("default"));
-		builder.put(COLOR, settableValues.of(color));
-		builder.put(LABEL, settableValues.of(""));
+		KeyedFactory.Builder<Viewable> builder = KeyedFactory.instance().builder();
 
-		return Configurations.instance().of(CONFIGURATION_VERSION, builder.build());
+		builder.put(ID, settableValues.of(aLine.getId()));
+		builder.put(NAME, settableValues.of(aLine.getName()));
+		// Note: it is correct to use settableValues to instantiate the setting for
+		// VERTICES. This is because the list of controlPoints is final but mutable. If
+		// one used just "Values", the set of vertices would not be saved in the file
+		// because it would not be considered "stateful".
+		builder.put(VERTICES, settableValues.of(aLine.getControlPoints()));
+		intArr = StructureLegacyUtil.convertColorToRgba(aLine.getColor());
+		builder.put(COLOR, settableValues.of(intArr));
+		builder.put(LABEL, settableValues.of(aLine.getLabel()));
+
+		FontAttr tmpFA = aLine.getLabelFontAttr();
+		intArr = StructureLegacyUtil.convertColorToRgba(tmpFA.getColor());
+		builder.put(LABEL_COLOR, settableValues.of(intArr));
+		builder.put(LABEL_FONT_SIZE, settableValues.of(tmpFA.getSize()));
+		builder.put(HIDDEN, settableValues.of(!aLine.getVisible()));
+		builder.put(LABEL_HIDDEN, settableValues.of(!tmpFA.getIsVisible()));
+
+		return ConfigurableFactory.instance().of(CONFIGURATION_VERSION, builder.build());
 	}
 
-	// Note that controlPoints is what gets stored in the saved file.
-	private final List<LatLon> controlPoints = new ArrayList<>();
+	private static final Key<PolyLine> LINE_STRUCTURE_PROXY_KEY = Key.of("Line (structure)");
+	private static boolean proxyInitialized = false;
 
-	// Note xyzPointList is what's displayed. There will usually be more of these points than
-	// controlPoints in order to ensure the line is right above the surface of the asteroid.
-	public List<Point3D> xyzPointList = new ArrayList<Point3D>();
-	public List<Integer> controlPointIds = new ArrayList<Integer>();
-	public boolean hidden = false;
-	public boolean labelHidden = false;
-
-	private PolyhedralModel smallBodyModel;
-
-	private static final int[] purpleColor = { 255, 0, 255, 255 }; // RGBA purple
-	protected static final DecimalFormat decimalFormatter = new DecimalFormat("#.###");
-
-	private boolean closed = false;
-	public vtkCaptionActor2D caption;
-	private static int maxId = 0;
-
-	public static final String PATH = "path";
-	public static final ContentKey<SettableValue<Integer>> ID = settableValues.key("id");
-	public static final ContentKey<SettableValue<String>> NAME = settableValues.key("name");
-	public static final ContentKey<SettableValue<String>> VERTICES = settableValues.key("vertices");
-	public static final String LENGTH = "length";
-	public static final ContentKey<SettableValue<int[]>> COLOR = settableValues.key("color");
-	public static final ContentKey<SettableValue<String>> LABEL = settableValues.key("label");
-	public static final String LABELCOLOR = "labelcolor";
-
-	private final Configuration<KeyValueCollection<SettableValue<?>>> configuration;
-
-	public Line(PolyhedralModel smallBodyModel, boolean closed, int id)
+	public static void initializeSerializationProxy()
 	{
-		this.configuration = createConfiguration(id, purpleColor.clone());
-		this.smallBodyModel = smallBodyModel;
-		this.closed = closed;
-	}
-
-	@Override
-	public int getId()
-	{
-		return configuration.getContent().getValue(ID).getValue();
-	}
-
-	private void setId(int id)
-	{
-		configuration.getContent().getValue(ID).setValue(id);
-	}
-
-	@Override
-	public String getLabel()
-	{
-		return configuration.getContent().getValue(LABEL).getValue();
-	}
-
-	@Override
-	public void setLabel(String label)
-	{
-		configuration.getContent().getValue(LABEL).setValue(label);
-	}
-
-	@Override
-	public String getName()
-	{
-		return configuration.getContent().getValue(NAME).getValue();
-	}
-
-	@Override
-	public void setName(String name)
-	{
-		configuration.getContent().getValue(NAME).setValue(name);
-	}
-
-	@Override
-	public String getType()
-	{
-		return PATH;
-	}
-
-	@Override
-	public String getInfo()
-	{
-		return decimalFormatter.format(getPathLength()) + " km, " + controlPointIds.size() + " vertices";
-	}
-
-	@Override
-	public int[] getColor()
-	{
-		return configuration.getContent().getValue(COLOR).getValue().clone();
-	}
-
-	@Override
-	public void setColor(int[] color)
-	{
-		configuration.getContent().getValue(COLOR).setValue(color.clone());
-	}
-
-	public ImmutableList<LatLon> getControlPoints()
-	{
-		return ImmutableList.copyOf(controlPoints);
-	}
-
-	public void setControlPoint(int index, LatLon controlPoint)
-	{
-		Preconditions.checkArgument(index >= 0 && index < controlPoints.size());
-
-		controlPoints.set(index, controlPoint);
-	}
-
-	public void addControlPoint(int index, LatLon controlPoint)
-	{
-		// One past last is OK for this one.
-		Preconditions.checkArgument(index >= 0 && index <= controlPoints.size());
-
-		controlPoints.add(index, controlPoint);
-	}
-
-	public void removeControlPoint(int index)
-	{
-		Preconditions.checkArgument(index >= 0 && index < controlPoints.size());
-
-		controlPoints.remove(index);
-	}
-
-	public Element toXmlDomElement(Document dom)
-	{
-		Element linEle = dom.createElement(getType());
-		linEle.setAttribute(ID.getId(), String.valueOf(getId()));
-		linEle.setAttribute(NAME.getId(), getName());
-		linEle.setAttribute(LABEL.getId(), getLabel());
-		//        String labelcolorStr=labelcolor[0] + "," + labelcolor[1] + "," + labelcolor[2];
-		//        linEle.setAttribute(LABELCOLOR, labelcolorStr);
-		linEle.setAttribute(LENGTH, String.valueOf(getPathLength()));
-
-		int[] color = getColor();
-		String colorStr = color[0] + "," + color[1] + "," + color[2];
-		linEle.setAttribute(COLOR.getId(), colorStr);
-
-		String vertices = "";
-		int size = getControlPoints().size();
-
-		for (int i = 0; i < size; ++i)
+		if (!proxyInitialized)
 		{
-			LatLon ll = getControlPoints().get(i);
-			double latitude = ll.lat * 180.0 / Math.PI;
-			double longitude = ll.lon * 180.0 / Math.PI;
-			if (longitude < 0.0)
-				longitude += 360.0;
+			LatLon.initializeSerializationProxy();
 
-			vertices += latitude + " " + longitude + " " + ll.rad;
+			InstanceGetter.defaultInstanceGetter().register(LINE_STRUCTURE_PROXY_KEY, source -> {
+				int id = source.get(Key.of(ID.getId()));
+				PolyLine result = new PolyLine(id, null, new ArrayList<>());
+				unpackMetadata(source, result);
 
-			if (i < size - 1)
-				vertices += " ";
+				return result;
+			}, PolyLine.class, line -> {
+				Configurable configuration = formConfigurationFor(line);
+				return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration).store();
+			});
+
+			proxyInitialized = true;
 		}
-
-		linEle.setAttribute(VERTICES.getId(), vertices);
-
-		return linEle;
 	}
 
-	public void fromXmlDomElement(Element element, String shapeModelName, boolean append)
+	protected static void unpackMetadata(Metadata source, PolyLine line)
 	{
-		controlPoints.clear();
-		controlPointIds.clear();
-		xyzPointList.clear();
+		int[] intArr;
 
-		int id = getId();
-		if (!append)
-		{ // If appending, use id as-is
-			id = Integer.parseInt(element.getAttribute(ID.getId()));
-			setId(id);
-		}
-		if (id > maxId)
-			maxId = id;
+		line.setName(source.get(Key.of(NAME.getId())));
+		intArr = source.get(Key.of(COLOR.getId()));
+		line.setColor(StructureLegacyUtil.convertRgbaToColor(intArr));
 
-		setName(element.getAttribute(NAME.getId()));
-		setLabel(element.getAttribute(LABEL.getId()));
-		String tmp = element.getAttribute(VERTICES.getId());
+		List<LatLon> sourceControlPoints = source.get(Key.of(VERTICES.getId()));
+		line.setControlPoints(ImmutableList.copyOf(sourceControlPoints));
 
-		if (tmp.length() == 0)
-			return;
+		line.setLabel(source.get(Key.of(LABEL.getId())));
+		intArr = source.get(Key.of(LABEL_COLOR.getId()));
+		Color labelColor = StructureLegacyUtil.convertRgbaToColor(intArr);
+		int labelSize = source.get(Key.of(LABEL_FONT_SIZE.getId()));
+		boolean visible = source.get(Key.of(HIDDEN.getId()));
+		line.setVisible(!visible);
+		boolean labelIsVisible = source.get(Key.of(LABEL_HIDDEN.getId()));
+		labelIsVisible = !labelIsVisible;
 
-		String[] tokens = tmp.split(" ");
-
-		int count = 0;
-		for (int i = 0; i < tokens.length;)
-		{
-			double lat = Double.parseDouble(tokens[i++]) * Math.PI / 180.0;
-			double lon = Double.parseDouble(tokens[i++]) * Math.PI / 180.0;
-			double rad = Double.parseDouble(tokens[i++]);
-			addControlPoint(count, new LatLon(lat, lon, rad));
-
-			if (shapeModelName == null || !shapeModelName.equals(smallBodyModel.getModelName()))
-				shiftPointOnPathToClosestPointOnAsteroid(count);
-
-			controlPointIds.add(xyzPointList.size());
-
-			// Note, this point will be replaced with the correct values
-			// when we call updateSegment
-			double[] dummy = { 0.0, 0.0, 0.0 };
-			xyzPointList.add(new Point3D(dummy));
-
-			if (count > 0)
-				this.updateSegment(count - 1);
-
-			++count;
-		}
-
-		if (closed)
-		{
-			// In CLOSED mode need to add segment connecting final point to initial point
-			this.updateSegment(controlPointIds.size() - 1);
-		}
-
-		tmp = element.getAttribute(COLOR.getId());
-		if (tmp.length() == 0)
-			return;
-		tokens = tmp.split(",");
-
-		int[] color = { Integer.parseInt(tokens[0]), Integer.parseInt(tokens[1]), Integer.parseInt(tokens[2]) };
-		setColor(color);
-
-		//        String[] labelColors=element.getAttribute(LABELCOLOR).split(",");
-		//        labelcolor[0] = Double.parseDouble(labelColors[0]);
-		//        labelcolor[1] = Double.parseDouble(labelColors[1]);
-		//        labelcolor[2] = Double.parseDouble(labelColors[2]);
-
-	}
-
-	@Override
-	public String getClickStatusBarText()
-	{
-		return "Path, Id = " + getId() + ", Length = " + decimalFormatter.format(getPathLength()) + " km" + ", Number of Vertices = " + getControlPoints().size();
-	}
-
-	public double getPathLength()
-	{
-		int size = xyzPointList.size();
-		double length = 0.0;
-
-		for (int i = 1; i < size; ++i)
-		{
-			double dist = xyzPointList.get(i - 1).distanceTo(xyzPointList.get(i));
-			length += dist;
-		}
-
-		if (closed && size > 1)
-		{
-			double dist = xyzPointList.get(size - 1).distanceTo(xyzPointList.get(0));
-			length += dist;
-		}
-
-		return length;
-	}
-
-	public void updateSegment(int segment)
-	{
-		int nextSegment = segment + 1;
-		if (nextSegment == getControlPoints().size())
-			nextSegment = 0;
-
-		LatLon ll1 = getControlPoints().get(segment);
-		LatLon ll2 = getControlPoints().get(nextSegment);
-		double pt1[] = MathUtil.latrec(ll1);
-		double pt2[] = MathUtil.latrec(ll2);
-
-		int id1 = controlPointIds.get(segment);
-		int id2 = controlPointIds.get(nextSegment);
-
-		// Set the 2 control points
-		xyzPointList.set(id1, new Point3D(pt1));
-		xyzPointList.set(id2, new Point3D(pt2));
-
-		vtkPoints points = null;
-		if (Math.abs(ll1.lat - ll2.lat) < 1e-8 && Math.abs(ll1.lon - ll2.lon) < 1e-8 && Math.abs(ll1.rad - ll2.rad) < 1e-8)
-		{
-			points = new vtkPoints();
-			points.InsertNextPoint(pt1);
-			points.InsertNextPoint(pt2);
-		}
-		else
-		{
-			vtkPolyData poly = smallBodyModel.drawPath(pt1, pt2);
-			if (poly == null)
-				return;
-
-			points = poly.GetPoints();
-		}
-
-		// Remove points BETWEEN the 2 control points
-		int numberPointsToRemove = id2 - id1 - 1;
-		if (nextSegment == 0)
-			numberPointsToRemove = xyzPointList.size() - id1 - 1;
-		for (int i = 0; i < numberPointsToRemove; ++i)
-		{
-			xyzPointList.remove(id1 + 1);
-		}
-
-		// Set the new points
-		int numNewPoints = points.GetNumberOfPoints();
-		for (int i = 1; i < numNewPoints - 1; ++i)
-		{
-			xyzPointList.add(id1 + i, new Point3D(points.GetPoint(i)));
-		}
-
-		// Shift the control points ids from segment+1 till the end by the right amount.
-		int shiftAmount = id1 + numNewPoints - 1 - id2;
-		for (int i = segment + 1; i < controlPointIds.size(); ++i)
-		{
-			controlPointIds.set(i, controlPointIds.get(i) + shiftAmount);
-		}
-
-	}
-
-	public void shiftPointOnPathToClosestPointOnAsteroid(int idx)
-	{
-		// When the resolution changes, the control points, might no longer
-		// be touching the asteroid. Therefore shift each control to the closest
-		// point on the asteroid.
-		LatLon llr = getControlPoints().get(idx);
-		double pt[] = MathUtil.latrec(llr);
-		double[] closestPoint = smallBodyModel.findClosestPoint(pt);
-		LatLon ll = MathUtil.reclat(closestPoint);
-		setControlPoint(idx, ll);
-	}
-
-	public double[] getCentroid()
-	{
-		int size = getControlPoints().size();
-
-		double[] centroid = { 0.0, 0.0, 0.0 };
-		for (int i = 0; i < size; ++i)
-		{
-			LatLon ll = getControlPoints().get(i);
-			double[] p = MathUtil.latrec(ll);
-			centroid[0] += p[0];
-			centroid[1] += p[1];
-			centroid[2] += p[2];
-		}
-
-		centroid[0] /= size;
-		centroid[1] /= size;
-		centroid[2] /= size;
-
-		double[] closestPoint = smallBodyModel.findClosestPoint(centroid);
-
-		return closestPoint;
-	}
-
-	public double getSize()
-	{
-		int size = getControlPoints().size();
-
-		double[] centroid = getCentroid();
-		double maxDistFromCentroid = 0.0;
-		for (int i = 0; i < size; ++i)
-		{
-			LatLon ll = getControlPoints().get(i);
-			double[] p = MathUtil.latrec(ll);
-			double dist = MathUtil.distanceBetween(centroid, p);
-			if (dist > maxDistFromCentroid)
-				maxDistFromCentroid = dist;
-		}
-		return maxDistFromCentroid;
-	}
-
-	@Override
-	public boolean getHidden()
-	{
-		return hidden;
-	}
-
-	@Override
-	public boolean getLabelHidden()
-	{
-		return labelHidden;
-	}
-
-	@Override
-	public void setHidden(boolean b)
-	{
-		hidden = b;
-	}
-
-	@Override
-	public void setLabelHidden(boolean b)
-	{
-		labelHidden = b;
-	}
-
-	public int getNumberOfPoints()
-	{
-		return xyzPointList.size();
-	}
-
-	public Vector3D getPoint(int i)
-	{
-		return new Vector3D(xyzPointList.get(i).xyz);
+		line.setLabelFontAttr(new FontAttr("Plain", labelColor, labelSize, labelIsVisible));
 	}
 }

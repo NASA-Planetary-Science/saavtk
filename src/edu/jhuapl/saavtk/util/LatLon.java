@@ -2,6 +2,11 @@ package edu.jhuapl.saavtk.util;
 
 import com.google.common.base.Preconditions;
 
+import crucible.crust.metadata.api.Key;
+import crucible.crust.metadata.api.Version;
+import crucible.crust.metadata.impl.InstanceGetter;
+import crucible.crust.metadata.impl.SettableMetadata;
+
 /**
  * Note it is unspecified whether lat and lon are in degrees or radians.
  */
@@ -79,4 +84,26 @@ public class LatLon
 	{
 		return new LatLon(lat, lon, rad);
 	}
+
+	private static final Version METADATA_VERSION = Version.of(1, 0);
+	private static final Key<LatLon> LATLON_PROXY_KEY = Key.of("latLon");
+	private static final Key<double[]> LAT_LON_RADIUS = Key.of("lat, lon, rad");
+	private static boolean proxyInitialized = false;
+
+	public static void initializeSerializationProxy()
+	{
+		if (!proxyInitialized)
+		{
+			InstanceGetter.defaultInstanceGetter().register(LATLON_PROXY_KEY, source -> {
+				return new LatLon(source.get(LAT_LON_RADIUS));
+			}, LatLon.class, latlon -> {
+				SettableMetadata metadata = SettableMetadata.of(METADATA_VERSION);
+				metadata.put(LAT_LON_RADIUS, latlon.get());
+				return metadata;
+			});
+
+			proxyInitialized = true;
+		}
+	}
+
 }

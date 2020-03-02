@@ -10,176 +10,201 @@ import javax.swing.JSeparator;
 
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
+import edu.jhuapl.saavtk.util.Configuration;
+import edu.jhuapl.saavtk.util.FileCache;
+import edu.jhuapl.saavtk.util.FileStateListenerTracker;
+import edu.jhuapl.saavtk.util.SafeURLPaths;
 
 public class FavoritesMenu extends JMenu
 {
-	FavoritesFile favoritesFile;
-	ViewManager manager;
+    private final FavoritesFile favoritesFile;
+    private final ViewManager manager;
+    private final FileStateListenerTracker fileStateTracker;
 
-	public FavoritesMenu(ViewManager manager)
-	{
-		super("Favorites");
-		this.favoritesFile = new FavoritesFile(manager);
-		this.manager = manager;
-		rebuild();
-	}
+    public FavoritesMenu(ViewManager manager)
+    {
+        super("Favorites");
+        this.favoritesFile = new FavoritesFile(manager);
+        this.manager = manager;
+        this.fileStateTracker = FileStateListenerTracker.of(FileCache.instance());
+        rebuild();
+    }
 
-	private final void rebuild()
-	{
-		removeAll();
-		//
-		JMenuItem add = new JMenuItem();
-		JMenuItem rem = new JMenuItem();
-		JMenuItem def = new JMenuItem();
-		JMenuItem remall = new JMenuItem();
-		add.setAction(new AddFavoriteAction("Add current model to favorites"));
-		rem.setAction(new RemoveFavoriteAction("Remove current model from favorites"));
-		def.setAction(new SetDefaultModelAction("Set current model as default", manager));
-		remall.setAction(new ClearFavoritesAction("Clear all favorites"));
+    private final void rebuild()
+    {
+        removeAll();
+        fileStateTracker.removeAllStateChangeListeners();
 
-		//
+        //
+        JMenuItem add = new JMenuItem();
+        JMenuItem rem = new JMenuItem();
+        JMenuItem def = new JMenuItem();
+        JMenuItem remall = new JMenuItem();
+        add.setAction(new AddFavoriteAction("Add current model to favorites"));
+        rem.setAction(new RemoveFavoriteAction("Remove current model from favorites"));
+        def.setAction(new SetDefaultModelAction("Set current model as default", manager));
+        remall.setAction(new ClearFavoritesAction("Clear all favorites"));
 
-		// favorites
+        //
 
-		JMenuItem favoritesItem = new JMenuItem("Favorite models:");
-		favoritesItem.setEnabled(false);
-		add(favoritesItem);
+        // favorites
 
-		List<View> favoriteViews = favoritesFile.getAllFavorites();
-		for (View view : favoriteViews)
-		{
-			JMenuItem menuItem = new FavoritesMenuItem(view);
-			if (!view.getUniqueName().equals(manager.getDefaultBodyToLoad()))
-				add(menuItem);
-		}
+        JMenuItem favoritesItem = new JMenuItem("Favorite models:");
+        favoritesItem.setEnabled(false);
+        add(favoritesItem);
 
-		// show default to load
-		if (!favoriteViews.isEmpty())
-			add(new JSeparator());
-		JMenuItem defaultItem = new JMenuItem("Default model:");
-		defaultItem.setEnabled(false);
-		add(defaultItem);
+        List<View> favoriteViews = favoritesFile.getAllFavorites();
+        for (View view : favoriteViews)
+        {
+            if (!view.getUniqueName().equals(manager.getDefaultBodyToLoad()))
+            {
+                JMenuItem menuItem = new FavoritesMenuItem(view);
+                String urlString = (view.getConfigURL() == null) ? view.getShapeModelName() : view.getConfigURL();
+            	if (view.getUniqueName().contains("Custom"))
+            	{
+            		SafeURLPaths safeUrlPaths = SafeURLPaths.instance();
+            		urlString = safeUrlPaths.getUrl(safeUrlPaths.getString(Configuration.getImportedShapeModelsDir(), view.getShapeModelName()));
+            	}
+//                String urlString = view.getConfig().getShapeModelFileNames()[0];
+                fileStateTracker.addStateChangeListener(urlString, state -> {
+                    menuItem.setEnabled(state.isAccessible());
+                });
+                add(menuItem);
+            }
+        }
 
-		try
-		{
-			View defaultToLoad = manager.getView(manager.getDefaultBodyToLoad());
-			JMenuItem menuItem = new FavoritesMenuItem(defaultToLoad);
-			if (!defaultToLoad.getConfig().isAccessible())
-			{
-				menuItem.setEnabled(false);
-			}
-			add(menuItem);
+        // show default to load
+        if (!favoriteViews.isEmpty())
+            add(new JSeparator());
+        JMenuItem defaultItem = new JMenuItem("Default model:");
+        add(defaultItem);
 
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        try
+        {
+            View defaultToLoad = manager.getView(manager.getDefaultBodyToLoad());
+            JMenuItem menuItem = new FavoritesMenuItem(defaultToLoad);
+//            String urlString = defaultToLoad.getShapeModelName();
+            String urlString = (defaultToLoad.getConfigURL() == null) ? defaultToLoad.getShapeModelName() : defaultToLoad.getConfigURL();
+        	if (defaultToLoad.getUniqueName().contains("Custom"))
+        	{
+        		SafeURLPaths safeUrlPaths = SafeURLPaths.instance();
+        		urlString = safeUrlPaths.getUrl(safeUrlPaths.getString(Configuration.getImportedShapeModelsDir(), defaultToLoad.getShapeModelName()));
+        	}
+            fileStateTracker.addStateChangeListener(urlString, state -> {
+                menuItem.setEnabled(state.isAccessible());
+            });
+            add(menuItem);
 
-		//
-		add(new JSeparator());
-		add(add);
-		add(rem);
-		add(remall);
-		add(def);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
 
-	}
+        //
+        add(new JSeparator());
+        add(add);
+        add(rem);
+        add(remall);
+        add(def);
 
-	private class FavoritesMenuItem extends JMenuItem
-	{
-		public FavoritesMenuItem(View view)
-		{
-			super(view.getModelDisplayName());
-			setAction(new ShowFavoriteAction(view));
-		}
+    }
 
-	}
+    private class FavoritesMenuItem extends JMenuItem
+    {
+        public FavoritesMenuItem(View view)
+        {
+            super(view.getModelDisplayName());
+            setAction(new ShowFavoriteAction(view));
+        }
 
-	private class ShowFavoriteAction extends AbstractAction
-	{
-		private final View view;
+    }
 
-		public ShowFavoriteAction(View view)
-		{
-			super(view.getModelDisplayName());
-			this.view = view;
-		}
+    private class ShowFavoriteAction extends AbstractAction
+    {
+        private final View view;
 
-		@Override
-		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
-		{
-			manager.setCurrentView(view);
-		}
+        public ShowFavoriteAction(View view)
+        {
+            super(view.getModelDisplayName());
+            this.view = view;
+        }
 
-	}
+        @Override
+        public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
+        {
+            manager.setCurrentView(view);
+        }
 
-	private class AddFavoriteAction extends AbstractAction
-	{
-		public AddFavoriteAction(String desc)
-		{
-			super(desc);
-		}
+    }
 
-		@Override
-		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
-		{
-			favoritesFile.addFavorite(manager.getCurrentView());
-			rebuild();
-		}
-	}
+    private class AddFavoriteAction extends AbstractAction
+    {
+        public AddFavoriteAction(String desc)
+        {
+            super(desc);
+        }
 
-	private class RemoveFavoriteAction extends AbstractAction
-	{
-		public RemoveFavoriteAction(String desc)
-		{
-			super(desc);
-		}
+        @Override
+        public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
+        {
+            favoritesFile.addFavorite(manager.getCurrentView());
+            rebuild();
+        }
+    }
 
-		@Override
-		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
-		{
-			favoritesFile.removeFavorite(manager.getCurrentView());
-			if (manager.getDefaultBodyToLoad().equals(manager.getCurrentView().getUniqueName()))
-				manager.resetDefaultBodyToLoad();
-			rebuild();
-		}
-	}
+    private class RemoveFavoriteAction extends AbstractAction
+    {
+        public RemoveFavoriteAction(String desc)
+        {
+            super(desc);
+        }
 
-	private class ClearFavoritesAction extends AbstractAction
-	{
-		public ClearFavoritesAction(String desc)
-		{
-			super(desc);
-		}
+        @Override
+        public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
+        {
+            favoritesFile.removeFavorite(manager.getCurrentView());
+            if (manager.getDefaultBodyToLoad().equals(manager.getCurrentView().getUniqueName()))
+                manager.resetDefaultBodyToLoad();
+            rebuild();
+        }
+    }
 
-		@Override
-		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
-		{
-			favoritesFile.clear();
-			manager.resetDefaultBodyToLoad();
-			rebuild();
-		}
-	}
+    private class ClearFavoritesAction extends AbstractAction
+    {
+        public ClearFavoritesAction(String desc)
+        {
+            super(desc);
+        }
 
-	private class SetDefaultModelAction extends AbstractAction
-	{
+        @Override
+        public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
+        {
+            favoritesFile.clear();
+            manager.resetDefaultBodyToLoad();
+            rebuild();
+        }
+    }
 
-		ViewManager manager;
+    private class SetDefaultModelAction extends AbstractAction
+    {
 
-		public SetDefaultModelAction(String desc, ViewManager manager)
-		{
-			super(desc);
-			this.manager = manager;
-		}
+        ViewManager manager;
 
-		@Override
-		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
-		{
-			manager.setDefaultBodyToLoad(manager.getCurrentView().getUniqueName());
-			favoritesFile.addFavorite(manager.getCurrentView()); // automatically add current view to favorites if it already is
-			rebuild();
-		}
+        public SetDefaultModelAction(String desc, ViewManager manager)
+        {
+            super(desc);
+            this.manager = manager;
+        }
 
-	}
+        @Override
+        public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
+        {
+            manager.setDefaultBodyToLoad(manager.getCurrentView().getUniqueName());
+            favoritesFile.addFavorite(manager.getCurrentView()); // automatically add current view to favorites if it already is
+            rebuild();
+        }
+
+    }
 
 }

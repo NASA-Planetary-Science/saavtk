@@ -10,6 +10,8 @@ import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
+import edu.jhuapl.saavtk.gui.StatusBar;
+import edu.jhuapl.saavtk.gui.StatusBarDefaultPickHandler;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
@@ -17,7 +19,17 @@ import edu.jhuapl.saavtk.pick.PickManager.PickMode;
 import edu.jhuapl.saavtk.util.Configuration;
 
 /**
- * Utility class for Picker related code.
+ * Utility class for configuration of Picker related code.
+ * <P>
+ * Please note the following:
+ * <UL>
+ * <LI>The method {@link #formNonDefaultPickerMap(Renderer, ModelManager)} is
+ * marked for removal.
+ * <LI>The method {@link #setPickingEnabled(boolean)} should be investigated
+ * further and eventually removed if possible.
+ * <UL>
+ *
+ * @author lopeznr1
  */
 public class PickUtil
 {
@@ -39,47 +51,49 @@ public class PickUtil
 	 * Utility method that forms the default collection of non-default Pickers to
 	 * their corresponding PickMode.
 	 */
-	public static Map<PickMode, Picker> formNonDefaultPickerMap(Renderer aRenderer, ModelManager aModelManager)
+	@Deprecated
+	protected static Map<PickMode, Picker> formNonDefaultPickerMap(Renderer aRenderer, ModelManager aModelManager)
 	{
-		Map<PickMode, Picker> retMap;
-
-		retMap = new HashMap<>();
-		if (aModelManager.getModel(ModelNames.LINE_STRUCTURES) != null)
-			retMap.put(PickMode.LINE_DRAW, new ControlPointsStructurePicker(aRenderer, aModelManager, ModelNames.LINE_STRUCTURES));
-		if (aModelManager.getModel(ModelNames.POLYGON_STRUCTURES) != null)
-			retMap.put(PickMode.POLYGON_DRAW, new ControlPointsStructurePicker(aRenderer, aModelManager, ModelNames.POLYGON_STRUCTURES));
-		if (aModelManager.getModel(ModelNames.CIRCLE_STRUCTURES) != null)
-			retMap.put(PickMode.CIRCLE_DRAW, new CirclePicker(aRenderer, aModelManager));
-		if (aModelManager.getModel(ModelNames.ELLIPSE_STRUCTURES) != null)
-			retMap.put(PickMode.ELLIPSE_DRAW, new EllipsePicker(aRenderer, aModelManager));
-		if (aModelManager.getModel(ModelNames.POINT_STRUCTURES) != null)
-			retMap.put(PickMode.POINT_DRAW, new PointPicker(aRenderer, aModelManager));
+		Map<PickMode, Picker> retMap = new HashMap<>();
 		if (aModelManager.getModel(ModelNames.CIRCLE_STRUCTURES) != null)
 			retMap.put(PickMode.CIRCLE_SELECTION, new CircleSelectionPicker(aRenderer, aModelManager));
 
 		return retMap;
 	}
 
-	// We do not rely on the OS for the popup trigger in the renderer (as explained in a comment
-	// in the DefaultPicker.mouseClicked function), we need to role out our own popup trigger logic.
-	// That's we why have the following complicated function. It's easier on non-macs. On macs
-	// we try to mimic the default behaviour where a Control + left mouse click is a popup trigger.
-	// Also for some reason, if you left mouse click while holding down the Command button, then
-	// SwingUtilities.isRightMouseButton() returns true. We therefore also prevent a popup from
-	// showing in this situation.
+	/**
+	 * Registers a {@link StatusBarDefaultPickHandler} with the
+	 * {@link PickManager}'s {@link DefaultPicker}.
+	 * <P>
+	 * The installed {@link StatusBarDefaultPickHandler} will handle updates
+	 * relevant to the status bar.
+	 */
+	public static void installDefaultPickHandler(PickManager aPickManager, StatusBar aStatusBar, Renderer aRenderer,
+			ModelManager aModelManager)
+	{
+		DefaultPicker tmpDefaultPicker = aPickManager.getDefaultPicker();
+		StatusBarDefaultPickHandler tmpStatusBarHandler = new StatusBarDefaultPickHandler(tmpDefaultPicker, aStatusBar,
+				aRenderer, aModelManager);
+		tmpDefaultPicker.addListener(tmpStatusBarHandler);
+	}
+
+	// We do not rely on the OS for the popup trigger in the renderer (as explained
+	// in a comment in the DefaultPicker.mouseClicked function), we need to role out
+	// our own popup trigger logic. That's we why have the following complicated
+	// function. It's easier on non-macs. On macs we try to mimic the default
+	// behaviour where a Control + left mouse click is a popup trigger. Also for
+	// some reason, if you left mouse click while holding down the Command button,
+	// then SwingUtilities.isRightMouseButton() returns true. We therefore also
+	// prevent a popup from showing in this situation.
 	public static boolean isPopupTrigger(MouseEvent e)
 	{
 		if (Configuration.isMac())
 		{
 			if (e.getButton() == MouseEvent.BUTTON1 && e.isControlDown())
-			{
 				return true;
-			}
 
-			if (!(e.getButton() == MouseEvent.BUTTON1 && e.isMetaDown()) && SwingUtilities.isRightMouseButton(e))
-			{
+			if (e.getButton() == MouseEvent.BUTTON3)
 				return true;
-			}
 		}
 		else if (SwingUtilities.isRightMouseButton(e))
 		{
@@ -110,7 +124,7 @@ public class PickUtil
 		{
 			// Delay half a second before enabling picking. This helps prevent some crashes.
 
-			int delay = 500; //milliseconds
+			int delay = 500; // milliseconds
 			ActionListener taskPerformer = new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent evt)

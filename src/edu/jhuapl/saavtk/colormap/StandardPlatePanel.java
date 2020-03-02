@@ -18,8 +18,8 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import edu.jhuapl.saavtk.gui.GNumberField;
-import edu.jhuapl.saavtk.gui.GuiUtil;
+import glum.gui.GuiUtil;
+import glum.gui.component.GNumberField;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -66,7 +66,7 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 		defaultMin = Double.NaN;
 		defaultMax = Double.NaN;
 
-		cColormap = Colormaps.getNewInstanceOfBuiltInColormap(Colormaps.getDefaultColormapName());
+		cColormap = Colormaps.getNewInstanceOfBuiltInColormap(Colormaps.getCurrentColormapName());
 
 		// Instantiate the various GUI controls
 		colormapComboBox = new JComboBox<>();
@@ -77,17 +77,15 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 		{
 			Colormap cmap = Colormaps.getNewInstanceOfBuiltInColormap(aStr);
 			colormapComboBox.addItem(cmap);
-			if (cmap.getName().equals(Colormaps.getDefaultColormapName()))
+			if (cmap.getName().equals(Colormaps.getCurrentColormapName()))
 				colormapComboBox.setSelectedItem(cmap);
 		}
 		colormapComboBox.addActionListener(this);
 
 		minValueL = new JLabel("Min Value");
 		maxValueL = new JLabel("Max Value");
-		minValueNF = new GNumberField(this);
-		minValueNF.setFormat(new SigFigNumberFormat(3));
-		maxValueNF = new GNumberField(this);
-		maxValueNF.setFormat(new SigFigNumberFormat(3));
+		minValueNF = new GNumberField(this, new SigFigNumberFormat(3));
+		maxValueNF = new GNumberField(this, new SigFigNumberFormat(3));
 		numColorLevelsNF = new GNumberField(this);
 		numColorLevelsNF.setValue(32);
 		numTicksSpinner = new JSpinner(new SpinnerNumberModel(5, 0, 20, 1));

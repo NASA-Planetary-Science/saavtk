@@ -4,17 +4,17 @@ import java.awt.Color;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.StructureModel;
-import edu.jhuapl.saavtk.model.StructureModel.Structure;
 import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.esri.LineSegment;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
@@ -23,12 +23,15 @@ import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
 import edu.jhuapl.saavtk.model.structure.esri.PointStyle;
 import edu.jhuapl.saavtk.model.structure.esri.ShapefileUtil;
 import edu.jhuapl.saavtk.model.structure.esri.VtkFileUtil;
+import edu.jhuapl.saavtk.structure.Ellipse;
+import edu.jhuapl.saavtk.structure.PolyLine;
+import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.util.MathUtil;
 
 public class StructuresExporter
 {
 
-	public static void exportToShapefile(StructureModel model, Path shapeFile) throws IOException
+	public static void exportToShapefile(StructureManager<?> model, Path shapeFile) throws IOException
 	{
 		if (model instanceof PointModel)
 		{
@@ -47,69 +50,70 @@ public class StructuresExporter
 		}
 	}
 
-	public static void exportToShapefile(PointModel model, Path shapeFile) throws IOException
+	public static void exportToShapefile(PointModel aPointManager, Path aShapeFile) throws IOException
 	{
-		List<PointStructure> structuresToWrite = Lists.newArrayList();
-		int[] ids = model.getSelectedStructures();
-		if (ids.length == 0)
+		List<PointStructure> structuresToWrite = new ArrayList<>();
+
+		// Determine the structures to be exported
+		Collection<Ellipse> tmpC = aPointManager.getSelectedItems();
+		if (tmpC.isEmpty() == true)
+			tmpC = aPointManager.getAllItems();
+
+		// Export the structures
+		for (Ellipse aItem : tmpC)
 		{
-			ids = new int[model.getNumberOfStructures()];
-			for (int i = 0; i < ids.length; i++)
-				ids[i] = i;
-		}
-		for (int i = 0; i < ids.length; i++)
-		{
-			Structure s = model.getStructure(ids[i]);
-			int[] c = s.getColor();
-			double sz = model.getStructureSize(ids[i]);
-			PointStyle style = new PointStyle(new Color(c[0], c[1], c[2]), sz);
-			String label = s.getLabel();
-			double[] location = model.getStructureCenter(ids[i]);
-			PointStructure ps=new PointStructure(new Vector3D(location));
+			Color c = aItem.getColor();
+			double sz = aPointManager.getDiameter(aItem);
+			PointStyle style = new PointStyle(c, sz);
+			String label = aItem.getLabel();
+			Vector3D location = aPointManager.getCenter(aItem);
+			PointStructure ps=new PointStructure(location);
 			ps.setPointStyle(style);
 			ps.setLabel(label);
 			structuresToWrite.add(ps);
 		}
-		ShapefileUtil.writePointStructures(structuresToWrite, shapeFile);
+		ShapefileUtil.writePointStructures(structuresToWrite, aShapeFile);
 	}
 
-	public static void exportToShapefile(LineModel model, Path shapeFile) throws IOException//, boolean closed) throws IOException
+	public static void exportToShapefile(LineModel<PolyLine> aLineManager, Path aShapeFile) throws IOException//, boolean closed) throws IOException
 	{
-		List<LineStructure> structuresToWrite = Lists.newArrayList();
-		int[] ids = model.getSelectedStructures();
-		if (ids.length == 0)
+		List<LineStructure> structuresToWrite = new ArrayList<>();
+
+		// Determine the structures to be exported
+		Collection<PolyLine> tmpC = aLineManager.getSelectedItems();
+		if (tmpC.isEmpty() == true)
+			tmpC = aLineManager.getAllItems();
+
+		// Export the structures
+		for (PolyLine aItem : tmpC)
 		{
-			ids = new int[model.getNumberOfStructures()];
-			for (int i = 0; i < ids.length; i++)
-				ids[i] = i;
-		}
-		for (int i = 0; i < ids.length; i++)
-		{
-			Line line = model.getLines().get(ids[i]);
-			if (line.xyzPointList.size()<2)
+			List<Vector3D> xyzPointL = aLineManager.getXyzPointsFor(aItem);
+
+			if (xyzPointL.size()<2)
 				continue;
-			int[] c = line.getColor();
-			double w = model.getLineWidth();
-			LineStyle style = new LineStyle(new Color(c[0], c[1], c[2]), w);
-			
+
+			Color c = aItem.getColor();
+			double w = aLineManager.getLineWidth();
+			LineStyle style = new LineStyle(c, w);
+
 			//int nSegments=closed?line.xyzPointList.size():(line.xyzPointList.size()-1);
-			int nSegments=line.xyzPointList.size()-1;
-				
+			int nSegments= xyzPointL.size()-1;
+
 			List<LineSegment> segments=Lists.newArrayList();
 			for (int j = 0; j < nSegments; j++)
 			{
 				int jp=j+1;
-				double[] start=line.xyzPointList.get(j).xyz;
-				double[] end=line.xyzPointList.get(jp).xyz;
-				segments.add(new LineSegment(new Vector3D(start), new Vector3D(end)));
+				Vector3D start=xyzPointL.get(j);
+				Vector3D  end=xyzPointL.get(jp);
+				segments.add(new LineSegment(start, end));
 			}
-			String label = line.getLabel();
+			String label = aItem.getLabel();
 			LineStructure ls=new LineStructure(segments);
 			ls.setLineStyle(style);
 			ls.setLabel(label);
 			structuresToWrite.add(ls);
 		}
-		ShapefileUtil.writeLineStructures(structuresToWrite, shapeFile);
+		ShapefileUtil.writeLineStructures(structuresToWrite, aShapeFile);
 	}
 
 	public static void exportToShapefile(AbstractEllipsePolygonModel model, Path shapeFile) throws IOException
@@ -117,74 +121,76 @@ public class StructuresExporter
 		ShapefileUtil.writeEllipseStructures(EllipseStructure.fromSbmtStructure(model), shapeFile);
 	}
 
-	
+
     public static String generateDefaultShapefileName(PolyhedralModel body, String modelName)
     {
-    	
-    	return body.getModelName().replaceAll(" ", "_").replaceAll("/", "-")+"."+modelName+".shp"; 
+
+    	return body.getModelName().replaceAll(" ", "_").replaceAll("/", "-")+"."+modelName+".shp";
     }
 
-    public static void exportToVtkFile(PointModel model, Path vtkFile, boolean multipleFiles)
+    public static void exportToVtkFile(PointModel aPointManager, Path vtkFile, boolean multipleFiles)
     {
-    	Map<Integer, PointStructure> structuresToWrite=Maps.newHashMap();
-		int[] ids = model.getSelectedStructures();
-		if (ids.length == 0)
+ 		// Determine the structures to be exported
+ 		Collection<Ellipse> tmpC = aPointManager.getSelectedItems();
+ 		if (tmpC.isEmpty() == true)
+ 			tmpC = aPointManager.getAllItems();
+
+    	Map<Integer, PointStructure> structuresToWrite = new HashMap<>();
+
+    	// Export the structures
+ 		for (Ellipse aItem : tmpC)
 		{
-			ids = new int[model.getNumberOfStructures()];
-			for (int i = 0; i < ids.length; i++)
-				ids[i] = i;
-		}
-		for (int i = 0; i < ids.length; i++)
-		{
-			double[] center=model.getStructureCenter(ids[i]);
-			Color color=model.getStructureColor(ids[i]);
+			Vector3D center=aPointManager.getCenter(aItem);
+			Color color=aPointManager.getColor(aItem);
 			// TODO: finish this
-		}    	
+		}
     }
 
-    public static void exportToVtkFile(LineModel model, Path vtkFile, boolean multipleFiles)
+    public static void exportToVtkFile(LineModel<PolyLine> aLineManager, Path vtkFile, boolean multipleFiles)
     {
-		Map<Integer, LineStructure> structuresToWrite = Maps.newHashMap();
-		int[] ids = model.getSelectedStructures();
-		if (ids.length == 0)
-		{
-			ids = new int[model.getNumberOfStructures()];
-			for (int i = 0; i < ids.length; i++)
-				ids[i] = i;
-		}
-		for (int i = 0; i < ids.length; i++)
-		{
-			Line line = model.getLines().get(ids[i]);
-			if (line.xyzPointList.size()<2)
+ 		// Determine the structures to be exported
+ 		Collection<PolyLine> tmpC = aLineManager.getSelectedItems();
+ 		if (tmpC.isEmpty() == true)
+ 			tmpC = aLineManager.getAllItems();
+
+		Map<Integer, LineStructure> structuresToWrite = new HashMap<>();
+
+ 		// Export the structures
+ 		for (PolyLine aItem : tmpC)
+ 		{
+ 			List<Vector3D> xyzPointL = aLineManager.getXyzPointsFor(aItem);
+
+			if (xyzPointL.size()<2)
 				continue;
-			int[] c = line.getColor();
-			double w = model.getLineWidth();
-			LineStyle style = new LineStyle(new Color(c[0], c[1], c[2]), w);
-			
+			Color c = aItem.getColor();
+			double w = aLineManager.getLineWidth();
+			LineStyle style = new LineStyle(c, w);
+
 			//int nSegments=closed?line.xyzPointList.size():(line.xyzPointList.size()-1);
-			int nSegments=line.xyzPointList.size()-1;
-				
+			int nSegments= xyzPointL.size()-1;
+
 			List<LineSegment> segments=Lists.newArrayList();
 			for (int j = 0; j < nSegments; j++)
 			{
 				int jp=j+1;
-				double[] start=line.xyzPointList.get(j).xyz;
-				double[] end=line.xyzPointList.get(jp).xyz;
-				segments.add(new LineSegment(new Vector3D(start), new Vector3D(end)));
+				Vector3D start= xyzPointL.get(j);
+				Vector3D end= xyzPointL.get(jp);
+				segments.add(new LineSegment(start, end));
 			}
-			String label = line.getLabel();
-			
-			
+			String label = aItem.getLabel();
+
+
 			List<Vector3D> controlPoints=Lists.newArrayList();
-			for (int j=0; j<line.getControlPoints().size(); j++)
+			for (int j=0; j<aItem.getControlPoints().size(); j++)
 			{
-				controlPoints.add(new Vector3D(MathUtil.latrec(line.getControlPoints().get(j))));
+				controlPoints.add(new Vector3D(MathUtil.latrec(aItem.getControlPoints().get(j))));
 			}
-			
+
 			LineStructure ls=new LineStructure(segments, controlPoints);
 			ls.setLineStyle(style);
 			ls.setLabel(label);
-			structuresToWrite.put(ids[i], ls);
+
+			structuresToWrite.put(aItem.getId(), ls);
 		}
 		if (multipleFiles)
 		{
@@ -198,8 +204,7 @@ public class StructuresExporter
 		{
 			VtkFileUtil.writeLineStructures(Lists.newArrayList(structuresToWrite.values()), vtkFile);
 		}
-			
-		
+
     }
-    
+
 }

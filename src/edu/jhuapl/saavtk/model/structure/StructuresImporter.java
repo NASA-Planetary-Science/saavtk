@@ -3,22 +3,30 @@ package edu.jhuapl.saavtk.model.structure;
 import java.awt.Color;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
-import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.esri.LineSegment;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
 import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
 import edu.jhuapl.saavtk.model.structure.esri.ShapefileUtil;
-import edu.jhuapl.saavtk.util.Point3D;
+import edu.jhuapl.saavtk.structure.Ellipse;
+import edu.jhuapl.saavtk.structure.PolyLine;
+import edu.jhuapl.saavtk.structure.StructureManager;
+import edu.jhuapl.saavtk.structure.io.StructureMiscUtil;
+import edu.jhuapl.saavtk.util.LatLon;
+import edu.jhuapl.saavtk.util.MathUtil;
 
 @Deprecated // ... for the moment... see AbstractStructureMappingControlPanel... nested class LoadEsriShapeFileAction
 public class StructuresImporter
 {
 
-	public static void importFromShapefile(StructureModel model, Path shapeFile, GenericPolyhedralModel body) throws IOException
+	public static void importFromShapefile(StructureManager<?> model, Path shapeFile, GenericPolyhedralModel body) throws IOException
 	{
 		if (model instanceof PointModel)
 		{
@@ -27,7 +35,7 @@ public class StructuresImporter
 		}
 		if (model instanceof LineModel)
 		{
-			importFromShapeFile((LineModel) model, shapeFile, body);
+			importFromShapeFile((LineModel<PolyLine>) model, shapeFile, body);
 			return;
 		}
 		if (model instanceof AbstractEllipsePolygonModel)
@@ -37,111 +45,140 @@ public class StructuresImporter
 		}
 	}
 
-	public static void importFromShapefile(PointModel model, Path shapeFile) throws IOException
+	public static void importFromShapefile(PointModel aPointManager, Path shapeFile) throws IOException
 	{
 		Collection<PointStructure> sc = ShapefileUtil.readPointStructures(shapeFile);
 		for (PointStructure s : sc)
 		{
-			Color c = s.getPointStyle().getColor();
-			int[] color = new int[] { c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha() };
+			Color color = s.getPointStyle().getColor();
 			String label = s.getLabel();
 			if (label == null)
 				label = "";
 			//
-			model.addNewStructure(s.getCentroid().toArray());
-			int id = model.getNumberOfStructures() - 1;
-			model.setStructureColor(id, color);
-			model.setStructureLabel(id, label);
+			aPointManager.addNewStructure(s.getCentroid());
+			int id = aPointManager.getNumItems() - 1;
+			Ellipse tmpItem = aPointManager.getItem(id);
+
+			aPointManager.setColor(tmpItem, color);
+			aPointManager.setLabel(tmpItem, label);
 		}
 	}
 
-	public static void importFromShapeFile(LineModel model, Path shapeFile, GenericPolyhedralModel body) throws IOException
+	public static void importFromShapeFile(LineModel<PolyLine> aLineManager, Path aFile, GenericPolyhedralModel aBody)
+			throws IOException
 	{
-		Collection<LineStructure> sc = ShapefileUtil.readLineStructures(shapeFile);
-		for (LineStructure s : sc)
+		int nextId = StructureMiscUtil.calcNextId(aLineManager);
+		List<PolyLine> fullL = new ArrayList<>(aLineManager.getAllItems());
+
+		// Load the the ERSI lines
+		Collection<LineStructure> loadL = ShapefileUtil.readLineStructures(aFile);
+
+		// Convert the ESRI lines to SBMT lines
+		for (LineStructure aErsiLine : loadL)
 		{
-			
-			//
-			Color c = s.getLineStyle().getColor();
-			int[] color = new int[] { c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha() };
-			double w = s.getLineStyle().getWidth();
-			String label = s.getLabel();
+			Color color = aErsiLine.getLineStyle().getColor();
+			double w = aErsiLine.getLineStyle().getWidth();
+			String label = aErsiLine.getLabel();
 			if (label == null)
 				label = "";
+
+			// Synthesize the control points from the provided 3D points
 			//
-			model.addNewStructure();
-			int id = model.getNumberOfStructures() - 1;
-			Line line = (Line) model.getStructure(id);
-			for (int i = 0; i < s.getNumberOfSegments(); i++)
+			// Note: The logic below extracts the (LatLon) control points from the provided
+			// 3D positions. It is not clear what the 3D positions actually represent. It is
+			// not believed this logic has been tested (in current form or previous form).
+			// -lopeznr1 2019Oct15
+			List<LatLon> controlPointL = new ArrayList<>();
+			for (int i = 0; i < aErsiLine.getNumberOfSegments(); i++)
 			{
-				//List<LineSegment> subsegments=forceCylindricalProjection(s.getSegment(i), body, Math.sqrt(body.getMeanCellArea()));
-				//for (int j=0; j<subsegments.size(); j++)
-				//{
-					LineSegment seg = s.getSegment(i);
-					line.xyzPointList.add(new Point3D(seg.getStart().toArray()));
-						if (i == s.getNumberOfSegments() - 1)
-					line.xyzPointList.add(new Point3D(seg.getEnd().toArray()));
-				//}
+				// List<LineSegment> subsegments=forceCylindricalProjection(aEsri.getSegment(i),
+				// body, Math.sqrt(aBody.getMeanCellArea()));
+				// for (int j=0; j<subsegments.size(); j++)
+				{
+					LineSegment seg = aErsiLine.getSegment(i);
+					Vector3D begPt = seg.getStart();
+					Vector3D endPt = seg.getEnd();
+
+					// Transform the 3D point to LatLon
+					LatLon begLL = MathUtil.reclat(begPt.toArray());
+					LatLon endLL = MathUtil.reclat(endPt.toArray());
+
+					// Store the control point(s)
+					controlPointL.add(begLL);
+					if (i == aErsiLine.getNumberOfSegments() - 1)
+						controlPointL.add(endLL);
+				}
 			}
-			model.setStructureColor(id, color);
-			model.setStructureLabel(id, label);
-			model.setLineWidth(w);
+
+			// Synthesize the (SBMT) line
+			PolyLine tmpLine = new PolyLine(nextId, null, controlPointL);
+			tmpLine.setColor(color);
+			tmpLine.setLabel(label);
+			// TODO: Currently (2019Oct15) there is no support for individual line widths
+//			tmpLine.setLineWidth(w);
+			nextId++;
+
+			fullL.add(tmpLine);
 		}
+
+		aLineManager.setAllItems(fullL);
 	}
 
-	public static void importFromShapeFile(AbstractEllipsePolygonModel model, Path shapeFile, GenericPolyhedralModel body) throws IOException
+	public static void importFromShapeFile(AbstractEllipsePolygonModel aEllipseManager, Path shapeFile,
+			GenericPolyhedralModel body) throws IOException
 	{
 		Collection<EllipseStructure> sc = ShapefileUtil.readEllipseStructures(shapeFile, body);
 		for (EllipseStructure s : sc)
 		{
-			Color c = s.getLineStyle().getColor();
-			int[] color = new int[] { c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha() };
+			Color color = s.getLineStyle().getColor();
 			double w = s.getLineStyle().getWidth();
 			String label = s.getLabel();
 			if (label == null)
 				label = "";
-			//
-			//			double[][] startPoints=new double[s.getNumberOfSegments()][3];
-			//			double[][] endPoints=new double[s.getNumberOfSegments()][3];
-			//			for (int i=0; i<s.getNumberOfSegments(); i++)
-			//			{
-			//				startPoints[i]=s.getSegment(i).getStart();
-			//				endPoints[i]=s.getSegment(i).getEnd();
-			//			}
-			//
-			double[] center = s.getParameters().center.toArray();
+//
+//			double[][] startPoints=new double[s.getNumberOfSegments()][3];
+//			double[][] endPoints=new double[s.getNumberOfSegments()][3];
+//			for (int i=0; i<s.getNumberOfSegments(); i++)
+//			{
+//				startPoints[i]=s.getSegment(i).getStart();
+//				endPoints[i]=s.getSegment(i).getEnd();
+//			}
+//
+			Vector3D center = s.getParameters().center;
 			double majorRadius = s.getParameters().majorRadius;
 			double flattening = s.getParameters().flattening;
 			double angle = s.getParameters().angle;
-			//
-			model.addNewStructure(center, majorRadius, flattening, angle);
-			int id = model.getNumberOfStructures() - 1;
-			model.setStructureColor(id, color);
-			model.setStructureLabel(id, label);
-			model.setLineWidth(w);
+
+			aEllipseManager.addNewStructure(center, majorRadius, flattening, angle);
+			int id = aEllipseManager.getNumItems() - 1;
+			Ellipse tmpItem = aEllipseManager.getItem(id);
+
+			aEllipseManager.setColor(tmpItem, color);
+			aEllipseManager.setLabel(tmpItem, label);
+			aEllipseManager.setLineWidth(w);
 		}
 
-		/*	vtkAppendPolyData append=new vtkAppendPolyData();
-			for (int i=0; i<model.getNumberOfStructures(); i++)
-				append.AddInputData(model.getPolygons().get(i).boundaryPolyData);
-			append.Update();
-			
-			vtkPolyDataWriter writer=new vtkPolyDataWriter();
-			writer.SetInputData(append.GetOutput());
-			writer.SetFileName("/Users/zimmemi1/Desktop/test.vtk");
-			writer.SetFileTypeToBinary();
-			writer.Write();
-			
-			vtkAppendPolyData append2=new vtkAppendPolyData();
-			for (int i=0; i<model.getNumberOfStructures(); i++)
-				append2.AddInputData(model.getPolygons().get(i).interiorPolyData);
-			append2.Update();
-		
-			vtkPolyDataWriter writer2=new vtkPolyDataWriter();
-			writer2.SetInputData(append2.GetOutput());
-			writer2.SetFileName("/Users/zimmemi1/Desktop/test2.vtk");
-			writer2.SetFileTypeToBinary();
-			writer2.Write();*/
+//			vtkAppendPolyData append=new vtkAppendPolyData();
+//			for (int i=0; i<model.getNumItems(); i++)
+//				append.AddInputData(model.getPolygons().get(i).boundaryPolyData);
+//			append.Update();
+//
+//			vtkPolyDataWriter writer=new vtkPolyDataWriter();
+//			writer.SetInputData(append.GetOutput());
+//			writer.SetFileName("/Users/zimmemi1/Desktop/test.vtk");
+//			writer.SetFileTypeToBinary();
+//			writer.Write();
+//
+//			vtkAppendPolyData append2=new vtkAppendPolyData();
+//			for (int i=0; i<model.getNumItems(); i++)
+//				append2.AddInputData(model.getPolygons().get(i).interiorPolyData);
+//			append2.Update();
+//
+//			vtkPolyDataWriter writer2=new vtkPolyDataWriter();
+//			writer2.SetInputData(append2.GetOutput());
+//			writer2.SetFileName("/Users/zimmemi1/Desktop/test2.vtk");
+//			writer2.SetFileTypeToBinary();
+//			writer2.Write();
 	}
 
 }

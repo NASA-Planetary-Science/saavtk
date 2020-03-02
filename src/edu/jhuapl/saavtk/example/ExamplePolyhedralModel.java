@@ -14,11 +14,11 @@ public class ExamplePolyhedralModel extends GenericPolyhedralModel
                 null,
                 null,
                 null,
-                null,
                 ColoringValueType.CELLDATA,
                 false);
     }
 
+    @Override
     public boolean isBuiltIn()
     {
         return false;

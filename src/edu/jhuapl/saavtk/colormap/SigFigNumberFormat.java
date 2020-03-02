@@ -20,7 +20,19 @@ public class SigFigNumberFormat extends NumberFormat
 	private static final long serialVersionUID = 1L;
 
 	// Attributes
+	private final String nanStr;
 	private final int numSigFigs;
+
+	/**
+	 * Standard Constructor
+	 * 
+	 * @param aNumSigFigs The number of significant figures to display
+	 */
+	public SigFigNumberFormat(int aNumSigFigs, String aNaNStr)
+	{
+		nanStr = aNaNStr;
+		numSigFigs = aNumSigFigs;
+	}
 
 	/**
 	 * Standard Constructor
@@ -29,12 +41,28 @@ public class SigFigNumberFormat extends NumberFormat
 	 */
 	public SigFigNumberFormat(int aNumSigFigs)
 	{
-		numSigFigs = aNumSigFigs;
+		this(aNumSigFigs, null);
 	}
 
 	@Override
 	public StringBuffer format(double number, StringBuffer result, FieldPosition fieldPosition)
 	{
+		// Special handling for infinite
+		if (Double.isInfinite(number) == true)
+			return result.append("" + number);
+
+		// Special handling for NaN
+		if (Double.isNaN(number) == true)
+		{
+			if (nanStr != null)
+				return result.append(nanStr);
+
+			result.append("-.");
+			for (int c1 = 0; c1 < numSigFigs - 1; c1++)
+				result.append("-");
+
+			return result;
+		}
 
 		BigDecimal tmpBD = getValueRoundedToSigFigs(number, numSigFigs);
 		return result.append("" + tmpBD);

@@ -8,9 +8,10 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.EllipsePolygon;
+import edu.jhuapl.saavtk.structure.Ellipse;
 import vtk.vtkCellArray;
 import vtk.vtkPoints;
+import vtk.vtkPolyData;
 
 public class EllipseStructure extends LineStructure
 {
@@ -20,7 +21,7 @@ public class EllipseStructure extends LineStructure
 		public double majorRadius;
 		public double flattening;
 		public double angle;
-		
+
 		public Parameters(Vector3D center, double majorRadius, double flattening, double angle)
 		{
 			super();
@@ -29,55 +30,54 @@ public class EllipseStructure extends LineStructure
 			this.flattening = flattening;
 			this.angle = angle;
 		}
-		
+
 	}
-	
+
 	Parameters params;
 
 	public EllipseStructure(List<LineSegment> segments, Parameters params)
 	{
 		super(segments);
-		this.params=params;
+		this.params = params;
 	}
-	
+
 	public static List<EllipseStructure> fromSbmtStructure(AbstractEllipsePolygonModel crappySbmtStructureModel)
 	{
-        List<EllipseStructure> structures = Lists.newArrayList();
-        for (int i = 0; i < crappySbmtStructureModel.getNumberOfStructures(); i++)
-        {
-            EllipsePolygon poly = (EllipsePolygon) crappySbmtStructureModel.getStructure(i);
-            int[] c = poly.getColor();
-            double w = crappySbmtStructureModel.getLineWidth();
-            LineStyle style = new LineStyle(new Color(c[0], c[1], c[2]), w);
-            String label = poly.getLabel();
-            //
-        
-            vtkCellArray cells=poly.getBoundaryPolyData().GetLines();
-            List<LineSegment> segments=Lists.newArrayList();
-            for (int j=0; j<cells.GetNumberOfCells(); j++)
-            {
-                vtkPoints points=poly.getBoundaryPolyData().GetCell(j).GetPoints();
-                if (points.GetNumberOfPoints()<2)
-                    continue;
-                for (int k=0; k<points.GetNumberOfPoints()-1; k++)
-                {
-                    double[] start=points.GetPoint(k);
-                    double[] end=points.GetPoint(k+1);
-                    segments.add(new LineSegment(new Vector3D(start), new Vector3D(end)));
-                }
-            }
-            
-            Parameters params=new Parameters(new Vector3D(poly.center), poly.radius, poly.flattening, poly.angle);
-            EllipseStructure es=new EllipseStructure(segments, params);
-            es.setLineStyle(style);
-            es.setLabel(label);
-            structures.add(es);
-            
+		List<EllipseStructure> structures = Lists.newArrayList();
+		for (int i = 0; i < crappySbmtStructureModel.getNumItems(); i++)
+		{
+			Ellipse poly = crappySbmtStructureModel.getItem(i);
+			Color c = poly.getColor();
+			double w = crappySbmtStructureModel.getLineWidth();
+			LineStyle style = new LineStyle(c, w);
+			String label = poly.getLabel();
+			//
 
-        }
-        return structures;
+			vtkPolyData tmpPolyData = crappySbmtStructureModel.getVtkExteriorPolyDataFor(poly);
+			vtkCellArray cells = tmpPolyData.GetLines();
+			List<LineSegment> segments = Lists.newArrayList();
+			for (int j = 0; j < cells.GetNumberOfCells(); j++)
+			{
+				vtkPoints points = tmpPolyData.GetCell(j).GetPoints();
+				if (points.GetNumberOfPoints() < 2)
+					continue;
+				for (int k = 0; k < points.GetNumberOfPoints() - 1; k++)
+				{
+					double[] start = points.GetPoint(k);
+					double[] end = points.GetPoint(k + 1);
+					segments.add(new LineSegment(new Vector3D(start), new Vector3D(end)));
+				}
+			}
+
+			Parameters params = new Parameters(poly.getCenter(), poly.getRadius(), poly.getFlattening(), poly.getAngle());
+			EllipseStructure es = new EllipseStructure(segments, params);
+			es.setLineStyle(style);
+			es.setLabel(label);
+			structures.add(es);
+
+		}
+		return structures;
 	}
-	
 
 	public Parameters getParameters()
 	{

@@ -1,8 +1,5 @@
 package edu.jhuapl.saavtk.config;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -21,8 +18,8 @@ public abstract class ViewConfig implements Cloneable
 	public ShapeModelType author; // e.g. Gaskell
 	public String version; // e.g. 2.0
 	public ShapeModelBody body; // e.g. EROS or ITOKAWA
-	public boolean hasFlybyData; // for flyby path data
-	public boolean hasStateHistory; // for bodies with state history tabs
+    public boolean hasFlybyData; // for flyby path data
+    public boolean hasStateHistory; // for bodies with state history tabs
 
 	public boolean useMinimumReferencePotential = false; // uses average otherwise
 	public boolean hasCustomBodyCubeSize = false;
@@ -118,6 +115,8 @@ public abstract class ViewConfig implements Cloneable
 		}
 	}
 
+    public abstract String[] getShapeModelFileNames();
+
 	public boolean isEnabled()
 	{
 		return enabled;
@@ -128,10 +127,10 @@ public abstract class ViewConfig implements Cloneable
 		this.enabled = enabled;
 	}
 
-	static private List<ViewConfig> builtInConfigs = new ArrayList<>();
+    private static ConfigArrayList builtInConfigs = new ConfigArrayList();
 	private static String firstTimeDefaultModel = null;
 
-	static public List<ViewConfig> getBuiltInConfigs()
+    public static ConfigArrayList getBuiltInConfigs()
 	{
 		return builtInConfigs;
 	}
@@ -146,7 +145,7 @@ public abstract class ViewConfig implements Cloneable
 	 * @param author
 	 * @return
 	 */
-	static public ViewConfig getConfig(ShapeModelBody name, ShapeModelType author)
+    public static ViewConfig getConfig(ShapeModelBody name, ShapeModelType author)
 	{
 		return getConfig(name, author, null);
 	}
@@ -161,7 +160,7 @@ public abstract class ViewConfig implements Cloneable
 	 * @param version
 	 * @return
 	 */
-	static public ViewConfig getConfig(ShapeModelBody name, ShapeModelType author, String version)
+    public static ViewConfig getConfig(ShapeModelBody name, ShapeModelType author, String version)
 	{
 		for (ViewConfig config : getBuiltInConfigs())
 		{
@@ -184,7 +183,7 @@ public abstract class ViewConfig implements Cloneable
 		return firstTimeDefaultModel;
 	}
 
-	protected static void setFirstTimeDefaultModelName(String firstTimeDefaultModel)
+	public static void setFirstTimeDefaultModelName(String firstTimeDefaultModel)
 	{
 		Preconditions.checkState(ViewConfig.firstTimeDefaultModel == null);
 		ViewConfig.firstTimeDefaultModel = firstTimeDefaultModel;
@@ -194,5 +193,135 @@ public abstract class ViewConfig implements Cloneable
 	public String toString()
 	{
 		return getUniqueName();
+	}
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((author == null) ? 0 : author.hashCode());
+		result = prime * result + ((body == null) ? 0 : body.hashCode());
+		long temp;
+		temp = Double.doubleToLongBits(customBodyCubeSize);
+		result = prime * result + (int) (temp ^ (temp >>> 32));
+		result = prime * result + (customTemporary ? 1231 : 1237);
+		result = prime * result + (hasCustomBodyCubeSize ? 1231 : 1237);
+		result = prime * result + ((modelLabel == null) ? 0 : modelLabel.hashCode());
+		result = prime * result
+				+ ((smallBodyLabelPerResolutionLevel == null) ? 0 : smallBodyLabelPerResolutionLevel.hashCode());
+		result = prime * result + ((smallBodyNumberOfPlatesPerResolutionLevel == null) ? 0
+				: smallBodyNumberOfPlatesPerResolutionLevel.hashCode());
+		result = prime * result + (useMinimumReferencePotential ? 1231 : 1237);
+		result = prime * result + ((version == null) ? 0 : version.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (this == obj)
+			return true;
+		if (obj == null)
+		{
+//			System.out.println("ViewConfig: equals: obj is null");
+			return false;
+		}
+//		if (getClass() != obj.getClass())
+//		{
+//			System.out.println("ViewConfig: equals: classes are not equals " + getClass() + " and " + obj.getClass());
+//			return false;
+//		}
+		ViewConfig other = (ViewConfig) obj;
+		if (author == null)
+		{
+			if (other.author != null)
+			{
+//				System.out.println("ViewConfig: equals: author null and other not null");
+				return false;
+			}
+		} 
+		else if (!author.equals(other.author))
+		{
+//			System.out.println("ViewConfig: equals: author don't match " + author + " and " + other.author);
+			return false;
+		}
+		if (body != other.body)
+		{
+//			System.out.println("ViewConfig: equals: body don't match " + body + " and " + other.body);
+			return false;
+		}
+		if (Double.doubleToLongBits(customBodyCubeSize) != Double.doubleToLongBits(other.customBodyCubeSize))
+		{
+//			System.out.println("ViewConfig: equals: custom body cube size don't match " + customBodyCubeSize + " " + other.customBodyCubeSize + " for " + other.author + "/" + other.body + " " + other.version);
+			return false;
+		}
+		if (customTemporary != other.customTemporary)
+		{
+//			System.out.println("ViewConfig: equals: custom temporary don't match");
+			return false;
+		}
+		if (hasCustomBodyCubeSize != other.hasCustomBodyCubeSize)
+		{
+//			System.out.println("ViewConfig: equals: has custom body cube size don't match");
+			return false;
+		}
+		if (modelLabel == null)
+		{
+			if (other.modelLabel != null)
+			{
+//				System.out.println("ViewConfig: equals: model label null; other is not");
+				return false;
+			}
+		} 
+		else if (!modelLabel.equals(other.modelLabel))
+		{
+//			System.out.println("ViewConfig: equals: model labels don't match");
+			return false;
+		}
+		if (smallBodyLabelPerResolutionLevel == null)
+		{
+			if (other.smallBodyLabelPerResolutionLevel != null)
+			{
+//				System.out.println("ViewConfig: equals: small body label per res null; other not");
+				return false;
+			}
+		} else if (!smallBodyLabelPerResolutionLevel.equals(other.smallBodyLabelPerResolutionLevel))
+		{
+//			System.out.println("ViewConfig: equals: small body label per res don't match " + smallBodyLabelPerResolutionLevel + " " + smallBodyLabelPerResolutionLevel + " for " + author + "/" + body + " " + version + " for " + other.author + "/" + other.body + " " + other.version);
+			return false;
+		}
+		if (smallBodyNumberOfPlatesPerResolutionLevel == null)
+		{
+			if (other.smallBodyNumberOfPlatesPerResolutionLevel != null)
+			{
+//				System.out.println("ViewConfig: equals: number of plates per res null; other not");
+				return false;
+			}
+		} else if (!smallBodyNumberOfPlatesPerResolutionLevel.equals(other.smallBodyNumberOfPlatesPerResolutionLevel))
+		{
+//			System.out.println("ViewConfig: equals: number of plates per level don't match");
+			return false;
+		}
+		if (useMinimumReferencePotential != other.useMinimumReferencePotential)
+		{
+//			System.out.println("ViewConfig: equals: use min ref potential don't match");
+			return false;
+		}
+		if (version == null)
+		{
+			if (other.version != null)
+			{
+//				System.out.println("ViewConfig: equals: version null; other not");
+				return false;
+			}
+		} else if (!version.equals(other.version))
+		{
+//			System.out.println("ViewConfig: equals: versions dont' match " + version + " other " + other.version );
+			return false;
+		}
+		
+//		System.out.println("ViewConfig: equals: match!!!");
+		return true;
 	}
 }

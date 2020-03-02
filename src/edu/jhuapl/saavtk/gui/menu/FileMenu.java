@@ -10,7 +10,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import javax.swing.AbstractAction;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
@@ -28,20 +27,17 @@ import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CameraDialog;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
-import edu.jhuapl.saavtk.gui.panel.AbstractStructureMappingControlPanel;
-import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.StructureModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
-import edu.jhuapl.saavtk.model.structure.CircleModel;
 import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.model.structure.PointModel;
 import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
 import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
 import edu.jhuapl.saavtk.model.structure.esri.ShapefileUtil;
-import edu.jhuapl.saavtk.model.structure.esri.StructureUtil;
+import edu.jhuapl.saavtk.structure.StructureManager;
+import edu.jhuapl.saavtk.structure.io.StructureLegacyUtil;
 import edu.jhuapl.saavtk.util.Configuration;
 
 public class FileMenu extends JMenu
@@ -80,7 +76,7 @@ public class FileMenu extends JMenu
 		mi = new JMenuItem(new SaveShapeModelAsSTLAction());
 		saveShapeModelMenu.add(mi);
 
-		JMenu convertMenu=new JMenu("Convert...");
+		JMenu convertMenu = new JMenu("Convert...");
 		this.add(convertMenu);
 		mi = new JMenuItem(new BatchConvertEsriToSbmtAction());
 		convertMenu.add(mi);
@@ -108,16 +104,19 @@ public class FileMenu extends JMenu
 
 			mi = new JMenuItem(new ExitAction());
 			this.add(mi);
-		} else
+		}
+		else
 		{
 			try
 			{
 				OSXAdapter.setPreferencesHandler(this, getClass().getDeclaredMethod("showPreferences", (Class[]) null));
 				OSXAdapter.setQuitHandler(this, getClass().getDeclaredMethod("exitTool", (Class[]) null));
-			} catch (SecurityException e)
+			}
+			catch (SecurityException e)
 			{
 				e.printStackTrace();
-			} catch (NoSuchMethodException e)
+			}
+			catch (NoSuchMethodException e)
 			{
 				e.printStackTrace();
 			}
@@ -247,7 +246,8 @@ public class FileMenu extends JMenu
 			{
 				if (file != null)
 					rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsPLT(file);
-			} catch (Exception e1)
+			}
+			catch (Exception e1)
 			{
 				e1.printStackTrace();
 				JOptionPane.showMessageDialog(null, "An error occurred exporting the shape model.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -274,7 +274,8 @@ public class FileMenu extends JMenu
 			{
 				if (file != null)
 					rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsOBJ(file);
-			} catch (Exception e1)
+			}
+			catch (Exception e1)
 			{
 				e1.printStackTrace();
 				JOptionPane.showMessageDialog(null, "An error occurred exporting the shape model.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -301,7 +302,8 @@ public class FileMenu extends JMenu
 			{
 				if (file != null)
 					rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsSTL(file);
-			} catch (Exception e1)
+			}
+			catch (Exception e1)
 			{
 				e1.printStackTrace();
 				JOptionPane.showMessageDialog(null, "An error occurred exporting the shape model.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -393,11 +395,12 @@ public class FileMenu extends JMenu
 		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			int option =
-					JOptionPane.showOptionDialog(frame, "Do you wish to clear your local data cache? \nIf you do, all remotely loaded data will need to be reloaded "
-							+ "from the server the next time you wish to view it. \nThis may take a few moments.", "Clear cache", 1, 3, null, null, null);			if (option == 0)
+					JOptionPane.showOptionDialog(frame, "Do you wish to clear your local data cache? \nIf you do, all remotely loaded data will need to be reloaded " + "from the server the next time you wish to view it. \nThis may take a few moments.", "Clear cache", 1, 3, null, null, null);
+			if (option == 0)
 			{
 				Configuration.clearCache();
-			} else
+			}
+			else
 			{
 				return;
 			}
@@ -427,7 +430,8 @@ public class FileMenu extends JMenu
 		try
 		{
 			serializer.save(file);
-		} catch (IOException e1)
+		}
+		catch (IOException e1)
 		{
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -440,7 +444,8 @@ public class FileMenu extends JMenu
 		try
 		{
 			serializer.load(file);
-		} catch (IOException e)
+		}
+		catch (IOException e)
 		{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -458,18 +463,17 @@ public class FileMenu extends JMenu
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			
+
 			File[] files = CustomFileChooser.showOpenDialog(FileMenu.this, "Input SBMT structure files...", null, true);
 			if (files == null)
 				return;
-			
-			FileDialog chooser=new FileDialog((Frame)null, "Output ESRI shapefile directory...", FileDialog.SAVE);
-			if (files[0].getParentFile()!=null)
+
+			FileDialog chooser = new FileDialog((Frame) null, "Output ESRI shapefile directory...", FileDialog.SAVE);
+			if (files[0].getParentFile() != null)
 				chooser.setDirectory(files[0].getParentFile().getAbsolutePath());
 			chooser.setFile("shp");
-			chooser.setFilenameFilter(new FilenameFilter()
-			{
-				
+			chooser.setFilenameFilter(new FilenameFilter() {
+
 				@Override
 				public boolean accept(File dir, String name)
 				{
@@ -477,10 +481,10 @@ public class FileMenu extends JMenu
 				}
 			});
 			chooser.setVisible(true);
-			File[] ofiles=chooser.getFiles();	// there will only ever be 0 or 1 elements in this array, for the present use case, but we need the absolute path of the selected file, so getFile() which returns a String is inadequate
-			if (ofiles==null || ofiles.length==0)
+			File[] ofiles = chooser.getFiles(); // there will only ever be 0 or 1 elements in this array, for the present use case, but we need the absolute path of the selected file, so getFile() which returns a String is inadequate
+			if (ofiles == null || ofiles.length == 0)
 				return;
-			Path opath=Paths.get(ofiles[0].getAbsolutePath());
+			Path opath = Paths.get(ofiles[0].getAbsolutePath());
 			opath.toFile().mkdirs();
 
 			PolyhedralModel body = rootPanel.getCurrentView().getModelManager().getPolyhedralModel();
@@ -488,43 +492,49 @@ public class FileMenu extends JMenu
 			{
 				String fname = files[i].getName().toLowerCase();
 				String oname = FilenameUtils.removeExtension(files[i].getName()) + ".shp";
-				System.out.println(fname+"  -->  "+opath.resolve(oname));
-				StructureModel model = null;
+				System.out.println(fname + "  -->  " + opath.resolve(oname));
+				StructureManager<?> model = null;
 				if (fname.endsWith("circles"))
 					try
 					{
-						model = AbstractStructureMappingControlPanel.loadStructuresFromFile(files[i], ModelNames.CIRCLE_STRUCTURES, body);
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.CIRCLE_STRUCTURES, body);
 						ShapefileUtil.writeEllipseStructures(Lists.newArrayList(EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) model)), opath.resolve(oname));
 
-					} catch (IOException ex)
+					}
+					catch (IOException ex)
 					{
 						ex.printStackTrace();
-					} catch (Exception ex)
+					}
+					catch (Exception ex)
 					{
 						//ex.printStackTrace();
 					}
 				else if (fname.endsWith("ellipses"))
 					try
 					{
-						model = AbstractStructureMappingControlPanel.loadStructuresFromFile(files[i], ModelNames.ELLIPSE_STRUCTURES, body);
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.ELLIPSE_STRUCTURES, body);
 						ShapefileUtil.writeEllipseStructures(Lists.newArrayList(EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) model)), opath.resolve(oname));
-					} catch (IOException ex)
+					}
+					catch (IOException ex)
 					{
 						ex.printStackTrace();
-					} catch (Exception ex)
+					}
+					catch (Exception ex)
 					{
 						//ex.printStackTrace();
 					}
 				else if (fname.endsWith("points"))
 					try
 					{
-						model = AbstractStructureMappingControlPanel.loadStructuresFromFile(files[i], ModelNames.POINT_STRUCTURES, body);
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.POINT_STRUCTURES, body);
 						ShapefileUtil.writePointStructures(Lists.newArrayList(PointStructure.fromSbmtStructure((PointModel) model)), opath.resolve(oname));
 
-					} catch (IOException ex)
+					}
+					catch (IOException ex)
 					{
 						ex.printStackTrace();
-					} catch (Exception ex)
+					}
+					catch (Exception ex)
 					{
 						ex.printStackTrace();
 					}
@@ -533,19 +543,22 @@ public class FileMenu extends JMenu
 				{
 					try
 					{
-						model = AbstractStructureMappingControlPanel.loadStructuresFromFile(files[i], ModelNames.POLYGON_STRUCTURES, body);
-						ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure((LineModel) model), opath.resolve(oname));
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.POLYGON_STRUCTURES, body);
+						ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure((LineModel<?>) model), opath.resolve(oname));
 
-					} catch (IOException ex)
+					}
+					catch (IOException ex)
 					{
 						ex.printStackTrace();
-					} catch (Exception ex)
+					}
+					catch (Exception ex)
 					{
 						try
 						{
-							model = AbstractStructureMappingControlPanel.loadStructuresFromFile(files[i], ModelNames.LINE_STRUCTURES, body);
-							ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure((LineModel) model), opath.resolve(oname));
-						} catch (Exception e1)
+							model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.LINE_STRUCTURES, body);
+							ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure((LineModel<?>) model), opath.resolve(oname));
+						}
+						catch (Exception e1)
 						{
 							// TODO Auto-generated catch block
 							e1.printStackTrace();
@@ -557,24 +570,28 @@ public class FileMenu extends JMenu
 				else if (fname.endsWith("polygons")) // user can employ the .polygons extension instead of .xml... this if clause also catches the case where the file itself is named "polygons"
 					try
 					{
-						model = AbstractStructureMappingControlPanel.loadStructuresFromFile(files[i], ModelNames.POLYGON_STRUCTURES, body);
-						ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure((LineModel) model), opath.resolve(oname));
-					} catch (IOException ex)
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.POLYGON_STRUCTURES, body);
+						ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure((LineModel<?>) model), opath.resolve(oname));
+					}
+					catch (IOException ex)
 					{
 						ex.printStackTrace();
-					} catch (Exception ex)
+					}
+					catch (Exception ex)
 					{
 						//ex.printStackTrace();
 					}
 				else if (fname.endsWith("paths")) // user can employ the .paths extension instead of .xml... this if clause also catches the case where the file itself is named "polygons"
 					try
 					{
-						model = AbstractStructureMappingControlPanel.loadStructuresFromFile(files[i], ModelNames.LINE_STRUCTURES, body);
-						ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure((LineModel) model), opath.resolve(oname));
-					} catch (IOException ex)
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.LINE_STRUCTURES, body);
+						ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure((LineModel<?>) model), opath.resolve(oname));
+					}
+					catch (IOException ex)
 					{
 						ex.printStackTrace();
-					} catch (Exception ex)
+					}
+					catch (Exception ex)
 					{
 						//ex.printStackTrace();
 					}
@@ -583,7 +600,8 @@ public class FileMenu extends JMenu
 					try
 					{
 						throw new IOException("Unable to determine content of " + fname);
-					} catch (IOException e1)
+					}
+					catch (IOException e1)
 					{
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
