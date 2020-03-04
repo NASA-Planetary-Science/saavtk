@@ -910,7 +910,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	@Override
 	public Metadata store()
 	{
-		KeyedFactory.Builder<Viewable> builder = KeyedFactory.instance().builder();
+	    KeyedFactory.Builder<Object> builder = KeyedFactory.instance().builder();
 
 		builder.put(LINE_WIDTH_KEY, SettableStoredFactory.instance().of(lineWidth));
 		builder.put(OFFSET_KEY, SettableStoredFactory.instance().of(offset));
