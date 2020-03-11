@@ -251,7 +251,11 @@ public class DownloadableFileManager
 
     /**
      * Attempt to use a server-side script to check accessibility of all the URLs
-     * known to this manager.
+     * known to this manager. After one successful check (in which the URL is found
+     * to be accessible, unauthorized, not found, etc.), a URL is not checked again,
+     * even if the internet connection is lost or restored. Checks are repeated only
+     * if the previous check resulted in a time-out or other transient condition. If
+     * no URLs require checking, the server-side script is not invoked.
      * <p>
      * This implementation iterates through the whole collection of URLs, sending
      * them in batches to the server-side script. This is for two reasons: 1) the
@@ -264,7 +268,7 @@ public class DownloadableFileManager
      * "checkfileaccess.php" in the query root directory.
      * 
      * @param forceUpdate force FileInfo portion of the update. The server-side
-     *            update (UrlInfo) is performed in any case.
+     *            update (UrlInfo) is performed once in any case.
      * 
      * @return true if all the access checks succeeded, false if any checks failed.
      *         Note this is checking whether the checks themselves succeeeded, not
@@ -287,8 +291,24 @@ public class DownloadableFileManager
             throw new AssertionError(e);
         }
 
-        ImmutableList<String> urlList = urlManager.getUrlList();
+        // Only ask about URLs for which no previous successful check has been made.
+        ImmutableList.Builder<String> builder = ImmutableList.builder();
+        for (String url : urlManager.getUrlList())
+        {
+            if (SafeURLPaths.instance().hasFileProtocol(url))
+            {
+                continue;
+            }
 
+            UrlStatus status = urlManager.getInfo(url).getState().getStatus();
+            if (status.equals(UrlStatus.CONNECTION_ERROR) || status.equals(UrlStatus.HTTP_ERROR) || status.equals(UrlStatus.UNKNOWN))
+            {
+                builder.add(url);
+            }
+         }
+
+        ImmutableList<String> urlList = builder.build();
+        
         ListIterator<String> iterator = urlList.listIterator();
         while (iterator.hasNext())
         {
@@ -868,7 +888,7 @@ public class DownloadableFileManager
     {
         try
         {
-            URL getUserAccessPhp = new URL("http://sbmt.jhuapl.edu/sbmtspud/prod/query/" + "checkfileaccess.php");
+            URL getUserAccessPhp = new URL("http://sbmt.jhuapl.edu/sbmt/prod/query/" + "checkfileaccess.php");
             try (CloseableUrlConnection closeableConn = CloseableUrlConnection.of(getUserAccessPhp, HttpRequestMethod.GET))
             {
                 URLConnection conn = closeableConn.getConnection();
