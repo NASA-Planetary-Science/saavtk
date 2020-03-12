@@ -706,34 +706,6 @@ public class DownloadableFileManager
         return fileState;
     }
 
-    public void getDownloadedFile(String urlString, StateListener whenFinished, boolean forceDownload)
-    {
-        Preconditions.checkNotNull(urlString);
-        Preconditions.checkNotNull(whenFinished);
-
-        DownloadableFileState fileState = getState(urlString);
-
-        if (urlManager.isServerAccessEnabled())
-        {
-            FileDownloader downloader = getDownloader(urlString, forceDownload);
-
-            downloader.addPropertyChangeListener(e -> {
-                String propertyName = e.getPropertyName();
-                if (propertyName.equals(FileDownloader.DOWNLOAD_DONE) || propertyName.equals(FileDownloader.DOWNLOAD_CANCELED))
-                {
-                    // Either way, respond to the state change, if any.
-                    whenFinished.respond((DownloadableFileState) e.getNewValue());
-                }
-            });
-
-            THREAD_POOL.execute(downloader);
-        }
-        else
-        {
-            whenFinished.respond(fileState);
-        }
-    }
-
     public void addStateListener(String urlString, StateListener listener)
     {
         Preconditions.checkNotNull(urlString);

@@ -28,7 +28,7 @@ import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
 import edu.jhuapl.saavtk.gui.menu.FileMenu;
 import edu.jhuapl.saavtk.gui.menu.HelpMenu;
 import edu.jhuapl.saavtk.util.Configuration;
-import edu.jhuapl.saavtk.util.FileCache.UnauthorizedAccessException;
+import edu.jhuapl.saavtk.util.UnauthorizedAccessException;
 
 public abstract class ViewManager extends JPanel
 {
