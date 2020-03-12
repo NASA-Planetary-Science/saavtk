@@ -15,8 +15,6 @@ import java.util.UUID;
 import com.google.common.base.Preconditions;
 
 import edu.jhuapl.saavtk.util.CloseableUrlConnection.HttpRequestMethod;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 import edu.jhuapl.saavtk.util.file.StreamGunzipper;
 import edu.jhuapl.saavtk.util.file.StreamUnpacker;
 import edu.jhuapl.saavtk.util.file.StreamUnpacker.UnpackingStatus;

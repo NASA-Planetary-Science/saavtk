@@ -32,8 +32,6 @@ import com.google.common.collect.ImmutableList;
 import edu.jhuapl.saavtk.util.CloseableUrlConnection.HttpRequestMethod;
 import edu.jhuapl.saavtk.util.FileInfo.FileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
 public class DownloadableFileManager
 {

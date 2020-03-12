@@ -29,8 +29,6 @@ import org.apache.commons.io.FileUtils;
 
 import com.google.common.base.Preconditions;
 
-import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
-
 /**
  * Static class containing general settings needed by any application.
  */

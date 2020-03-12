@@ -13,9 +13,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
-
 /**
  * A facility for managing server access to URLs online. An instance of this
  * class has a root URL and manages a cache of information about URLs (which may

@@ -19,7 +19,6 @@ import java.util.zip.GZIPInputStream;
 import com.google.common.base.Preconditions;
 
 import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
 public final class FileCache
 {

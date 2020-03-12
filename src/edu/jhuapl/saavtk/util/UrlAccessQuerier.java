@@ -9,8 +9,6 @@ import javax.swing.SwingWorker;
 import com.google.common.base.Preconditions;
 
 import edu.jhuapl.saavtk.util.CloseableUrlConnection.HttpRequestMethod;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
 public class UrlAccessQuerier extends SwingWorker<Void, Void>
 {
