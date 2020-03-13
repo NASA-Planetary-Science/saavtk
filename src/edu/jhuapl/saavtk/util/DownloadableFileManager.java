@@ -46,8 +46,6 @@ public class DownloadableFileManager
         void respond(DownloadableFileState fileState);
     }
 
-    private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
-
     public static DownloadableFileManager of(URL rootUrl, File cacheDir)
     {
         Preconditions.checkNotNull(rootUrl);
@@ -213,7 +211,8 @@ public class DownloadableFileManager
                         {
                             // Safe and necessary to call this, even if server access is currently disabled,
                             // because this method will skip URL checks but still perform file-system
-                            // accessibility checks.
+                            // accessibility checks. Also it informs listeners of the change of
+                            // accessibility status of URLs.
                             queryAll(forceUpdate);
                         }
 
@@ -293,20 +292,20 @@ public class DownloadableFileManager
         ImmutableList.Builder<String> builder = ImmutableList.builder();
         for (String url : urlManager.getUrlList())
         {
-            if (SafeURLPaths.instance().hasFileProtocol(url))
+            if (SafeURLPaths.instance().hasFileProtocol(url) || urlManager.getRootUrl().toString().equals(url))
             {
                 continue;
             }
 
             UrlStatus status = urlManager.getInfo(url).getState().getStatus();
-            if (status.equals(UrlStatus.CONNECTION_ERROR) || status.equals(UrlStatus.HTTP_ERROR) || status.equals(UrlStatus.UNKNOWN))
+            if (forceUpdate || status.equals(UrlStatus.CONNECTION_ERROR) || status.equals(UrlStatus.HTTP_ERROR) || status.equals(UrlStatus.UNKNOWN))
             {
                 builder.add(url);
             }
-         }
+        }
 
         ImmutableList<String> urlList = builder.build();
-        
+
         ListIterator<String> iterator = urlList.listIterator();
         while (iterator.hasNext())
         {
@@ -368,7 +367,6 @@ public class DownloadableFileManager
                 StringBuilder sb = new StringBuilder();
                 sb.append("rootURL=").append(rootUrlString);
                 sb.append("&userName=").append(URLEncoder.encode(Configuration.getUserName(), getURLEncoding()));
-                sb.append("&password=").append(URLEncoder.encode(String.valueOf(Configuration.getPassword()), getURLEncoding()));
                 sb.append("&args=-encode");
                 sb.append("&stdin=");
 //                sb = new StringBuilder(URLEncoder.encode(sb.toString(), getURLEncoding()));
@@ -560,14 +558,14 @@ public class DownloadableFileManager
      * Query the server about the accessibility for all URLs/files tracked by this
      * manager. This opens a new connection for each such check, so it is
      * time-consuming and generates a lot of queries. This is best performed on a
-     * background threa or on the server itself.
+     * background thread or on the server itself.
      * <p>
      * This check skips any/all local file:// URLs and URLs that do not reside under
      * the top server URL.
      * <p>
      * If server-side access is currrently disabled (most likely because of internet
      * connectivity problems), this method will skip ALL server queries rather than
-     * try them all, thus generating many queries that are likely to fail.
+     * try them all, which would otherwise generate many queries destined to fail.
      * <p>
      * This method also triggers file-system checks for the local accessibility of
      * cached files. It does these checks whether or not server-side access checking

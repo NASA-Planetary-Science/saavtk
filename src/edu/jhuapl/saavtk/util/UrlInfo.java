@@ -33,29 +33,31 @@ public class UrlInfo
         return Debug.of(enableDebug);
     }
 
-    public static UrlInfo of(URL url)
+    public static UrlInfo of(URL url, UrlAccessManager urlManager)
     {
-        return new UrlInfo(url);
+        return new UrlInfo(url, urlManager);
     }
 
     private final PropertyChangeSupport pcs;
     private final AtomicReference<UrlState> state;
+    private final UrlAccessManager urlManager;
 
-    protected UrlInfo(URL url)
+    protected UrlInfo(URL url, UrlAccessManager urlManager)
     {
         this.pcs = new PropertyChangeSupport(this);
         this.state = new AtomicReference<>(UrlState.of(url));
+        this.urlManager = urlManager;
     }
 
     public UrlState getState()
     {
         synchronized (this.state)
         {
-            return state.get();
+            return urlManager.isServerAccessEnabled() ? state.get() : UrlState.of(state.get().getUrl());
         }
     }
 
-    public UrlState update(URLConnection connection) throws IOException
+    public void update(URLConnection connection) throws IOException
     {
         Preconditions.checkNotNull(connection);
 
@@ -115,26 +117,24 @@ public class UrlInfo
                     status = UrlStatus.ACCESSIBLE;
                 }
 
-                state = update(status, contentLength, lastModified);
+                update(status, contentLength, lastModified);
             }
-
-            return state;
         }
     }
 
-    public UrlState update(UrlStatus status, long contentLength, long lastModified)
+    public void update(UrlStatus status, long contentLength, long lastModified)
     {
         Preconditions.checkNotNull(status);
 
         synchronized (this.state)
         {
             URL url = state.get().getUrl();
-            return update(UrlState.of(url, status, contentLength, lastModified));
+            update(UrlState.of(url, status, contentLength, lastModified));
         }
 
     }
 
-    public UrlState update(UrlState state)
+    public void update(UrlState state)
     {
         Preconditions.checkNotNull(state);
 
@@ -158,8 +158,6 @@ public class UrlInfo
                 pcs.firePropertyChange(STATE_PROPERTY, null, state);
             }
         }
-
-        return state;
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener)

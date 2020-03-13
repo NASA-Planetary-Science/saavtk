@@ -276,7 +276,7 @@ public class UrlAccessManager
             result = urlInfoCache.get(urlString);
             if (result == null)
             {
-                result = UrlInfo.of(url);
+                result = UrlInfo.of(url, this);
                 urlInfoCache.put(urlString, result);
             }
         }
