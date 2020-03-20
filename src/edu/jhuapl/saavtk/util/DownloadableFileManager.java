@@ -16,6 +16,8 @@ import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.ListIterator;
 import java.util.Map;
@@ -36,6 +38,7 @@ import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 public class DownloadableFileManager
 {
     private static final String UrlEncoding = "UTF-8";
+    private static final SimpleDateFormat DateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
     private static volatile Boolean headless = null;
     private static volatile boolean enableInfoMessages = true;
     private static volatile boolean enableDebug = false;
@@ -180,9 +183,10 @@ public class DownloadableFileManager
                     {
                         if (enableInfoMessages)
                         {
-                            System.out.println(currentlyEnabled ? //
-                            "Connected to server. Re-enabling online access." : //
-                            "Failed to connect to server. Disabling online access for now.");
+                            String timeStamp = DateFormat.format(new Date(System.currentTimeMillis()));
+                            System.out.println(timeStamp + ( //
+                            currentlyEnabled ? " Connected to server. Re-enabling online access." : " Failed to connect to server. Disabling online access for now." //
+                            ));
                         }
                         if (exception != null)
                         {
