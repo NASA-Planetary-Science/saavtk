@@ -462,14 +462,15 @@ public class DownloadableFileManager
                         {
                             fileInfo.update();
                         }
-
-                        result = true;
                     }
                 }
                 if (!someOutput)
                 {
                     debug().err().println("Server=side access check returned empty list");
                 }
+
+                result = true;
+
             }
             catch (FileNotFoundException e)
             {
