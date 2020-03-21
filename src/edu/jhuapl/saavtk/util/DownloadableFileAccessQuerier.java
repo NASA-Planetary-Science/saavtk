@@ -7,21 +7,29 @@ import com.google.common.base.Preconditions;
 import edu.jhuapl.saavtk.util.FileInfo.FileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
 
-public class DownloadableFileAccessQuerier extends UrlAccessQuerier
+public abstract class DownloadableFileAccessQuerier extends UrlAccessQuerier
 {
     public static DownloadableFileAccessQuerier of(UrlInfo urlInfo, FileInfo fileInfo, boolean forceUpdate, boolean serverAccessEnabled)
     {
         Preconditions.checkNotNull(urlInfo);
         Preconditions.checkNotNull(fileInfo);
 
-        return new DownloadableFileAccessQuerier(urlInfo, fileInfo, forceUpdate, serverAccessEnabled);
+        return new DownloadableFileAccessQuerier(urlInfo, fileInfo, serverAccessEnabled) {
+
+            @Override
+            public boolean isForceUpdate()
+            {
+                return forceUpdate;
+            }
+
+        };
     }
 
     private final FileInfo fileInfo;
 
-    protected DownloadableFileAccessQuerier(UrlInfo urlInfo, FileInfo fileInfo, boolean forceUpdate, boolean serverAccessEnabled)
+    protected DownloadableFileAccessQuerier(UrlInfo urlInfo, FileInfo fileInfo, boolean serverAccessEnabled)
     {
-        super(urlInfo, forceUpdate, serverAccessEnabled);
+        super(urlInfo, serverAccessEnabled);
         this.fileInfo = fileInfo;
     }
 
