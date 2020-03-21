@@ -179,10 +179,7 @@ public class UrlInfo
     @Override
     public String toString()
     {
-        synchronized (this.state)
-        {
-            return state.toString();
-        }
+        return getState().toString();
     }
 
 }
