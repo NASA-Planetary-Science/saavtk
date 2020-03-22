@@ -167,16 +167,7 @@ public class DownloadableFileManager
                 while (enableMonitor)
                 {
                     boolean initiallyEnabled = urlManager.isServerAccessEnabled();
-                    Exception exception = null;
-                    try
-                    {
-                        urlManager.queryRootUrl();
-                    }
-                    catch (Exception e)
-                    {
-                        exception = e;
-                    }
-
+                    urlManager.setEnableServerAccess(updateServerSettings());
                     boolean currentlyEnabled = urlManager.isServerAccessEnabled();
 
                     boolean forceUpdate = initiallyEnabled != currentlyEnabled;
@@ -190,10 +181,6 @@ public class DownloadableFileManager
                             System.out.println(timeStamp + ( //
                             currentlyEnabled ? " Connected to server. Re-enabling online access." : " Failed to connect to server. Disabling online access for now." //
                             ));
-                        }
-                        if (exception != null)
-                        {
-                            exception.printStackTrace(debug().err());
                         }
                     }
 
@@ -294,11 +281,8 @@ public class DownloadableFileManager
         }
         catch (Exception e)
         {
-//            maximumQueryLength = AbsoluteMaximumQueryLength;
-            sleepIntervalBetweenChecks = SleepIntervalAfterLOC;
-            e.printStackTrace();
+            e.printStackTrace(debug().err());
         }
-        System.err.println(sleepIntervalBetweenChecks);
 
         return result;
     }
@@ -653,7 +637,7 @@ public class DownloadableFileManager
      * <p>
      * Because internet connections can be finicky, this method handles exceptions
      * in a specific way to reduce latency and improve odds of getting accurate
-     * infomration for most URLs:
+     * information for most URLs:
      * <p>
      * 1. If an {@link UnknownHostException} is thrown when checking any one URL, no
      * further URLs will be checked and the method will return. This exception is
