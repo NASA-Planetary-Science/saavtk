@@ -284,7 +284,7 @@ public class UrlAccessManager
         return result;
     }
 
-    public UrlInfo queryRootUrl() throws Exception
+    private UrlInfo queryRootUrl() throws Exception
     {
         UrlInfo rootInfo = getInfo(rootUrl);
         UrlAccessQuerier querier = UrlAccessQuerier.of(rootInfo, true, true);
