@@ -17,8 +17,10 @@ import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -37,6 +39,11 @@ public class DownloadableFileManager
 {
     private static final String UrlEncoding = "UTF-8";
     private static final SimpleDateFormat DateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+    private static final int AbsoluteMinimumQueryLength = 100; // ~1 URL.
+    private static final int AbsoluteMaximumQueryLength = 10000; // ~100 URLs.
+    private static final int AbsoluteMinimumSleepInterval = 5000; // 5 sec.
+    private static final int AbsoluteMaximumSleepInterval = 120000; // 2 min.
+    private static final int SleepIntervalAfterLOC = 50000; // 50 sec., empirically good value.
     private static volatile Boolean headless = null;
     private static volatile boolean enableInfoMessages = true;
     private static volatile boolean enableDebug = false;
@@ -127,11 +134,11 @@ public class DownloadableFileManager
         this.listenerMap = new HashMap<>();
         this.accessMonitor = Executors.newCachedThreadPool();
         this.enableMonitor = false;
-        this.sleepIntervalBetweenChecks = 5000;
+        this.sleepIntervalBetweenChecks = AbsoluteMinimumSleepInterval;
         // Currently no option to change this field through a method call; this is just
         // for debugging:
         this.enableAccessChecksOnServer = new AtomicBoolean(Boolean.TRUE);
-        this.maximumQueryLength = 10000; // Set to match the limit imposed by the web server.
+        this.maximumQueryLength = AbsoluteMaximumQueryLength; // Set to match the limit imposed by the web server.
         this.consecutiveServerSideCheckExceptionCount = new AtomicInteger();
     }
 
@@ -238,6 +245,77 @@ public class DownloadableFileManager
                 }
 
             });
+        }
+    }
+
+    protected boolean updateServerSettings()
+    {
+        boolean result = false;
+        String checkServerScriptName = SafeURLPaths.instance().getString(Configuration.getQueryRootURL(), "checkserver.php");
+        URL checkServerScriptUrl;
+        try
+        {
+            checkServerScriptUrl = new URL(checkServerScriptName);
+        }
+        catch (Exception e)
+        {
+            throw new AssertionError(e);
+        }
+
+        try (CloseableUrlConnection closeableConn = CloseableUrlConnection.of(checkServerScriptUrl, HttpRequestMethod.GET))
+        {
+            URLConnection conn = closeableConn.getConnection();
+            conn.setDoOutput(true);
+
+            // Process the results of the query.
+            List<String> lines = new ArrayList<>();
+            try (InputStreamReader isr = new InputStreamReader(conn.getInputStream()))
+            {
+                BufferedReader in = new BufferedReader(isr);
+                String line;
+                while ((line = in.readLine()) != null)
+                {
+                    if (line.matches(("^<html>.*Request Rejected.*")))
+                    {
+                        debug().err().println("Request rejected for URL info from server-side script " + conn.getURL());
+                        break;
+                    }
+                    else
+                    {
+                        lines.add(line);
+                    }
+                }
+            }
+            result = true;
+
+            int numberLines = lines.size();
+            maximumQueryLength = numberLines > 0 ? parseInt(lines.get(0), AbsoluteMaximumQueryLength, AbsoluteMinimumQueryLength, AbsoluteMaximumQueryLength) : AbsoluteMaximumQueryLength;
+            sleepIntervalBetweenChecks = numberLines > 1 ? parseInt(lines.get(1), AbsoluteMinimumSleepInterval, AbsoluteMinimumSleepInterval, AbsoluteMaximumSleepInterval) : AbsoluteMinimumSleepInterval;
+        }
+        catch (Exception e)
+        {
+//            maximumQueryLength = AbsoluteMaximumQueryLength;
+            sleepIntervalBetweenChecks = SleepIntervalAfterLOC;
+            e.printStackTrace();
+        }
+        System.err.println(sleepIntervalBetweenChecks);
+
+        return result;
+    }
+
+    protected int parseInt(String intString, int defaultValue, int minimumValue, int maximumValue)
+    {
+        try
+        {
+            int result = Integer.parseInt(intString);
+            result = Math.max(result, minimumValue);
+            result = Math.min(result, maximumValue);
+
+            return result;
+        }
+        catch (Exception e)
+        {
+            return defaultValue;
         }
     }
 
@@ -552,7 +630,7 @@ public class DownloadableFileManager
 
     public void queryAll(boolean forceUpdate)
     {
-        queryAll(forceUpdate, 3, 50000);
+        queryAll(forceUpdate, 3, SleepIntervalAfterLOC);
     }
 
     /**
