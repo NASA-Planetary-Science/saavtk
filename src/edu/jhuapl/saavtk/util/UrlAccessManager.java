@@ -61,6 +61,7 @@ public class UrlAccessManager
         try
         {
             result.queryRootUrl();
+            result.setEnableServerAccess(true);
             if (enableInfoMessages)
             {
                 System.out.println("Connected to server at " + rootUrl);
@@ -68,6 +69,7 @@ public class UrlAccessManager
         }
         catch (Exception e)
         {
+            result.setEnableServerAccess(false);
             if (enableInfoMessages)
             {
                 System.err.println("Unable to connect to server. Disabling online access.");
@@ -284,24 +286,14 @@ public class UrlAccessManager
         return result;
     }
 
-    private UrlInfo queryRootUrl() throws Exception
+    public UrlState queryRootUrl() throws Exception
     {
         UrlInfo rootInfo = getInfo(rootUrl);
-        UrlAccessQuerier querier = UrlAccessQuerier.of(rootInfo, true, true);
-        try
-        {
-            querier.query();
-            setEnableServerAccess(true);
-        }
-        catch (Exception e)
-        {
-            // Serious problem. Disable server access pending resolution.
-            rootInfo.update(UrlState.of(rootUrl));
-            setEnableServerAccess(false);
-            throw e;
-        }
+        boolean forceUpdate = rootInfo.getState().getStatus() == UrlStatus.NOT_AUTHORIZED;
+        UrlAccessQuerier querier = UrlAccessQuerier.of(rootInfo, forceUpdate, true);
+        querier.query();
 
-        return rootInfo;
+        return rootInfo.getState();
     }
 
     @Override

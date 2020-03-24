@@ -184,6 +184,18 @@ public class DownloadableFileManager
                         }
                     }
 
+                    if (forceUpdate)
+                    {
+                        try
+                        {
+                            urlManager.queryRootUrl();
+                        }
+                        catch (Exception e)
+                        {
+                            e.printStackTrace(debug().err());
+                        }
+                    }
+
                     try
                     {
                         if (consecutiveServerSideCheckExceptionCount.get() >= maximumConsecutiveServerSideCheckExceptions)
@@ -339,7 +351,7 @@ public class DownloadableFileManager
     {
         boolean result = true;
 
-        String checkFileAccessScriptName = SafeURLPaths.instance().getString(Configuration.getQueryRootURL(), "checkfileaccess.php");
+        String checkFileAccessScriptName = SafeURLPaths.instance().getString(Configuration.getQueryRootURL(), "newcheckfileaccess.php");
         URL getUserAccessPhp;
         try
         {
