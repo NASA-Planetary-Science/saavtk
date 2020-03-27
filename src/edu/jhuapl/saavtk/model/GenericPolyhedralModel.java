@@ -241,7 +241,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
         String metadataFileName = BasicColoringDataManager.getMetadataFileName(Serializers.of().getVersion());
         metadataFileName = SAFE_URL_PATHS.getString(SAFE_URL_PATHS.get(coloringFiles[0]).toFile().getParent(), metadataFileName);
-        if (FileCache.instance().isAccessible(metadataFileName))
+        try
         {
             File metadataFile = FileCache.getFileFromServer(metadataFileName);
             if (metadataFile.exists())
@@ -268,6 +268,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
                 }
                 return;
             }
+        }
+        catch (Exception e)
+        {
+            // Ignore this exception -- this file is optional. Fall through to continue with legacy behavior.
         }
 
         boolean sbmt2style = false;
