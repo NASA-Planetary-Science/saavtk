@@ -127,7 +127,7 @@ public final class FileCache
         {
             if (exception == null)
             {
-                if (fileState.getUrlState().getStatus() == UrlStatus.NOT_AUTHORIZED)
+                if (fileState.isUrlUnauthorized())
                 {
                     exception = new UnauthorizedAccessException("Cannot get file: access is restricted to URL: " + url, url);
                 }
@@ -166,29 +166,14 @@ public final class FileCache
     {
         Preconditions.checkNotNull(urlOrPathSegment);
 
-        boolean result = false;
-
         DownloadableFileState state = instance().query(urlOrPathSegment, false);
 
-        if (state.getFileState().getStatus() == FileStatus.ACCESSIBLE)
+        if (state.getUrlState().getStatus() == UrlStatus.NOT_AUTHORIZED)
         {
-            result = true;
-        }
-        else
-        {
-            switch (state.getUrlState().getStatus())
-            {
-            case ACCESSIBLE:
-                result = true;
-                break;
-            case NOT_AUTHORIZED:
-                throw new UnauthorizedAccessException("Cannot access information about restricted URL: ", state.getUrlState().getUrl());
-            default:
-                break;
-            }
+            throw new UnauthorizedAccessException("Cannot access information about restricted URL: ", state.getUrlState().getUrl());
         }
 
-        return result;
+        return state.isAccessible();
     }
 
     /**

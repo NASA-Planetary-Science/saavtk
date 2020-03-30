@@ -33,27 +33,25 @@ public class UrlInfo
         return Debug.of(enableDebug);
     }
 
-    public static UrlInfo of(URL url, UrlAccessManager urlManager)
+    public static UrlInfo of(URL url)
     {
-        return new UrlInfo(url, urlManager);
+        return new UrlInfo(url);
     }
 
     private final PropertyChangeSupport pcs;
     private final AtomicReference<UrlState> state;
-    private final UrlAccessManager urlManager;
 
-    protected UrlInfo(URL url, UrlAccessManager urlManager)
+    protected UrlInfo(URL url)
     {
         this.pcs = new PropertyChangeSupport(this);
         this.state = new AtomicReference<>(UrlState.of(url));
-        this.urlManager = urlManager;
     }
 
     public UrlState getState()
     {
         synchronized (this.state)
         {
-            return urlManager.isServerAccessEnabled() ? state.get() : UrlState.of(state.get().getUrl());
+            return state.get();
         }
     }
 
@@ -61,77 +59,69 @@ public class UrlInfo
     {
         Preconditions.checkNotNull(connection);
 
-        synchronized (this.state)
-        {
-            UrlState state = this.state.get();
-            UrlStatus status = state.getStatus();
+        UrlState state = getState();
+        UrlStatus status = state.getLastKnownStatus();
 
-            if (status != UrlStatus.INVALID_URL)
+        debug().err().print("Connected to " + state.getUrl() + ": ");
+        if (status == UrlStatus.INVALID_URL)
+        {
+            debug().err().println("invalid URL");
+        }
+        else
+        {
+            long contentLength = state.getContentLength();
+            long lastModified = state.getLastModified();
+            if (connection instanceof HttpURLConnection)
             {
-                long contentLength = state.getContentLength();
-                long lastModified = state.getLastModified();
-                if (connection instanceof HttpURLConnection)
+                HttpURLConnection httpConnection = (HttpURLConnection) connection;
+                try
                 {
-                    HttpURLConnection httpConnection = (HttpURLConnection) connection;
-                    try
-                    {
-                        int code = httpConnection.getResponseCode();
+                    int code = httpConnection.getResponseCode();
 
-                        // Codes in the 200 series are generally "ok" so treat any of them as
-                        // successful.
-                        if (code >= HttpURLConnection.HTTP_OK && code < HttpURLConnection.HTTP_MULT_CHOICE)
-                        {
-                            status = UrlStatus.ACCESSIBLE;
-                            contentLength = httpConnection.getContentLengthLong();
-                            lastModified = httpConnection.getLastModified();
-                        }
-                        else if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN)
-                        {
-                            status = UrlStatus.NOT_AUTHORIZED;
-                        }
-                        else if (code == HttpURLConnection.HTTP_NOT_FOUND)
-                        {
-                            status = UrlStatus.NOT_FOUND;
-                        }
-                        else
-                        {
-                            debug().err().println("Received response code " + code + " for URL " + state.getUrl());
-                            status = UrlStatus.HTTP_ERROR;
-                        }
-                    }
-                    catch (ProtocolException e)
+                    // Codes in the 200 series are generally "ok" so treat any of them as
+                    // successful.
+                    if (code >= HttpURLConnection.HTTP_OK && code < HttpURLConnection.HTTP_MULT_CHOICE)
                     {
-                        // This indicates the request method isn't supported. That should not happen.
-                        throw new AssertionError(e);
+                        status = UrlStatus.ACCESSIBLE;
+                        contentLength = httpConnection.getContentLengthLong();
+                        lastModified = httpConnection.getLastModified();
                     }
-                    catch (SocketException | SocketTimeoutException e)
+                    else if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN)
                     {
-                        update(UrlStatus.CONNECTION_ERROR, contentLength, lastModified);
-                        throw e;
+                        status = UrlStatus.NOT_AUTHORIZED;
                     }
+                    else if (code == HttpURLConnection.HTTP_NOT_FOUND)
+                    {
+                        status = UrlStatus.NOT_FOUND;
+                    }
+                    else
+                    {
+                        status = UrlStatus.HTTP_ERROR;
+                    }
+
+                    debug().err().println("response code = " + code + ", status = " + status);
                 }
-                else
+                catch (ProtocolException e)
                 {
-                    // Probably this is a file-type URL. May need to add access checks for that, but
-                    // for now, be optimistic and assume it's accessible.
-                    status = UrlStatus.ACCESSIBLE;
+                    // This indicates the request method isn't supported. That should not happen.
+                    throw new AssertionError(e);
                 }
-
-                update(status, contentLength, lastModified);
+                catch (SocketException | SocketTimeoutException e)
+                {
+                    update(state.update(UrlStatus.CONNECTION_ERROR));
+                    throw e;
+                }
             }
+            else
+            {
+                // Something other than http. May need to handle this in the future.
+                // For now, be optimistic and assume it's accessible.
+                status = UrlStatus.ACCESSIBLE;
+                debug().err().println("non-http connection, status = " + status);
+            }
+
+            update(state.update(status, contentLength, lastModified).update(true));
         }
-    }
-
-    public void update(UrlStatus status, long contentLength, long lastModified)
-    {
-        Preconditions.checkNotNull(status);
-
-        synchronized (this.state)
-        {
-            URL url = state.get().getUrl();
-            update(UrlState.of(url, status, contentLength, lastModified));
-        }
-
     }
 
     public void update(UrlState state)

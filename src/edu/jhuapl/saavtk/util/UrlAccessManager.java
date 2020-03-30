@@ -278,7 +278,7 @@ public class UrlAccessManager
             result = urlInfoCache.get(urlString);
             if (result == null)
             {
-                result = UrlInfo.of(url, this);
+                result = UrlInfo.of(url);
                 urlInfoCache.put(urlString, result);
             }
         }
@@ -289,7 +289,7 @@ public class UrlAccessManager
     public UrlState queryRootUrl() throws Exception
     {
         UrlInfo rootInfo = getInfo(rootUrl);
-        boolean forceUpdate = rootInfo.getState().getStatus() == UrlStatus.NOT_AUTHORIZED;
+        boolean forceUpdate = rootInfo.getState().getLastKnownStatus() == UrlStatus.NOT_AUTHORIZED;
         UrlAccessQuerier querier = UrlAccessQuerier.of(rootInfo, forceUpdate, true);
         querier.query();
 
@@ -502,7 +502,7 @@ public class UrlAccessManager
         {
             UrlState state = result.getState();
             UrlStatus status = state.getStatus();
-            if (status == UrlStatus.UNKNOWN || status == UrlStatus.CONNECTION_ERROR || forceUpdate)
+            if (status == UrlStatus.UNKNOWN || status == UrlStatus.CONNECTION_ERROR || status == UrlStatus.HTTP_ERROR || forceUpdate)
             {
                 debug().out().println("Querying server about " + url);
                 try
