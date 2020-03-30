@@ -131,6 +131,10 @@ public final class FileCache
                 {
                     exception = new UnauthorizedAccessException("Cannot get file: access is restricted to URL: " + url, url);
                 }
+                else if (!fileState.getUrlState().wasCheckedOnline())
+                {
+                    exception = new NoInternetAccessException("Cannot get file: unable to connect to server", url);
+                }
                 else
                 {
                     exception = new RuntimeException("Unknown problem trying to update file from URL: " + url);
