@@ -27,6 +27,8 @@ public class ZipFileUnzipper
 {
     public static final String UNZIPPING_PROGRESS = "unzippingProgress";
 
+    private static volatile boolean enableDebug = false;
+
     public static ZipFileUnzipper of(File file) throws IOException
     {
         return new ZipFileUnzipper(file, 8192);
@@ -38,6 +40,16 @@ public class ZipFileUnzipper
     }
 
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
+
+    public static void enableDebug(boolean enable)
+    {
+        enableDebug = enable;
+    }
+
+    protected static Debug debug()
+    {
+        return Debug.of(enableDebug);
+    }
 
     private final PropertyChangeSupport pcs;
     private final ZipFile zipFile;
@@ -149,7 +161,7 @@ public class ZipFileUnzipper
         }
         catch (Exception e)
         {
-            if (!Debug.isEnabled())
+            if (!enableDebug)
             {
                 deleteQuietly(tempExtractToFolder);
             }

@@ -14,6 +14,17 @@ import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
 public class FileAccessManager
 {
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
+    private static volatile boolean enableDebug = false;
+
+    public static void enableDebug(boolean enable)
+    {
+        enableDebug = enable;
+    }
+
+    protected static Debug debug()
+    {
+        return Debug.of(enableDebug);
+    }
 
     public static FileAccessManager of(File rootDirectory) throws IOException
     {
@@ -102,7 +113,7 @@ public class FileAccessManager
         FileState state = result.getState();
         if (state.getStatus() == FileStatus.UNKNOWN || forceUpdate)
         {
-            Debug.out().println("Querying FS about " + file);
+            debug().out().println("Querying FS about " + file);
             result.update();
         }
 

@@ -142,8 +142,12 @@ public class StructureLoadUtil
 		// Transform to the proper formats
 		retL = new ArrayList<>();
 		for (Ellipse aItem : tmpL)
-			retL.add(new Ellipse(aItem.getId(), aFile, tmpMode, aItem.getCenter(), aItem.getRadius(), aItem.getAngle(),
-					aItem.getFlattening(), aItem.getColor(), aItem.getLabel()));
+		{
+			Ellipse tmpItem = new Ellipse(aItem.getId(), aFile, tmpMode, aItem.getCenter(), aItem.getRadius(),
+					aItem.getAngle(), aItem.getFlattening(), aItem.getColor(), aItem.getLabel());
+			tmpItem.setName(aItem.getName());
+			retL.add(tmpItem);
+		}
 
 		return retL;
 	}
