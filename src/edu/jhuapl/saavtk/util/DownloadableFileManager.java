@@ -383,7 +383,7 @@ public class DownloadableFileManager
             UrlStatus status = state.getLastKnownStatus();
             if (forceUpdate || status.equals(UrlStatus.CONNECTION_ERROR) || status.equals(UrlStatus.HTTP_ERROR) || status.equals(UrlStatus.UNKNOWN))
             {
-                System.err.println("Adding to new access check: " + url);
+                debug().err().println("Adding to server-side access check: " + url);
                 builder.add(url);
             }
             else
