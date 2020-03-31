@@ -62,10 +62,9 @@ public class UrlInfo
         UrlState state = getState();
         UrlStatus status = state.getLastKnownStatus();
 
-        debug().err().print("Connected to " + state.getUrl() + ": ");
         if (status == UrlStatus.INVALID_URL)
         {
-            debug().err().println("invalid URL");
+            debugConnectionMessage(state, "invalid URL");
         }
         else
         {
@@ -99,7 +98,7 @@ public class UrlInfo
                         status = UrlStatus.HTTP_ERROR;
                     }
 
-                    debug().err().println("response code = " + code + ", status = " + status);
+                    debugConnectionMessage(state, "response code = " + code + ", status = " + status);
                 }
                 catch (ProtocolException e)
                 {
@@ -117,11 +116,16 @@ public class UrlInfo
                 // Something other than http. May need to handle this in the future.
                 // For now, be optimistic and assume it's accessible.
                 status = UrlStatus.ACCESSIBLE;
-                debug().err().println("non-http connection, status = " + status);
+                debugConnectionMessage(state, "non-http connection, status = " + status);
             }
 
             update(state.update(status, contentLength, lastModified).update(true));
         }
+    }
+
+    private void debugConnectionMessage(UrlState state, String message)
+    {
+        debug().err().println("Connected to " + state.getUrl() + ": " + message);
     }
 
     public void update(UrlState state)

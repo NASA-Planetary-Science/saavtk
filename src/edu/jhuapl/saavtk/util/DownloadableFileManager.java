@@ -104,6 +104,7 @@ public class DownloadableFileManager
     public static void enableDebug(boolean enable)
     {
         enableDebug = enable;
+        UrlInfo.enableDebug(enable);
     }
 
     protected static Debug debug()
