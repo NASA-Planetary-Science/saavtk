@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
+import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Properties;
@@ -118,6 +119,8 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 
 		String fmt = "%.0f";
 		String deg = String.valueOf(Character.toChars(0x00B0));
+		if (Configuration.isWindows())
+			deg = " ";
 
 		for (int i = 0; i <= numberLonCircles; i++)
 		{
