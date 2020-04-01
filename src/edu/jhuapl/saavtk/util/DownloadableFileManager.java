@@ -8,7 +8,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
@@ -27,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -124,6 +124,7 @@ public class DownloadableFileManager
     private volatile boolean enableMonitor;
     private volatile long sleepIntervalBetweenChecks;
     private final AtomicBoolean enableAccessChecksOnServer;
+    private final AtomicReference<URL> checkFileAccessScriptURL;
     private volatile int maximumQueryLength;
     private final AtomicInteger consecutiveServerSideCheckExceptionCount;
     private static final int maximumConsecutiveServerSideCheckExceptions = 2;
@@ -134,6 +135,7 @@ public class DownloadableFileManager
         this.fileManager = fileManager;
         this.listenerMap = new HashMap<>();
         this.accessMonitor = Executors.newCachedThreadPool();
+        this.checkFileAccessScriptURL = new AtomicReference<>();
         this.enableMonitor = false;
         this.sleepIntervalBetweenChecks = AbsoluteMinimumSleepInterval;
         // Currently no option to change this field through a method call; this is just
@@ -216,7 +218,7 @@ public class DownloadableFileManager
         {
             if (consecutiveServerSideCheckExceptionCount.get() >= maximumConsecutiveServerSideCheckExceptions)
             {
-                debug().err().println("URL status check on server failed too many times. Falling back to file-by-file check.");
+                debug().err().println("URL status check on server failed too many times; disabling.");
                 enableAccessChecksOnServer.set(false);
             }
 
@@ -225,8 +227,7 @@ public class DownloadableFileManager
             {
                 if (!doAccessCheckOnServer(forceUpdate))
                 {
-                    debug().err().println("URL status check on server did not complete. Falling back to file-by-file check.");
-                    queryAll(forceUpdate);
+                    throw new NoInternetAccessException("Access chcck on servdr failed", checkFileAccessScriptURL.get());
                 }
             }
             else
@@ -235,6 +236,10 @@ public class DownloadableFileManager
                 // because this method will skip URL checks but still perform file-system
                 // accessibility checks. Also it informs listeners of the change of
                 // accessibility status of URLs.
+                if (!enableAccessChecksOnServer.get())
+                {
+                    debug().err().println("Falling back on file-by-file access check");
+                }
                 queryAll(forceUpdate);
             }
 
@@ -340,7 +345,7 @@ public class DownloadableFileManager
      * VERY IMPORTANT: this method needs to be kept in synch with the way clients
      * work to accept the queries, run them on the server and return the results. In
      * particular, this method expects the server to have a script named
-     * "checkfileaccess.php" in the query root directory.
+     * "checkfilesystemaccess.php" in the query root directory.
      * 
      * @param forceUpdate force FileInfo portion of the update. The server-side
      *            update (UrlInfo) is performed once in any case.
@@ -355,16 +360,13 @@ public class DownloadableFileManager
     {
         boolean result = true;
 
-        String checkFileAccessScriptName = SafeURLPaths.instance().getString(Configuration.getQueryRootURL(), "newcheckfileaccess.php");
-        URL getUserAccessPhp;
-        try
+        if (checkFileAccessScriptURL.get() == null)
         {
-            getUserAccessPhp = new URL(checkFileAccessScriptName);
+            checkFileAccessScriptURL.set(new URL(SafeURLPaths.instance().getString(Configuration.getQueryRootURL(), "checkfilesystemaccess.php")));
         }
-        catch (MalformedURLException e)
-        {
-            throw new AssertionError(e);
-        }
+
+        URL getUserAccessPhp = checkFileAccessScriptURL.get();
+        ;
 
         // Only ask about URLs for which no previous successful check has been made.
         ImmutableList.Builder<String> builder = ImmutableList.builder();
