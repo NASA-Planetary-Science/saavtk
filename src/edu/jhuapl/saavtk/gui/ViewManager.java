@@ -200,6 +200,9 @@ public abstract class ViewManager extends JPanel
                     addCustomView(initialView);
                     add(initialView, modelName);
                     setDefaultModelName(modelName);
+                    
+                    System.err.println("Starting with one basic/demo model. No other models are currently available.");
+                    System.err.println("Restart with a stable internet connection to see all available models");
                 }
             }
 
