@@ -302,7 +302,7 @@ public class DownloadableFileManager
         }
         catch (Exception e)
         {
-            e.printStackTrace(debug().err());
+            debug().err().println(e.getClass().getName() + ": " + e.getMessage());
         }
 
         return result;
