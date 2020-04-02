@@ -91,13 +91,17 @@ public class AbstractModelManager extends DefaultDatasourceModel implements Mode
 	}
 
 	@Override
+	public void notifySceneChange()
+	{
+		updateProps();
+		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+	}
+
+	@Override
 	public void propertyChange(PropertyChangeEvent evt)
 	{
 		if (Properties.MODEL_CHANGED.equals(evt.getPropertyName()))
-		{
-			updateProps();
-			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-		}
+			notifySceneChange();
 	}
 
 	protected void clearProps()
