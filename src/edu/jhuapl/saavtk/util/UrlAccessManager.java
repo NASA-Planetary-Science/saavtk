@@ -72,8 +72,8 @@ public class UrlAccessManager
             result.setEnableServerAccess(false);
             if (enableInfoMessages)
             {
-                System.err.println("Unable to connect to server. Disabling online access.");
-                e.printStackTrace();
+                System.err.println("Unable to connect to server. Disabling online access.\nException was " //
+                        + e.getClass().getName() + ": " + e.getMessage());
             }
         }
 
