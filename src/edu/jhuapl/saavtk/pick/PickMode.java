@@ -8,10 +8,13 @@ package edu.jhuapl.saavtk.pick;
 public enum PickMode
 {
 	/** No-operation mode. */
-	NONE,
+	None,
 
-	/** Mode associated with a specific action. */
-	Active,
+	/** Mode associated with a (primary) action. */
+	ActivePri,
+
+	/** Mode associated with a (secondary) action. */
+	ActiveSec,
 
 	/** Mode associated with a passive activity. */
 	Passive;

@@ -16,12 +16,11 @@ import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
+import edu.jhuapl.saavtk.gui.render.VtkPropProvider;
 import edu.jhuapl.saavtk.gui.render.camera.Camera;
 import edu.jhuapl.saavtk.gui.render.camera.CameraUtil;
-import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.util.Properties;
 import vtk.vtkActor;
 import vtk.vtkCellPicker;
@@ -39,23 +38,24 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
  * <LI>Keyboard support for various view transformations
  * </UL>
  * TODO: Eventually this Picker should not be a ProperyChangeListener but rather
- * relevant objects should be responsible for registering there
+ * relevant objects should be responsible for registering their
  * {@link vtkProp}s.
  * 
  * @author lopeznr1
  */
 public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 {
+	// Reference vars
 	private final Renderer refRenderer;
 	private final vtkJoglPanelComponent refRenWin;
+	private final PolyhedralModel refSmallBody;
 	private final ModelManager refModelManager;
-	private final PopupManager refPopupManager;
 
 	// State vars
-	private ImmutableList<PickListener> listenerL;
-	private boolean suppressPopups;
-	private Vector3D lastClickedPosition;
-	private Vector3D lastClickedNormal;
+	private ImmutableList<PickListener> pickListenerL;
+	private ImmutableList<VtkPropProvider> propProviderL;
+	private PickTarget lastClickedTarget;
+	private boolean suppressModeActiveSec;
 	private boolean isDragged;
 
 	// VTK vars
@@ -65,59 +65,86 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 	/**
 	 * Standard Constructor
 	 */
-	public BaseDefaultPicker(Renderer aRenderer, ModelManager aModelManager, PopupManager aPopupManager)
+	public BaseDefaultPicker(Renderer aRenderer, ModelManager aModelManager)
 	{
 		refRenderer = aRenderer;
 		refRenWin = aRenderer.getRenderWindowPanel();
+		refSmallBody = aModelManager.getPolyhedralModel();
 		refModelManager = aModelManager;
-		refPopupManager = aPopupManager;
 
-		listenerL = ImmutableList.of();
-		suppressPopups = false;
-		lastClickedPosition = null;
-		lastClickedNormal = null;
+		pickListenerL = ImmutableList.of();
+		propProviderL = ImmutableList.of();
+		lastClickedTarget = null;
+		suppressModeActiveSec = false;
 		isDragged = false;
-
-		PolyhedralModel smallBodyModel = aModelManager.getPolyhedralModel();
 
 		// See comment in the propertyChange function below as to why
 		// we use a custom pick list for these pickers.
 		vNonSmallBodyCP = PickUtilEx.formEmptyPicker();
 
-		vSmallBodyCP = PickUtilEx.formSmallBodyPicker(smallBodyModel);
+		vSmallBodyCP = PickUtilEx.formSmallBodyPicker(refSmallBody);
 
 		// Register for events of interest
 		aModelManager.addPropertyChangeListener(this);
 	}
 
 	/**
-	 * Registers a listener with this PickManager
+	 * Registers a {@link PickListener} with this PickManager
 	 */
 	public synchronized void addListener(PickListener aListener)
 	{
-		List<PickListener> tmpL = new ArrayList<>(listenerL);
+		List<PickListener> tmpL = new ArrayList<>(pickListenerL);
 		tmpL.add(aListener);
 
-		listenerL = ImmutableList.copyOf(tmpL);
+		pickListenerL = ImmutableList.copyOf(tmpL);
 	}
 
 	/**
-	 * Deregisters a listener with this PickManager
+	 * Deregisters a {@link PickListener} with this PickManager
 	 */
 	public synchronized void delListener(PickListener aListener)
 	{
-		List<PickListener> tmpL = new ArrayList<>(listenerL);
+		List<PickListener> tmpL = new ArrayList<>(pickListenerL);
 		tmpL.remove(aListener);
 
-		listenerL = ImmutableList.copyOf(tmpL);
+		pickListenerL = ImmutableList.copyOf(tmpL);
 	}
 
 	/**
-	 * Configures the picker to disable popups.
+	 * Registers a {@link VtkPropProvider} with this PickManager
 	 */
-	public void setSuppressPopups(boolean aBool)
+	public synchronized void addPropProvider(VtkPropProvider aProvider)
 	{
-		suppressPopups = aBool;
+		List<VtkPropProvider> tmpL = new ArrayList<>(propProviderL);
+		tmpL.add(aProvider);
+
+		propProviderL = ImmutableList.copyOf(tmpL);
+
+		buildCellPickers();
+	}
+
+	/**
+	 * Deregisters a {@link VtkPropProvider} with this PickManager
+	 */
+	public synchronized void delPropProvider(VtkPropProvider aProvider)
+	{
+		List<VtkPropProvider> tmpL = new ArrayList<>(propProviderL);
+		tmpL.remove(aProvider);
+
+		propProviderL = ImmutableList.copyOf(tmpL);
+
+		buildCellPickers();
+	}
+
+	/**
+	 * Configures the picker to disable secondary actions.
+	 * <P>
+	 * {@link PickEvent} with a mode of type {@link PickMode#ActiveSec} will not be
+	 * sent.
+	 */
+	public void setSuppressModeActiveSec(boolean aBool)
+	{
+		suppressModeActiveSec = aBool;
 	}
 
 	/**
@@ -174,11 +201,11 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		}
 		else if (keyCode == KeyEvent.VK_F)
 		{
-			// Bail if no point has been clicked on
-			if (lastClickedPosition == null || lastClickedNormal == null)
+			// Bail if no target has been clicked on
+			if (lastClickedTarget == null)
 				return;
 
-			CameraUtil.setFocalPosition(refRenderer, lastClickedPosition, lastClickedNormal);
+			CameraUtil.setFocalPosition(refRenderer, lastClickedTarget.getPosition(), lastClickedTarget.getNormal());
 
 			notifyListeners(aEvent, PickMode.Passive, PickTarget.Invalid, surfaceTarg);
 		}
@@ -217,47 +244,45 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		}
 		else if (keyCode == KeyEvent.VK_S)
 		{
-			PolyhedralModel polyhedralModel = refModelManager.getPolyhedralModel();
-			polyhedralModel.setRepresentationToSurface();
+			refSmallBody.setRepresentationToSurface();
 		}
 		else if (keyCode == KeyEvent.VK_W)
 		{
-			PolyhedralModel polyhedralModel = refModelManager.getPolyhedralModel();
-			polyhedralModel.setRepresentationToWireframe();
+			refSmallBody.setRepresentationToWireframe();
 		}
 	}
 
 	@Override
 	public void mouseClicked(MouseEvent aEvent)
 	{
-		// Note that in general when a popup should appear is system dependent. On some
-		// systems popups are triggered on mouse press and on others on mouse release.
-		// However, in the renderer, we always want the popup to appear on mouse RELEASE
-		// not mouse press regardless of platform, because otherwise the popup will
-		// interfere with renderer's zoom in and out feature. Therefore, to avoid this
-		// whole issue we only show the popup within the mouseClicked call since the
-		// mouseClicked event is only thrown when the mouse is released.
-		maybeShowPopup(aEvent);
+		if (refRenWin.getRenderWindow().GetNeverRendered() > 0)
+			return;
 
-		if (aEvent.getClickCount() == 1 && (aEvent.getModifiers() & InputEvent.BUTTON1_MASK) == InputEvent.BUTTON1_MASK)
-		{
-			// need to shut off LODs to make sure pick is done on correct geometry
-			boolean wasShowingLODs = refRenderer.showingLODs;
-			refRenderer.hideLODs();
+		// need to shut off LODs to make sure pick is done on correct geometry
+		boolean wasShowingLODs = refRenderer.showingLODs;
+		refRenderer.hideLODs();
 
-			int pickSucceeded = doPick(aEvent, vSmallBodyCP, refRenWin);
+		// Synthesize the primary and surface target
+		PickTarget primaryTarg = getPickTarget(vNonSmallBodyCP, aEvent.getX(), aEvent.getY());
+		PickTarget surfaceTarg = getPickTarget(vSmallBodyCP, aEvent.getX(), aEvent.getY());
 
-			// show LODs again if they were shown before picking; view-menu enabling of LODs
-			// is handled by the renderer so we don't need to worry about it here
-			if (wasShowingLODs)
-				refRenderer.showLODs();
+		// Keep track of the (regular) last clicked target
+		boolean isRegClick = aEvent.getClickCount() == 1;
+		isRegClick &= (aEvent.getModifiers() & InputEvent.BUTTON1_MASK) == InputEvent.BUTTON1_MASK;
+		if (isRegClick == true && surfaceTarg != PickTarget.Invalid)
+			lastClickedTarget = surfaceTarg;
 
-			if (pickSucceeded == 1)
-			{
-				lastClickedPosition = new Vector3D(vSmallBodyCP.GetPickPosition());
-				lastClickedNormal = new Vector3D(vSmallBodyCP.GetPickNormal());
-			}
-		}
+		// show LODs again if they were shown before picking; view-menu enabling of LODs
+		// is handled by the renderer so we don't need to worry about it here
+		if (wasShowingLODs == true)
+			refRenderer.showLODs();
+
+		// Send out notification (if appropriate)
+		PickMode tmpMode = PickMode.ActiveSec;
+		if (suppressModeActiveSec == false)
+			notifyListeners(aEvent, tmpMode, primaryTarg, surfaceTarg);
+
+		isDragged = false;
 	}
 
 	@Override
@@ -300,8 +325,8 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		if (wasShowingLODs == true)
 			refRenderer.showLODs();
 
-		// Mark as active as long as the mouse was not dragged
-		PickMode tmpMode = PickMode.Active;
+		// Mark as primary action as long as the mouse was not dragged
+		PickMode tmpMode = PickMode.ActivePri;
 		if (isDragged == true)
 			tmpMode = PickMode.Passive;
 
@@ -317,45 +342,41 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		notifyListeners(aEvent, PickMode.Passive, PickTarget.Invalid, surfaceTarg);
 	}
 
-	/**
-	 * Helper method to determine if a popup should be shown
-	 */
-	private void maybeShowPopup(MouseEvent aEvent)
-	{
-		if (aEvent.getClickCount() != 1 || !PickUtil.isPopupTrigger(aEvent))
-			return;
-
-		if (suppressPopups == true)
-			return;
-
-		if (refRenWin.getRenderWindow().GetNeverRendered() > 0)
-			return;
-
-		int pickSucceeded = doPick(aEvent, vNonSmallBodyCP, refRenWin);
-		if (pickSucceeded == 1)
-		{
-			vtkActor pickedActor = vNonSmallBodyCP.GetActor();
-			refPopupManager.showPopup(aEvent, pickedActor, vNonSmallBodyCP.GetCellId(), vNonSmallBodyCP.GetPickPosition());
-		}
-	}
-
 	@Override
 	public void propertyChange(PropertyChangeEvent aEvent)
 	{
 		if (aEvent.getPropertyName().equals(Properties.MODEL_CHANGED) == false)
 			return;
 
+		// Time to rebuild the vtkCellPickers
+		buildCellPickers();
+	}
+
+	/**
+	 * Helper method that will configure the non small body cell picker with the
+	 * relevant (available) {@link vtkProp}s.
+	 */
+	private void buildCellPickers()
+	{
 		// Whenever the model actors change, we need to update the pickers
 		// internal list of all actors to pick from. The small body actor is excluded
 		// from this list since many other actors occupy the same position
 		// as parts of the small body and we want the picker to pick these other
 		// actors rather than the small body. Note that this exclusion only applies
 		// to the following picker.
-		List<vtkProp> actorL = refModelManager.getPropsExceptSmallBody();
 		vtkPropCollection mousePressNonSmallBodyCellPickList = vNonSmallBodyCP.GetPickList();
 		mousePressNonSmallBodyCellPickList.RemoveAllItems();
-		for (vtkProp aActor : actorL)
-			vNonSmallBodyCP.AddPickList(aActor);
+
+		List<vtkProp> actorL = refModelManager.getPropsExceptSmallBody();
+		for (vtkProp aProp : actorL)
+			vNonSmallBodyCP.AddPickList(aProp);
+
+		for (VtkPropProvider aPropProvider : propProviderL)
+		{
+			for (vtkProp aProp : aPropProvider.getProps())
+				vNonSmallBodyCP.AddPickList(aProp);
+		}
+
 	}
 
 	/**
@@ -374,12 +395,11 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 			return PickTarget.Invalid;
 
 		vtkActor pickedActor = aCellPicker.GetActor();
-
-		Model model = refModelManager.getModel(pickedActor);
+		Vector3D targetNorm = new Vector3D(aCellPicker.GetPickNormal());
 		Vector3D targetPos = new Vector3D(aCellPicker.GetPickPosition());
 		int cellId = aCellPicker.GetCellId();
 
-		PickTarget retTarget = new PickTarget(model, pickedActor, targetPos, cellId);
+		PickTarget retTarget = new PickTarget(pickedActor, targetNorm, targetPos, cellId);
 		return retTarget;
 	}
 
@@ -392,7 +412,7 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		if (refRenWin.getRenderWindow().GetNeverRendered() > 0)
 			return;
 
-		for (PickListener aListener : listenerL)
+		for (PickListener aListener : pickListenerL)
 			aListener.handlePickAction(aEvent, aMode, aPrimaryTarg, aSurfaceTarg);
 	}
 
