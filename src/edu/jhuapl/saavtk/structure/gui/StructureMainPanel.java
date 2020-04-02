@@ -25,7 +25,6 @@ import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.pick.PickManager;
-import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.structure.gui.action.LoadEsriShapeFileAction;
@@ -52,8 +51,8 @@ public class StructureMainPanel extends JPanel implements ActionListener
 	/**
 	 * Standard Constructor
 	 */
-	public StructureMainPanel(ModelManager aModelManager, PickManager aPickManager, Renderer aRenderer,
-			StatusBar aStatusBar, PopupManager aPopupManager)
+	public StructureMainPanel(PickManager aPickManager, Renderer aRenderer, StatusBar aStatusBar,
+			ModelManager aModelManager)
 	{
 		refModelManager = aModelManager;
 
@@ -71,8 +70,7 @@ public class StructureMainPanel extends JPanel implements ActionListener
 //		add(saveB, "sg g0");
 		add(loadEsriB, "wrap");
 
-		StructureTabbedPane structureTP = new StructureTabbedPane(aModelManager, aPickManager, aRenderer, aStatusBar,
-				aPopupManager);
+		StructureTabbedPane structureTP = new StructureTabbedPane(aPickManager, aRenderer, aModelManager);
 		add(structureTP, "growx,growy,pushy,span");
 	}
 

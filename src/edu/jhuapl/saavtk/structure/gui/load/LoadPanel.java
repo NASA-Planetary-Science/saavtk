@@ -16,6 +16,7 @@ import javax.swing.SwingUtilities;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.jhuapl.saavtk.gui.util.Colors;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
@@ -27,8 +28,12 @@ import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.structure.io.StructureMiscUtil;
 import glum.gui.GuiUtil;
+import glum.task.NotifyTask;
 import glum.task.PartialTask;
 import glum.task.Task;
+import glum.task.TaskListener;
+import glum.unit.NumberUnit;
+import glum.unit.TimeCountUnit;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -44,14 +49,12 @@ import net.miginfocom.swing.MigLayout;
  *
  * @author lopeznr1
  */
-public class LoadPanel extends JPanel implements ActionListener
+public class LoadPanel extends JPanel implements ActionListener, TaskListener
 {
 	// Constants
+	private static final long serialVersionUID = 0L;
 	private static final String ERR_MSG_NO_STRUCTURES_LOADED = "Failed to load any structures.";
 	private static final String ERR_MSG_NO_STRUCTURES_SELECTED = "Please select at least one of the available structure types.";
-	private static final long serialVersionUID = 0L;
-	// TODO: Move constant elsewhere
-	private static final Color failColor = Color.RED.darker();
 
 	// Ref vars
 	private final JDialog refDialog;
@@ -79,8 +82,8 @@ public class LoadPanel extends JPanel implements ActionListener
 	private JCheckBox pathCountCB;
 	private JCheckBox pointCountCB;
 
-	private LoadTask loadTask;
-	private JLabel statusL;
+	private NotifyTask loadTask;
+	private JLabel progL, statusL;
 
 	private JButton acceptB;
 	private JButton cancelB;
@@ -121,8 +124,8 @@ public class LoadPanel extends JPanel implements ActionListener
 		ellipseCountCB = GuiUtil.createJCheckBox("Ellipses: ", this);
 		pointCountCB = GuiUtil.createJCheckBox("Points: ", this);
 
-		JPanel westPanel = formWestPanel();
-		JPanel eastPanel = formEastPanel();
+		JPanel westPanel = formPanelWest();
+		JPanel eastPanel = formPanelEast();
 		add(westPanel, "growy");
 		add(GuiUtil.createDivider(), "growy,pushy,w 4!");
 		add(eastPanel, "growy,pushx,wrap");
@@ -130,11 +133,11 @@ public class LoadPanel extends JPanel implements ActionListener
 		statusL = new JLabel(ERR_MSG_NO_STRUCTURES_SELECTED);
 		add(statusL, "growx,span,wrap");
 
-		JLabel progL = new JLabel();
-		loadTask = new LoadTask(progL);
+		loadTask = new NotifyTask(this);
 		acceptB = GuiUtil.formButton(this, "Accept");
 		cancelB = GuiUtil.formButton(this, "Cancel");
 		closeB = GuiUtil.formButton(this, "Close");
+		progL = new JLabel();
 		add(progL, "");
 		add(cancelB, "align right,span,split");
 		add(acceptB, "");
@@ -204,6 +207,13 @@ public class LoadPanel extends JPanel implements ActionListener
 		updateGui();
 	}
 
+	@Override
+	public void taskUpdate(Task aTask)
+	{
+		String tmpMsg = formProgressMsg(loadTask);
+		SwingUtilities.invokeLater(() -> progL.setText(tmpMsg));
+	}
+
 	/**
 	 * Helper method to handle the accept action.
 	 */
@@ -228,7 +238,7 @@ public class LoadPanel extends JPanel implements ActionListener
 	}
 
 	/**
-	 * Helper method to handle the accept action.
+	 * Helper method to handle the cancel action.
 	 */
 	private void doActionCancel()
 	{
@@ -252,7 +262,7 @@ public class LoadPanel extends JPanel implements ActionListener
 	/**
 	 * Helper method to form the load details panel.
 	 */
-	private JPanel formEastPanel()
+	private JPanel formPanelEast()
 	{
 		JPanel retPanel = new JPanel(new MigLayout("", "", "[]"));
 		retPanel.add(pathCountCB, "wrap");
@@ -267,7 +277,7 @@ public class LoadPanel extends JPanel implements ActionListener
 	/**
 	 * Helper method to form the load-mode panel.
 	 */
-	private JPanel formWestPanel()
+	private JPanel formPanelWest()
 	{
 		GuiUtil.linkRadioButtons(replaceAllRB, replaceCollideRB, appendWithOrignalRB, appendWithUniqueRB);
 
@@ -280,6 +290,28 @@ public class LoadPanel extends JPanel implements ActionListener
 		retPanel.add(projToBodyCB, "gapy 7 0");
 
 		return retPanel;
+	}
+
+	/**
+	 * Helper method that returns the appropriate progress message.
+	 */
+	private static String formProgressMsg(NotifyTask aTask)
+	{
+		// Display nothing if the task is in the init state
+		if (aTask.isInit() == true)
+			return "";
+
+		double progress = aTask.getProgress();
+		NumberUnit perU = new NumberUnit("", "", 1.0, "0.00 %");
+		String retStr = "Progress: " + perU.getString(progress);
+
+		Long runTime = null;
+		if (aTask.isActive() == true || progress >= 0)
+			runTime = aTask.getTimeEnd() - aTask.getTimeBeg();
+		TimeCountUnit timeU = new TimeCountUnit(2);
+		retStr += "    Time: " + timeU.getString(runTime);
+
+		return retStr;
 	}
 
 	/**
@@ -401,9 +433,9 @@ public class LoadPanel extends JPanel implements ActionListener
 			tmpMsg = errMsg;
 		statusL.setText(tmpMsg);
 
-		Color fgColor = Color.BLACK;
+		Color fgColor = Colors.getPassFG();
 		if (errMsg != null)
-			fgColor = failColor;
+			fgColor = Colors.getFailFG();
 		statusL.setForeground(fgColor);
 
 		boolean isEnabled = errMsg == null;

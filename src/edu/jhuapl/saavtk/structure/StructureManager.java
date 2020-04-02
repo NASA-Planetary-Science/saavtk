@@ -6,7 +6,6 @@ import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.pick.DefaultPicker;
 import glum.item.ItemEventListener;
 import glum.item.ItemManager;
 import glum.task.Task;
@@ -87,11 +86,6 @@ public interface StructureManager<G1 extends Structure> extends ItemManager<G1>
 	public void installItems(Task aTask, List<G1> aItemL);
 
 	/**
-	 * Removes the specified items from this manager.
-	 */
-	public void removeItems(Collection<G1> aItemC);
-
-	/**
 	 * Sets the color of the specified structures.
 	 *
 	 * @param aItemC The collection of structures to change.
@@ -161,11 +155,5 @@ public interface StructureManager<G1 extends Structure> extends ItemManager<G1>
 
 	// TODO: Bad design
 	public boolean supportsActivation();
-
-	/**
-	 * TODO: We should be registered with the "DefaultPicker" through different
-	 * means and not rely on unrelated third party registration...
-	 */
-	public void registerDefaultPickerHandler(DefaultPicker aDefaultPicker);
 
 }

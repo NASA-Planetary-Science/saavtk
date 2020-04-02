@@ -9,6 +9,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.vtk.VtkResource;
+import edu.jhuapl.saavtk.vtk.VtkUtil;
 import vtk.vtkActor;
 import vtk.vtkCellArray;
 import vtk.vtkCellData;

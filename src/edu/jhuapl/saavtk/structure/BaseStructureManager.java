@@ -18,15 +18,15 @@ import com.google.common.collect.Sets;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.SaavtkItemManager;
-import edu.jhuapl.saavtk.pick.DefaultPicker;
 import edu.jhuapl.saavtk.pick.HookUtil;
 import edu.jhuapl.saavtk.pick.PickListener;
 import edu.jhuapl.saavtk.pick.PickMode;
 import edu.jhuapl.saavtk.pick.PickTarget;
+import edu.jhuapl.saavtk.structure.gui.StructureGuiUtil;
 import edu.jhuapl.saavtk.structure.vtk.VtkCompositePainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkLabelPainter;
-import edu.jhuapl.saavtk.structure.vtk.VtkUtil;
 import edu.jhuapl.saavtk.vtk.VtkResource;
+import edu.jhuapl.saavtk.vtk.VtkUtil;
 import glum.item.ItemEventType;
 import glum.task.Task;
 import glum.util.ThreadUtil;
@@ -88,12 +88,6 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 	 */
 	protected abstract void updateVtkColorsFor(Collection<G1> aItemC, boolean aSendNotification);
 
-	@Override
-	public void registerDefaultPickerHandler(DefaultPicker aDefaultPicker)
-	{
-		aDefaultPicker.addListener(this);
-	}
-
 	/**
 	 * Removes all of the items from this manager.
 	 */
@@ -136,12 +130,12 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 	@Override
 	public void handlePickAction(InputEvent aEvent, PickMode aMode, PickTarget aPrimaryTarg, PickTarget aSurfaceTarg)
 	{
-		// Bail if we are not the target model
-		if (aPrimaryTarg.getModel() != this)
+		// Bail if this is not a primary action
+		if (aMode != PickMode.ActivePri)
 			return;
 
-		// Respond only to active events
-		if (aMode != PickMode.Active)
+		// Bail if we are are not associated with the PickTarget
+		if (StructureGuiUtil.isAssociatedPickTarget(aPrimaryTarg, this) == false)
 			return;
 
 		// Retrieve the clicked item
