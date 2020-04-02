@@ -1,26 +1,24 @@
 package edu.jhuapl.saavtk.model.structure;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 
-import edu.jhuapl.saavtk.model.FacetColoringData;
-import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.structure.Ellipse;
 import edu.jhuapl.saavtk.structure.Polygon;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.structure.vtk.VtkEllipsePainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkPolygonPainter;
+import glum.task.Task;
 import vtk.vtkAppendPolyData;
 import vtk.vtkPolyData;
 
 /**
- * Collection of utility that provides the following functionality for Ellipse
- * and Polygon structures:
+ * Collection of utility methods that provides the following functionality for
+ * {@link Ellipse} and {@link Polygon} structures:
  * <UL>
- * <LI>Retrieval of plate data
- * <LI>Saving of plate data
+ * <LI>Generation of unified (interior) vtkPolyData of a list of structures
+ * <LI>TODO: Retrieval of plate data
+ * <LI>Progress mechanism via a {@link Task}
  * </UL>
  * <P>
  * The logic for these utility methods (~2019Oct07) is based off of :
@@ -34,97 +32,79 @@ import vtk.vtkPolyData;
 public class PlateUtil
 {
 	/**
-	 * Utility method to retrieve the plate data associated with the specified
-	 * structure, aItem to the file aFile.
+	 * Utility method that returns a unified {@link vtkPolyData} consisting of all
+	 * the interior {@link vtkPolyData} of the list of {@link Structure}s.
+	 * <P>
+	 * This method will return null if the provided {@link Task} is aborted before
+	 * completion.
 	 * <P>
 	 * This method supports {@link StructureManager}s of type
 	 * {@link AbstractEllipsePolygonModel} and {@link PolygonModel}.
 	 * {@link StructureManager}s that do not match that type will result in an
 	 * {@link UnsupportedOperationException}.
 	 * <P>
-	 * The provided item, aItem, must be managed by the provided
+	 * The provided structures must be managed by the provided
 	 * {@link StructureManager}.
 	 */
 	@SuppressWarnings("unchecked")
-	public static <G1 extends Structure> FacetColoringData[] getPlateDataInsideStructure(PolyhedralModel aSmallBody,
+	public static <G1 extends Structure> vtkPolyData formUnifiedStructurePolyData(Task aTask,
 			StructureManager<G1> aManager, Collection<G1> aItemC)
 	{
+		// Delegate
 		if (aManager instanceof AbstractEllipsePolygonModel)
-			return getPlateDataInsideEllipse(aSmallBody, (AbstractEllipsePolygonModel) aManager,
-					(Collection<Ellipse>) aItemC);
+			return formUnifiedEllipsePolyData(aTask, (AbstractEllipsePolygonModel) aManager, (Collection<Ellipse>) aItemC);
 		else if (aManager instanceof PolygonModel)
-			return getPlateDataInsidePolygon(aSmallBody, (PolygonModel) aManager, (Collection<Polygon>) aItemC);
+			return formUnifiedPolgonPloyData(aTask, (PolygonModel) aManager, (Collection<Polygon>) aItemC);
 		else
 			throw new UnsupportedOperationException(
 					"StructureManager type is not recognized. Type: " + aManager.getClass());
 	}
 
 	/**
-	 * Utility method to save the plate data associated with the specified
-	 * structure, aItem to the file aFile.
-	 * <P>
-	 * This method supports {@link StructureManager}s of type
-	 * {@link AbstractEllipsePolygonModel} and {@link PolygonModel}.
-	 * {@link StructureManager}s that do not match that type will result in an
-	 * {@link UnsupportedOperationException}.
-	 * <P>
-	 * The provided item, aItem, must be managed by the provided
-	 * {@link StructureManager}.
+	 * Utility helper method that returns a unified {@link vtkPolyData} consisting
+	 * of all the interior {@link vtkPolyData} of the list of {@link Ellipse}s.
 	 */
-	@SuppressWarnings("unchecked")
-	public static <G1 extends Structure> void savePlateDataInsideStructure(PolyhedralModel aSmallBody,
-			StructureManager<G1> aManager, Collection<G1> aItemC, File aFile) throws IOException
+	private static vtkPolyData formUnifiedEllipsePolyData(Task aTask, AbstractEllipsePolygonModel aManager,
+			Collection<Ellipse> aItemC)
 	{
-		if (aManager instanceof AbstractEllipsePolygonModel)
-			savePlateDataInsideEllipse(aSmallBody, (AbstractEllipsePolygonModel) aManager, (Collection<Ellipse>) aItemC,
-					aFile);
-		else if (aManager instanceof PolygonModel)
-			savePlateDataInsidePolygon(aSmallBody, (PolygonModel) aManager, (Collection<Polygon>) aItemC, aFile);
-		else
-			throw new UnsupportedOperationException(
-					"StructureManager type is not recognized. Type: " + aManager.getClass());
-	}
-
-	/**
-	 * TODO: Add javadoc
-	 */
-	private static FacetColoringData[] getPlateDataInsideEllipse(PolyhedralModel aSmallBody,
-			AbstractEllipsePolygonModel aManager, Collection<Ellipse> aItemC)
-	{
+		int tmpIdx = 0;
 		vtkAppendPolyData appendFilter = new vtkAppendPolyData();
 		for (Ellipse aItem : aItemC)
 		{
+			// Bail if the task has been aborted
+			if (aTask.isAborted() == true)
+				return null;
+			aTask.setProgress(tmpIdx, aItemC.size());
+			tmpIdx++;
+
 			VtkEllipsePainter tmpPainter = aManager.getOrCreateVtkMainPainterFor(aItem);
 			tmpPainter.vtkUpdateState();
 			appendFilter.AddInputData(tmpPainter.getVtkInteriorPolyData());
 		}
 		appendFilter.Update();
 
-		return aSmallBody.getPlateDataInsidePolydata(appendFilter.GetOutput());
+		vtkPolyData retPolyData = appendFilter.GetOutput();
+		aTask.setProgress(1.0);
+
+		return retPolyData;
 	}
 
-//	/**
-//	 * TODO: Add javadoc
-//	 */
-//	private static FacetColoringData[] getPlateDataInsideEllipse(PolyhedralModel aSmallBody,
-//			AbstractEllipsePolygonModel aManager, EllipsePolygon aItem)
-//	{
-//		VtkEllipsePainter tmpPainter = aManager.getOrCreateVtkMainPainterFor(aItem);
-//		tmpPainter.vtkUpdateState();
-//
-//		vtkPolyData polydata = tmpPainter.getVtkInteriorPolyData();
-//		return aSmallBody.getPlateDataInsidePolydata(polydata);
-//	}
-
 	/**
-	 * TODO: Add javadoc
+	 * Utility helper method that returns a unified {@link vtkPolyData} consisting
+	 * of all the interior {@link vtkPolyData} of the list of {@link Polygon}s.
 	 */
-	private static FacetColoringData[] getPlateDataInsidePolygon(PolyhedralModel aSmallBody, PolygonModel aManager,
-			Collection<Polygon> aItemC)
+	private static vtkPolyData formUnifiedPolgonPloyData(Task aTask, PolygonModel aManager, Collection<Polygon> aItemC)
 	{
+		int tmpIdx = 0;
 		vtkAppendPolyData appendFilter = new vtkAppendPolyData();
 		for (Polygon aItem : aItemC)
 		{
+			// Bail if the task has been aborted
+			if (aTask.isAborted() == true)
+				return null;
+			aTask.setProgress(tmpIdx, aItemC.size());
+			tmpIdx++;
+
 			aManager.configurePolygonInterior(aItem, true);
 
 			VtkPolygonPainter tmpPainter = aManager.getOrCreateMainPainter(aItem);
@@ -136,110 +116,10 @@ public class PlateUtil
 			aManager.configurePolygonInterior(aItem, false);
 		}
 
-		FacetColoringData[] data = aSmallBody.getPlateDataInsidePolydata(appendFilter.GetOutput());
-		return data;
+		vtkPolyData retPolyData = appendFilter.GetOutput();
+		aTask.setProgress(1.0);
+
+		return retPolyData;
 	}
-
-//	/**
-//	 * TODO: Add javadoc
-//	 */
-//	private static FacetColoringData[] getPlateDataInsidePolygon(PolyhedralModel aSmallBody, PolygonModel aManager,
-//			Polygon aItem)
-//	{
-//		if (aItem.getShowInterior() == true)
-//		{
-//			VtkPolygonPainter tmpPainter = aManager.getOrCreateMainPainter(aItem);
-//			vtkPolyData tmpInteriorRegPD = tmpPainter.getVtkInteriorRegPD();
-//			return aSmallBody.getPlateDataInsidePolydata(tmpInteriorRegPD);
-//		}
-//		else
-//		{
-//			aManager.configurePolygonInterior(aItem, true);
-//
-//			VtkPolygonPainter tmpPainter = aManager.getOrCreateMainPainter(aItem);
-//			vtkPolyData tmpInteriorRegPD = tmpPainter.getVtkInteriorRegPD();
-//			FacetColoringData[] data = aSmallBody.getPlateDataInsidePolydata(tmpInteriorRegPD);
-//
-//			aManager.configurePolygonInterior(aItem, false);
-//
-//			return data;
-//		}
-//	}
-
-	/**
-	 * TODO: Add javadoc
-	 */
-	private static void savePlateDataInsideEllipse(PolyhedralModel aSmallBody, AbstractEllipsePolygonModel aManager,
-			Collection<Ellipse> aItemC, File aFile) throws IOException
-	{
-		vtkAppendPolyData appendFilter = new vtkAppendPolyData();
-		for (Ellipse aItem : aItemC)
-		{
-			VtkEllipsePainter tmpPainter = aManager.getOrCreateVtkMainPainterFor(aItem);
-			tmpPainter.vtkUpdateState();
-			appendFilter.AddInputData(tmpPainter.getVtkInteriorPolyData());
-		}
-		appendFilter.Update();
-
-		aSmallBody.savePlateDataInsidePolydata(appendFilter.GetOutput(), aFile);
-	}
-
-//	/**
-//	 * TODO: Add javadoc
-//	 */
-//	private static void savePlateDataInsideEllipse(PolyhedralModel aSmallBody, AbstractEllipsePolygonModel aManager,
-//			Ellipse aItem, File aFile) throws IOException
-//	{
-//		VtkEllipsePainter tmpPainter = aManager.getOrCreateVtkMainPainterFor(aItem);
-//		tmpPainter.vtkUpdateState();
-//
-//		vtkPolyData polydata = tmpPainter.getVtkInteriorPolyData();
-//		aSmallBody.savePlateDataInsidePolydata(polydata, aFile);
-//	}
-
-	/**
-	 * TODO: Add javadoc
-	 */
-	private static void savePlateDataInsidePolygon(PolyhedralModel aSmallBody, PolygonModel aManager,
-			Collection<Polygon> aItemC, File aFile) throws IOException
-	{
-		vtkAppendPolyData appendFilter = new vtkAppendPolyData();
-		for (Polygon aItem : aItemC)
-		{
-			aManager.configurePolygonInterior(aItem, true);
-
-			VtkPolygonPainter tmpPainter = aManager.getOrCreateMainPainter(aItem);
-			vtkPolyData tmpInteriorRegPD = tmpPainter.getVtkInteriorRegPD();
-			appendFilter.AddInputData(tmpInteriorRegPD);
-			appendFilter.Update();
-
-			aManager.configurePolygonInterior(aItem, false);
-		}
-		aSmallBody.savePlateDataInsidePolydata(appendFilter.GetOutput(), aFile);
-	}
-
-//	/**
-//	 * TODO: Add javadoc
-//	 */
-//	private static void savePlateDataInsidePolygon(PolyhedralModel aSmallBody, PolygonModel aManager, Polygon aItem,
-//			File aFile) throws IOException
-//	{
-//		if (aItem.getShowInterior())
-//		{
-//			VtkPolygonPainter tmpPainter = aManager.getOrCreateMainPainter(aItem);
-//			vtkPolyData tmpInteriorRegPD = tmpPainter.getVtkInteriorRegPD();
-//			aSmallBody.savePlateDataInsidePolydata(tmpInteriorRegPD, aFile);
-//		}
-//		else
-//		{
-//			aManager.configurePolygonInterior(aItem, true);
-//
-//			VtkPolygonPainter tmpPainter = aManager.getOrCreateMainPainter(aItem);
-//			vtkPolyData tmpInteriorRegPD = tmpPainter.getVtkInteriorRegPD();
-//			aSmallBody.savePlateDataInsidePolydata(tmpInteriorRegPD, aFile);
-//
-//			aManager.configurePolygonInterior(aItem, false);
-//		}
-//	}
 
 }
