@@ -15,9 +15,12 @@ import edu.jhuapl.saavtk.pick.DefaultPicker;
 import edu.jhuapl.saavtk.pick.PickListener;
 import edu.jhuapl.saavtk.pick.PickMode;
 import edu.jhuapl.saavtk.pick.PickTarget;
+import edu.jhuapl.saavtk.status.StatusProvider;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
+import edu.jhuapl.saavtk.util.SaavtkLODActor;
 import vtk.vtkCamera;
+import vtk.vtkProp;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 /**
@@ -87,21 +90,39 @@ public class StatusBarDefaultPickHandler implements PickListener
 	@Override
 	public void handlePickAction(InputEvent aEvent, PickMode aMode, PickTarget aPrimaryTarg, PickTarget aSurfaceTarg)
 	{
-		// Just update the status bar if passive
-		if (aMode != PickMode.Active)
+		// Just update the status bar if not a primary action
+		if (aMode != PickMode.ActivePri)
 		{
 			cSurfacePos = aSurfaceTarg.getPosition();
 			showPositionInfoInStatusBar(cSurfacePos);
 			return;
 		}
 
+		// Retrieve relevant primary target attributes
+		vtkProp priActor = aPrimaryTarg.getActor();
+		int priCellId = aPrimaryTarg.getCellId();
+
+		// Just update the status bar's left size with status if
+		// aPrimaryTarg is associated with a StatusProvider
+		if (priActor instanceof SaavtkLODActor)
+		{
+			StatusProvider tmpSP = ((SaavtkLODActor) priActor).getAssocModel(StatusProvider.class);
+			if (tmpSP != null)
+			{
+				String tmpStr = tmpSP.getDisplayInfo(priCellId);
+				refStatusBar.setLeftText(tmpStr);
+				return;
+			}
+		}
+
+		// Retrieve the model associated with the actor
+		Model tmpModel = refModelManager.getModel(priActor);
+
 		// Otherwise, update the left side
-		Model tmpModel = aPrimaryTarg.getModel();
 		if (tmpModel == null)
 			refStatusBar.setLeftText(" ");
 		else
-			refStatusBar.setLeftTextSource(tmpModel, aPrimaryTarg.getActor(), aPrimaryTarg.getCellId(),
-					aPrimaryTarg.getPosition().toArray());
+			refStatusBar.setLeftTextSource(tmpModel, priActor, priCellId, aPrimaryTarg.getPosition().toArray());
 	}
 
 	// TODO: Add Comments, needs to be reworked

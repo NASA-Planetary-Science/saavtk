@@ -18,8 +18,6 @@ import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import com.google.common.base.Stopwatch;
-
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
 import nom.tam.fits.Header;
@@ -122,8 +120,6 @@ public class PolyDataUtil
 		//printpt(ur, "ur");
 		//printpt(lr, "lr");
 		//printpt(ll, "ll");
-		Stopwatch sw = new Stopwatch();
-		sw.start();
 		// First compute the normals of the 6 planes.
 		// Start with computing the normals of the 4 side planes of the frustum.
 		double[] top = new double[3];

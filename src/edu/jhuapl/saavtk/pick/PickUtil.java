@@ -2,6 +2,7 @@ package edu.jhuapl.saavtk.pick;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
@@ -77,25 +78,43 @@ public class PickUtil
 		tmpDefaultPicker.addListener(tmpStatusBarHandler);
 	}
 
-	// We do not rely on the OS for the popup trigger in the renderer (as explained
-	// in a comment in the DefaultPicker.mouseClicked function), we need to role out
-	// our own popup trigger logic. That's we why have the following complicated
-	// function. It's easier on non-macs. On macs we try to mimic the default
-	// behaviour where a Control + left mouse click is a popup trigger. Also for
-	// some reason, if you left mouse click while holding down the Command button,
-	// then SwingUtilities.isRightMouseButton() returns true. We therefore also
-	// prevent a popup from showing in this situation.
-	public static boolean isPopupTrigger(MouseEvent e)
+	/**
+	 * Determines if the specified {@link InputEvent} is a valid popup trigger.
+	 * <P>
+	 * To be considered a valid popup trigger, the following must be true:
+	 * <UL>
+	 * <LI>InputEvent must be of type {@link MouseEvent}
+	 * <LI>On Linux / Windows systems, the event must be associated with the
+	 * right-mouse-button.
+	 * <LI>On Mac systems the event must be either associated with the
+	 * {@link MouseEvent#BUTTON3} or <CTRL> key is pressed while
+	 * {@link MouseEvent#BUTTON1} is pressed.
+	 * </UL>
+	 */
+	public static boolean isPopupTrigger(InputEvent aEvent)
 	{
+		// Only MouseEvents are valid popup triggers
+		if (aEvent instanceof MouseEvent == false)
+			return false;
+		MouseEvent mouseEvent = (MouseEvent) aEvent;
+
+		// We do not rely on the OS for the popup trigger in the renderer (as explained
+		// in a comment in the DefaultPicker.mouseClicked function), we need to role out
+		// our own popup trigger logic. That's we why have the following complicated
+		// function. It's easier on non-macs. On macs we try to mimic the default
+		// behaviour where a Control + left mouse click is a popup trigger. Also for
+		// some reason, if you left mouse click while holding down the Command button,
+		// then SwingUtilities.isRightMouseButton() returns true. We therefore also
+		// prevent a popup from showing in this situation.
 		if (Configuration.isMac())
 		{
-			if (e.getButton() == MouseEvent.BUTTON1 && e.isControlDown())
+			if (mouseEvent.getButton() == MouseEvent.BUTTON1 && mouseEvent.isControlDown())
 				return true;
 
-			if (e.getButton() == MouseEvent.BUTTON3)
+			if (mouseEvent.getButton() == MouseEvent.BUTTON3)
 				return true;
 		}
-		else if (SwingUtilities.isRightMouseButton(e))
+		else if (SwingUtilities.isRightMouseButton(mouseEvent) == true)
 		{
 			return true;
 		}

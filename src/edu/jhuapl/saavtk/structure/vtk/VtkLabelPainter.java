@@ -9,6 +9,7 @@ import edu.jhuapl.saavtk.structure.FontAttr;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.vtk.VtkResource;
+import edu.jhuapl.saavtk.vtk.VtkUtil;
 import vtk.vtkCaptionActor2D;
 import vtk.vtkProp;
 
