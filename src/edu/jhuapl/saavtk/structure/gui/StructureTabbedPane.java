@@ -12,6 +12,7 @@ import edu.jhuapl.saavtk.pick.EllipsePicker;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.pick.Picker;
 import edu.jhuapl.saavtk.pick.PointPicker;
+import edu.jhuapl.saavtk.structure.BaseStructureManager;
 import edu.jhuapl.saavtk.structure.StructureManager;
 
 /**
@@ -62,6 +63,9 @@ public class StructureTabbedPane extends JTabbedPane
 	private StructurePanel<?> formStructurePanel(ModelNames aModelNames)
 	{
 		StructureManager<?> tmpStructureManager = (StructureManager<?>) refModelManager.getModel(aModelNames);
+
+		// Manually register for events of interest
+		refPickManager.getDefaultPicker().addListener((BaseStructureManager<?, ?>) tmpStructureManager);
 
 		// Instantiate the appropriate Picker
 		Picker tmpPicker = null;
