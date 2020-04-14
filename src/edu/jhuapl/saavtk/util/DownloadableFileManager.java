@@ -596,7 +596,7 @@ public class DownloadableFileManager
 
     public void addRootStateListener(StateListener stateListener)
     {
-        addStateListener(urlManager.getRootUrl().toString(), stateListener);
+        addStateListener(urlManager.getRootUrl().toString(), stateListener, true);
     }
 
     public void removeRootStateListener(StateListener stateListener)
@@ -799,6 +799,11 @@ public class DownloadableFileManager
 
     public void addStateListener(String urlString, StateListener listener)
     {
+        addStateListener(urlString, listener, false);
+    }
+
+    public void addStateListener(String urlString, StateListener listener, boolean urlListenerOnly)
+    {
         Preconditions.checkNotNull(urlString);
         Preconditions.checkNotNull(listener);
 
@@ -858,7 +863,10 @@ public class DownloadableFileManager
 
                 propertyListenerMap.put(listener, propertyListener);
                 urlInfo.addPropertyChangeListener(propertyListener);
-                fileInfo.addPropertyChangeListener(propertyListener);
+                if (!urlListenerOnly)
+                {                    
+                    fileInfo.addPropertyChangeListener(propertyListener);
+                }
 
                 DownloadableFileState state = DownloadableFileState.of(urlInfo.getState(), fileInfo.getState());
                 // Immediately "fire" just the newly added listener.
