@@ -286,43 +286,6 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 		addNewStructure(aCenter, defaultRadius, 1.0, 0.);
 	}
 
-	public void movePolygon(Ellipse aItem, Vector3D aCenter)
-	{
-		aItem.setCenter(aCenter);
-		markPainterStale(aItem);
-
-		updatePolyData();
-		notifyListeners(this, ItemEventType.ItemsMutated);
-	}
-
-	/**
-	 * Move the polygon to the specified latitude and longitude.
-	 *
-	 * @param aItem
-	 * @param latitude  - in radians
-	 * @param longitude - in radians
-	 */
-	public void movePolygon(Ellipse aItem, double latitude, double longitude)
-	{
-		Vector3D oldCenter = getCenter(aItem);
-
-		double[] newCenterArr = new double[3];
-		refSmallBody.getPointAndCellIdFromLatLon(latitude, longitude, newCenterArr);
-		Vector3D newCenter = new Vector3D(newCenterArr);
-
-		// there is sometimes a radial offset (parallel to both center and newCenter)
-		// that needs to be corrected
-		newCenter = newCenter.scalarMultiply(oldCenter.getNorm() / newCenter.getNorm());
-
-		// System.out.println(newCenterVec+" "+centerVec+"
-		// "+newCenterVec.crossProduct(centerVec));
-		// LatLon ll=MathUtil.reclat(centerVec.toArray());
-		// LatLon ll2=MathUtil.reclat(newCenterVec.toArray());
-		// System.out.println(Math.toDegrees(ll.lat)+" "+Math.toDegrees(ll.lon)+"
-		// "+Math.toDegrees(ll2.lat)+" "+Math.toDegrees(ll2.lon));
-		movePolygon(aItem, newCenter);
-	}
-
 	public void changeRadiusOfPolygon(Ellipse aItem, Vector3D aNewPointOnPerimeter)
 	{
 		double[] newPointOnPerimeterArr = aNewPointOnPerimeter.toArray();
@@ -520,6 +483,16 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 	public double getDiameter(Ellipse aItem)
 	{
 		return 2.0 * aItem.getRadius();
+	}
+
+	@Override
+	public void setCenter(Ellipse aItem,  Vector3D aCenter)
+	{
+		aItem.setCenter(aCenter);
+		markPainterStale(aItem);
+
+		updatePolyData();
+		notifyListeners(this, ItemEventType.ItemsMutated);
 	}
 
 	@Override
