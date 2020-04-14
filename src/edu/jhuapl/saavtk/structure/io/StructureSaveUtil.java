@@ -34,7 +34,7 @@ import edu.jhuapl.saavtk.util.MathUtil;
 public class StructureSaveUtil
 {
 	/**
-	 * Utility helper method for saving the content of a list of {@link Ellipse}s.
+	 * Utility method for saving the content of a list of {@link Ellipse}s.
 	 * <P>
 	 * This method originated from (~2019Oct07):
 	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
@@ -45,6 +45,11 @@ public class StructureSaveUtil
 		FileWriter fstream = new FileWriter(aFile);
 		BufferedWriter out = new BufferedWriter(fstream);
 
+		// Write the header comments
+		Mode tmpMode = aManager.getMode();
+		writeHeaderComments(out, tmpMode);
+
+		// Write the data content
 		for (Ellipse aEllipse : aStructureL)
 		{
 			String name = aEllipse.getName();
@@ -66,7 +71,6 @@ public class StructureSaveUtil
 
 			str += "\t";
 
-			Mode tmpMode = aManager.getMode();
 			double[] values = EllipseUtil.getStandardColoringValuesAtPolygon(aManager, aEllipse, aSmallBody, tmpMode);
 			for (int i = 0; i < values.length; ++i)
 			{
@@ -209,6 +213,70 @@ public class StructureSaveUtil
 		}
 
 		out.close();
+	}
+
+	/**
+	 * Utility helper method for writing out the header comments
+	 */
+	private static void writeHeaderComments(BufferedWriter aBW, Mode aMode) throws IOException
+	{
+		String columnDefStr = "<id> <name> <centerXYZ[3]> <centerLLR[3]> <coloringValue[4]> <diameter> <flattening> <regularAngle> <colorRGB> <gravityAngle> <label>";
+
+		String dataTypeStr = "ellipse";
+		if (aMode == Mode.CIRCLE_MODE)
+			dataTypeStr = "circle";
+		else if (aMode == Mode.POINT_MODE)
+			dataTypeStr = "point";
+
+		boolean alwaysTrue = true;
+		boolean isEllipseF = aMode != Mode.ELLIPSE_MODE;
+		boolean isEllipseT = aMode == Mode.ELLIPSE_MODE;
+
+		writeLine(aBW, alwaysTrue, "# SBMT Structure File");
+		writeLine(aBW, alwaysTrue, "# type," + dataTypeStr);
+		writeLine(aBW, alwaysTrue, "# ------------------------------------------------------------------------------");
+		writeLine(aBW, alwaysTrue, "# File consists of a list of structures on each line.");
+		writeLine(aBW, alwaysTrue, "#");
+		writeLine(aBW, isEllipseF, "# Each line is defined by 17 columns with the following:");
+		writeLine(aBW, isEllipseT, "# Each line is defined by 18 columns with the following:");
+		writeLine(aBW, alwaysTrue, "# " + columnDefStr + "*");
+		writeLine(aBW, alwaysTrue, "#");
+		writeLine(aBW, alwaysTrue, "#               id: Id of the structure");
+		writeLine(aBW, alwaysTrue, "#             name: Name of the structure");
+		writeLine(aBW, alwaysTrue, "#     centerXYZ[3]: 3 columns that define the structure center in 3D space");
+		writeLine(aBW, alwaysTrue, "#     centerLLR[3]: 3 columns that define the structure center in lan,lon,radius");
+		writeLine(aBW, alwaysTrue, "# coloringValue[4]: 4 columns that define the ellipse “standard” colorings. The");
+		writeLine(aBW, alwaysTrue, "#                   colorings are: slope, elevation, acceleration, potential");
+		writeLine(aBW, alwaysTrue, "#         diameter: Diameter of (semimajor) axis of ellipse");
+		writeLine(aBW, alwaysTrue, "#       flattening: Flattening factor of ellipse. Range: [0.0, 1.0]");
+		writeLine(aBW, alwaysTrue, "#     regularAngle: Angle between the semimajor axis and the semiminor axis as");
+		writeLine(aBW, alwaysTrue, "#                   projected onto the surface");
+		writeLine(aBW, alwaysTrue, "#         colorRGB: 1 column (of RGB values [0, 255] separated by commas with no");
+		writeLine(aBW, alwaysTrue, "#                   spaces). This column appears as a single textual column.");
+		writeLine(aBW, isEllipseT, "#     gravityAngle: Angle between the semimajor axis of the ellipse and the gravity");
+		writeLine(aBW, isEllipseT, "#                   acceleration vector... (Description continues in user manual)");
+		writeLine(aBW, alwaysTrue, "#            label: Label of the structure");
+		writeLine(aBW, alwaysTrue, "#");
+		writeLine(aBW, alwaysTrue, "#");
+		writeLine(aBW, alwaysTrue, "# Please note the following:");
+		writeLine(aBW, alwaysTrue, "# - Each line is composed of columns separated by a tab character.");
+		writeLine(aBW, alwaysTrue, "# - Blank lines or lines that start with '#' are ignored.");
+		writeLine(aBW, alwaysTrue, "# - Angle units: degrees");
+		writeLine(aBW, alwaysTrue, "# - Length units: kilometers");
+		writeLine(aBW, alwaysTrue, "#");
+	}
+
+	/**
+	 * Helper method that optionally writes out the specified line.
+	 *
+	 * @param aBool If true then aMsg will be output to the {@link BufferedWriter}.
+	 */
+	private static void writeLine(BufferedWriter aBW, boolean aBool, String aMsg) throws IOException
+	{
+		if (aBool == false)
+			return;
+
+		aBW.write(aMsg + "\n");
 	}
 
 }
