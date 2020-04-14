@@ -180,7 +180,7 @@ public class DownloadableFileManager
                     {
                         try
                         {
-                            urlManager.queryRootUrl();
+                            urlManager.queryRootState();
                         }
                         catch (Exception e)
                         {
@@ -227,7 +227,7 @@ public class DownloadableFileManager
             {
                 if (!doAccessCheckOnServer(forceUpdate))
                 {
-                    throw new NoInternetAccessException("Access chcck on servdr failed", checkFileAccessScriptURL.get());
+                    throw new NoInternetAccessException("Access check on server failed", checkFileAccessScriptURL.get());
                 }
             }
             else
@@ -438,6 +438,11 @@ public class DownloadableFileManager
     protected boolean doAccessCheckOnServer(URL getUserAccessPhp, ListIterator<String> iterator, boolean forceUpdate) throws IOException
     {
         boolean result = false;
+        String userName = Configuration.getAuthorizor().getUserName();
+        if (userName == null)
+        {
+            return result;
+        }
 
         try (CloseableUrlConnection closeableConn = CloseableUrlConnection.of(getUserAccessPhp, HttpRequestMethod.GET))
         {
@@ -453,7 +458,7 @@ public class DownloadableFileManager
 
                 StringBuilder sb = new StringBuilder();
                 sb.append("rootURL=").append(rootUrlString);
-                sb.append("&userName=").append(URLEncoder.encode(Configuration.getUserName(), getURLEncoding()));
+                sb.append("&userName=").append(URLEncoder.encode(userName, getURLEncoding()));
                 sb.append("&args=-encode");
                 sb.append("&stdin=");
 
@@ -579,9 +584,14 @@ public class DownloadableFileManager
         urlManager.setEnableServerAccess(enableServerAccess);
     }
 
-    public DownloadableFileState getRootState()
+    public UrlState getRootState()
     {
-        return getState(urlManager.getRootUrl().toString());
+        return urlManager.getRootState();
+    }
+
+    public UrlState queryRootState() throws IOException
+    {
+        return urlManager.queryRootState();
     }
 
     public void addRootStateListener(StateListener stateListener)

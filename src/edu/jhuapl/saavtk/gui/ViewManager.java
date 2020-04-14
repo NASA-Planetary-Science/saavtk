@@ -6,7 +6,6 @@ import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,6 +21,7 @@ import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
 import edu.jhuapl.saavtk.gui.menu.FileMenu;
 import edu.jhuapl.saavtk.gui.menu.HelpMenu;
 import edu.jhuapl.saavtk.util.Configuration;
+import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.UnauthorizedAccessException;
 
 public abstract class ViewManager extends JPanel
@@ -104,14 +104,9 @@ public abstract class ViewManager extends JPanel
             @Override
             public void actionPerformed(@SuppressWarnings("unused") ActionEvent evt)
             {
-                try
+                if (Configuration.getSwingAuthorizor().updateCredentials())
                 {
-                    Configuration.updatePassword();
-                }
-                catch (IOException e)
-                {
-                    e.printStackTrace();
-                    JOptionPane.showMessageDialog(null, "Error trying to save user name and password.", "Unable to save changes", JOptionPane.ERROR_MESSAGE);
+                    FileCache.instance().queryAllInBackground(true);
                 }
             }
         });

@@ -60,7 +60,7 @@ public class UrlAccessManager
 
         try
         {
-            result.queryRootUrl();
+            result.queryRootState();
             result.setEnableServerAccess(true);
             if (enableInfoMessages)
             {
@@ -104,6 +104,23 @@ public class UrlAccessManager
     public URL getRootUrl()
     {
         return rootUrl;
+    }
+
+    public UrlState getRootState()
+    {
+        UrlInfo rootInfo = getInfo(rootUrl);
+
+        return rootInfo.getState();
+    }
+
+    public UrlState queryRootState() throws IOException
+    {
+        UrlInfo rootInfo = getInfo(rootUrl);
+        boolean forceUpdate = rootInfo.getState().getLastKnownStatus() == UrlStatus.NOT_AUTHORIZED;
+        UrlAccessQuerier querier = UrlAccessQuerier.of(rootInfo, forceUpdate, true);
+        querier.query();
+
+        return rootInfo.getState();
     }
 
     /**
@@ -284,16 +301,6 @@ public class UrlAccessManager
         }
 
         return result;
-    }
-
-    public UrlState queryRootUrl() throws Exception
-    {
-        UrlInfo rootInfo = getInfo(rootUrl);
-        boolean forceUpdate = rootInfo.getState().getLastKnownStatus() == UrlStatus.NOT_AUTHORIZED;
-        UrlAccessQuerier querier = UrlAccessQuerier.of(rootInfo, forceUpdate, true);
-        querier.query();
-
-        return rootInfo.getState();
     }
 
     @Override
