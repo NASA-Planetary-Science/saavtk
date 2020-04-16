@@ -77,6 +77,12 @@ public abstract class AuthorizorSwingUtil
         {
             Configuration.runAndWaitOnEDT(() -> {
 
+                if (!ServerSettingsManager.instance().update().isServerAccessible())
+                {
+                    JOptionPane.showMessageDialog(null, "Unable to update password at this time. Please try later. See console for more details.", "Unable to connect", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+   
                 Authorizor authorizor = getAuthorizor();
 
                 JPanel mainPanel = new JPanel();
@@ -132,7 +138,7 @@ public abstract class AuthorizorSwingUtil
                             UrlStatus status = state.getStatus();
                             if (!state.wasCheckedOnline())
                             {
-                                JOptionPane.showMessageDialog(null, "Unable to connect to server at this time. Please try later. See console for more details.", "Unable to connect", JOptionPane.ERROR_MESSAGE);
+                                JOptionPane.showMessageDialog(null, "Unable to verify credentials at this time. Please try later. See console for more details.", "Unable to connect", JOptionPane.ERROR_MESSAGE);
                             }
                             else if (status == UrlStatus.NOT_AUTHORIZED)
                             {
@@ -155,13 +161,17 @@ public abstract class AuthorizorSwingUtil
                                     try
                                     {
                                         authorizor.saveCredentials();
-                                        JOptionPane.showMessageDialog(null, "Password updated.", "Password changes saved", JOptionPane.INFORMATION_MESSAGE);
+                                        JOptionPane.showMessageDialog(null, "Password saved.", "Password changes saved", JOptionPane.INFORMATION_MESSAGE);
                                     }
                                     catch (IOException e)
                                     {
                                         e.printStackTrace();
                                         JOptionPane.showMessageDialog(null, "Unable to update password. See console for more details.", "Failed to save password", JOptionPane.ERROR_MESSAGE);
                                     }
+                                }
+                                else
+                                {
+                                    JOptionPane.showMessageDialog(null, "Password updated for this session.", "Password updated", JOptionPane.INFORMATION_MESSAGE);
                                 }
                             }
                         }
