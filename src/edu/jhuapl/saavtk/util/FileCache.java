@@ -18,12 +18,8 @@ import java.util.zip.GZIPInputStream;
 
 import com.google.common.base.Preconditions;
 
-import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
-
 public final class FileCache
 {
-    private static volatile boolean enableInfoMessages = true;
-
     /**
      * Deprecated in favor of utilities in SafeURLPaths such as getString(...) and
      * getUrl(...), which encapsulate forming strings that contain valid file paths
@@ -34,18 +30,9 @@ public final class FileCache
 
     private static DownloadableFileManager downloadableManager = null;
 
-    public static void enableInfoMessages(boolean enable)
-    {
-        enableInfoMessages = enable;
-
-        DownloadableFileManager.enableInfoMessages(enable);
-        FileDownloader.enableInfoMessages(enable);
-        UrlAccessManager.enableInfoMessages(enable);
-    }
-
     public static boolean isEnableDebug()
     {
-        return DownloadableFileManager.isEnableDebug();
+        return FileCacheMessageUtil.isDebugCache();
     }
 
     /**
@@ -58,7 +45,7 @@ public final class FileCache
      */
     public static void enableDebug(boolean enable)
     {
-        DownloadableFileManager.enableDebug(enable);
+        FileCacheMessageUtil.enableDebugCache(enable);
     }
 
     public static DownloadableFileManager instance()
@@ -115,12 +102,9 @@ public final class FileCache
         {
             if (exception != null)
             {
-                if (enableInfoMessages)
-                {
-                    System.err.println("Warning: cached file exists, but unable to update cache from URL: " + url);
-                    System.err.println("Ignored the following exception:");
-                    exception.printStackTrace();
-                }
+                FileCacheMessageUtil.debugCache().err().println("Warning: cached file exists, but unable to update cache from URL: " + url);
+                FileCacheMessageUtil.debugCache().err().println("Ignored the following exception:");
+                exception.printStackTrace(FileCacheMessageUtil.debugCache().err());
             }
         }
         else

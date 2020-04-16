@@ -23,27 +23,10 @@ import edu.jhuapl.saavtk.util.file.ZipFileUnzipper;
 public abstract class FileDownloader implements Runnable
 {
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
-    private static volatile boolean enableInfoMessages = true;
-    private static volatile boolean enableDebug;
 
     public static final String DOWNLOAD_PROGRESS = "downloadProgress";
     public static final String DOWNLOAD_DONE = "downloadDone";
     public static final String DOWNLOAD_CANCELED = "downloadCanceled";
-
-    public static void enableInfoMessages(boolean enable)
-    {
-        enableInfoMessages = enable;
-    }
-
-    public static void enableDebug(boolean enable)
-    {
-        enableDebug = enable;
-    }
-
-    protected static Debug debug()
-    {
-        return Debug.of(enableDebug);
-    }
 
     public static FileDownloader of(UrlInfo urlInfo, FileInfo fileInfo, boolean forceDownload)
     {
@@ -139,7 +122,8 @@ public abstract class FileDownloader implements Runnable
             return;
         }
 
-//        debug().getOut().println("Querying FS and server before maybe downloading " + url);
+        // MessageUtils.debugCache().out().println("Querying FS and server before maybe
+        // downloading " + url);
 
         fileInfo.update();
 
@@ -152,27 +136,24 @@ public abstract class FileDownloader implements Runnable
                 if (isDownloadable())
                 {
                     download(closeableConnection);
-                    if (enableInfoMessages)
-                    {
-                        System.out.println("Downloaded file from " + url);
-                    }
+                    FileCacheMessageUtil.info().println("Downloaded file from " + url);
                 }
                 else
                 {
-                    debug().out().println("Debug: unable to download " + file);
+                    FileCacheMessageUtil.debugCache().out().println("Debug: unable to download " + file);
                 }
             }
             else
             {
-                if (isDownloadable() && enableInfoMessages)
+                if (isDownloadable())
                 {
-                    System.out.println("File cache is up to date. Skipped download from " + url);
+                    FileCacheMessageUtil.info().println("File cache is up to date. Skipped download from " + url);
                 }
             }
         }
         catch (Exception e)
         {
-            debug().out().println("Failed attempt to download file " + url);
+            FileCacheMessageUtil.debugCache().out().println("Failed attempt to download file " + url);
             throw e;
         }
     }
@@ -250,7 +231,8 @@ public abstract class FileDownloader implements Runnable
 
     protected void download(CloseableUrlConnection closeableConnection) throws IOException, InterruptedException
     {
-//        debug().getOut().println("Downloading " + urlInfo.getState().getUrl());
+        // MessageUtils.debugCache().out().println("Downloading " +
+        // urlInfo.getState().getUrl());
 
         URLConnection connection = closeableConnection.getConnection();
 
@@ -317,7 +299,7 @@ public abstract class FileDownloader implements Runnable
         }
         catch (Exception e)
         {
-            if (!enableDebug)
+            if (!FileCacheMessageUtil.isDebugCache())
             {
                 Files.deleteIfExists(tmpFilePath);
             }
@@ -349,19 +331,21 @@ public abstract class FileDownloader implements Runnable
         }
     }
 
-//    public static void main(String[] args) throws MalformedURLException
-//    {
-//        File file = SafeURLPaths.instance().get(System.getProperty("user.home"), "Downloads", "spud").toFile();
-//
-//        FileDownloader downloader = FileDownloader.of(UrlInfo.of(new URL("http://sbmt.jhuapl.edu")), FileInfo.of(file), true);
-//        try
-//        {
-//            downloader.download();
-//            System.out.println("Done");
-//        }
-//        catch (Exception e)
-//        {
-//            e.printStackTrace();
-//        }
-//    }
+    // public static void main(String[] args) throws MalformedURLException
+    // {
+    // File file = SafeURLPaths.instance().get(System.getProperty("user.home"),
+    // "Downloads", "spud").toFile();
+    //
+    // FileDownloader downloader = FileDownloader.of(UrlInfo.of(new
+    // URL("http://sbmt.jhuapl.edu")), FileInfo.of(file), true);
+    // try
+    // {
+    // downloader.download();
+    // System.out.println("Done");
+    // }
+    // catch (Exception e)
+    // {
+    // e.printStackTrace();
+    // }
+    // }
 }
