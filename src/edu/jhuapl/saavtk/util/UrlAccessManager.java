@@ -25,23 +25,6 @@ import com.google.common.collect.ImmutableList;
 public class UrlAccessManager
 {
     protected static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
-    private static volatile boolean enableInfoMessages = true;
-    private static volatile boolean enableDebug = false;;
-
-    public static void enableInfoMessages(boolean enable)
-    {
-        enableInfoMessages = enable;
-    }
-
-    public static void enableDebug(boolean enable)
-    {
-        enableDebug = enable;
-    }
-
-    protected static Debug debug()
-    {
-        return Debug.of(enableDebug);
-    }
 
     /**
      * Create a new UrlAccessManager using the arguments as the root level URL for
@@ -62,19 +45,13 @@ public class UrlAccessManager
         {
             result.queryRootState();
             result.setEnableServerAccess(true);
-            if (enableInfoMessages)
-            {
-                System.out.println("Connected to server at " + rootUrl);
-            }
+            FileCacheMessageUtil.info().println("Connected to server at " + rootUrl);
         }
         catch (Exception e)
         {
             result.setEnableServerAccess(false);
-            if (enableInfoMessages)
-            {
-                System.err.println("Unable to connect to server. Disabling online access.\nException was " //
+            FileCacheMessageUtil.err().println("Unable to connect to server. Disabling online access.\nException was " //
                         + e.getClass().getName() + ": " + e.getMessage());
-            }
         }
 
         return result;
@@ -311,7 +288,7 @@ public class UrlAccessManager
 
     public static void main(String[] args)
     {
-        enableDebug(true);
+        FileCacheMessageUtil.enableDebugCache(true);
         boolean checkStuff = false;
         if (checkStuff)
         {
@@ -511,7 +488,7 @@ public class UrlAccessManager
             UrlStatus status = state.getStatus();
             if (status == UrlStatus.UNKNOWN || status == UrlStatus.CONNECTION_ERROR || status == UrlStatus.HTTP_ERROR || forceUpdate)
             {
-                debug().out().println("Querying server about " + url);
+                FileCacheMessageUtil.debugCache().out().println("Querying server about " + url);
                 try
                 {
                     UrlAccessQuerier querier = UrlAccessQuerier.of(result, forceUpdate, serverAccessEnabled);
@@ -524,7 +501,7 @@ public class UrlAccessManager
             }
             else if (status == UrlStatus.INVALID_URL)
             {
-                debug().out().println("Skipping server query about invalid url " + url);
+                FileCacheMessageUtil.debugCache().out().println("Skipping server query about invalid url " + url);
             }
         }
 
