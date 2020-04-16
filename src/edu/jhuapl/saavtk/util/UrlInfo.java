@@ -96,7 +96,8 @@ public class UrlInfo
                 }
                 catch (SocketException | SocketTimeoutException e)
                 {
-                    update(state.update(UrlStatus.CONNECTION_ERROR));
+                    update(state.update(UrlStatus.CONNECTION_ERROR).update(false));
+
                     throw e;
                 }
             }
