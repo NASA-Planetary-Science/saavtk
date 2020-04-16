@@ -21,17 +21,6 @@ import com.google.common.base.Preconditions;
 public class UrlInfo
 {
     public static final String STATE_PROPERTY = "urlInfoState";
-    private static volatile boolean enableDebug = false;
-
-    public static void enableDebug(boolean enable)
-    {
-        enableDebug = enable;
-    }
-
-    protected static Debug debug()
-    {
-        return Debug.of(enableDebug);
-    }
 
     public static UrlInfo of(URL url)
     {
@@ -125,7 +114,7 @@ public class UrlInfo
 
     private void debugConnectionMessage(UrlState state, String message)
     {
-        debug().err().println("Connected to " + state.getUrl() + ": " + message);
+        FileCacheMessageUtil.debugCache().err().println("Connected to " + state.getUrl() + ": " + message);
     }
 
     public void update(UrlState state)
