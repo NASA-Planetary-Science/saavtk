@@ -12,6 +12,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.google.common.base.Preconditions;
+
 /**
  * Facility for wetting up user-name/password-based authentication using
  * {@link Authenticator}. It also includes support for storing/loading
@@ -69,12 +71,25 @@ public class Authorizor
     }
 
     /**
+     * Return a flag indicating whether valid credentials (possibly the default
+     * credentials) are defined for this authorizor.
+     * 
+     * @return
+     */
+    public boolean isAuthorized()
+    {
+        return getUserName() != null;
+    }
+
+    /**
      * Return a flag indicating whether valid non-default credentials are defined
      * for this authorizor. Valid non-default credentials are defined if either the
      * {@link #loadCredentials()} or {@link #applyCredentials(String, char[])}
      * methods were called successfully, and if the defined user name that would be
      * returned by the {@link #getUserName()} method is *not* the same name that
      * would be returned by {@link #getDefaultUserName()}.
+     * <p>
+     * If this method returns true, so would {@link #isAuthorized()}
      * 
      * @return true if valid credentials are defined, false otherwise
      */
@@ -102,11 +117,11 @@ public class Authorizor
      */
     public UrlState loadCredentials()
     {
-        String userName = null;
         char[] password = null;
-
         try
         {
+            String userName = null;
+
             try (BufferedReader reader = Files.newBufferedReader(credentialsFilePath))
             {
                 String line;
@@ -130,7 +145,10 @@ public class Authorizor
                 {
                     userName = getDefaultUserName();
                     char[] defaultPassword = getDefaultPassword();
-                    password = Arrays.copyOf(defaultPassword, defaultPassword.length);
+                    if (defaultPassword != null)
+                    {
+                        password = Arrays.copyOf(defaultPassword, defaultPassword.length);
+                    }
                 }
             }
             catch (Exception e)
@@ -138,26 +156,17 @@ public class Authorizor
 
             }
 
-            UrlState result = null;
+            UrlState result;
             if (userName != null && password != null)
             {
-                try
-                {
-                    result = applyCredentials(userName, password);
-                }
-                catch (Exception e)
-                {
-
-                }
+                result = applyCredentials(userName, password);
             }
-
-            if (result == null)
+            else
             {
-                result = FileCache.instance().getRootState();
+                result = FileCache.instance().queryRootState();
             }
 
             return result;
-
         }
         finally
         {
@@ -186,43 +195,35 @@ public class Authorizor
      */
     public UrlState applyCredentials(String userName, char[] password)
     {
-        Authenticator.setDefault(null);
-
-        UrlState result;
+        Preconditions.checkNotNull(userName);
+        Preconditions.checkNotNull(password);
 
         char[] copyOfPassword = Arrays.copyOf(password, password.length);
+        SecureAuthenticator authenticator = new SecureAuthenticator(userName, copyOfPassword);
 
-        try
+        Authenticator.setDefault(null);
+        Authenticator.setDefault(authenticator);
+
+        UrlState rootState = FileCache.instance().queryRootState();
+
+        if (rootState.getStatus() == UrlStatus.ACCESSIBLE)
         {
-            SecureAuthenticator authenticator = new SecureAuthenticator(userName, copyOfPassword);
-
-            SecureAuthenticator previousAuthenticator = this.authenticator.getAndSet(authenticator);
-            if (previousAuthenticator != null)
+            // Accept the new authenticator; clean up the old one.
+            authenticator = this.authenticator.getAndSet(authenticator);
+            if (authenticator != null)
             {
-                clearArray(previousAuthenticator.password);
-            }
-
-            Authenticator.setDefault(authenticator);
-
-            result = FileCache.instance().queryRootState();
-
-            if (result.getStatus() != UrlStatus.ACCESSIBLE)
-            {
-                // Authentication failed for whatever reason. Don't act like it worked. This
-                // will be caught immediately below.
-                throw new RuntimeException();
+                clearArray(authenticator.password);
             }
         }
-        catch (Exception e)
+        else
         {
-            clearArray(copyOfPassword);
-            this.authenticator.set(null);
-
+            // Reject the new authenticator; restore the old one.
             Authenticator.setDefault(null);
-            result = FileCache.instance().getRootState();
+            Authenticator.setDefault(this.authenticator.get());
+            clearArray(copyOfPassword);
         }
 
-        return result;
+        return rootState;
     }
 
     /**
@@ -293,8 +294,8 @@ public class Authorizor
      * anon-null default password, the {@link #getDefaultUserName()} method must
      * also return a valid default user name.
      * 
-     * @return the default password, which may be null (and will be null if the
-     *         base implementation is called)
+     * @return the default password, which may be null (and will be null if the base
+     *         implementation is called)
      */
     protected char[] getDefaultPassword()
     {
