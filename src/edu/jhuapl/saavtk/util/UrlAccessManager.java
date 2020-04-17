@@ -28,9 +28,7 @@ public class UrlAccessManager
 
     /**
      * Create a new UrlAccessManager using the arguments as the root level URL for
-     * relative path queries. If server access is enabled, this method attempts to
-     * open a connection and determine whether this process can successfully access
-     * the root-level server.
+     * relative path queries.
      * 
      * @param rootUrl the root level of the server
      * @return the manager
@@ -39,22 +37,7 @@ public class UrlAccessManager
     {
         Preconditions.checkNotNull(rootUrl);
 
-        UrlAccessManager result = new UrlAccessManager(rootUrl);
-
-        try
-        {
-            result.queryRootState();
-            result.setEnableServerAccess(true);
-            FileCacheMessageUtil.info().println("Connected to server at " + rootUrl);
-        }
-        catch (Exception e)
-        {
-            result.setEnableServerAccess(false);
-            FileCacheMessageUtil.err().println("Unable to connect to server. Disabling online access.\nException was " //
-                        + e.getClass().getName() + ": " + e.getMessage());
-        }
-
-        return result;
+        return new UrlAccessManager(rootUrl);
     }
 
     private final URL rootUrl;
@@ -75,29 +58,34 @@ public class UrlAccessManager
 
     public void setEnableServerAccess(boolean enableServerAccess)
     {
-        this.enableServerAccess.set(enableServerAccess);
+        boolean forceUpdate = enableServerAccess != this.enableServerAccess.getAndSet(enableServerAccess);
+        queryRootState(forceUpdate, enableServerAccess);
     }
 
-    public URL getRootUrl()
+    protected URL getRootUrl()
     {
         return rootUrl;
     }
-
-    public UrlState getRootState()
+    
+    protected UrlState queryRootState(boolean forceUpdate, boolean serverAccessEnabled)
     {
-        UrlInfo rootInfo = getInfo(rootUrl);
+        UrlInfo rootInfo = getRootInfo();
+        try
+        {
+            UrlAccessQuerier querier = UrlAccessQuerier.of(rootInfo, forceUpdate, serverAccessEnabled);
+            querier.query();
+        }
+        catch (Exception e)
+        {
+            FileCacheMessageUtil.debugCache().err().println(e.getClass().getName() + ": " + e.getMessage());
+        }
 
         return rootInfo.getState();
     }
 
-    public UrlState queryRootState() throws IOException
+    protected UrlInfo getRootInfo()
     {
-        UrlInfo rootInfo = getInfo(rootUrl);
-        boolean forceUpdate = rootInfo.getState().getLastKnownStatus() == UrlStatus.NOT_AUTHORIZED;
-        UrlAccessQuerier querier = UrlAccessQuerier.of(rootInfo, forceUpdate, true);
-        querier.query();
-
-        return rootInfo.getState();
+        return getInfo(rootUrl);
     }
 
     /**
@@ -247,7 +235,7 @@ public class UrlAccessManager
         return SAFE_URL_PATHS.get(pathString);
     }
 
-    public UrlInfo getInfo(String urlString)
+    protected UrlInfo getInfo(String urlString)
     {
         return getInfo(getUrl(urlString));
     }
@@ -259,7 +247,7 @@ public class UrlAccessManager
      * @return
      * @throws MalformedURLException
      */
-    public UrlInfo getInfo(URL url)
+    protected UrlInfo getInfo(URL url)
     {
         Preconditions.checkNotNull(url);
 
