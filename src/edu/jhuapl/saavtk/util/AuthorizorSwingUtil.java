@@ -79,7 +79,7 @@ public abstract class AuthorizorSwingUtil
 
                 if (!ServerSettingsManager.instance().update().isServerAccessible())
                 {
-                    JOptionPane.showMessageDialog(null, "Unable to update password at this time. Please try later. See console for more details.", "Unable to connect", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "Unable to update password at this time. Please try later.", "Unable to connect", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
    
@@ -138,7 +138,7 @@ public abstract class AuthorizorSwingUtil
                             UrlStatus status = state.getStatus();
                             if (!state.wasCheckedOnline())
                             {
-                                JOptionPane.showMessageDialog(null, "Unable to verify credentials at this time. Please try later. See console for more details.", "Unable to connect", JOptionPane.ERROR_MESSAGE);
+                                JOptionPane.showMessageDialog(null, "Unable to verify credentials at this time. Please try later.", "Unable to connect", JOptionPane.ERROR_MESSAGE);
                             }
                             else if (status == UrlStatus.NOT_AUTHORIZED)
                             {
