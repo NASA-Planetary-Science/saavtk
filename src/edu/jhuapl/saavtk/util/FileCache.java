@@ -134,9 +134,7 @@ public final class FileCache
     private static DownloadableFileManager createDownloadManager()
     {
         DownloadableFileManager result = DownloadableFileManager.of(Configuration.getDataRootURL(), new File(Configuration.getCacheDir()));
-
-        System.out.println("Storing application data in " + Configuration.getApplicationDataDir());
-
+        
         return result;
     }
 
