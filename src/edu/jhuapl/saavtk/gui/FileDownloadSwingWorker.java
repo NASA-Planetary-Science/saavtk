@@ -50,7 +50,7 @@ public class FileDownloadSwingWorker extends ProgressBarSwingWorker
             String propertyName = e.getPropertyName();
             if (FileDownloader.DOWNLOAD_PROGRESS.equals(propertyName))
             {
-                long contentLength = downloader.getUrlInfo().getState().getContentLength();
+                long contentLength = downloader.getState().getUrlState().getContentLength();
 
                 UnpackingStatus unpackingStatus = (UnpackingStatus) e.getNewValue();
 
