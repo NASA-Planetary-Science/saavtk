@@ -16,10 +16,8 @@ import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -34,19 +32,14 @@ import com.google.common.collect.ImmutableList;
 import edu.jhuapl.saavtk.util.CloseableUrlConnection.HttpRequestMethod;
 import edu.jhuapl.saavtk.util.FileInfo.FileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
+import edu.jhuapl.saavtk.util.ServerSettingsManager.ServerSettings;
 
 public class DownloadableFileManager
 {
     private static final String UrlEncoding = "UTF-8";
     private static final SimpleDateFormat DateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-    private static final int AbsoluteMinimumQueryLength = 100; // ~1 URL.
-    private static final int AbsoluteMaximumQueryLength = 10000; // ~100 URLs.
-    private static final int AbsoluteMinimumSleepInterval = 5000; // 5 sec.
-    private static final int AbsoluteMaximumSleepInterval = 120000; // 2 min.
     private static final int SleepIntervalAfterLOC = 50000; // 50 sec., empirically good value.
     private static volatile Boolean headless = null;
-    private static volatile boolean enableInfoMessages = true;
-    private static volatile boolean enableDebug = false;
 
     public interface StateListener
     {
@@ -69,49 +62,6 @@ public class DownloadableFileManager
         return new DownloadableFileManager(urlManager, fileManager);
     }
 
-    /**
-     * Enable or disable user-oriented diagnostic messages related to the file
-     * cache, the state of internet access and/or remote file accessibility. This is
-     * similar to, but distinct from, {@link #enableDebug(boolean)}.
-     * <p>
-     * If this method is never called, informational messages will be shown, i.e.,
-     * this property is TRUE by default.
-     * 
-     * @param enable if true, show diagnostic statements, if false, don't
-     */
-    public static void enableInfoMessages(boolean enable)
-    {
-        enableInfoMessages = enable;
-    }
-
-    public static boolean isEnableDebug()
-    {
-        return enableDebug;
-    }
-
-    /**
-     * Enable or disable developer-oriented debugging messages related to the file
-     * cache. This uses the {@link Debug} facility to show/suppress these messages
-     * but ignores its global enable/disable state. This method may be called
-     * multiple times at runtime to show/suppress specific messages. This is similar
-     * to, but distinct from, {@link #enableInfoMessages(boolean)}.
-     * <p>
-     * If this method is never called, cache-related debugging messages will not be
-     * shown, i.e., this property is FALSE by default.
-     * 
-     * @param enable if true, show file cache debugging statements, if false, don't
-     */
-    public static void enableDebug(boolean enable)
-    {
-        enableDebug = enable;
-        UrlInfo.enableDebug(enable);
-    }
-
-    protected static Debug debug()
-    {
-        return Debug.of(enableDebug);
-    }
-
     public static String getURLEncoding()
     {
         return UrlEncoding;
@@ -122,10 +72,8 @@ public class DownloadableFileManager
     private final Map<String, Map<StateListener, PropertyChangeListener>> listenerMap;
     private final ExecutorService accessMonitor;
     private volatile boolean enableMonitor;
-    private volatile long sleepIntervalBetweenChecks;
     private final AtomicBoolean enableAccessChecksOnServer;
     private final AtomicReference<URL> checkFileAccessScriptURL;
-    private volatile int maximumQueryLength;
     private final AtomicInteger consecutiveServerSideCheckExceptionCount;
     private static final int maximumConsecutiveServerSideCheckExceptions = 2;
 
@@ -137,11 +85,9 @@ public class DownloadableFileManager
         this.accessMonitor = Executors.newCachedThreadPool();
         this.checkFileAccessScriptURL = new AtomicReference<>();
         this.enableMonitor = false;
-        this.sleepIntervalBetweenChecks = AbsoluteMinimumSleepInterval;
         // Currently no option to change this field through a method call; this is just
         // for debugging:
         this.enableAccessChecksOnServer = new AtomicBoolean(true);
-        this.maximumQueryLength = AbsoluteMaximumQueryLength; // Set to match the limit imposed by the web server.
         this.consecutiveServerSideCheckExceptionCount = new AtomicInteger();
     }
 
@@ -169,38 +115,29 @@ public class DownloadableFileManager
             accessMonitor.execute(() -> {
                 while (enableMonitor)
                 {
-                    boolean initiallyEnabled = urlManager.isServerAccessEnabled();
-                    urlManager.setEnableServerAccess(updateServerSettings());
-                    boolean currentlyEnabled = urlManager.isServerAccessEnabled();
+                    boolean initiallyEnabled = isServerAccessEnabled();
+
+                    ServerSettings serverSettings = ServerSettingsManager.instance().update();
+                    boolean currentlyEnabled = serverSettings.isServerAccessible();
+
+                    setEnableServerAccess(currentlyEnabled);
 
                     boolean statusChanged = initiallyEnabled != currentlyEnabled;
 
                     // Determine accessibility of root URL. Maybe print diagnotic info.
                     if (statusChanged)
                     {
-                        try
-                        {
-                            urlManager.queryRootState();
-                        }
-                        catch (Exception e)
-                        {
-                            e.printStackTrace(debug().err());
-                        }
-
-                        if (enableInfoMessages)
-                        {
-                            String timeStamp = DateFormat.format(new Date(System.currentTimeMillis()));
-                            System.out.println(timeStamp + ( //
-                            currentlyEnabled ? " Connected to server. Re-enabling online access." : " Failed to connect to server. Disabling online access for now." //
-                            ));
-                        }
+                        String timeStamp = DateFormat.format(new Date(System.currentTimeMillis()));
+                        FileCacheMessageUtil.info().println(timeStamp + ( //
+                        currentlyEnabled ? " Connected to server. Re-enabling online access." : " Failed to connect to server. Disabling online access for now." //
+                        ));
                     }
 
-                    updateAccessAllUrls(currentlyEnabled, false);
+                    updateAccessAllUrls(currentlyEnabled && Configuration.getAuthorizor().isAuthorized(), false);
 
                     try
                     {
-                        Thread.sleep(sleepIntervalBetweenChecks);
+                        Thread.sleep(serverSettings.getSleepInterval());
                     }
                     catch (InterruptedException ignored)
                     {
@@ -212,18 +149,18 @@ public class DownloadableFileManager
         }
     }
 
-    public void updateAccessAllUrls(boolean enableOnlineCheck, boolean forceUpdate)
+    protected void updateAccessAllUrls(boolean enableServerCheck, boolean forceUpdate)
     {
         try
         {
             if (consecutiveServerSideCheckExceptionCount.get() >= maximumConsecutiveServerSideCheckExceptions)
             {
-                debug().err().println("URL status check on server failed too many times; disabling.");
+                FileCacheMessageUtil.debugCache().err().println("URL status check on server failed too many times; disabling.");
                 enableAccessChecksOnServer.set(false);
             }
 
             // Only call doAccessCheckOnServer if web access is currently enabled.
-            if (enableAccessChecksOnServer.get() && enableOnlineCheck)
+            if (enableAccessChecksOnServer.get() && enableServerCheck)
             {
                 if (!doAccessCheckOnServer(forceUpdate))
                 {
@@ -232,15 +169,16 @@ public class DownloadableFileManager
             }
             else
             {
+                if (!enableAccessChecksOnServer.get())
+                {
+                    FileCacheMessageUtil.debugCache().err().println("Falling back on file-by-file access check");
+                }
+
                 // Safe and necessary to call this, even if server access is currently disabled,
                 // because this method will skip URL checks but still perform file-system
                 // accessibility checks. Also it informs listeners of the change of
                 // accessibility status of URLs.
-                if (!enableAccessChecksOnServer.get())
-                {
-                    debug().err().println("Falling back on file-by-file access check");
-                }
-                queryAll(forceUpdate);
+                queryAll(enableServerCheck, forceUpdate);
             }
 
             consecutiveServerSideCheckExceptionCount.set(0);
@@ -250,78 +188,10 @@ public class DownloadableFileManager
         {
             // Probably this indicates a problem with the internet connection. This will be
             // tested the next time the loop executes.
-            e.printStackTrace(debug().err());
+            e.printStackTrace(FileCacheMessageUtil.debugCache().err());
             consecutiveServerSideCheckExceptionCount.incrementAndGet();
         }
 
-    }
-
-    protected boolean updateServerSettings()
-    {
-        boolean result = false;
-        String checkServerScriptName = SafeURLPaths.instance().getString(Configuration.getQueryRootURL(), "checkserver.php");
-        URL checkServerScriptUrl;
-        try
-        {
-            checkServerScriptUrl = new URL(checkServerScriptName);
-        }
-        catch (Exception e)
-        {
-            throw new AssertionError(e);
-        }
-
-        try (CloseableUrlConnection closeableConn = CloseableUrlConnection.of(checkServerScriptUrl, HttpRequestMethod.GET))
-        {
-            URLConnection conn = closeableConn.getConnection();
-            conn.setDoOutput(true);
-
-            // Process the results of the query.
-            List<String> lines = new ArrayList<>();
-            try (InputStreamReader isr = new InputStreamReader(conn.getInputStream()))
-            {
-                BufferedReader in = new BufferedReader(isr);
-                String line;
-                while ((line = in.readLine()) != null)
-                {
-                    if (line.matches(("^<html>.*Request Rejected.*")))
-                    {
-                        debug().err().println("Request rejected for URL info from server-side script " + conn.getURL());
-                        break;
-                    }
-                    else
-                    {
-                        lines.add(line);
-                    }
-                }
-            }
-            result = true;
-
-            int numberLines = lines.size();
-            maximumQueryLength = numberLines > 0 ? parseInt(lines.get(0), AbsoluteMaximumQueryLength, AbsoluteMinimumQueryLength, AbsoluteMaximumQueryLength) : AbsoluteMaximumQueryLength;
-            sleepIntervalBetweenChecks = numberLines > 1 ? parseInt(lines.get(1), AbsoluteMinimumSleepInterval, AbsoluteMinimumSleepInterval, AbsoluteMaximumSleepInterval) : AbsoluteMinimumSleepInterval;
-        }
-        catch (Exception e)
-        {
-            debug().err().println(e.getClass().getName() + ": " + e.getMessage());
-        }
-
-        return result;
-    }
-
-    protected int parseInt(String intString, int defaultValue, int minimumValue, int maximumValue)
-    {
-        try
-        {
-            int result = Integer.parseInt(intString);
-            result = Math.max(result, minimumValue);
-            result = Math.min(result, maximumValue);
-
-            return result;
-        }
-        catch (Exception e)
-        {
-            return defaultValue;
-        }
     }
 
     public synchronized void stopAccessMonitor()
@@ -366,7 +236,9 @@ public class DownloadableFileManager
         }
 
         URL getUserAccessPhp = checkFileAccessScriptURL.get();
-        ;
+
+//        boolean enableServerCheck = urlManager.isServerAccessEnabled();
+        boolean enableServerCheck = true;
 
         // Only ask about URLs for which no previous successful check has been made.
         ImmutableList.Builder<String> builder = ImmutableList.builder();
@@ -376,16 +248,14 @@ public class DownloadableFileManager
             UrlState state = urlInfo.getState();
             if (urlManager.getRootUrl().equals(state.getUrl()) || SafeURLPaths.instance().hasFileProtocol(url))
             {
-                // This "query" will just look at the local file system. Necessary to call it
-                // for a "file://" type URL.
-                doQuery(state.getUrl(), forceUpdate);
+                doQuery(state.getUrl(), enableServerCheck, forceUpdate);
                 continue;
             }
 
             UrlStatus status = state.getLastKnownStatus();
             if (forceUpdate || status.equals(UrlStatus.CONNECTION_ERROR) || status.equals(UrlStatus.HTTP_ERROR) || status.equals(UrlStatus.UNKNOWN))
             {
-                debug().err().println("Adding to server-side access check: " + url);
+                FileCacheMessageUtil.debugCache().err().println("Adding to server-side access check: " + url);
                 builder.add(url);
             }
             else
@@ -494,7 +364,7 @@ public class DownloadableFileManager
                     // Make sure the maximum query length would not be exceeded with the current URL
                     // plus a newline. For purposes of ensuring this doesn't happen, newline
                     // is counted as two characters (CR/LF).
-                    if ((sb.length() + shortUrl.length() + 2) >= maximumQueryLength)
+                    if ((sb.length() + shortUrl.length() + 2) >= ServerSettingsManager.instance().get().getQueryLength())
                     {
                         // Move back one position so this URL is included in the next batch of queries.
                         // Then exit the loop so this query will go forward.
@@ -526,12 +396,12 @@ public class DownloadableFileManager
                     String line = in.readLine();
                     if (line == null)
                     {
-                        debug().err().println("Server-side access check returned null");
+                        FileCacheMessageUtil.debugCache().err().println("Server-side access check returned null");
                         break;
                     }
                     else if (line.matches(("^<html>.*Request Rejected.*")))
                     {
-                        debug().err().println("Request rejected for URL info from server-side script " + conn.getURL());
+                        FileCacheMessageUtil.debugCache().err().println("Request rejected for URL info from server-side script " + conn.getURL());
                         break;
                     }
                     String[] splitLine = line.split(",");
@@ -558,7 +428,7 @@ public class DownloadableFileManager
                 }
                 if (!someOutput)
                 {
-                    debug().err().println("Server=side access check returned empty list");
+                    FileCacheMessageUtil.debugCache().err().println("Server=side access check returned empty list");
                 }
 
                 result = true;
@@ -566,8 +436,8 @@ public class DownloadableFileManager
             }
             catch (FileNotFoundException e)
             {
-                debug().err().println("Server-side access check failed");
-                e.printStackTrace(debug().err());
+                FileCacheMessageUtil.debugCache().err().println("Server-side access check failed");
+                e.printStackTrace(FileCacheMessageUtil.debugCache().err());
             }
         }
 
@@ -584,14 +454,9 @@ public class DownloadableFileManager
         urlManager.setEnableServerAccess(enableServerAccess);
     }
 
-    public UrlState getRootState()
+    public UrlState queryRootState()
     {
-        return urlManager.getRootState();
-    }
-
-    public UrlState queryRootState() throws IOException
-    {
-        return urlManager.queryRootState();
+        return urlManager.queryRootState(true, urlManager.isServerAccessEnabled());
     }
 
     public void addRootStateListener(StateListener stateListener)
@@ -624,19 +489,19 @@ public class DownloadableFileManager
         return DownloadableFileState.of(urlManager.getInfo(urlString).getState(), getFileInfo(urlString).getState());
     }
 
-    public DownloadableFileAccessQuerier getQuerier(String urlString, boolean forceUpdate)
+    public DownloadableFileAccessQuerier getQuerier(String urlString, boolean enableServerCheck, boolean forceUpdate)
     {
         UrlInfo urlInfo = urlManager.getInfo(urlString);
         FileInfo fileInfo = getFileInfo(urlString);
 
-        return DownloadableFileAccessQuerier.of(urlInfo, fileInfo, forceUpdate, urlManager.isServerAccessEnabled());
+        return DownloadableFileAccessQuerier.of(urlInfo, fileInfo, forceUpdate, enableServerCheck);
     }
 
     public DownloadableFileState query(String urlString, boolean forceUpdate)
     {
         try
         {
-            return doQuery(urlManager.getUrl(urlString), forceUpdate);
+            return doQuery(urlManager.getUrl(urlString), urlManager.isServerAccessEnabled(), forceUpdate);
         }
         catch (Exception e)
         {
@@ -647,16 +512,15 @@ public class DownloadableFileManager
         return getState(urlString);
     }
 
-    protected void queryAll(boolean forceUpdate)
+    protected void queryAll(boolean enableServerCheck, boolean forceUpdate)
     {
-        queryAll(forceUpdate, 3, SleepIntervalAfterLOC);
+        queryAll(enableServerCheck, forceUpdate, 3, SleepIntervalAfterLOC);
     }
 
     /**
      * Query the server about the accessibility for all URLs/files tracked by this
-     * manager. This opens a new connection for each such check, so it is
-     * time-consuming and generates a lot of queries. This is best performed on a
-     * background thread or on the server itself.
+     * manager. If server checking is performed, this opens a new connection for
+     * each such check, so it is time-consuming and generates a lot of queries.
      * <p>
      * If server-side access is currrently disabled (most likely because of internet
      * connectivity problems), this method will skip ALL server queries rather than
@@ -684,17 +548,19 @@ public class DownloadableFileManager
      * 3. If any other {@link Exception} type is thrown when checking any URL, the
      * method will go on to check the next URL.
      * 
-     * @param forceUpdate if true, forces both a server-side check of the URL and
-     *            file-system check for the file, even if a previous check
-     *            succeeded. This is useful for forcing a refresh of accessibility
-     *            states. If false, checks will be performed only if a successful
-     *            check was not previously performed.
-     * @param maximumNumberTries the number of times to retry checks for URLs that
-     *            failed because of socket/latency problems.
+     * @param enableServerCheck if true, the method will attempt to check URLs on
+     *            the server. If false, only file-system checks will be performed.
+     * @param forceUpdate if true, forces a fresh check of access even if a previous
+     *            check succeeded. This is useful for forcing a refresh of
+     *            accessibility states. If false, checks will be performed only if a
+     *            successful check was not previously performed.
+     * @param maximumNumberTries the number of times to retry online checks for URLs
+     *            that failed because of socket/latency problems.
      * @param sleepIntervalAfterFailure the number of milliseconds to sleep
-     *            following an unsuccessful URL check before retrying the check.
+     *            following an unsuccessful online URL check before retrying the
+     *            check.
      */
-    protected void queryAll(boolean forceUpdate, int maximumNumberTries, int sleepIntervalAfterFailure)
+    protected void queryAll(boolean enableServerCheck, boolean forceUpdate, int maximumNumberTries, int sleepIntervalAfterFailure)
     {
         URL rootUrl = urlManager.getRootUrl();
         String rootUrlString = rootUrl.toString();
@@ -716,27 +582,27 @@ public class DownloadableFileManager
                 try
                 {
                     URL url = urlManager.getUrl(urlString);
-                    doQuery(url, forceUpdate);
+                    doQuery(url, enableServerCheck, forceUpdate);
                     doCheck = false;
                     checkCompleted = true;
                 }
                 catch (SocketException ignored)
                 {
-                    debug().err().println("SocketException on " + urlString);
+                    FileCacheMessageUtil.debugCache().err().println("SocketException on " + urlString);
                 }
                 catch (SocketTimeoutException ignored)
                 {
-                    debug().err().println("Timeout on " + urlString);
+                    FileCacheMessageUtil.debugCache().err().println("Timeout on " + urlString);
                 }
                 catch (UnknownHostException ignored)
                 {
                     doCheck = false;
-                    debug().err().println("Unknown host exception on " + urlString);
+                    FileCacheMessageUtil.debugCache().err().println("Unknown host exception on " + urlString);
                 }
                 catch (Exception e)
                 {
                     doCheck = false;
-                    e.printStackTrace(debug().err());
+                    e.printStackTrace(FileCacheMessageUtil.debugCache().err());
                 }
 
                 if (doCheck)
@@ -748,7 +614,7 @@ public class DownloadableFileManager
                     // seem to reduce the number of timeouts, thus 50 seems to be the "sweet spot".
                     try
                     {
-                        debug().err().println("Pausing before retrying " + urlString);
+                        FileCacheMessageUtil.debugCache().err().println("Pausing before retrying " + urlString);
                         Thread.sleep(sleepIntervalAfterFailure);
                     }
                     catch (InterruptedException e)
@@ -864,7 +730,7 @@ public class DownloadableFileManager
                 propertyListenerMap.put(listener, propertyListener);
                 urlInfo.addPropertyChangeListener(propertyListener);
                 if (!urlListenerOnly)
-                {                    
+                {
                     fileInfo.addPropertyChangeListener(propertyListener);
                 }
 
@@ -920,11 +786,11 @@ public class DownloadableFileManager
         return fileManager.getInfo(urlPath);
     }
 
-    protected DownloadableFileState doQuery(URL url, boolean forceUpdate) throws IOException
+    protected DownloadableFileState doQuery(URL url, boolean enableServerCheck, boolean forceUpdate) throws IOException
     {
         Preconditions.checkNotNull(url);
 
-        DownloadableFileAccessQuerier querier = getQuerier(url.toString(), forceUpdate);
+        DownloadableFileAccessQuerier querier = getQuerier(url.toString(), enableServerCheck, forceUpdate);
         querier.query();
 
         return querier.getDownloadableFileState();
