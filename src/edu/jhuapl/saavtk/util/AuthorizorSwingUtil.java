@@ -171,7 +171,7 @@ public abstract class AuthorizorSwingUtil
                                 }
                                 else
                                 {
-                                    JOptionPane.showMessageDialog(null, "Password updated for this session.", "Password updated", JOptionPane.INFORMATION_MESSAGE);
+                                    JOptionPane.showMessageDialog(null, "Password accepted for this session.", "Password updated", JOptionPane.INFORMATION_MESSAGE);
                                 }
                             }
                         }
