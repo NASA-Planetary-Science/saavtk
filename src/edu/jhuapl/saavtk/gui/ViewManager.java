@@ -167,7 +167,14 @@ public abstract class ViewManager extends JPanel
             // Default model is not available. Try to find the first accessible model.
             if (initialView == null)
             {
-                System.err.println("\nDefault model " + defaultModelName + " is not available.");
+                if (defaultModelName == null)
+                {
+                    System.err.println("\nNo default model is set.");
+                }
+                else
+                {                    
+                    System.err.println("\nDefault model " + defaultModelName + " is not available.");
+                }
                 for (View view : getAllViews())
                 {
                     if (view.isAccessible())
