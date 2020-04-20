@@ -79,26 +79,38 @@ public class FavoritesMenu extends JMenu
         JMenuItem defaultItem = new JMenuItem("Default model:");
         add(defaultItem);
 
+        View defaultToLoad;
         try
         {
-            View defaultToLoad = manager.getView(manager.getDefaultModelName());
-            JMenuItem menuItem = new FavoritesMenuItem(defaultToLoad);
-//            String urlString = defaultToLoad.getShapeModelName();
-            String urlString = (defaultToLoad.getConfigURL() == null) ? defaultToLoad.getShapeModelName() : defaultToLoad.getConfigURL();
-        	if (defaultToLoad.getUniqueName().contains("Custom"))
-        	{
-        		SafeURLPaths safeUrlPaths = SafeURLPaths.instance();
-        		urlString = safeUrlPaths.getUrl(safeUrlPaths.getString(Configuration.getImportedShapeModelsDir(), defaultToLoad.getShapeModelName()));
-        	}
-            fileStateTracker.addStateChangeListener(urlString, state -> {
-                menuItem.setEnabled(state.isAccessible());
-            });
-            add(menuItem);
-
+            defaultToLoad = manager.getView(manager.getDefaultModelName());
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            defaultToLoad = null;
+        }
+
+        if (defaultToLoad != null)
+        {            
+            try
+            {
+                JMenuItem menuItem = new FavoritesMenuItem(defaultToLoad);
+//            String urlString = defaultToLoad.getShapeModelName();
+                String urlString = (defaultToLoad.getConfigURL() == null) ? defaultToLoad.getShapeModelName() : defaultToLoad.getConfigURL();
+                if (defaultToLoad.getUniqueName().contains("Custom"))
+                {
+                    SafeURLPaths safeUrlPaths = SafeURLPaths.instance();
+                    urlString = safeUrlPaths.getUrl(safeUrlPaths.getString(Configuration.getImportedShapeModelsDir(), defaultToLoad.getShapeModelName()));
+                }
+                fileStateTracker.addStateChangeListener(urlString, state -> {
+                    menuItem.setEnabled(state.isAccessible());
+                });
+                add(menuItem);
+                
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
         }
 
         //
