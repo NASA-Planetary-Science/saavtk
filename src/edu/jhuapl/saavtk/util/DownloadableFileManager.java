@@ -255,7 +255,6 @@ public class DownloadableFileManager
             UrlStatus status = state.getLastKnownStatus();
             if (forceUpdate || status.equals(UrlStatus.CONNECTION_ERROR) || status.equals(UrlStatus.HTTP_ERROR) || status.equals(UrlStatus.UNKNOWN))
             {
-                FileCacheMessageUtil.debugCache().err().println("Adding to server-side access check: " + url);
                 builder.add(url);
             }
             else
@@ -358,6 +357,8 @@ public class DownloadableFileManager
                         // Don't check the root prefix path itself.
                         continue;
                     }
+
+                    FileCacheMessageUtil.debugCache().err().println("Adding to server-side access check: " + shortUrl);
 
                     shortUrl = URLEncoder.encode(shortUrl, getURLEncoding());
 
