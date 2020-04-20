@@ -429,7 +429,7 @@ public class DownloadableFileManager
                 }
                 if (!someOutput)
                 {
-                    FileCacheMessageUtil.debugCache().err().println("Server=side access check returned empty list");
+                    FileCacheMessageUtil.debugCache().err().println("Server-side access check returned empty list");
                 }
 
                 result = true;
