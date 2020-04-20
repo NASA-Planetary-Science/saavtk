@@ -151,7 +151,7 @@ public class ServerSettingsManager
         catch (Exception e)
         {
             settings = null;
-            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            FileCacheMessageUtil.debugCache().err().println(e.getClass().getName() + ": " + e.getMessage());
         }
 
         synchronized (this.settings)
