@@ -45,9 +45,11 @@ public class StructureSaveUtil
 		FileWriter fstream = new FileWriter(aFile);
 		BufferedWriter out = new BufferedWriter(fstream);
 
+		String[] standardColoringUnitArr = EllipseUtil.getStandardColoringUnits(aSmallBody);
+
 		// Write the header comments
 		Mode tmpMode = aManager.getMode();
-		writeHeaderComments(out, tmpMode);
+		writeHeaderComments(out, tmpMode, standardColoringUnitArr);
 
 		// Write the data content
 		for (Ellipse aEllipse : aStructureL)
@@ -71,7 +73,7 @@ public class StructureSaveUtil
 
 			str += "\t";
 
-			double[] values = EllipseUtil.getStandardColoringValuesAtPolygon(aManager, aEllipse, aSmallBody, tmpMode);
+			double[] values = EllipseUtil.getStandardColoringValues(aManager, aEllipse, aSmallBody);
 			for (int i = 0; i < values.length; ++i)
 			{
 				str += Double.isNaN(values[i]) ? "NA" : values[i];
@@ -217,9 +219,31 @@ public class StructureSaveUtil
 
 	/**
 	 * Utility helper method for writing out the header comments
+	 *
+	 * @param aBW                      {@link BufferedWriter} where comments will be
+	 *                                 written to.
+	 * @param aMode                    The mode associated with the associated round
+	 *                                 structures.
+	 * @param aStandardColoringUnitArr 4-element array containing the standard
+	 *                                 coloring units. If the standard coloring
+	 *                                 units are not available then null should be
+	 *                                 at the relevant index.
 	 */
-	private static void writeHeaderComments(BufferedWriter aBW, Mode aMode) throws IOException
+	private static void writeHeaderComments(BufferedWriter aBW, Mode aMode, String[] aStandardColoringUnitArr)
+			throws IOException
 	{
+		// Extract the text to utilize as the coloring unit info string
+		String unitStrArr[] = new String[4];
+		for (int c1 = 0; c1 < aStandardColoringUnitArr.length; c1++)
+		{
+			String tmpStr = "NA";
+			if (aStandardColoringUnitArr[c1] != null)
+				tmpStr = aStandardColoringUnitArr[c1];
+			unitStrArr[c1] = tmpStr;
+		}
+		String coloringUnitStr = String.format("slope (%s), elevation (%s), acceleration (%s), potential (%s)",
+				unitStrArr[0], unitStrArr[1], unitStrArr[2], unitStrArr[3]);
+
 		String columnDefStr = "<id> <name> <centerXYZ[3]> <centerLLR[3]> <coloringValue[4]> <diameter> <flattening> <regularAngle> <colorRGB> <gravityAngle> <label>";
 
 		String dataTypeStr = "ellipse";
@@ -244,9 +268,9 @@ public class StructureSaveUtil
 		writeLine(aBW, alwaysTrue, "#               id: Id of the structure");
 		writeLine(aBW, alwaysTrue, "#             name: Name of the structure");
 		writeLine(aBW, alwaysTrue, "#     centerXYZ[3]: 3 columns that define the structure center in 3D space");
-		writeLine(aBW, alwaysTrue, "#     centerLLR[3]: 3 columns that define the structure center in lan,lon,radius");
+		writeLine(aBW, alwaysTrue, "#     centerLLR[3]: 3 columns that define the structure center in lat,lon,radius");
 		writeLine(aBW, alwaysTrue, "# coloringValue[4]: 4 columns that define the ellipse “standard” colorings. The");
-		writeLine(aBW, alwaysTrue, "#                   colorings are: slope, elevation, acceleration, potential");
+		writeLine(aBW, alwaysTrue, "#                   colorings are: " + coloringUnitStr);
 		writeLine(aBW, alwaysTrue, "#         diameter: Diameter of (semimajor) axis of ellipse");
 		writeLine(aBW, alwaysTrue, "#       flattening: Flattening factor of ellipse. Range: [0.0, 1.0]");
 		writeLine(aBW, alwaysTrue, "#     regularAngle: Angle between the semimajor axis and the semiminor axis as");
@@ -263,7 +287,7 @@ public class StructureSaveUtil
 		writeLine(aBW, alwaysTrue, "# - Blank lines or lines that start with '#' are ignored.");
 		writeLine(aBW, alwaysTrue, "# - Angle units: degrees");
 		writeLine(aBW, alwaysTrue, "# - Length units: kilometers");
-		writeLine(aBW, alwaysTrue, "#");
+		writeLine(aBW, alwaysTrue, "");
 	}
 
 	/**
