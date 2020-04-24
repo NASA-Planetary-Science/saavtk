@@ -80,6 +80,7 @@ public enum ShapeModelBody
 	HELENE("Helene"),
 	RYUGU("162173 Ryugu"),
 	MU69("2014 MU69"),
+	DIDYMOS("65803 Didymos"),
 	;
 
 	final private String str;
