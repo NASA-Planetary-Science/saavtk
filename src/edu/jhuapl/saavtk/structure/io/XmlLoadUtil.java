@@ -31,7 +31,7 @@ import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.Polygon;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.util.LatLon;
-import glum.gui.GuiUtil;
+import glum.io.ParseUtil;
 
 /**
  * Collection of utility methods to support (de)serialization of SBMT structures
@@ -79,7 +79,7 @@ public class XmlLoadUtil
 			// Retrieve the structures id
 			// Invalid ids will be assigned value: -1
 			String tmpStr = tmpE.getAttribute(XML_ATTR_ID);
-			int id = GuiUtil.readInt(tmpStr, -1);
+			int id = ParseUtil.readInt(tmpStr, -1);
 
 			// Retrieve the control points
 			List<LatLon> controlPointL = readControlPointsFrom(tmpE);

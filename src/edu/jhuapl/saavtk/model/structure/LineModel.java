@@ -41,11 +41,11 @@ import edu.jhuapl.saavtk.structure.vtk.VtkCompositePainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkControlPointPainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkLabelPainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkPolyLinePainter;
-import edu.jhuapl.saavtk.structure.vtk.VtkUtil;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
+import edu.jhuapl.saavtk.vtk.VtkUtil;
 import glum.item.ItemEventType;
 import vtk.vtkActor;
 import vtk.vtkCellArray;
@@ -126,7 +126,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		vIdRegIL = new vtkIdList();
 		vIdDecIL = new vtkIdList();
 
-		vLineActor = new SaavtkLODActor();
+		vLineActor = new SaavtkLODActor(this);
 		vtkProperty lineProperty = vLineActor.GetProperty();
 
 		lineWidth = 2.0;

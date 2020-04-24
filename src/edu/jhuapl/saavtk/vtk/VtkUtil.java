@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.structure.vtk;
+package edu.jhuapl.saavtk.vtk;
 
 import java.awt.Color;
 import java.util.Collection;

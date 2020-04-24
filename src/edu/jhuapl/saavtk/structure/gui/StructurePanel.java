@@ -1,10 +1,13 @@
 package edu.jhuapl.saavtk.structure.gui;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.text.DecimalFormat;
 import java.util.List;
@@ -30,13 +33,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import edu.jhuapl.saavtk.gui.ProfilePlot;
-import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.dialog.NormalOffsetChangerDialog;
 import edu.jhuapl.saavtk.gui.funk.PopupButton;
+import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.table.ColorCellEditor;
 import edu.jhuapl.saavtk.gui.table.ColorCellRenderer;
 import edu.jhuapl.saavtk.gui.table.SourceRenderer;
-import edu.jhuapl.saavtk.gui.table.TablePopupHandler;
 import edu.jhuapl.saavtk.gui.util.IconUtil;
 import edu.jhuapl.saavtk.gui.util.ToolTipUtil;
 import edu.jhuapl.saavtk.model.Model;
@@ -49,11 +51,13 @@ import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.model.structure.PointModel;
 import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.pick.ControlPointsPicker;
+import edu.jhuapl.saavtk.pick.PickListener;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.pick.PickManagerListener;
+import edu.jhuapl.saavtk.pick.PickMode;
+import edu.jhuapl.saavtk.pick.PickTarget;
 import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.pick.Picker;
-import edu.jhuapl.saavtk.popup.PopupMenu;
 import edu.jhuapl.saavtk.structure.ControlPointsHandler;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
@@ -62,6 +66,7 @@ import edu.jhuapl.saavtk.structure.gui.action.SaveSbmtStructuresFileAction;
 import edu.jhuapl.saavtk.structure.gui.action.SaveVtkFileAction;
 import edu.jhuapl.saavtk.util.ColorIcon;
 import glum.gui.GuiUtil;
+import glum.gui.action.PopupMenu;
 import glum.gui.component.GNumberFieldSlider;
 import glum.gui.icon.EmptyIcon;
 import glum.gui.misc.BooleanCellEditor;
@@ -71,6 +76,7 @@ import glum.gui.panel.itemList.ItemListPanel;
 import glum.gui.panel.itemList.ItemProcessor;
 import glum.gui.panel.itemList.query.QueryComposer;
 import glum.gui.table.NumberRenderer;
+import glum.gui.table.TablePopupHandler;
 import glum.item.ItemEventListener;
 import glum.item.ItemEventType;
 import glum.item.ItemManagerUtil;
@@ -89,14 +95,13 @@ import net.miginfocom.swing.MigLayout;
  * @author lopeznr1
  */
 public class StructurePanel<G1 extends Structure> extends JPanel
-		implements ActionListener, ItemEventListener, PickManagerListener
+		implements ActionListener, ItemEventListener, PickListener, PickManagerListener
 {
 	// Constants
 	private static final long serialVersionUID = 1L;
 
 	// Ref vars
 	private final StructureManager<G1> refStructureManager;
-	private final ModelManager refModelManager;
 	private final PickManager refPickManager;
 	private final Picker refPicker;
 
@@ -105,6 +110,7 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 	private File structuresFile;
 
 	// GUI vars
+	private final PopupMenu<?> popupMenu;
 	private ItemListPanel<G1> itemILP;
 	private JFrame profileWindow;
 
@@ -126,10 +132,9 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 	/**
 	 * Standard Constructor
 	 */
-	public StructurePanel(ModelManager aModelManager, StructureManager<G1> aStructureManager, PickManager aPickManager,
-			Picker aPicker, StatusBar aStatusBar, PopupMenu aPopupMenu)
+	public StructurePanel(StructureManager<G1> aStructureManager, PickManager aPickManager, Picker aPicker,
+			Renderer aRenderer, PolyhedralModel aSmallBody, ModelManager aModelManager)
 	{
-		refModelManager = aModelManager;
 		refStructureManager = aStructureManager;
 		refPickManager = aPickManager;
 		refPicker = aPicker;
@@ -138,16 +143,17 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 
 		changeOffsetDialog = null;
 
-		saveB = new PopupButton("Save...");
-
-		saveB.getPopup().add(new JMenuItem(new SaveSbmtStructuresFileAction<>(this, refStructureManager, //
-				refModelManager.getPolyhedralModel())));
-		saveB.getPopup().add(new JMenuItem(new SaveEsriShapeFileAction<>(this, refStructureManager, refModelManager)));
-		saveB.getPopup().add(new JMenuItem(new SaveVtkFileAction<>(refStructureManager)));
-
 		setLayout(new MigLayout("", "", "[]"));
 
+		// Legacy save UI
+		saveB = new PopupButton("Save...");
+		saveB.getPopup().add(new JMenuItem(new SaveSbmtStructuresFileAction<>(this, refStructureManager, aSmallBody)));
+		saveB.getPopup().add(new JMenuItem(new SaveEsriShapeFileAction<>(this, refStructureManager, aModelManager)));
+		saveB.getPopup().add(new JMenuItem(new SaveVtkFileAction<>(refStructureManager)));
 		add(saveB, "align right,span,split,wrap");
+
+		// Popup menu
+		popupMenu = StructureGuiUtil.formPopupMenu(refStructureManager, aRenderer, aSmallBody, this);
 
 		// Table header
 		selectInvertB = GuiUtil.formButton(this, IconUtil.getSelectInvert());
@@ -226,7 +232,7 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 
 		JTable structureTable = itemILP.getTable();
 		structureTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		structureTable.addMouseListener(new TablePopupHandler(refStructureManager, aPopupMenu));
+		structureTable.addMouseListener(new TablePopupHandler(refStructureManager, popupMenu));
 		add(new JScrollPane(structureTable), "growx,growy,pushx,pushy,span,wrap");
 
 		// Specialized code to handle deletion via the keyboard
@@ -344,7 +350,7 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		refPickManager.addListener(this);
 
 		// TODO: This registration should be done by the refStructureManager
-		refStructureManager.registerDefaultPickerHandler(refPickManager.getDefaultPicker());
+		aPickManager.getDefaultPicker().addListener(this);
 	}
 
 	/**
@@ -448,6 +454,24 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		}
 
 		updateControlGui();
+	}
+
+	@Override
+	public void handlePickAction(InputEvent aEvent, PickMode aMode, PickTarget aPrimaryTarg, PickTarget aSurfaceTarg)
+	{
+		// Bail if we are are not associated with the primary PickTarget
+		if (StructureGuiUtil.isAssociatedPickTarget(aPrimaryTarg, refStructureManager) == false)
+			return;
+
+		// Bail if not a valid popup action
+		if (PickUtil.isPopupTrigger(aEvent) == false || aMode != PickMode.ActiveSec)
+			return;
+
+		// Show the popup (if appropriate)
+		Component tmpComp = aEvent.getComponent();
+		int posX = ((MouseEvent) aEvent).getX();
+		int posY = ((MouseEvent) aEvent).getY();
+		popupMenu.show(tmpComp, posX, posY);
 	}
 
 	@Override

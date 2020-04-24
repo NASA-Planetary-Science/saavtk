@@ -17,7 +17,6 @@ import javax.swing.event.MouseInputListener;
 
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
-import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.util.Preferences;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
@@ -36,6 +35,8 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
  * This class still relies on VTK's Interactor to accomplish manipulation of the
  * ShapeModel. It would be ideal to do away with the reliance of this VTK code
  * and have a custom "Picker" that performs the manipulations natively via Java.
+ * 
+ * @author lopeznr1
  */
 public class PickManager
 {
@@ -53,7 +54,6 @@ public class PickManager
 	// Ref vars
 	private Renderer refRenderer;
 	private vtkJoglPanelComponent refRenWin;
-	private PopupManager refPopupManager;
 
 	// State vars
 	private List<PickManagerListener> listenerL;
@@ -69,15 +69,14 @@ public class PickManager
 	/**
 	 * Standard Constructor
 	 */
-	public PickManager(Renderer aRenderer, ModelManager aModelManager, PopupManager aPopupManager)
+	public PickManager(Renderer aRenderer, ModelManager aModelManager)
 	{
 		refRenderer = aRenderer;
 		refRenWin = aRenderer.getRenderWindowPanel();
-		refPopupManager = aPopupManager;
 
 		listenerL = new ArrayList<>();
 		activePicker = NonePicker.Instance;
-		defaultPicker = new DefaultPicker(aRenderer, aModelManager, aPopupManager);
+		defaultPicker = new DefaultPicker(aRenderer, aModelManager);
 		pickMode = PickMode.DEFAULT;
 		currExclusiveMode = false;
 		pickTolerance = Picker.DEFAULT_PICK_TOLERANCE;
@@ -202,11 +201,6 @@ public class PickManager
 			nondefaultPickers.get(pm).setPickTolerance(aPickTolerance);
 	}
 
-	public PopupManager getPopupManager()
-	{
-		return refPopupManager;
-	}
-
 	/**
 	 * Helper method that determines if the active Picker has entered into an
 	 * activated state.
@@ -225,17 +219,17 @@ public class PickManager
 			return;
 
 		// If the activePicker requests to be exclusive then:
-		// - disable popups (supress them)
+		// - disable secondary actions (suppress popups)
 		// - disable ShapeModel manipulations
 		currExclusiveMode = tmpExclusiveMode;
 		if (currExclusiveMode == false)
 		{
-			defaultPicker.setSuppressPopups(false);
+			defaultPicker.setSuppressModeActiveSec(false);
 			refRenderer.setInteractorEnableState(true);
 		}
 		else
 		{
-			defaultPicker.setSuppressPopups(true);
+			defaultPicker.setSuppressModeActiveSec(true);
 			refRenderer.setInteractorEnableState(false);
 		}
 	}

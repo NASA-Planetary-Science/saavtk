@@ -9,7 +9,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
-import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Properties;
 import vtk.vtkCellPicker;
@@ -38,9 +37,9 @@ public class DefaultPicker extends BaseDefaultPicker implements PickListener, Pr
 	/**
 	 * Standard Constructor
 	 */
-	public DefaultPicker(Renderer aRenderer, ModelManager aModelManager, PopupManager aPopupManager)
+	public DefaultPicker(Renderer aRenderer, ModelManager aModelManager)
 	{
-		super(aRenderer, aModelManager, aPopupManager);
+		super(aRenderer, aModelManager);
 
 		refRenWin = aRenderer.getRenderWindowPanel();
 
@@ -80,8 +79,8 @@ public class DefaultPicker extends BaseDefaultPicker implements PickListener, Pr
 		if (aEvent instanceof MouseEvent == false)
 			return;
 
-		// Bail since only active events are propagated (via the former design)
-		if (aMode != PickMode.Active)
+		// Bail since only primary actions are propagated (via the former design)
+		if (aMode != PickMode.ActivePri)
 			return;
 
 		// Bail if no valid target position

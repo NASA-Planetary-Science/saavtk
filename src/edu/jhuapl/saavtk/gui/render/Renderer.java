@@ -7,6 +7,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -16,6 +17,7 @@ import javax.media.opengl.GLContext;
 import javax.swing.BorderFactory;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 import org.apache.commons.io.FilenameUtils;
@@ -56,7 +58,6 @@ import vtk.vtkPNMWriter;
 import vtk.vtkPostScriptWriter;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
-import vtk.vtkRenderWindow;
 import vtk.vtkRenderer;
 import vtk.vtkScalarBarActor;
 import vtk.vtkTIFFWriter;
@@ -115,6 +116,7 @@ public class Renderer extends JPanel implements ActionListener
 	private RenderToolbar toolbar;
 
 	// State vars
+	private List<VtkPropProvider> propProviderL;
 	private Camera camera;
 
 	// VTK vars
@@ -147,6 +149,7 @@ public class Renderer extends JPanel implements ActionListener
 
 		double tmpDistance = tmpPolyModel.getBoundingBoxDiagonalLength() * 2.0;
 
+		propProviderL = new ArrayList<>();
 		camera = new StandardCamera(mainCanvas, tmpCoordinateSystem, tmpDistance);
 		toolbar = new RenderToolbar(mainCanvas, camera);
 
@@ -167,15 +170,28 @@ public class Renderer extends JPanel implements ActionListener
 		mainCanvas.getRenderWindowInteractor().AddObserver("InteractionEvent", this, "duringInteraction");
 		mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
 
-		javax.swing.SwingUtilities.invokeLater(() -> {
-			setProps(aModelManager.getProps());
-		});
+		SwingUtilities.invokeLater(() -> setProps(aModelManager.getProps()));
 		
 		// Cause the RenderPanel to be rendered whenever the camera changes
-		camera.addListener((aEvent) -> { mainCanvas.Render(); }); 
+		camera.addListener((aEvent) -> mainCanvas.Render());
 				
         ((GenericPolyhedralModel)tmpPolyModel).sortPolydata(mainCanvas.getActiveCamera());
+	}
 
+	/**
+	 * Registers a {@link VtkPropProvider} with this Renderer.
+	 */
+	public void addVtkPropProvider(VtkPropProvider aPropProvider)
+	{
+		propProviderL.add(aPropProvider);
+	}
+
+	/**
+	 * Deregisters a {@link VtkPropProvider} with this Renderer.
+	 */
+	public void delVtkPropProvider(VtkPropProvider aPropProvider)
+	{
+		propProviderL.remove(aPropProvider);
 	}
 
 	/**
@@ -244,10 +260,20 @@ public class Renderer extends JPanel implements ActionListener
 
 	public void setProps(List<vtkProp> props)
 	{
-		setProps(props, mainCanvas, mainCanvas.getRenderer());
+		// Form the full list of vtkProps to render
+		List<vtkProp> fullPropL = new ArrayList<>();
+
+		// Add the vtkProps from the provided list of props
+		fullPropL.addAll(props);
+
+		// Add the vtkProps from the registered VtkPropProviders
+		for (VtkPropProvider aPropProvider : propProviderL)
+			fullPropL.addAll(aPropProvider.getProps());
+
+		setProps(fullPropL, mainCanvas, mainCanvas.getRenderer());
 	}
 
-	public void setProps(List<vtkProp> props, vtkJoglPanelComponent renderWindow, vtkRenderer whichRenderer)
+	private void setProps(List<vtkProp> props, vtkJoglPanelComponent renderWindow, vtkRenderer whichRenderer)
 	{
 		// Go through the props and if an prop is already in the renderer,
 		// do nothing. If not, add it. If an prop not listed is

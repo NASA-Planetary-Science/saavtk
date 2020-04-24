@@ -2,9 +2,7 @@ package edu.jhuapl.saavtk.structure.gui;
 
 import javax.swing.JTabbedPane;
 
-import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.render.Renderer;
-import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.structure.LineModel;
@@ -14,8 +12,6 @@ import edu.jhuapl.saavtk.pick.EllipsePicker;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.pick.Picker;
 import edu.jhuapl.saavtk.pick.PointPicker;
-import edu.jhuapl.saavtk.popup.PopupManager;
-import edu.jhuapl.saavtk.popup.PopupMenu;
 import edu.jhuapl.saavtk.structure.StructureManager;
 
 /**
@@ -31,23 +27,18 @@ public class StructureTabbedPane extends JTabbedPane
 	private static final long serialVersionUID = 1L;
 
 	// Ref vars
-	private final ModelManager refModelManager;
 	private final PickManager refPickManager;
 	private final Renderer refRenderer;
-	private final PopupManager refPopupManager;
-	private final StatusBar statusBar;
+	private final ModelManager refModelManager;
 
 	/**
 	 * Standard Constructor
 	 */
-	public StructureTabbedPane(ModelManager aModelManager, PickManager aPickManager, Renderer aRenderer,
-			StatusBar aStatusBar, PopupManager aPopupManager)
+	public StructureTabbedPane(PickManager aPickManager, Renderer aRenderer, ModelManager aModelManager)
 	{
-		refModelManager = aModelManager;
 		refPickManager = aPickManager;
 		refRenderer = aRenderer;
-		refPopupManager = aPopupManager;
-		statusBar = aStatusBar;
+		refModelManager = aModelManager;
 
 		StructurePanel<?> linePanel = formStructurePanel(ModelNames.LINE_STRUCTURES);
 		StructurePanel<?> polygonPanel = formStructurePanel(ModelNames.POLYGON_STRUCTURES);
@@ -71,7 +62,6 @@ public class StructureTabbedPane extends JTabbedPane
 	private StructurePanel<?> formStructurePanel(ModelNames aModelNames)
 	{
 		StructureManager<?> tmpStructureManager = (StructureManager<?>) refModelManager.getModel(aModelNames);
-		PopupMenu tmpPopupMenu = refPopupManager.getPopup((Model) tmpStructureManager);
 
 		// Instantiate the appropriate Picker
 		Picker tmpPicker = null;
@@ -87,8 +77,8 @@ public class StructureTabbedPane extends JTabbedPane
 		else
 			throw new RuntimeException("Unrecognized ModelName: " + aModelNames);
 
-		StructurePanel<?> retPanel = new StructurePanel<>(refModelManager, tmpStructureManager, refPickManager, tmpPicker,
-				statusBar, tmpPopupMenu);
+		StructurePanel<?> retPanel = new StructurePanel<>(tmpStructureManager, refPickManager, tmpPicker, refRenderer,
+				refModelManager.getPolyhedralModel(), refModelManager);
 		return retPanel;
 	}
 
