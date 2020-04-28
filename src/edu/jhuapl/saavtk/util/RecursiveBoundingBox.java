@@ -43,7 +43,7 @@ public class RecursiveBoundingBox extends BoundingBox
     	this.cubeSize = cubeSize;
     	this.levelNodeID = levelNodeID;
     	this.parentNodeID = parentNodeID;
-    	this.nodePath = nodePath + "," + levelNodeID;
+    	this.nodePath = nodePath + "-" + levelNodeID;
     	setBounds(bounds);
 //		System.out.println("RecursiveBoundingBox: made " + this);
     	makeChildren();
