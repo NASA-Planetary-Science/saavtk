@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.TreeSet;
+import java.util.Vector;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
@@ -106,6 +107,8 @@ public abstract class PolyhedralModel extends AbstractModel
     public abstract int getModelResolution();
 
     public abstract TreeSet<Integer> getIntersectingCubes(vtkPolyData polydata);
+    
+    public abstract Vector<String> getIntersectingRCubes(vtkPolyData polydata);
 
     public abstract TreeSet<Integer> getIntersectingCubes(BoundingBox bb);
 

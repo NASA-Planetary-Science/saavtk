@@ -10,10 +10,12 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.Vector;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -36,6 +38,7 @@ import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
 import edu.jhuapl.saavtk.util.SafeURLPaths;
 import edu.jhuapl.saavtk.util.SmallBodyCubes;
+import edu.jhuapl.saavtk.util.SmallBodyCubes2;
 import vtk.vtkActor;
 import vtk.vtkActor2D;
 import vtk.vtkCamera;
@@ -45,6 +48,7 @@ import vtk.vtkCellData;
 import vtk.vtkCellDataToPointData;
 import vtk.vtkContourFilter;
 import vtk.vtkCoordinate;
+import vtk.vtkCubeSource;
 import vtk.vtkDataArray;
 import vtk.vtkDepthSortPolyData;
 import vtk.vtkFloatArray;
@@ -70,6 +74,10 @@ import vtk.vtksbCellLocator;
 
 public class GenericPolyhedralModel extends PolyhedralModel implements PropertyChangeListener
 {
+	//This is a placeholder for enabling a series of diagnostic tools we hope to bring into the renderer.  Currently in place but with no UI hooks to enable it (yet) is a 
+	//block of code that can display the body cubes used during a database search that allows you to see what exactly it is you're choosing.  
+	private boolean diagnosticModeEnabled = false;
+	
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
 
     private final CustomizableColoringDataManager coloringDataManager;
@@ -860,9 +868,75 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
             // Generate cubes based on chosen resolution
             smallBodyCubes = new SmallBodyCubes(getLowResSmallBodyPolyData(), cubeSize, 0.01 * cubeSize, true);
+            
+            //TODO: This needs to be exposed through a developer only UI for diagnosis purposes.  
+            if (diagnosticModeEnabled == true)
+            {
+	            int index = 0;
+	            Integer[] sampleIndices = new Integer[] { 1060, 1061 };
+	            TreeSet<Integer> sampleSet = new TreeSet<Integer>();
+	            sampleSet.addAll(Arrays.asList(sampleIndices));
+	            for (BoundingBox bb : smallBodyCubes.getAllCubes())
+	            {
+	            	vtkCubeSource cube = new vtkCubeSource();
+	            	cube.SetBounds(bb.getBounds()); 
+	            	vtkPolyDataMapper mapper = new vtkPolyDataMapper();
+	            	mapper.SetInputConnection(cube.GetOutputPort());
+	            	vtkActor actor = new vtkActor();
+	            	actor.SetMapper(mapper);
+	            	actor.GetProperty().SetOpacity(0.5);
+	            	if (sampleSet.contains(index))
+	            	{
+	            		actor.GetProperty().SetColor(1.0, 0.0, 0.0);
+	            		smallBodyActors.add(actor);
+	            	}
+	            	index++;
+	            }
+	            this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+            }
         }
 
         return smallBodyCubes;
+    }
+    
+    private SmallBodyCubes2 getSmallBodyCubes2()
+    {
+    	double cubeSize;
+        if (getConfig().hasCustomBodyCubeSize)
+        {
+            // Custom specified cube size
+            cubeSize = getConfig().customBodyCubeSize;
+        }
+        else
+        {
+            // Old way of determining cube size, most models still use this
+            double diagonalLength = new BoundingBox(getLowResSmallBodyPolyData().GetBounds()).getDiagonalLength();
+            // The number 38.66056033363347 is used here so that the cube size
+            // comes out to 1 km for Eros (whose diagonaLength equals 38.6605...).
+            cubeSize = diagonalLength / 38.66056033363347;
+        }
+
+        // Generate cubes based on chosen resolution
+    	return new SmallBodyCubes2(lowResSmallBodyPolyData, cubeSize, 0.01);
+    }
+    
+    public Vector<String> getIntersectingRCubes(vtkPolyData polydata)
+    {
+    	return getSmallBodyCubes2().getIntersectingCubes(polydata);
+    }
+    
+    public void setCubeVisibility(int index)
+    {
+    	vtkCubeSource cube = new vtkCubeSource();
+    	cube.SetBounds(smallBodyCubes.getCube(index).getBounds()); 
+    	vtkPolyDataMapper mapper = new vtkPolyDataMapper();
+    	mapper.SetInputConnection(cube.GetOutputPort());
+    	vtkActor actor = new vtkActor();
+    	actor.SetMapper(mapper);
+    	actor.GetProperty().SetOpacity(0.5);
+    	actor.GetProperty().SetColor(1.0, 0.0, 0.0);
+		smallBodyActors.add(actor);
+		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
     }
 
     @Override
