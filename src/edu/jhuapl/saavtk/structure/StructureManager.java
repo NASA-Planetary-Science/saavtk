@@ -86,6 +86,11 @@ public interface StructureManager<G1 extends Structure> extends ItemManager<G1>
 	public void installItems(Task aTask, List<G1> aItemL);
 
 	/**
+	 * Sets the center of the specified {@link Structure}.
+	 */
+	public void setCenter(G1 aItem, Vector3D aCenter);
+
+	/**
 	 * Sets the color of the specified structures.
 	 *
 	 * @param aItemC The collection of structures to change.

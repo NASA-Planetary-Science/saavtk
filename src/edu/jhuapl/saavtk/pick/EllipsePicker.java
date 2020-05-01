@@ -177,7 +177,7 @@ public class EllipsePicker extends Picker
 			else if (changeAngleKeyPressed)
 				refStructureManager.changeAngleOfPolygon(tmpItem, lastDragPosition);
 			else
-				refStructureManager.movePolygon(tmpItem, lastDragPosition);
+				refStructureManager.setCenter(tmpItem, lastDragPosition);
 		}
 	}
 

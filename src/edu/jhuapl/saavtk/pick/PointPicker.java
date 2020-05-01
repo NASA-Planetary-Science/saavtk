@@ -159,7 +159,7 @@ public class PointPicker extends Picker
 			if (aEvent.isControlDown() || aEvent.isShiftDown())
 				refStructureManager.changeRadiusOfPolygon(tmpItem, lastDragPosition);
 			else
-				refStructureManager.movePolygon(tmpItem, lastDragPosition);
+				refStructureManager.setCenter(tmpItem, lastDragPosition);
 		}
 	}
 

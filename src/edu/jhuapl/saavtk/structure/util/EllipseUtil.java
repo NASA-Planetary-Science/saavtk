@@ -154,76 +154,102 @@ public class EllipseUtil
 	}
 
 	/**
-	 * TODO: Add documentation
+	 * Returns an array containing the 4 standard coloring units. The returned array
+	 * will have the standard coloring units defined in the following (index) order:
+	 * (Slope, Elevation, GravAccel, GravPotential)
 	 * <P>
-	 * Source (~2019Oct07):
+	 * If a unit is not available then null will be stored at the relevant index.
+	 */
+	public static String[] getStandardColoringUnits(PolyhedralModel aSmallBody)
+	{
+		List<ColoringData> coloringDataL = aSmallBody.getAllColoringData();
+
+		String[] retUnitArr = { null, null, null, null };
+		for (ColoringData aItem : coloringDataL)
+		{
+			String name = aItem.getName();
+			if (name.equalsIgnoreCase(PolyhedralModel.SlopeStr) == true)
+				retUnitArr[0] = aItem.getUnits();
+			if (name.equalsIgnoreCase(PolyhedralModel.ElevStr) == true)
+				retUnitArr[1] = aItem.getUnits();
+			if (name.equalsIgnoreCase(PolyhedralModel.GravAccStr) == true)
+				retUnitArr[2] = aItem.getUnits();
+			if (name.equalsIgnoreCase(PolyhedralModel.GravPotStr) == true)
+				retUnitArr[3] = aItem.getUnits();
+
+			// Hack: Unfortunately in at least OREx's case, this vector is named differently
+			if (name.equalsIgnoreCase("Gravitational Magnitude") == true)
+				retUnitArr[2] = aItem.getUnits();
+		}
+
+		return retUnitArr;
+	}
+
+	/**
+	 * Returns an array containing the 4 standard coloring values. The returned
+	 * array will have the standard coloring units defined in the following (index)
+	 * order: (Slope, Elevation, GravAccel, GravPotential)
+	 * <P>
+	 * If a value is not available then NaN will be stored at the relevant index.
+	 * <P>
+	 * Source Basis (~2019Oct07):<BR>
 	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
 	 */
-	public static double[] getStandardColoringValuesAtPolygon(AbstractEllipsePolygonModel aManager, Ellipse aEllipse,
-			PolyhedralModel aSmallBody, Mode aMode) throws IOException
+	public static double[] getStandardColoringValues(AbstractEllipsePolygonModel aManager, Ellipse aEllipse,
+			PolyhedralModel aSmallBody) throws IOException
 	{
 		// Output array of 4 standard colorings (Slope, Elevation, GravAccel,
-		// GravPotential).
-		// Assume at the outset that none of the standard colorings are available.
-		final double[] standardValues = new double[] { Double.NaN, Double.NaN, Double.NaN, Double.NaN };
+		// GravPotential). Assume that none of the standard colorings are available.
+		double[] retValueArr = new double[] { Double.NaN, Double.NaN, Double.NaN, Double.NaN };
 
-		if (!aSmallBody.isColoringDataAvailable())
-			return standardValues;
+		if (aSmallBody.isColoringDataAvailable() == false)
+			return retValueArr;
 
-		int slopeIndex = -1;
-		int elevationIndex = -1;
-		int accelerationIndex = -1;
-		int potentialIndex = -1;
+		int slopeIdx = -1;
+		int elevationIdx = -1;
+		int accelerationIdx = -1;
+		int potentialIdx = -1;
 
 		// Locate any of the 4 standard plate colorings in the list of all colorings
 		// available for this resolution.
 		// Usually the standard colorings are first in the list, so the loop could
-		// terminate after all
-		// 4 are >= 0, but omitting this check for brevity and readability.
-		List<ColoringData> coloringDataList = aSmallBody.getAllColoringData();
-		for (int index = 0; index < coloringDataList.size(); ++index)
+		// terminate after all 4 are >= 0, but omitting this check for brevity and
+		// readability.
+		List<ColoringData> coloringDataL = aSmallBody.getAllColoringData();
+		for (int aIndex = 0; aIndex < coloringDataL.size(); ++aIndex)
 		{
-			String name = coloringDataList.get(index).getName();
+			String name = coloringDataL.get(aIndex).getName();
 			if (name.equalsIgnoreCase(PolyhedralModel.SlopeStr))
-			{
-				slopeIndex = index;
-			}
-			else if (name.equalsIgnoreCase(PolyhedralModel.ElevStr))
-			{
-				elevationIndex = index;
-			}
-			else if (name.equalsIgnoreCase(PolyhedralModel.GravAccStr))
-			{
-				accelerationIndex = index;
-			}
-			// This is a hack -- unfortunately, in at least OREx's case, this vector is
-			// given a different name.
-			else if (name.equalsIgnoreCase("Gravitational Magnitude"))
-			{
-				accelerationIndex = index;
-			}
-			else if (name.equalsIgnoreCase(PolyhedralModel.GravPotStr))
-			{
-				potentialIndex = index;
-			}
+				slopeIdx = aIndex;
+			if (name.equalsIgnoreCase(PolyhedralModel.ElevStr))
+				elevationIdx = aIndex;
+			if (name.equalsIgnoreCase(PolyhedralModel.GravAccStr))
+				accelerationIdx = aIndex;
+			if (name.equalsIgnoreCase(PolyhedralModel.GravPotStr))
+				potentialIdx = aIndex;
+
+			// Hack: Unfortunately in at least OREx's case, this vector is named differently
+			if (name.equalsIgnoreCase("Gravitational Magnitude"))
+				accelerationIdx = aIndex;
 		}
 
 		// Get all the coloring values interpolated at the center of the polygon.
-		double[] allValues;
+		double[] allValueArr;
 
 		try
 		{
-			allValues = aSmallBody.getAllColoringValues(aEllipse.getCenter().toArray());
-			if (aMode != Mode.POINT_MODE)
+			allValueArr = aSmallBody.getAllColoringValues(aEllipse.getCenter().toArray());
+			Mode tmpMode = aManager.getMode();
+			if (tmpMode != Mode.POINT_MODE)
 			{
 				// Replace slope and/or elevation central values with the average over the rim
 				// of the circle.
-				if (slopeIndex != -1 || elevationIndex != -1)
+				if (slopeIdx != -1 || elevationIdx != -1)
 				{
-					if (slopeIndex != -1)
-						allValues[slopeIndex] = 0.; // Accumulate weighted sum in situ.
-					if (elevationIndex != -1)
-						allValues[elevationIndex] = 0.; // Accumulate weighted sum in situ.
+					if (slopeIdx != -1)
+						allValueArr[slopeIdx] = 0.; // Accumulate weighted sum in situ.
+					if (elevationIdx != -1)
+						allValueArr[elevationIdx] = 0.; // Accumulate weighted sum in situ.
 
 					vtkCellArray lines = aManager.getVtkExteriorPolyDataFor(aEllipse).GetLines();
 					vtkPoints points = aManager.getVtkExteriorPolyDataFor(aEllipse).GetPoints();
@@ -238,7 +264,7 @@ public class EllipseUtil
 						if (idArray.GetValue(i) != 2)
 						{
 							System.out.println("Big problem: polydata corrupted");
-							return standardValues;
+							return retValueArr;
 						}
 
 						double[] pt1 = points.GetPoint(idArray.GetValue(i + 1));
@@ -251,44 +277,41 @@ public class EllipseUtil
 						double[] valuesAtMidpoint = aSmallBody.getAllColoringValues(midpoint);
 
 						// Accumulate sums weighted by the length of this polygon segment.
-						if (slopeIndex != -1)
-							allValues[slopeIndex] += valuesAtMidpoint[slopeIndex] * dist;
-						if (elevationIndex != -1)
-							allValues[elevationIndex] += valuesAtMidpoint[elevationIndex] * dist;
+						if (slopeIdx != -1)
+							allValueArr[slopeIdx] += valuesAtMidpoint[slopeIdx] * dist;
+						if (elevationIdx != -1)
+							allValueArr[elevationIdx] += valuesAtMidpoint[elevationIdx] * dist;
 					}
 
 					// Normalize by the total (perimeter).
-					if (slopeIndex != -1)
-						allValues[slopeIndex] /= totalLength;
-					if (elevationIndex != -1)
-						allValues[elevationIndex] /= totalLength;
+					if (slopeIdx != -1)
+						allValueArr[slopeIdx] /= totalLength;
+					if (elevationIdx != -1)
+						allValueArr[elevationIdx] /= totalLength;
 				}
 			}
 		}
-		catch (Exception e)
+		catch (Exception aExp)
 		{
 			System.err.println("Warning: plate coloring values were not available; omitting them from structures file.");
-			System.err.println("Exception thrown was " + e.getMessage());
+			System.err.println("Exception thrown was " + aExp.getMessage());
 
-			allValues = new double[coloringDataList.size()];
-			for (int index = 0; index < allValues.length; ++index)
-			{
-				allValues[index] = Double.NaN;
-			}
+			allValueArr = new double[coloringDataL.size()];
+			for (int aIndex = 0; aIndex < allValueArr.length; ++aIndex)
+				allValueArr[aIndex] = Double.NaN;
 		}
 
-		// Use whichever standard coloring values are present to populate the output
-		// array.
-		if (slopeIndex != -1)
-			standardValues[0] = allValues[slopeIndex];
-		if (elevationIndex != -1)
-			standardValues[1] = allValues[elevationIndex];
-		if (accelerationIndex != -1)
-			standardValues[2] = allValues[accelerationIndex];
-		if (potentialIndex != -1)
-			standardValues[3] = allValues[potentialIndex];
+		// Populate the (returned) 4-element standard coloring array
+		if (slopeIdx != -1)
+			retValueArr[0] = allValueArr[slopeIdx];
+		if (elevationIdx != -1)
+			retValueArr[1] = allValueArr[elevationIdx];
+		if (accelerationIdx != -1)
+			retValueArr[2] = allValueArr[accelerationIdx];
+		if (potentialIdx != -1)
+			retValueArr[3] = allValueArr[potentialIdx];
 
-		return standardValues;
+		return retValueArr;
 	}
 
 	/**
