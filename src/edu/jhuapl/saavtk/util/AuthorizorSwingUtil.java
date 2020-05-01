@@ -58,7 +58,7 @@ public abstract class AuthorizorSwingUtil
             result = true;
         }
         else if (urlStatus == UrlStatus.NOT_AUTHORIZED)
-        {            
+        {
             result = updateCredentials();
         }
 
@@ -79,10 +79,10 @@ public abstract class AuthorizorSwingUtil
 
                 if (!ServerSettingsManager.instance().update().isServerAccessible())
                 {
-                    JOptionPane.showMessageDialog(null, "Unable to update password at this time. Please try later.", "Unable to connect", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "Unable to connect to server to update password. Please check your internet connection and/or try again later.", "Unable to connect", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-   
+
                 Authorizor authorizor = getAuthorizor();
 
                 JPanel mainPanel = new JPanel();
@@ -138,7 +138,7 @@ public abstract class AuthorizorSwingUtil
                             UrlStatus status = state.getStatus();
                             if (!state.wasCheckedOnline())
                             {
-                                JOptionPane.showMessageDialog(null, "Unable to verify credentials at this time. Please try later.", "Unable to connect", JOptionPane.ERROR_MESSAGE);
+                                JOptionPane.showMessageDialog(null, "Unable to connect to server to verify credentials at this time. Please check your internet connection, and/or try later.", "Unable to connect", JOptionPane.ERROR_MESSAGE);
                             }
                             else if (status == UrlStatus.NOT_AUTHORIZED)
                             {
@@ -149,13 +149,13 @@ public abstract class AuthorizorSwingUtil
                             else if (status != UrlStatus.ACCESSIBLE)
                             {
                                 // Try again.
-                                promptLabel.setText("<html>Server problem. Try again, or click \"Cancel\" to continue without password. If this persists, contact sbmt.jhuapl.edu. Some models may not be available without a password.</html>");
+                                promptLabel.setText("<html>Server problem. Please check your internet connection and try again, or click \"Cancel\" to continue without password. If this persists, contact sbmt.jhuapl.edu. Some models may not be available without a password.</html>");
                                 promptUser = true;
                             }
                             else
                             {
                                 result.set(true);
-                                
+
                                 if (rememberPassword)
                                 {
                                     try
@@ -166,12 +166,12 @@ public abstract class AuthorizorSwingUtil
                                     catch (IOException e)
                                     {
                                         e.printStackTrace();
-                                        JOptionPane.showMessageDialog(null, "Unable to update password. See console for more details.", "Failed to save password", JOptionPane.ERROR_MESSAGE);
+                                        JOptionPane.showMessageDialog(null, "Unable to save password changes. See console for more details.", "Failed to save password", JOptionPane.ERROR_MESSAGE);
                                     }
                                 }
                                 else
                                 {
-                                    JOptionPane.showMessageDialog(null, "Password accepted for this session.", "Password updated", JOptionPane.INFORMATION_MESSAGE);
+                                    JOptionPane.showMessageDialog(null, "Password accepted just for this session.", "Password updated", JOptionPane.INFORMATION_MESSAGE);
                                 }
                             }
                         }
