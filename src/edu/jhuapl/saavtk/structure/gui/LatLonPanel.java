@@ -8,6 +8,8 @@ import java.text.DecimalFormat;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 
+import com.google.common.collect.Range;
+
 import glum.gui.FocusUtil;
 import glum.gui.GuiUtil;
 import glum.gui.action.ClickAction;
@@ -19,11 +21,15 @@ import net.miginfocom.swing.MigLayout;
  * GUI component used to prompt the user for a latitude and longitude inputs.
  * <P>
  * Inputs is specified in degrees.
- * 
+ *
  * @author lopeznr1
  */
 public class LatLonPanel extends GlassPanel implements ActionListener
 {
+	// Constants
+	private static final Range<Double> LatRange = Range.closed(-90.0, 90.0);
+	private static final Range<Double> LonRange = Range.closed(-180.0, 360.0);
+
 	// Gui vars
 	private final JLabel titleL;
 	private final GNumberField latNF;
@@ -49,13 +55,13 @@ public class LatLonPanel extends GlassPanel implements ActionListener
 		add(titleL, "growx,span,wrap");
 
 		// Latitude
-		latNF = new GNumberField(this, new DecimalFormat("#.###"), -90, 90);
+		latNF = new GNumberField(this, new DecimalFormat("#.###"), LatRange);
 		add(new JLabel("Latitude"), "");
 		add(latNF, "growx");
 		add(new JLabel("deg"), "wrap");
 
 		// Longitude
-		lonNF = new GNumberField(this, new DecimalFormat("#.###"), -180, 360);
+		lonNF = new GNumberField(this, new DecimalFormat("#.###"), LonRange);
 		add(new JLabel("Longitude"), "");
 		add(lonNF, "growx");
 		add(new JLabel("deg"), "wrap");
