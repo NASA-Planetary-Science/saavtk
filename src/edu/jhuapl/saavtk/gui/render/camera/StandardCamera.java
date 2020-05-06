@@ -5,17 +5,20 @@ import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import edu.jhuapl.saavtk.camera.Camera;
+import edu.jhuapl.saavtk.camera.CameraActionListener;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
+import edu.jhuapl.saavtk.util.MathUtil;
 import vtk.vtkCamera;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 /**
- * Standard camera that is associated with the specified panel.
+ * Vtk implementation of the {@link Camera} interface.
  * <P>
- * By default the camera is assumed to be centered over the origin with a
- * standard coordinate system (X-axis: [1, 0, 0]; Y-axis: [0, 1, 0], Z-axis: [0,
- * 0, 1]). If this is not the case then the method {@link #setDefaults} should
- * be called so that the proper coordinate system can utilized.
+ * The installed {@link CoordinateSystem} defines the camera's frame of
+ * reference.
+ *
+ * @author lopeznr1
  */
 public class StandardCamera implements Camera
 {
@@ -23,7 +26,7 @@ public class StandardCamera implements Camera
 	private final vtkJoglPanelComponent refPanel;
 
 	// State vars
-	private List<CameraListener> myListenerL;
+	private List<CameraActionListener> cameraActionListenerL;
 	private CoordinateSystem curCoordSystem;
 
 	// Default vars
@@ -32,18 +35,20 @@ public class StandardCamera implements Camera
 
 	/**
 	 * Standard constructor
-	 * 
+	 *
 	 * @param aPanel            The panel associated with this camera.
-	 * @param aCoordinateSystem The coordinate system associated with the camera. This coordinate system is utilized
-	 *                          whenever the camera is reset.
-	 * @param aDistance         The distance between the camera and the focus position. This distance is utilized
-	 *                          whenever the camera is reset.
+	 * @param aCoordinateSystem The coordinate system associated with the camera.
+	 *                          This coordinate system is utilized whenever the
+	 *                          camera is reset.
+	 * @param aDistance         The distance between the camera and the focus
+	 *                          position. This distance is utilized whenever the
+	 *                          camera is reset.
 	 */
 	public StandardCamera(vtkJoglPanelComponent aPanel, CoordinateSystem aCoordinateSystem, double aDistance)
 	{
 		refPanel = aPanel;
 
-		myListenerL = new ArrayList<>();
+		cameraActionListenerL = new ArrayList<>();
 		curCoordSystem = aCoordinateSystem;
 
 		defCoordSystem = aCoordinateSystem;
@@ -52,7 +57,7 @@ public class StandardCamera implements Camera
 
 	/**
 	 * Sets in the default that will be utilized whenever the camera is reset.
-	 * 
+	 *
 	 * @param aCoordSystem The coordinate system associated with the camera.
 	 * @param aDefDistance The distance between the camera and the focus position.
 	 */
@@ -63,22 +68,15 @@ public class StandardCamera implements Camera
 	}
 
 	@Override
-	public void addListener(CameraListener listener)
+	public void addCameraChangeListener(CameraActionListener aListener)
 	{
-		myListenerL.add(listener);
+		cameraActionListenerL.add(aListener);
 	}
 
 	@Override
-	public void removeListener(CameraListener listener)
+	public void delCameraChangeListener(CameraActionListener aListener)
 	{
-		myListenerL.remove(listener);
-	}
-
-	@Override
-	public Vector3D getPosition()
-	{
-		vtkCamera vCamera = getVtkCamera();
-		return new Vector3D(vCamera.GetPosition());
+		cameraActionListenerL.remove(aListener);
 	}
 
 	@Override
@@ -89,113 +87,24 @@ public class StandardCamera implements Camera
 	}
 
 	@Override
-	public Vector3D getLookUnit()
-	{
-		return getFocalPoint().subtract(getPosition()).normalize();
-	}
-
-	@Override
-	public Vector3D getRightUnit()
-	{
-		return getLookUnit().crossProduct(getUpUnit()).normalize();
-	}
-
-	@Override
-	public Vector3D getUpUnit()
+	public Vector3D getPosition()
 	{
 		vtkCamera vCamera = getVtkCamera();
-		return new Vector3D(vCamera.GetViewUp()).normalize();
+		return new Vector3D(vCamera.GetPosition());
 	}
 
 	@Override
-	public void setPosition(Vector3D point)
+	public double getRoll()
 	{
 		vtkCamera vCamera = getVtkCamera();
-		vCamera.SetPosition(point.toArray());
-		vCamera.OrthogonalizeViewUp();
-		fireCameraEvent();
+		return vCamera.GetRoll();
 	}
 
 	@Override
-	public void setFocalPoint(Vector3D point)
+	public double getViewAngle()
 	{
 		vtkCamera vCamera = getVtkCamera();
-		vCamera.SetFocalPoint(point.toArray());
-		vCamera.OrthogonalizeViewUp();
-	}
-
-	@Override
-	public void setLookUnit(Vector3D look)
-	{
-		double dist = getFocalPoint().subtract(getPosition()).getNorm();
-		setFocalPoint(getPosition().add(look.normalize().scalarMultiply(dist)));
-
-		vtkCamera vCamera = getVtkCamera();
-		vCamera.OrthogonalizeViewUp();
-		fireCameraEvent();
-	}
-
-	@Override
-	public void setUpUnit(Vector3D up)
-	{
-		vtkCamera vCamera = getVtkCamera();
-		vCamera.SetViewUp(up.toArray());
-		vCamera.OrthogonalizeViewUp();
-		fireCameraEvent();
-	}
-
-	@Override
-	public void dolly(double distance)
-	{
-		vtkCamera vCamera = getVtkCamera();
-		vCamera.Dolly(distance);
-		vCamera.OrthogonalizeViewUp();
-		fireCameraEvent();
-	}
-
-	@Override
-	public void pan(double dx, double dy)
-	{
-		Vector3D deltaVec = getRightUnit().scalarMultiply(dx).add(getUpUnit().scalarMultiply(dy));
-		setPosition(getPosition().add(deltaVec));
-		setFocalPoint(getFocalPoint().add(deltaVec));
-		fireCameraEvent();
-	}
-
-	@Override
-	public void zoom(double factor)
-	{
-		vtkCamera vCamera = getVtkCamera();
-		vCamera.Zoom(factor);
-		vCamera.OrthogonalizeViewUp();
-		fireCameraEvent();
-	}
-
-	@Override
-	public void roll(double angleDeg)
-	{
-		vtkCamera vCamera = getVtkCamera();
-		vCamera.Roll(angleDeg);
-		vCamera.OrthogonalizeViewUp();
-		fireCameraEvent();
-	}
-
-	@Override
-	public void pitch(double angleDeg)
-	{
-		vtkCamera vCamera = getVtkCamera();
-		vCamera.Pitch(angleDeg);
-		vCamera.OrthogonalizeViewUp();
-		fireCameraEvent();
-	}
-
-	@Override
-	public void yaw(double angleDeg)
-	{
-		vtkCamera vCamera = getVtkCamera();
-		vCamera.Yaw(angleDeg);
-		vCamera.OrthogonalizeViewUp();
-		fireCameraEvent();
+		return vCamera.GetViewAngle();
 	}
 
 	@Override
@@ -205,13 +114,35 @@ public class StandardCamera implements Camera
 	}
 
 	@Override
+	public void getOrientationMatrix(double[] cxArr, double[] cyArr, double[] czArr)
+	{
+		vtkCamera cam = getVtkCamera();
+
+		double[] pos = cam.GetPosition();
+
+		double[] up = cam.GetViewUp();
+		cxArr[0] = up[0];
+		cxArr[1] = up[1];
+		cxArr[2] = up[2];
+		MathUtil.vhat(cxArr, cxArr);
+
+		double[] fp = cam.GetFocalPoint();
+		czArr[0] = fp[0] - pos[0];
+		czArr[1] = fp[1] - pos[1];
+		czArr[2] = fp[2] - pos[2];
+		MathUtil.vhat(czArr, czArr);
+
+		MathUtil.vcrss(czArr, cxArr, cyArr);
+		MathUtil.vhat(cyArr, cyArr);
+	}
+
+	@Override
 	public void reset()
 	{
 		// Reset the coordinate system to the default
 		curCoordSystem = defCoordSystem;
 
 		CameraUtil.setOrientationInDirectionOfAxis(this, AxisType.NEGATIVE_Z, defDistance);
-//		refRenderPanel.resetCamera();
 	}
 
 	@Override
@@ -219,26 +150,84 @@ public class StandardCamera implements Camera
 	{
 		curCoordSystem = aCoordSystem;
 
-		// Send out notification of the configuration change
+		// Send out event notification
 		fireCameraEvent();
 	}
 
 	@Override
-	public void setView(Vector3D aFocalVect, Vector3D aPositionVect, Vector3D aViewUpVect)
+	public void setFocalPoint(Vector3D aPosition)
 	{
-		refPanel.getVTKLock().lock();
-
-		// Orient the camera to reflect the new configuration
 		vtkCamera tmpVtkCamera = getVtkCamera();
-		tmpVtkCamera.SetFocalPoint(aFocalVect.toArray());
-		tmpVtkCamera.SetPosition(aPositionVect.toArray());
-		tmpVtkCamera.SetViewUp(aViewUpVect.toArray());
 
+		// Update the vtk camera
+		refPanel.getVTKLock().lock();
+		tmpVtkCamera.SetFocalPoint(aPosition.getX(), aPosition.getY(), aPosition.getZ());
 		refPanel.getVTKLock().unlock();
-
 		refPanel.resetCameraClippingRange();
 
-		// Send out notification of the configuration change
+		// Send out event notification
+		fireCameraEvent();
+	}
+
+	@Override
+	public void setPosition(Vector3D aPosition)
+	{
+		vtkCamera tmpVtkCamera = getVtkCamera();
+
+		// Update the vtk camera
+		refPanel.getVTKLock().lock();
+		tmpVtkCamera.SetPosition(aPosition.getX(), aPosition.getY(), aPosition.getZ());
+		refPanel.getVTKLock().unlock();
+		refPanel.resetCameraClippingRange();
+
+		// Send out event notification
+		fireCameraEvent();
+	}
+
+	@Override
+	public void setRoll(double aAngle)
+	{
+		vtkCamera tmpVtkCamera = getVtkCamera();
+
+		// Update the vtk camera
+		refPanel.getVTKLock().lock();
+		tmpVtkCamera.SetRoll(aAngle);
+		refPanel.getVTKLock().unlock();
+		refPanel.resetCameraClippingRange();
+
+		// Send out event notification
+		fireCameraEvent();
+	}
+
+	@Override
+	public void setView(Vector3D aFocalVect, Vector3D aPosition, Vector3D aViewUpVect)
+	{
+		vtkCamera tmpVtkCamera = getVtkCamera();
+
+		// Update the vtk camera
+		refPanel.getVTKLock().lock();
+		tmpVtkCamera.SetFocalPoint(aFocalVect.toArray());
+		tmpVtkCamera.SetPosition(aPosition.getX(), aPosition.getY(), aPosition.getZ());
+		tmpVtkCamera.SetViewUp(aViewUpVect.toArray());
+		refPanel.getVTKLock().unlock();
+		refPanel.resetCameraClippingRange();
+
+		// Send out event notification
+		fireCameraEvent();
+	}
+
+	@Override
+	public void setViewAngle(double aAngle)
+	{
+		vtkCamera tmpVtkCamera = getVtkCamera();
+
+		// Update the vtk camera
+		refPanel.getVTKLock().lock();
+		tmpVtkCamera.SetViewAngle(aAngle);
+		refPanel.getVTKLock().unlock();
+		refPanel.resetCameraClippingRange();
+
+		// Send out event notification
 		fireCameraEvent();
 	}
 
@@ -247,8 +236,8 @@ public class StandardCamera implements Camera
 	 */
 	protected void fireCameraEvent()
 	{
-		for (CameraListener aListener : myListenerL)
-			aListener.handle(new CameraEvent(this));
+		for (CameraActionListener aListener : cameraActionListenerL)
+			aListener.handleCameraAction(this);
 	}
 
 	/**
