@@ -9,7 +9,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 import javax.swing.BorderFactory;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -17,9 +20,15 @@ import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.SwingWorker;
 
+import edu.jhuapl.saavtk.camera.gui.CameraQuaternionAction;
+import edu.jhuapl.saavtk.camera.gui.CameraRegularAction;
+import edu.jhuapl.saavtk.gui.menu.EnableLODsAction;
 import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
 import edu.jhuapl.saavtk.gui.menu.FileMenu;
 import edu.jhuapl.saavtk.gui.menu.HelpMenu;
+import edu.jhuapl.saavtk.gui.menu.PickToleranceAction;
+import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
+import edu.jhuapl.saavtk.scalebar.gui.ScaleBarAction;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.UnauthorizedAccessException;
@@ -35,9 +44,8 @@ public abstract class ViewManager extends JPanel
     private String tempCustomShapeModelPath;
 
     protected FileMenu fileMenu = null;
-    protected ViewMenu viewMenu = null;
+    protected ViewMenu bodyMenu = null;
     protected HelpMenu helpMenu = null;
-    protected FavoritesMenu favoritesMenu = null;
     protected RecentlyViewed recentsMenu = null;
     private volatile boolean initialViewSet;
 
@@ -70,28 +78,42 @@ public abstract class ViewManager extends JPanel
 
     protected void createMenus(JMenuBar menuBar)
     {
+        // File menu
         fileMenu = new FileMenu(this);
         fileMenu.setMnemonic('F');
         menuBar.add(fileMenu);
 
+        // Body menu
         recentsMenu = new RecentlyViewed(this);
-        viewMenu = new ViewMenu(this, recentsMenu);
+
+        bodyMenu = new ViewMenu(this, recentsMenu);
+        bodyMenu.setMnemonic('B');
+        bodyMenu.add(new JSeparator());
+        bodyMenu.add(new FavoritesMenu(this));
+        bodyMenu.add(createPasswordMenu());
+        bodyMenu.add(new JSeparator());
+        bodyMenu.add(recentsMenu);
+        menuBar.add(bodyMenu);
+
+        // View menu
+        JMenu viewMenu = new JMenu("View");
         viewMenu.setMnemonic('V');
+        viewMenu.add(new JMenuItem(new CameraRegularAction(this)));
+        viewMenu.add(new JMenuItem(new CameraQuaternionAction(this)));
+        viewMenu.add(new JMenuItem(new ScaleBarAction(this)));
+
+        viewMenu.addSeparator();
+        JCheckBoxMenuItem enableLodMI = new JCheckBoxMenuItem(new EnableLODsAction());
+        enableLodMI.setSelected(true);
+        viewMenu.add(enableLodMI);
+        viewMenu.add(new PickToleranceAction(this));
 
         menuBar.add(viewMenu);
 
-        favoritesMenu = new FavoritesMenu(this);
-
-        JMenuItem passwordMenu = createPasswordMenu();
-
-        viewMenu.add(new JSeparator());
-        viewMenu.add(favoritesMenu);
-        viewMenu.add(passwordMenu);
-        viewMenu.add(new JSeparator());
-        viewMenu.add(recentsMenu);
-
+        // Console menu
         Console.addConsoleMenu(menuBar);
 
+        // Help menu
         helpMenu = new HelpMenu(this);
         helpMenu.setMnemonic('H');
         menuBar.add(helpMenu);
@@ -172,7 +194,7 @@ public abstract class ViewManager extends JPanel
                     System.err.println("\nNo default model is set.");
                 }
                 else
-                {                    
+                {
                     System.err.println("\nDefault model " + defaultModelName + " is not available.");
                 }
                 for (View view : getAllViews())
@@ -202,7 +224,7 @@ public abstract class ViewManager extends JPanel
                     addCustomView(initialView);
                     add(initialView, modelName);
                     setDefaultModelName(modelName);
-                    
+
                     System.err.println("Starting with one basic/demo model. No other models are currently available.");
                     System.err.println("Restart with a stable internet connection to see all available models");
                 }
@@ -221,7 +243,7 @@ public abstract class ViewManager extends JPanel
      * Return the name of the default model, if any is defined. The base
      * implementation just returns null, meaning there is no built-in factory
      * default model.
-     * 
+     *
      * @return the default model name
      */
     public String getDefaultModelName()
@@ -233,7 +255,7 @@ public abstract class ViewManager extends JPanel
      * Set the default model to the supplied name. The base implementation is a
      * no-op. Override this to actually set the model name, which should be returned
      * by future calls to {@link #getDefaultModelName()}.
-     * 
+     *
      * @param modelName the model name to use for the default model
      */
     @SuppressWarnings("unused")
@@ -268,7 +290,7 @@ public abstract class ViewManager extends JPanel
      * unique name. The base implementation returns null. If not null, the name
      * returned by this method is used to create a {@link View} if no other model is
      * available to be viewed. (See {@link #setupViews()}.
-     * 
+     *
      * @return the name of the created model, or null if no basic/failsafe model may
      *         be provided.
      */
@@ -285,10 +307,10 @@ public abstract class ViewManager extends JPanel
     /**
      * Returns the View whose unique name matches the supplied unique name.
      * Returns null if the supplied name is null.
-     * 
+     *
      * This method does *NOT* guarantee that the returned View is actually
      * accessible.
-     * 
+     *
      * @param uniqueName the name of the View to return
      * @return the View
      * @throws IllegalArgumentException if a View was not found with the supplied name.
@@ -518,7 +540,7 @@ public abstract class ViewManager extends JPanel
     /**
      * Return the built-in View that matches the supplied name. Note that this
      * method does check that the view be accessible.
-     * 
+     *
      * @param uniqueName name of the view
      * @return the view with the name, or null if it's not found, or not accessible
      */
@@ -538,7 +560,7 @@ public abstract class ViewManager extends JPanel
     /**
      * Return the custom View that matches the supplied name. Note that this method
      * does check that the view be accessible.
-     * 
+     *
      * @param uniqueName name of the view
      * @return the view with the name, or null if it's not found, or not accessible
      */
