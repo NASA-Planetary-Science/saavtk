@@ -31,16 +31,13 @@ import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MapUtil;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
-import edu.jhuapl.saavtk.util.Preferences;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
 import edu.jhuapl.saavtk.util.SafeURLPaths;
 import edu.jhuapl.saavtk.util.SmallBodyCubes;
 import vtk.vtkActor;
-import vtk.vtkActor2D;
 import vtk.vtkCamera;
 import vtk.vtkCell;
-import vtk.vtkCellArray;
 import vtk.vtkCellData;
 import vtk.vtkCellDataToPointData;
 import vtk.vtkContourFilter;
@@ -57,12 +54,10 @@ import vtk.vtkPointLocator;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
-import vtk.vtkPolyDataMapper2D;
 import vtk.vtkPolyDataNormals;
 import vtk.vtkProp;
 import vtk.vtkProperty;
 import vtk.vtkScalarBarActor;
-import vtk.vtkTextActor;
 import vtk.vtkTextProperty;
 import vtk.vtkTriangle;
 import vtk.vtkUnsignedCharArray;
@@ -125,16 +120,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     private double minCellArea = -1.0;
     private double maxCellArea = -1.0;
     private double meanCellArea = -1.0;
-
-    // variables related to the scale bar (note the scale bar is different
-    // from the scalar bar)
-    private vtkPolyData scaleBarPolydata;
-    private vtkPolyDataMapper2D scaleBarMapper;
-    private vtkActor2D scaleBarActor;
-    private vtkTextActor scaleBarTextActor;
-    private int scaleBarWidthInPixels = 0;
-    private double scaleBarWidthInKm = -1.0;
-    private boolean showScaleBar = true;
 
     vtkIdTypeArray cellIds = new vtkIdTypeArray();
     public static final String cellIdsArrayName = "cellIds";
@@ -1218,8 +1203,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
             tp.SetFontSize(10);
             scalarBarActor.SetTitleTextProperty(tp);
 
-            setupScaleBar();
-
             linesMapper = new vtkPolyDataMapper();
             linesActor = new SaavtkLODActor();
             smallBodyActors.add(linesActor);
@@ -2104,9 +2087,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         }
     }
 
-    private void loadLidarDatasourceData() throws IOException
-    {}
-
     private boolean isColoringAvailable(int coloringIndex)
     {
         boolean result = false;
@@ -2424,133 +2404,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         if (smallBodyPolyData != null)
             smallBodyPolyData.Delete();
         // if (lowResSmallBodyPolyData != null) lowResSmallBodyPolyData.Delete();
-    }
-
-    private void setupScaleBar()
-    {
-        scaleBarPolydata = new vtkPolyData();
-        vtkPoints points = new vtkPoints();
-        vtkCellArray polys = new vtkCellArray();
-        scaleBarPolydata.SetPoints(points);
-        scaleBarPolydata.SetPolys(polys);
-
-        points.SetNumberOfPoints(4);
-
-        vtkIdList idList = new vtkIdList();
-        idList.SetNumberOfIds(4);
-        for (int i = 0; i < 4; ++i)
-            idList.SetId(i, i);
-        polys.InsertNextCell(idList);
-
-        scaleBarMapper = new vtkPolyDataMapper2D();
-        scaleBarMapper.SetInputData(scaleBarPolydata);
-
-        scaleBarActor = new vtkActor2D();
-        scaleBarActor.SetMapper(scaleBarMapper);
-
-        scaleBarTextActor = new vtkTextActor();
-
-        smallBodyActors.add(scaleBarActor);
-        smallBodyActors.add(scaleBarTextActor);
-
-        scaleBarActor.GetProperty().SetColor(1.0, 1.0, 1.0);
-        scaleBarActor.GetProperty().SetOpacity(0.5);
-        scaleBarTextActor.GetTextProperty().SetColor(0.0, 0.0, 0.0);
-        scaleBarTextActor.GetTextProperty().SetJustificationToCentered();
-        scaleBarTextActor.GetTextProperty().BoldOn();
-
-        scaleBarActor.VisibilityOff();
-        scaleBarTextActor.VisibilityOff();
-
-        showScaleBar = Preferences.getInstance().getAsBoolean(Preferences.SHOW_SCALE_BAR, true);
-    }
-
-    @Override
-    public void updateScaleBarPosition(int windowWidth, int windowHeight)
-    {
-        vtkPoints points = scaleBarPolydata.GetPoints();
-
-        int newScaleBarWidthInPixels = (int) Math.min(0.75 * windowWidth, 150.0);
-
-        scaleBarWidthInPixels = newScaleBarWidthInPixels;
-        int scaleBarHeight = scaleBarWidthInPixels / 9;
-        int buffer = scaleBarWidthInPixels / 20;
-        int x = windowWidth - scaleBarWidthInPixels - buffer; // lower left corner x
-        int y = buffer; // lower left corner y
-
-        points.SetPoint(0, x, y, 0.0);
-        points.SetPoint(1, x + scaleBarWidthInPixels, y, 0.0);
-        points.SetPoint(2, x + scaleBarWidthInPixels, y + scaleBarHeight, 0.0);
-        points.SetPoint(3, x, y + scaleBarHeight, 0.0);
-
-        scaleBarTextActor.SetPosition(x + scaleBarWidthInPixels / 2, y + 2);
-        scaleBarTextActor.GetTextProperty().SetFontSize(scaleBarHeight - 4);
-
-        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-    }
-
-    @Override
-    public void updateScaleBarValue(double pixelSizeInKm, Runnable completionBlock)
-    {
-        updateScaleBarValue(pixelSizeInKm);
-        completionBlock.run();
-        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-    }
-
-    @Override
-    public void updateScaleBarValue(double pixelSizeInKm)
-    {
-        if (scaleBarWidthInPixels <= 0 || scaleBarWidthInKm == scaleBarWidthInPixels * pixelSizeInKm)
-        {
-            return;
-        }
-
-        scaleBarWidthInKm = scaleBarWidthInPixels * pixelSizeInKm;
-
-        if (pixelSizeInKm > 0.0 && showScaleBar)
-        {
-            scaleBarActor.VisibilityOn();
-            scaleBarTextActor.VisibilityOn();
-        }
-        else
-        {
-            scaleBarActor.VisibilityOff();
-            scaleBarTextActor.VisibilityOff();
-        }
-// if (pixelSizeInKm > 0.0)
-// {
-// if (scaleBarWidthInKm < 1.0)
-// scaleBarTextActor.SetInput(String.format("%.2f m", 1000.0 *
-// scaleBarWidthInKm));
-// else
-// scaleBarTextActor.SetInput(String.format("%.2f km", scaleBarWidthInKm));
-// }
-
-        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-
-    }
-
-    @Override
-    public double getScaleBarWidthInKm()
-    {
-        return scaleBarWidthInKm;
-    }
-
-    @Override
-    public void setShowScaleBar(boolean enabled)
-    {
-        this.showScaleBar = enabled;
-        // The following forces the scale bar to be redrawn.
-        scaleBarWidthInKm = -1.0;
-        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-        // Note that we call firePropertyChange *twice*. Not really sure why.
-        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-    }
-
-    @Override
-    public boolean getShowScaleBar()
-    {
-        return showScaleBar;
     }
 
     @Override
