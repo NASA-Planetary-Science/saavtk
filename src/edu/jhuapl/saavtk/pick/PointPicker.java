@@ -43,7 +43,7 @@ public class PointPicker extends Picker
 		refRenWin = aRenderer.getRenderWindowPanel();
 
 		smallBodyPicker = PickUtilEx.formSmallBodyPicker(refSmallBodyModel);
-		structurePicker = PickUtilEx.formStructurePicker(refStructureManager.getInteriorActor());
+		structurePicker = PickUtilEx.formPickerFor(refStructureManager.getInteriorActor());
 
 		currEditMode = EditMode.CLICKABLE;
 		currVertexId = -1;
@@ -79,8 +79,8 @@ public class PointPicker extends Picker
 			return;
 
 		// Bail if a valid point was not picked
-		int pickSucceeded = doPick(aEvent, smallBodyPicker, refRenWin);
-		if (pickSucceeded != 1)
+		boolean isPicked = PickUtil.isPicked(smallBodyPicker, refRenWin, aEvent, getTolerance());
+		if (isPicked == false)
 			return;
 
 		vtkActor pickedActor = smallBodyPicker.GetActor();
@@ -111,8 +111,8 @@ public class PointPicker extends Picker
 			return;
 
 		// Bail if we failed to pick something
-		int pickSucceeded = doPick(aEvent, structurePicker, refRenWin);
-		if (pickSucceeded != 1)
+		boolean isPicked = PickUtil.isPicked(structurePicker, refRenWin, aEvent, getTolerance());
+		if (isPicked == false)
 			return;
 
 		vtkActor pickedActor = structurePicker.GetActor();
@@ -144,8 +144,8 @@ public class PointPicker extends Picker
 //			return;
 
 		// Bail if we failed to pick something
-		int pickSucceeded = doPick(aEvent, smallBodyPicker, refRenWin);
-		if (pickSucceeded != 1)
+		boolean isPicked = PickUtil.isPicked(smallBodyPicker, refRenWin, aEvent, getTolerance());
+		if (isPicked == false)
 			return;
 
 		vtkActor pickedActor = smallBodyPicker.GetActor();
@@ -166,9 +166,9 @@ public class PointPicker extends Picker
 	@Override
 	public void mouseMoved(MouseEvent aEvent)
 	{
-		int pickSucceeded = doPick(aEvent, structurePicker, refRenWin);
+		boolean isPicked = PickUtil.isPicked(structurePicker, refRenWin, aEvent, getTolerance());
 
-		if (pickSucceeded == 1 && structurePicker.GetActor() == refStructureManager.getInteriorActor())
+		if (isPicked == true && structurePicker.GetActor() == refStructureManager.getInteriorActor())
 			currEditMode = EditMode.DRAGGABLE;
 		else
 			currEditMode = EditMode.CLICKABLE;

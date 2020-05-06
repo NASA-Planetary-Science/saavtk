@@ -5,21 +5,29 @@ import java.util.List;
 import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import vtk.vtkActor;
 import vtk.vtkCellPicker;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
 
 /**
  * Collection of (extra) utility methods associated with Pickers.
+ * <P>
+ * The following functionality is provided:
+ * <UL>
+ * <LI>Creation of {@link vtkCellPicker}s (empty, single, or vtkProps located on
+ * a {@link PolyhedralModel})
+ * <LI>Updating of target {@link vtkProp}s for picking
+ * </UL>
+ *
+ * @author lopeznr1
  */
 public class PickUtilEx
 {
 	/**
-	 * Utility method to form a vtkCellPicker suitable for picking targets.
+	 * Utility method to form a {@link vtkCellPicker} suitable for picking targets.
 	 * <P>
-	 * The returned picker will not have any registered vtkPros and thus will
-	 * (initially) not be able to pick anything.
+	 * The returned picker will not have any registered {@link vtkProp}s and thus
+	 * will (initially) not be able to pick anything.
 	 */
 	public static vtkCellPicker formEmptyPicker()
 	{
@@ -31,32 +39,10 @@ public class PickUtilEx
 	}
 
 	/**
-	 * Utility method to form a vtkCellPicker suitable for picking targets on the
-	 * "small body".
+	 * Utility method to form a {@link vtkCellPicker} suitable for picking targets
+	 * corresponding to the specified (single) {@link vtkProp}.
 	 */
-	public static vtkCellPicker formSmallBodyPicker(PolyhedralModel aSmallBodyModel)
-	{
-		vtkCellPicker retCellPicker = new vtkCellPicker();
-		retCellPicker.PickFromListOn();
-		retCellPicker.InitializePickList();
-
-		vtkPropCollection vPropCollection = retCellPicker.GetPickList();
-		vPropCollection.RemoveAllItems();
-
-		List<vtkProp> actors = aSmallBodyModel.getProps();
-		for (vtkProp act : actors)
-			retCellPicker.AddPickList(act);
-
-		retCellPicker.AddLocator(aSmallBodyModel.getCellLocator());
-
-		return retCellPicker;
-	}
-
-	/**
-	 * Utility method to form a vtkCellPicker suitable for picking targets
-	 * corresponding to the specified vtkProp.
-	 */
-	public static vtkCellPicker formStructurePicker(vtkActor aProp)
+	public static vtkCellPicker formPickerFor(vtkProp aProp)
 	{
 		// Delegate
 		vtkCellPicker retCellPicker = formEmptyPicker();
@@ -64,14 +50,37 @@ public class PickUtilEx
 		// Register the single vtkProp
 		vtkPropCollection vPropCollection = retCellPicker.GetPickList();
 		vPropCollection.RemoveAllItems();
+
 		retCellPicker.AddPickList(aProp);
 
 		return retCellPicker;
 	}
 
 	/**
-	 * Utility method to update a vtkCellPicker with an updated list of vtkProps
-	 * corresponding to potential targets of interest.
+	 * Utility method to form a {@link vtkCellPicker} suitable for picking targets
+	 * on the "small body".
+	 */
+	public static vtkCellPicker formSmallBodyPicker(PolyhedralModel aSmallBody)
+	{
+		// Delegate
+		vtkCellPicker retCellPicker = formEmptyPicker();
+
+		vtkPropCollection vPropCollection = retCellPicker.GetPickList();
+		vPropCollection.RemoveAllItems();
+
+		// Register the list of vtkProps
+		List<vtkProp> tmpPropL = aSmallBody.getProps();
+		for (vtkProp aProp : tmpPropL)
+			retCellPicker.AddPickList(aProp);
+
+		retCellPicker.AddLocator(aSmallBody.getCellLocator());
+
+		return retCellPicker;
+	}
+
+	/**
+	 * Utility method to update a {@link vtkCellPicker} with an updated list of
+	 * {@link vtkProp}s corresponding to potential targets of interest.
 	 */
 	public static void updatePickerProps(vtkCellPicker aCellPicker, List<vtkProp> aPropL)
 	{
@@ -82,8 +91,8 @@ public class PickUtilEx
 		// Update the list of vtkProps that the picker will respond to
 		vtkPropCollection vPropCollection = aCellPicker.GetPickList();
 		vPropCollection.RemoveAllItems();
-		for (vtkProp aActor : aPropL)
-			aCellPicker.AddPickList(aActor);
+		for (vtkProp aProp : aPropL)
+			aCellPicker.AddPickList(aProp);
 	}
 
 }
