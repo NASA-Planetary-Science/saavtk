@@ -1,9 +1,6 @@
-package edu.jhuapl.saavtk.gui.render.camera;
+package edu.jhuapl.saavtk.camera;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
-import edu.jhuapl.saavtk.camera.Camera;
-import edu.jhuapl.saavtk.camera.CameraActionListener;
 
 /**
  * Invalid Camera useful as a test harness / place holder.

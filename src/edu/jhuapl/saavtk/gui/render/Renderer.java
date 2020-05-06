@@ -31,14 +31,14 @@ import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.camera.Camera;
 import edu.jhuapl.saavtk.camera.CameraActionListener;
+import edu.jhuapl.saavtk.camera.CameraFrame;
+import edu.jhuapl.saavtk.camera.CameraUtil;
+import edu.jhuapl.saavtk.camera.CoordinateSystem;
+import edu.jhuapl.saavtk.camera.StandardCamera;
 import edu.jhuapl.saavtk.camera.View;
 import edu.jhuapl.saavtk.camera.ViewActionListener;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
-import edu.jhuapl.saavtk.gui.render.camera.CameraFrame;
-import edu.jhuapl.saavtk.gui.render.camera.CameraUtil;
-import edu.jhuapl.saavtk.gui.render.camera.CoordinateSystem;
-import edu.jhuapl.saavtk.gui.render.camera.StandardCamera;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.Model;

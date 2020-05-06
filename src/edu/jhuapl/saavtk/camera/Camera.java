@@ -2,8 +2,6 @@ package edu.jhuapl.saavtk.camera;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.gui.render.camera.CoordinateSystem;
-
 /**
  * Interface which defines a "camera" in a 3D scene.
  * <P>

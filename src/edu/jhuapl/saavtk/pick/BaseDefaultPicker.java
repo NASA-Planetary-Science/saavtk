@@ -15,11 +15,11 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.camera.Camera;
+import edu.jhuapl.saavtk.camera.CameraUtil;
 import edu.jhuapl.saavtk.camera.View;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.gui.render.VtkPropProvider;
-import edu.jhuapl.saavtk.gui.render.camera.CameraUtil;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.Properties;

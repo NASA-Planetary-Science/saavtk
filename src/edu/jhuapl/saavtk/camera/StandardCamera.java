@@ -1,12 +1,10 @@
-package edu.jhuapl.saavtk.gui.render.camera;
+package edu.jhuapl.saavtk.camera;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.camera.Camera;
-import edu.jhuapl.saavtk.camera.CameraActionListener;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.util.MathUtil;
 import vtk.vtkCamera;

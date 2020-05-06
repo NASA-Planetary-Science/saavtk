@@ -14,10 +14,10 @@ import javax.swing.JToolBar;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.camera.Camera;
+import edu.jhuapl.saavtk.camera.CameraUtil;
 import edu.jhuapl.saavtk.gui.GuiUtil;
 import edu.jhuapl.saavtk.gui.render.RenderPanel;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
-import edu.jhuapl.saavtk.gui.render.camera.CameraUtil;
 
 public class RenderToolbar extends JToolBar implements ActionListener
 {
