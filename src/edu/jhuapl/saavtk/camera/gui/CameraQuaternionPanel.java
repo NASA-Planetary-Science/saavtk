@@ -222,7 +222,7 @@ public class CameraQuaternionPanel extends JPanel implements ActionComponentProv
 			return String.format("Invalid Z-Pos.");
 
 		if (currRot == RotationNaN)
-			return "Quaternioun error: " + quaternionErrMsg;
+			return "Quaternion error: " + quaternionErrMsg;
 
 		if (quat0NFS.isValidInput() == false)
 			return String.format("Invalid Quaternion-0. Range: [%1.0f, %1.0f]", ScalarRange.lowerEndpoint(),

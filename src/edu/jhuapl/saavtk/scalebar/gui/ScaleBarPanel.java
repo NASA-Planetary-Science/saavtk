@@ -59,7 +59,7 @@ public class ScaleBarPanel extends JPanel implements ActionListener, ViewActionL
 		setLayout(new MigLayout("", "[right][grow][]", "[]"));
 
 		// Scale Bar area
-		showCB = GuiUtil.createJCheckBox("Scale Bar", this);
+		showCB = GuiUtil.createJCheckBox("Show Scale Bar", this);
 		add(showCB, "center,span,wrap");
 
 		JLabel xSizeL = new JLabel("X-Size:");
@@ -203,6 +203,9 @@ public class ScaleBarPanel extends JPanel implements ActionListener, ViewActionL
 	 */
 	private String getErrorMsg()
 	{
+		if (showCB.isSelected() == false)
+			return "Scale bar is disabled.";
+
 		if (xSizeNFS.isValidInput() == false)
 			return String.format("Invalid X-Size. Range: [%1.0f, %1.0f]", RangeSizeX.lowerEndpoint(),
 					RangeSizeX.upperEndpoint());
