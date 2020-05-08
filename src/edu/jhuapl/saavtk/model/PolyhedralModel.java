@@ -108,8 +108,6 @@ public abstract class PolyhedralModel extends AbstractModel
 
     public abstract TreeSet<Integer> getIntersectingCubes(vtkPolyData polydata);
     
-    public abstract Vector<String> getIntersectingRCubes(vtkPolyData polydata);
-
     public abstract TreeSet<Integer> getIntersectingCubes(BoundingBox bb);
 
     public abstract void addCustomLidarDataSource(LidarDataSource info) throws IOException;
