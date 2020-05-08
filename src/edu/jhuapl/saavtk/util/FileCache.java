@@ -18,85 +18,8 @@ import java.util.zip.GZIPInputStream;
 
 import com.google.common.base.Preconditions;
 
-import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
-
 public final class FileCache
 {
-    private static volatile boolean enableInfoMessages = true;
-
-    // TODO this should extend Exception and thus be checked.
-    public static class NoInternetAccessException extends RuntimeException
-    {
-        private static final long serialVersionUID = -1250977612922624246L;
-        private final URL url;
-
-        private NoInternetAccessException(String cause, URL url)
-        {
-            super(cause);
-            this.url = url;
-        }
-
-        private NoInternetAccessException(Exception cause, URL url)
-        {
-            super(cause);
-            this.url = url;
-        }
-
-        public URL getURL()
-        {
-            return url;
-        }
-    }
-
-    // TODO this should extend Exception and thus be checked.
-    public static class UnauthorizedAccessException extends RuntimeException
-    {
-        private static final long serialVersionUID = 7671006960310656926L;
-        private final URL url;
-
-        private UnauthorizedAccessException(String cause, URL url)
-        {
-            super(cause);
-            this.url = url;
-        }
-
-        private UnauthorizedAccessException(Exception cause, URL url)
-        {
-            super(cause);
-            this.url = url;
-        }
-
-        public URL getURL()
-        {
-            return url;
-        }
-    }
-
-    // TODO this should extend Exception and thus be checked.
-    public static class NonexistentRemoteFile extends RuntimeException
-    {
-        private static final long serialVersionUID = 7671006960310656926L;
-        private final URL url;
-
-        private NonexistentRemoteFile(String cause, URL url)
-        {
-            super(cause);
-            this.url = url;
-        }
-
-        private NonexistentRemoteFile(Exception cause, URL url)
-        {
-            super(cause);
-            this.url = url;
-        }
-
-        public URL getURL()
-        {
-            return url;
-        }
-    }
-
     /**
      * Deprecated in favor of utilities in SafeURLPaths such as getString(...) and
      * getUrl(...), which encapsulate forming strings that contain valid file paths
@@ -107,18 +30,9 @@ public final class FileCache
 
     private static DownloadableFileManager downloadableManager = null;
 
-    public static void enableInfoMessages(boolean enable)
-    {
-        enableInfoMessages = enable;
-
-        DownloadableFileManager.enableInfoMessages(enable);
-        FileDownloader.enableInfoMessages(enable);
-        UrlAccessManager.enableInfoMessages(enable);
-    }
-
     public static boolean isEnableDebug()
     {
-        return DownloadableFileManager.isEnableDebug();
+        return FileCacheMessageUtil.isDebugCache();
     }
 
     /**
@@ -131,7 +45,7 @@ public final class FileCache
      */
     public static void enableDebug(boolean enable)
     {
-        DownloadableFileManager.enableDebug(enable);
+        FileCacheMessageUtil.enableDebugCache(enable);
     }
 
     public static DownloadableFileManager instance()
@@ -188,21 +102,22 @@ public final class FileCache
         {
             if (exception != null)
             {
-                if (enableInfoMessages)
-                {
-                    System.err.println("Warning: cached file exists, but unable to update cache from URL: " + url);
-                    System.err.println("Ignored the following exception:");
-                    exception.printStackTrace();
-                }
+                FileCacheMessageUtil.debugCache().err().println("Warning: cached file exists, but unable to update cache from URL: " + url);
+                FileCacheMessageUtil.debugCache().err().println("Ignored the following exception:");
+                exception.printStackTrace(FileCacheMessageUtil.debugCache().err());
             }
         }
         else
         {
             if (exception == null)
             {
-                if (fileState.getUrlState().getStatus() == UrlStatus.NOT_AUTHORIZED)
+                if (fileState.isUrlUnauthorized())
                 {
                     exception = new UnauthorizedAccessException("Cannot get file: access is restricted to URL: " + url, url);
+                }
+                else if (!fileState.getUrlState().wasCheckedOnline())
+                {
+                    exception = new NoInternetAccessException("Cannot get file: unable to connect to server", url);
                 }
                 else
                 {
@@ -219,7 +134,7 @@ public final class FileCache
     private static DownloadableFileManager createDownloadManager()
     {
         DownloadableFileManager result = DownloadableFileManager.of(Configuration.getDataRootURL(), new File(Configuration.getCacheDir()));
-
+        
         return result;
     }
 
@@ -239,29 +154,14 @@ public final class FileCache
     {
         Preconditions.checkNotNull(urlOrPathSegment);
 
-        boolean result = false;
-
         DownloadableFileState state = instance().query(urlOrPathSegment, false);
 
-        if (state.getFileState().getStatus() == FileStatus.ACCESSIBLE)
+        if (state.getUrlState().getStatus() == UrlStatus.NOT_AUTHORIZED)
         {
-            result = true;
-        }
-        else
-        {
-            switch (state.getUrlState().getStatus())
-            {
-            case ACCESSIBLE:
-                result = true;
-                break;
-            case NOT_AUTHORIZED:
-                throw new UnauthorizedAccessException("Cannot access information about restricted URL: ", state.getUrlState().getUrl());
-            default:
-                break;
-            }
+            throw new UnauthorizedAccessException("Cannot access information about restricted URL: ", state.getUrlState().getUrl());
         }
 
-        return result;
+        return state.isAccessible();
     }
 
     /**

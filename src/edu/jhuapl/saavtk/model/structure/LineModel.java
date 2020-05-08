@@ -902,6 +902,12 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		return ControlPointUtil.calcSizeOnBody(refSmallBody, aItem.getControlPoints());
 	}
 
+	@Override
+	public void setCenter(G1 aItem, Vector3D aCenter)
+	{
+		throw new UnsupportedOperationException("Not implemented");
+	}
+
 	private static final Versionable CONFIGURATION_VERSION = Version.of(1, 0);
 	private static final ControlKey<SettableStored<Double>> OFFSET_KEY = SettableStoredFactory.key("offset");
 	private static final ControlKey<SettableStored<Double>> LINE_WIDTH_KEY = SettableStoredFactory.key("lineWidth");
@@ -910,7 +916,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	@Override
 	public Metadata store()
 	{
-		KeyedFactory.Builder<Viewable> builder = KeyedFactory.instance().builder();
+	    KeyedFactory.Builder<Object> builder = KeyedFactory.instance().builder();
 
 		builder.put(LINE_WIDTH_KEY, SettableStoredFactory.instance().of(lineWidth));
 		builder.put(OFFSET_KEY, SettableStoredFactory.instance().of(offset));

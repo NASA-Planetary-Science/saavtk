@@ -14,7 +14,6 @@ import crucible.crust.settings.api.ControlKey;
 import crucible.crust.settings.api.SettableStored;
 import crucible.crust.settings.api.Stored;
 import crucible.crust.settings.api.Versionable;
-import crucible.crust.settings.api.Viewable;
 import crucible.crust.settings.impl.ConfigurableFactory;
 import crucible.crust.settings.impl.KeyedFactory;
 import crucible.crust.settings.impl.SettableStoredFactory;
@@ -45,7 +44,7 @@ public class Line
 	{
 		int[] intArr;
 
-		KeyedFactory.Builder<Viewable> builder = KeyedFactory.instance().builder();
+		KeyedFactory.Builder<Object> builder = KeyedFactory.instance().builder();
 
 		builder.put(ID, settableValues.of(aLine.getId()));
 		builder.put(NAME, settableValues.of(aLine.getName()));

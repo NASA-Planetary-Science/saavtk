@@ -7,7 +7,7 @@ import javax.swing.JPanel;
 
 import com.google.common.collect.Lists;
 
-import edu.jhuapl.saavtk.gui.render.camera.InvalidCamera;
+import edu.jhuapl.saavtk.camera.InvalidCamera;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import vtk.vtkProp;
 import vtk.rendering.jogl.vtkJoglPanelComponent;

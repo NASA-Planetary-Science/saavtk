@@ -14,11 +14,12 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.jhuapl.saavtk.camera.Camera;
+import edu.jhuapl.saavtk.camera.CameraUtil;
+import edu.jhuapl.saavtk.camera.View;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.gui.render.VtkPropProvider;
-import edu.jhuapl.saavtk.gui.render.camera.Camera;
-import edu.jhuapl.saavtk.gui.render.camera.CameraUtil;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.Properties;
@@ -40,13 +41,13 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
  * TODO: Eventually this Picker should not be a ProperyChangeListener but rather
  * relevant objects should be responsible for registering their
  * {@link vtkProp}s.
- * 
+ *
  * @author lopeznr1
  */
 public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 {
 	// Reference vars
-	private final Renderer refRenderer;
+	private final View refView;
 	private final vtkJoglPanelComponent refRenWin;
 	private final PolyhedralModel refSmallBody;
 	private final ModelManager refModelManager;
@@ -65,10 +66,10 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 	/**
 	 * Standard Constructor
 	 */
-	public BaseDefaultPicker(Renderer aRenderer, ModelManager aModelManager)
+	public BaseDefaultPicker(Renderer aView, ModelManager aModelManager)
 	{
-		refRenderer = aRenderer;
-		refRenWin = aRenderer.getRenderWindowPanel();
+		refView = aView;
+		refRenWin = aView.getRenderWindowPanel();
 		refSmallBody = aModelManager.getPolyhedralModel();
 		refModelManager = aModelManager;
 
@@ -147,19 +148,6 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		suppressModeActiveSec = aBool;
 	}
 
-	/**
-	 * This method exists to support retrieval of the small body picker. The
-	 * returned object should be utilized in a read-only fashion.
-	 * <P>
-	 * TODO: This method is needed for "compute pixel size computations", however
-	 * the DefaultPicker should not be responsible for such computations. This
-	 * method should eventually be removed.
-	 */
-	protected vtkCellPicker getSmallBodyPicker()
-	{
-		return vSmallBodyCP;
-	}
-
 	@Override
 	public void keyPressed(KeyEvent aEvent)
 	{
@@ -195,7 +183,7 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 				return;
 
 			// Set the camera to focus on the picked position
-			refRenderer.setCameraFocalPoint(tmpPos.toArray());
+			refView.getCamera().setFocalPoint(tmpPos);
 
 			notifyListeners(aEvent, PickMode.Passive, PickTarget.Invalid, surfaceTarg);
 		}
@@ -205,13 +193,14 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 			if (lastClickedTarget == null)
 				return;
 
-			CameraUtil.setFocalPosition(refRenderer, lastClickedTarget.getPosition(), lastClickedTarget.getNormal());
+			Camera tmpCamera = refView.getCamera();
+			CameraUtil.setFocalPosition(tmpCamera, lastClickedTarget.getPosition(), lastClickedTarget.getNormal());
 
 			notifyListeners(aEvent, PickMode.Passive, PickTarget.Invalid, surfaceTarg);
 		}
 		else if (keyCode == KeyEvent.VK_N)
 		{
-			CameraUtil.spinBoresightForNormalAxisZ(refRenderer);
+			CameraUtil.spinBoresightForNormalAxisZ(refView.getCamera());
 
 			notifyListeners(aEvent, PickMode.Passive, PickTarget.Invalid, surfaceTarg);
 		}
@@ -219,7 +208,7 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		{
 			char keyChar = aEvent.getKeyChar();
 
-			Camera tmpCamera = refRenderer.getCamera();
+			Camera tmpCamera = refView.getCamera();
 			if ('X' == keyChar)
 				CameraUtil.setOrientationInDirectionOfAxis(tmpCamera, AxisType.NEGATIVE_X);
 			else if ('x' == keyChar)
@@ -237,7 +226,7 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		}
 		else if (keyCode == KeyEvent.VK_R)
 		{
-			Camera tmpCamera = refRenderer.getCamera();
+			Camera tmpCamera = refView.getCamera();
 			tmpCamera.reset();
 
 			notifyListeners(aEvent, PickMode.Passive, PickTarget.Invalid, surfaceTarg);
@@ -258,9 +247,9 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		if (refRenWin.getRenderWindow().GetNeverRendered() > 0)
 			return;
 
-		// need to shut off LODs to make sure pick is done on correct geometry
-		boolean wasShowingLODs = refRenderer.showingLODs;
-		refRenderer.hideLODs();
+		// Shut off LODs (temporarily) to ensure a pick is done on the best geometry
+		boolean prevLodFlag = refView.getLodFlag();
+		refView.setLodFlag(false);
 
 		// Synthesize the primary and surface target
 		PickTarget primaryTarg = getPickTarget(vNonSmallBodyCP, aEvent.getX(), aEvent.getY());
@@ -272,10 +261,8 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		if (isRegClick == true && surfaceTarg != PickTarget.Invalid)
 			lastClickedTarget = surfaceTarg;
 
-		// show LODs again if they were shown before picking; view-menu enabling of LODs
-		// is handled by the renderer so we don't need to worry about it here
-		if (wasShowingLODs == true)
-			refRenderer.showLODs();
+		// Restore LOD state
+		refView.setLodFlag(prevLodFlag);
 
 		// Send out notification (if appropriate)
 		PickMode tmpMode = PickMode.ActiveSec;
@@ -312,18 +299,16 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		if (refRenWin.getRenderWindow().GetNeverRendered() > 0)
 			return;
 
-		// need to shut off LODs to make sure pick is done on correct geometry
-		boolean wasShowingLODs = refRenderer.showingLODs;
-		refRenderer.hideLODs();
+		// Shut off LODs (temporarily) to ensure a pick is done on the best geometry
+		boolean prevLodFlag = refView.getLodFlag();
+		refView.setLodFlag(false);
 
 		// Synthesize the primary and surface target
 		PickTarget primaryTarg = getPickTarget(vNonSmallBodyCP, aEvent.getX(), aEvent.getY());
 		PickTarget surfaceTarg = getPickTarget(vSmallBodyCP, aEvent.getX(), aEvent.getY());
 
-		// show LODs again if they were shown before picking; view-menu enabling of LODs
-		// is handled by the renderer so we don't need to worry about it here
-		if (wasShowingLODs == true)
-			refRenderer.showLODs();
+		// Restore LOD state
+		refView.setLodFlag(prevLodFlag);
 
 		// Mark as primary action as long as the mouse was not dragged
 		PickMode tmpMode = PickMode.ActivePri;
@@ -390,8 +375,8 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 	private PickTarget getPickTarget(vtkCellPicker aCellPicker, int aPosX, int aPosY)
 	{
 		// Bail if nothing was picked
-		int pickSucceeded = doPick(0L, aPosX, aPosY, aCellPicker, refRenWin);
-		if (pickSucceeded != 1)
+		boolean isPicked = PickUtil.isPicked(aCellPicker, refRenWin, aPosX, aPosY, getTolerance());
+		if (isPicked == false)
 			return PickTarget.Invalid;
 
 		vtkActor pickedActor = aCellPicker.GetActor();

@@ -29,6 +29,7 @@ import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.popup.PopupMenu;
+import edu.jhuapl.saavtk.scalebar.ScaleBarPainter;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.Preferences;
 
@@ -47,6 +48,7 @@ public abstract class View extends JPanel
     private ModelManager modelManager;
     private PickManager pickManager;
     private PopupManager popupManager;
+    private ScaleBarPainter scaleBarPainter;
     private WindowManager infoPanelManager;
     private WindowManager spectrumPanelManager;
     private StatusBar statusBar;
@@ -122,17 +124,17 @@ public abstract class View extends JPanel
     {
         this.pickManager = pickManager;
     }
-    
+
     protected void setConfig(ViewConfig config)
     {
     	this.config = config;
     }
-    
+
     public boolean isAccessible()
     {
     	return getConfig().isAccessible();
     }
-    
+
     public String getShapeModelName()
     {
     	return shapeModelName;
@@ -189,6 +191,7 @@ public abstract class View extends JPanel
 
             Configuration.runAndWaitOnEDT(() -> {
                 setupPickManager();
+                setupScaleBarPainter();
             });
 
             Configuration.runAndWaitOnEDT(() -> {
@@ -318,6 +321,11 @@ public abstract class View extends JPanel
         return pickManager;
     }
 
+    public ScaleBarPainter getScaleBarPainter()
+    {
+   	 return scaleBarPainter;
+    }
+
     protected void setModels(HashMap<ModelNames, Model> models)
     {
         modelManager.setModels(models);
@@ -339,7 +347,7 @@ public abstract class View extends JPanel
      * share the name of a built-in one or vice versa. By default simply return the
      * author concatenated with the name if the author is not null or just the name
      * if the author is null.
-     * 
+     *
      * @return
      */
     public String getUniqueName()
@@ -354,7 +362,7 @@ public abstract class View extends JPanel
 
 	/**
      * Return a hierarchical path representation of this view.
-     * 
+     *
      * @return the representation.
      */
     public abstract String getPathRepresentation();
@@ -362,7 +370,7 @@ public abstract class View extends JPanel
     /**
      * Return the display name for this view (the name to be shown in the menu).
      * This name need not be unique among all views.
-     * 
+     *
      * @return the name to display
      */
     public abstract String getDisplayName();
@@ -370,7 +378,7 @@ public abstract class View extends JPanel
     /**
      * Similar to {@link getDisplayName()}, this returns a suitable-for-display name
      * that uniquely identifies the model. This name must be unique among all views.
-     * 
+     *
      * @return
      */
     public abstract String getModelDisplayName();
@@ -411,6 +419,14 @@ public abstract class View extends JPanel
 
         // Force the renderer's camera to the "reset" default view
         renderer.getCamera().reset();
+    }
+
+    protected void setupScaleBarPainter()
+    {
+       ModelManager tmpModelManager = getModelManager();
+       scaleBarPainter = new ScaleBarPainter(renderer, tmpModelManager);
+
+       renderer.addVtkPropProvider(scaleBarPainter);
     }
 
     protected abstract void setupPickManager();

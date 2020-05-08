@@ -21,135 +21,6 @@ import com.google.common.base.Preconditions;
 public class UrlInfo
 {
     public static final String STATE_PROPERTY = "urlInfoState";
-    private static volatile boolean enableDebug = false;
-
-    public enum UrlStatus
-    {
-        ACCESSIBLE, // Connection made, resource is accessible. Future access likely to succeed.
-        NOT_AUTHORIZED, // Connection made, but user is not authorized.
-        NOT_FOUND, // Connection made, but resource was not found.
-        HTTP_ERROR, // Connection made, but HTTP error code was returned. Future access unknown.
-        CONNECTION_ERROR, // Connection was not made, e.g., interruption or timeout.
-        INVALID_URL, // URL itself is flawed. Future access will fail.
-        UNKNOWN, // Have not succesfully obtained information about the URL.
-    }
-
-    public static class UrlState
-    {
-        protected static final long UNKNOWN_LENGTH = -1;
-        protected static final long UNKNOWN_LAST_MODIFIED = 0;
-
-        public static UrlState of(URL url)
-        {
-            UrlStatus initialStatus = url.toString().contains(" ") ? UrlStatus.INVALID_URL : UrlStatus.UNKNOWN;
-
-            return of(url, initialStatus, UNKNOWN_LENGTH, UNKNOWN_LAST_MODIFIED);
-        }
-
-        public static UrlState of(URL url, UrlStatus status)
-        {
-            return of(url, status, UNKNOWN_LENGTH, UNKNOWN_LAST_MODIFIED);
-        }
-
-        public static UrlState of(URL url, UrlStatus status, long contentLength, long lastModified)
-        {
-            Preconditions.checkNotNull(url);
-            Preconditions.checkNotNull(status);
-
-            return new UrlState(url, status, contentLength, lastModified);
-        }
-
-        private final URL url;
-        private final UrlStatus status;
-        private final long contentLength;
-        private final long lastModified;
-
-        protected UrlState(URL url, UrlStatus status, long contentLength, long lastModified)
-        {
-            this.url = url;
-            this.status = status;
-            this.contentLength = contentLength;
-            this.lastModified = lastModified;
-        }
-
-        public URL getUrl()
-        {
-            return url;
-        }
-
-        public UrlStatus getStatus()
-        {
-            return status;
-        }
-
-        public long getContentLength()
-        {
-            return contentLength;
-        }
-
-        public long getLastModified()
-        {
-            return lastModified;
-        }
-
-        @Override
-        public final int hashCode()
-        {
-            final int prime = 31;
-            int result = 1;
-            // Work around a bug in Java: under some circumstances, URL.hashCode() gives
-            // different results depending on whether there was an internet connection when
-            // the URL was instantiated.
-            result = prime * result + url.toString().hashCode();
-            result = prime * result + (int) (contentLength ^ (contentLength >>> 32));
-            result = prime * result + (int) (lastModified ^ (lastModified >>> 32));
-            result = prime * result + status.hashCode();
-
-            return result;
-        }
-
-        @Override
-        public final boolean equals(Object other)
-        {
-            if (this == other)
-                return true;
-            if (other instanceof UrlState)
-            {
-                UrlState that = (UrlState) other;
-                if (!this.url.equals(that.url))
-                    return false;
-                if (this.contentLength != that.contentLength)
-                    return false;
-                if (this.lastModified != that.lastModified)
-                    return false;
-                if (this.status != that.status)
-                    return false;
-
-                return true;
-            }
-
-            return false;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "UrlState [" + (url != null ? "url=" + url + ", " : "") + //
-                    "status=" + status + ", contentLength=" + contentLength + //
-                    ", lastModified=" + lastModified + "]";
-        }
-
-    }
-
-    public static void enableDebug(boolean enable)
-    {
-        enableDebug = enable;
-    }
-
-    protected static Debug debug()
-    {
-        return Debug.of(enableDebug);
-    }
 
     public static UrlInfo of(URL url)
     {
@@ -173,86 +44,81 @@ public class UrlInfo
         }
     }
 
-    public UrlState update(URLConnection connection) throws IOException
+    public void update(URLConnection connection) throws IOException
     {
         Preconditions.checkNotNull(connection);
 
-        synchronized (this.state)
+        UrlState state = getState();
+        UrlStatus status = state.getLastKnownStatus();
+
+        if (status == UrlStatus.INVALID_URL)
         {
-            UrlState state = this.state.get();
-            UrlStatus status = state.getStatus();
-
-            if (status != UrlStatus.INVALID_URL)
+            debugConnectionMessage(state, "invalid URL");
+        }
+        else
+        {
+            long contentLength = state.getContentLength();
+            long lastModified = state.getLastModified();
+            if (connection instanceof HttpURLConnection)
             {
-                long contentLength = state.getContentLength();
-                long lastModified = state.getLastModified();
-                if (connection instanceof HttpURLConnection)
+                HttpURLConnection httpConnection = (HttpURLConnection) connection;
+                try
                 {
-                    HttpURLConnection httpConnection = (HttpURLConnection) connection;
-                    try
-                    {
-                        int code = httpConnection.getResponseCode();
+                    int code = httpConnection.getResponseCode();
 
-                        // Codes in the 200 series are generally "ok" so treat any of them as
-                        // successful.
-                        if (code >= HttpURLConnection.HTTP_OK && code < HttpURLConnection.HTTP_MULT_CHOICE)
-                        {
-                            status = UrlStatus.ACCESSIBLE;
-                            contentLength = httpConnection.getContentLengthLong();
-                            lastModified = httpConnection.getLastModified();
-                        }
-                        else if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN)
-                        {
-                            status = UrlStatus.NOT_AUTHORIZED;
-                        }
-                        else if (code == HttpURLConnection.HTTP_NOT_FOUND)
-                        {
-                            status = UrlStatus.NOT_FOUND;
-                        }
-                        else
-                        {
-                            debug().err().println("Received response code " + code + " for URL " + state.getUrl());
-                            status = UrlStatus.HTTP_ERROR;
-                        }
-                    }
-                    catch (ProtocolException e)
+                    // Codes in the 200 series are generally "ok" so treat any of them as
+                    // successful.
+                    if (code >= HttpURLConnection.HTTP_OK && code < HttpURLConnection.HTTP_MULT_CHOICE)
                     {
-                        // This indicates the request method isn't supported. That should not happen.
-                        throw new AssertionError(e);
+                        status = UrlStatus.ACCESSIBLE;
+                        contentLength = httpConnection.getContentLengthLong();
+                        lastModified = httpConnection.getLastModified();
                     }
-                    catch (SocketException | SocketTimeoutException e)
+                    else if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN)
                     {
-                        update(UrlStatus.CONNECTION_ERROR, contentLength, lastModified);
-                        throw e;
+                        status = UrlStatus.NOT_AUTHORIZED;
                     }
+                    else if (code == HttpURLConnection.HTTP_NOT_FOUND)
+                    {
+                        status = UrlStatus.NOT_FOUND;
+                    }
+                    else
+                    {
+                        status = UrlStatus.HTTP_ERROR;
+                    }
+
+                    debugConnectionMessage(state, "response code = " + code + ", status = " + status);
                 }
-                else
+                catch (ProtocolException e)
                 {
-                    // Probably this is a file-type URL. May need to add access checks for that, but
-                    // for now, be optimistic and assume it's accessible.
-                    status = UrlStatus.ACCESSIBLE;
+                    // This indicates the request method isn't supported. That should not happen.
+                    throw new AssertionError(e);
                 }
+                catch (SocketException | SocketTimeoutException e)
+                {
+                    update(state.update(UrlStatus.CONNECTION_ERROR).update(false));
 
-                state = update(status, contentLength, lastModified);
+                    throw e;
+                }
+            }
+            else
+            {
+                // Something other than http. May need to handle this in the future.
+                // For now, be optimistic and assume it's accessible.
+                status = UrlStatus.ACCESSIBLE;
+                debugConnectionMessage(state, "non-http connection, status = " + status);
             }
 
-            return state;
+            update(state.update(status, contentLength, lastModified).update(true));
         }
     }
 
-    public UrlState update(UrlStatus status, long contentLength, long lastModified)
+    private void debugConnectionMessage(UrlState state, String message)
     {
-        Preconditions.checkNotNull(status);
-
-        synchronized (this.state)
-        {
-            URL url = state.get().getUrl();
-            return update(UrlState.of(url, status, contentLength, lastModified));
-        }
-
+        FileCacheMessageUtil.debugCache().err().println("Connected to " + state.getUrl() + ": " + message);
     }
 
-    public UrlState update(UrlState state)
+    public void update(UrlState state)
     {
         Preconditions.checkNotNull(state);
 
@@ -276,8 +142,6 @@ public class UrlInfo
                 pcs.firePropertyChange(STATE_PROPERTY, null, state);
             }
         }
-
-        return state;
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener)
@@ -299,10 +163,7 @@ public class UrlInfo
     @Override
     public String toString()
     {
-        synchronized (this.state)
-        {
-            return state.toString();
-        }
+        return getState().toString();
     }
 
 }

@@ -6,16 +6,13 @@ import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Scanner;
 
 import javax.swing.BorderFactory;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -23,12 +20,18 @@ import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.SwingWorker;
 
-import edu.jhuapl.saavtk.config.ViewConfig;
+import edu.jhuapl.saavtk.camera.gui.CameraQuaternionAction;
+import edu.jhuapl.saavtk.camera.gui.CameraRegularAction;
+import edu.jhuapl.saavtk.gui.menu.EnableLODsAction;
 import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
 import edu.jhuapl.saavtk.gui.menu.FileMenu;
 import edu.jhuapl.saavtk.gui.menu.HelpMenu;
+import edu.jhuapl.saavtk.gui.menu.PickToleranceAction;
+import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
+import edu.jhuapl.saavtk.scalebar.gui.ScaleBarAction;
 import edu.jhuapl.saavtk.util.Configuration;
-import edu.jhuapl.saavtk.util.FileCache.UnauthorizedAccessException;
+import edu.jhuapl.saavtk.util.FileCache;
+import edu.jhuapl.saavtk.util.UnauthorizedAccessException;
 
 public abstract class ViewManager extends JPanel
 {
@@ -40,13 +43,9 @@ public abstract class ViewManager extends JPanel
     private final Frame frame;
     private String tempCustomShapeModelPath;
 
-    private static String defaultModelName = null;
-    private final static Path defaultModelFile = Paths.get(Configuration.getApplicationDataDir() + File.separator + "defaultModelToLoad");
-
     protected FileMenu fileMenu = null;
-    protected ViewMenu viewMenu = null;
+    protected ViewMenu bodyMenu = null;
     protected HelpMenu helpMenu = null;
-    protected FavoritesMenu favoritesMenu = null;
     protected RecentlyViewed recentsMenu = null;
     private volatile boolean initialViewSet;
 
@@ -79,28 +78,42 @@ public abstract class ViewManager extends JPanel
 
     protected void createMenus(JMenuBar menuBar)
     {
+        // File menu
         fileMenu = new FileMenu(this);
         fileMenu.setMnemonic('F');
         menuBar.add(fileMenu);
 
+        // Body menu
         recentsMenu = new RecentlyViewed(this);
-        viewMenu = new ViewMenu(this, recentsMenu);
+
+        bodyMenu = new ViewMenu(this, recentsMenu);
+        bodyMenu.setMnemonic('B');
+        bodyMenu.add(new JSeparator());
+        bodyMenu.add(new FavoritesMenu(this));
+        bodyMenu.add(createPasswordMenu());
+        bodyMenu.add(new JSeparator());
+        bodyMenu.add(recentsMenu);
+        menuBar.add(bodyMenu);
+
+        // View menu
+        JMenu viewMenu = new JMenu("View");
         viewMenu.setMnemonic('V');
+        viewMenu.add(new JMenuItem(new CameraRegularAction(this)));
+        viewMenu.add(new JMenuItem(new CameraQuaternionAction(this)));
+        viewMenu.add(new JMenuItem(new ScaleBarAction(this)));
+
+        viewMenu.addSeparator();
+        JCheckBoxMenuItem enableLodMI = new JCheckBoxMenuItem(new EnableLODsAction());
+        enableLodMI.setSelected(true);
+        viewMenu.add(enableLodMI);
+        viewMenu.add(new PickToleranceAction(this));
 
         menuBar.add(viewMenu);
 
-        favoritesMenu = new FavoritesMenu(this);
-
-        JMenuItem passwordMenu = createPasswordMenu();
-
-        viewMenu.add(new JSeparator());
-        viewMenu.add(favoritesMenu);
-        viewMenu.add(passwordMenu);
-        viewMenu.add(new JSeparator());
-        viewMenu.add(recentsMenu);
-
+        // Console menu
         Console.addConsoleMenu(menuBar);
 
+        // Help menu
         helpMenu = new HelpMenu(this);
         helpMenu.setMnemonic('H');
         menuBar.add(helpMenu);
@@ -113,14 +126,9 @@ public abstract class ViewManager extends JPanel
             @Override
             public void actionPerformed(@SuppressWarnings("unused") ActionEvent evt)
             {
-                try
+                if (Configuration.getSwingAuthorizor().updateCredentials())
                 {
-                    Configuration.updatePassword();
-                }
-                catch (IOException e)
-                {
-                    e.printStackTrace();
-                    JOptionPane.showMessageDialog(null, "Error trying to save user name and password.", "Unable to save changes", JOptionPane.ERROR_MESSAGE);
+                    FileCache.instance().queryAllInBackground(true);
                 }
             }
         });
@@ -171,7 +179,7 @@ public abstract class ViewManager extends JPanel
         if (tempCustomShapeModel == null)
         {
             // First try the default model, which may be built-in or custom.
-            final String defaultModelName = getDefaultBodyToLoad();
+            final String defaultModelName = getDefaultModelName();
             initialView = getBuiltInView(defaultModelName);
             if (initialView == null)
             {
@@ -181,7 +189,14 @@ public abstract class ViewManager extends JPanel
             // Default model is not available. Try to find the first accessible model.
             if (initialView == null)
             {
-                System.err.println("\nDefault model " + defaultModelName + " is not available.");
+                if (defaultModelName == null)
+                {
+                    System.err.println("\nNo default model is set.");
+                }
+                else
+                {
+                    System.err.println("\nDefault model " + defaultModelName + " is not available.");
+                }
                 for (View view : getAllViews())
                 {
                     if (view.isAccessible())
@@ -200,12 +215,88 @@ public abstract class ViewManager extends JPanel
 
             if (initialView == null)
             {
-                System.err.println("Cannot find another available model to start with.");
+                String modelName = provideBasicModel();
+                if (modelName != null)
+                {
+                    initialView = createCustomView(statusBar, modelName, false);
+                    modelName = initialView.getUniqueName();
+
+                    addCustomView(initialView);
+                    add(initialView, modelName);
+                    setDefaultModelName(modelName);
+
+                    System.err.println("Starting with one basic/demo model. No other models are currently available.");
+                    System.err.println("Restart with a stable internet connection to see all available models");
+                }
             }
 
+            if (initialView == null)
+            {
+                System.err.println("Cannot find another available model to start with.");
+            }
         }
 
         setCurrentView(initialView);
+    }
+
+    /**
+     * Return the name of the default model, if any is defined. The base
+     * implementation just returns null, meaning there is no built-in factory
+     * default model.
+     *
+     * @return the default model name
+     */
+    public String getDefaultModelName()
+    {
+        return null;
+    }
+
+    /**
+     * Set the default model to the supplied name. The base implementation is a
+     * no-op. Override this to actually set the model name, which should be returned
+     * by future calls to {@link #getDefaultModelName()}.
+     *
+     * @param modelName the model name to use for the default model
+     */
+    @SuppressWarnings("unused")
+    public void setDefaultModelName(String modelName)
+    {
+
+    }
+
+    /**
+     * Make the current default model name persistent. The base implementation is a
+     * no-op. Override this to save the current default model returned by
+     * {@link #getDefaultModelName()}.
+     */
+    public void saveDefaultModelName()
+    {
+
+    }
+
+    /**
+     * Revert the current default model name to the factory default value. The base
+     * implementation is a no-op. Implementations may override this to provide any
+     * desired behavior, such as returning a value loaded from a persistent state or
+     * set to a hardwired default value.
+     */
+    public void resetDefaultModelName()
+    {
+
+    }
+
+    /**
+     * Provide a basic/dummy/failsafe {@link GenericPolyhedralModel} and return its
+     * unique name. The base implementation returns null. If not null, the name
+     * returned by this method is used to create a {@link View} if no other model is
+     * available to be viewed. (See {@link #setupViews()}.
+     *
+     * @return the name of the created model, or null if no basic/failsafe model may
+     *         be provided.
+     */
+    protected String provideBasicModel()
+    {
+        return null;
     }
 
     public boolean isReady()
@@ -213,63 +304,24 @@ public abstract class ViewManager extends JPanel
         return initialViewSet && (currentView == null || currentView.isInitialized());
     }
 
-    public void setDefaultBodyToLoad(String uniqueName)
-    {
-        try
-        {
-            defaultModelName = uniqueName;
-            if (defaultModelFile.toFile().exists())
-                defaultModelFile.toFile().delete();
-            defaultModelFile.toFile().createNewFile();
-            FileWriter writer = new FileWriter(defaultModelFile.toFile());
-            writer.write(defaultModelName);
-            writer.close();
-        }
-        catch (IOException e)
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
-
-    public String getDefaultBodyToLoad()
-    {
-        defaultModelName = ViewConfig.getFirstTimeDefaultModelName();
-        if (defaultModelFile.toFile().exists())
-        {
-            try (Scanner scanner = new Scanner(ViewManager.defaultModelFile.toFile()))
-            {
-                if (scanner.hasNextLine())
-                    defaultModelName = scanner.nextLine();
-            }
-            catch (IOException e)
-            {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-
-        return defaultModelName;
-    }
-
-    public void resetDefaultBodyToLoad()
-    {
-        if (defaultModelFile.toFile().exists())
-            defaultModelFile.toFile().delete();
-    }
-
     /**
      * Returns the View whose unique name matches the supplied unique name.
-     * 
+     * Returns null if the supplied name is null.
+     *
      * This method does *NOT* guarantee that the returned View is actually
      * accessible.
-     * 
+     *
      * @param uniqueName the name of the View to return
      * @return the View
-     * @throws IllegalArgumentException if the View was not found
+     * @throws IllegalArgumentException if a View was not found with the supplied name.
      */
     public View getView(String uniqueName) throws IllegalArgumentException
     {
+        if (uniqueName == null)
+        {
+            return null;
+        }
+
         for (View view : getBuiltInViews())
         {
             if (view.getUniqueName().equals(uniqueName))
@@ -277,6 +329,7 @@ public abstract class ViewManager extends JPanel
                 return view;
             }
         }
+
         for (View view : getCustomViews())
         {
             if (view.getUniqueName().equals(uniqueName))
@@ -284,6 +337,7 @@ public abstract class ViewManager extends JPanel
                 return view;
             }
         }
+
         throw new IllegalArgumentException("Could not find a model/view with name " + uniqueName);
     }
 
@@ -405,13 +459,14 @@ public abstract class ViewManager extends JPanel
 
                     currentView = view;
 
-                    if (currentView != null)
+                    if (view != null)
                     {
-                        currentView.getRenderer().viewActivating();
+                        view.getRenderer().viewActivating();
                     }
 
                     updateRecents();
-                    frame.setTitle(view.getPathRepresentation());
+
+                    frame.setTitle(view != null ? view.getPathRepresentation() : "");
                 }
 
                 initialViewSet = true;
@@ -485,7 +540,7 @@ public abstract class ViewManager extends JPanel
     /**
      * Return the built-in View that matches the supplied name. Note that this
      * method does check that the view be accessible.
-     * 
+     *
      * @param uniqueName name of the view
      * @return the view with the name, or null if it's not found, or not accessible
      */
@@ -505,7 +560,7 @@ public abstract class ViewManager extends JPanel
     /**
      * Return the custom View that matches the supplied name. Note that this method
      * does check that the view be accessible.
-     * 
+     *
      * @param uniqueName name of the view
      * @return the view with the name, or null if it's not found, or not accessible
      */

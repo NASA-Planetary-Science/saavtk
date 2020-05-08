@@ -47,7 +47,7 @@ public class EllipsePicker extends Picker
 		refRenWin = aRenderer.getRenderWindowPanel();
 
 		smallBodyPicker = PickUtilEx.formSmallBodyPicker(refSmallBodyModel);
-		structurePicker = PickUtilEx.formStructurePicker(refStructureManager.getBoundaryActor());
+		structurePicker = PickUtilEx.formPickerFor(refStructureManager.getBoundaryActor());
 
 		currEditMode = EditMode.CLICKABLE;
 		currVertexId = -1;
@@ -88,8 +88,8 @@ public class EllipsePicker extends Picker
 		}
 
 		// Bail if a valid point was not picked
-		int pickSucceeded = doPick(aEvent, smallBodyPicker, refRenWin);
-		if (pickSucceeded != 1)
+		boolean isPicked = PickUtil.isPicked(smallBodyPicker, refRenWin, aEvent, getTolerance());
+		if (isPicked == false)
 			return;
 
 		vtkActor pickedActor = smallBodyPicker.GetActor();
@@ -125,8 +125,8 @@ public class EllipsePicker extends Picker
 			return;
 
 		// Bail if we failed to pick something
-		int pickSucceeded = doPick(aEvent, structurePicker, refRenWin);
-		if (pickSucceeded != 1)
+		boolean isPicked = PickUtil.isPicked(structurePicker, refRenWin, aEvent, getTolerance());
+		if (isPicked == false)
 			return;
 
 		// Determine what was picked
@@ -158,8 +158,8 @@ public class EllipsePicker extends Picker
 //			return;
 
 		// Bail if we failed to pick something
-		int pickSucceeded = doPick(aEvent, smallBodyPicker, refRenWin);
-		if (pickSucceeded != 1)
+		boolean isPicked = PickUtil.isPicked(smallBodyPicker, refRenWin, aEvent, getTolerance());
+		if (isPicked == false)
 			return;
 
 		vtkActor pickedActor = smallBodyPicker.GetActor();
@@ -177,19 +177,19 @@ public class EllipsePicker extends Picker
 			else if (changeAngleKeyPressed)
 				refStructureManager.changeAngleOfPolygon(tmpItem, lastDragPosition);
 			else
-				refStructureManager.movePolygon(tmpItem, lastDragPosition);
+				refStructureManager.setCenter(tmpItem, lastDragPosition);
 		}
 	}
 
 	@Override
 	public void mouseMoved(MouseEvent aEvent)
 	{
-		int pickSucceeded = doPick(aEvent, structurePicker, refRenWin);
+		boolean isPicked = PickUtil.isPicked(structurePicker, refRenWin, aEvent, getTolerance());
 		int numActivePoints = refStructureManager.getNumberOfCircumferencePoints();
 
 		// Only allow dragging if we are not in the middle of drawing a
 		// new ellipse, i.e. if number of circumference points is zero.
-		if (numActivePoints == 0 && pickSucceeded == 1
+		if (numActivePoints == 0 && isPicked == true
 				&& structurePicker.GetActor() == refStructureManager.getBoundaryActor())
 			currEditMode = EditMode.DRAGGABLE;
 		else
