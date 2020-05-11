@@ -147,8 +147,12 @@ public class SmallBodyCubes
                     BoundingBox bb = polyCellsBB.get(j);
                     if (cube.intersects(bb))
                     {
-                        cubeIds.add(i);
-                        break;
+                    	//this is here to ensure that there is at least a 10% overlap between the boxes, so we don't catch edges of polydata 
+                    	if (cube.getOverlapFactor(bb)*100.0 > 10.0)
+                    	{
+                    		cubeIds.add(i);
+                    		break;
+                    	}
                     }
                 }
             }

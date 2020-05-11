@@ -75,6 +75,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	//This is a placeholder for enabling a series of diagnostic tools we hope to bring into the renderer.  Currently in place but with no UI hooks to enable it (yet) is a 
 	//block of code that can display the body cubes used during a database search that allows you to see what exactly it is you're choosing.  
 	private boolean diagnosticModeEnabled = false;
+	private List<vtkProp> diagnosticCubes = new ArrayList<vtkProp>();
 	
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
 
@@ -900,6 +901,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     
     public void setCubeVisibility(TreeSet<Integer> indices)
     {
+    	smallBodyActors.removeAll(diagnosticCubes);
+    	diagnosticCubes.clear();
     	for (int index : indices)
     	{
 	    	vtkCubeSource cube = new vtkCubeSource();
@@ -910,6 +913,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 	    	actor.SetMapper(mapper);
 	    	actor.GetProperty().SetOpacity(0.5);
 	    	actor.GetProperty().SetColor(1.0, 0.0, 0.0);
+	    	diagnosticCubes.add(actor);
 			smallBodyActors.add(actor);
     	}
 		this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
