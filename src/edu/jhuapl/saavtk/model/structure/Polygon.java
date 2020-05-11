@@ -21,8 +21,8 @@ public class Polygon
 	{
 		Configurable lineConfiguration = Line.formConfigurationFor(aPolygon);
 
-		KeyedFactory.Builder<Viewable> builder = KeyedFactory.instance().builder();
-		for (ControlKey<? extends Viewable> key : lineConfiguration.getKeys())
+		KeyedFactory.Builder<Object> builder = KeyedFactory.instance().builder();
+		for (ControlKey<?> key : lineConfiguration.getKeys())
 		{
 			@SuppressWarnings("unchecked")
 			ControlKey<Viewable> contentKey = (ControlKey<Viewable>) key;

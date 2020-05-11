@@ -59,7 +59,7 @@ public class StructureGuiUtil
 
 		boolean showChangeLatLon = aManager instanceof AbstractEllipsePolygonModel;
 		if (showChangeLatLon == true)
-			retPM.installPopAction(new ChangeLatLonAction<>(aManager, aParent), "Change Latitude/Longitude...");
+			retPM.installPopAction(new ChangeLatLonAction<>(aManager, aParent, aSmallBody), "Change Latitude/Longitude...");
 
 		boolean showExportPlateDataInsidePolygon = false;
 		showExportPlateDataInsidePolygon |= aManager instanceof CircleModel;

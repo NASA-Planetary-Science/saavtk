@@ -57,34 +57,33 @@ public class CircleSelectionPicker extends Picker
 		return false;
 	}
 
-   @Override
-	public void mousePressed(MouseEvent e)
-    {
-        //if (e.getButton() != MouseEvent.BUTTON1)
-        //    return;
+	@Override
+	public void mousePressed(MouseEvent aEvent)
+	{
+		// if (e.getButton() != MouseEvent.BUTTON1)
+		// return;
 
-        currVertexId = -1;
+		currVertexId = -1;
 
-        refStructureManager.removeAllStructures();
+		refStructureManager.removeAllStructures();
 
-        int pickSucceeded = doPick(e, smallBodyPicker, refRenWin);
+		// Bail if we failed to pick something
+		boolean isPicked = PickUtil.isPicked(smallBodyPicker, refRenWin, aEvent, getTolerance());
+		if (isPicked == false)
+			return;
 
-        if (pickSucceeded == 1)
-        {
-            vtkActor pickedActor = smallBodyPicker.GetActor();
-            Model model = refModelManager.getModel(pickedActor);
-
-            if (model == refSmallBodyModel)
-            {
-                double[] pos = smallBodyPicker.GetPickPosition();
-                if (e.getClickCount() == 1)
-                {
-                    refStructureManager.addNewStructure(new Vector3D(pos));
-                    currVertexId = refStructureManager.getNumItems()-1;
-                }
-            }
-        }
-    }
+		vtkActor pickedActor = smallBodyPicker.GetActor();
+		Model model = refModelManager.getModel(pickedActor);
+		if (model == refSmallBodyModel)
+		{
+			double[] pos = smallBodyPicker.GetPickPosition();
+			if (aEvent.getClickCount() == 1)
+			{
+				refStructureManager.addNewStructure(new Vector3D(pos));
+				currVertexId = refStructureManager.getNumItems() - 1;
+			}
+		}
+	}
 
 	@Override
 	public void mouseReleased(MouseEvent aEvent)
@@ -104,8 +103,8 @@ public class CircleSelectionPicker extends Picker
 //			return;
 
 		// Bail if we failed to pick something
-		int pickSucceeded = doPick(aEvent, smallBodyPicker, refRenWin);
-		if (pickSucceeded != 1)
+		boolean isPicked = PickUtil.isPicked(smallBodyPicker, refRenWin, aEvent, getTolerance());
+		if (isPicked == false)
 			return;
 
 		vtkActor pickedActor = smallBodyPicker.GetActor();

@@ -13,11 +13,11 @@ import javax.swing.JToolBar;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import edu.jhuapl.saavtk.camera.Camera;
+import edu.jhuapl.saavtk.camera.CameraUtil;
 import edu.jhuapl.saavtk.gui.GuiUtil;
 import edu.jhuapl.saavtk.gui.render.RenderPanel;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
-import edu.jhuapl.saavtk.gui.render.camera.Camera;
-import edu.jhuapl.saavtk.gui.render.camera.CameraUtil;
 
 public class RenderToolbar extends JToolBar implements ActionListener
 {
@@ -38,7 +38,7 @@ public class RenderToolbar extends JToolBar implements ActionListener
 
 //	// ImageIcon dragToolbarIcon=new
 //	// ImageIcon(RenderToolbar.class.getResource("grab.png"));
-//	
+//
 //	// TODO: add dropdown for out-of-bounds components
 //	List<Component> componentsToShow=Lists.newArrayList();
 //	List<Component> visibleComponents=Lists.newArrayList();
@@ -126,8 +126,7 @@ public class RenderToolbar extends JToolBar implements ActionListener
 		add(zAxisLockTB);
 
 		// Register for events of interest
-		aRenderPanel.getAxesFrame().addComponentListener(new ComponentAdapter()
-		{
+		aRenderPanel.getAxesFrame().addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentHidden(ComponentEvent aEvent)
 			{

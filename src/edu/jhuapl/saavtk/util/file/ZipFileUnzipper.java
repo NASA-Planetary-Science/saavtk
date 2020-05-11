@@ -19,15 +19,13 @@ import org.apache.commons.io.FileUtils;
 
 import com.google.common.base.Preconditions;
 
-import edu.jhuapl.saavtk.util.Debug;
+import edu.jhuapl.saavtk.util.FileCacheMessageUtil;
 import edu.jhuapl.saavtk.util.SafeURLPaths;
 import edu.jhuapl.saavtk.util.file.StreamUnpacker.UnpackingStatus;
 
 public class ZipFileUnzipper
 {
     public static final String UNZIPPING_PROGRESS = "unzippingProgress";
-
-    private static volatile boolean enableDebug = false;
 
     public static ZipFileUnzipper of(File file) throws IOException
     {
@@ -40,16 +38,6 @@ public class ZipFileUnzipper
     }
 
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
-
-    public static void enableDebug(boolean enable)
-    {
-        enableDebug = enable;
-    }
-
-    protected static Debug debug()
-    {
-        return Debug.of(enableDebug);
-    }
 
     private final PropertyChangeSupport pcs;
     private final ZipFile zipFile;
@@ -161,7 +149,7 @@ public class ZipFileUnzipper
         }
         catch (Exception e)
         {
-            if (!enableDebug)
+            if (!FileCacheMessageUtil.isDebugCache())
             {
                 deleteQuietly(tempExtractToFolder);
             }

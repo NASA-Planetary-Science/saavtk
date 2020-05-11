@@ -24,7 +24,6 @@ import crucible.crust.metadata.api.Serializer;
 import crucible.crust.metadata.impl.gson.Serializers;
 import edu.jhuapl.saavtk.gui.OSXAdapter;
 import edu.jhuapl.saavtk.gui.ViewManager;
-import edu.jhuapl.saavtk.gui.dialog.CameraDialog;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
 import edu.jhuapl.saavtk.model.ModelNames;
@@ -80,9 +79,6 @@ public class FileMenu extends JMenu
 		this.add(convertMenu);
 		mi = new JMenuItem(new BatchConvertEsriToSbmtAction());
 		convertMenu.add(mi);
-
-		mi = new JMenuItem(new ShowCameraOrientationAction());
-		this.add(mi);
 
 		// mi = new JMenuItem(new CopyToClipboardAction());
 		// this.add(mi);
@@ -309,27 +305,6 @@ public class FileMenu extends JMenu
 				JOptionPane.showMessageDialog(null, "An error occurred exporting the shape model.", "Error", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
-		}
-	}
-
-	private class ShowCameraOrientationAction extends AbstractAction
-	{
-		private static final long serialVersionUID = 1L;
-
-		private final CameraDialog refCameraDialog;
-
-		public ShowCameraOrientationAction()
-		{
-			super("Camera...");
-
-			refCameraDialog = new CameraDialog();
-		}
-
-		@Override
-		public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
-		{
-			refCameraDialog.setRenderer(rootPanel.getCurrentView().getRenderer());
-			refCameraDialog.setVisible(true);
 		}
 	}
 

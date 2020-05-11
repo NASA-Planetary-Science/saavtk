@@ -175,7 +175,7 @@ public class PickManager
 			refRenWin.getComponent().setCursor(new Cursor(targCursorType));
 
 		// TODO: This is a poor design and should be passed in via the event handlers
-		activePicker.setPickTolerance(pickTolerance);
+		activePicker.setTolerance(pickTolerance);
 
 		notifyListeners();
 	}
@@ -189,16 +189,16 @@ public class PickManager
 	{
 		// All the pickers managed by this class should have the same
 		// tolerance so just return tolerance of the default picker.
-		return defaultPicker.getPickTolerance();
+		return defaultPicker.getTolerance();
 	}
 
 	public void setPickTolerance(double aPickTolerance)
 	{
 		pickTolerance = aPickTolerance;
 
-		defaultPicker.setPickTolerance(aPickTolerance);
+		defaultPicker.setTolerance(aPickTolerance);
 		for (PickMode pm : nondefaultPickers.keySet())
-			nondefaultPickers.get(pm).setPickTolerance(aPickTolerance);
+			nondefaultPickers.get(pm).setTolerance(aPickTolerance);
 	}
 
 	/**

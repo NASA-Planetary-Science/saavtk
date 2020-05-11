@@ -31,6 +31,7 @@ import javax.swing.JToggleButton;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Range;
 
 import edu.jhuapl.saavtk.gui.ProfilePlot;
 import edu.jhuapl.saavtk.gui.dialog.NormalOffsetChangerDialog;
@@ -98,7 +99,8 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		implements ActionListener, ItemEventListener, PickListener, PickManagerListener
 {
 	// Constants
-	private static final long serialVersionUID = 1L;
+	private static final Range<Double> FontSizeRange = Range.closed(8.0, 120.0);
+	private static final Range<Double> LineWidthRange = Range.closed(1.0, 100.0);
 
 	// Ref vars
 	private final StructureManager<G1> refStructureManager;
@@ -317,14 +319,14 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		add(openProfilePlotB, "sg g5,wrap");
 
 		fontSizeL = new JLabel("Font Size:");
-		fontSizeNFS = new GNumberFieldSlider(this, 8, 120, new DecimalFormat("0"));
+		fontSizeNFS = new GNumberFieldSlider(this, new DecimalFormat("0"), FontSizeRange);
 		fontSizeNFS.setIntegralSteps();
 		fontSizeNFS.setNumColumns(3);
 		add(fontSizeL, "sg g6,span,split");
 		add(fontSizeNFS, "growx,sg g7,wrap");
 
 		lineWidthL = new JLabel("Line Width:");
-		lineWidthNFS = new GNumberFieldSlider(this, 1, 100, new DecimalFormat("0"));
+		lineWidthNFS = new GNumberFieldSlider(this, new DecimalFormat("0"), LineWidthRange);
 		lineWidthNFS.setIntegralSteps();
 		lineWidthNFS.setNumColumns(3);
 
@@ -348,9 +350,7 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		PickUtil.autoDeactivatePickerWhenComponentHidden(refPickManager, refPicker, this);
 		refStructureManager.addListener(this);
 		refPickManager.addListener(this);
-
-		// TODO: This registration should be done by the refStructureManager
-		aPickManager.getDefaultPicker().addListener(this);
+		refPickManager.getDefaultPicker().addListener(this);
 	}
 
 	/**
