@@ -9,10 +9,8 @@ import javax.swing.SwingWorker;
 import com.google.common.base.Preconditions;
 
 import edu.jhuapl.saavtk.util.CloseableUrlConnection.HttpRequestMethod;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
-public class UrlAccessQuerier extends SwingWorker<Void, Void>
+public abstract class UrlAccessQuerier extends SwingWorker<Void, Void>
 {
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
 
@@ -24,17 +22,23 @@ public class UrlAccessQuerier extends SwingWorker<Void, Void>
     {
         Preconditions.checkNotNull(urlInfo);
 
-        return new UrlAccessQuerier(urlInfo, forceUpdate, serverAccessEnabled);
+        return new UrlAccessQuerier(urlInfo, serverAccessEnabled) {
+
+            @Override
+            public boolean isForceUpdate()
+            {
+                return forceUpdate;
+            }
+
+        };
     }
 
     private final UrlInfo urlInfo;
-    private final boolean forceUpdate;
     private final boolean serverAccessEnabled;
 
-    protected UrlAccessQuerier(UrlInfo urlInfo, boolean forceUpdate, boolean serverAccessEnabled)
+    protected UrlAccessQuerier(UrlInfo urlInfo, boolean serverAccessEnabled)
     {
         this.urlInfo = urlInfo;
-        this.forceUpdate = forceUpdate;
         this.serverAccessEnabled = serverAccessEnabled;
     }
 
@@ -43,16 +47,16 @@ public class UrlAccessQuerier extends SwingWorker<Void, Void>
         return urlInfo.getState();
     }
 
-    public boolean isForceUpdate()
-    {
-        return forceUpdate;
-    }
+    public abstract boolean isForceUpdate();
 
     public void query() throws IOException
     {
-        UrlState urlState = urlInfo.getState();
+        UrlState urlState = getUrlState();
+        UrlStatus status = urlState.getLastKnownStatus();
 
-        if (forceUpdate || urlState.getStatus() == UrlStatus.UNKNOWN || urlState.getStatus() == UrlStatus.CONNECTION_ERROR)
+        boolean needsUpdate = status == UrlStatus.UNKNOWN || status == UrlStatus.CONNECTION_ERROR || status == UrlStatus.HTTP_ERROR;
+
+        if (isForceUpdate() || needsUpdate)
         {
             if (SAFE_URL_PATHS.hasFileProtocol(urlState.getUrl().toString()))
             {
@@ -63,11 +67,15 @@ public class UrlAccessQuerier extends SwingWorker<Void, Void>
                 queryServer();
             }
         }
+        else
+        {
+            urlInfo.update(urlState.update(serverAccessEnabled));
+        }
     }
 
     protected void queryServer() throws IOException
     {
-        UrlState urlState = urlInfo.getState();
+        UrlState urlState = getUrlState();
 
         if (serverAccessEnabled)
         {
@@ -78,14 +86,15 @@ public class UrlAccessQuerier extends SwingWorker<Void, Void>
         }
         else
         {
-            // This resets the state to a new/unknown condition.
-            urlInfo.update(UrlState.of(urlState.getUrl()));
+            // Do not update the URL info other than to report that the server access is
+            // disabled.
+            urlInfo.update(urlState.update(false));
         }
     }
 
     protected void queryFileSystem() throws IOException
     {
-        UrlState urlState = urlInfo.getState();
+        UrlState urlState = getUrlState();
 
         URL url = urlState.getUrl();
 
@@ -93,11 +102,11 @@ public class UrlAccessQuerier extends SwingWorker<Void, Void>
 
         if (file.exists())
         {
-            urlState = UrlState.of(url, UrlStatus.ACCESSIBLE, file.length(), file.lastModified());
+            urlState = UrlState.of(url, UrlStatus.ACCESSIBLE, file.length(), file.lastModified(), true);
         }
         else
         {
-            urlState = UrlState.of(url, UrlStatus.NOT_FOUND);
+            urlState = UrlState.of(url, UrlStatus.NOT_FOUND, true);
         }
 
         urlInfo.update(urlState);

@@ -73,8 +73,8 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 		refRenWin = aRenderer.getRenderWindowPanel();
 
 		vSmallBodyPickerCP = PickUtilEx.formSmallBodyPicker(refSmallBody);
-		vActivatePickerCP = PickUtilEx.formStructurePicker(refStructureManager.getVtkControlPointActor());
-		vStructurePickerCP = PickUtilEx.formStructurePicker(refStructureManager.getVtkItemActor());
+		vActivatePickerCP = PickUtilEx.formPickerFor(refStructureManager.getVtkControlPointActor());
+		vStructurePickerCP = PickUtilEx.formPickerFor(refStructureManager.getVtkItemActor());
 
 		currEditMode = EditMode.CLICKABLE;
 		hookControlPointIdx = -1;
@@ -160,8 +160,8 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 			return;
 
 		// Bail if a valid point was not picked
-		int pickSucceeded = doPick(aEvent, vSmallBodyPickerCP, refRenWin);
-		if (pickSucceeded != 1)
+		boolean isPicked = PickUtil.isPicked(vSmallBodyPickerCP, refRenWin, aEvent, getTolerance());
+		if (isPicked == false)
 			return;
 
 		// Attempt to create a new control point
@@ -223,7 +223,7 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 			return;
 
 		// Control points selection logic
-		if (doPick(aEvent, vActivatePickerCP, refRenWin) == 1)
+		if (PickUtil.isPicked(vActivatePickerCP, refRenWin, aEvent, getTolerance()) == true)
 		{
 			// Button1 must be depressed
 			if (aEvent.getButton() != MouseEvent.BUTTON1)
@@ -244,7 +244,7 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 			return;
 
 		// Structure item selection logic
-		if (doPick(aEvent, vStructurePickerCP, refRenWin) == 1)
+		if (PickUtil.isPicked(vStructurePickerCP, refRenWin, aEvent, getTolerance()) == true)
 		{
 			vtkActor pickedActor = vStructurePickerCP.GetActor();
 			int cellId = vStructurePickerCP.GetCellId();
@@ -290,8 +290,8 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 			return;
 
 		// Bail if we failed to pick something
-		int pickSucceeded = doPick(aEvent, vSmallBodyPickerCP, refRenWin);
-		if (pickSucceeded != 1)
+		boolean isPicked = PickUtil.isPicked(vSmallBodyPickerCP, refRenWin, aEvent, getTolerance());
+		if (isPicked == false)
 			return;
 
 		// Attempt to update the hooked ControlPoint's position
@@ -310,13 +310,13 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 		vtkActor pickedActor = null;
 
 		// Determine if the activatePicker has been triggered
-		boolean isPickedA = doPick(aEvent, vActivatePickerCP, refRenWin) == 1;
+		boolean isPickedA = PickUtil.isPicked(vActivatePickerCP, refRenWin, aEvent, getTolerance());
 		if (isPickedA == true)
 			pickedActor = vActivatePickerCP.GetActor();
 
 		// Determine if the structurePicker has been triggered
 		// Note if has a "profile mode" then ignore the structurePicker
-		boolean isPickedB = doPick(aEvent, vStructurePickerCP, refRenWin) == 1;
+		boolean isPickedB = PickUtil.isPicked(vStructurePickerCP, refRenWin, aEvent, getTolerance());
 		if (isPickedB == true && pickedActor == null && refStructureManager.hasProfileMode() == false)
 		{
 			pickedActor = vStructurePickerCP.GetActor();

@@ -18,6 +18,8 @@ import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.pick.PickManager.PickMode;
 import edu.jhuapl.saavtk.util.Configuration;
+import vtk.vtkCellPicker;
+import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 /**
  * Utility class for configuration of Picker related code.
@@ -35,7 +37,7 @@ import edu.jhuapl.saavtk.util.Configuration;
 public class PickUtil
 {
 	// not sure if volatile is really needed, but just to be sure
-	protected static volatile boolean pickingEnabled = true;
+	private static volatile boolean pickingEnabled = true;
 
 	/**
 	 * Utility method that will automatically setup a listener on aComponent that
@@ -73,8 +75,8 @@ public class PickUtil
 			ModelManager aModelManager)
 	{
 		DefaultPicker tmpDefaultPicker = aPickManager.getDefaultPicker();
-		StatusBarDefaultPickHandler tmpStatusBarHandler = new StatusBarDefaultPickHandler(tmpDefaultPicker, aStatusBar,
-				aRenderer, aModelManager);
+		StatusBarDefaultPickHandler tmpStatusBarHandler = new StatusBarDefaultPickHandler(aStatusBar, aRenderer,
+				aModelManager);
 		tmpDefaultPicker.addListener(tmpStatusBarHandler);
 	}
 
@@ -156,6 +158,47 @@ public class PickUtil
 			timer.setRepeats(false);
 			timer.start();
 		}
+	}
+
+	/**
+	 * Utility method that return true if the provided {@link vtkCellPicker} has
+	 * selected something at the specified screen coordinates.
+	 */
+	public static boolean isPicked(vtkCellPicker aCellPicker, vtkJoglPanelComponent aRenComp, int aPosX, int aPosY,
+			double aTolerance)
+	{
+		if (PickUtil.pickingEnabled == false)
+			return false;
+
+		aRenComp.getVTKLock().lock();
+
+		aCellPicker.SetTolerance(aTolerance);
+
+		// Note that on some displays, such as a retina display, the height used by
+		// OpenGL is different than the height used by Java. Therefore we need
+		// scale the mouse coordinates to get the right position for OpenGL.
+		// double openGlHeight = aRenComp.getComponent().getSurfaceHeight();
+		// double openGlHeight = aRenComp.getComponent().getHeight();
+		double javaHeight = aRenComp.getComponent().getHeight();
+		// double scale = openGlHeight / javaHeight;
+		double scale = 1.0;
+		int tmpVal = aCellPicker.Pick(scale * aPosX, scale * (javaHeight - aPosY - 1), 0.0, aRenComp.getRenderer());
+
+		aRenComp.getVTKLock().unlock();
+
+		boolean isPicked = tmpVal != 0;
+		return isPicked;
+	}
+
+	/**
+	 * Utility method that return true if the provided {@link vtkCellPicker} has
+	 * selected something at the specified screen coordinates.
+	 */
+	public static boolean isPicked(vtkCellPicker aCellPicker, vtkJoglPanelComponent aRenComp, MouseEvent aEvent,
+			double aPickTolerance)
+	{
+		// Delegate
+		return isPicked(aCellPicker, aRenComp, aEvent.getX(), aEvent.getY(), aPickTolerance);
 	}
 
 }

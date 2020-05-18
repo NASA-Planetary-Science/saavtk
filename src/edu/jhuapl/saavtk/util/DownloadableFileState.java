@@ -7,8 +7,6 @@ import com.google.common.base.Preconditions;
 
 import edu.jhuapl.saavtk.util.FileInfo.FileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 
 public class DownloadableFileState
 {
@@ -50,43 +48,50 @@ public class DownloadableFileState
         return isLocalFileAvailable() || isUrlAccessible();
     }
 
-    public boolean isLocalFileAvailable()
+    protected boolean isLocalFileAvailable()
     {
         return fileState.getStatus() == FileStatus.ACCESSIBLE;
     }
 
-    public boolean isUrlAccessible()
+    protected boolean isUrlAccessible()
     {
         return urlState.getStatus() == UrlStatus.ACCESSIBLE;
     }
 
     public boolean isUrlUnauthorized()
     {
-        return urlState.getStatus() == UrlStatus.NOT_AUTHORIZED;
+        return urlState.getLastKnownStatus() == UrlStatus.NOT_AUTHORIZED;
     }
 
     public boolean isURLNotFound()
     {
-        return urlState.getStatus() == UrlStatus.NOT_FOUND;
+        return urlState.getLastKnownStatus() == UrlStatus.NOT_FOUND;
     }
 
     public boolean isDownloadNecessary()
     {
-        UrlStatus urlStatus = urlState.getStatus();
+        boolean result;
 
-        boolean result = false;
-
-        switch (urlStatus)
+        if (urlState.wasCheckedOnline())
         {
-        case ACCESSIBLE:
-            result = fileState.getStatus() != FileStatus.ACCESSIBLE || urlState.getLastModified() > fileState.getLastModified();
-            break;
-        case UNKNOWN:
-            result = true;
-            break;
-        default:
+            UrlStatus urlStatus = urlState.getStatus();
+
+            switch (urlStatus)
+            {
+            case ACCESSIBLE:
+                result = fileState.getStatus() != FileStatus.ACCESSIBLE || urlState.getLastModified() > fileState.getLastModified();
+                break;
+            case UNKNOWN:
+                result = true;
+                break;
+            default:
+                result = fileState.getStatus() != FileStatus.ACCESSIBLE;
+                break;
+            }
+        }
+        else
+        {
             result = fileState.getStatus() != FileStatus.ACCESSIBLE;
-            break;
         }
 
         return result;

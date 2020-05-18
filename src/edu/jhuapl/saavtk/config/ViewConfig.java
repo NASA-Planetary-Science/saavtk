@@ -128,7 +128,6 @@ public abstract class ViewConfig implements Cloneable
 	}
 
     private static ConfigArrayList builtInConfigs = new ConfigArrayList();
-	private static String firstTimeDefaultModel = null;
 
     public static ConfigArrayList getBuiltInConfigs()
 	{
@@ -171,22 +170,6 @@ public abstract class ViewConfig implements Cloneable
 		System.err.println("Error: Cannot find Config with name " + name + " and author " + author + " and version " + version);
 
 		return null;
-	}
-
-	public static String getFirstTimeDefaultModelName()
-	{
-		Preconditions.checkState(firstTimeDefaultModel != null || !builtInConfigs.isEmpty());
-		if (firstTimeDefaultModel == null)
-		{
-			firstTimeDefaultModel = builtInConfigs.get(0).getUniqueName();
-		}
-		return firstTimeDefaultModel;
-	}
-
-	public static void setFirstTimeDefaultModelName(String firstTimeDefaultModel)
-	{
-		Preconditions.checkState(ViewConfig.firstTimeDefaultModel == null);
-		ViewConfig.firstTimeDefaultModel = firstTimeDefaultModel;
 	}
 
 	@Override

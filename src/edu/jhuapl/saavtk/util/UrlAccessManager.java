@@ -13,9 +13,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.util.UrlInfo.UrlState;
-import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
-
 /**
  * A facility for managing server access to URLs online. An instance of this
  * class has a root URL and manages a cache of information about URLs (which may
@@ -28,29 +25,10 @@ import edu.jhuapl.saavtk.util.UrlInfo.UrlStatus;
 public class UrlAccessManager
 {
     protected static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
-    private static volatile boolean enableInfoMessages = true;
-    private static volatile boolean enableDebug = false;;
-
-    public static void enableInfoMessages(boolean enable)
-    {
-        enableInfoMessages = enable;
-    }
-
-    public static void enableDebug(boolean enable)
-    {
-        enableDebug = enable;
-    }
-
-    protected static Debug debug()
-    {
-        return Debug.of(enableDebug);
-    }
 
     /**
      * Create a new UrlAccessManager using the arguments as the root level URL for
-     * relative path queries. If server access is enabled, this method attempts to
-     * open a connection and determine whether this process can successfully access
-     * the root-level server.
+     * relative path queries.
      * 
      * @param rootUrl the root level of the server
      * @return the manager
@@ -59,26 +37,7 @@ public class UrlAccessManager
     {
         Preconditions.checkNotNull(rootUrl);
 
-        UrlAccessManager result = new UrlAccessManager(rootUrl);
-
-        try
-        {
-            result.queryRootUrl();
-            if (enableInfoMessages)
-            {
-                System.out.println("Connected to server at " + rootUrl);
-            }
-        }
-        catch (Exception e)
-        {
-            if (enableInfoMessages)
-            {
-                System.err.println("Unable to connect to server. Disabling online access.");
-                e.printStackTrace();
-            }
-        }
-
-        return result;
+        return new UrlAccessManager(rootUrl);
     }
 
     private final URL rootUrl;
@@ -99,12 +58,34 @@ public class UrlAccessManager
 
     public void setEnableServerAccess(boolean enableServerAccess)
     {
-        this.enableServerAccess.set(enableServerAccess);
+        boolean forceUpdate = enableServerAccess != this.enableServerAccess.getAndSet(enableServerAccess);
+        queryRootState(forceUpdate, enableServerAccess);
     }
 
-    public URL getRootUrl()
+    protected URL getRootUrl()
     {
         return rootUrl;
+    }
+    
+    protected UrlState queryRootState(boolean forceUpdate, boolean serverAccessEnabled)
+    {
+        UrlInfo rootInfo = getRootInfo();
+        try
+        {
+            UrlAccessQuerier querier = UrlAccessQuerier.of(rootInfo, forceUpdate, serverAccessEnabled);
+            querier.query();
+        }
+        catch (Exception e)
+        {
+            FileCacheMessageUtil.debugCache().err().println(e.getClass().getName() + ": " + e.getMessage());
+        }
+
+        return rootInfo.getState();
+    }
+
+    protected UrlInfo getRootInfo()
+    {
+        return getInfo(rootUrl);
     }
 
     /**
@@ -254,7 +235,7 @@ public class UrlAccessManager
         return SAFE_URL_PATHS.get(pathString);
     }
 
-    public UrlInfo getInfo(String urlString)
+    protected UrlInfo getInfo(String urlString)
     {
         return getInfo(getUrl(urlString));
     }
@@ -266,7 +247,7 @@ public class UrlAccessManager
      * @return
      * @throws MalformedURLException
      */
-    public UrlInfo getInfo(URL url)
+    protected UrlInfo getInfo(URL url)
     {
         Preconditions.checkNotNull(url);
 
@@ -287,97 +268,6 @@ public class UrlAccessManager
         return result;
     }
 
-    public UrlInfo queryRootUrl() throws Exception
-    {
-        UrlInfo rootInfo = getInfo(rootUrl);
-        UrlAccessQuerier querier = UrlAccessQuerier.of(rootInfo, true, true);
-        try
-        {
-            querier.query();
-            setEnableServerAccess(true);
-        }
-        catch (Exception e)
-        {
-            // Serious problem. Disable server access pending resolution.
-            rootInfo.update(UrlState.of(rootUrl));
-            setEnableServerAccess(false);
-            throw e;
-        }
-
-        return rootInfo;
-    }
-
-    /**
-     * Return information associated with the URL identified by the first argument.
-     * The argument is first converted to a URL object in the same way as described
-     * in the getUrl(...) method. Then a connection *may* be opened to the URL to
-     * obtain the necessary information. This can take a long time to run and/or
-     * time-out, so be careful calling this method from a thread where this can
-     * impact performance.
-     * <p>
-     * More specifically, this method attempts to open a connection and obtain
-     * information if server access is enabled (see the setServerAccessEnabled(...)
-     * method) AND one of the following two conditions holds:
-     * <p>
-     * 1. This method has not already successfully opened a connection to the URL
-     * identified by the URL string argument in the currently running instance,
-     * and/or:
-     * <p>
-     * 2. The forceUpdate argument is true.
-     * <p>
-     * The information obtained from a successful connection is cached so that
-     * subsequent calls will run more quickly (though the information is not
-     * refreshed in that case).
-     * <p>
-     * No connections are made whenever server access is disabled. See the
-     * {@link UrlInfo} class for more details about the information it provides when
-     * there is no server access.
-     * 
-     * @param urlString URL string, either absolute or relative to the root URL
-     * @param forceUpdate if true, the server will be queried and the cached
-     *            information updated. If false, this will only happen the first
-     *            time for each URL.
-     * @return the information object
-     * @throws IllegalArgumentException if the URL string argument is malformed
-     */
-    public UrlInfo queryServer(String urlString, boolean forceUpdate)
-    {
-        return queryServer(getUrl(urlString), forceUpdate);
-    }
-
-    public UrlInfo queryServer(URL url, boolean forceUpdate)
-    {
-        Preconditions.checkNotNull(url);
-
-        UrlInfo result = getInfo(url);
-
-        boolean serverAccessEnabled = isServerAccessEnabled();
-        if (serverAccessEnabled || forceUpdate)
-        {
-            UrlState state = result.getState();
-            UrlStatus status = state.getStatus();
-            if (status == UrlStatus.UNKNOWN || status == UrlStatus.CONNECTION_ERROR || forceUpdate)
-            {
-                debug().out().println("Querying server about " + url);
-                try
-                {
-                    UrlAccessQuerier querier = UrlAccessQuerier.of(result, forceUpdate, serverAccessEnabled);
-                    querier.query();
-                }
-                catch (Exception ignored)
-                {
-                    result.update(UrlState.of(url));
-                }
-            }
-            else if (status == UrlStatus.INVALID_URL)
-            {
-                debug().out().println("Skipping server query about invalid url " + url);
-            }
-        }
-
-        return result;
-    }
-
     @Override
     public String toString()
     {
@@ -386,7 +276,7 @@ public class UrlAccessManager
 
     public static void main(String[] args)
     {
-        enableDebug(true);
+        FileCacheMessageUtil.enableDebugCache(true);
         boolean checkStuff = false;
         if (checkStuff)
         {
@@ -516,7 +406,7 @@ public class UrlAccessManager
     {
         try
         {
-            UrlState info = queryServer(urlString, forceQuery).getState();
+            UrlState info = testQueryServer(urlString, forceQuery).getState();
 
             if (info.getStatus() != expectedStatus)
             {
@@ -538,6 +428,72 @@ public class UrlAccessManager
                 }
             }
         }
+    }
+
+    /**
+     * Return information associated with the URL identified by the first argument.
+     * The argument is first converted to a URL object in the same way as described
+     * in the getUrl(...) method. Then a connection *may* be opened to the URL to
+     * obtain the necessary information. This can take a long time to run and/or
+     * time-out, so be careful calling this method from a thread where this can
+     * impact performance.
+     * <p>
+     * More specifically, this method attempts to open a connection and obtain
+     * information if server access is enabled (see the setServerAccessEnabled(...)
+     * method) AND one of the following two conditions holds:
+     * <p>
+     * 1. This method has not already successfully opened a connection to the URL
+     * identified by the URL string argument in the currently running instance,
+     * and/or:
+     * <p>
+     * 2. The forceUpdate argument is true.
+     * <p>
+     * The information obtained from a successful connection is cached so that
+     * subsequent calls will run more quickly (though the information is not
+     * refreshed in that case).
+     * <p>
+     * No connections are made whenever server access is disabled. See the
+     * {@link UrlInfo} class for more details about the information it provides when
+     * there is no server access.
+     * 
+     * @param urlString URL string, either absolute or relative to the root URL
+     * @param forceUpdate if true, the server will be queried and the cached
+     *            information updated. If false, this will only happen the first
+     *            time for each URL.
+     * @return the information object
+     * @throws IllegalArgumentException if the URL string argument is malformed
+     */
+    private UrlInfo testQueryServer(String urlString, boolean forceUpdate)
+    {
+        URL url = getUrl(urlString);
+
+        UrlInfo result = getInfo(url);
+
+        boolean serverAccessEnabled = isServerAccessEnabled();
+        if (serverAccessEnabled || forceUpdate)
+        {
+            UrlState state = result.getState();
+            UrlStatus status = state.getStatus();
+            if (status == UrlStatus.UNKNOWN || status == UrlStatus.CONNECTION_ERROR || status == UrlStatus.HTTP_ERROR || forceUpdate)
+            {
+                FileCacheMessageUtil.debugCache().out().println("Querying server about " + url);
+                try
+                {
+                    UrlAccessQuerier querier = UrlAccessQuerier.of(result, forceUpdate, serverAccessEnabled);
+                    querier.query();
+                }
+                catch (Exception ignored)
+                {
+                    result.update(UrlState.of(url));
+                }
+            }
+            else if (status == UrlStatus.INVALID_URL)
+            {
+                FileCacheMessageUtil.debugCache().out().println("Skipping server query about invalid url " + url);
+            }
+        }
+
+        return result;
     }
 
 }

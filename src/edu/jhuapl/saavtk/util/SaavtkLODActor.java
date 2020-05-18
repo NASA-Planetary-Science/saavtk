@@ -23,9 +23,9 @@ public class SaavtkLODActor extends vtkActor
 	private final Object refModel;
 
 	// Keeps track of the actor's LOD mapper
-	protected vtkMapper normalMapper;
-	protected vtkMapper lodMapper;
-	protected boolean useLodMapper;
+	private vtkMapper normalMapper;
+	private vtkMapper lodMapper;
+	private boolean useLodMapper;
 
 	/**
 	 * Standard Constructor
@@ -68,6 +68,31 @@ public class SaavtkLODActor extends vtkActor
 	}
 
 	/**
+	 * Method that returns the LOD flag.
+	 * <P>
+	 * LOD flags set to true will result in more coarse rendering but improved
+	 * rendering speed.
+	 */
+	public boolean getLodFlag()
+	{
+		return useLodMapper;
+	}
+
+	/**
+	 * Method that changes LOD flag.
+	 * <P>
+	 * LOD flags set to true will result in more coarse rendering but improved
+	 * rendering speed.
+	 */
+	public void setLodFlag(boolean aFlag)
+	{
+		useLodMapper = aFlag;
+
+		// Update mapper actually being used by actor
+		updateMapper();
+	}
+
+	/**
 	 * Saves passed in argument as the actor's LOD mapper and then applies a mapper
 	 * to the actor The actual mapper that is applied depends based on whether LODs
 	 * are enabled or not
@@ -97,24 +122,6 @@ public class SaavtkLODActor extends vtkActor
 	{
 		// Keep track of it
 		normalMapper = mapper;
-
-		// Update mapper actually being used by actor
-		updateMapper();
-	}
-
-	public void showLOD()
-	{
-		// We want to show LODs
-		useLodMapper = true;
-
-		// Update mapper actually being used by actor
-		updateMapper();
-	}
-
-	public void hideLOD()
-	{
-		// We want to not show LODs
-		useLodMapper = false;
 
 		// Update mapper actually being used by actor
 		updateMapper();

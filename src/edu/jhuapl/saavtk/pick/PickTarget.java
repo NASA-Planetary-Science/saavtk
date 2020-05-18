@@ -6,7 +6,7 @@ import vtk.vtkActor;
 
 /**
  * Immutable class that defines the target that was picked.
- * 
+ *
  * @author lopeznr1
  */
 public class PickTarget
@@ -22,12 +22,11 @@ public class PickTarget
 
 	/**
 	 * Standard Constructor
-	 * 
+	 *
 	 * @param aActor    The VTK actor that was picked
 	 * @param aNormal   Corresponds to the normal associated with the position.
 	 * @param aPosition Corresponds to the 3D position that was picked.
 	 * @param aCellId   Corresponds to the cell id that was picked.
-	 * @param aModel    The model associated with the pick action
 	 */
 	public PickTarget(vtkActor aActor, Vector3D aNormal, Vector3D aPosition, int aCellId)
 	{
