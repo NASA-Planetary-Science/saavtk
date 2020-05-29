@@ -1,21 +1,21 @@
-package edu.jhuapl.saavtk.gui.render.camera;
+package edu.jhuapl.saavtk.camera;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.MathUtil;
-import vtk.vtkCamera;
 import vtk.vtkFloatArray;
 
 /**
  * Collection of utility methods useful for camera operations.
  * <P>
  * A number of methods in this class deal with the retrieval / computation of
- * attributes associated with a PolyhedralModel. Eventually these utility
- * methods should be relocated to a more appropriate package.
+ * attributes associated with a {@link PolyhedralModel}. Eventually these
+ * utility methods should be relocated to a more appropriate package.
+ *
+ * @author lopeznr1
  */
 public class CameraUtil
 {
@@ -45,7 +45,7 @@ public class CameraUtil
 	 * Computation of the surface normal of a closed body is nonsensical.
 	 * <P>
 	 * The returned surface normal will be normalized.
-	 * 
+	 *
 	 * @param aPolyModel
 	 */
 	public static Vector3D calcSurfaceNormal(PolyhedralModel aPolyModel)
@@ -54,7 +54,7 @@ public class CameraUtil
 //		// Locate the normal at the located centerPt
 //		Vector3D centerVect = calculateCenterPoint(aPolyModel);
 //		double[] centerPt = centerVect.toArray();
-//		
+//
 ////		double[] normalPt = refPolyModel.getClosestNormal(centerPt);
 //		double[] normalPt = aPolyModel.getNormalAtPoint(centerPt);
 //		Vector3D normalVect = new Vector3D(normalPt);
@@ -159,7 +159,7 @@ public class CameraUtil
 	/**
 	 * Utility method that forms a CoordinateSystem from the specified normal and
 	 * origin.
-	 * 
+	 *
 	 * @param aNormal This Z-Axis will be aligned with the specified normal (and
 	 *                normalized).
 	 * @param aOrigin The origin of this coordinate system.
@@ -234,7 +234,7 @@ public class CameraUtil
 	/**
 	 * Utility method that configures the camera so that the camera is pointed down
 	 * the logical axis corresponding to the specified AxisType.
-	 * 
+	 *
 	 * @param aCamera   The camera to be manipulated.
 	 * @param aAxisType The AxisType to look down.
 	 * @param aDistance The distance between the camera and the focal point.
@@ -298,7 +298,7 @@ public class CameraUtil
 	 * the logical axis corresponding to the specified AxisType.
 	 * <P>
 	 * The distance between the Camera and the focal point will be maintained.
-	 * 
+	 *
 	 * @param aCamera   The camera to be manipulated.
 	 * @param aAxisType The AxisType to look down.
 	 */
@@ -316,16 +316,12 @@ public class CameraUtil
 	 * Utility method to configure the camera to focus on the specified position,
 	 * aFocalPos. The camera will be moved to a point directly above the focus
 	 * position along the normal as specified by aFocalNorm.
-	 * <P>
-	 * TODO: Rework to make specific to {@link Camera} rather than {@link Renderer}
 	 */
-	public static void setFocalPosition(Renderer aRenderer, Vector3D aFocalPos, Vector3D aFocalNorm)
+	public static void setFocalPosition(Camera aCamera, Vector3D aFocalPos, Vector3D aFocalNorm)
 	{
-		vtkCamera tmpCamera = aRenderer.getRenderWindowPanel().getActiveCamera();
-
 		double flyToRange = aFocalPos.getNorm();
 
-		Vector3D cPos = new Vector3D(tmpCamera.GetPosition());
+		Vector3D cPos = aCamera.getPosition();
 		double cRange = cPos.getNorm();
 
 		// Use law of cosines based on the current camera position and the fly-to
@@ -333,38 +329,34 @@ public class CameraUtil
 		double newAltitude = Math
 				.sqrt(Math.abs(cRange * cRange + flyToRange * flyToRange - 2 * aFocalPos.dotProduct(cPos)));
 
-		tmpCamera.SetFocalPoint(aFocalPos.toArray());
-		tmpCamera.SetPosition(aFocalPos.add(aFocalNorm.scalarMultiply(newAltitude)).toArray());
+		aCamera.setFocalPoint(aFocalPos);
 
-		aRenderer.getRenderWindowPanel().Render();
+		Vector3D tmpPosition = aFocalPos.add(aFocalNorm.scalarMultiply(newAltitude));
+		aCamera.setPosition(tmpPosition);
 	}
 
 	/**
 	 * Utility method that spins the view along the boresight of the current camera
 	 * so that the Z axis of the body is up.
-	 * <P>
-	 * TODO: Rework to make specific to {@link Camera} rather than {@link Renderer}
 	 */
-	public static void spinBoresightForNormalAxisZ(Renderer aRenderer)
+	public static void spinBoresightForNormalAxisZ(Camera aCamera)
 	{
-		vtkCamera tmpCamera = aRenderer.getRenderWindowPanel().getActiveCamera();
-//		Camera tmpCamera = refRenderer.getCamera();
+		Vector3D position = aCamera.getPosition();
+		Vector3D focalPoint = aCamera.getFocalPoint();
+		double[] posArr = position.toArray();
+		double[] fpArr = focalPoint.toArray();
 
-		double[] position = tmpCamera.GetPosition();
-		double[] focalPoint = tmpCamera.GetFocalPoint();
-		double viewAngle = tmpCamera.GetViewAngle();
-
-		double[] dir = { focalPoint[0] - position[0], focalPoint[1] - position[1], focalPoint[2] - position[2] };
+		double[] dir = { fpArr[0] - posArr[0], fpArr[1] - posArr[1], fpArr[2] - posArr[2] };
 		MathUtil.vhat(dir, dir);
 
 		double[] zAxis = { 0.0, 0.0, 1.0 };
-		double[] upVector = new double[3];
-		MathUtil.vcrss(dir, zAxis, upVector);
+		double[] upVectorArr = new double[3];
+		MathUtil.vcrss(dir, zAxis, upVectorArr);
 
-		if (upVector[0] != 0.0 || upVector[1] != 0.0 || upVector[2] != 0.0)
+		if (upVectorArr[0] != 0.0 || upVectorArr[1] != 0.0 || upVectorArr[2] != 0.0)
 		{
-			MathUtil.vcrss(upVector, dir, upVector);
-			aRenderer.setCameraOrientation(position, focalPoint, upVector, viewAngle);
+			MathUtil.vcrss(upVectorArr, dir, upVectorArr);
+			aCamera.setView(focalPoint, position, new Vector3D(upVectorArr));
 		}
 	}
 

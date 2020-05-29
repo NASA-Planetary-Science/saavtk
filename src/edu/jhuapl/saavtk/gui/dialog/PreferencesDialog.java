@@ -27,7 +27,6 @@ import edu.jhuapl.saavtk.gui.render.RenderPanel;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.render.Renderer.LightingType;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
-import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.util.ColorIcon;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -82,10 +81,6 @@ public class PreferencesDialog extends javax.swing.JDialog
             joystickRadioButton.setEnabled(false);
             trackballRadioButton.setEnabled(false);
 
-            PolyhedralModel smallBodyModel =
-                    viewManager.getCurrentView().getModelManager().getPolyhedralModel();
-            showScaleBarCheckBox.setSelected(smallBodyModel.getShowScaleBar());
-
             PickManager pickManager = viewManager.getCurrentView().getPickManager();
             int value = getSliderValueFromTolerance(pickManager.getPickTolerance());
             pickToleranceSlider.setValue(value);
@@ -107,9 +102,9 @@ public class PreferencesDialog extends javax.swing.JDialog
              * updateColorLabel(axesPanel.getxColor(), xAxisColorLabel);
              * updateColorLabel(axesPanel.getyColor(), yAxisColorLabel);
              * updateColorLabel(axesPanel.getzColor(), zAxisColorLabel);
-             * 
+             *
              * updateColorLabel(axesPanel.getFontColor(), fontColorLabel);
-             * 
+             *
              * axesSizeSpinner.setValue(axesPanel.getShaftlength());
              * axesLineWidthSpinner.setValue(axesPanel.getLinewidth());
              * axesFontSpinner.setValue(axesPanel.getFontsize());
@@ -169,9 +164,6 @@ public class PreferencesDialog extends javax.swing.JDialog
              * else
              * renderer.setDefaultInteractorStyleType(InteractorStyleType.TRACKBALL_CAMERA);
              */
-
-            PolyhedralModel smallBodyModel = v.getModelManager().getPolyhedralModel();
-            smallBodyModel.setShowScaleBar(showScaleBarCheckBox.isSelected());
 
             PickManager pickManager = v.getPickManager();
             double tolerance = getToleranceFromSliderValue(pickToleranceSlider.getValue());
@@ -298,10 +290,6 @@ public class PreferencesDialog extends javax.swing.JDialog
         longitudeTextField = new javax.swing.JFormattedTextField();
         distanceLabel = new javax.swing.JLabel();
         distanceTextField = new javax.swing.JFormattedTextField();
-        jPanel4 = new javax.swing.JPanel();
-        jSeparator3 = new javax.swing.JSeparator();
-        jLabel2 = new javax.swing.JLabel();
-        showScaleBarCheckBox = new javax.swing.JCheckBox();
         jPanel5 = new javax.swing.JPanel();
         jLabel4 = new javax.swing.JLabel();
         jSeparator4 = new javax.swing.JSeparator();
@@ -593,38 +581,6 @@ public class PreferencesDialog extends javax.swing.JDialog
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         jPanel11.add(distanceTextField, gridBagConstraints);
 
-        jPanel4.setLayout(new java.awt.GridBagLayout());
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1.0;
-        jPanel4.add(jSeparator3, gridBagConstraints);
-
-        jLabel2.setText("Scale Bar");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 4);
-        jPanel4.add(jLabel2, gridBagConstraints);
-
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 20;
-        gridBagConstraints.gridwidth = 4;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
-        gridBagConstraints.insets = new java.awt.Insets(15, 4, 5, 0);
-        jPanel11.add(jPanel4, gridBagConstraints);
-
-        showScaleBarCheckBox.setText("Show Scale Bar");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 21;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 0);
-        jPanel11.add(showScaleBarCheckBox, gridBagConstraints);
-
         jPanel5.setLayout(new java.awt.GridBagLayout());
 
 //        jLabel4.setText("Interactor Style");
@@ -871,7 +827,7 @@ public class PreferencesDialog extends javax.swing.JDialog
          * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
          * gridBagConstraints.gridy = 11; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.EAST; jPanel11.add(jLabel20, gridBagConstraints);
-         * 
+         *
          * xAxisColorButton.setText("Change..."); xAxisColorButton.addActionListener(new
          * java.awt.event.ActionListener() { public void
          * actionPerformed(java.awt.event.ActionEvent evt) {
@@ -880,17 +836,17 @@ public class PreferencesDialog extends javax.swing.JDialog
          * gridBagConstraints.gridy = 11; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.LINE_START; jPanel11.add(xAxisColorButton,
          * gridBagConstraints);
-         * 
+         *
          * jLabel21.setText("Y Axis Color"); gridBagConstraints = new
          * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
          * gridBagConstraints.gridy = 12; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.EAST; jPanel11.add(jLabel21, gridBagConstraints);
-         * 
+         *
          * jLabel22.setText("Z Axis Color"); gridBagConstraints = new
          * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
          * gridBagConstraints.gridy = 13; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.EAST; jPanel11.add(jLabel22, gridBagConstraints);
-         * 
+         *
          * yAxisColorButton.setText("Change..."); yAxisColorButton.addActionListener(new
          * java.awt.event.ActionListener() { public void
          * actionPerformed(java.awt.event.ActionEvent evt) {
@@ -899,7 +855,7 @@ public class PreferencesDialog extends javax.swing.JDialog
          * gridBagConstraints.gridy = 12; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.LINE_START; jPanel11.add(yAxisColorButton,
          * gridBagConstraints);
-         * 
+         *
          * zAxisColorButton.setText("Change..."); zAxisColorButton.addActionListener(new
          * java.awt.event.ActionListener() { public void
          * actionPerformed(java.awt.event.ActionEvent evt) {
@@ -908,47 +864,47 @@ public class PreferencesDialog extends javax.swing.JDialog
          * gridBagConstraints.gridy = 13; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.LINE_START; jPanel11.add(zAxisColorButton,
          * gridBagConstraints);
-         * 
+         *
          * xAxisColorLabel.setText("Default"); gridBagConstraints = new
          * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 2;
          * gridBagConstraints.gridy = 11; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.LINE_START; gridBagConstraints.insets = new
          * java.awt.Insets(0, 4, 0, 0); jPanel11.add(xAxisColorLabel,
          * gridBagConstraints);
-         * 
+         *
          * yAxisColorLabel.setText("Default"); gridBagConstraints = new
          * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 2;
          * gridBagConstraints.gridy = 12; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.LINE_START; gridBagConstraints.insets = new
          * java.awt.Insets(0, 4, 0, 0); jPanel11.add(yAxisColorLabel,
          * gridBagConstraints);
-         * 
+         *
          * zAxisColorLabel.setText("Default"); gridBagConstraints = new
          * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 2;
          * gridBagConstraints.gridy = 13; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.LINE_START; gridBagConstraints.insets = new
          * java.awt.Insets(0, 4, 0, 0); jPanel11.add(zAxisColorLabel,
          * gridBagConstraints);
-         * 
+         *
          * jLabel15.setText("Size"); gridBagConstraints = new
          * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
          * gridBagConstraints.gridy = 15; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.EAST; gridBagConstraints.insets = new
          * java.awt.Insets(0, 0, 0, 4); jPanel11.add(jLabel15, gridBagConstraints);
-         * 
+         *
          * axesSizeSpinner.setModel(new javax.swing.SpinnerNumberModel(0.2d, 0.0d, 1.0d,
          * 0.1d)); gridBagConstraints = new java.awt.GridBagConstraints();
          * gridBagConstraints.gridx = 2; gridBagConstraints.gridy = 15;
          * gridBagConstraints.gridwidth = 2; gridBagConstraints.ipadx = 50;
          * gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
          * jPanel11.add(axesSizeSpinner, gridBagConstraints);
-         * 
+         *
          * jLabel16.setText("Line Width"); gridBagConstraints = new
          * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
          * gridBagConstraints.gridy = 16; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.EAST; gridBagConstraints.insets = new
          * java.awt.Insets(0, 0, 0, 4); jPanel11.add(jLabel16, gridBagConstraints);
-         * 
+         *
          * axesLineWidthSpinner.setModel(new javax.swing.SpinnerNumberModel(1.0d, 1.0d,
          * 128.0d, 1.0d)); axesLineWidthSpinner.setMinimumSize(new
          * java.awt.Dimension(41, 28)); axesLineWidthSpinner.setPreferredSize(new
@@ -958,25 +914,25 @@ public class PreferencesDialog extends javax.swing.JDialog
          * gridBagConstraints.ipadx = 50; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.WEST; jPanel11.add(axesLineWidthSpinner,
          * gridBagConstraints);
-         * 
+         *
          * jLabel17.setText("Font Size"); gridBagConstraints = new
          * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
          * gridBagConstraints.gridy = 17; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.EAST; gridBagConstraints.insets = new
          * java.awt.Insets(0, 0, 0, 4); jPanel11.add(jLabel17, gridBagConstraints);
-         * 
+         *
          * jLabel18.setText("Cone Length"); gridBagConstraints = new
          * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
          * gridBagConstraints.gridy = 18; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.EAST; gridBagConstraints.insets = new
          * java.awt.Insets(0, 0, 0, 4); jPanel11.add(jLabel18, gridBagConstraints);
-         * 
+         *
          * jLabel19.setText("Cone Radius"); gridBagConstraints = new
          * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
          * gridBagConstraints.gridy = 19; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.EAST; gridBagConstraints.insets = new
          * java.awt.Insets(0, 0, 0, 4); jPanel11.add(jLabel19, gridBagConstraints);
-         * 
+         *
          * axesFontSpinner.setModel(new javax.swing.SpinnerNumberModel(12, 4, 128, 1));
          * axesFontSpinner.setMinimumSize(new java.awt.Dimension(41, 28));
          * axesFontSpinner.setPreferredSize(new java.awt.Dimension(41, 28));
@@ -985,33 +941,33 @@ public class PreferencesDialog extends javax.swing.JDialog
          * gridBagConstraints.gridwidth = 2; gridBagConstraints.ipadx = 50;
          * gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
          * jPanel11.add(axesFontSpinner, gridBagConstraints);
-         * 
+         *
          * axesConeLengthSpinner.setModel(new javax.swing.SpinnerNumberModel(0.2d, 0.0d,
          * 1.0d, 0.1d)); gridBagConstraints = new java.awt.GridBagConstraints();
          * gridBagConstraints.gridx = 2; gridBagConstraints.gridy = 18;
          * gridBagConstraints.gridwidth = 2; gridBagConstraints.ipadx = 50;
          * gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
          * jPanel11.add(axesConeLengthSpinner, gridBagConstraints);
-         * 
+         *
          * axesConeRadiusSpinner.setModel(new javax.swing.SpinnerNumberModel(0.4d, 0.0d,
          * 1.0d, 0.1d)); gridBagConstraints = new java.awt.GridBagConstraints();
          * gridBagConstraints.gridx = 2; gridBagConstraints.gridy = 19;
          * gridBagConstraints.gridwidth = 2; gridBagConstraints.ipadx = 50;
          * gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
          * jPanel11.add(axesConeRadiusSpinner, gridBagConstraints);
-         * 
+         *
          * jLabel11.setText("Font Color"); gridBagConstraints = new
          * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 1;
          * gridBagConstraints.gridy = 14; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.EAST; jPanel11.add(jLabel11, gridBagConstraints);
-         * 
+         *
          * fontColorLabel.setText("Default"); gridBagConstraints = new
          * java.awt.GridBagConstraints(); gridBagConstraints.gridx = 2;
          * gridBagConstraints.gridy = 14; gridBagConstraints.anchor =
          * java.awt.GridBagConstraints.LINE_START; gridBagConstraints.insets = new
          * java.awt.Insets(0, 4, 0, 0); jPanel11.add(fontColorLabel,
          * gridBagConstraints);
-         * 
+         *
          * fontColorButton.setText("Change..."); fontColorButton.addActionListener(new
          * java.awt.event.ActionListener() { public void
          * actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1081,7 +1037,6 @@ public class PreferencesDialog extends javax.swing.JDialog
         preferencesMap.put(Preferences.FIXEDLIGHT_DISTANCE, Double.valueOf(distanceTextField.getText()).toString());
 //        preferencesMap.put(Preferences.SHOW_AXES, ((Boolean)showAxesCheckBox.isSelected()).toString());
 //        preferencesMap.put(Preferences.INTERACTIVE_AXES, ((Boolean)interactiveCheckBox.isSelected()).toString());
-        preferencesMap.put(Preferences.SHOW_SCALE_BAR, ((Boolean) showScaleBarCheckBox.isSelected()).toString());
         preferencesMap.put(Preferences.LIGHT_INTENSITY, ((Double) intensitySpinner.getValue()).toString());
         preferencesMap.put(Preferences.PICK_TOLERANCE, Double.valueOf(getToleranceFromSliderValue(pickToleranceSlider.getValue())).toString());
 //        preferencesMap.put(Preferences.MOUSE_WHEEL_MOTION_FACTOR, ((Double)mouseWheelMotionFactorSpinner.getValue()).toString());
@@ -1177,7 +1132,6 @@ public class PreferencesDialog extends javax.swing.JDialog
     private javax.swing.JLabel jLabel17;
     private javax.swing.JLabel jLabel18;
     private javax.swing.JLabel jLabel19;
-    private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel20;
     private javax.swing.JLabel jLabel21;
     private javax.swing.JLabel jLabel22;
@@ -1193,7 +1147,6 @@ public class PreferencesDialog extends javax.swing.JDialog
     private javax.swing.JPanel jPanel11;
     private javax.swing.JPanel jPanel2;
 //    private javax.swing.JPanel jPanel3;
-    private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel6;
     private javax.swing.JPanel jPanel7;
@@ -1202,7 +1155,6 @@ public class PreferencesDialog extends javax.swing.JDialog
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator2;
-    private javax.swing.JSeparator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JSeparator jSeparator5;
     private javax.swing.JSeparator jSeparator6;
@@ -1222,7 +1174,6 @@ public class PreferencesDialog extends javax.swing.JDialog
     private javax.swing.JButton selectionColorButton;
     private javax.swing.JLabel selectionColorLabel;
 //    private javax.swing.JCheckBox showAxesCheckBox;
-    private javax.swing.JCheckBox showScaleBarCheckBox;
     private javax.swing.JRadioButton trackballRadioButton;
 //    private javax.swing.JButton xAxisColorButton;
 //    private javax.swing.JLabel xAxisColorLabel;

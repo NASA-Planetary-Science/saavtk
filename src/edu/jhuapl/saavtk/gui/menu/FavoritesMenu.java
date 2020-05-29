@@ -56,7 +56,7 @@ public class FavoritesMenu extends JMenu
         List<View> favoriteViews = favoritesFile.getAllFavorites();
         for (View view : favoriteViews)
         {
-            if (!view.getUniqueName().equals(manager.getDefaultBodyToLoad()))
+            if (!view.getUniqueName().equals(manager.getDefaultModelName()))
             {
                 JMenuItem menuItem = new FavoritesMenuItem(view);
                 String urlString = (view.getConfigURL() == null) ? view.getShapeModelName() : view.getConfigURL();
@@ -79,26 +79,38 @@ public class FavoritesMenu extends JMenu
         JMenuItem defaultItem = new JMenuItem("Default model:");
         add(defaultItem);
 
+        View defaultToLoad;
         try
         {
-            View defaultToLoad = manager.getView(manager.getDefaultBodyToLoad());
-            JMenuItem menuItem = new FavoritesMenuItem(defaultToLoad);
-//            String urlString = defaultToLoad.getShapeModelName();
-            String urlString = (defaultToLoad.getConfigURL() == null) ? defaultToLoad.getShapeModelName() : defaultToLoad.getConfigURL();
-        	if (defaultToLoad.getUniqueName().contains("Custom"))
-        	{
-        		SafeURLPaths safeUrlPaths = SafeURLPaths.instance();
-        		urlString = safeUrlPaths.getUrl(safeUrlPaths.getString(Configuration.getImportedShapeModelsDir(), defaultToLoad.getShapeModelName()));
-        	}
-            fileStateTracker.addStateChangeListener(urlString, state -> {
-                menuItem.setEnabled(state.isAccessible());
-            });
-            add(menuItem);
-
+            defaultToLoad = manager.getView(manager.getDefaultModelName());
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            defaultToLoad = null;
+        }
+
+        if (defaultToLoad != null)
+        {            
+            try
+            {
+                JMenuItem menuItem = new FavoritesMenuItem(defaultToLoad);
+//            String urlString = defaultToLoad.getShapeModelName();
+                String urlString = (defaultToLoad.getConfigURL() == null) ? defaultToLoad.getShapeModelName() : defaultToLoad.getConfigURL();
+                if (defaultToLoad.getUniqueName().contains("Custom"))
+                {
+                    SafeURLPaths safeUrlPaths = SafeURLPaths.instance();
+                    urlString = safeUrlPaths.getUrl(safeUrlPaths.getString(Configuration.getImportedShapeModelsDir(), defaultToLoad.getShapeModelName()));
+                }
+                fileStateTracker.addStateChangeListener(urlString, state -> {
+                    menuItem.setEnabled(state.isAccessible());
+                });
+                add(menuItem);
+                
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
         }
 
         //
@@ -164,8 +176,10 @@ public class FavoritesMenu extends JMenu
         public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
         {
             favoritesFile.removeFavorite(manager.getCurrentView());
-            if (manager.getDefaultBodyToLoad().equals(manager.getCurrentView().getUniqueName()))
-                manager.resetDefaultBodyToLoad();
+            String defaultModelName = manager.getDefaultModelName();
+            String currentModelName = manager.getCurrentView().getUniqueName();
+            if (defaultModelName == currentModelName || (defaultModelName != null && defaultModelName.equals(currentModelName))) 
+                manager.resetDefaultModelName();
             rebuild();
         }
     }
@@ -181,7 +195,7 @@ public class FavoritesMenu extends JMenu
         public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
         {
             favoritesFile.clear();
-            manager.resetDefaultBodyToLoad();
+            manager.resetDefaultModelName();
             rebuild();
         }
     }
@@ -200,7 +214,8 @@ public class FavoritesMenu extends JMenu
         @Override
         public void actionPerformed(@SuppressWarnings("unused") ActionEvent e)
         {
-            manager.setDefaultBodyToLoad(manager.getCurrentView().getUniqueName());
+            manager.setDefaultModelName(manager.getCurrentView().getUniqueName());
+            manager.saveDefaultModelName();
             favoritesFile.addFavorite(manager.getCurrentView()); // automatically add current view to favorites if it already is
             rebuild();
         }

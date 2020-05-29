@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.render.camera;
+package edu.jhuapl.saavtk.camera;
 
 import java.io.File;
 
