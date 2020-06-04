@@ -106,6 +106,8 @@ public class UrlInfo
                 // Something other than http. May need to handle this in the future.
                 // For now, be optimistic and assume it's accessible.
                 status = UrlStatus.ACCESSIBLE;
+                contentLength = connection.getContentLengthLong();
+                lastModified = connection.getLastModified();
                 debugConnectionMessage(state, "non-http connection, status = " + status);
             }
 
