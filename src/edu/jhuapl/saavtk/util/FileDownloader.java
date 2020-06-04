@@ -348,4 +348,10 @@ public abstract class FileDownloader implements Runnable
     // e.printStackTrace();
     // }
     // }
+
+    @Override
+    public String toString()
+    {
+        return "FileDownloader from:\n" + getUrlInfo() + "\nto:\n" + getFileInfo();
+    }
 }
