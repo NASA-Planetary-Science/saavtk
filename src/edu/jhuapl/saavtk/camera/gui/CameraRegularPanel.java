@@ -38,7 +38,7 @@ import net.miginfocom.swing.MigLayout;
 public class CameraRegularPanel extends JPanel implements ActionListener, ViewActionListener
 {
 	// Constants
-	private static final String ErrMsgNoTargetIntercept = "No target intercept with surface.";
+	private static final String InfoMsgUndefinedLineOfSight = "Line of sight is undefined.";
 	private static final String ToolTipCameraAlt = "Altitude is distance between camera position and camera intercept (or if a DEM then it's geometric center).";
 	private static final String ToolTipLineOfSight = "Line of sight is distance between camera position and target intercept.";
 
@@ -51,9 +51,6 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 	// Ref vars
 	private final View refView;
 	private final PolyModel refPolyModel;
-
-	// State vars
-	private String failMsgExt;
 
 	// Gui vars
 	private final GNumberFieldSlider fovNFS;
@@ -76,8 +73,6 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 	{
 		refView = aView;
 		refPolyModel = aPolyModel;
-
-		failMsgExt = null;
 
 		setLayout(new MigLayout("", "[right][grow][]", "[]"));
 
@@ -127,12 +122,14 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 
 		JLabel targetLatL = new JLabel("Lat:");
 		targetLatNFS = new GNumberFieldSlider(this, tmpFormat, LatRange, NumCols);
+		targetLatNFS.setEnabled(false);
 		add(targetLatL, "");
 		add(targetLatNFS, "growx");
 		add(new JLabel("deg"), "wrap");
 
 		JLabel targetLonL = new JLabel("Lon:");
 		targetLonNFS = new GNumberFieldSlider(this, tmpFormat, LonRange, NumCols);
+		targetLonNFS.setEnabled(false);
 		add(targetLonL, "");
 		add(targetLonNFS, "growx");
 		add(new JLabel("deg"), "wrap");
@@ -140,7 +137,7 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 		JLabel targetLineOfSightL = new JLabel("Line of Sight*:");
 		targetLineOfSightL.setToolTipText(ToolTipLineOfSight);
 		targetLineOfSightNF = new GNumberField(this);
-		targetLineOfSightNF.setEditable(false);
+		targetLineOfSightNF.setEnabled(false);
 		add(targetLineOfSightL, "span 2,split 2");
 		add(targetLineOfSightNF, "growx");
 		add(new JLabel("km"), "wrap");
@@ -165,9 +162,6 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 			refView.setLodFlag(lodFlag);
 		}
 
-		// Clear out any prior extended fail message
-		failMsgExt = null;
-
 		// Process the event
 		if (source == fovNFS)
 			doActionCameraFov();
@@ -185,8 +179,6 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 	public void handleViewAction(Object aSource)
 	{
 		syncGuiToModel();
-
-		failMsgExt = null;
 		updateGui();
 	}
 
@@ -303,10 +295,7 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 		Vector3D extPos = unitTargetDir.scalarMultiply(extAmt);
 		Vector3D targetIntercept = refPolyModel.calcInterceptBetween(Vector3D.ZERO, extPos);
 		if (targetIntercept == null)
-		{
-			failMsgExt = ErrMsgNoTargetIntercept;
 			return;
-		}
 
 		// Set the camera's focal point to be at the target intercept
 		refView.getCamera().setFocalPoint(targetIntercept);
@@ -346,14 +335,14 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 	 */
 	private String getErrorMsgForTargetUI()
 	{
-		if (targetLatNFS.isValidInput() == false)
-			return String.format("Invalid Target Latitude. Range: [%1.0f, %1.0f]", LatRange.lowerEndpoint(),
-					LatRange.upperEndpoint());
-
-		if (targetLonNFS.isValidInput() == false)
-			return String.format("Invalid Target Longitude. Range: [%1.0f, %1.0f]", LonRange.lowerEndpoint(),
-					LonRange.upperEndpoint());
-
+//		if (targetLatNFS.isValidInput() == false)
+//			return String.format("Invalid Target Latitude. Range: [%1.0f, %1.0f]", LatRange.lowerEndpoint(),
+//					LatRange.upperEndpoint());
+//
+//		if (targetLonNFS.isValidInput() == false)
+//			return String.format("Invalid Target Longitude. Range: [%1.0f, %1.0f]", LonRange.lowerEndpoint(),
+//					LonRange.upperEndpoint());
+//
 		return null;
 	}
 
@@ -428,10 +417,21 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 		Vector3D targetPosExt = cameraPos.add(dirVect.scalarMultiply(extAmt));
 
 		double losDist = Double.NaN;
+		double losLat = Double.NaN;
+		double losLon = Double.NaN;
 		Vector3D losInterceptPos = refPolyModel.calcInterceptBetween(cameraPos, targetPosExt);
 		if (losInterceptPos != null)
+		{
 			losDist = losInterceptPos.distance(cameraPos);
 
+			LatLon losLL = MathUtil.reclat(losInterceptPos.toArray()).toDegrees();
+			losLat = losLL.lat;
+			losLon = losLL.lon;
+			if (losLon < 0)
+				losLon += 360;
+		}
+		targetLatNFS.setValue(losLat);
+		targetLonNFS.setValue(losLon);
 		targetLineOfSightNF.setValue(losDist);
 	}
 
@@ -446,12 +446,10 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 			failMsg = getErrorMsgForCameraUI();
 		if (failMsg == null)
 			failMsg = getErrorMsgForTargetUI();
-		if (failMsg == null)
-			failMsg = failMsgExt;
 
 		String infoMsg = null;
 		if (targetLineOfSightNF.isValidInput() == false)
-			infoMsg = String.format("Line of sight is undefined.");
+			infoMsg = String.format(InfoMsgUndefinedLineOfSight);
 
 		// Update the status area
 		String tmpMsg = infoMsg;
