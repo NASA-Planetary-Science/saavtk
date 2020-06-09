@@ -15,6 +15,8 @@ import com.google.common.collect.Range;
 import edu.jhuapl.saavtk.camera.View;
 import edu.jhuapl.saavtk.camera.ViewActionListener;
 import edu.jhuapl.saavtk.gui.util.Colors;
+import edu.jhuapl.saavtk.model.PolyModel;
+import edu.jhuapl.saavtk.model.PolyModelUtil;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import glum.gui.GuiUtil;
@@ -36,14 +38,19 @@ import net.miginfocom.swing.MigLayout;
 public class CameraRegularPanel extends JPanel implements ActionListener, ViewActionListener
 {
 	// Constants
+	private static final String InfoMsgUndefinedLineOfSight = "Line of sight is undefined.";
+	private static final String ToolTipCameraAlt = "Altitude is distance between camera position and camera intercept (or if a DEM then it's geometric center).";
+	private static final String ToolTipLineOfSight = "Line of sight is distance between camera position and target intercept.";
+
 	private static final Range<Double> LatRange = Range.closed(-90.0, 90.0);
-	private static final Range<Double> LonRange = Range.closed(-180.0, 180.0);
-	private static final Range<Double> RollRange = Range.closed(-360.0, 360.0);
+	private static final Range<Double> LonRange = Range.closed(0.0, 360.0);
+	private static final Range<Double> RollRange = Range.closed(-180.0, 180.0);
 	private static final Range<Double> FovRange = Range.closed(0.01, 179.0);
 	private static final int NumCols = 6;
 
 	// Ref vars
 	private final View refView;
+	private final PolyModel refPolyModel;
 
 	// Gui vars
 	private final GNumberFieldSlider fovNFS;
@@ -62,9 +69,10 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 	/**
 	 * Standard Constructor
 	 */
-	public CameraRegularPanel(View aView)
+	public CameraRegularPanel(View aView, PolyModel aPolyModel)
 	{
 		refView = aView;
+		refPolyModel = aPolyModel;
 
 		setLayout(new MigLayout("", "[right][grow][]", "[]"));
 
@@ -93,9 +101,11 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 		add(cameraLonNFS, "growx");
 		add(new JLabel("deg"), "wrap");
 
+		JLabel cameraAltL = new JLabel("Alt*:");
+		cameraAltL.setToolTipText(ToolTipCameraAlt);
 		cameraAltNF = new GNumberField(this);
 		JLabel kmLabel = new JLabel("km");
-		add(new JLabel("Alt:"), "");
+		add(cameraAltL, "");
 		add(cameraAltNF, "growx");
 		add(kmLabel, "wrap");
 
@@ -112,18 +122,22 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 
 		JLabel targetLatL = new JLabel("Lat:");
 		targetLatNFS = new GNumberFieldSlider(this, tmpFormat, LatRange, NumCols);
+		targetLatNFS.setEnabled(false);
 		add(targetLatL, "");
 		add(targetLatNFS, "growx");
 		add(new JLabel("deg"), "wrap");
 
 		JLabel targetLonL = new JLabel("Lon:");
 		targetLonNFS = new GNumberFieldSlider(this, tmpFormat, LonRange, NumCols);
+		targetLonNFS.setEnabled(false);
 		add(targetLonL, "");
 		add(targetLonNFS, "growx");
 		add(new JLabel("deg"), "wrap");
 
-		JLabel targetLineOfSightL = new JLabel("Line of Sight:");
+		JLabel targetLineOfSightL = new JLabel("Line of Sight*:");
+		targetLineOfSightL.setToolTipText(ToolTipLineOfSight);
 		targetLineOfSightNF = new GNumberField(this);
+		targetLineOfSightNF.setEnabled(false);
 		add(targetLineOfSightL, "span 2,split 2");
 		add(targetLineOfSightNF, "growx");
 		add(new JLabel("km"), "wrap");
@@ -140,9 +154,8 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 	@Override
 	public void actionPerformed(ActionEvent aEvent)
 	{
-		Object source = aEvent.getSource();
-
 		// Flip LOD flag for better performance
+		Object source = aEvent.getSource();
 		if (source instanceof GNumberFieldSlider)
 		{
 			boolean lodFlag = ((GNumberFieldSlider) source).getValueIsAdjusting() == true;
@@ -166,6 +179,7 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 	public void handleViewAction(Object aSource)
 	{
 		syncGuiToModel();
+		updateGui();
 	}
 
 	/**
@@ -174,7 +188,7 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 	private void doActionCameraFov()
 	{
 		// Bail if there are any errors
-		if (getErrorMsg() != null)
+		if (getErrorMsgForViewUI() != null)
 			return;
 
 		double newFov = fovNFS.getValue();
@@ -187,28 +201,52 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 	private void doActionCameraLocation()
 	{
 		// Bail if there are any errors
-		if (getErrorMsg() != null)
+		if (getErrorMsgForCameraUI() != null)
 			return;
 
-		// Convert lat/lon to unit vector
+		// Compute the distance between the camera's (surface) intercept and the shape
+		// model's origin (geometric center).
+		Vector3D cameraPos = refView.getCamera().getPosition();
+		Vector3D cameraInterceptPos = PolyModelUtil.calcInterceptPosition(refPolyModel, cameraPos);
+
+		Vector3D geoCenterPos = refPolyModel.getGeometricCenterPoint();
+		double cameraInterceptDist = cameraInterceptPos.distance(geoCenterPos);
+
+		// Compute the (new) unit camera direction vector. The unit camera direction
+		// vector is provided via user input.
 		double tmpLat = cameraLatNFS.getValue();
 		double tmpLon = cameraLonNFS.getValue();
-		LatLon tmpLL = new LatLon(tmpLat, tmpLon);
+		LatLon tmpLL = new LatLon(tmpLat, tmpLon).toRadians();
+		double[] tmpPosArr = MathUtil.latrec(tmpLL);
+		Vector3D unitCameraDir = new Vector3D(tmpPosArr).normalize();
 
-		double[] pos = MathUtil.latrec(tmpLL.toRadians());
-		MathUtil.unorm(pos, pos);
+		// The new camera position will be a function of the following:
+		// - camera's unit vector described by user input (camera) lat, lon
+		// - camera's unit vector scaled by a (proper) scalar factor.
+		//
+		// Note the scalar factor is the distance along unit camera direction vector.
+		//
+		// Currently we approximate the scalar factor as:
+		// ---> scalarFact = cameraAltitude + cameraInterceptDist <---
+		//
+		// This approximation is not sufficient if the shape model's geometric center
+		// is not equal to the coordinate system origin (0, 0, 0)
 
-		// Compute the distance
-		double spacecraftAltitude = cameraAltNF.getValue();
-		double cameraRadius = calculateCameraRadius();
+		// Retrieve the (user provided) cameras altitude and compute the scalar factor
+		double cameraAltitude = cameraAltNF.getValue();
+		double scaleFact = cameraAltitude + cameraInterceptDist;
 
-		double distance = cameraRadius + spacecraftAltitude;
-		pos[0] *= distance;
-		pos[1] *= distance;
-		pos[2] *= distance;
+		// If the shape model's geometric center is not equal to the origin
+		// then just utilize the scalar factor from the (old) camera position. Note we
+		// thus ignore the (user provided) camera altitude.
+		//
+		// TODO: Do not ignore (user provided) camera altitude for this special case.
+		if (isShapeModelAtOrigin() == false)
+			scaleFact = refView.getCamera().getPosition().getNorm();
 
-		Vector3D tmpPosition = new Vector3D(pos[0], pos[1], pos[2]);
-		refView.getCamera().setPosition(tmpPosition);
+		// Update the camera to reflect the new position
+		Vector3D newCameraPos = unitCameraDir.scalarMultiply(scaleFact);
+		refView.getCamera().setPosition(newCameraPos);
 	}
 
 	/**
@@ -217,7 +255,7 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 	private void doActionCameraRoll()
 	{
 		// Bail if there are any errors
-		if (getErrorMsg() != null)
+		if (getErrorMsgForCameraUI() != null)
 			return;
 
 		double roll = cameraRollNFS.getValue();
@@ -230,41 +268,47 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 	private void doActionTargetFocalPoint()
 	{
 		// Bail if there are any errors
-		if (getErrorMsg() != null)
+		if (getErrorMsgForTargetUI() != null)
 			return;
 
-		// TODO: The below logic has defects
-		// Set camera view point
-//		GenericPolyhedralModel model = refRenderer..getGenericPolyhedralModel();
-		double lineOfSightAltitude = targetLineOfSightNF.getValue();
-		LatLon viewpointLatLong = new LatLon(targetLatNFS.getValue(), targetLonNFS.getValue());
-		double[] pos = MathUtil.latrec(viewpointLatLong.toRadians());
-		double[] viewDirection = new double[3];
-		double[] origin = new double[3];
-		MathUtil.unorm(pos, pos);
-		MathUtil.vscl(JupiterScale, pos, origin);
-		MathUtil.vscl(-1.0, pos, viewDirection);
-//		pos[0] *= altitude;
-//		pos[1] *= altitude;
-//		pos[2] *= altitude;
-//		int result = model.computeRayIntersection(origin, viewDirection, pos);
-		double radius = MathUtil.vnorm(pos);
-//		System.out.println("RadiusPoint: " + radius);
-		MathUtil.unorm(pos, pos);
-		MathUtil.vscl(radius + lineOfSightAltitude, pos, pos);
-		refView.getCamera().setFocalPoint(new Vector3D(pos));
+		// Compute the (new) unit target direction vector. The unit target direction
+		// vector is provided via user input.
+		double tmpLat = targetLatNFS.getValue();
+		double tmpLon = targetLonNFS.getValue();
+		LatLon tmpLL = new LatLon(tmpLat, tmpLon).toRadians();
+		double[] tmpPosArr = MathUtil.latrec(tmpLL);
+		Vector3D unitTargetDir = new Vector3D(tmpPosArr).normalize();
+
+		// Calculate the target intercept (aka line of sight intercept) between the
+		// origin and the target (direction) vector
+		//
+		// Note an extend vector is utilized to ensure we will have a vector that does
+		// not fall short of the required length of the intercept. The extension amount
+		// is 2X the summation of:
+		// - bounding box diagonal
+		// - distance between the origin and geometric center
+		Vector3D geoCenterPos = refPolyModel.getGeometricCenterPoint();
+		double extAmt = refPolyModel.getBoundingBoxDiagonalLength();
+		extAmt += geoCenterPos.distance(Vector3D.ZERO);
+		extAmt *= 2;
+
+		Vector3D extPos = unitTargetDir.scalarMultiply(extAmt);
+		Vector3D targetIntercept = refPolyModel.calcInterceptBetween(Vector3D.ZERO, extPos);
+		if (targetIntercept == null)
+			return;
+
+		// Set the camera's focal point to be at the target intercept
+		refView.getCamera().setFocalPoint(targetIntercept);
 	}
 
 	/**
-	 * Helper method that will return a string describing invalid user input.
+	 * Helper method that will return a string describing invalid user input
+	 * associated with the camera UI elements.
 	 * <P>
 	 * If all input is valid then null will be returned.
 	 */
-	private String getErrorMsg()
+	private String getErrorMsgForCameraUI()
 	{
-		if (fovNFS.isValidInput() == false)
-			return String.format("Invalid FOV. Range: [%1.2f, %1.2f]", FovRange.lowerEndpoint(), FovRange.upperEndpoint());
-
 		if (cameraAltNF.isValidInput() == false)
 			return String.format("Invalid Camera Altitude.");
 
@@ -280,18 +324,50 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 			return String.format("Invalid Camera Roll. Range: [%1.0f, %1.0f]", RollRange.lowerEndpoint(),
 					RollRange.upperEndpoint());
 
-		if (targetLatNFS.isValidInput() == false)
-			return String.format("Invalid Target Latitude. Range: [%1.0f, %1.0f]", LatRange.lowerEndpoint(),
-					LatRange.upperEndpoint());
+		return null;
+	}
 
-		if (targetLonNFS.isValidInput() == false)
-			return String.format("Invalid Target Longitude. Range: [%1.0f, %1.0f]", LonRange.lowerEndpoint(),
-					LonRange.upperEndpoint());
+	/**
+	 * Helper method that will return a string describing invalid user input
+	 * associated with the target UI elements.
+	 * <P>
+	 * If all input is valid then null will be returned.
+	 */
+	private String getErrorMsgForTargetUI()
+	{
+//		if (targetLatNFS.isValidInput() == false)
+//			return String.format("Invalid Target Latitude. Range: [%1.0f, %1.0f]", LatRange.lowerEndpoint(),
+//					LatRange.upperEndpoint());
+//
+//		if (targetLonNFS.isValidInput() == false)
+//			return String.format("Invalid Target Longitude. Range: [%1.0f, %1.0f]", LonRange.lowerEndpoint(),
+//					LonRange.upperEndpoint());
+//
+		return null;
+	}
 
-		if (targetLineOfSightNF.isValidInput() == false)
-			return String.format("Invalid Target Line-Of-Sight.");
+	/**
+	 * Helper method that will return a string describing invalid user input
+	 * associated with the view UI elements.
+	 * <P>
+	 * If all input is valid then null will be returned.
+	 */
+	private String getErrorMsgForViewUI()
+	{
+		if (fovNFS.isValidInput() == false)
+			return String.format("Invalid FOV. Range: [%1.2f, %1.2f]", FovRange.lowerEndpoint(), FovRange.upperEndpoint());
 
 		return null;
+	}
+
+	/**
+	 * Helper method that returns true if the reference shape model's geometric
+	 * center lies at the origin.
+	 */
+	private boolean isShapeModelAtOrigin()
+	{
+		boolean retBool = Vector3D.ZERO.equals(refPolyModel.getGeometricCenterPoint()) == true;
+		return retBool;
 	}
 
 	/**
@@ -301,26 +377,62 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 	{
 		fovNFS.setValue(refView.getCamera().getViewAngle());
 
-		double cameraRadius = calculateCameraRadius();
-		double cameraAltitude = cameraGetDistance() - cameraRadius;
-		cameraAltNF.setValue(cameraAltitude);
-
+		// Camera position + roll
 		Vector3D cameraPos = refView.getCamera().getPosition();
 		LatLon cameraLL = MathUtil.reclat(cameraPos.toArray()).toDegrees();
-		cameraLatNFS.setValue(cameraLL.lat);
-		cameraLonNFS.setValue(cameraLL.lon);
-		cameraRollNFS.setValue(refView.getCamera().getRoll());
+		double cameraLat = cameraLL.lat;
+		double cameraLon = cameraLL.lon;
+		if (cameraLon < 0)
+			cameraLon += 360;
+		cameraLatNFS.setValue(cameraLat);
+		cameraLonNFS.setValue(cameraLon);
 
+		double cameraRoll = refView.getCamera().getRoll() + 0.0;
+		cameraRollNFS.setValue(cameraRoll);
+
+		// Camera altitude
+		double altDist = PolyModelUtil.calcAltitudeFor(refPolyModel, cameraPos);
+		cameraAltNF.setValue(altDist);
+
+		boolean isEnabled = isShapeModelAtOrigin() == true;
+		cameraAltNF.setEnabled(isEnabled);
+
+		// Target position
 		Vector3D targetPos = refView.getCamera().getFocalPoint();
-		double[] targetPosArr = targetPos.toArray();
+		LatLon targetLL = MathUtil.reclat(targetPos.toArray()).toDegrees();
+		double targetLat = targetLL.lat;
+		double targetLon = targetLL.lon;
+		if (targetLon < 0)
+			targetLon += 360;
+		targetLatNFS.setValue(targetLat);
+		targetLonNFS.setValue(targetLon);
 
-		LatLon targetLL = MathUtil.reclat(targetPosArr).toDegrees();
-		targetLatNFS.setValue(targetLL.lat);
-		targetLonNFS.setValue(targetLL.lon);
+		// Target line of sight
+		// It is necessary to extend the targetPos to ensure an intercept can be
+		// computed. This is necessary in particular for a polygonal surfaces.
+		double extAmt = refPolyModel.getBoundingBoxDiagonalLength();
+		if (extAmt < 2.0)
+			extAmt = 2.0;
+		Vector3D dirVect = targetPos.subtract(cameraPos);
+		Vector3D targetPosExt = cameraPos.add(dirVect.scalarMultiply(extAmt));
 
-		double viewRadius = calculateViewRadius(targetPosArr);
-		double lineOfSightDistance = MathUtil.vnorm(targetPosArr) - viewRadius;
-		targetLineOfSightNF.setValue(lineOfSightDistance);
+		double losDist = Double.NaN;
+		double losLat = Double.NaN;
+		double losLon = Double.NaN;
+		Vector3D losInterceptPos = refPolyModel.calcInterceptBetween(cameraPos, targetPosExt);
+		if (losInterceptPos != null)
+		{
+			losDist = losInterceptPos.distance(cameraPos);
+
+			LatLon losLL = MathUtil.reclat(losInterceptPos.toArray()).toDegrees();
+			losLat = losLL.lat;
+			losLon = losLL.lon;
+			if (losLon < 0)
+				losLon += 360;
+		}
+		targetLatNFS.setValue(losLat);
+		targetLonNFS.setValue(losLon);
+		targetLineOfSightNF.setValue(losDist);
 	}
 
 	/**
@@ -328,69 +440,29 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 	 */
 	private void updateGui()
 	{
+		// Retrieve various errors / info message
+		String failMsg = getErrorMsgForViewUI();
+		if (failMsg == null)
+			failMsg = getErrorMsgForCameraUI();
+		if (failMsg == null)
+			failMsg = getErrorMsgForTargetUI();
+
+		String infoMsg = null;
+		if (targetLineOfSightNF.isValidInput() == false)
+			infoMsg = String.format(InfoMsgUndefinedLineOfSight);
+
 		// Update the status area
-		String tmpMsg = null;
-		String errMsg = getErrorMsg();
-		if (errMsg != null)
-			tmpMsg = errMsg;
+		String tmpMsg = infoMsg;
+		if (failMsg != null)
+			tmpMsg = failMsg;
 		statusL.setText(tmpMsg);
 
 		Color fgColor = Colors.getPassFG();
-		if (errMsg != null)
+		if (failMsg != null)
 			fgColor = Colors.getFailFG();
+		else if (infoMsg != null)
+			fgColor = Colors.getInfoFG();
 		statusL.setForeground(fgColor);
-	}
-
-	// -----------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------
-	// -----------------------------------------------------------------------------------------------------------
-	// TODO: The below logic is NOT valid!
-	// TODO: It will need to be completely redone.
-
-	// Constants
-	@Deprecated
-	private static final double JupiterScale = 75000;
-
-	private double calculateCameraRadius()
-	{
-//		GenericPolyhedralModel model = refRenderer..getGenericPolyhedralModel();
-		double[] pos = refView.getCamera().getPosition().toArray();
-		double[] viewDirection = new double[3];
-		double[] origin = new double[3];
-		MathUtil.unorm(pos, pos);
-		MathUtil.vscl(JupiterScale, pos, origin);
-		MathUtil.vscl(-1.0, pos, viewDirection);
-//		pos[0] *= altitude;
-//		pos[1] *= altitude;
-//		pos[2] *= altitude;
-//		int result = model.computeRayIntersection(origin, viewDirection, pos);
-
-		double cameraRadius = MathUtil.vnorm(pos);
-		return cameraRadius;
-	}
-
-	private static double calculateViewRadius(double[] aPos)
-	{
-		double[] uPos = new double[3];
-		double[] origin = new double[3];
-		double[] viewDirection = new double[3];
-
-		MathUtil.unorm(aPos, uPos);
-		MathUtil.vscl(JupiterScale, uPos, origin);
-		MathUtil.vscl(-1.0, uPos, viewDirection);
-//		pos[0] *= altitude;
-//		pos[1] *= altitude;
-//		pos[2] *= altitude;
-//		int result = model.computeRayIntersection(origin, viewDirection, pos);
-
-		double retRadius = MathUtil.vnorm(uPos);
-		return retRadius;
-	}
-
-	private double cameraGetDistance()
-	{
-		double[] posArr = refView.getCamera().getPosition().toArray();
-		return MathUtil.vnorm(posArr);
 	}
 
 }

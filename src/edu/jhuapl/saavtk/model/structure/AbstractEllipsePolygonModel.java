@@ -215,8 +215,8 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 	@Override
 	public Vector3D getCentroid(Ellipse aItem)
 	{
-		double[] tmpArr = refSmallBody.findClosestPoint(aItem.getCenter().toArray());
-		return new Vector3D(tmpArr);
+		// Delegate
+		return refSmallBody.findClosestPoint(aItem.getCenter());
 	}
 
 	@Override
@@ -486,7 +486,7 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 	}
 
 	@Override
-	public void setCenter(Ellipse aItem,  Vector3D aCenter)
+	public void setCenter(Ellipse aItem, Vector3D aCenter)
 	{
 		aItem.setCenter(aCenter);
 		markPainterStale(aItem);

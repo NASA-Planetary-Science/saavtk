@@ -14,6 +14,7 @@ import javax.swing.JOptionPane;
 
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.render.Renderer;
+import edu.jhuapl.saavtk.model.PolyModel;
 import glum.gui.action.CloseDialog;
 
 /**
@@ -53,7 +54,8 @@ public class CameraRegularAction extends AbstractAction implements HierarchyList
 		JDialog tmpDialog = viewM.get(tmpRenderer);
 		if (tmpDialog == null)
 		{
-			CameraRegularPanel tmpPanel = new CameraRegularPanel(tmpRenderer);
+			PolyModel tmpPolyModel = refViewManager.getCurrentView().getModelManager().getPolyhedralModel();
+			CameraRegularPanel tmpPanel = new CameraRegularPanel(tmpRenderer, tmpPolyModel);
 
 			Frame tmpFrame = JOptionPane.getFrameForComponent(refViewManager.getCurrentView());
 			tmpDialog = new CloseDialog(tmpFrame, tmpPanel);

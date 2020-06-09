@@ -153,8 +153,10 @@ public class CameraQuaternionPanel extends JPanel implements ActionComponentProv
 		Object source = aEvent.getSource();
 		if (source == dumpB)
 			doActionLogQuaternion();
-		else
-			doActionCamera();
+		else if (source == xPosNF || source == yPosNF || source == zPosNF)
+			doActionCameraPosition();
+		else if (source == quat0NFS || source == quat1NFS || source == quat2NFS || source == quat3NFS)
+			doActionCameraQuaterion();
 
 		updateGui();
 	}
@@ -172,16 +174,29 @@ public class CameraQuaternionPanel extends JPanel implements ActionComponentProv
 	 * <P>
 	 * If there are any errors then nothing will be changed.
 	 */
-	private void doActionCamera()
+	private void doActionCameraPosition()
 	{
 		// Bail if there are any errors
-		if (getErrorMsg() != null)
+		if (getErrorMsgForPositionUI() != null)
 			return;
 
 		Vector3D tmpPosition = new Vector3D(xPosNF.getValue(), yPosNF.getValue(), zPosNF.getValue());
 		refView.getCamera().setPosition(tmpPosition);
+	}
 
-		// TODO: Add ability to set in quaternion also
+	/**
+	 * Helper method that updates the Renderer's camera to reflect the GUI
+	 * (quaternion) input.
+	 * <P>
+	 * If there are any errors then nothing will be changed.
+	 */
+	private void doActionCameraQuaterion()
+	{
+		// Bail if there are any errors
+		if (getErrorMsgForQuaternionUI() != null)
+			return;
+
+		// TODO: Logic is not implemented
 	}
 
 	/**
@@ -206,11 +221,12 @@ public class CameraQuaternionPanel extends JPanel implements ActionComponentProv
 	}
 
 	/**
-	 * Helper method that will return a string describing invalid user input.
+	 * Helper method that will return a string describing invalid input associated
+	 * with the position UI elements.
 	 * <P>
 	 * If all input is valid then null will be returned.
 	 */
-	private String getErrorMsg()
+	private String getErrorMsgForPositionUI()
 	{
 		if (xPosNF.isValidInput() == false)
 			return String.format("Invalid X-Pos.");
@@ -221,6 +237,17 @@ public class CameraQuaternionPanel extends JPanel implements ActionComponentProv
 		if (zPosNF.isValidInput() == false)
 			return String.format("Invalid Z-Pos.");
 
+		return null;
+	}
+
+	/**
+	 * Helper method that will return a string describing invalid input associated
+	 * with the quaternion UI elements.
+	 * <P>
+	 * If all input is valid then null will be returned.
+	 */
+	private String getErrorMsgForQuaternionUI()
+	{
 		if (currRot == RotationNaN)
 			return "Quaternion error: " + quaternionErrMsg;
 
@@ -266,8 +293,11 @@ public class CameraQuaternionPanel extends JPanel implements ActionComponentProv
 	private void updateGui()
 	{
 		// Update the status area
+		String errMsg = getErrorMsgForPositionUI();
+		if (errMsg == null)
+			errMsg = getErrorMsgForQuaternionUI();
+
 		String tmpMsg = null;
-		String errMsg = getErrorMsg();
 		if (errMsg != null)
 			tmpMsg = errMsg;
 		statusL.setText(tmpMsg);

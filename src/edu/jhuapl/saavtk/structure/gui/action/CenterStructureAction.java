@@ -5,18 +5,19 @@ import java.util.List;
 
 import javax.swing.JMenuItem;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
+import edu.jhuapl.saavtk.camera.Camera;
 import edu.jhuapl.saavtk.gui.render.Renderer;
-import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.PolyModel;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.util.MathUtil;
 import glum.gui.action.PopAction;
-import vtk.vtkCamera;
-import vtk.rendering.vtkAbstractComponent;
 
 /**
  * {@link PopAction} that will center a single {@link Structure}.
- * 
+ *
  * @author lopeznr1
  */
 public class CenterStructureAction<G1 extends Structure> extends PopAction<G1>
@@ -24,20 +25,18 @@ public class CenterStructureAction<G1 extends Structure> extends PopAction<G1>
 	// Ref vars
 	private final StructureManager<G1> refManager;
 	private final Renderer refRenderer;
-	private final PolyhedralModel refSmallBody;
+	private final PolyModel refPolyModel;
 
 	// Attributes
 	private final boolean preserveCurrentDistance;
 
-	/**
-	 * Standard Constructor
-	 */
-	public CenterStructureAction(StructureManager<G1> aManager, Renderer aRenderer, PolyhedralModel aSmallBody,
+	/** Standard Constructor */
+	public CenterStructureAction(StructureManager<G1> aManager, Renderer aRenderer, PolyModel aPolyModel,
 			boolean aPreserveCurrentDistance)
 	{
 		refManager = aManager;
 		refRenderer = aRenderer;
-		refSmallBody = aSmallBody;
+		refPolyModel = aPolyModel;
 
 		preserveCurrentDistance = aPreserveCurrentDistance;
 	}
@@ -53,15 +52,15 @@ public class CenterStructureAction<G1 extends Structure> extends PopAction<G1>
 		double viewAngle = refRenderer.getCameraViewAngle();
 		double[] focalPoint = refManager.getCenter(tmpItem).toArray();
 		double[] normal = refManager.getNormal(tmpItem).toArray();
-		vtkAbstractComponent renWin = refRenderer.getRenderWindowPanel();
 
 		double distanceToStructure = 0.0;
 		if (preserveCurrentDistance)
 		{
-			vtkCamera activeCamera = renWin.getRenderer().GetActiveCamera();
-			double[] pos = activeCamera.GetPosition();
-			double[] closestPoint = refSmallBody.findClosestPoint(pos);
-			distanceToStructure = MathUtil.distanceBetween(pos, closestPoint);
+			Camera tmpCamera = refRenderer.getCamera();
+
+			Vector3D cameraPos = tmpCamera.getPosition();
+			Vector3D closestPt = refPolyModel.findClosestPoint(cameraPos);
+			distanceToStructure = cameraPos.distance(closestPt);
 		}
 		else
 		{
