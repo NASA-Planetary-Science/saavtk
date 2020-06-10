@@ -318,6 +318,9 @@ public class DownloadableFileManager
             URLConnection conn = closeableConn.getConnection();
             conn.setDoOutput(true);
 
+            // Important: DO NOT DO THIS! It would break opening the output stream below.
+            // closeableConn.connect();
+
             try (OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream()))
             {
                 URL rootUrl = Configuration.getRootURL();
@@ -400,7 +403,7 @@ public class DownloadableFileManager
                         FileCacheMessageUtil.debugCache().err().println("Server-side access check returned null");
                         break;
                     }
-                    else if (line.matches(("^<html>.*Request Rejected.*")))
+                    else if (CloseableUrlConnection.detectRejectionMessages(line))
                     {
                         FileCacheMessageUtil.debugCache().err().println("Request rejected for URL info from server-side script " + conn.getURL());
                         break;
