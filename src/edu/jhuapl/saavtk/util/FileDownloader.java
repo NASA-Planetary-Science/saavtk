@@ -342,6 +342,7 @@ public abstract class FileDownloader implements Runnable
         try
         {
             Path passwordFilePath = SafeURLPaths.instance().get(System.getProperty("user.home"), ".sbmt", "password.txt");
+            File downloadedFile = SafeURLPaths.instance().get(System.getProperty("user.home"), args[1]).toFile();
 
             Authorizor authorizor = new Authorizor(passwordFilePath);
             authorizor.loadCredentials();
@@ -350,7 +351,7 @@ public abstract class FileDownloader implements Runnable
             FileCache.enableDebug(true);
 
             UrlInfo urlInfo = UrlInfo.of(new URL(args[0]));
-            FileInfo fileInfo = FileInfo.of(new File(args[1]));
+            FileInfo fileInfo = FileInfo.of(downloadedFile);
             
             FileDownloader downloader = FileDownloader.of(urlInfo, fileInfo, true);
             downloader.run();
