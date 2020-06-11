@@ -81,7 +81,7 @@ public abstract class UrlAccessQuerier extends SwingWorker<Void, Void>
         {
             try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(urlState.getUrl(), HttpRequestMethod.HEAD))
             {
-                urlInfo.update(closeableConnection.getConnection());
+                urlInfo.update(closeableConnection);
             }
         }
         else

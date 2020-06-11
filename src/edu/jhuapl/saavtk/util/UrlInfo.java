@@ -3,12 +3,7 @@ package edu.jhuapl.saavtk.util;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.ProtocolException;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Preconditions;
@@ -44,11 +39,13 @@ public class UrlInfo
         }
     }
 
-    public void update(URLConnection connection) throws IOException
+    public void update(CloseableUrlConnection connection) throws IOException
     {
         Preconditions.checkNotNull(connection);
-
         UrlState state = getState();
+
+        Preconditions.checkArgument(connection.getUrl().equals(state.getUrl()));
+
         UrlStatus status = state.getLastKnownStatus();
 
         if (status == UrlStatus.INVALID_URL)
@@ -57,61 +54,17 @@ public class UrlInfo
         }
         else
         {
-            long contentLength = state.getContentLength();
-            long lastModified = state.getLastModified();
-            if (connection instanceof HttpURLConnection)
+            try
             {
-                HttpURLConnection httpConnection = (HttpURLConnection) connection;
-                try
-                {
-                    int code = httpConnection.getResponseCode();
-
-                    // Codes in the 200 series are generally "ok" so treat any of them as
-                    // successful.
-                    if (code >= HttpURLConnection.HTTP_OK && code < HttpURLConnection.HTTP_MULT_CHOICE)
-                    {
-                        status = UrlStatus.ACCESSIBLE;
-                        contentLength = httpConnection.getContentLengthLong();
-                        lastModified = httpConnection.getLastModified();
-                    }
-                    else if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN)
-                    {
-                        status = UrlStatus.NOT_AUTHORIZED;
-                    }
-                    else if (code == HttpURLConnection.HTTP_NOT_FOUND)
-                    {
-                        status = UrlStatus.NOT_FOUND;
-                    }
-                    else
-                    {
-                        status = UrlStatus.HTTP_ERROR;
-                    }
-
-                    debugConnectionMessage(state, "response code = " + code + ", status = " + status);
-                }
-                catch (ProtocolException e)
-                {
-                    // This indicates the request method isn't supported. That should not happen.
-                    throw new AssertionError(e);
-                }
-                catch (SocketException | SocketTimeoutException e)
-                {
-                    update(state.update(UrlStatus.CONNECTION_ERROR).update(false));
-
-                    throw e;
-                }
-            }
-            else
+                state = connection.connect();
+            }           
+            catch (IOException e)
             {
-                // Something other than http. May need to handle this in the future.
-                // For now, be optimistic and assume it's accessible.
-                status = UrlStatus.ACCESSIBLE;
-                contentLength = connection.getContentLengthLong();
-                lastModified = connection.getLastModified();
-                debugConnectionMessage(state, "non-http connection, status = " + status);
+                update(state.update(UrlStatus.CONNECTION_ERROR).update(false));
+                throw e;
             }
 
-            update(state.update(status, contentLength, lastModified).update(true));
+            update(state);
         }
     }
 

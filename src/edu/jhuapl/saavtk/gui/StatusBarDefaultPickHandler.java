@@ -17,9 +17,7 @@ import edu.jhuapl.saavtk.status.StatusProvider;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.SaavtkLODActor;
-import vtk.vtkCamera;
 import vtk.vtkProp;
-import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 /**
  * {@link PickListener} that is responsible for updating the status bar whenever
@@ -34,7 +32,7 @@ public class StatusBarDefaultPickHandler implements PickListener
 
 	// Ref vars
 	private final StatusBar refStatusBar;
-	private final vtkJoglPanelComponent refRenWin;
+	private final Renderer refRenderer;
 	private final ModelManager refModelManager;
 
 	// State vars
@@ -51,7 +49,7 @@ public class StatusBarDefaultPickHandler implements PickListener
 	public StatusBarDefaultPickHandler(StatusBar aStatusBar, Renderer aRenderer, ModelManager aModelManager)
 	{
 		refStatusBar = aStatusBar;
-		refRenWin = aRenderer.getRenderWindowPanel();
+		refRenderer = aRenderer;
 		refModelManager = aModelManager;
 
 		rangeStr = null;
@@ -101,14 +99,9 @@ public class StatusBarDefaultPickHandler implements PickListener
 	 */
 	private void updatePositionInStatusBar(Vector3D aPosition)
 	{
-		if (refRenWin.getRenderWindow().GetNeverRendered() > 0)
-			return;
-
 		// Form the rangeStr
-		vtkCamera activeCamera = refRenWin.getRenderer().GetActiveCamera();
-		double[] cameraPos = activeCamera.GetPosition();
-		double distance = Math
-				.sqrt(cameraPos[0] * cameraPos[0] + cameraPos[1] * cameraPos[1] + cameraPos[2] * cameraPos[2]);
+		Vector3D cameraPos = refRenderer.getCamera().getPosition();
+		double distance = cameraPos.distance(Vector3D.ZERO);
 
 		DecimalFormat decimalFormatter = new DecimalFormat("##0.000");
 		rangeStr = decimalFormatter.format(distance) + " km";

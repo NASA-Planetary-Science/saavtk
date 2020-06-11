@@ -9,6 +9,8 @@ import java.text.DecimalFormat;
 
 import com.google.common.base.Preconditions;
 
+import edu.jhuapl.saavtk.util.CloseableUrlConnection;
+
 public abstract class StreamUnpacker
 {
     public static final String UNPACKING_STATUS = "unpackingStatus";
@@ -84,11 +86,11 @@ public abstract class StreamUnpacker
             int numberBytesRead = getInputStream().read(buffer);
             if (numberBytesRead > 0)
             {
+                outputStream.write(buffer, 0, numberBytesRead);
                 if (firstBuffer)
                 {
                     checkForRejectedRequest(numberBytesRead);
                 }
-                outputStream.write(buffer, 0, numberBytesRead);
             }
 
             return numberBytesRead;
@@ -107,7 +109,7 @@ public abstract class StreamUnpacker
             }
 
             String firstCharacterString = new String(firstCharacters);
-            if (firstCharacterString.matches(("^<html>.*Request Rejected.*")))
+            if (CloseableUrlConnection.detectRejectionMessages(firstCharacterString))
             {
                 throw new IOException("Request for file was rejected by the server.");
             }

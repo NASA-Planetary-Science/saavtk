@@ -129,7 +129,7 @@ public abstract class FileDownloader implements Runnable
 
         try (CloseableUrlConnection closeableConnection = CloseableUrlConnection.of(url, HttpRequestMethod.GET))
         {
-            urlInfo.update(closeableConnection.getConnection());
+            urlInfo.update(closeableConnection);
 
             if (forceDownload || isDownloadNeeded())
             {
@@ -331,27 +331,44 @@ public abstract class FileDownloader implements Runnable
         }
     }
 
-    // public static void main(String[] args) throws MalformedURLException
-    // {
-    // File file = SafeURLPaths.instance().get(System.getProperty("user.home"),
-    // "Downloads", "spud").toFile();
-    //
-    // FileDownloader downloader = FileDownloader.of(UrlInfo.of(new
-    // URL("http://sbmt.jhuapl.edu")), FileInfo.of(file), true);
-    // try
-    // {
-    // downloader.download();
-    // System.out.println("Done");
-    // }
-    // catch (Exception e)
-    // {
-    // e.printStackTrace();
-    // }
-    // }
-
     @Override
     public String toString()
     {
         return "FileDownloader from:\n" + getUrlInfo() + "\nto:\n" + getFileInfo();
     }
+
+    public static void main(String[] args)
+    {
+        if (args.length < 2)
+        {
+            System.out.println("Usage: FileDownloader URL file-name");
+            System.exit(1);
+        }
+        
+        try
+        {
+            Path passwordFilePath = SafeURLPaths.instance().get(System.getProperty("user.home"), ".sbmt", "password.txt");
+            File downloadedFile = SafeURLPaths.instance().get(System.getProperty("user.home"), args[1]).toFile();
+
+            Authorizor authorizor = new Authorizor(passwordFilePath);
+            authorizor.loadCredentials();
+
+            Debug.setEnabled(true);
+            FileCache.enableDebug(true);
+
+            UrlInfo urlInfo = UrlInfo.of(new URL(args[0]));
+            FileInfo fileInfo = FileInfo.of(downloadedFile);
+            
+            FileDownloader downloader = FileDownloader.of(urlInfo, fileInfo, true);
+            downloader.run();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+        
+        System.exit(0);
+    }
+
 }
