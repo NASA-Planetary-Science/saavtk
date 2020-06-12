@@ -119,9 +119,9 @@ public class ServerSettingsManager
                 String line;
                 while ((line = in.readLine()) != null)
                 {
-                    if (line.matches(("^<html>.*Request Rejected.*")))
+                    if (CloseableUrlConnection.detectRejectionMessages(line))
                     {
-                        FileCacheMessageUtil.debugCache().err().println("Request rejected for URL info from server-side script " + conn.getURL());
+                        FileCacheMessageUtil.debugCache().err().println("Request rejected for URL info from server-side script "  + closeableConn.getUrl());
                         break;
                     }
                     else

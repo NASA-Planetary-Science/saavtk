@@ -52,7 +52,6 @@ import net.miginfocom.swing.MigLayout;
 public class LoadPanel extends JPanel implements ActionListener, TaskListener
 {
 	// Constants
-	private static final long serialVersionUID = 0L;
 	private static final String ERR_MSG_NO_STRUCTURES_LOADED = "Failed to load any structures.";
 	private static final String ERR_MSG_NO_STRUCTURES_SELECTED = "Please select at least one of the available structure types.";
 
@@ -359,7 +358,7 @@ public class LoadPanel extends JPanel implements ActionListener, TaskListener
 	{
 		// Project the structures onto the surface of the shape model
 		if (projToBodyCB.isSelected() == true)
-			StructureMiscUtil.projectControlPointsToShapeModel(refSmallBody, aFullL);
+			StructureMiscUtil.projectControlPointsToShapeModel(refSmallBody, refSmallBody.getModelName(), aFullL);
 
 		// Split structures into various type
 		// TODO: Eventually this step should not be needed
