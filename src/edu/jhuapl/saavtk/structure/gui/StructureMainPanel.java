@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
@@ -41,14 +40,10 @@ import net.miginfocom.swing.MigLayout;
 
 public class StructureMainPanel extends JPanel implements ActionListener
 {
-	// Constants
-	private static final long serialVersionUID = 0L;
-
 	// Ref vars
 	private final ModelManager refModelManager;
 
 	// GUI vars
-	private JDialog loadDialog;
 	private LoadPanel loadPanel;
 	private JLabel structuresFileL;
 	private JButton loadB;
@@ -62,6 +57,7 @@ public class StructureMainPanel extends JPanel implements ActionListener
 	{
 		refModelManager = aModelManager;
 
+		// Form the GUI
 		setLayout(new MigLayout("", "", "[]"));
 
 		PopupButton loadEsriB = formEsriLoadButton(aStatusBar);
@@ -128,19 +124,12 @@ public class StructureMainPanel extends JPanel implements ActionListener
 			return;
 
 		// Lazy init
-		if (loadDialog == null)
-		{
-			loadDialog = new JDialog();
-			loadDialog.setTitle("Load Structures");
-			loadDialog.setModal(true);
-			loadPanel = new LoadPanel(loadDialog, refModelManager);
-			loadDialog.pack();
-			loadDialog.setLocationRelativeTo(this);
-		}
+		if (loadPanel == null)
+			loadPanel = new LoadPanel(this, refModelManager);
 
 		// Prompt the user for how to load the structures
 		loadPanel.setStructuresToLoad(fullL);
-		loadDialog.setVisible(true);
+		loadPanel.setVisibleAsModal();
 
 		updateFileLabelUI();
 	}

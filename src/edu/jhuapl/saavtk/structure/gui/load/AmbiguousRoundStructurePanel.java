@@ -52,10 +52,10 @@ public class AmbiguousRoundStructurePanel extends GlassPanel implements ActionLi
 
 		pickMode = null;
 
+		// Form the GUI
 		setLayout(new MigLayout("", "[right][grow][][]", "[][grow][]"));
 		setBorder(new BevelBorder(BevelBorder.RAISED));
 
-		// Form the GUI
 		titleL = new JLabel("Ambiguous Structures", JLabel.CENTER);
 		add(titleL, "growx,span,wrap");
 
@@ -93,8 +93,8 @@ public class AmbiguousRoundStructurePanel extends GlassPanel implements ActionLi
 	 */
 	public void setAmbigousMap(Multimap<Object, Structure> aAmbigousMM)
 	{
-		String tmpMsg = "Some files contain structures that are ambiguously circles or points.";
-		tmpMsg += " Please specify how you would like to load the ambigous files.\n\n";
+		String tmpMsg = "The SBMT cannot tell whether the structures in this file are circles or points.";
+		tmpMsg += " Please choose how you would like to load the structures.\n\n";
 		tmpMsg += "Files: " + aAmbigousMM.keySet().size() + "\n";
 		for (Object aObject : aAmbigousMM.keySet())
 			tmpMsg += "\t" + aAmbigousMM.get(aObject).size() + " items: " + aObject + "\n";
