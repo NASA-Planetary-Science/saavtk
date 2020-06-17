@@ -141,6 +141,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     private double contourLineWidth = 1;
     private vtkPolyDataMapper linesMapper;
 	private VtkLodActor linesActor;
+	
+	private double cubeSize;
     
     // Heuristic to avoid computationally expensive paint operations when possible.
     private Map<String, Object> paintingAttributes = null;
@@ -859,27 +861,34 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     {
         return pointLocator;
     }
+    
+    public void calculateCubeSize(boolean useCustomBodyCubeSizeIfAvailable)
+    {
+        if (useCustomBodyCubeSizeIfAvailable && getConfig().hasCustomBodyCubeSize)
+        {
+            // Custom specified cube size
+            cubeSize = getConfig().customBodyCubeSize;
+        }
+        else
+        {
+            // Old way of determining cube size, most models still use this
+            double diagonalLength = new BoundingBox(getLowResSmallBodyPolyData().GetBounds()).getDiagonalLength();
+            // The number 38.66056033363347 is used here so that the cube size
+            // comes out to 1 km for Eros (whose diagonaLength equals 38.6605...).
+            cubeSize = diagonalLength / 38.66056033363347;
+        }
+    }
+    
+    public void clearCubes()
+    {
+    	smallBodyCubes = null;
+    }
 
     public SmallBodyCubes getSmallBodyCubes()
     {
         if (smallBodyCubes == null)
         {
-            // Compute bounding box diagonal length of lowest res shape model
-            double cubeSize;
-            if (getConfig().hasCustomBodyCubeSize)
-            {
-                // Custom specified cube size
-                cubeSize = getConfig().customBodyCubeSize;
-            }
-            else
-            {
-                // Old way of determining cube size, most models still use this
-                double diagonalLength = new BoundingBox(getLowResSmallBodyPolyData().GetBounds()).getDiagonalLength();
-                // The number 38.66056033363347 is used here so that the cube size
-                // comes out to 1 km for Eros (whose diagonaLength equals 38.6605...).
-                cubeSize = diagonalLength / 38.66056033363347;
-            }
-
+        	if (cubeSize == 0.0) calculateCubeSize(false);
             // Generate cubes based on chosen resolution
             smallBodyCubes = new SmallBodyCubes(getLowResSmallBodyPolyData(), cubeSize, 0.01 * cubeSize, true);
             
