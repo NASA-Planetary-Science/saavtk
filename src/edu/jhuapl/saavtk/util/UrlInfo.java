@@ -61,7 +61,6 @@ public class UrlInfo
             catch (IOException e)
             {
                 update(state.update(UrlStatus.CONNECTION_ERROR).update(false));
-
                 throw e;
             }
 

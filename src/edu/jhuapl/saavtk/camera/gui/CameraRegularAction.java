@@ -61,7 +61,6 @@ public class CameraRegularAction extends AbstractAction implements HierarchyList
 			tmpDialog = new CloseDialog(tmpFrame, tmpPanel);
 			tmpDialog.setTitle(Title);
 			tmpDialog.setLocationRelativeTo(tmpRenderer);
-			tmpDialog.setDefaultCloseOperation(JDialog.HIDE_ON_CLOSE);
 
 			tmpRenderer.addHierarchyListener(this);
 

@@ -17,9 +17,9 @@ import edu.jhuapl.saavtk.util.IdPair;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
 import edu.jhuapl.saavtk.util.Properties;
-import edu.jhuapl.saavtk.util.SaavtkLODActor;
+import edu.jhuapl.saavtk.view.lod.LodMode;
+import edu.jhuapl.saavtk.view.lod.VtkLodActor;
 import edu.jhuapl.saavtk.vtk.VtkUtil;
-import vtk.vtkActor;
 import vtk.vtkAppendPolyData;
 import vtk.vtkCellData;
 import vtk.vtkPolyData;
@@ -46,7 +46,7 @@ public class PolygonModel extends LineModel<Polygon>
 	private final vtkAppendPolyData vInteriorFilterDecAPD;
 	private final vtkPolyDataMapper vInteriorMapperRegPDM;
 	private final vtkPolyDataMapper vInteriorMapperDecPDM;
-	private final vtkActor vInteriorActor;
+	private final VtkLodActor vInteriorActor;
 
 	private final vtkUnsignedCharArray vInteriorColorsRegUCA;
 	private final vtkUnsignedCharArray vInteriorColorsDecUCA;
@@ -77,7 +77,7 @@ public class PolygonModel extends LineModel<Polygon>
 		vInteriorFilterDecAPD.UserManagedInputsOn();
 		vInteriorMapperRegPDM = new vtkPolyDataMapper();
 		vInteriorMapperDecPDM = new vtkPolyDataMapper();
-		vInteriorActor = new SaavtkLODActor(this);
+		vInteriorActor = new VtkLodActor(this);
 		vtkProperty interiorProperty = vInteriorActor.GetProperty();
 		interiorProperty.LightingOff();
 		interiorProperty.SetOpacity(interiorOpacity);
@@ -212,8 +212,9 @@ public class PolygonModel extends LineModel<Polygon>
 		vInteriorMapperDecPDM.SetInputData(vInteriorDecPD);
 		vInteriorMapperDecPDM.Update();
 
-		vInteriorActor.SetMapper(vInteriorMapperRegPDM);
-		((SaavtkLODActor) vInteriorActor).setLODMapper(vInteriorMapperDecPDM);
+		vInteriorActor.setDefaultMapper(vInteriorMapperRegPDM);
+		vInteriorActor.setLodMapper(LodMode.MaxQuality, vInteriorMapperRegPDM);
+		vInteriorActor.setLodMapper(LodMode.MaxSpeed, vInteriorMapperDecPDM);
 		vInteriorActor.Modified();
 
 		// Notify model change listeners

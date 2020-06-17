@@ -26,6 +26,7 @@ import edu.jhuapl.saavtk.gui.OSXAdapter;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
+import edu.jhuapl.saavtk.gui.render.RenderIoUtil;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
@@ -204,7 +205,7 @@ public class FileMenu extends JMenu
 		@Override
 		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
-			rootPanel.getCurrentView().getRenderer().saveToFile();
+			RenderIoUtil.saveToFile(rootPanel.getCurrentView().getRenderer());
 		}
 	}
 

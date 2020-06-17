@@ -16,7 +16,7 @@ import edu.jhuapl.saavtk.pick.PickTarget;
 import edu.jhuapl.saavtk.status.StatusProvider;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
-import edu.jhuapl.saavtk.util.SaavtkLODActor;
+import edu.jhuapl.saavtk.view.AssocActor;
 import vtk.vtkProp;
 
 /**
@@ -71,9 +71,9 @@ public class StatusBarDefaultPickHandler implements PickListener
 		// Just update the status bar's left size with status if
 		// aPrimaryTarg is associated with a StatusProvider
 		vtkProp priActor = aPrimaryTarg.getActor();
-		if (priActor instanceof SaavtkLODActor)
+		if (priActor instanceof AssocActor)
 		{
-			StatusProvider tmpSP = ((SaavtkLODActor) priActor).getAssocModel(StatusProvider.class);
+			StatusProvider tmpSP = ((AssocActor) priActor).getAssocModel(StatusProvider.class);
 			if (tmpSP != null)
 			{
 				String tmpStr = tmpSP.getDisplayInfo(aPrimaryTarg);

@@ -28,7 +28,7 @@ public class FileAccessManager
             }
         }
 
-        return new FileAccessManager(rootDirectory.getCanonicalFile());
+        return new FileAccessManager(rootDirectory);
     }
 
     private final File rootDirectory;

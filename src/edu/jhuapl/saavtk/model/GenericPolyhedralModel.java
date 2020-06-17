@@ -35,9 +35,11 @@ import edu.jhuapl.saavtk.util.MapUtil;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
 import edu.jhuapl.saavtk.util.Properties;
-import edu.jhuapl.saavtk.util.SaavtkLODActor;
 import edu.jhuapl.saavtk.util.SafeURLPaths;
 import edu.jhuapl.saavtk.util.SmallBodyCubes;
+import edu.jhuapl.saavtk.view.lod.LodMode;
+import edu.jhuapl.saavtk.view.lod.LodUtil;
+import edu.jhuapl.saavtk.view.lod.VtkLodActor;
 import vtk.vtkActor;
 import vtk.vtkCamera;
 import vtk.vtkCell;
@@ -98,7 +100,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
     private vtkPolyData smallBodyPolyData;
     private vtkPolyData lowResSmallBodyPolyData;
-    private vtkActor smallBodyActor;
+	private VtkLodActor smallBodyActor;
     private vtkPolyDataMapper smallBodyMapper;
 
     private List<vtkProp> smallBodyActors = new ArrayList<>();
@@ -138,7 +140,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     private boolean showColorsAsContourLines = false;
     private double contourLineWidth = 1;
     private vtkPolyDataMapper linesMapper;
-    private vtkActor linesActor;
+	private VtkLodActor linesActor;
     
     // Heuristic to avoid computationally expensive paint operations when possible.
     private Map<String, Object> paintingAttributes = null;
@@ -1297,14 +1299,14 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
             smallBodyMapper.SetLookupTable(lookupTable);
             smallBodyMapper.UseLookupTableScalarRangeOn();
 
-            // smallBodyActor = new vtkActor();
-            smallBodyActor = new SaavtkLODActor();
-            smallBodyActor.SetMapper(smallBodyMapper);
+			smallBodyActor = new VtkLodActor(null);
+			smallBodyActor.setDefaultMapper(smallBodyMapper);
+			smallBodyActor.setLodMapper(LodMode.MaxQuality, smallBodyMapper);
 
-			vtkPolyDataMapper decimatedMapper = ((SaavtkLODActor) smallBodyActor)
-					.setQuadricDecimatedLODMapper(smallBodyPolyData);
-            decimatedMapper.SetLookupTable(lookupTable);
-            decimatedMapper.UseLookupTableScalarRangeOn();
+			vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyData);
+			smallBodyActor.setLodMapper(LodMode.MaxSpeed, tmpDecimatedPDM);
+			tmpDecimatedPDM.SetLookupTable(lookupTable);
+			tmpDecimatedPDM.UseLookupTableScalarRangeOn();
             vtkProperty smallBodyProperty = smallBodyActor.GetProperty();
             smallBodyProperty.SetInterpolationToGouraud();
             // smallBodyProperty.SetSpecular(.1);
@@ -1324,7 +1326,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
             scalarBarActor.SetTitleTextProperty(tp);
 
             linesMapper = new vtkPolyDataMapper();
-            linesActor = new SaavtkLODActor();
+			linesActor = new VtkLodActor(null);
             smallBodyActors.add(linesActor);
 
         }
@@ -2299,10 +2301,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
                     smallBodyMapper.SetLookupTable(colormap.getLookupTable());
 
-					vtkPolyDataMapper decimatedMapper = ((SaavtkLODActor) smallBodyActor)
-							.setQuadricDecimatedLODMapper(smallBodyPolyData);
-                    decimatedMapper.SetLookupTable(colormap.getLookupTable());
-                    decimatedMapper.UseLookupTableScalarRangeOn();
+					vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyData);
+					smallBodyActor.setLodMapper(LodMode.MaxSpeed, tmpDecimatedPDM);
+					tmpDecimatedPDM.SetLookupTable(colormap.getLookupTable());
+					tmpDecimatedPDM.UseLookupTableScalarRangeOn();
 
                     if (coloringValueType == ColoringValueType.POINT_DATA)
                         this.smallBodyPolyData.GetPointData().SetScalars(rgbColorData);
@@ -2318,9 +2320,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
                 doPaint |= checkAndSave("contourLineWidth", contourLineWidth, newPaintingAttributes);
                 if (doPaint)
                 {
-					vtkPolyDataMapper decimatedMapper = ((SaavtkLODActor) smallBodyActor)
-							.setQuadricDecimatedLODMapper(smallBodyPolyData);
-                    decimatedMapper.ScalarVisibilityOff();
+					vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyData);
+					smallBodyActor.setLodMapper(LodMode.MaxSpeed, tmpDecimatedPDM);
+					tmpDecimatedPDM.ScalarVisibilityOff();
                     smallBodyMapper.ScalarVisibilityOff();
 
                     vtkPolyData polyData;
@@ -2346,8 +2348,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 							colormap.getRangeMax());
                     contourFilter.Update();
 
-                    linesMapper = ((SaavtkLODActor) linesActor).setQuadricDecimatedLODMapper(contourFilter.GetOutput());
-
+					linesMapper = LodUtil.createQuadricDecimatedMapper(contourFilter.GetOutput());
                     linesMapper.SetInputData(contourFilter.GetOutput());
                     linesMapper.ScalarVisibilityOn();
                     linesMapper.SetScalarModeToDefault();
@@ -2355,7 +2356,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
                     linesMapper.UseLookupTableScalarRangeOn();
 
                     linesActor.VisibilityOn();
-                    linesActor.SetMapper(linesMapper);
+					linesActor.setDefaultMapper(linesMapper);
+					linesActor.setLodMapper(LodMode.MaxQuality, linesMapper);
+					linesActor.setLodMapper(LodMode.MaxSpeed, linesMapper);
                     linesActor.GetProperty().SetLineWidth(contourLineWidth);
 
                     if (!smallBodyActors.contains(linesActor))
@@ -2389,14 +2392,15 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
                         else
                             this.smallBodyPolyData.GetCellData().SetScalars(falseColorArray);
                         smallBodyMapper.ScalarVisibilityOn();
-                        ((SaavtkLODActor) smallBodyActor).setQuadricDecimatedLODMapper(smallBodyPolyData);
+						vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyData);
+						smallBodyActor.setLodMapper(LodMode.MaxSpeed, tmpDecimatedPDM);
                     }
                 }
                 else
                 {
-					vtkPolyDataMapper decimatedMapper = ((SaavtkLODActor) smallBodyActor)
-							.setQuadricDecimatedLODMapper(smallBodyPolyData);
-                    decimatedMapper.ScalarVisibilityOff();
+					vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyData);
+					smallBodyActor.setLodMapper(LodMode.MaxSpeed, tmpDecimatedPDM);
+					tmpDecimatedPDM.ScalarVisibilityOff();
                     smallBodyMapper.ScalarVisibilityOff();
                 }
             }

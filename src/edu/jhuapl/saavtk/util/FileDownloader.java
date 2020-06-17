@@ -331,6 +331,12 @@ public abstract class FileDownloader implements Runnable
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return "FileDownloader from:\n" + getUrlInfo() + "\nto:\n" + getFileInfo();
+    }
+
     public static void main(String[] args)
     {
         if (args.length < 2)

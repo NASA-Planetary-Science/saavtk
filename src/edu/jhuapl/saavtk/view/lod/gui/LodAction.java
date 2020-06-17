@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.scalebar.gui;
+package edu.jhuapl.saavtk.view.lod.gui;
 
 import java.awt.Component;
 import java.awt.Frame;
@@ -16,21 +16,20 @@ import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
-import edu.jhuapl.saavtk.scalebar.ScaleBarPainter;
+import edu.jhuapl.saavtk.view.lod.LodStatusPainter;
 import glum.gui.GuiUtil;
 import glum.gui.action.CloseDialog;
 import glum.misc.InitListener;
 
 /**
- * {@link AbstractAction} that contains the logic for the 'Config Scale Bar'
- * menu.
+ * {@link AbstractAction} that contains the logic for the 'Configure LOD' menu.
  *
  * @author lopeznr1
  */
-public class ScaleBarAction extends AbstractAction implements HierarchyListener, InitListener
+public class LodAction extends AbstractAction implements HierarchyListener, InitListener
 {
 	// Constants
-	private static final String Title = "Scale Bar";
+	private static final String Title = "Configure LOD";
 
 	// Ref vars
 	private final ViewManager refViewManager;
@@ -41,7 +40,7 @@ public class ScaleBarAction extends AbstractAction implements HierarchyListener,
 	/**
 	 * Standard Constructor
 	 */
-	public ScaleBarAction(ViewManager aViewManager)
+	public LodAction(ViewManager aViewManager)
 	{
 		super(Title);
 
@@ -87,11 +86,11 @@ public class ScaleBarAction extends AbstractAction implements HierarchyListener,
 			return;
 
 		// Create our UI
-		ScaleBarPainter tmpPainter = new ScaleBarPainter(tmpRenderer, tmpSceneChangeNotifier);
+		LodStatusPainter tmpPainter = new LodStatusPainter(tmpRenderer, tmpSceneChangeNotifier);
 		tmpRenderer.addVtkPropProvider(tmpPainter);
-		ScaleBarPanel tmpPanel = new ScaleBarPanel(tmpRenderer, tmpPainter);
+		LodPanel tmpPanel = new LodPanel(tmpRenderer, tmpPainter);
 
-		Frame tmpFrame = JOptionPane.getFrameForComponent(tmpView);
+		Frame tmpFrame = JOptionPane.getFrameForComponent(refViewManager.getCurrentView());
 		tmpDialog = new CloseDialog(tmpFrame, tmpPanel);
 		tmpDialog.setTitle(Title);
 		tmpDialog.setLocationRelativeTo(tmpRenderer);
