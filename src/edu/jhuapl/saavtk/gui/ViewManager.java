@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.BorderFactory;
-import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -22,7 +21,6 @@ import javax.swing.SwingWorker;
 
 import edu.jhuapl.saavtk.camera.gui.CameraQuaternionAction;
 import edu.jhuapl.saavtk.camera.gui.CameraRegularAction;
-import edu.jhuapl.saavtk.gui.menu.EnableLODsAction;
 import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
 import edu.jhuapl.saavtk.gui.menu.FileMenu;
 import edu.jhuapl.saavtk.gui.menu.HelpMenu;
@@ -32,6 +30,8 @@ import edu.jhuapl.saavtk.scalebar.gui.ScaleBarAction;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.UnauthorizedAccessException;
+import edu.jhuapl.saavtk.view.lod.gui.LodAction;
+import glum.misc.InitListener;
 
 public abstract class ViewManager extends JPanel
 {
@@ -48,6 +48,8 @@ public abstract class ViewManager extends JPanel
     protected HelpMenu helpMenu = null;
     protected RecentlyViewed recentsMenu = null;
     private volatile boolean initialViewSet;
+
+    private List<InitListener> initListenerL;
 
     /**
      * The top level frame is required so that the title can be updated when the
@@ -71,9 +73,19 @@ public abstract class ViewManager extends JPanel
         this.tempCustomShapeModelPath = tempCustomShapeModelPath;
         this.initialViewSet = false;
 
+        initListenerL = new ArrayList<>();
+
         // Subclass constructors should call this. It should not be called here because
         // it is not final.
         // setupViews();
+    }
+
+    /**
+     * Registers a {@link InitListener} with the ViewManager.
+     */
+    public synchronized void addInitListener(InitListener aListener)
+    {
+        initListenerL.add(aListener);
     }
 
     protected void createMenus(JMenuBar menuBar)
@@ -103,9 +115,7 @@ public abstract class ViewManager extends JPanel
         viewMenu.add(new JMenuItem(new ScaleBarAction(this)));
 
         viewMenu.addSeparator();
-        JCheckBoxMenuItem enableLodMI = new JCheckBoxMenuItem(new EnableLODsAction());
-        enableLodMI.setSelected(true);
-        viewMenu.add(enableLodMI);
+        viewMenu.add(new JMenuItem(new LodAction(this)));
         viewMenu.add(new PickToleranceAction(this));
 
         menuBar.add(viewMenu);
@@ -421,6 +431,8 @@ public abstract class ViewManager extends JPanel
                     try
                     {
                         view.initialize();
+
+                        notifyInitListeners(view);
                     }
                     catch (UnauthorizedAccessException e)
                     {
@@ -583,6 +595,21 @@ public abstract class ViewManager extends JPanel
         allViews.addAll(builtInViews);
         allViews.addAll(customViews);
         return allViews;
+    }
+
+    /**
+     * Helper method that sends notification to our {@link InitListener}s.
+     */
+    private void notifyInitListeners(View aView)
+    {
+        List<InitListener> tmpItemL;
+        synchronized (this)
+        {
+      	  tmpItemL = new ArrayList<>(initListenerL);
+        }
+
+        for (InitListener aListener : tmpItemL)
+            aListener.handleInitAction(aView);
     }
 
     private void updateRecents()
