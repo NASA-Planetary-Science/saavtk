@@ -18,10 +18,11 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Range;
 
-import edu.jhuapl.saavtk.camera.View;
-import edu.jhuapl.saavtk.camera.ViewActionListener;
 import edu.jhuapl.saavtk.colormap.SigFigNumberFormat;
 import edu.jhuapl.saavtk.gui.util.Colors;
+import edu.jhuapl.saavtk.view.View;
+import edu.jhuapl.saavtk.view.ViewActionListener;
+import edu.jhuapl.saavtk.view.ViewChangeReason;
 import glum.gui.GuiUtil;
 import glum.gui.action.ActionComponentProvider;
 import glum.gui.component.GNumberField;
@@ -107,21 +108,25 @@ public class CameraQuaternionPanel extends JPanel implements ActionComponentProv
 
 		JLabel quat0L = new JLabel("Quat-0:");
 		quat0NFS = new GNumberFieldSlider(this, tmpNF, ScalarRange, NumCols);
+		quat0NFS.setEditable(false);
 		add(quat0L, "");
 		add(quat0NFS, "growx,wrap");
 
 		JLabel quat1L = new JLabel("Quat-1:");
 		quat1NFS = new GNumberFieldSlider(this, tmpNF, ScalarRange, NumCols);
+		quat1NFS.setEditable(false);
 		add(quat1L, "");
 		add(quat1NFS, "growx,wrap");
 
 		JLabel quat2L = new JLabel("Quat-2:");
 		quat2NFS = new GNumberFieldSlider(this, tmpNF, ScalarRange, NumCols);
+		quat2NFS.setEditable(false);
 		add(quat2L, "");
 		add(quat2NFS, "growx,wrap");
 
 		JLabel quat3L = new JLabel("Quat-3:");
 		quat3NFS = new GNumberFieldSlider(this, tmpNF, ScalarRange, NumCols);
+		quat3NFS.setEditable(false);
 		add(quat3L, "");
 		add(quat3NFS, "growx,wrap");
 
@@ -131,14 +136,10 @@ public class CameraQuaternionPanel extends JPanel implements ActionComponentProv
 		dumpB = GuiUtil.createJButton("Log to Console", this);
 		dumpB.setToolTipText("Log position and orientation to console.");
 
-		// Disable quaternion components - updating of view is not supported
-		GuiUtil.setEnabled(false, quat0NFS, quat1NFS, quat2NFS, quat3NFS);
-		GuiUtil.setEnabled(false, quat0L, quat1L, quat2L, quat3L);
-
 		// Register for events of interest
 		refView.addViewChangeListener(this);
 
-		handleViewAction(null);
+		handleViewAction(this, ViewChangeReason.Camera);
 	}
 
 	@Override
@@ -162,10 +163,9 @@ public class CameraQuaternionPanel extends JPanel implements ActionComponentProv
 	}
 
 	@Override
-	public void handleViewAction(Object aSource)
+	public void handleViewAction(Object aSource, ViewChangeReason aReason)
 	{
 		updateState();
-
 		syncGuiToModel();
 	}
 

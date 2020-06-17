@@ -12,13 +12,15 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Range;
 
-import edu.jhuapl.saavtk.camera.View;
-import edu.jhuapl.saavtk.camera.ViewActionListener;
 import edu.jhuapl.saavtk.gui.util.Colors;
 import edu.jhuapl.saavtk.model.PolyModel;
 import edu.jhuapl.saavtk.model.PolyModelUtil;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
+import edu.jhuapl.saavtk.view.View;
+import edu.jhuapl.saavtk.view.ViewActionListener;
+import edu.jhuapl.saavtk.view.ViewChangeReason;
+import edu.jhuapl.saavtk.view.lod.LodMode;
 import glum.gui.GuiUtil;
 import glum.gui.component.GNumberField;
 import glum.gui.component.GNumberFieldSlider;
@@ -122,14 +124,14 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 
 		JLabel targetLatL = new JLabel("Lat:");
 		targetLatNFS = new GNumberFieldSlider(this, tmpFormat, LatRange, NumCols);
-		targetLatNFS.setEnabled(false);
+		targetLatNFS.setEditable(false);
 		add(targetLatL, "");
 		add(targetLatNFS, "growx");
 		add(new JLabel("deg"), "wrap");
 
 		JLabel targetLonL = new JLabel("Lon:");
 		targetLonNFS = new GNumberFieldSlider(this, tmpFormat, LonRange, NumCols);
-		targetLonNFS.setEnabled(false);
+		targetLonNFS.setEditable(false);
 		add(targetLonL, "");
 		add(targetLonNFS, "growx");
 		add(new JLabel("deg"), "wrap");
@@ -137,7 +139,7 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 		JLabel targetLineOfSightL = new JLabel("Line of Sight*:");
 		targetLineOfSightL.setToolTipText(ToolTipLineOfSight);
 		targetLineOfSightNF = new GNumberField(this);
-		targetLineOfSightNF.setEnabled(false);
+		targetLineOfSightNF.setEditable(false);
 		add(targetLineOfSightL, "span 2,split 2");
 		add(targetLineOfSightNF, "growx");
 		add(new JLabel("km"), "wrap");
@@ -148,18 +150,21 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 		// Register for events of interest
 		refView.addViewChangeListener(this);
 
-		handleViewAction(null);
+		handleViewAction(this, ViewChangeReason.Camera);
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent aEvent)
 	{
-		// Flip LOD flag for better performance
+		// Configure LodMode for better performance
 		Object source = aEvent.getSource();
 		if (source instanceof GNumberFieldSlider)
 		{
-			boolean lodFlag = ((GNumberFieldSlider) source).getValueIsAdjusting() == true;
-			refView.setLodFlag(lodFlag);
+			LodMode tmpMode = null;
+			if (((GNumberFieldSlider) source).getValueIsAdjusting() == true)
+				tmpMode = LodMode.MaxSpeed;
+
+			refView.setLodModeTemporal(tmpMode);
 		}
 
 		// Process the event
@@ -176,7 +181,7 @@ public class CameraRegularPanel extends JPanel implements ActionListener, ViewAc
 	}
 
 	@Override
-	public void handleViewAction(Object aSource)
+	public void handleViewAction(Object aSource, ViewChangeReason aReason)
 	{
 		syncGuiToModel();
 		updateGui();
