@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.TreeSet;
+import java.util.Vector;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
@@ -16,7 +17,7 @@ import vtk.vtkPointLocator;
 import vtk.vtkPolyData;
 import vtk.vtksbCellLocator;
 
-public abstract class PolyhedralModel extends AbstractModel
+public abstract class PolyhedralModel extends AbstractModel implements PolyModel
 {
     public static final String LIST_SEPARATOR = ",";
     public static final String CELL_DATA_PATHS = "CellDataPaths"; // for backwards compatibility
@@ -96,7 +97,7 @@ public abstract class PolyhedralModel extends AbstractModel
     public abstract int getModelResolution();
 
     public abstract TreeSet<Integer> getIntersectingCubes(vtkPolyData polydata);
-
+    
     public abstract TreeSet<Integer> getIntersectingCubes(BoundingBox bb);
 
     public abstract void addCustomLidarDataSource(LidarDataSource info) throws IOException;
@@ -127,7 +128,8 @@ public abstract class PolyhedralModel extends AbstractModel
 
     // public abstract Config getSmallBodyConfig();
 
-    public abstract void drawRegularPolygonLowRes(double[] center, double radius, int numberOfSides, vtkPolyData outputInterior, vtkPolyData outputBoundary);
+	public abstract void drawRegularPolygonLowRes(double[] center, double radius, int numberOfSides,
+			vtkPolyData outputInterior, vtkPolyData outputBoundary);
 
     public abstract String getCustomDataRootFolder();
 
@@ -221,8 +223,10 @@ public abstract class PolyhedralModel extends AbstractModel
 
     public abstract String getColoringName(int i);
 
-    public abstract void drawEllipticalPolygon(double[] center, double radius, double flattening, double angle, int numberOfSides, vtkPolyData outputInterior, vtkPolyData outputBoundary);
+	public abstract void drawEllipticalPolygon(double[] center, double radius, double flattening, double angle,
+			int numberOfSides, vtkPolyData outputInterior, vtkPolyData outputBoundary);
 
+	@Override
     public abstract double getBoundingBoxDiagonalLength();
 
     public abstract void shiftPolyLineInNormalDirection(vtkPolyData polyLine, double shiftAmount);
@@ -269,37 +273,22 @@ public abstract class PolyhedralModel extends AbstractModel
 
     public abstract void drawPolygon(List<LatLon> controlPoints, vtkPolyData outputInterior, vtkPolyData outputBoundary);
 
-    /**
-     * Method that returns the average surface normal over the the entire
-     * PolyhedralModel.
-     * <P>
-     * A polyhedral model is a closed 3 dimensional body - however due to the
-     * defective design some derived classes will result in objects that are
-     * polygonal models rather than polyhedral models.
-     * <P>
-     * Objects that are polyhedral models should return the Zero vector (no normal)
-     * where as objects that are (open ended) polygonal models should return their
-     * average surface normal (normalized).
-     * <P>
-     * TODO: Consider abstracting PolyhedralModel into PolyModel and moving this
-     * method declaration there or renaming PolyhedralModel to PolygonalModel.
-     * 
-     * @return Returns a normalized vector describing the average surface normal.
-     */
+	@Override
     public Vector3D getAverageSurfaceNormal()
     {
         return Vector3D.ZERO;
     }
 
-    /**
-     * Method that returns the geometric center of the polyhedral model.
-     * <P>
-     * The geometric center of the polyhedral model will typically lie at the origin
-     * but may differ if the model is offset or is a polygonal model instead.
-     */
+	@Override
     public Vector3D getGeometricCenterPoint()
     {
         return Vector3D.ZERO;
     }
+
+	@Override
+	public boolean isPolyhedron()
+	{
+		return true;
+	}
 
 }

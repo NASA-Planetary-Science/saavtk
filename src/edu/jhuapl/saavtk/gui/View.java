@@ -29,7 +29,6 @@ import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.popup.PopupMenu;
-import edu.jhuapl.saavtk.scalebar.ScaleBarPainter;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.Preferences;
 
@@ -48,7 +47,6 @@ public abstract class View extends JPanel
     private ModelManager modelManager;
     private PickManager pickManager;
     private PopupManager popupManager;
-    private ScaleBarPainter scaleBarPainter;
     private WindowManager infoPanelManager;
     private WindowManager spectrumPanelManager;
     private StatusBar statusBar;
@@ -191,7 +189,6 @@ public abstract class View extends JPanel
 
             Configuration.runAndWaitOnEDT(() -> {
                 setupPickManager();
-                setupScaleBarPainter();
             });
 
             Configuration.runAndWaitOnEDT(() -> {
@@ -321,11 +318,6 @@ public abstract class View extends JPanel
         return pickManager;
     }
 
-    public ScaleBarPainter getScaleBarPainter()
-    {
-   	 return scaleBarPainter;
-    }
-
     protected void setModels(HashMap<ModelNames, Model> models)
     {
         modelManager.setModels(models);
@@ -419,14 +411,6 @@ public abstract class View extends JPanel
 
         // Force the renderer's camera to the "reset" default view
         renderer.getCamera().reset();
-    }
-
-    protected void setupScaleBarPainter()
-    {
-       ModelManager tmpModelManager = getModelManager();
-       scaleBarPainter = new ScaleBarPainter(renderer, tmpModelManager);
-
-       renderer.addVtkPropProvider(scaleBarPainter);
     }
 
     protected abstract void setupPickManager();

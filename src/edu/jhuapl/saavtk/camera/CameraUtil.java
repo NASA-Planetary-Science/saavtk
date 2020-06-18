@@ -3,159 +3,15 @@ package edu.jhuapl.saavtk.camera;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
-import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
-import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.MathUtil;
-import vtk.vtkFloatArray;
 
 /**
- * Collection of utility methods useful for camera operations.
- * <P>
- * A number of methods in this class deal with the retrieval / computation of
- * attributes associated with a {@link PolyhedralModel}. Eventually these
- * utility methods should be relocated to a more appropriate package.
+ * Collection of utility methods useful for working with {@link Camera}s.
  *
  * @author lopeznr1
  */
 public class CameraUtil
 {
-	/**
-	 * Given the specified PolyhedralModel compute and return the center point.
-	 * <P>
-	 * The center point is defined as a point that lies on the surface closest to
-	 * the geometric center.
-	 */
-	public static Vector3D calcCenterPoint(PolyhedralModel aPolyModel)
-	{
-		// Retrieve the geometric center of the refPolyModel
-		double[] centerPt = aPolyModel.getSmallBodyPolyData().GetCenter();
-
-		// Locate a point on the surface closest to the geometric center of the model
-		centerPt = aPolyModel.findClosestPoint(centerPt);
-
-		Vector3D retCenterVect = new Vector3D(centerPt);
-		return retCenterVect;
-	}
-
-	/**
-	 * Given the specified PolyhedralModel compute and return the corresponding
-	 * (average) surface normal.
-	 * <P>
-	 * The specified PolyhedralModel should be a surface rather than a closed body.
-	 * Computation of the surface normal of a closed body is nonsensical.
-	 * <P>
-	 * The returned surface normal will be normalized.
-	 *
-	 * @param aPolyModel
-	 */
-	public static Vector3D calcSurfaceNormal(PolyhedralModel aPolyModel)
-	{
-//		// Overly simplistic computation of normal
-//		// Locate the normal at the located centerPt
-//		Vector3D centerVect = calculateCenterPoint(aPolyModel);
-//		double[] centerPt = centerVect.toArray();
-//
-////		double[] normalPt = refPolyModel.getClosestNormal(centerPt);
-//		double[] normalPt = aPolyModel.getNormalAtPoint(centerPt);
-//		Vector3D normalVect = new Vector3D(normalPt);
-//
-//		// Debug
-//		if (isDebug() == true)
-//			System.err.println("   centerPt: " + centerVect + "  norm: " + normalVect);
-
-		// Cast to a GenericPolyhedralModel
-		// TODO: Should the method getCellNormals be part of PolyhedralModel interface?
-		GenericPolyhedralModel tmpPolyModel = (GenericPolyhedralModel) aPolyModel;
-
-		// Calculate the average normal vector (composed of all cells)
-		vtkFloatArray tmpVFA = tmpPolyModel.getCellNormals();
-		int numNorms = tmpVFA.GetNumberOfTuples();
-		double sumX = 0.0, sumY = 0.0, sumZ = 0.0;
-		for (int c1 = 0; c1 < numNorms; c1++)
-		{
-			double[] tmp = tmpVFA.GetTuple3(c1);
-			sumX += tmp[0];
-			sumY += tmp[1];
-			sumZ += tmp[2];
-		}
-		Vector3D normalVect = new Vector3D(sumX / numNorms, sumY / numNorms, sumZ / numNorms);
-
-		// Normalize the average normal vector
-		if (normalVect.equals(Vector3D.ZERO) == true)
-			normalVect = Vector3D.PLUS_K;
-		else
-			normalVect = normalVect.normalize();
-
-		// Debug
-		if (isDebug() == true)
-			System.err.println("   SurfaceNormal: " + normalVect + " numNorms: " + numNorms);
-
-		return normalVect;
-	}
-
-	/**
-	 * Utility method that returns true if the angle between the 2 specified vectors
-	 * is less than 90 degrees.
-	 */
-	public static boolean isAcuteAngle(Vector3D aVectA, Vector3D aVectB)
-	{
-		// The equation of the angle between 2 vectors is given by:
-		// cos(theta) = (vectA dot vectB) / (||vectA|| * ||vectB||)
-		//
-		// Note however that we do not need to calculate the actual actual angle (theta)
-		// just the sign of the expression cos(theta) to determine if we are looking at
-		// acute or obtuse angles.
-		double tmpVal = aVectA.dotProduct(aVectB);
-		if (tmpVal > 0)
-			return true;
-
-		return false;
-	}
-
-	/**
-	 * Utility method to determine if the specified PolyhedralModel is a true
-	 * polyhedron or just a multipolygon surface.
-	 */
-	public static boolean isPolyhedron(GenericPolyhedralModel aPolyModel)
-	{
-		// Determine if we have a model that is a polyhedral model or a polygonal
-		// surface. We do this by evaluating the angle between the (individual)
-		// normals and the "center" normal.
-		Vector3D centerVect = CameraUtil.calcCenterPoint(aPolyModel);
-		vtkFloatArray tmpVFA = aPolyModel.getCellNormals();
-
-		int numNorms = tmpVFA.GetNumberOfTuples();
-		int numNormsObtuse = 0;
-
-		// Evaluate all of the normals. If performance is an issue then consider:
-		// - Randomly evaluating only 10% or less of the normals
-		// - Randomly evaluating only the first ~5K of normals
-		for (int c1 = 0; c1 < numNorms; c1++)
-		{
-			double[] tmp = tmpVFA.GetTuple3(c1);
-			Vector3D evalVect = new Vector3D(tmp[0], tmp[1], tmp[2]);
-
-			// Evaluate whether the angle between the center normal and the individual
-			// normal is acute or obtuse. Acute angles correspond to normals that are
-			// on the same side.
-			if (isAcuteAngle(centerVect, evalVect) == false)
-				numNormsObtuse++;
-		}
-
-		// Heuristic: Assume the shape model is a polyhedron if the number of (obtuse)
-		// normals away from the "center" normal exceed a ratio of 7%
-		double ratio = (numNormsObtuse + 0.0) / numNorms;
-		boolean isPolyhedron = ratio > 0.07;
-
-		// Debug
-		if (isDebug() == true)
-			System.err.println(String.format(
-					"[CustomShapeModel: %s] numNorms: %d numSameSides: %d numDiffSides: %d  Ratio diff: %1.2f\n",
-					aPolyModel.hashCode(), numNorms, (numNorms - numNormsObtuse), numNormsObtuse, ratio));
-
-		return isPolyhedron;
-	}
-
 	/**
 	 * Utility method that forms a CoordinateSystem from the specified normal and
 	 * origin.
@@ -304,12 +160,12 @@ public class CameraUtil
 	 */
 	public static void setOrientationInDirectionOfAxis(Camera aCamera, AxisType aAxisType)
 	{
-		double distance = CameraUtil.calcDistance(aCamera);
+		double distance = calcDistance(aCamera);
 		if (aAxisType == AxisType.POSITIVE_X || aAxisType == AxisType.POSITIVE_Y || aAxisType == AxisType.POSITIVE_Z)
 			distance = -distance;
 
 		// Delegate
-		CameraUtil.setOrientationInDirectionOfAxis(aCamera, aAxisType, distance);
+		setOrientationInDirectionOfAxis(aCamera, aAxisType, distance);
 	}
 
 	/**
@@ -358,14 +214,6 @@ public class CameraUtil
 			MathUtil.vcrss(upVectorArr, dir, upVectorArr);
 			aCamera.setView(focalPoint, position, new Vector3D(upVectorArr));
 		}
-	}
-
-	/**
-	 * Helper method used for debugging
-	 */
-	private static boolean isDebug()
-	{
-		return false;
 	}
 
 }

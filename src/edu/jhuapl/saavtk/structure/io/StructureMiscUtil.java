@@ -9,7 +9,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
-import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.PolyModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.model.structure.Line;
 import edu.jhuapl.saavtk.structure.Ellipse;
@@ -173,41 +173,42 @@ public class StructureMiscUtil
 	 * Utility method that will project the control points associated with specified
 	 * list of structures onto the provided shape model.
 	 * <P>
+	 * This method will only adjust control points for which the {@link Structure}'s
+	 * shapeModelId does not match the passed in shapeModelId.
+	 * <P>
 	 * Throws a {@link RuntimeException} if the structure type is not recognized.
 	 */
-	public static void projectControlPointsToShapeModel(PolyhedralModel aSmallBody, List<? extends Structure> aItemL)
+	public static void projectControlPointsToShapeModel(PolyModel aPolyModel, String aShapeModelId,
+			List<? extends Structure> aItemL)
 	{
-		String refShapeModelName = aSmallBody.getModelName();
-
 		for (Structure aItem : aItemL)
 		{
-			String tmpShapeModelName = aItem.getShapeModelId();
-			if (Objects.equals(refShapeModelName, tmpShapeModelName) == false)
-			{
-				// Update the structure's control points
-				if (aItem instanceof PolyLine)
-				{
-					PolyLine tmpItem = (PolyLine) aItem;
-					List<LatLon> tmpControlPointL = tmpItem.getControlPoints();
-					tmpControlPointL = ControlPointUtil.shiftControlPointsToNearestPointOnBody(aSmallBody, tmpControlPointL);
-					tmpItem.setControlPoints(tmpControlPointL);
-				}
-				else if (aItem instanceof Ellipse)
-				{
-					Ellipse tmpItem = (Ellipse) aItem;
-					Vector3D tmpPos = tmpItem.getCenter();
-					double[] tmpPosArr = aSmallBody.findClosestPoint(tmpPos.toArray());
-					tmpPos = new Vector3D(tmpPosArr);
-					tmpItem.setCenter(tmpPos);
-				}
-				else
-				{
-					throw new RuntimeException("Structure type is not recognized: " + aItem.getClass());
-				}
+			String tmpShapeModelId = aItem.getShapeModelId();
+			if (Objects.equals(aShapeModelId, tmpShapeModelId) == true)
+				continue;
 
-				// Update the structure's associated shape model
-				aItem.setShapeModelId(refShapeModelName);
+			// Update the structure's control points
+			if (aItem instanceof PolyLine)
+			{
+				PolyLine tmpItem = (PolyLine) aItem;
+				List<LatLon> tmpControlPointL = tmpItem.getControlPoints();
+				tmpControlPointL = ControlPointUtil.shiftControlPointsToNearestPointOnBody(aPolyModel, tmpControlPointL);
+				tmpItem.setControlPoints(tmpControlPointL);
 			}
+			else if (aItem instanceof Ellipse)
+			{
+				Ellipse tmpItem = (Ellipse) aItem;
+				Vector3D tmpPos = tmpItem.getCenter();
+				tmpPos = aPolyModel.findClosestPoint(tmpPos);
+				tmpItem.setCenter(tmpPos);
+			}
+			else
+			{
+				throw new RuntimeException("Structure type is not recognized: " + aItem.getClass());
+			}
+
+			// Update the structure's associated shape model
+			aItem.setShapeModelId(aShapeModelId);
 		}
 	}
 

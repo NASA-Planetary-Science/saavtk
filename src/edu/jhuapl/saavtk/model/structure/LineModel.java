@@ -22,7 +22,6 @@ import crucible.crust.settings.api.ControlKey;
 import crucible.crust.settings.api.SettableStored;
 import crucible.crust.settings.api.Stored;
 import crucible.crust.settings.api.Versionable;
-import crucible.crust.settings.api.Viewable;
 import crucible.crust.settings.impl.ConfigurableFactory;
 import crucible.crust.settings.impl.KeyedFactory;
 import crucible.crust.settings.impl.SettableStoredFactory;
@@ -44,7 +43,8 @@ import edu.jhuapl.saavtk.structure.vtk.VtkPolyLinePainter;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Properties;
-import edu.jhuapl.saavtk.util.SaavtkLODActor;
+import edu.jhuapl.saavtk.view.lod.LodMode;
+import edu.jhuapl.saavtk.view.lod.VtkLodActor;
 import edu.jhuapl.saavtk.vtk.VtkUtil;
 import glum.item.ItemEventType;
 import vtk.vtkActor;
@@ -95,7 +95,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	private final vtkPolyDataMapper vLineMapperRegPDM;
 	private final vtkPolyDataMapper vLineMapperDecPDM;
 	private final vtkPolyDataMapper vLineActivationMapperPDM;
-	private final SaavtkLODActor vLineActor;
+	private final VtkLodActor vLineActor;
 	private final vtkActor vLineActivationActor;
 	private final vtkIdList vIdRegIL;
 	private final vtkIdList vIdDecIL;
@@ -126,7 +126,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		vIdRegIL = new vtkIdList();
 		vIdDecIL = new vtkIdList();
 
-		vLineActor = new SaavtkLODActor(this);
+		vLineActor = new VtkLodActor(this);
 		vtkProperty lineProperty = vLineActor.GetProperty();
 
 		lineWidth = 2.0;
@@ -357,9 +357,9 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		vLineMapperRegPDM.Update();
 		vLineMapperDecPDM.Update();
 
-		vLineActor.SetMapper(vLineMapperRegPDM);
-		vLineActor.setLODMapper(vLineMapperDecPDM);
-
+		vLineActor.setDefaultMapper(vLineMapperRegPDM);
+		vLineActor.setLodMapper(LodMode.MaxQuality, vLineMapperRegPDM);
+		vLineActor.setLodMapper(LodMode.MaxSpeed, vLineMapperDecPDM);
 		vLineActor.Modified();
 
 		// Notify model change listeners
@@ -916,7 +916,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	@Override
 	public Metadata store()
 	{
-	    KeyedFactory.Builder<Object> builder = KeyedFactory.instance().builder();
+		KeyedFactory.Builder<Object> builder = KeyedFactory.instance().builder();
 
 		builder.put(LINE_WIDTH_KEY, SettableStoredFactory.instance().of(lineWidth));
 		builder.put(OFFSET_KEY, SettableStoredFactory.instance().of(offset));

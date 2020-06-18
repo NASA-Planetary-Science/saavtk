@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.PolyModel;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 
@@ -21,25 +21,24 @@ public class ControlPointUtil
 	 * Returns the centroid of the specified LatLon points as projected on the
 	 * provided small body.
 	 */
-	public static Vector3D calcCentroidOnBody(PolyhedralModel aSmallBody, List<LatLon> aLatLonL)
+	public static Vector3D calcCentroidOnBody(PolyModel aPolyModel, List<LatLon> aLatLonL)
 	{
-		double[] centroid = { 0.0, 0.0, 0.0 };
+		double[] centroidArr = { 0.0, 0.0, 0.0 };
 		for (LatLon aLatLon : aLatLonL)
 		{
 			double[] tmpPt = MathUtil.latrec(aLatLon);
-			centroid[0] += tmpPt[0];
-			centroid[1] += tmpPt[1];
-			centroid[2] += tmpPt[2];
+			centroidArr[0] += tmpPt[0];
+			centroidArr[1] += tmpPt[1];
+			centroidArr[2] += tmpPt[2];
 		}
 
 		int numPts = aLatLonL.size();
-		centroid[0] /= numPts;
-		centroid[1] /= numPts;
-		centroid[2] /= numPts;
+		centroidArr[0] /= numPts;
+		centroidArr[1] /= numPts;
+		centroidArr[2] /= numPts;
 
-		double[] closestPoint = aSmallBody.findClosestPoint(centroid);
-
-		return new Vector3D(closestPoint);
+		Vector3D retPt = aPolyModel.findClosestPoint(new Vector3D(centroidArr));
+		return retPt;
 	}
 
 	/**
@@ -49,10 +48,10 @@ public class ControlPointUtil
 	 * The size is defined as the longest distance between any control point and the
 	 * associated centroid.
 	 */
-	public static double calcSizeOnBody(PolyhedralModel aSmallBody, List<LatLon> aLatLonL)
+	public static double calcSizeOnBody(PolyModel aPolyModel, List<LatLon> aLatLonL)
 	{
 		// Compute the centroid of the LatLon points
-		Vector3D centroid = calcCentroidOnBody(aSmallBody, aLatLonL);
+		Vector3D centroid = calcCentroidOnBody(aPolyModel, aLatLonL);
 
 		// Determine the max distance between any point and the centroid
 		double maxDist = 0.0;
@@ -93,17 +92,16 @@ public class ControlPointUtil
 	 * <LI>Loading a structure to a different shape model
 	 * </UL>
 	 */
-	public static List<LatLon> shiftControlPointsToNearestPointOnBody(PolyhedralModel aSmallBody,
-			List<LatLon> aControlPointL)
+	public static List<LatLon> shiftControlPointsToNearestPointOnBody(PolyModel aPolyModel, List<LatLon> aControlPointL)
 	{
 		List<LatLon> retL = new ArrayList<>();
-
 		for (LatLon aLL : aControlPointL)
 		{
 			double ptArr[] = MathUtil.latrec(aLL);
-			double[] closestPoint = aSmallBody.findClosestPoint(ptArr);
 
-			LatLon tmpLL = MathUtil.reclat(closestPoint);
+			Vector3D closestPt = aPolyModel.findClosestPoint(new Vector3D(ptArr));
+
+			LatLon tmpLL = MathUtil.reclat(closestPt.toArray());
 			retL.add(tmpLL);
 		}
 

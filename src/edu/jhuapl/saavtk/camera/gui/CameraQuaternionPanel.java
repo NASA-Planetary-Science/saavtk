@@ -18,10 +18,11 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Range;
 
-import edu.jhuapl.saavtk.camera.View;
-import edu.jhuapl.saavtk.camera.ViewActionListener;
 import edu.jhuapl.saavtk.colormap.SigFigNumberFormat;
 import edu.jhuapl.saavtk.gui.util.Colors;
+import edu.jhuapl.saavtk.view.View;
+import edu.jhuapl.saavtk.view.ViewActionListener;
+import edu.jhuapl.saavtk.view.ViewChangeReason;
 import glum.gui.GuiUtil;
 import glum.gui.action.ActionComponentProvider;
 import glum.gui.component.GNumberField;
@@ -107,21 +108,25 @@ public class CameraQuaternionPanel extends JPanel implements ActionComponentProv
 
 		JLabel quat0L = new JLabel("Quat-0:");
 		quat0NFS = new GNumberFieldSlider(this, tmpNF, ScalarRange, NumCols);
+		quat0NFS.setEditable(false);
 		add(quat0L, "");
 		add(quat0NFS, "growx,wrap");
 
 		JLabel quat1L = new JLabel("Quat-1:");
 		quat1NFS = new GNumberFieldSlider(this, tmpNF, ScalarRange, NumCols);
+		quat1NFS.setEditable(false);
 		add(quat1L, "");
 		add(quat1NFS, "growx,wrap");
 
 		JLabel quat2L = new JLabel("Quat-2:");
 		quat2NFS = new GNumberFieldSlider(this, tmpNF, ScalarRange, NumCols);
+		quat2NFS.setEditable(false);
 		add(quat2L, "");
 		add(quat2NFS, "growx,wrap");
 
 		JLabel quat3L = new JLabel("Quat-3:");
 		quat3NFS = new GNumberFieldSlider(this, tmpNF, ScalarRange, NumCols);
+		quat3NFS.setEditable(false);
 		add(quat3L, "");
 		add(quat3NFS, "growx,wrap");
 
@@ -131,14 +136,10 @@ public class CameraQuaternionPanel extends JPanel implements ActionComponentProv
 		dumpB = GuiUtil.createJButton("Log to Console", this);
 		dumpB.setToolTipText("Log position and orientation to console.");
 
-		// Disable quaternion components - updating of view is not supported
-		GuiUtil.setEnabled(false, quat0NFS, quat1NFS, quat2NFS, quat3NFS);
-		GuiUtil.setEnabled(false, quat0L, quat1L, quat2L, quat3L);
-
 		// Register for events of interest
 		refView.addViewChangeListener(this);
 
-		handleViewAction(null);
+		handleViewAction(this, ViewChangeReason.Camera);
 	}
 
 	@Override
@@ -153,17 +154,18 @@ public class CameraQuaternionPanel extends JPanel implements ActionComponentProv
 		Object source = aEvent.getSource();
 		if (source == dumpB)
 			doActionLogQuaternion();
-		else
-			doActionCamera();
+		else if (source == xPosNF || source == yPosNF || source == zPosNF)
+			doActionCameraPosition();
+		else if (source == quat0NFS || source == quat1NFS || source == quat2NFS || source == quat3NFS)
+			doActionCameraQuaterion();
 
 		updateGui();
 	}
 
 	@Override
-	public void handleViewAction(Object aSource)
+	public void handleViewAction(Object aSource, ViewChangeReason aReason)
 	{
 		updateState();
-
 		syncGuiToModel();
 	}
 
@@ -172,16 +174,29 @@ public class CameraQuaternionPanel extends JPanel implements ActionComponentProv
 	 * <P>
 	 * If there are any errors then nothing will be changed.
 	 */
-	private void doActionCamera()
+	private void doActionCameraPosition()
 	{
 		// Bail if there are any errors
-		if (getErrorMsg() != null)
+		if (getErrorMsgForPositionUI() != null)
 			return;
 
 		Vector3D tmpPosition = new Vector3D(xPosNF.getValue(), yPosNF.getValue(), zPosNF.getValue());
 		refView.getCamera().setPosition(tmpPosition);
+	}
 
-		// TODO: Add ability to set in quaternion also
+	/**
+	 * Helper method that updates the Renderer's camera to reflect the GUI
+	 * (quaternion) input.
+	 * <P>
+	 * If there are any errors then nothing will be changed.
+	 */
+	private void doActionCameraQuaterion()
+	{
+		// Bail if there are any errors
+		if (getErrorMsgForQuaternionUI() != null)
+			return;
+
+		// TODO: Logic is not implemented
 	}
 
 	/**
@@ -206,11 +221,12 @@ public class CameraQuaternionPanel extends JPanel implements ActionComponentProv
 	}
 
 	/**
-	 * Helper method that will return a string describing invalid user input.
+	 * Helper method that will return a string describing invalid input associated
+	 * with the position UI elements.
 	 * <P>
 	 * If all input is valid then null will be returned.
 	 */
-	private String getErrorMsg()
+	private String getErrorMsgForPositionUI()
 	{
 		if (xPosNF.isValidInput() == false)
 			return String.format("Invalid X-Pos.");
@@ -221,6 +237,17 @@ public class CameraQuaternionPanel extends JPanel implements ActionComponentProv
 		if (zPosNF.isValidInput() == false)
 			return String.format("Invalid Z-Pos.");
 
+		return null;
+	}
+
+	/**
+	 * Helper method that will return a string describing invalid input associated
+	 * with the quaternion UI elements.
+	 * <P>
+	 * If all input is valid then null will be returned.
+	 */
+	private String getErrorMsgForQuaternionUI()
+	{
 		if (currRot == RotationNaN)
 			return "Quaternion error: " + quaternionErrMsg;
 
@@ -266,8 +293,11 @@ public class CameraQuaternionPanel extends JPanel implements ActionComponentProv
 	private void updateGui()
 	{
 		// Update the status area
+		String errMsg = getErrorMsgForPositionUI();
+		if (errMsg == null)
+			errMsg = getErrorMsgForQuaternionUI();
+
 		String tmpMsg = null;
-		String errMsg = getErrorMsg();
 		if (errMsg != null)
 			tmpMsg = errMsg;
 		statusL.setText(tmpMsg);

@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.camera;
+package edu.jhuapl.saavtk.view;
 
 /**
  * Listener that provides notification whenever the {@link View}'s state has
@@ -14,6 +14,6 @@ public interface ViewActionListener
 	 *
 	 * @param aSource The object that generated this event.
 	 */
-	public void handleViewAction(Object aSource);
+	public void handleViewAction(Object aSource, ViewChangeReason aReason);
 
 }

@@ -31,7 +31,8 @@ import edu.jhuapl.saavtk.structure.vtk.VtkEllipsePainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkLabelPainter;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
 import edu.jhuapl.saavtk.util.Properties;
-import edu.jhuapl.saavtk.util.SaavtkLODActor;
+import edu.jhuapl.saavtk.view.lod.LodMode;
+import edu.jhuapl.saavtk.view.lod.VtkLodActor;
 import edu.jhuapl.saavtk.vtk.VtkUtil;
 import glum.item.ItemEventType;
 import glum.task.Task;
@@ -73,7 +74,7 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 	private vtkAppendPolyData vExteriorFilterDecAPD;
 	private vtkPolyDataMapper vExteriorRegPDM;
 	private vtkPolyDataMapper vExteriorDecPDM;
-	private SaavtkLODActor vExteriorActor;
+	private VtkLodActor vExteriorActor;
 
 	private vtkPolyData vInteriorRegPD;
 	private vtkPolyData vInteriorDecPD;
@@ -81,7 +82,7 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 	private vtkAppendPolyData vInteriorFilterDecAPD;
 	private vtkPolyDataMapper vInteriorRegPDM;
 	private vtkPolyDataMapper vInteriorDecPDM;
-	private SaavtkLODActor vInteriorActor;
+	private VtkLodActor vInteriorActor;
 
 	private vtkUnsignedCharArray vExteriorColorsRegUCA;
 	private vtkUnsignedCharArray vExteriorColorsDecUCA;
@@ -134,7 +135,7 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 		vExteriorFilterDecAPD.UserManagedInputsOn();
 		vExteriorRegPDM = new vtkPolyDataMapper();
 		vExteriorDecPDM = new vtkPolyDataMapper();
-		vExteriorActor = new SaavtkLODActor(this);
+		vExteriorActor = new VtkLodActor(this);
 		vtkProperty boundaryProperty = vExteriorActor.GetProperty();
 		boundaryProperty.LightingOff();
 		lineWidth = 2.;
@@ -148,7 +149,7 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 		vInteriorFilterDecAPD.UserManagedInputsOn();
 		vInteriorRegPDM = new vtkPolyDataMapper();
 		vInteriorDecPDM = new vtkPolyDataMapper();
-		vInteriorActor = new SaavtkLODActor(this);
+		vInteriorActor = new VtkLodActor(this);
 		vtkProperty interiorProperty = vInteriorActor.GetProperty();
 		interiorProperty.LightingOff();
 		interiorProperty.SetOpacity(interiorOpacity);
@@ -215,8 +216,8 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 	@Override
 	public Vector3D getCentroid(Ellipse aItem)
 	{
-		double[] tmpArr = refSmallBody.findClosestPoint(aItem.getCenter().toArray());
-		return new Vector3D(tmpArr);
+		// Delegate
+		return refSmallBody.findClosestPoint(aItem.getCenter());
 	}
 
 	@Override
@@ -486,7 +487,7 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 	}
 
 	@Override
-	public void setCenter(Ellipse aItem,  Vector3D aCenter)
+	public void setCenter(Ellipse aItem, Vector3D aCenter)
 	{
 		aItem.setCenter(aCenter);
 		markPainterStale(aItem);
@@ -628,10 +629,12 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 		vInteriorRegPDM.SetInputData(vInteriorRegPD);
 		vInteriorDecPDM.SetInputData(vInteriorDecPD);
 
-		vExteriorActor.SetMapper(vExteriorRegPDM);
-		vExteriorActor.setLODMapper(vExteriorDecPDM);
-		vInteriorActor.SetMapper(vInteriorRegPDM);
-		vInteriorActor.setLODMapper(vInteriorDecPDM);
+		vExteriorActor.setDefaultMapper(vExteriorRegPDM);
+		vExteriorActor.setLodMapper(LodMode.MaxQuality, vExteriorRegPDM);
+		vExteriorActor.setLodMapper(LodMode.MaxSpeed, vExteriorDecPDM);
+		vInteriorActor.setDefaultMapper(vInteriorRegPDM);
+		vInteriorActor.setLodMapper(LodMode.MaxQuality, vInteriorRegPDM);
+		vInteriorActor.setLodMapper(LodMode.MaxSpeed, vInteriorDecPDM);
 
 		vExteriorActor.Modified();
 		vInteriorActor.Modified();
