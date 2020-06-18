@@ -16,6 +16,7 @@ public class SmallBodyCubes
     private List<BoundingBox> allCubes = new ArrayList<BoundingBox>();
     private final double cubeSize;
     private final double buffer;
+    private double overlap;
 
     /**
      * Create a cube set structure for the given model, where each cube has side <tt>cubeSize</tt>
@@ -30,10 +31,12 @@ public class SmallBodyCubes
             vtkPolyData smallBodyPolyData,
             double cubeSize,
             double buffer,
-            boolean removeEmptyCubes)
+            boolean removeEmptyCubes,
+            double overlap)
     {
         this.cubeSize = cubeSize;
         this.buffer = buffer;
+        this.overlap = overlap;
 
         initialize(smallBodyPolyData);
 
@@ -148,7 +151,7 @@ public class SmallBodyCubes
                     if (cube.intersects(bb))
                     {
                     	//this is here to ensure that there is at least a 10% overlap between the boxes, so we don't catch edges of polydata 
-                    	if (cube.getOverlapFactor(bb)*100.0 > 10.0)
+                    	if (cube.getOverlapFactor(bb)*100.0 > overlap)
                     	{
                     		cubeIds.add(i);
                     		break;
@@ -176,7 +179,10 @@ public class SmallBodyCubes
             BoundingBox cube = getCube(i);
             if (cube.intersects(bb))
             {
-                cubeIds.add(i);
+            	if (cube.getOverlapFactor(bb)*100.0 > overlap)
+            	{
+            		cubeIds.add(i);
+            	}
             }
         }
 
