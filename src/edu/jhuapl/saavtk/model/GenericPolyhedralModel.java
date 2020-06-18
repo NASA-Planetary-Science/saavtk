@@ -927,6 +927,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     
     public void setCubeVisibility(TreeSet<Integer> indices)
     {
+    	if (diagnosticModeEnabled == false) return;
     	smallBodyActors.removeAll(diagnosticCubes);
     	diagnosticCubes.clear();
     	for (int index : indices)
