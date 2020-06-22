@@ -72,6 +72,16 @@ public class BoundingBox
         else
             return false;
     }
+    
+    public double getOverlapFactor(BoundingBox other)
+    {
+    	double xLength = Math.abs(xmax - other.xmin);
+    	double yLength = Math.abs(ymax - other.ymin);
+    	double zLength = Math.abs(zmax - other.zmin);
+    	double overlappingVolume = xLength*yLength*zLength;
+    	double originalVolume = (xmax-xmin)*(ymax-ymin)*(zmax-zmin);
+    	return overlappingVolume/originalVolume;
+    }
 
     /**
      * Returns the largest side of the box.

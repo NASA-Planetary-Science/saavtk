@@ -8,10 +8,11 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.camera.ViewActionListener;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
 import edu.jhuapl.saavtk.gui.render.VtkPropProvider;
+import edu.jhuapl.saavtk.view.ViewActionListener;
+import edu.jhuapl.saavtk.view.ViewChangeReason;
 import edu.jhuapl.saavtk.vtk.VtkResource;
 import vtk.vtkActor2D;
 import vtk.vtkCellArray;
@@ -187,7 +188,7 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 	}
 
 	@Override
-	public void handleViewAction(Object aSource)
+	public void handleViewAction(Object aSource, ViewChangeReason aReason)
 	{
 		vtkUpdateState();
 	}

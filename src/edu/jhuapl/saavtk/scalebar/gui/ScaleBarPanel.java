@@ -13,10 +13,11 @@ import javax.swing.JPanel;
 import com.google.common.base.Strings;
 import com.google.common.collect.Range;
 
-import edu.jhuapl.saavtk.camera.ViewActionListener;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.util.Colors;
 import edu.jhuapl.saavtk.scalebar.ScaleBarPainter;
+import edu.jhuapl.saavtk.view.ViewActionListener;
+import edu.jhuapl.saavtk.view.ViewChangeReason;
 import glum.gui.GuiUtil;
 import glum.gui.component.GNumberField;
 import glum.gui.component.GNumberFieldSlider;
@@ -115,7 +116,7 @@ public class ScaleBarPanel extends JPanel implements ActionListener, ViewActionL
 	}
 
 	@Override
-	public void handleViewAction(Object aSource)
+	public void handleViewAction(Object aSource, ViewChangeReason aReason)
 	{
 		syncGuiToModel();
 		updateGui();
