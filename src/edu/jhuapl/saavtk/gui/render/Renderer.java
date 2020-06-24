@@ -69,7 +69,7 @@ import vtk.vtkRenderer;
 import vtk.vtkScalarBarActor;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
-public class Renderer extends JPanel implements ActionListener, CameraActionListener, PickListener, View
+public class Renderer extends JPanel implements ActionListener, CameraActionListener, PickListener, View//, Cloneable
 {
 	public enum LightingType
 	{
@@ -888,5 +888,12 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		// Send out notification of the change
 		doViewChange(ViewChangeReason.Lod);
 	}
+	
+//	@Override
+//	public Object clone() throws CloneNotSupportedException
+//	{
+//		// TODO Auto-generated method stub
+//		return super.clone();
+//	}
 
 }

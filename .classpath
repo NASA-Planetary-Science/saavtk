@@ -146,5 +146,7 @@
 			<attribute name="javadoc_location" value="jar:platform:/resource/saavtk/lib/commons-text-1.8-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry exported="true" kind="lib" path="lib/jcodec-0.2.3.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/jcodec-javase-0.2.3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
