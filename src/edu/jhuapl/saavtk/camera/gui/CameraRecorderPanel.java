@@ -311,6 +311,8 @@ public class CameraRecorderPanel extends JPanel implements ActionListener, ViewA
 				Rotation rotation = new Rotation(rotationVector, Math.toRadians(rotationRate), RotationConvention.VECTOR_OPERATOR);
 				Vector3D newPosition = rotation.applyTo(renderer.getCamera().getPosition());
 				renderer.getCamera().setPosition(newPosition);
+				renderer.setCameraOrientation(newPosition.toArray(), renderer.getCameraFocalPoint(), rotationVector.toArray(),
+						renderer.getCameraViewAngle());
 				renderer.getRenderWindowPanel().Render();
 			}
 		},
@@ -330,7 +332,10 @@ public class CameraRecorderPanel extends JPanel implements ActionListener, ViewA
 				}
 				try
 				{
-					MovieGenerator.create(filenames, new File(path+base + ".mp4"), renderer.getWidth(), renderer.getHeight());
+					int width = renderer.getWidth()%2 == 0 ? renderer.getWidth() : renderer.getWidth() + 1;
+					int height = renderer.getHeight()%2 == 0 ? renderer.getHeight() : renderer.getHeight() + 1;
+					System.out.println("CameraRecorderPanel.doRecord().new Runnable() {...}: run: width height is " + width + " " + height);
+					MovieGenerator.create(filenames, new File(path+base + ".mp4"), width, height);
 					for (String filename : filenames)
 					{
 						new File(filename).delete();
