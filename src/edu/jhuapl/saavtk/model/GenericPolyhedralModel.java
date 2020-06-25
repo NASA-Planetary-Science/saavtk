@@ -40,6 +40,7 @@ import edu.jhuapl.saavtk.util.SmallBodyCubes;
 import edu.jhuapl.saavtk.view.lod.LodMode;
 import edu.jhuapl.saavtk.view.lod.LodUtil;
 import edu.jhuapl.saavtk.view.lod.VtkLodActor;
+import edu.jhuapl.saavtk.vtk.VtkDrawUtil;
 import vtk.vtkActor;
 import vtk.vtkCamera;
 import vtk.vtkCell;
@@ -1053,36 +1054,30 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 				outputBoundary);
     }
 
-	public void drawRegularPolygon(double[] center, double radius, int numberOfSides, vtkPolyData outputInterior,
-			vtkPolyData outputBoundary)
-    {
-		PolyDataUtil.drawRegularPolygonOnPolyData(smallBodyPolyData, pointLocator, center, radius, numberOfSides,
-				outputInterior, outputBoundary);
-    }
+	@Override
+	public void drawRegularPolygonLowRes(double[] aCenterArr, double aRadius, int aNumSides, vtkPolyData aRetInteriorPD,
+			vtkPolyData aRetExteriorPD)
+	{
+		Vector3D center = new Vector3D(aCenterArr);
+		double flattening = 1.0;
+		double angle = 0.0;
 
-    @Override
-	public void drawEllipticalPolygon(double[] center, double radius, double flattening, double angle, int numberOfSides,
-			vtkPolyData outputInterior, vtkPolyData outputBoundary)
-    {
-		PolyDataUtil.drawEllipseOnPolyData(smallBodyPolyData, pointLocator, center, radius, flattening, angle,
-				numberOfSides, outputInterior, outputBoundary);
-    }
+		// Determine the VTK vars to use (ensure low res data)
+		vtkPolyData vSurfacePD = smallBodyPolyData;
+		vtkPointLocator vSurfacePL = pointLocator;
 
-    @Override
-	public void drawRegularPolygonLowRes(double[] center, double radius, int numberOfSides, vtkPolyData outputInterior,
-			vtkPolyData outputBoundary)
-    {
-        if (resolutionLevel == 0)
-        {
-            drawRegularPolygon(center, radius, numberOfSides, outputInterior, outputBoundary);
-            return;
-        }
+		if (resolutionLevel != 0)
+		{
+			initializeLowResData();
 
-        initializeLowResData();
+			vSurfacePD = lowResSmallBodyPolyData;
+			vSurfacePL = lowResPointLocator;
+		}
 
-		PolyDataUtil.drawRegularPolygonOnPolyData(lowResSmallBodyPolyData, lowResPointLocator, center, radius,
-				numberOfSides, outputInterior, outputBoundary);
-    }
+		// Render the circle
+		VtkDrawUtil.drawEllipseOn(vSurfacePD, vSurfacePL, center, aRadius, flattening, angle, aNumSides,
+				aRetInteriorPD, aRetExteriorPD);
+	}
 
 	public void drawCone(double[] vertex, double[] axis, double angle, int numberOfSides, vtkPolyData outputInterior,
 			vtkPolyData outputBoundary)
@@ -1311,7 +1306,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
             smallBodyMapper.SetLookupTable(lookupTable);
             smallBodyMapper.UseLookupTableScalarRangeOn();
 
-			smallBodyActor = new VtkLodActor(null);
+			smallBodyActor = new VtkLodActor(this);
 			smallBodyActor.setDefaultMapper(smallBodyMapper);
 			smallBodyActor.setLodMapper(LodMode.MaxQuality, smallBodyMapper);
 
@@ -1338,7 +1333,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
             scalarBarActor.SetTitleTextProperty(tp);
 
             linesMapper = new vtkPolyDataMapper();
-			linesActor = new VtkLodActor(null);
+			linesActor = new VtkLodActor(this);
             smallBodyActors.add(linesActor);
 
         }
