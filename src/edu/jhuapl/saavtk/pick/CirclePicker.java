@@ -11,12 +11,12 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.gui.GuiUtil;
 import edu.jhuapl.saavtk.gui.render.Renderer;
-import edu.jhuapl.saavtk.model.Model;
-import edu.jhuapl.saavtk.model.ModelManager;
-import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.CircleModel;
 import edu.jhuapl.saavtk.structure.Ellipse;
+import edu.jhuapl.saavtk.structure.StructureManager;
+import edu.jhuapl.saavtk.structure.util.EllipseUtil;
+import edu.jhuapl.saavtk.vtk.VtkUtil;
 import vtk.vtkActor;
 import vtk.vtkCellPicker;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
@@ -24,28 +24,26 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
 public class CirclePicker extends Picker
 {
 	// Reference vars
-	private ModelManager refModelManager;
-	private PolyhedralModel refSmallBodyModel;
-	private CircleModel refStructureManager;
-	private vtkJoglPanelComponent refRenWin;
+	private final PolyhedralModel refSmallBody;
+	private final CircleModel refStructureManager;
+	private final vtkJoglPanelComponent refRenWin;
 
 	// VTK vars
-	private vtkCellPicker smallBodyPicker;
-	private vtkCellPicker structurePicker;
+	private final vtkCellPicker vSmallBodyCP;
+	private final vtkCellPicker vStructureCP;
 
 	// State vars
 	private EditMode currEditMode;
 	private int currVertexId;
 
-	public CirclePicker(Renderer aRenderer, ModelManager aModelManager)
+	public CirclePicker(Renderer aRenderer, PolyhedralModel aSmallBody, StructureManager<?> aStructureManager)
 	{
-		refModelManager = aModelManager;
-		refSmallBodyModel = aModelManager.getPolyhedralModel();
-		refStructureManager = (CircleModel) aModelManager.getModel(ModelNames.CIRCLE_STRUCTURES);
+		refSmallBody = aSmallBody;
+		refStructureManager = (CircleModel) aStructureManager;
 		refRenWin = aRenderer.getRenderWindowPanel();
 
-		smallBodyPicker = PickUtilEx.formSmallBodyPicker(refSmallBodyModel);
-		structurePicker = PickUtilEx.formPickerFor(refStructureManager.getBoundaryActor());
+		vSmallBodyCP = PickUtilEx.formSmallBodyPicker(refSmallBody);
+		vStructureCP = PickUtilEx.formPickerFor(refStructureManager.getBoundaryActor());
 
 		currEditMode = EditMode.CLICKABLE;
 		currVertexId = -1;
@@ -84,24 +82,26 @@ public class CirclePicker extends Picker
 		}
 
 		// Bail if a valid point was not picked
-		boolean isPicked = PickUtil.isPicked(smallBodyPicker, refRenWin, aEvent, getTolerance());
+		boolean isPicked = PickUtil.isPicked(vSmallBodyCP, refRenWin, aEvent, getTolerance());
 		if (isPicked == false)
 			return;
 
-		vtkActor pickedActor = smallBodyPicker.GetActor();
-		Model model = refModelManager.getModel(pickedActor);
-		if (model == refSmallBodyModel)
+		// Bail if the picked actor is not associated with refSmallBody
+		vtkActor pickedActor = vSmallBodyCP.GetActor();
+		if (VtkUtil.getAssocModel(pickedActor) != refSmallBody)
+			return;
+
+		// Handle the action
+		double[] pos = vSmallBodyCP.GetPickPosition();
+
+		// TODO: Is this conditional really necessary?
+		if (aEvent.getClickCount() == 1)
 		{
-			double[] pos = smallBodyPicker.GetPickPosition();
-			// TODO: Is this conditional really necessary?
-			if (aEvent.getClickCount() == 1)
+//			refStructureModel.addNewStructure(pos);
+			if (refStructureManager.addCircumferencePoint(pos) == false)
 			{
-//				refStructureModel.addNewStructure(pos);
-				if (refStructureManager.addCircumferencePoint(pos) == false)
-				{
-					JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(refRenWin.getComponent()),
-							"Could not fit circle to specified points.", "Error", JOptionPane.ERROR_MESSAGE);
-				}
+				JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(refRenWin.getComponent()),
+						"Could not fit circle to specified points.", "Error", JOptionPane.ERROR_MESSAGE);
 			}
 		}
 	}
@@ -121,15 +121,15 @@ public class CirclePicker extends Picker
 			return;
 
 		// Bail if we failed to pick something
-		boolean isPicked = PickUtil.isPicked(structurePicker, refRenWin, aEvent, getTolerance());
+		boolean isPicked = PickUtil.isPicked(vStructureCP, refRenWin, aEvent, getTolerance());
 		if (isPicked == false)
 			return;
 
 		// Determine what was picked
-		vtkActor pickedActor = structurePicker.GetActor();
+		vtkActor pickedActor = vStructureCP.GetActor();
 		if (pickedActor == refStructureManager.getBoundaryActor())
 		{
-			int cellId = structurePicker.GetCellId();
+			int cellId = vStructureCP.GetCellId();
 			int pointId = refStructureManager.getPolygonIdFromBoundaryCellId(cellId);
 			currVertexId = pointId;
 		}
@@ -150,35 +150,34 @@ public class CirclePicker extends Picker
 		Ellipse tmpItem = refStructureManager.getItem(currVertexId);
 
 		// Bail if we failed to pick something
-		boolean isPicked = PickUtil.isPicked(smallBodyPicker, refRenWin, aEvent, getTolerance());
+		boolean isPicked = PickUtil.isPicked(vSmallBodyCP, refRenWin, aEvent, getTolerance());
 		if (isPicked == false)
 			return;
 
-		vtkActor pickedActor = smallBodyPicker.GetActor();
-		Model model = refModelManager.getModel(pickedActor);
+		// Bail if the picked actor is not associated with refSmallBody
+		vtkActor pickedActor = vSmallBodyCP.GetActor();
+		if (VtkUtil.getAssocModel(pickedActor) != refSmallBody)
+			return;
 
-		if (model == refSmallBodyModel)
-		{
-			double[] lastDragPositionArr = smallBodyPicker.GetPickPosition();
-			Vector3D lastDragPosition = new Vector3D(lastDragPositionArr);
+		// Handle the action
+		double[] lastDragPositionArr = vSmallBodyCP.GetPickPosition();
+		Vector3D lastDragPosition = new Vector3D(lastDragPositionArr);
 
-			if (aEvent.isControlDown() || aEvent.isShiftDown())
-				refStructureManager.changeRadiusOfPolygon(tmpItem, lastDragPosition);
-			else
-				refStructureManager.setCenter(tmpItem, lastDragPosition);
-		}
+		if (aEvent.isControlDown() || aEvent.isShiftDown())
+			EllipseUtil.changeRadius(refStructureManager, tmpItem, refSmallBody, lastDragPosition);
+		else
+			refStructureManager.setCenter(tmpItem, lastDragPosition);
 	}
 
 	@Override
 	public void mouseMoved(MouseEvent aEvent)
 	{
-		boolean isPicked = PickUtil.isPicked(structurePicker, refRenWin, aEvent, getTolerance());
+		boolean isPicked = PickUtil.isPicked(vStructureCP, refRenWin, aEvent, getTolerance());
 		int numActivePoints = refStructureManager.getNumberOfCircumferencePoints();
 
 		// Only allow dragging if we are not in the middle of drawing a
 		// a new circle, i.e. if number of circumference points is zero.
-		if (numActivePoints == 0 && isPicked == true
-				&& structurePicker.GetActor() == refStructureManager.getBoundaryActor())
+		if (numActivePoints == 0 && isPicked == true && vStructureCP.GetActor() == refStructureManager.getBoundaryActor())
 			currEditMode = EditMode.DRAGGABLE;
 		else
 			currEditMode = EditMode.CLICKABLE;

@@ -17,6 +17,7 @@ import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.pick.PickManager.PickMode;
+import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.util.Configuration;
 import vtk.vtkCellPicker;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
@@ -57,9 +58,13 @@ public class PickUtil
 	@Deprecated
 	protected static Map<PickMode, Picker> formNonDefaultPickerMap(Renderer aRenderer, ModelManager aModelManager)
 	{
+		StructureManager<?> tmpCircleSelectionManager = (StructureManager<?>) aModelManager
+				.getModel(ModelNames.CIRCLE_SELECTION);
+
 		Map<PickMode, Picker> retMap = new HashMap<>();
 		if (aModelManager.getModel(ModelNames.CIRCLE_STRUCTURES) != null)
-			retMap.put(PickMode.CIRCLE_SELECTION, new CircleSelectionPicker(aRenderer, aModelManager));
+			retMap.put(PickMode.CIRCLE_SELECTION,
+					new CircleSelectionPicker(aRenderer, aModelManager.getPolyhedralModel(), tmpCircleSelectionManager));
 
 		return retMap;
 	}
