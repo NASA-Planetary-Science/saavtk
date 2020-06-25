@@ -18,157 +18,162 @@ import vtk.vtkProperty;
 
 public class EllipseModel extends AbstractEllipsePolygonModel
 {
-    private PolyhedralModel smallBodyModel;
-    private vtkPolyData activationPolyData;
-    private vtkPolyDataMapper activationMapper;
-    private vtkActor activationActor;
-    private double[] unshiftedPoint1;
-    private double[] unshiftedPoint2;
+	// Ref vars
+	private final PolyhedralModel refSmallBody;
 
-    public EllipseModel(PolyhedralModel smallBodyModel)
-    {
-        super(smallBodyModel, 20, Mode.ELLIPSE_MODE, "ellipse");
+	// VTK vars
+	private final vtkPolyData vActivationPD;
+	private final vtkPolyDataMapper vActivationPDM;
+	private final vtkActor vActivationA;
 
-        this.smallBodyModel = smallBodyModel;
+	// State vars
+	private double[] unshiftedPoint1;
+	private double[] unshiftedPoint2;
 
-        setInteriorOpacity(0.0);
-        setDefaultColor(Color.MAGENTA);
+	public EllipseModel(PolyhedralModel aSmallBody)
+	{
+		super(aSmallBody, 20, Mode.ELLIPSE_MODE, "ellipse");
 
-        activationPolyData = new vtkPolyData();
-        vtkPoints points = new vtkPoints();
-        vtkCellArray cells = new vtkCellArray();
-        activationPolyData.SetPoints(points);
-        activationPolyData.SetVerts(cells);
+		refSmallBody = aSmallBody;
 
-        activationMapper = new vtkPolyDataMapper();
-        activationMapper.SetInputData(activationPolyData);
-        activationMapper.Update();
+		setInteriorOpacity(0.0);
+		setDefaultColor(Color.MAGENTA);
 
-        activationActor = new vtkActor();
-        activationActor.PickableOff();
-        vtkProperty lineActivationProperty = activationActor.GetProperty();
-        lineActivationProperty.SetColor(0.0, 0.0, 1.0);
-        lineActivationProperty.SetPointSize(7.0);
+		vActivationPD = new vtkPolyData();
+		vtkPoints points = new vtkPoints();
+		vtkCellArray cells = new vtkCellArray();
+		vActivationPD.SetPoints(points);
+		vActivationPD.SetVerts(cells);
 
-        activationActor.SetMapper(activationMapper);
-        activationActor.Modified();
+		vActivationPDM = new vtkPolyDataMapper();
+		vActivationPDM.SetInputData(vActivationPD);
+		vActivationPDM.Update();
 
-        getProps().add(activationActor);
-    }
+		vActivationA = new vtkActor();
+		vActivationA.PickableOff();
+		vtkProperty lineActivationProperty = vActivationA.GetProperty();
+		lineActivationProperty.SetColor(0.0, 0.0, 1.0);
+		lineActivationProperty.SetPointSize(7.0);
 
-    /**
-     * Adds a new point on the perimeter of the ellipse. When the point
-     * count equals 3, am ellipse is created and the intermediate points are
-     * deleted.
-     *
-     * @param aPtArr
-     * @return
-     */
-    public boolean addCircumferencePoint(double[] aPtArr)
-    {
-        vtkPoints points = activationPolyData.GetPoints();
-        vtkCellArray vert = activationPolyData.GetVerts();
+		vActivationA.SetMapper(vActivationPDM);
+		vActivationA.Modified();
 
-        int numPoints = points.GetNumberOfPoints();
+		getProps().add(vActivationA);
+	}
 
+	/**
+	 * Adds a new point on the perimeter of the ellipse. When the point count equals
+	 * 3, am ellipse is created and the intermediate points are deleted.
+	 *
+	 * @param aPtArr
+	 * @return
+	 */
+	public boolean addCircumferencePoint(double[] aPtArr)
+	{
+		vtkPoints points = vActivationPD.GetPoints();
+		vtkCellArray vert = vActivationPD.GetVerts();
 
-        if (!getProps().contains(activationActor))
-        	getProps().add(activationActor);
+		int numPoints = points.GetNumberOfPoints();
 
-        if (numPoints < 2)
-        {
-            vtkIdList idList = new vtkIdList();
-            idList.SetNumberOfIds(1);
-            idList.SetId(0, numPoints);
+		if (!getProps().contains(vActivationA))
+			getProps().add(vActivationA);
 
-            points.InsertNextPoint(aPtArr);
-            vert.InsertNextCell(idList);
+		if (numPoints < 2)
+		{
+			vtkIdList idList = new vtkIdList();
+			idList.SetNumberOfIds(1);
+			idList.SetId(0, numPoints);
 
-            idList.Delete();
+			points.InsertNextPoint(aPtArr);
+			vert.InsertNextCell(idList);
 
-            if (numPoints == 0)
-            {
-                unshiftedPoint1 = aPtArr.clone();
-            }
-            if (numPoints == 1)
-            {
-                unshiftedPoint2 = aPtArr.clone();
-                // Since we shift the points afterwards, reset the first
-                // point to the original unshifted position.
-                points.SetPoint(0, unshiftedPoint1);
-            }
+			idList.Delete();
 
-            smallBodyModel.shiftPolyLineInNormalDirection(activationPolyData, getOffset());
+			if (numPoints == 0)
+			{
+				unshiftedPoint1 = aPtArr.clone();
+			}
+			if (numPoints == 1)
+			{
+				unshiftedPoint2 = aPtArr.clone();
+				// Since we shift the points afterwards, reset the first
+				// point to the original unshifted position.
+				points.SetPoint(0, unshiftedPoint1);
+			}
 
-            activationPolyData.Modified();
-            this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-        }
-        else
-        {
-            // Take the 3 points and compute an ellipse that passes through them.
-            // To do this, assume that the first 2 points lie on the end-points of the major axis
-            // and that the third point lies on one of the end-points of the minor axis.
-            double[] pt1Arr = unshiftedPoint1;
-            double[] pt2Arr = unshiftedPoint2;
-            double[] pt3Arr = aPtArr;
+			refSmallBody.shiftPolyLineInNormalDirection(vActivationPD, getOffset());
 
-            double radius = 0.5 * MathUtil.distanceBetween(pt1Arr, pt2Arr);
-            if (radius == 0.0)
-            {
-                // Cannot fit an ellipse so reset and return
-                resetCircumferencePoints();
-                return false;
-            }
+			vActivationPD.Modified();
+			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		}
+		else
+		{
+			// Take the 3 points and compute an ellipse that passes through them.
+			// To do this, assume that the first 2 points lie on the end-points of the major
+			// axis
+			// and that the third point lies on one of the end-points of the minor axis.
+			double[] pt1Arr = unshiftedPoint1;
+			double[] pt2Arr = unshiftedPoint2;
+			double[] pt3Arr = aPtArr;
 
-            // First find the point on the asteroid that is midway between
-            // the first 2 points. This is the center of the ellipse.
-            double[] centerArr = new double[3];
-            MathUtil.midpointBetween(pt1Arr, pt2Arr, centerArr);
-            Vector3D center = new Vector3D(centerArr);
+			double radius = 0.5 * MathUtil.distanceBetween(pt1Arr, pt2Arr);
+			if (radius == 0.0)
+			{
+				// Cannot fit an ellipse so reset and return
+				resetCircumferencePoints();
+				return false;
+			}
 
-            Vector3D pt2 = new Vector3D(pt2Arr);
-            double angle = EllipseUtil.computeAngleOfPolygon(smallBodyModel, center, pt2);
+			// First find the point on the asteroid that is midway between
+			// the first 2 points. This is the center of the ellipse.
+			double[] centerArr = new double[3];
+			MathUtil.midpointBetween(pt1Arr, pt2Arr, centerArr);
+			Vector3D center = new Vector3D(centerArr);
 
-            Vector3D pt3 = new Vector3D(pt3Arr);
-            double flattening = EllipseUtil.computeFlatteningOfPolygon(smallBodyModel, center, radius, angle, pt3);
+			Vector3D pt2 = new Vector3D(pt2Arr);
+			double angle = EllipseUtil.computeAngle(refSmallBody, center, pt2);
 
-            addNewStructure(center, radius, flattening, angle);
+			Vector3D pt3 = new Vector3D(pt3Arr);
+			double flattening = EllipseUtil.computeFlattening(refSmallBody, center, radius, angle, pt3);
 
-            resetCircumferencePoints();
-        }
+			addNewStructure(center, radius, flattening, angle);
 
-        return true;
-    }
+			resetCircumferencePoints();
+		}
 
-    /**
-     * Cancels the new ellipse currently being created so you can start again.
-     * Intermediate points are deleted.
-     */
-    public void resetCircumferencePoints()
-    {
-        if (activationPolyData.GetNumberOfPoints() > 0)
-        {
-            unshiftedPoint1 = null;
-            unshiftedPoint2 = null;
+		return true;
+	}
 
-            vtkPoints points = new vtkPoints();
-            vtkCellArray cells = new vtkCellArray();
-            activationPolyData.SetPoints(points);
-            activationPolyData.SetVerts(cells);
+	/**
+	 * Cancels the new ellipse currently being created so you can start again.
+	 * Intermediate points are deleted.
+	 */
+	public void resetCircumferencePoints()
+	{
+		if (vActivationPD.GetNumberOfPoints() > 0)
+		{
+			unshiftedPoint1 = null;
+			unshiftedPoint2 = null;
 
-            activationPolyData.Modified();
-            this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-        }
-    }
+			vtkPoints points = new vtkPoints();
+			vtkCellArray cells = new vtkCellArray();
+			vActivationPD.SetPoints(points);
+			vActivationPD.SetVerts(cells);
 
-    public int getNumberOfCircumferencePoints()
-    {
-        return activationPolyData.GetNumberOfPoints();
-    }
-    @Override
+			vActivationPD.Modified();
+			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		}
+	}
+
+	public int getNumberOfCircumferencePoints()
+	{
+		return vActivationPD.GetNumberOfPoints();
+	}
+
+	@Override
 	public void removeAllStructures()
-    {
-        super.removeAllStructures();
-        this.resetCircumferencePoints();
-    }
+	{
+		super.removeAllStructures();
+		this.resetCircumferencePoints();
+	}
 }

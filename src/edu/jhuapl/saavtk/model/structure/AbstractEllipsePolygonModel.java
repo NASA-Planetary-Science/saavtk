@@ -25,7 +25,6 @@ import edu.jhuapl.saavtk.structure.BaseStructureManager;
 import edu.jhuapl.saavtk.structure.Ellipse;
 import edu.jhuapl.saavtk.structure.io.StructureLegacyUtil;
 import edu.jhuapl.saavtk.structure.io.StructureMiscUtil;
-import edu.jhuapl.saavtk.structure.util.EllipseUtil;
 import edu.jhuapl.saavtk.structure.vtk.VtkCompositePainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkEllipsePainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkLabelPainter;
@@ -59,8 +58,7 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 	// State vars
 	private Map<Ellipse, VtkDrawState> drawM;
 	private double defaultRadius;
-	private final double maxRadius;
-	private final int numberOfSides;
+	private final int numSides;
 	private Color defaultColor = new Color(0, 191, 255);
 	private double interiorOpacity = 0.3;
 	private double offset;
@@ -96,11 +94,11 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 		POINT_MODE, CIRCLE_MODE, ELLIPSE_MODE
 	}
 
-	public AbstractEllipsePolygonModel(PolyhedralModel aSmallBodyModel, int aNumberOfSides, Mode aMode, String aType)
+	public AbstractEllipsePolygonModel(PolyhedralModel aSmallBody, int aNumSides, Mode aMode, String aType)
 	{
-		super(aSmallBodyModel);
+		super(aSmallBody);
 
-		refSmallBody = aSmallBodyModel;
+		refSmallBody = aSmallBody;
 		mode = aMode;
 		type = aType;
 
@@ -108,14 +106,13 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 
 		offset = getDefaultOffset();
 
-		defaultRadius = aSmallBodyModel.getBoundingBoxDiagonalLength() / 155.0;
-		maxRadius = aSmallBodyModel.getBoundingBoxDiagonalLength() / 8.0;
+		defaultRadius = aSmallBody.getBoundingBoxDiagonalLength() / 155.0;
 
 		refSmallBody.addPropertyChangeListener(this);
 
 		vEmptyPD = new vtkPolyData();
 
-		numberOfSides = aNumberOfSides;
+		numSides = aNumSides;
 
 		vExteriorColorsRegUCA = new vtkUnsignedCharArray();
 		vExteriorColorsDecUCA = new vtkUnsignedCharArray();
@@ -182,7 +179,7 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 
 	public int getNumberOfSides()
 	{
-		return numberOfSides;
+		return numSides;
 	}
 
 	/**
@@ -256,6 +253,19 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 		super.installItems(aTask, aItemL);
 	}
 
+	@Override
+	public void notifyItemsMutated(Collection<Ellipse> aItemC)
+	{
+		if (aItemC.isEmpty() == true)
+			return;
+
+		for (Ellipse aItem : aItemC)
+			markPainterStale(aItem);
+
+		updatePolyData();
+		notifyListeners(this, ItemEventType.ItemsMutated);
+	}
+
 	public vtkActor getBoundaryActor()
 	{
 		return vExteriorActor;
@@ -287,36 +297,6 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 		addNewStructure(aCenter, defaultRadius, 1.0, 0.);
 	}
 
-	public void changeRadiusOfPolygon(Ellipse aItem, Vector3D aNewPointOnPerimeter)
-	{
-		double[] newPointOnPerimeterArr = aNewPointOnPerimeter.toArray();
-
-		double[] center = aItem.getCenter().toArray();
-		double newRadius = Math.sqrt((center[0] - newPointOnPerimeterArr[0]) * (center[0] - newPointOnPerimeterArr[0])
-				+ (center[1] - newPointOnPerimeterArr[1]) * (center[1] - newPointOnPerimeterArr[1])
-				+ (center[2] - newPointOnPerimeterArr[2]) * (center[2] - newPointOnPerimeterArr[2]));
-		if (newRadius > maxRadius)
-			newRadius = maxRadius;
-
-		aItem.setRadius(newRadius);
-		markPainterStale(aItem);
-
-		updatePolyData();
-		notifyListeners(this, ItemEventType.ItemsMutated);
-	}
-
-	public void changeFlatteningOfPolygon(Ellipse aItem, Vector3D aNewPointOnPerimeter)
-	{
-		double tmpFlattening = EllipseUtil.computeFlatteningOfPolygon(refSmallBody, aItem.getCenter(), aItem.getRadius(),
-				aItem.getAngle(), aNewPointOnPerimeter);
-
-		aItem.setFlattening(tmpFlattening);
-		markPainterStale(aItem);
-
-		updatePolyData();
-		notifyListeners(this, ItemEventType.ItemsMutated);
-	}
-
 	// TODO: Better comments
 	// TODO: Perhaps this should act on the Structure level
 	public int getPolygonIdFromBoundaryCellId(int cellId)
@@ -329,30 +309,6 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 	public int getPolygonIdFromInteriorCellId(int cellId)
 	{
 		return getPolygonIdFromCellId(cellId, true);
-	}
-
-	// TODO: Add comments
-	public void changeAngleOfPolygon(Ellipse aItem, Vector3D aNewPointOnPerimeter)
-	{
-		double tmpAngle = EllipseUtil.computeAngleOfPolygon(refSmallBody, aItem.getCenter(), aNewPointOnPerimeter);
-
-		aItem.setAngle(tmpAngle);
-		markPainterStale(aItem);
-
-		updatePolyData();
-		notifyListeners(this, ItemEventType.ItemsMutated);
-	}
-
-	// TODO: Add comments
-	public void changeRadiusOfAllPolygons(double aRadius)
-	{
-		for (Ellipse aItem : getAllItems())
-		{
-			aItem.setRadius(aRadius);
-			markPainterStale(aItem);
-		}
-
-		updatePolyData();
 	}
 
 	/**
@@ -499,7 +455,7 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 	@Override
 	protected VtkEllipsePainter createPainter(Ellipse aItem)
 	{
-		return new VtkEllipsePainter(refSmallBody, aItem, numberOfSides);
+		return new VtkEllipsePainter(refSmallBody, aItem, numSides);
 	}
 
 	/**

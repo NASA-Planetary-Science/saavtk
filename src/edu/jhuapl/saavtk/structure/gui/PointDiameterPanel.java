@@ -1,5 +1,7 @@
 package edu.jhuapl.saavtk.structure.gui;
 
+import java.util.List;
+
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
@@ -9,6 +11,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import edu.jhuapl.saavtk.model.structure.PointModel;
+import edu.jhuapl.saavtk.structure.Ellipse;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -17,18 +20,15 @@ import net.miginfocom.swing.MigLayout;
  */
 public class PointDiameterPanel extends JPanel implements ChangeListener
 {
-	// Constants
-	private static final long serialVersionUID = 1L;
-
 	// State vars
 	private final PointModel pointModel;
 
 	// GUI vars
-	private JSpinner spinner;
+	private final JSpinner spinner;
 
 	/**
 	 * Standard Constructor
-	 * 
+	 *
 	 * @param aPointModel The PointModel that will be controlled by this UI
 	 *                    component.
 	 */
@@ -74,22 +74,27 @@ public class PointDiameterPanel extends JPanel implements ChangeListener
 	}
 
 	@Override
-	public void stateChanged(ChangeEvent e)
+	public void stateChanged(ChangeEvent aEvent)
 	{
-		Number val = (Number) spinner.getValue();
-		pointModel.setDefaultRadius(val.doubleValue() / 2.0);
-		pointModel.changeRadiusOfAllPolygons(val.doubleValue() / 2.0);
+		double tmpRadius = ((Number) spinner.getValue()).doubleValue() / 2.0;
+		pointModel.setDefaultRadius(tmpRadius);
+
+		List<Ellipse> tmpItemL = pointModel.getAllItems();
+		for (Ellipse aItem : tmpItemL)
+			aItem.setRadius(tmpRadius);
+
+		pointModel.notifyItemsMutated(tmpItemL);
 	}
 
 	/**
 	 * Helper method to determine the step size to use for the spinner.
 	 */
-	private double computeStepSize(double diameter)
+	private double computeStepSize(double aDiameter)
 	{
 		double step = 1.;
-		while (diameter < 1.)
+		while (aDiameter < 1.)
 		{
-			diameter *= 10.;
+			aDiameter *= 10.;
 			step *= .1;
 		}
 		return step;
