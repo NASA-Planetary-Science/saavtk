@@ -1,10 +1,12 @@
 package edu.jhuapl.saavtk.view.lod.gui;
 
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.view.ViewActionListener;
@@ -12,7 +14,7 @@ import edu.jhuapl.saavtk.view.ViewChangeReason;
 import edu.jhuapl.saavtk.view.lod.LodMode;
 import edu.jhuapl.saavtk.view.lod.LodStatusPainter;
 import edu.jhuapl.saavtk.view.lod.LodUtil;
-import glum.gui.component.GComboBox;
+import glum.gui.GuiUtil;
 import net.miginfocom.swing.MigLayout;
 
 public class LodPanel extends JPanel implements ActionListener, ViewActionListener
@@ -22,8 +24,10 @@ public class LodPanel extends JPanel implements ActionListener, ViewActionListen
 	private final LodStatusPainter refPainter;
 
 	// Gui vars
-	private final GComboBox<LodMode> lodBox;
-	private final JLabel statusL;
+	private final JRadioButton modeAutoRB;
+	private final JRadioButton modeMaxSpeedRB;
+	private final JRadioButton modeMaxQualityRB;
+	private final JLabel modeAutoInfoL;
 
 	/**
 	 * Standard Constructor
@@ -34,19 +38,23 @@ public class LodPanel extends JPanel implements ActionListener, ViewActionListen
 		refPainter = aPainter;
 
 		// Form the GUI
-		setLayout(new MigLayout("", "[right][grow][]", "[]"));
+		setLayout(new MigLayout("", "[]", "[]"));
 
-		JLabel xSizeL = new JLabel("Level of Detail:");
-		lodBox = new GComboBox<>(this, LodMode.values());
-		lodBox.setRenderer(new LodModeRenderer());
-		lodBox.setChosenItem(refRenderer.getLodMode());
-		add(xSizeL, "");
-		add(lodBox, "w pref::,wrap");
+		JLabel titleL = new JLabel("Level of Detail", JLabel.CENTER);
+		add(titleL, "align center,growx,span,wrap");
 
-		JLabel tmpL = new JLabel("Status:");
-		statusL = new JLabel("");
-		add(tmpL, "");
-		add(statusL, "growx,sgy G1,span,w 150::,wrap 0");
+		modeAutoRB = GuiUtil.createJRadioButton("Auto", this);
+		modeAutoInfoL = new JLabel();
+		modeAutoInfoL.setForeground(Color.GRAY);
+		modeMaxSpeedRB = GuiUtil.createJRadioButton("Max Speed", this);
+		modeMaxQualityRB = GuiUtil.createJRadioButton("Max Quality", this);
+		add(modeAutoRB, "span,split");
+		add(modeAutoInfoL, "w 150::,wrap");
+		add(modeMaxSpeedRB, "wrap");
+		add(modeMaxQualityRB, "wrap");
+
+		GuiUtil.linkRadioButtons(modeAutoRB, modeMaxSpeedRB, modeMaxQualityRB);
+		modeAutoRB.setSelected(true);
 
 		// Register for events of interest
 		refRenderer.addViewChangeListener(this);
@@ -59,7 +67,7 @@ public class LodPanel extends JPanel implements ActionListener, ViewActionListen
 	public void actionPerformed(ActionEvent aEvent)
 	{
 		Object source = aEvent.getSource();
-		if (source == lodBox)
+		if (source == modeAutoRB || source == modeMaxSpeedRB || source == modeMaxQualityRB)
 			doChangeLodMode();
 
 		updateGui();
@@ -81,7 +89,13 @@ public class LodPanel extends JPanel implements ActionListener, ViewActionListen
 	 */
 	private void doChangeLodMode()
 	{
-		refRenderer.setLodMode(lodBox.getChosenItem());
+		LodMode tmpMode = LodMode.Auto;
+		if (modeMaxSpeedRB.isSelected() == true)
+			tmpMode = LodMode.MaxSpeed;
+		else if (modeMaxQualityRB.isSelected() == true)
+			tmpMode = LodMode.MaxQuality;
+
+		refRenderer.setLodMode(tmpMode);
 	}
 
 	/**
@@ -90,7 +104,15 @@ public class LodPanel extends JPanel implements ActionListener, ViewActionListen
 	private void syncGuiToModel()
 	{
 		LodMode tmpMode = refRenderer.getLodMode();
-		lodBox.setChosenItem(tmpMode);
+
+		boolean tmpBool = tmpMode == LodMode.Auto;
+		modeAutoRB.setSelected(tmpBool);
+
+		tmpBool = tmpMode == LodMode.MaxQuality;
+		modeMaxQualityRB.setSelected(tmpBool);
+
+		tmpBool = tmpMode == LodMode.MaxSpeed;
+		modeMaxSpeedRB.setSelected(tmpBool);
 	}
 
 	/**
@@ -100,18 +122,17 @@ public class LodPanel extends JPanel implements ActionListener, ViewActionListen
 	{
 		// Retrieve the (configured) LodMode
 		LodMode modePri = refRenderer.getLodMode();
-		String tmpMsg = LodUtil.getDisplayString(modePri);
 
 		// If the primary mode is set to auto then show the "instantaneous" mode
+		String tmpMsg = "";
 		if (modePri == LodMode.Auto)
 		{
 			// If the secondary mode is NOT auto then show details
 			LodMode modeSec = refPainter.getLastLodMode();
 			if (modeSec != LodMode.Auto && modeSec != null)
-				tmpMsg += " - " + LodUtil.getDisplayString(modeSec);
+				tmpMsg = "(" + LodUtil.getDisplayString(modeSec) + ")";
 		}
-
-		statusL.setText(tmpMsg);
+		modeAutoInfoL.setText(tmpMsg);
 	}
 
 }

@@ -233,8 +233,6 @@ public class EllipsePicker extends Picker
 	{
 		// Update the item's angle
 		double tmpAngle = EllipseUtil.computeAngle(refSmallBody, aItem.getCenter(), aDragPosition);
-		if (tmpAngle < 0)
-			tmpAngle += 180;
 		aItem.setAngle(tmpAngle);
 
 		// Send out notification of the mutation
