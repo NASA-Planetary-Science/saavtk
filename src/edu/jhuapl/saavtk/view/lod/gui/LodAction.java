@@ -90,7 +90,7 @@ public class LodAction extends AbstractAction implements HierarchyListener, Init
 		tmpRenderer.addVtkPropProvider(tmpPainter);
 		LodPanel tmpPanel = new LodPanel(tmpRenderer, tmpPainter);
 
-		Frame tmpFrame = JOptionPane.getFrameForComponent(refViewManager.getCurrentView());
+		Frame tmpFrame = JOptionPane.getFrameForComponent(tmpView);
 		tmpDialog = new CloseDialog(tmpFrame, tmpPanel);
 		tmpDialog.setTitle(Title);
 		tmpDialog.setLocationRelativeTo(tmpRenderer);
