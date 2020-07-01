@@ -104,6 +104,10 @@ public class EllipseUtil
 
 		transform.Delete();
 
+		// Ensure the new angle is in range from [0, 180]
+		if (newAngle < 0)
+			newAngle += 180;
+
 		return newAngle;
 	}
 
