@@ -17,6 +17,17 @@ import com.google.common.base.Preconditions;
  */
 public class Configuration
 {
+	/**
+	 * Denotes the release type for this release - development or release
+	 * @author steelrj1
+	 *
+	 */
+	public enum ReleaseType {
+		
+		RELEASE,
+		DEVELOPMENT
+	}
+	
     private static Boolean headless = null;
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
 
@@ -33,6 +44,7 @@ public class Configuration
     private static boolean useFileCache = true;
     private static String mapMaperDir = null;
     private static String databaseSuffix = "";
+    private static ReleaseType releaseType = ReleaseType.RELEASE;
 
     // Flag indicating if this version of the tool is APL in-house only ("private")
     private static boolean APLVersion = false;
@@ -363,6 +375,23 @@ public class Configuration
     private Configuration()
     {
         throw new AssertionError();
+    }
+    
+    /**
+     * Sets the release type for this configuration
+     * @param type
+     */
+    public static void setReleaseType(ReleaseType type)
+    {
+    	releaseType = type;
+    }
+    
+    /**
+     * @return the release type for this configuration
+     */
+    public static ReleaseType getReleaseType()
+    {
+    	return releaseType;
     }
 
 }

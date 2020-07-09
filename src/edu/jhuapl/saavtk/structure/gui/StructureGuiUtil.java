@@ -24,7 +24,7 @@ import edu.jhuapl.saavtk.structure.gui.action.SaveProfileAction;
 import edu.jhuapl.saavtk.structure.gui.action.SetLabelAction;
 import edu.jhuapl.saavtk.structure.gui.action.ShowAction;
 import edu.jhuapl.saavtk.structure.gui.action.ShowPlateStatisticsInfoAction;
-import edu.jhuapl.saavtk.util.SaavtkLODActor;
+import edu.jhuapl.saavtk.view.AssocActor;
 import glum.gui.action.PopupMenu;
 import vtk.vtkProp;
 
@@ -59,7 +59,8 @@ public class StructureGuiUtil
 
 		boolean showChangeLatLon = aManager instanceof AbstractEllipsePolygonModel;
 		if (showChangeLatLon == true)
-			retPM.installPopAction(new ChangeLatLonAction<>(aManager, aParent, aSmallBody), "Change Latitude/Longitude...");
+			retPM.installPopAction(new ChangeLatLonAction<>(aManager, aParent, aSmallBody),
+					"Change Latitude/Longitude...");
 
 		boolean showExportPlateDataInsidePolygon = false;
 		showExportPlateDataInsidePolygon |= aManager instanceof CircleModel;
@@ -98,11 +99,11 @@ public class StructureGuiUtil
 	{
 		// Bail if the actor is not the right type
 		vtkProp tmpProp = aPickTarget.getActor();
-		if (tmpProp instanceof SaavtkLODActor == false)
+		if (tmpProp instanceof AssocActor == false)
 			return false;
 
 		// Bail if tmpProp is not associated with the StructureManager
-		Object tmpObj = ((SaavtkLODActor) tmpProp).getAssocModel(Object.class);
+		Object tmpObj = ((AssocActor) tmpProp).getAssocModel(Object.class);
 		if (tmpObj != aManager)
 			return false;
 

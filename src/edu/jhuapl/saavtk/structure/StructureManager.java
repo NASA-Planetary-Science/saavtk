@@ -86,6 +86,11 @@ public interface StructureManager<G1 extends Structure> extends ItemManager<G1>
 	public void installItems(Task aTask, List<G1> aItemL);
 
 	/**
+	 * Notifies this manager that the specified items has been mutated.
+	 */
+	public void notifyItemsMutated(Collection<G1> aItemC);
+
+	/**
 	 * Sets the center of the specified {@link Structure}.
 	 */
 	public void setCenter(G1 aItem, Vector3D aCenter);

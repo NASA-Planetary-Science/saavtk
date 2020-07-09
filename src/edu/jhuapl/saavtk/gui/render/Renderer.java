@@ -17,14 +17,12 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import javax.media.opengl.GLContext;
 import javax.swing.BorderFactory;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
@@ -35,10 +33,7 @@ import edu.jhuapl.saavtk.camera.CameraFrame;
 import edu.jhuapl.saavtk.camera.CameraUtil;
 import edu.jhuapl.saavtk.camera.CoordinateSystem;
 import edu.jhuapl.saavtk.camera.StandardCamera;
-import edu.jhuapl.saavtk.camera.View;
-import edu.jhuapl.saavtk.camera.ViewActionListener;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
-import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.Model;
@@ -54,8 +49,11 @@ import edu.jhuapl.saavtk.pick.PickUtilEx;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Preferences;
-import edu.jhuapl.saavtk.util.SaavtkLODActor;
-import vtk.vtkBMPWriter;
+import edu.jhuapl.saavtk.view.View;
+import edu.jhuapl.saavtk.view.ViewActionListener;
+import edu.jhuapl.saavtk.view.ViewChangeReason;
+import edu.jhuapl.saavtk.view.lod.LodActor;
+import edu.jhuapl.saavtk.view.lod.LodMode;
 import vtk.vtkCamera;
 import vtk.vtkCellLocator;
 import vtk.vtkCellPicker;
@@ -63,18 +61,12 @@ import vtk.vtkCubeAxesActor2D;
 import vtk.vtkIdList;
 import vtk.vtkInteractorStyleImage;
 import vtk.vtkInteractorStyleTrackballCamera;
-import vtk.vtkJPEGWriter;
 import vtk.vtkLight;
 import vtk.vtkLightKit;
-import vtk.vtkPNGWriter;
-import vtk.vtkPNMWriter;
-import vtk.vtkPostScriptWriter;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
 import vtk.vtkRenderer;
 import vtk.vtkScalarBarActor;
-import vtk.vtkTIFFWriter;
-import vtk.vtkWindowToImageFilter;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 public class Renderer extends JPanel implements ActionListener, CameraActionListener, PickListener, View
@@ -98,9 +90,6 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		NEGATIVE_Z
 	}
 
-	/* Global variable that configures the LOD capability for all Renderers. */
-	public static boolean enableLODs = true;
-
 	// Constants
 	private static final long serialVersionUID = 1L;
 
@@ -111,7 +100,13 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	private final List<VtkPropProvider> propProviderL;
 	private final List<ViewActionListener> viewActionListenerL;
 	private final Camera camera;
+
+	private LodMode lodModeRegular;
+	private LodMode lodModeTemporal;
 	private double nominalPixelSpan;
+
+	// Cache vars
+	private LodMode cLodModeInstant;
 
 	// GUI vars
 	private RenderPanel mainCanvas;
@@ -131,14 +126,20 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	public Renderer(ModelManager aModelManager)
 	{
 		refModelManager = aModelManager;
-		PolyhedralModel tmpPolyModel = aModelManager.getPolyhedralModel();
 
 		propProviderL = new ArrayList<>();
 		viewActionListenerL = new ArrayList<>();
+
+		lodModeRegular = LodMode.Auto;
+		lodModeTemporal = LodMode.MaxQuality;
 		nominalPixelSpan = Double.NaN;
+
+		cLodModeInstant = null;
 
 		mainCanvas = new RenderPanel();
 		mainCanvas.getRenderWindowInteractor().AddObserver("KeyPressEvent", this, "localKeypressHandler");
+
+		PolyhedralModel tmpPolyModel = aModelManager.getPolyhedralModel();
 		camera = formCamera(tmpPolyModel, mainCanvas);
 		toolbar = new RenderToolbar(mainCanvas, camera);
 
@@ -171,7 +172,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 			public void componentResized(ComponentEvent aEvent)
 			{
 				// Delegate
-				doViewChange();
+				doViewChange(ViewChangeReason.Camera);
 			}
 		});
 	}
@@ -342,26 +343,19 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 
 	public void onStartInteraction()
 	{
-		setLodFlag(true);
 		occludeLabels();
 	}
 
 	public void duringInteraction()
 	{
+		setLodModeTemporal(LodMode.MaxSpeed);
 		occludeLabels();
 	}
 
 	public void onEndInteraction()
 	{
-		setLodFlag(false);
+		setLodModeTemporal(null);
 		occludeLabels();
-
-		// See Redmine #1135. This method was added in an attempt to address rendering
-		// problems that were caused by clipping range limitations, but it interacted
-		// badly with other features, specifically center-in-window, but who knows what
-		// else would have been affected. Leaving the code here, but commented out, in
-		// case we need to revisit this capability.
-//		updateImageOffsets();
 	}
 
 	public void occludeLabels()
@@ -393,38 +387,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 			}
 	}
 
-	// See Redmine #1135. This method was added in an attempt to address rendering
-	// problems that were caused by clipping range limitations, but it interacted
-	// badly with other features, specifically center-in-window, but who knows what
-	// else would have been affected. Leaving the code here, but commented out, in
-	// case we need to revisit this capability.
-//	public void updateImageOffsets()
-//	{
-//		double oldDistance = this.cameraDistance;
-//		double newDistance = getCameraDistance();
-//		this.cameraDistance = newDistance;
-//		if (newDistance != oldDistance)
-//		{
-//			firePropertyChange(CameraProperties.CAMERA_DISTANCE, oldDistance, newDistance);
-//		}
-//	}
-
-	public static File createAxesFile(File rawOutputFile)
-	{
-		String extension = FilenameUtils.getExtension(rawOutputFile.getName());
-		return new File(rawOutputFile.getAbsolutePath().replaceAll("." + extension, ".axes." + extension));
-	}
-
-	public void saveToFile()
-	{
-		getRenderWindowPanel().Render();
-		File file = CustomFileChooser.showSaveDialog(this, "Export to PNG Image", "image.png", "png");
-		saveToFile(file, mainCanvas, mainCanvas.getAxesPanel());
-	}
-
 	private BlockingQueue<CameraFrame> cameraFrameQueue;
-
-	private File[] sixFiles = new File[6];
 
 	public void save6ViewsToFile()
 	{
@@ -435,6 +398,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		String base = path.substring(0, path.lastIndexOf('.'));
 		String ext = path.substring(path.lastIndexOf('.'));
 
+		File[] sixFiles = new File[6];
 		sixFiles[0] = new File(base + "+x" + ext);
 		sixFiles[1] = new File(base + "-x" + ext);
 		sixFiles[2] = new File(base + "+y" + ext);
@@ -474,83 +438,13 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		{
 			File f = sixFiles[i];
 			AxisType at = sixAxes[i];
-			CameraFrame frame = createCameraFrameInDirectionOfAxis(at, true, f, 1);
+			CameraFrame frame = RenderIoUtil.createCameraFrameInDirectionOfAxis(refModelManager, mainCanvas, at, true, f,
+					1);
 			cameraFrameQueue.add(frame);
 		}
 
 		// start off the timer
 		this.actionPerformed(null);
-
-	}
-
-	public CameraFrame createCameraFrameInDirectionOfAxis(AxisType axisType, boolean preserveCurrentDistance, File file,
-			int delayMilliseconds)
-	{
-		CameraFrame result = new CameraFrame();
-		result.file = file;
-		result.delay = delayMilliseconds;
-
-		double[] bounds = refModelManager.getPolyhedralModel().getBoundingBox().getBounds();
-		double xSize = Math.abs(bounds[1] - bounds[0]);
-		double ySize = Math.abs(bounds[3] - bounds[2]);
-		double zSize = Math.abs(bounds[5] - bounds[4]);
-		double maxSize = Math.max(Math.max(xSize, ySize), zSize);
-
-		vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
-		double[] posArr = cam.GetPosition();
-		double cameraDistance = MathUtil.vnorm(posArr);
-
-		result.focalPoint = new double[] { 0.0, 0.0, 0.0 };
-
-		if (axisType == AxisType.NEGATIVE_X)
-		{
-			double xpos = xSize / Math.tan(Math.PI / 6.0) + 2.0 * maxSize;
-			result.position = new double[] { xpos, 0.0, 0.0 };
-			result.upDirection = new double[] { 0.0, 0.0, 1.0 };
-		}
-		else if (axisType == AxisType.POSITIVE_X)
-		{
-			double xpos = -xSize / Math.tan(Math.PI / 6.0) - 2.0 * maxSize;
-			result.position = new double[] { xpos, 0.0, 0.0 };
-			result.upDirection = new double[] { 0.0, 0.0, 1.0 };
-		}
-		else if (axisType == AxisType.NEGATIVE_Y)
-		{
-			double ypos = ySize / Math.tan(Math.PI / 6.0) + 2.0 * maxSize;
-			result.position = new double[] { 0.0, ypos, 0.0 };
-			result.upDirection = new double[] { 0.0, 0.0, 1.0 };
-		}
-		else if (axisType == AxisType.POSITIVE_Y)
-		{
-			double ypos = -ySize / Math.tan(Math.PI / 6.0) - 2.0 * maxSize;
-			result.position = new double[] { 0.0, ypos, 0.0 };
-			result.upDirection = new double[] { 0.0, 0.0, 1.0 };
-		}
-		else if (axisType == AxisType.NEGATIVE_Z)
-		{
-			double zpos = zSize / Math.tan(Math.PI / 6.0) + 2.0 * maxSize;
-			result.position = new double[] { 0.0, 0.0, zpos };
-			result.upDirection = new double[] { 0.0, 1.0, 0.0 };
-		}
-		else if (axisType == AxisType.POSITIVE_Z)
-		{
-			double zpos = -zSize / Math.tan(Math.PI / 6.0) - 2.0 * maxSize;
-			result.position = new double[] { 0.0, 0.0, zpos };
-			result.upDirection = new double[] { 0.0, 1.0, 0.0 };
-		}
-
-		if (preserveCurrentDistance)
-		{
-			double[] poshat = new double[3];
-
-			MathUtil.unorm(result.position, poshat);
-
-			result.position[0] = poshat[0] * cameraDistance;
-			result.position[1] = poshat[1] * cameraDistance;
-			result.position[2] = poshat[2] * cameraDistance;
-		}
-
-		return result;
 	}
 
 	public void setCameraFrame(CameraFrame frame)
@@ -623,7 +517,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		mainCanvas.getAxesFrame().setVisible(toolbar.getOrientationAxesToggleState());
 	}
 
-	public vtkJoglPanelComponent getRenderWindowPanel()
+	public RenderPanel getRenderWindowPanel()
 	{
 		return mainCanvas;
 	}
@@ -778,106 +672,6 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		return mainCanvas.getComponent().getHeight();
 	}
 
-	public static void saveToFile(File file, vtkJoglPanelComponent renWin, AxesPanel axesWin)
-	{
-		saveToFile(file, renWin);
-		if (axesWin != null && ((RenderPanel) renWin).isAxesPanelVisible())
-		{
-			// axesWin.printModeOn();
-			// axesWin.setSize(200, 200);
-			RenderPanel renderPanel = (RenderPanel) renWin;
-			// boolean visible=renderPanel.axesFrame.isVisible();
-			// if (!visible)
-			// renderPanel.axesFrame.setVisible(true);
-			saveToFile(createAxesFile(file), axesWin);
-			axesWin.Render();
-			// if (!visible)
-			// renderPanel.axesFrame.setVisible(false);
-			// axesWin.printModeOff();
-		}
-	}
-
-	protected static void saveToFile(File file, vtkJoglPanelComponent renWin)
-	{
-		if (file != null)
-		{
-			GLContext glContext = null;
-			try
-			{
-				glContext = renWin.getComponent().getContext();
-				if (glContext != null)
-				{
-					// The following line is needed due to some weird threading
-					// issue with JOGL when saving out the pixel buffer. Note release
-					// needs to be called at the end.
-					glContext.makeCurrent();
-				}
-
-				renWin.getVTKLock().lock();
-				vtkWindowToImageFilter windowToImage = new vtkWindowToImageFilter();
-				windowToImage.SetInput(renWin.getRenderWindow());
-				windowToImage.ShouldRerenderOn();
-
-				String filename = file.getAbsolutePath();
-				if (filename.toLowerCase().endsWith("bmp"))
-				{
-					vtkBMPWriter writer = new vtkBMPWriter();
-					writer.SetFileName(filename);
-					writer.SetInputConnection(windowToImage.GetOutputPort());
-					writer.Write();
-				}
-				else if (filename.toLowerCase().endsWith("jpg") || filename.toLowerCase().endsWith("jpeg"))
-				{
-					vtkJPEGWriter writer = new vtkJPEGWriter();
-					writer.SetFileName(filename);
-					writer.SetInputConnection(windowToImage.GetOutputPort());
-					writer.Write();
-				}
-				else if (filename.toLowerCase().endsWith("png"))
-				{
-					vtkPNGWriter writer = new vtkPNGWriter();
-					writer.SetFileName(filename);
-					writer.SetInputConnection(windowToImage.GetOutputPort());
-					writer.Write();
-				}
-				else if (filename.toLowerCase().endsWith("pnm"))
-				{
-					vtkPNMWriter writer = new vtkPNMWriter();
-					writer.SetFileName(filename);
-					writer.SetInputConnection(windowToImage.GetOutputPort());
-					writer.Write();
-				}
-				else if (filename.toLowerCase().endsWith("ps"))
-				{
-					vtkPostScriptWriter writer = new vtkPostScriptWriter();
-					writer.SetFileName(filename);
-					writer.SetInputConnection(windowToImage.GetOutputPort());
-					writer.Write();
-				}
-				else if (filename.toLowerCase().endsWith("tif") || filename.toLowerCase().endsWith("tiff"))
-				{
-					vtkTIFFWriter writer = new vtkTIFFWriter();
-					writer.SetFileName(filename);
-					writer.SetInputConnection(windowToImage.GetOutputPort());
-					writer.SetCompressionToNoCompression();
-					writer.Write();
-				}
-				renWin.getVTKLock().unlock();
-			}
-			catch (Exception e)
-			{
-				System.out.println(e);
-			}
-			finally
-			{
-				if (glContext != null)
-				{
-					glContext.release();
-				}
-			}
-		}
-	}
-
 	public void setMouseEnabled(boolean enabled)
 	{
 		if (enabled)
@@ -894,7 +688,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		{
 			if (frame.staged && frame.file != null)
 			{
-				saveToFile(frame.file, mainCanvas, mainCanvas.getAxesPanel());
+				RenderIoUtil.saveToFile(frame.file, mainCanvas, mainCanvas.getAxesPanel());
 				cameraFrameQueue.remove();
 			}
 			else
@@ -929,25 +723,9 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	}
 
 	@Override
-	public boolean getLodFlag()
+	public LodMode getLodMode()
 	{
-		// Bail if LOD is disabled
-		if (enableLODs == false)
-			return false;
-
-		// Return true if **any** SaavtkLODActors have LOD flagged on
-		List<vtkProp> propL = refModelManager.getProps();
-		for (vtkProp aProp : propL)
-		{
-			// Skip to next
-			if (aProp instanceof SaavtkLODActor == false)
-				continue;
-
-			if (((SaavtkLODActor) aProp).getLodFlag() == true)
-				return true;
-		}
-
-		return false;
+		return lodModeRegular;
 	}
 
 	@Override
@@ -956,7 +734,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		// Cause the RenderPanel to be rendered whenever the camera changes
 		mainCanvas.Render();
 
-		doViewChange();
+		doViewChange(ViewChangeReason.Camera);
 	}
 
 	@Override
@@ -971,23 +749,23 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		}
 
 		// Delegate the processing (after all other awt events)
-		SwingUtilities.invokeLater(() -> doViewChange());
+		SwingUtilities.invokeLater(() -> doViewChange(ViewChangeReason.Other));
 	}
 
 	@Override
-	public void setLodFlag(boolean aFlag)
+	public void setLodMode(LodMode aLodMode)
 	{
-		// Bail if LOD is disabled
-		if (enableLODs == false)
-			return;
+		lodModeRegular = aLodMode;
 
-		// Update the LOD flag of all SaavtkLODActors
-		List<vtkProp> propL = refModelManager.getProps();
-		for (vtkProp aProp : propL)
-		{
-			if (aProp instanceof SaavtkLODActor)
-				((SaavtkLODActor) aProp).setLodFlag(aFlag);
-		}
+		updateLodActors();
+	}
+
+	@Override
+	public void setLodModeTemporal(LodMode aLodMode)
+	{
+		lodModeTemporal = aLodMode;
+
+		updateLodActors();
 	}
 
 	/**
@@ -1035,14 +813,14 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	/**
 	 * Helper method that will process a view changed
 	 */
-	private void doViewChange()
+	private void doViewChange(ViewChangeReason aReason)
 	{
 		// Update the nominalPixelSpan
 		nominalPixelSpan = computeNominalPixelSpan(vSmallBodyCP);
 
 		// Sends out notification to the ViewChangeListeners
 		for (ViewActionListener aListener : viewActionListenerL)
-			aListener.handleViewAction(this);
+			aListener.handleViewAction(this, aReason);
 	}
 
 	/**
@@ -1059,6 +837,52 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		double tmpDistance = aPolyModel.getBoundingBoxDiagonalLength() * 2.0;
 
 		return new StandardCamera(aMainCanvas, tmpCoordinateSystem, tmpDistance);
+	}
+
+	/**
+	 * Helper method to update all {@link LodActor}s to reflect the proper
+	 * {@link LodMode}.
+	 */
+	private void updateLodActors()
+	{
+		// Determine the LodMode to utilize. The temporal LodMode is utilized if:
+		// - The regular LodMode is set to Auto
+		// - If the temporal LodMode is null then default to highest quality
+		LodMode tmpLodModeInstant = lodModeRegular;
+		if (lodModeRegular == LodMode.Auto)
+		{
+			tmpLodModeInstant = lodModeTemporal;
+			if (tmpLodModeInstant == null)
+				tmpLodModeInstant = LodMode.MaxQuality;
+		}
+
+		// Bail if the instantaneous LodMode has not changed
+		if (tmpLodModeInstant == cLodModeInstant)
+			return;
+		cLodModeInstant = tmpLodModeInstant;
+
+		// Update the LodMode for all LodActors
+		for (VtkPropProvider aPropProvider : propProviderL)
+		{
+			for (vtkProp aProp : aPropProvider.getProps())
+			{
+				if (aProp instanceof LodActor)
+					((LodActor) aProp).setLodMode(tmpLodModeInstant);
+			}
+		}
+
+		List<vtkProp> propL = refModelManager.getProps();
+		for (vtkProp aProp : propL)
+		{
+			if (aProp instanceof LodActor)
+				((LodActor) aProp).setLodMode(tmpLodModeInstant);
+		}
+
+		// Update the scene
+		refModelManager.notifySceneChange();
+
+		// Send out notification of the change
+		doViewChange(ViewChangeReason.Lod);
 	}
 
 }

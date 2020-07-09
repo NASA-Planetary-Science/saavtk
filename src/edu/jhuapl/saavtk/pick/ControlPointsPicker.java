@@ -12,13 +12,12 @@ import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.gui.GuiUtil;
 import edu.jhuapl.saavtk.gui.render.Renderer;
-import edu.jhuapl.saavtk.model.Model;
-import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.io.StructureMiscUtil;
 import edu.jhuapl.saavtk.structure.vtk.VtkControlPointPainter;
+import edu.jhuapl.saavtk.vtk.VtkUtil;
 import vtk.vtkActor;
 import vtk.vtkCellPicker;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
@@ -40,16 +39,15 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
 public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements PickManagerListener
 {
 	// Reference vars
-	private final ModelManager refModelManager;
 	private final PickManager refPickManager;
 	private final PolyhedralModel refSmallBody;
 	private final LineModel<G1> refStructureManager;
 	private final vtkJoglPanelComponent refRenWin;
 
 	// VTK vars
-	private final vtkCellPicker vSmallBodyPickerCP;
-	private final vtkCellPicker vActivatePickerCP;
-	private final vtkCellPicker vStructurePickerCP;
+	private final vtkCellPicker vSmallBodyCP;
+	private final vtkCellPicker vActivateCP;
+	private final vtkCellPicker vStructureCP;
 
 	// State vars
 	private EditMode currEditMode;
@@ -63,18 +61,17 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 	/**
 	 * Standard Constructor
 	 */
-	public ControlPointsPicker(Renderer aRenderer, PickManager aPickManager, ModelManager aModelManager,
+	public ControlPointsPicker(Renderer aRenderer, PickManager aPickManager, PolyhedralModel aSmallBody,
 			LineModel<G1> aStructureManager)
 	{
-		refModelManager = aModelManager;
 		refPickManager = aPickManager;
-		refSmallBody = refModelManager.getPolyhedralModel();
+		refSmallBody = aSmallBody;
 		refStructureManager = aStructureManager;
 		refRenWin = aRenderer.getRenderWindowPanel();
 
-		vSmallBodyPickerCP = PickUtilEx.formSmallBodyPicker(refSmallBody);
-		vActivatePickerCP = PickUtilEx.formPickerFor(refStructureManager.getVtkControlPointActor());
-		vStructurePickerCP = PickUtilEx.formPickerFor(refStructureManager.getVtkItemActor());
+		vSmallBodyCP = PickUtilEx.formSmallBodyPicker(refSmallBody);
+		vActivateCP = PickUtilEx.formPickerFor(refStructureManager.getVtkControlPointActor());
+		vStructureCP = PickUtilEx.formPickerFor(refStructureManager.getVtkItemActor());
 
 		currEditMode = EditMode.CLICKABLE;
 		hookControlPointIdx = -1;
@@ -160,48 +157,48 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 			return;
 
 		// Bail if a valid point was not picked
-		boolean isPicked = PickUtil.isPicked(vSmallBodyPickerCP, refRenWin, aEvent, getTolerance());
+		boolean isPicked = PickUtil.isPicked(vSmallBodyCP, refRenWin, aEvent, getTolerance());
 		if (isPicked == false)
 			return;
 
+		// Bail if the picked actor is not associated with refSmallBody
+		vtkActor pickedActor = vSmallBodyCP.GetActor();
+		if (VtkUtil.getAssocModel(pickedActor) != refSmallBody)
+			return;
+
 		// Attempt to create a new control point
-		vtkActor pickedActor = vSmallBodyPickerCP.GetActor();
-		Model model = refModelManager.getModel(pickedActor);
-		if (model == refSmallBody)
+		Vector3D tmpPos = new Vector3D(vSmallBodyCP.GetPickPosition());
+		if (aEvent.getClickCount() != 1)
+			return;
+
+		// Just add the new control point if we are creating a new item
+		if (isNewMode == true)
 		{
-			Vector3D tmpPos = new Vector3D(vSmallBodyPickerCP.GetPickPosition());
-			if (aEvent.getClickCount() != 1)
-				return;
-
-			// Just add the new control point if we are creating a new item
-			if (isNewMode == true)
+			VtkControlPointPainter tmpPainter = refStructureManager.getControlPointPainter();
+			tmpPainter.addPoint(tmpPos);
+			refStructureManager.notifyModelChanged();
+			if (refStructureManager.getNumPointsNeededForNewItem() == tmpPainter.getControlPoints().size())
 			{
-				VtkControlPointPainter tmpPainter = refStructureManager.getControlPointPainter();
-				tmpPainter.addPoint(tmpPos);
-				refStructureManager.notifyModelChanged();
-				if (refStructureManager.getNumPointsNeededForNewItem() == tmpPainter.getControlPoints().size())
-				{
-					// Create the item
-					int tmpId = StructureMiscUtil.calcNextId(refStructureManager);
-					G1 tmpItem = refStructureManager.addItemWithControlPoints(tmpId, tmpPainter.getControlPoints());
+				// Create the item
+				int tmpId = StructureMiscUtil.calcNextId(refStructureManager);
+				G1 tmpItem = refStructureManager.addItemWithControlPoints(tmpId, tmpPainter.getControlPoints());
 
-					// Set it as the selected and activated item
-					List<G1> tmpL = ImmutableList.of(tmpItem);
-					refStructureManager.setSelectedItems(tmpL);
-					refStructureManager.setActivatedItem(tmpItem);
+				// Set it as the selected and activated item
+				List<G1> tmpL = ImmutableList.of(tmpItem);
+				refStructureManager.setSelectedItems(tmpL);
+				refStructureManager.setActivatedItem(tmpItem);
 
-					// Switch out of the new mode
-					disableNewMode();
-				}
-
-				return;
+				// Switch out of the new mode
+				disableNewMode();
 			}
 
-			int tmpControlPointIdx = refStructureManager.getActivatedControlPoint() + 1;
-			refStructureManager.addControlPoint(tmpControlPointIdx, tmpPos);
-
-			refStructureManager.setActivatedControlPoint(tmpControlPointIdx);
+			return;
 		}
+
+		int tmpControlPointIdx = refStructureManager.getActivatedControlPoint() + 1;
+		refStructureManager.addControlPoint(tmpControlPointIdx, tmpPos);
+
+		refStructureManager.setActivatedControlPoint(tmpControlPointIdx);
 	}
 
 	@Override
@@ -223,14 +220,14 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 			return;
 
 		// Control points selection logic
-		if (PickUtil.isPicked(vActivatePickerCP, refRenWin, aEvent, getTolerance()) == true)
+		if (PickUtil.isPicked(vActivateCP, refRenWin, aEvent, getTolerance()) == true)
 		{
 			// Button1 must be depressed
 			if (aEvent.getButton() != MouseEvent.BUTTON1)
 				return;
 
 			// Determine the selected item and the selected vertex
-			int tmpCellId = vActivatePickerCP.GetCellId();
+			int tmpCellId = vActivateCP.GetCellId();
 			hookControlPointIdx = refStructureManager.getControlPointIndexFromActivationCellId(tmpCellId);
 			G1 hookItem = refStructureManager.getItemFromActivationCellId(tmpCellId);
 
@@ -244,10 +241,10 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 			return;
 
 		// Structure item selection logic
-		if (PickUtil.isPicked(vStructurePickerCP, refRenWin, aEvent, getTolerance()) == true)
+		if (PickUtil.isPicked(vStructureCP, refRenWin, aEvent, getTolerance()) == true)
 		{
-			vtkActor pickedActor = vStructurePickerCP.GetActor();
-			int cellId = vStructurePickerCP.GetCellId();
+			vtkActor pickedActor = vStructureCP.GetActor();
+			int cellId = vStructureCP.GetCellId();
 
 			// Do not allow picking of the activated structure
 			G1 tmpHookItem = refStructureManager.getItemFromCellId(cellId, pickedActor);
@@ -290,18 +287,18 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 			return;
 
 		// Bail if we failed to pick something
-		boolean isPicked = PickUtil.isPicked(vSmallBodyPickerCP, refRenWin, aEvent, getTolerance());
+		boolean isPicked = PickUtil.isPicked(vSmallBodyCP, refRenWin, aEvent, getTolerance());
 		if (isPicked == false)
 			return;
 
-		// Attempt to update the hooked ControlPoint's position
-		vtkActor pickedActor = vSmallBodyPickerCP.GetActor();
-		Model model = refModelManager.getModel(pickedActor);
-		if (model == refSmallBody)
-		{
-			lastDragPosition = new Vector3D(vSmallBodyPickerCP.GetPickPosition());
-			refStructureManager.moveControlPoint(hookControlPointIdx, lastDragPosition, false);
-		}
+		// Bail if the picked actor is not associated with refSmallBody
+		vtkActor pickedActor = vSmallBodyCP.GetActor();
+		if (VtkUtil.getAssocModel(pickedActor) != refSmallBody)
+			return;
+
+		// Handle the action
+		lastDragPosition = new Vector3D(vSmallBodyCP.GetPickPosition());
+		refStructureManager.moveControlPoint(hookControlPointIdx, lastDragPosition, false);
 	}
 
 	@Override
@@ -310,17 +307,17 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 		vtkActor pickedActor = null;
 
 		// Determine if the activatePicker has been triggered
-		boolean isPickedA = PickUtil.isPicked(vActivatePickerCP, refRenWin, aEvent, getTolerance());
+		boolean isPickedA = PickUtil.isPicked(vActivateCP, refRenWin, aEvent, getTolerance());
 		if (isPickedA == true)
-			pickedActor = vActivatePickerCP.GetActor();
+			pickedActor = vActivateCP.GetActor();
 
 		// Determine if the structurePicker has been triggered
 		// Note if has a "profile mode" then ignore the structurePicker
-		boolean isPickedB = PickUtil.isPicked(vStructurePickerCP, refRenWin, aEvent, getTolerance());
+		boolean isPickedB = PickUtil.isPicked(vStructureCP, refRenWin, aEvent, getTolerance());
 		if (isPickedB == true && pickedActor == null && refStructureManager.hasProfileMode() == false)
 		{
-			pickedActor = vStructurePickerCP.GetActor();
-			int cellId = vStructurePickerCP.GetCellId();
+			pickedActor = vStructureCP.GetActor();
+			int cellId = vStructureCP.GetCellId();
 
 			// Do not allow picking of the activated structure
 			G1 tmpHookItem = refStructureManager.getItemFromCellId(cellId, pickedActor);

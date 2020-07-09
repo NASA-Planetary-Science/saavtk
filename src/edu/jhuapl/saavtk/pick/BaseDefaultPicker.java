@@ -16,13 +16,14 @@ import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.camera.Camera;
 import edu.jhuapl.saavtk.camera.CameraUtil;
-import edu.jhuapl.saavtk.camera.View;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.gui.render.VtkPropProvider;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.Properties;
+import edu.jhuapl.saavtk.view.View;
+import edu.jhuapl.saavtk.view.lod.LodMode;
 import vtk.vtkActor;
 import vtk.vtkCellPicker;
 import vtk.vtkProp;
@@ -247,9 +248,8 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		if (refRenWin.getRenderWindow().GetNeverRendered() > 0)
 			return;
 
-		// Shut off LODs (temporarily) to ensure a pick is done on the best geometry
-		boolean prevLodFlag = refView.getLodFlag();
-		refView.setLodFlag(false);
+		// Switch LOD temporarily to MaxQuality so the pick is done on the best geometry
+		refView.setLodModeTemporal(LodMode.MaxQuality);
 
 		// Synthesize the primary and surface target
 		PickTarget primaryTarg = getPickTarget(vNonSmallBodyCP, aEvent.getX(), aEvent.getY());
@@ -261,8 +261,8 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		if (isRegClick == true && surfaceTarg != PickTarget.Invalid)
 			lastClickedTarget = surfaceTarg;
 
-		// Restore LOD state
-		refView.setLodFlag(prevLodFlag);
+		// Clear out the temporal LOD state
+		refView.setLodModeTemporal(null);
 
 		// Send out notification (if appropriate)
 		PickMode tmpMode = PickMode.ActiveSec;
@@ -299,16 +299,15 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		if (refRenWin.getRenderWindow().GetNeverRendered() > 0)
 			return;
 
-		// Shut off LODs (temporarily) to ensure a pick is done on the best geometry
-		boolean prevLodFlag = refView.getLodFlag();
-		refView.setLodFlag(false);
+		// Switch LOD temporarily to MaxQuality so the pick is done on the best geometry
+		refView.setLodModeTemporal(LodMode.MaxQuality);
 
 		// Synthesize the primary and surface target
 		PickTarget primaryTarg = getPickTarget(vNonSmallBodyCP, aEvent.getX(), aEvent.getY());
 		PickTarget surfaceTarg = getPickTarget(vSmallBodyCP, aEvent.getX(), aEvent.getY());
 
-		// Restore LOD state
-		refView.setLodFlag(prevLodFlag);
+		// Clear out the temporal LOD state
+		refView.setLodModeTemporal(null);
 
 		// Mark as primary action as long as the mouse was not dragged
 		PickMode tmpMode = PickMode.ActivePri;
