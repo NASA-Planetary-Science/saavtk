@@ -1,9 +1,13 @@
 package edu.jhuapl.saavtk.structure.vtk;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.structure.Ellipse;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
+import edu.jhuapl.saavtk.vtk.VtkDrawUtil;
 import edu.jhuapl.saavtk.vtk.VtkResource;
+import vtk.vtkPointLocator;
 import vtk.vtkPolyData;
 import vtk.vtkQuadricClustering;
 
@@ -117,11 +121,14 @@ public class VtkEllipsePainter implements VtkResource
 			return;
 		vIsStale = false;
 
-		double[] centerArr = refItem.getCenter().toArray();
+		// Draw the (high quality) ellipse
+		vtkPolyData vTmpPD = refSmallBody.getSmallBodyPolyData();
+		vtkPointLocator vTmpPL = refSmallBody.getPointLocator();
+		Vector3D center = refItem.getCenter();
 		double radius = refItem.getRadius();
 		double flattening = refItem.getFlattening();
 		double angle = refItem.getAngle();
-		refSmallBody.drawEllipticalPolygon(centerArr, radius, flattening, angle, numSides, vInteriorRegPD,
+		VtkDrawUtil.drawEllipseOn(vTmpPD, vTmpPL, center, radius, flattening, angle, numSides, vInteriorRegPD,
 				vExteriorRegPD);
 
 		// Setup decimator

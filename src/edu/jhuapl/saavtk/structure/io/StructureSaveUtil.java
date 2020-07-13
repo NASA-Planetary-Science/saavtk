@@ -244,8 +244,6 @@ public class StructureSaveUtil
 		String coloringUnitStr = String.format("slope (%s), elevation (%s), acceleration (%s), potential (%s)",
 				unitStrArr[0], unitStrArr[1], unitStrArr[2], unitStrArr[3]);
 
-		String columnDefStr = "<id> <name> <centerXYZ[3]> <centerLLR[3]> <coloringValue[4]> <diameter> <flattening> <regularAngle> <colorRGB> <gravityAngle> <label>";
-
 		String dataTypeStr = "ellipse";
 		if (aMode == Mode.CIRCLE_MODE)
 			dataTypeStr = "circle";
@@ -255,6 +253,10 @@ public class StructureSaveUtil
 		boolean alwaysTrue = true;
 		boolean isEllipseF = aMode != Mode.ELLIPSE_MODE;
 		boolean isEllipseT = aMode == Mode.ELLIPSE_MODE;
+
+		String columnDefStr = "<id> <name> <centerXYZ[3]> <centerLLR[3]> <coloringValue[4]> <diameter> <flattening> <regularAngle> <colorRGB> <gravityAngle> <label>";
+		if (isEllipseF == true)
+			columnDefStr = "<id> <name> <centerXYZ[3]> <centerLLR[3]> <coloringValue[4]> <diameter> <flattening> <regularAngle> <colorRGB> <label>";
 
 		writeLine(aBW, alwaysTrue, "# SBMT Structure File");
 		writeLine(aBW, alwaysTrue, "# type," + dataTypeStr);
@@ -273,8 +275,8 @@ public class StructureSaveUtil
 		writeLine(aBW, alwaysTrue, "#                   colorings are: " + coloringUnitStr);
 		writeLine(aBW, alwaysTrue, "#         diameter: Diameter of (semimajor) axis of ellipse");
 		writeLine(aBW, alwaysTrue, "#       flattening: Flattening factor of ellipse. Range: [0.0, 1.0]");
-		writeLine(aBW, alwaysTrue, "#     regularAngle: Angle between the semimajor axis and the semiminor axis as");
-		writeLine(aBW, alwaysTrue, "#                   projected onto the surface");
+		writeLine(aBW, alwaysTrue, "#     regularAngle: Angle between the semimajor axis and the line of longitude");
+		writeLine(aBW, alwaysTrue, "#                   as projected onto the surface");
 		writeLine(aBW, alwaysTrue, "#         colorRGB: 1 column (of RGB values [0, 255] separated by commas with no");
 		writeLine(aBW, alwaysTrue, "#                   spaces). This column appears as a single textual column.");
 		writeLine(aBW, isEllipseT, "#     gravityAngle: Angle between the semimajor axis of the ellipse and the gravity");

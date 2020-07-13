@@ -5,6 +5,7 @@ import javax.swing.JTabbedPane;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
+import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.pick.CirclePicker;
 import edu.jhuapl.saavtk.pick.ControlPointsPicker;
@@ -68,21 +69,23 @@ public class StructureTabbedPane extends JTabbedPane
 		refPickManager.getDefaultPicker().addListener((BaseStructureManager<?, ?>) tmpStructureManager);
 
 		// Instantiate the appropriate Picker
+		PolyhedralModel tmpSmallBody = refModelManager.getPolyhedralModel();
+
 		Picker tmpPicker = null;
 		if (aModelNames == ModelNames.LINE_STRUCTURES || aModelNames == ModelNames.POLYGON_STRUCTURES)
-			tmpPicker = new ControlPointsPicker<>(refRenderer, refPickManager, refModelManager,
+			tmpPicker = new ControlPointsPicker<>(refRenderer, refPickManager, tmpSmallBody,
 					(LineModel<?>) tmpStructureManager);
 		else if (aModelNames == ModelNames.CIRCLE_STRUCTURES)
-			tmpPicker = new CirclePicker(refRenderer, refModelManager);
+			tmpPicker = new CirclePicker(refRenderer, tmpSmallBody, tmpStructureManager);
 		else if (aModelNames == ModelNames.ELLIPSE_STRUCTURES)
-			tmpPicker = new EllipsePicker(refRenderer, refModelManager);
+			tmpPicker = new EllipsePicker(refRenderer, tmpSmallBody, tmpStructureManager);
 		else if (aModelNames == ModelNames.POINT_STRUCTURES)
-			tmpPicker = new PointPicker(refRenderer, refModelManager);
+			tmpPicker = new PointPicker(refRenderer, tmpSmallBody, tmpStructureManager);
 		else
 			throw new RuntimeException("Unrecognized ModelName: " + aModelNames);
 
 		StructurePanel<?> retPanel = new StructurePanel<>(tmpStructureManager, refPickManager, tmpPicker, refRenderer,
-				refModelManager.getPolyhedralModel(), refModelManager);
+				tmpSmallBody, refModelManager);
 		return retPanel;
 	}
 

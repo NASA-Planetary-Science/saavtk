@@ -420,6 +420,19 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	}
 
 	@Override
+	public void notifyItemsMutated(Collection<G1> aItemC)
+	{
+		if (aItemC.isEmpty() == true)
+			return;
+
+		for (G1 aItem : aItemC)
+			markPainterStale(aItem);
+
+		updatePolyData();
+		notifyListeners(this, ItemEventType.ItemsMutated);
+	}
+
+	@Override
 	public void addControlPoint(int aIdx, Vector3D aPoint)
 	{
 		// Bail if no activated line
@@ -1078,6 +1091,20 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		updatePolyData();
 
 		updateLineActivation();
+	}
+
+	/**
+	 * Helper method to mark the painter(s) associated with the specified item as
+	 * stale.
+	 */
+	private void markPainterStale(G1 aItem)
+	{
+		VtkCompositePainter<?, VtkPolyLinePainter<G1>> tmpPainter = getVtkCompPainter(aItem);
+		if (tmpPainter == null)
+			return;
+
+		tmpPainter.getMainPainter().markStale();
+		tmpPainter.getTextPainter().markStale();
 	}
 
 }

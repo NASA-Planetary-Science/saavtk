@@ -6,12 +6,12 @@ import java.awt.event.MouseEvent;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.gui.render.Renderer;
-import edu.jhuapl.saavtk.model.Model;
-import edu.jhuapl.saavtk.model.ModelManager;
-import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
 import edu.jhuapl.saavtk.structure.Ellipse;
+import edu.jhuapl.saavtk.structure.StructureManager;
+import edu.jhuapl.saavtk.structure.util.EllipseUtil;
+import edu.jhuapl.saavtk.vtk.VtkUtil;
 import vtk.vtkActor;
 import vtk.vtkCellPicker;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
@@ -19,25 +19,23 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
 public class CircleSelectionPicker extends Picker
 {
 	// Reference vars
-	private ModelManager refModelManager;
-	private PolyhedralModel refSmallBodyModel;
-	private AbstractEllipsePolygonModel refStructureManager;
-	private vtkJoglPanelComponent refRenWin;
+	private final PolyhedralModel refSmallBody;
+	private final AbstractEllipsePolygonModel refStructureManager;
+	private final vtkJoglPanelComponent refRenWin;
 
 	// VTK vars
-	private vtkCellPicker smallBodyPicker;
+	private final vtkCellPicker vSmallBodyCP;
 
 	// State vars
 	private int currVertexId;
 
-	public CircleSelectionPicker(Renderer aRenderer, ModelManager aModelManager)
+	public CircleSelectionPicker(Renderer aRenderer, PolyhedralModel aSmallBody, StructureManager<?> aStructureManager)
 	{
-		refModelManager = aModelManager;
-		refSmallBodyModel = aModelManager.getPolyhedralModel();
-		refStructureManager = (AbstractEllipsePolygonModel) aModelManager.getModel(ModelNames.CIRCLE_SELECTION);
+		refSmallBody = aSmallBody;
+		refStructureManager = (AbstractEllipsePolygonModel) aStructureManager;
 		refRenWin = aRenderer.getRenderWindowPanel();
 
-		smallBodyPicker = PickUtilEx.formSmallBodyPicker(refSmallBodyModel);
+		vSmallBodyCP = PickUtilEx.formSmallBodyPicker(refSmallBody);
 
 		currVertexId = -1;
 	}
@@ -68,20 +66,21 @@ public class CircleSelectionPicker extends Picker
 		refStructureManager.removeAllStructures();
 
 		// Bail if we failed to pick something
-		boolean isPicked = PickUtil.isPicked(smallBodyPicker, refRenWin, aEvent, getTolerance());
+		boolean isPicked = PickUtil.isPicked(vSmallBodyCP, refRenWin, aEvent, getTolerance());
 		if (isPicked == false)
 			return;
 
-		vtkActor pickedActor = smallBodyPicker.GetActor();
-		Model model = refModelManager.getModel(pickedActor);
-		if (model == refSmallBodyModel)
+		// Bail if the picked actor is not associated with refSmallBody
+		vtkActor pickedActor = vSmallBodyCP.GetActor();
+		if (VtkUtil.getAssocModel(pickedActor) != refSmallBody)
+			return;
+
+		// Handle the action
+		double[] pos = vSmallBodyCP.GetPickPosition();
+		if (aEvent.getClickCount() == 1)
 		{
-			double[] pos = smallBodyPicker.GetPickPosition();
-			if (aEvent.getClickCount() == 1)
-			{
-				refStructureManager.addNewStructure(new Vector3D(pos));
-				currVertexId = refStructureManager.getNumItems() - 1;
-			}
+			refStructureManager.addNewStructure(new Vector3D(pos));
+			currVertexId = refStructureManager.getNumItems() - 1;
 		}
 	}
 
@@ -103,20 +102,20 @@ public class CircleSelectionPicker extends Picker
 //			return;
 
 		// Bail if we failed to pick something
-		boolean isPicked = PickUtil.isPicked(smallBodyPicker, refRenWin, aEvent, getTolerance());
+		boolean isPicked = PickUtil.isPicked(vSmallBodyCP, refRenWin, aEvent, getTolerance());
 		if (isPicked == false)
 			return;
 
-		vtkActor pickedActor = smallBodyPicker.GetActor();
-		Model model = refModelManager.getModel(pickedActor);
+		// Bail if the picked actor is not associated with refSmallBody
+		vtkActor pickedActor = vSmallBodyCP.GetActor();
+		if (VtkUtil.getAssocModel(pickedActor) != refSmallBody)
+			return;
 
-		if (model == refSmallBodyModel)
-		{
-			double[] lastDragPositionArr = smallBodyPicker.GetPickPosition();
-			Vector3D lastDragPosition = new Vector3D(lastDragPositionArr);
+		// Handle the action
+		double[] lastDragPositionArr = vSmallBodyCP.GetPickPosition();
+		Vector3D lastDragPosition = new Vector3D(lastDragPositionArr);
 
-			refStructureManager.changeRadiusOfPolygon(tmpItem, lastDragPosition);
-		}
+		EllipseUtil.changeRadius(refStructureManager, tmpItem, refSmallBody, lastDragPosition);
 	}
 
 }
