@@ -1032,21 +1032,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         return PolyDataUtil.computeMultipleFrustumIntersection(smallBodyPolyData, cellLocator, pointLocator, frustums);
     }
 
-    /**
-     * Given 2 points on the surface of the body, draw a nice looking path between
-     * the 2 that is not obscured anywhere or too distant from the surface. Return
-     * this path as a vtkPolyData
-     * 
-     * @param pt1
-     * @param pt2
-     * @return
-     */
-    @Override
-    public vtkPolyData drawPath(double[] pt1, double[] pt2)
-    {
-        return PolyDataUtil.drawPathOnPolyData(smallBodyPolyData, pointLocator, pt1, pt2);
-    }
-
     @Override
     public void drawPolygon(List<LatLon> controlPoints, vtkPolyData outputInterior, vtkPolyData outputBoundary)
     {

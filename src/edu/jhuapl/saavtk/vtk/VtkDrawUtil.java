@@ -10,9 +10,13 @@ import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
 import vtk.vtkAbstractPointLocator;
 import vtk.vtkAlgorithmOutput;
+import vtk.vtkCellArray;
 import vtk.vtkClipPolyData;
+import vtk.vtkCutter;
 import vtk.vtkExtractPolyDataGeometry;
 import vtk.vtkFeatureEdges;
+import vtk.vtkGenericCell;
+import vtk.vtkIdList;
 import vtk.vtkObject;
 import vtk.vtkPlane;
 import vtk.vtkPointLocator;
@@ -23,6 +27,7 @@ import vtk.vtkRegularPolygonSource;
 import vtk.vtkSphere;
 import vtk.vtkTransform;
 import vtk.vtkTransformPolyDataFilter;
+import vtk.vtksbCellLocator;
 
 /**
  * Collection of VTK based draw routines.
@@ -37,7 +42,7 @@ public class VtkDrawUtil
 	 * The results of the rendered ellipse will be returned via the last two
 	 * arguments (aRetInteriourPD, aRetExteriorPD).
 	 * <P>
-	 * This basis of this method originated from (prior to 2018Jan)
+	 * The basis of this method originated from (prior to 2018Jan)
 	 * edu.jhuapl.saavtk.util.PolyDataUtil.
 	 *
 	 * @param aSurfacePD     The {@link vtkPolyData} corresponding to the surface.
@@ -54,9 +59,9 @@ public class VtkDrawUtil
 	 * @param aRetExteriorPD {@link vtkPolyData} that is used to store the computed
 	 *                       exterior. May be null.
 	 */
-	public static void drawEllipseOn(vtkPolyData aSurfacePD, vtkAbstractPointLocator aSurfacePL,
-			Vector3D aCenter, double aMajorRadius, double aFlattening, double aAngle, int aNumSides,
-			vtkPolyData aRetInteriorPD, vtkPolyData aRetExteriorPD)
+	public static void drawEllipseOn(vtkPolyData aSurfacePD, vtkAbstractPointLocator aSurfacePL, Vector3D aCenter,
+			double aMajorRadius, double aFlattening, double aAngle, int aNumSides, vtkPolyData aRetInteriorPD,
+			vtkPolyData aRetExteriorPD)
 	{
 		// List holding vtk objects to delete at end of function
 		List<vtkObject> deleteL = new ArrayList<>();
@@ -259,6 +264,136 @@ public class VtkDrawUtil
 
 		// Release temporary VTK objects
 		VtkUtil.deleteAll(deleteL);
+	}
+
+	/**
+	 * Utility method for drawing a (multi-point) poly path on a {@link vtkPolyData}
+	 * surface.
+	 * <P>
+	 * The results of the rendered poly path will be returned.
+	 * <P>
+	 * The basis of this method originated from (prior to 2018Jan)
+	 * edu.jhuapl.saavtk.util.PolyDataUtil.
+	 *
+	 * @param aSurfacePD The {@link vtkPolyData} corresponding to the surface.
+	 * @param aSurfacePL The {@link vtkPointLocator} associated with the surface.
+	 * @param aPointBeg  The starting end point.
+	 * @param aPointEnd  The ending end point.
+	 * @return Returns a {@link vtkPolyData} that contains the contents of the
+	 *         computed line.
+	 */
+	public static vtkPolyData drawPathPolyOn(vtkPolyData aSurfacePD, vtkAbstractPointLocator aSurfacePL,
+			Vector3D aPointBeg, Vector3D aPointEnd)
+	{
+		// Get the average normal of the 2 end points
+		Vector3D normalBeg = PolyDataUtil.getPolyDataNormalAtPoint(aPointBeg, aSurfacePD, aSurfacePL, 20);
+		Vector3D normalEnd = PolyDataUtil.getPolyDataNormalAtPoint(aPointEnd, aSurfacePD, aSurfacePL, 20);
+		Vector3D normalAvg = normalBeg.add(normalEnd).scalarMultiply(0.5);
+
+		// Compute the normal for the cutting plane
+		Vector3D diffVec = aPointBeg.subtract(aPointEnd);
+		Vector3D normalCut = diffVec.crossProduct(normalAvg).normalize();
+
+		vtkPlane vCutPlane = new vtkPlane();
+		vCutPlane.SetOrigin(aPointBeg.toArray());
+		vCutPlane.SetNormal(normalCut.toArray());
+
+		vtkExtractPolyDataGeometry vExtract1EPDG = new vtkExtractPolyDataGeometry();
+		vExtract1EPDG.SetImplicitFunction(vCutPlane);
+		vExtract1EPDG.SetExtractInside(1);
+		vExtract1EPDG.SetExtractBoundaryCells(1);
+		vExtract1EPDG.SetInputData(aSurfacePD);
+		vExtract1EPDG.Update();
+
+		vtkExtractPolyDataGeometry vExtract2EPDG = new vtkExtractPolyDataGeometry();
+		vExtract2EPDG.SetImplicitFunction(vCutPlane);
+		vExtract2EPDG.SetExtractInside(0);
+		vExtract2EPDG.SetExtractBoundaryCells(1);
+		vExtract2EPDG.SetInputConnection(vExtract1EPDG.GetOutputPort());
+		vExtract2EPDG.Update();
+
+		vtkCutter vCutC = new vtkCutter();
+		vCutC.SetInputConnection(vExtract2EPDG.GetOutputPort());
+		vCutC.CreateDefaultLocator();
+		vCutC.SetCutFunction(vCutPlane);
+		vCutC.Update();
+
+		vtkPolyData retLinePD = new vtkPolyData();
+		retLinePD.DeepCopy(vCutC.GetOutput());
+
+		// Take this line and put it into a cell locator so we can find the cells
+		// closest to the end points
+		vtksbCellLocator vCellCL = new vtksbCellLocator();
+		vCellCL.SetDataSet(retLinePD);
+		vCellCL.CacheCellBoundsOn();
+		vCellCL.AutomaticOn();
+		vCellCL.BuildLocator();
+
+		// Bail if this is a degenerate case - no points in the polyline
+		if (retLinePD.GetNumberOfPoints() == 0)
+		{
+			drawPathSimpleOn(aPointBeg, aPointEnd, retLinePD);
+			return retLinePD;
+		}
+
+		// Search for the cells and points closest to the 2 end points
+		double[] closestPt1Arr = new double[3];
+		double[] closestPt2Arr = new double[3];
+		vtkGenericCell vGeneric1GC = new vtkGenericCell();
+		vtkGenericCell vGeneric2GC = new vtkGenericCell();
+		int[] cellId1 = new int[1];
+		int[] cellId2 = new int[1];
+		int[] subId = new int[1];
+		double[] dist2 = new double[1];
+
+		vCellCL.FindClosestPoint(aPointBeg.toArray(), closestPt1Arr, vGeneric1GC, cellId1, subId, dist2);
+		vCellCL.FindClosestPoint(aPointEnd.toArray(), closestPt2Arr, vGeneric2GC, cellId2, subId, dist2);
+
+		// Bail if this is a degenerate case - both points are on the same cell
+		if (cellId1[0] == cellId2[0])
+		{
+			Vector3D tmpPointBeg = new Vector3D(closestPt1Arr);
+			Vector3D tmpPointEnd = new Vector3D(closestPt2Arr);
+			drawPathSimpleOn(tmpPointBeg, tmpPointEnd, retLinePD);
+			return retLinePD;
+		}
+
+		// Delegate to PolyDataUtil to finish the formation of poly path...
+		boolean isPass = PolyDataUtil.convertPartOfLinesToPolyLineWithSplitting(retLinePD, closestPt1Arr, cellId1[0],
+				closestPt2Arr, cellId2[0]);
+		if (isPass == true)
+			return retLinePD;
+
+		return null;
+	}
+
+	/**
+	 * Utility method that for drawing a simple path onto a {@link vtkPolyData}.
+	 * <P>
+	 * The results for the rendered path will be returned via the last argument
+	 * (aRetPath).
+	 *
+	 * @param aPointBeg  The starting end point.
+	 * @param aPointEnd  The ending end point.
+	 * @param aRetPathPD {@link vtkPolyData} that is used to store the computed
+	 *                   path.
+	 */
+	public static void drawPathSimpleOn(Vector3D aPointBeg, Vector3D aPointEnd, vtkPolyData aRetPathPD)
+	{
+		vtkPoints vPointP = aRetPathPD.GetPoints();
+		vPointP.SetNumberOfPoints(2);
+		vPointP.SetPoint(0, aPointBeg.toArray());
+		vPointP.SetPoint(1, aPointEnd.toArray());
+
+		vtkCellArray vLineCA = aRetPathPD.GetLines();
+		vLineCA.Initialize();
+
+		vtkIdList vTmpIL = new vtkIdList();
+		vTmpIL.SetNumberOfIds(2);
+		vTmpIL.SetId(0, 0);
+		vTmpIL.SetId(1, 1);
+
+		vLineCA.InsertNextCell(vTmpIL);
 	}
 
 }
