@@ -12,7 +12,9 @@ import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.PolyLineMode;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
+import edu.jhuapl.saavtk.vtk.VtkDrawUtil;
 import edu.jhuapl.saavtk.vtk.VtkResource;
+import vtk.vtkPointLocator;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
 
@@ -380,15 +382,17 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 
 		LatLon ll1 = refItem.getControlPoints().get(aBegIdx);
 		LatLon ll2 = refItem.getControlPoints().get(nextIdx);
-		double pt1[] = MathUtil.latrec(ll1);
-		double pt2[] = MathUtil.latrec(ll2);
+		double[] pt1Arr = MathUtil.latrec(ll1);
+		double[] pt2Arr = MathUtil.latrec(ll2);
+		Vector3D pt1 = new Vector3D(pt1Arr);
+		Vector3D pt2 = new Vector3D(pt2Arr);
 
 		int id1 = controlPointIdL.get(aBegIdx);
 		int id2 = controlPointIdL.get(nextIdx);
 
 		// Set the 2 control points
-		aPointL.set(id1, new Vector3D(pt1));
-		aPointL.set(id2, new Vector3D(pt2));
+		aPointL.set(id1, pt1);
+		aPointL.set(id2, pt2);
 
 		// TODO: The logic below is convoluted and there may be issues
 		vtkPolyData vTmpPD = null;
@@ -397,12 +401,14 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 				&& Math.abs(ll1.rad - ll2.rad) < 1e-8)
 		{
 			vTmpP = new vtkPoints();
-			vTmpP.InsertNextPoint(pt1);
-			vTmpP.InsertNextPoint(pt2);
+			vTmpP.InsertNextPoint(pt1Arr);
+			vTmpP.InsertNextPoint(pt2Arr);
 		}
 		else
 		{
-			vTmpPD = refSmallBody.drawPath(pt1, pt2);
+			vtkPolyData vSurfacePD = refSmallBody.getSmallBodyPolyData();
+			vtkPointLocator vSurfacePL = refSmallBody.getPointLocator();
+			vTmpPD = VtkDrawUtil.drawPathPolyOn(vSurfacePD, vSurfacePL, pt1, pt2);
 			if (vTmpPD == null)
 				return;
 

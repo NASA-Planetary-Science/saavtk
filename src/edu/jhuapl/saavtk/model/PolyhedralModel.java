@@ -249,8 +249,6 @@ public abstract class PolyhedralModel extends AbstractModel implements PolyModel
 
 	public abstract List<String> getModelFileNames();
 
-	public abstract vtkPolyData drawPath(double[] pt1, double[] pt2);
-
 	public abstract double[] findClosestPoint(double[] pt);
 
 	public abstract double getColoringValue(int index, double[] pt);
