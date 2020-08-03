@@ -18,6 +18,7 @@ import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import edu.jhuapl.saavtk.vtk.VtkDrawUtil;
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
 import nom.tam.fits.Header;
@@ -29,10 +30,8 @@ import vtk.vtkCell;
 import vtk.vtkCellArray;
 import vtk.vtkCleanPolyData;
 import vtk.vtkClipPolyData;
-import vtk.vtkCutter;
 import vtk.vtkDataArray;
 import vtk.vtkDecimatePro;
-import vtk.vtkExtractPolyDataGeometry;
 import vtk.vtkFeatureEdges;
 import vtk.vtkFloatArray;
 import vtk.vtkGenericCell;
@@ -463,169 +462,6 @@ public class PolyDataUtil
 	 * // return result vtkPolyData result=new vtkPolyData();
 	 * result.DeepCopy(booleanFilter.GetOutput()); return result; }
 	 */
-
-	/*
-	 * This is an older version of that uses a vtkCylinder to do the intersection
-	 * rather than a series of planes. Unfortunately, the results look crappy. Use
-	 * drawRegularPolygonOnPolyData instead.
-	 */
-	/*
-	 *
-	 * public static vtkPolyData drawCircleOnPolyData( vtkPolyData polyData,
-	 * vtkAbstractPointLocator pointLocator, double[] center, double radius, boolean
-	 * filled) { double[] normal = getPolyDataNormalAtPoint(center, polyData,
-	 * pointLocator);
-	 *
-	 * radius += 0.5; if (radius < 1.0) radius = 1.0;
-	 *
-	 * vtkCylinder cylinder = new vtkCylinder(); cylinder.SetRadius(radius);
-	 * cylinder.SetCenter(center);
-	 *
-	 * // Note the cylinder has its axis pointing to the y-axis (0,1,0). // Create a
-	 * transform that rotates this axis to normal. // To do this we need to first
-	 * find the axis of rotation // (note don't confuse this with the axis of the
-	 * cylindar. // We're using the word axis to refer to 2 different things) //
-	 * which is the cross product between the y-axis and normal. double[]
-	 * originalCylindarAxis = {0.0, 1.0, 0.0}; double[] axisOfRotation = new
-	 * double[3]; MathUtil.vcrss(normal, originalCylindarAxis, axisOfRotation);
-	 * Spice.vhat(axisOfRotation,axisOfRotation);
-	 *
-	 * // Now compute the angle between these 2 cylinder axes. double angle =
-	 * Spice.vsep(originalCylindarAxis, normal) * 180.0 / Math.PI;
-	 *
-	 * vtkTransform transform = new vtkTransform(); transform.Translate(center);
-	 * transform.RotateWXYZ(angle, axisOfRotation);
-	 * transform.Translate(-center[0],-center[1],-center[2]);
-	 *
-	 * cylinder.SetTransform(transform);
-	 *
-	 * vtkPolyDataAlgorithm filter = null;
-	 *
-	 * if(filled) { vtkClipPolyData clipPolyData = new vtkClipPolyData();
-	 * clipPolyData.SetInput(polyData); clipPolyData.SetClipFunction(cylinder);
-	 * clipPolyData.SetInsideOut(1); clipPolyData.Update(); filter = clipPolyData; }
-	 * else { vtkCutter cutPolyData = new vtkCutter();
-	 * cutPolyData.SetInput(polyData); cutPolyData.SetCutFunction(cylinder);
-	 * cutPolyData.Update(); filter = cutPolyData; }
-	 *
-	 * vtkPolyDataConnectivityFilter connectivityFilter = new
-	 * vtkPolyDataConnectivityFilter();
-	 * connectivityFilter.SetInputConnection(filter.GetOutputPort());
-	 * connectivityFilter.SetExtractionModeToClosestPointRegion();
-	 * connectivityFilter.SetClosestPoint(center); connectivityFilter.Update();
-	 *
-	 * polyData = new vtkPolyData();
-	 * polyData.DeepCopy(connectivityFilter.GetOutput());
-	 *
-	 *
-	 * // vtkPolyDataWriter writer = new vtkPolyDataWriter(); //
-	 * writer.SetInput(polyData); // writer.SetFileName("/tmp/coneeros.vtk"); //
-	 * //writer.SetFileTypeToBinary(); // writer.Write();
-	 *
-	 * return polyData; }
-	 */
-
-	public static vtkPolyData drawPathOnPolyData(vtkPolyData polyData, vtkAbstractPointLocator pointLocator, double[] pt1, double[] pt2)
-	{
-		double[] normal1 = getPolyDataNormalAtPoint(pt1, polyData, pointLocator);
-		double[] normal2 = getPolyDataNormalAtPoint(pt2, polyData, pointLocator);
-
-		double[] avgNormal = new double[3];
-		avgNormal[0] = (normal1[0] + normal2[0]) / 2.0;
-		avgNormal[1] = (normal1[1] + normal2[1]) / 2.0;
-		avgNormal[2] = (normal1[2] + normal2[2]) / 2.0;
-
-		double[] vec1 = { pt1[0] - pt2[0], pt1[1] - pt2[1], pt1[2] - pt2[2] };
-		//double[] vec2 = {pt2[0]-pt1[0], pt2[1]-pt1[1], pt2[2]-pt1[2]};
-
-		double[] normal = new double[3];
-		MathUtil.vcrss(vec1, avgNormal, normal);
-		MathUtil.vhat(normal, normal);
-
-		vtkPlane cutPlane = new vtkPlane();
-		cutPlane.SetOrigin(pt1);
-		cutPlane.SetNormal(normal);
-
-		vtkExtractPolyDataGeometry extract1 = new vtkExtractPolyDataGeometry();
-		extract1.SetImplicitFunction(cutPlane);
-		extract1.SetExtractInside(1);
-		extract1.SetExtractBoundaryCells(1);
-		extract1.SetInputData(polyData);
-		extract1.Update();
-
-		vtkExtractPolyDataGeometry extract2 = new vtkExtractPolyDataGeometry();
-		extract2.SetImplicitFunction(cutPlane);
-		extract2.SetExtractInside(0);
-		extract2.SetExtractBoundaryCells(1);
-		extract2.SetInputConnection(extract1.GetOutputPort());
-		extract2.Update();
-
-		vtkCutter cutPolyData = new vtkCutter();
-		cutPolyData.SetInputConnection(extract2.GetOutputPort());
-		cutPolyData.CreateDefaultLocator();
-		cutPolyData.SetCutFunction(cutPlane);
-		cutPolyData.Update();
-
-		vtkPolyData polyLine = new vtkPolyData();
-		polyLine.DeepCopy(cutPolyData.GetOutput());
-
-		// Take this line and put it into a cell locator so we can find the cells
-		// closest to the end points
-		vtksbCellLocator cellLocator = new vtksbCellLocator();
-		cellLocator.SetDataSet(polyLine);
-		cellLocator.CacheCellBoundsOn();
-		cellLocator.AutomaticOn();
-		cellLocator.BuildLocator();
-
-		// Search for the cells closest to the 2 endpoints
-		double[] closestPoint1 = new double[3];
-		double[] closestPoint2 = new double[3];
-		vtkGenericCell genericCell1 = new vtkGenericCell();
-		vtkGenericCell genericCell2 = new vtkGenericCell();
-		int[] cellId1 = new int[1];
-		int[] cellId2 = new int[1];
-		int[] subId = new int[1];
-		double[] dist2 = new double[1];
-
-		cellLocator.FindClosestPoint(pt1, closestPoint1, genericCell1, cellId1, subId, dist2);
-		cellLocator.FindClosestPoint(pt2, closestPoint2, genericCell2, cellId2, subId, dist2);
-
-		// In the rare case where both points are on the same cell, simply
-		// return a single line connecting them
-		if (cellId1[0] == cellId2[0])
-		{
-			vtkPoints points = polyLine.GetPoints();
-			points.SetNumberOfPoints(2);
-			points.SetPoint(0, closestPoint1);
-			points.SetPoint(1, closestPoint2);
-
-			vtkCellArray lines = polyLine.GetLines();
-			lines.Initialize();
-
-			vtkIdList idList = new vtkIdList();
-			idList.SetNumberOfIds(2);
-			idList.SetId(0, 0);
-			idList.SetId(1, 1);
-
-			lines.InsertNextCell(idList);
-
-			return polyLine;
-		}
-
-		boolean okay = convertPartOfLinesToPolyLineWithSplitting(polyLine, closestPoint1, cellId1[0], closestPoint2, cellId2[0]);
-
-		//System.out.println("number points: " + polyLine.GetNumberOfPoints());
-
-		//vtkPolyDataWriter writer = new vtkPolyDataWriter();
-		//writer.SetInput(polyLine);
-		//writer.SetFileName("/tmp/cuteros.vtk");
-		//writer.Write();
-
-		if (okay)
-			return polyLine;
-		else
-			return null;
-	}
 
 	/*
 	 *
@@ -1125,7 +961,7 @@ public class PolyDataUtil
 			else
 				pt2 = MathUtil.latrec(controlPoints.get(0));
 
-			vtkPolyData poly = drawPathOnPolyData(polyData, pointLocator, pt1, pt2);
+			vtkPolyData poly = VtkDrawUtil.drawPathPolyOn(polyData, pointLocator, new Vector3D(pt1), new Vector3D(pt2));
 
 			// Remove normals (which we don't need) as this causes an error
 			// in the Append filter.
