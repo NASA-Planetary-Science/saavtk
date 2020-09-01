@@ -139,6 +139,8 @@ public final class ShapeModelType
     public static final ShapeModelType MU69_TEST5H_1_FINAL_ORIENTED = create("mu69_test5h_1_final_oriented");
     public static final ShapeModelType NIMMO = create("Nimmo");
     public static final ShapeModelType WEAVER = create("Weaver");
+    public static final ShapeModelType HANUS = create("Hanus");
+    public static final ShapeModelType VIIKINKOSKI = create("Viikinkoski");
 
     private final String identifier;
 
