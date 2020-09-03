@@ -141,6 +141,17 @@ public final class ShapeModelType
     public static final ShapeModelType WEAVER = create("Weaver");
     public static final ShapeModelType HANUS = create("Hanus");
     public static final ShapeModelType VIIKINKOSKI = create("Viikinkoski");
+    //***********************************************************************************
+    //***********************************************************************************
+    // DO NOT ADD ANY MORE STATIC FIELDS HERE FOR NEW AUTHORS. INSTEAD, PROVIDE THEM
+    // DYNAMICALLY BY CALLING THE ShapeModelType.provide(String) METHOD.
+    //
+    // Example:
+    // 
+    // c.author = ShapeModelType.provide("Gonzalez");
+    //
+    //***********************************************************************************
+    //***********************************************************************************
 
     private final String identifier;
 
