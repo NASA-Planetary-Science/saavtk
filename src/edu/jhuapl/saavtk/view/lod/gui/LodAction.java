@@ -15,7 +15,6 @@ import javax.swing.JOptionPane;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.render.Renderer;
-import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
 import edu.jhuapl.saavtk.view.lod.LodStatusPainter;
 import glum.gui.GuiUtil;
 import glum.gui.action.CloseDialog;
@@ -78,7 +77,6 @@ public class LodAction extends AbstractAction implements HierarchyListener, Init
 
 		View tmpView = (View) aSource;
 		Renderer tmpRenderer = tmpView.getRenderer();
-		SceneChangeNotifier tmpSceneChangeNotifier = tmpView.getModelManager();
 
 		// Bail if we have already seen this source
 		JDialog tmpDialog = initM.get(tmpView);
@@ -86,7 +84,7 @@ public class LodAction extends AbstractAction implements HierarchyListener, Init
 			return;
 
 		// Create our UI
-		LodStatusPainter tmpPainter = new LodStatusPainter(tmpRenderer, tmpSceneChangeNotifier);
+		LodStatusPainter tmpPainter = new LodStatusPainter(tmpRenderer);
 		tmpRenderer.addVtkPropProvider(tmpPainter);
 		LodPanel tmpPanel = new LodPanel(tmpRenderer, tmpPainter);
 

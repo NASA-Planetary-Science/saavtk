@@ -9,7 +9,6 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.gui.render.Renderer;
-import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
 import edu.jhuapl.saavtk.gui.render.VtkPropProvider;
 import edu.jhuapl.saavtk.view.ViewActionListener;
 import edu.jhuapl.saavtk.view.ViewChangeReason;
@@ -36,7 +35,6 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 {
 	// Reference vars
 	private final Renderer refRenderer;
-	private final SceneChangeNotifier refSceneChangeNotifier;
 
 	// State vars
 	private boolean isVisible;
@@ -52,10 +50,9 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 	/**
 	 * Standard Constructor
 	 */
-	public ScaleBarPainter(Renderer aRenderer, SceneChangeNotifier aSceneChangeNotifier)
+	public ScaleBarPainter(Renderer aRenderer)
 	{
 		refRenderer = aRenderer;
-		refSceneChangeNotifier = aSceneChangeNotifier;
 
 		isVisible = true;
 		dimSizeX = 150;
@@ -147,7 +144,7 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 		isVisible = aBool;
 
 		// Send out the update notification
-		refSceneChangeNotifier.notifySceneChange();
+		refRenderer.notifySceneChange();
 	}
 
 	/**
@@ -210,7 +207,7 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 		vScaleBarTA.Modified();
 
 		// Send out the update notification
-		refSceneChangeNotifier.notifySceneChange();
+		refRenderer.notifySceneChange();
 	}
 
 	/**

@@ -15,7 +15,6 @@ import javax.swing.JOptionPane;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.render.Renderer;
-import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
 import edu.jhuapl.saavtk.scalebar.ScaleBarPainter;
 import glum.gui.GuiUtil;
 import glum.gui.action.CloseDialog;
@@ -79,7 +78,6 @@ public class ScaleBarAction extends AbstractAction implements HierarchyListener,
 
 		View tmpView = (View) aSource;
 		Renderer tmpRenderer = tmpView.getRenderer();
-		SceneChangeNotifier tmpSceneChangeNotifier = tmpView.getModelManager();
 
 		// Bail if we have already seen this source
 		JDialog tmpDialog = initM.get(tmpView);
@@ -87,7 +85,7 @@ public class ScaleBarAction extends AbstractAction implements HierarchyListener,
 			return;
 
 		// Create our UI
-		ScaleBarPainter tmpPainter = new ScaleBarPainter(tmpRenderer, tmpSceneChangeNotifier);
+		ScaleBarPainter tmpPainter = new ScaleBarPainter(tmpRenderer);
 		tmpRenderer.addVtkPropProvider(tmpPainter);
 		ScaleBarPanel tmpPanel = new ScaleBarPanel(tmpRenderer, tmpPainter);
 
