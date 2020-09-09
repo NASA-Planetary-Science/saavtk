@@ -3,10 +3,11 @@ package edu.jhuapl.saavtk.colormap;
 import java.awt.Color;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
-import java.util.List;
 
+import edu.jhuapl.saavtk.color.table.ColorMapAttr;
+import edu.jhuapl.saavtk.color.table.ColorTable;
+import edu.jhuapl.saavtk.color.table.ColorTableUtil;
 import edu.jhuapl.saavtk.util.LinearSpace;
-import vtk.vtkColorTransferFunction;
 import vtk.vtkLookupTable;
 
 public class RgbColormap implements Colormap
@@ -18,16 +19,14 @@ public class RgbColormap implements Colormap
 	// Listener vars
 	private PropertyChangeSupport pcs;
 
+	// Attributes
+	private final ColorTable refColorTable;
+
 	// State vars
-	private String name;
 	private double dataMin, dataMax;
 	private boolean isLog;
 
-	private List<Double> interpLevels;
-	private List<Color> colors;
 	private int nLevels;
-	private Color nanColor;
-	private ColorSpace colorSpace;
 
 	// This field member does not belong in this class.
 	// See notes on Colormap interface.
@@ -35,39 +34,20 @@ public class RgbColormap implements Colormap
 
 	// VTK vars
 	private vtkLookupTable lut = new vtkLookupTable();
-	private vtkColorTransferFunction ctf; // TODO: Is this really needed to be a member?
 
-	public enum ColorSpace
-	{
-		RGB, HSV, LAB, DIVERGING;
-	}
-
-	public RgbColormap(List<Double> interpLevels, List<Color> colors, int nLevels, Color nanColor, ColorSpace colorSpace)
+	public RgbColormap(ColorTable aColorTable)
 	{
 		pcs = new PropertyChangeSupport(this);
 
-		name = "";
+		refColorTable = aColorTable;
+
 		dataMin = Double.NaN;
 		dataMax = Double.NaN;
 		isLog = false;
 
-		this.interpLevels = interpLevels;
-		this.colors = colors;
-		this.nLevels = nLevels;
-		this.nanColor = nanColor;
-		this.colorSpace = colorSpace;
+		nLevels = DefaultNumberOfLabels;
 
 		nLabels = DefaultNumberOfLabels;
-	}
-
-	public RgbColormap(List<Double> interpLevels, List<Color> colors, int nLevels, Color nanColor)
-	{
-		this(interpLevels, colors, nLevels, nanColor, ColorSpace.RGB);
-	}
-
-	public RgbColormap(List<Double> interpLevels, List<Color> colors, int nLevels)
-	{
-		this(interpLevels, colors, nLevels, Color.white, ColorSpace.RGB);
 	}
 
 	@Override
@@ -80,6 +60,12 @@ public class RgbColormap implements Colormap
 	public void removePropertyChangeListener(PropertyChangeListener l)
 	{
 		pcs.removePropertyChangeListener(l);
+	}
+
+	@Override
+	public ColorMapAttr getColorMapAttr()
+	{
+		return new ColorMapAttr(refColorTable, getRangeMin(), getRangeMax(), getNumberOfLevels(), isLogScale());
 	}
 
 	@Override
@@ -157,12 +143,7 @@ public class RgbColormap implements Colormap
 	@Override
 	public String getName()
 	{
-		return name;
-	}
-
-	public void setName(String name)
-	{
-		this.name = name;
+		return refColorTable.getName();
 	}
 
 	@Override
@@ -209,85 +190,8 @@ public class RgbColormap implements Colormap
 		if (dataMax <= dataMin)
 			return;
 
-		ctf = new vtkColorTransferFunction();
-		ctf.SetAlpha(1);
-		if (isLog)
-			ctf.SetScaleToLog10();
-		else
-			ctf.SetScaleToLinear();
-		switch (colorSpace)
-		{
-			case RGB:
-				ctf.SetColorSpaceToRGB();
-				break;
-			case HSV:
-				ctf.SetColorSpaceToHSV();
-				break;
-			case LAB:
-				ctf.SetColorSpaceToLab();
-				break;
-			case DIVERGING:
-				ctf.SetColorSpaceToDiverging();
-				break;
-			default:
-				ctf.SetColorSpaceToRGB();
-		}
-		double rangeMin = Float.POSITIVE_INFINITY;
-		double rangeMax = Float.NEGATIVE_INFINITY;
-		for (int i = 0; i < interpLevels.size(); i++)
-		{
-			if (interpLevels.get(i) < rangeMin)
-				rangeMin = interpLevels.get(i);
-			if (interpLevels.get(i) > rangeMax)
-				rangeMax = interpLevels.get(i);
-		}
-		for (int i = 0; i < interpLevels.size(); i++)
-		{
-			Color c = colors.get(i);
-			float[] comp = c.getRGBComponents(null);
-			ctf.AddRGBPoint((interpLevels.get(i) - rangeMin) / (rangeMax - rangeMin), comp[0], comp[1], comp[2]);
-		}
-
-		lut.GlobalWarningDisplayOff();
-		ctf.GlobalWarningDisplayOff();
-
-		float[] comp = nanColor.getRGBColorComponents(null);
-		lut.SetNanColor(comp[0], comp[1], comp[2], 1);
-		lut.SetNumberOfTableValues(nLevels);
-		lut.ForceBuild();
-
-		if (isLog)
-		{
-			double minValue = dataMin;
-			double maxValue = dataMax;
-			if (minValue < 0)
-				minValue = Double.MIN_VALUE;
-			if (maxValue < 0)
-				maxValue = Double.MIN_VALUE;
-			lut.SetTableRange(minValue, maxValue);
-			lut.SetValueRange(minValue, maxValue);
-			lut.SetRange(minValue, maxValue);
-			// System.out.println("Warning: negative values in range clipped to smallest possible value greater than zero ("+Double.MIN_VALUE+")");
-		}
-		else
-		{
-			lut.SetTableRange(dataMin, dataMax);
-			lut.SetValueRange(dataMin, dataMax);
-			lut.SetRange(dataMin, dataMax);
-		}
-
-		if (isLog)
-			lut.SetScaleToLog10();
-		else
-			lut.SetScaleToLinear();
-
-		for (int i = 0; i < getNumberOfLevels(); i++)
-		{
-			double val = (double) i / (double) getNumberOfLevels();// *(dataMax-dataMin)+dataMin;
-			// lut.SetTableValue(i, ctf.GetColor(val));
-			double[] col = ctf.GetColor(val);
-			lut.SetTableValue(i, col[0], col[1], col[2], 1);
-		}
+		// Delegate
+		ColorTableUtil.updateLookUpTable(lut, getColorMapAttr());
 
 		pcs.firePropertyChange(colormapPropertyChanged, null, null);
 	}
@@ -297,13 +201,12 @@ public class RgbColormap implements Colormap
 	 */
 	public static RgbColormap copy(RgbColormap aColormap)
 	{
-		RgbColormap retColormap = new RgbColormap(aColormap.interpLevels, aColormap.colors, aColormap.nLevels,
-				aColormap.nanColor, aColormap.colorSpace);
+		RgbColormap retColormap = new RgbColormap(aColormap.refColorTable);
 
 		retColormap.isLog = aColormap.isLog;
 		retColormap.dataMin = aColormap.dataMin;
 		retColormap.dataMax = aColormap.dataMax;
-		retColormap.name = aColormap.name;
+		retColormap.nLevels = aColormap.nLevels;
 		retColormap.rebuildLookupTable();
 
 		return retColormap;
