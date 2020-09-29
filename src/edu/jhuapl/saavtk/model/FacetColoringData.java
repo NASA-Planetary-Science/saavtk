@@ -28,6 +28,14 @@ public class FacetColoringData
 		this.allColoringData = allColoringData;
 	}
 
+	/**
+	 * @return the cellId
+	 */
+	public int getCellId()
+	{
+		return cellId;
+	}
+
 	public String[] getAvailableColoringNames()
 	{
 		String[] names = new String[allColoringData.size()];

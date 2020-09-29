@@ -109,7 +109,7 @@ public class PolyDataUtil
 
 		return polyData;
 	}
-
+	
 	public static vtkPolyData computeFrustumIntersection(vtkPolyData polyData, vtksbCellLocator locator, vtkAbstractPointLocator pointLocator, double[] origin, double[] ul, double[] ur, double[] lr, double[] ll)
 	{
 		//printpt(origin, "origin");
@@ -128,7 +128,6 @@ public class PolyDataUtil
 		MathUtil.vcrss(lr, ur, right);
 		MathUtil.vcrss(ll, lr, bottom);
 		MathUtil.vcrss(ul, ll, left);
-
 		double dx = MathUtil.vnorm(origin);
 		double[] UL2 = { origin[0] + ul[0] * dx, origin[1] + ul[1] * dx, origin[2] + ul[2] * dx };
 		double[] UR2 = { origin[0] + ur[0] * dx, origin[1] + ur[1] * dx, origin[2] + ur[2] * dx };
@@ -147,16 +146,24 @@ public class PolyDataUtil
 		vtkPlane plane4 = new vtkPlane();
 		plane4.SetOrigin(LL2);
 		plane4.SetNormal(left);
+		vtkPlane backPlane = new vtkPlane();
+		backPlane.SetOrigin(0, 0, 0);
+		backPlane.SetNormal(-origin[0], -origin[1], -origin[2]);
+		vtkClipPolyData backPlaneClip = new vtkClipPolyData();
+		backPlaneClip.SetInputData(polyData);
+		backPlaneClip.SetClipFunction(backPlane);
+		backPlaneClip.SetInsideOut(1);
+		backPlaneClip.Update();
 
 		// I found that the results are MUCH better when you use a separate vtkClipPolyData
 		// for each plane of the frustum rather than trying to use a single vtkClipPolyData
 		// with an vtkImplicitBoolean or vtkPlanes that combines all the planes together.
 		vtkClipPolyData clipPolyData1 = new vtkClipPolyData();
-		clipPolyData1.SetInputData(polyData);
+		clipPolyData1.SetInputConnection(backPlaneClip.GetOutputPort());
 		clipPolyData1.SetClipFunction(plane1);
 		clipPolyData1.SetInsideOut(1);
 		vtkAlgorithmOutput clipPolyData1OutputPort = clipPolyData1.GetOutputPort();
-
+		
 		vtkClipPolyData clipPolyData2 = new vtkClipPolyData();
 		clipPolyData2.SetInputConnection(clipPolyData1OutputPort);
 		clipPolyData2.SetClipFunction(plane2);
@@ -190,7 +197,6 @@ public class PolyDataUtil
 
 		vtkPolyData tmpPolyData = new vtkPolyData();
 		tmpPolyData.DeepCopy(normalsFilterOutput);
-
 		// Now remove from this clipped poly data all the cells that are facing away from the viewer.
 		vtkDataArray cellNormals = tmpPolyData.GetCellData().GetNormals();
 		vtkPoints points = tmpPolyData.GetPoints();
@@ -218,8 +224,9 @@ public class PolyDataUtil
 			if (dot <= 0.0)
 				tmpPolyData.DeleteCell(i);
 		}
-
+		
 		tmpPolyData.RemoveDeletedCells();
+		tmpPolyData.Modified();
 		tmpPolyData.GetCellData().SetNormals(null);
 
 		vtkCleanPolyData cleanPoly = new vtkCleanPolyData();
@@ -229,6 +236,7 @@ public class PolyDataUtil
 
 		//polyData = new vtkPolyData();
 		tmpPolyData.DeepCopy(cleanPolyOutput);
+
 		// If the body was a convex shape we would be done now.
 		// Unfortunately, since it's not, it's possible for the polydata to have multiple connected
 		// pieces in view of the camera and some of these pieces are obscured by other pieces.
@@ -310,6 +318,7 @@ public class PolyDataUtil
 				}
 			}
 		}
+
 		tmpPolyData.RemoveDeletedCells();
 
 		//cleanPoly = new vtkCleanPolyData();
@@ -1853,7 +1862,7 @@ public class PolyDataUtil
 			pointScalars.SetTuple1(i, pointValue);
 		}
 	}
-
+	
 	/**
 	 * Given a frustum and a polydata footprint, generate texture coordinates for
 	 * all points in the polydata assuming an image acquired with that frustum is
@@ -1864,12 +1873,21 @@ public class PolyDataUtil
 	 */
 	public static void generateTextureCoordinates(Frustum frustum, int width, int height, vtkPolyData footprint)
 	{
-		int numberOfPoints = footprint.GetNumberOfPoints();
+		generateTextureCoordinates(frustum.origin, frustum.ul, frustum.lr, frustum.ur, width, height, footprint);
+	}
 
-		double[] spacecraftPosition = frustum.origin;
-		double[] frustum1 = frustum.ul;
-		double[] frustum2 = frustum.lr;
-		double[] frustum3 = frustum.ur;
+	/**
+	 * Given a frustum and a polydata footprint, generate texture coordinates for
+	 * all points in the polydata assuming an image acquired with that frustum is
+	 * texture mapped to it.
+	 *
+	 * @param frustum
+	 * @param polyData
+	 */
+	public static void generateTextureCoordinates(double[] spacecraftPosition, double[] frustum1, double[] frustum2, double[] frustum3, 
+													int width, int height, vtkPolyData footprint)
+	{
+		int numberOfPoints = footprint.GetNumberOfPoints();
 
 		vtkPointData pointData = footprint.GetPointData();
 		vtkDataArray textureCoordinates = pointData.GetTCoords();
