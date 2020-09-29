@@ -17,6 +17,12 @@ import edu.jhuapl.saavtk.view.lod.LodUtil;
 import glum.gui.GuiUtil;
 import net.miginfocom.swing.MigLayout;
 
+/**
+ * Panel that allows the user to configure the {@link LodMode} for the specified
+ * {@link Renderer}.
+ *
+ * @author lopeznr1
+ */
 public class LodPanel extends JPanel implements ActionListener, ViewActionListener
 {
 	// Ref vars
@@ -29,9 +35,7 @@ public class LodPanel extends JPanel implements ActionListener, ViewActionListen
 	private final JRadioButton modeMaxQualityRB;
 	private final JLabel modeAutoInfoL;
 
-	/**
-	 * Standard Constructor
-	 */
+	/** Standard Constructor */
 	public LodPanel(Renderer aRenderer, LodStatusPainter aPainter)
 	{
 		refRenderer = aRenderer;

@@ -1,20 +1,15 @@
 package edu.jhuapl.saavtk.view.lod;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.gui.render.Renderer;
-import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
 import edu.jhuapl.saavtk.gui.render.VtkPropProvider;
 import edu.jhuapl.saavtk.view.ViewActionListener;
 import edu.jhuapl.saavtk.view.ViewChangeReason;
 import edu.jhuapl.saavtk.vtk.VtkResource;
-import vtk.vtkActor2D;
 import vtk.vtkProp;
-import vtk.vtkTextActor;
 
 /**
  * Painter used to track the status of the (instantaneous) {@link LodMode}.
@@ -25,23 +20,19 @@ public class LodStatusPainter implements ViewActionListener, VtkPropProvider, Vt
 {
 	// Reference vars
 	private final Renderer refRenderer;
-	private final SceneChangeNotifier refSceneChangeNotifier;
 
 	// State vars
 	private boolean isVisible;
 
 	// Vtk vars
 	private EmptyLodActor vEmptyLodA;
-	private vtkActor2D vScaleBarA;
-	private vtkTextActor vScaleBarTA;
 
 	/**
 	 * Standard Constructor
 	 */
-	public LodStatusPainter(Renderer aRenderer, SceneChangeNotifier aSceneChangeNotifier)
+	public LodStatusPainter(Renderer aRenderer)
 	{
 		refRenderer = aRenderer;
-		refSceneChangeNotifier = aSceneChangeNotifier;
 
 		isVisible = false;
 
@@ -97,22 +88,13 @@ public class LodStatusPainter implements ViewActionListener, VtkPropProvider, Vt
 		isVisible = aBool;
 
 		// Send out the update notification
-		refSceneChangeNotifier.notifySceneChange();
+		refRenderer.notifySceneChange();
 	}
 
 	@Override
 	public Collection<vtkProp> getProps()
 	{
-		// Bail if not visible
-		if (isVisible == false)
-			return ImmutableList.of(vEmptyLodA);
-
-		// Return the list of all vtkProps
-		List<vtkProp> retL = new ArrayList<>();
-		retL.add(vEmptyLodA);
-		retL.add(vScaleBarA);
-		retL.add(vScaleBarTA);
-		return retL;
+		return ImmutableList.of(vEmptyLodA);
 	}
 
 }
