@@ -2,7 +2,7 @@ package edu.jhuapl.saavtk.vtk;
 
 import java.awt.Color;
 
-import edu.jhuapl.saavtk.structure.FontAttr;
+import edu.jhuapl.saavtk.vtk.font.FontAttr;
 import vtk.vtkTextProperty;
 
 /**
@@ -39,6 +39,12 @@ public class VtkFontUtil
 		aTmpTP.SetColor(tmpColor.getRed() / 255.0, tmpColor.getGreen() / 255.0, tmpColor.getBlue() / 255.0);
 
 		aTmpTP.SetFontSize(aFontAttr.getSize());
+
+		int iBool = aFontAttr.getIsBold() == false ? 0 : 1;
+		aTmpTP.SetBold(iBool);
+
+		iBool = aFontAttr.getIsItalic() == false ? 0 : 1;
+		aTmpTP.SetItalic(iBool);
 
 		aTmpTP.Modified();
 	}

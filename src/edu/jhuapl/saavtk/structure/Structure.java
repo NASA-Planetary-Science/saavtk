@@ -2,6 +2,8 @@ package edu.jhuapl.saavtk.structure;
 
 import java.awt.Color;
 
+import edu.jhuapl.saavtk.vtk.font.FontAttr;
+
 /**
  * Interface that defines a structure.
  * <P>
