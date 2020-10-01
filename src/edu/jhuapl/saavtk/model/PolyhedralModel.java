@@ -7,7 +7,7 @@ import java.util.TreeSet;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.colormap.Colormap;
+import edu.jhuapl.saavtk.color.table.ColorMapAttr;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -121,9 +121,15 @@ public abstract class PolyhedralModel extends AbstractModel implements PolyModel
 
 	public abstract boolean isResolutionLevelAvailable(int resolutionLevel);
 
-	public abstract void setColormap(Colormap colormap);
+	/**
+	 * Gets the {@link ColorMapAttr} that is used to colorize this model's data.
+	 */
+	public abstract ColorMapAttr getColorMapAttr();
 
-	public abstract Colormap getColormap();
+	/**
+	 * Sets in the {@link ColorMapAttr} that is used to colorize this model's data.
+	 */
+	public abstract void setColorMapAttr(ColorMapAttr aCMA);
 
 	// public abstract Config getSmallBodyConfig();
 
