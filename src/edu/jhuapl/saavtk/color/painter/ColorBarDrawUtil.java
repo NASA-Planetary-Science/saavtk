@@ -78,6 +78,8 @@ public class ColorBarDrawUtil
 
 		// Bail if we do not have a valid data range
 		boolean isValidDataRange = true;
+		isValidDataRange &= Double.isFinite(minDV) == false;
+		isValidDataRange &= Double.isFinite(maxDV) == false;
 		isValidDataRange &= Double.isNaN(minDV) == false;
 		isValidDataRange &= Double.isNaN(maxDV) == false;
 		isValidDataRange &= maxDV > minDV;
