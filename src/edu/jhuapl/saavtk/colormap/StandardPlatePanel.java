@@ -12,6 +12,8 @@ import javax.swing.JToggleButton;
 import edu.jhuapl.saavtk.color.gui.ColorBarConfigPanel;
 import edu.jhuapl.saavtk.color.gui.ColorBarPanel;
 import edu.jhuapl.saavtk.color.gui.ColorTableListCellRenderer;
+import edu.jhuapl.saavtk.color.painter.ColorBarChangeListener;
+import edu.jhuapl.saavtk.color.painter.ColorBarChangeType;
 import edu.jhuapl.saavtk.color.painter.ColorBarPainter;
 import edu.jhuapl.saavtk.color.table.ColorMapAttr;
 import edu.jhuapl.saavtk.color.table.ColorTable;
@@ -36,7 +38,7 @@ import net.miginfocom.swing.MigLayout;
  *
  * @author lopeznr1
  */
-public class StandardPlatePanel extends GPanel implements ActionListener
+public class StandardPlatePanel extends GPanel implements ActionListener, ColorBarChangeListener
 {
 	// Ref vars
 	private final Renderer refRenderer;
@@ -110,7 +112,7 @@ public class StandardPlatePanel extends GPanel implements ActionListener
 
 		// Register for events of interest
 		GuiExeUtil.executeOnceWhenShowing(this, () -> updateColorTableArea());
-//		refColorBarPainter.addListener(this);
+		refColorBarPainter.addListener(this);
 	}
 
 	/**
@@ -221,12 +223,24 @@ public class StandardPlatePanel extends GPanel implements ActionListener
 	}
 
 	@Override
+	public void handleColorBarChanged(Object aSource, ColorBarChangeType aType)
+	{
+		if (aType == ColorBarChangeType.ColorMap)
+			setColorMapAttr(refColorBarPainter.getColorMapAttr());
+
+		notifyListeners(this);
+	}
+
+	@Override
 	public void setEnabled(boolean aEnabled)
 	{
 		GuiUtil.setEnabled(this, aEnabled);
 
 		if (aEnabled == true)
+		{
 			updateControlArea();
+			updateColorTableArea();
+		}
 
 		// Show the ColorBarPainter (if appropriate)
 		if (aEnabled == true && cColoringIdx >= 0)
@@ -337,7 +351,7 @@ public class StandardPlatePanel extends GPanel implements ActionListener
 	 */
 	protected void updateColorTableArea()
 	{
-		int iconW = colorTableL.getWidth();
+		int iconW = colorTableBox.getWidth();
 		if (iconW < 16)
 			iconW = 16;
 		int iconH = colorTableL.getHeight();
