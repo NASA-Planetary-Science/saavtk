@@ -27,6 +27,7 @@ import edu.jhuapl.saavtk.structure.vtk.VtkCompositePainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkLabelPainter;
 import edu.jhuapl.saavtk.vtk.VtkResource;
 import edu.jhuapl.saavtk.vtk.VtkUtil;
+import edu.jhuapl.saavtk.vtk.font.FontAttr;
 import glum.item.ItemEventType;
 import glum.task.Task;
 import glum.util.ThreadUtil;

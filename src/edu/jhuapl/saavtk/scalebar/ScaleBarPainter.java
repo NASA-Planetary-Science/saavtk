@@ -9,17 +9,12 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.gui.render.Renderer;
-import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
 import edu.jhuapl.saavtk.gui.render.VtkPropProvider;
 import edu.jhuapl.saavtk.view.ViewActionListener;
 import edu.jhuapl.saavtk.view.ViewChangeReason;
+import edu.jhuapl.saavtk.vtk.Location;
 import edu.jhuapl.saavtk.vtk.VtkResource;
-import vtk.vtkActor2D;
-import vtk.vtkCellArray;
-import vtk.vtkIdList;
-import vtk.vtkPoints;
-import vtk.vtkPolyData;
-import vtk.vtkPolyDataMapper2D;
+import edu.jhuapl.saavtk.vtk.painter.VtkRectPainter;
 import vtk.vtkProp;
 import vtk.vtkTextActor;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
@@ -36,56 +31,29 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 {
 	// Reference vars
 	private final Renderer refRenderer;
-	private final SceneChangeNotifier refSceneChangeNotifier;
 
 	// State vars
 	private boolean isVisible;
-	private double dimSizeX, dimSizeY;
+	private double dimX, dimY;
 	private NumberFormat dispNF;
 
 	// VTK vars
-	private vtkPolyData vScaleBarPD;
-	private vtkPolyDataMapper2D vScaleBarM;
-	private vtkActor2D vScaleBarA;
+	private VtkRectPainter vScaleBarRP;
 	private vtkTextActor vScaleBarTA;
 
-	/**
-	 * Standard Constructor
-	 */
-	public ScaleBarPainter(Renderer aRenderer, SceneChangeNotifier aSceneChangeNotifier)
+	/** Standard Constructor */
+	public ScaleBarPainter(Renderer aRenderer)
 	{
 		refRenderer = aRenderer;
-		refSceneChangeNotifier = aSceneChangeNotifier;
 
 		isVisible = true;
-		dimSizeX = 150;
-		dimSizeY = 16;
+		dimX = 150;
+		dimY = 16;
 		dispNF = new DecimalFormat("0.00");
 
-		vScaleBarPD = new vtkPolyData();
-		vtkPoints points = new vtkPoints();
-		vtkCellArray polys = new vtkCellArray();
-		vScaleBarPD.SetPoints(points);
-		vScaleBarPD.SetPolys(polys);
-
-		points.SetNumberOfPoints(4);
-
-		vtkIdList idList = new vtkIdList();
-		idList.SetNumberOfIds(4);
-		for (int i = 0; i < 4; ++i)
-			idList.SetId(i, i);
-		polys.InsertNextCell(idList);
-
-		vScaleBarM = new vtkPolyDataMapper2D();
-		vScaleBarM.SetInputData(vScaleBarPD);
-
-		vScaleBarA = new vtkActor2D();
-		vScaleBarA.SetMapper(vScaleBarM);
+		vScaleBarRP = new VtkRectPainter();
 
 		vScaleBarTA = new vtkTextActor();
-
-		vScaleBarA.GetProperty().SetColor(1.0, 1.0, 1.0);
-		vScaleBarA.GetProperty().SetOpacity(0.5);
 		vScaleBarTA.GetTextProperty().SetColor(0.0, 0.0, 0.0);
 		vScaleBarTA.GetTextProperty().SetJustificationToCentered();
 		vScaleBarTA.GetTextProperty().BoldOn();
@@ -115,7 +83,7 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 	 */
 	public double getSizeX()
 	{
-		return dimSizeX;
+		return dimX;
 	}
 
 	/**
@@ -123,7 +91,7 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 	 */
 	public double getSizeY()
 	{
-		return dimSizeY;
+		return dimY;
 	}
 
 	/**
@@ -147,7 +115,7 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 		isVisible = aBool;
 
 		// Send out the update notification
-		refSceneChangeNotifier.notifySceneChange();
+		refRenderer.notifySceneChange();
 	}
 
 	/**
@@ -157,13 +125,13 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 	{
 		// Bail if no state change
 		boolean isChanged = false;
-		isChanged |= Double.compare(dimSizeX, aSizeX) != 0;
-		isChanged |= Double.compare(dimSizeY, aSizeY) != 0;
+		isChanged |= Double.compare(dimX, aSizeX) != 0;
+		isChanged |= Double.compare(dimY, aSizeY) != 0;
 		if (isChanged == false)
 			return;
 
-		dimSizeX = aSizeX;
-		dimSizeY = aSizeY;
+		dimX = aSizeX;
+		dimY = aSizeY;
 
 		vtkUpdateState();
 	}
@@ -182,7 +150,7 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 
 		// Return the list of all vtkProps
 		List<vtkProp> retL = new ArrayList<>();
-		retL.add(vScaleBarA);
+		retL.addAll(vScaleBarRP.getProps());
 		retL.add(vScaleBarTA);
 		return retL;
 	}
@@ -196,7 +164,7 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 	@Override
 	public void vtkDispose()
 	{
-		vScaleBarA.Delete();
+		vScaleBarRP.vtkDispose();
 		vScaleBarTA.Delete();
 	}
 
@@ -206,11 +174,8 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 		updatePosition();
 		updateInfoMsg();
 
-		vScaleBarA.Modified();
-		vScaleBarTA.Modified();
-
 		// Send out the update notification
-		refSceneChangeNotifier.notifySceneChange();
+		refRenderer.notifySceneChange();
 	}
 
 	/**
@@ -224,11 +189,12 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 			return;
 
 		// Update the scale bar's text
-		double fullSpanKm = nominalPixelSpan * dimSizeX;
+		double fullSpanKm = nominalPixelSpan * dimX;
 		String tmpMsg = dispNF.format(fullSpanKm) + " km";
 		if (fullSpanKm < 1.0)
 			tmpMsg = dispNF.format(fullSpanKm * 1000.0) + " m";
 		vScaleBarTA.SetInput(tmpMsg);
+		vScaleBarTA.Modified();
 	}
 
 	/**
@@ -241,20 +207,17 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 		vtkJoglPanelComponent tmpRenWin = refRenderer.getRenderWindowPanel();
 		int compW = tmpRenWin.getComponent().getWidth();
 		int padAmt = 7;
-		double x = compW - dimSizeX - padAmt;
+		double x = compW - dimX - padAmt;
 		double y = padAmt;
 
 		// Update scale bar
-		vtkPoints points = vScaleBarPD.GetPoints();
-		points.SetPoint(0, x, y, 0.0);
-		points.SetPoint(1, x + dimSizeX, y, 0.0);
-		points.SetPoint(2, x + dimSizeX, y + dimSizeY, 0.0);
-		points.SetPoint(3, x, y + dimSizeY, 0.0);
+		vScaleBarRP.setLocation(new Location(x, y, dimX, dimY));
 
 		// Update scale bar text
-		int fontSize = (int) (dimSizeY - 4);
-		vScaleBarTA.SetPosition(x + dimSizeX / 2, y + 2);
+		int fontSize = (int) (dimY - 4);
+		vScaleBarTA.SetPosition(x + dimX / 2, y + 2);
 		vScaleBarTA.GetTextProperty().SetFontSize(fontSize);
+		vScaleBarTA.Modified();
 	}
 
 }

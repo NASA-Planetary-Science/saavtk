@@ -36,7 +36,7 @@ import edu.jhuapl.saavtk.structure.gui.StructureTabbedPane;
 public class ExampleView extends View
 {
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1L;
 
@@ -112,7 +112,7 @@ public class ExampleView extends View
 		// allModels.put(ModelNames.TRACKS, new
 		// LidarSearchDataCollection(smallBodyModel));
 
-		setModelManager(new ExampleModelManager(smallBodyModel, allModels));
+		setModelManager(new ModelManager(smallBodyModel, allModels));
 	}
 
 	@Override
@@ -145,7 +145,7 @@ public class ExampleView extends View
 	protected void setupTabs()
 	{
 		addTab(getConfig().getShapeModelName(),
-				PolyhedralModelControlPanel.of(getModelManager(), getConfig().getShapeModelName()));
+				PolyhedralModelControlPanel.of(getRenderer(), getModelManager(), getConfig().getShapeModelName()));
 
 		// if (getConfig().hasLidarData)
 		// {

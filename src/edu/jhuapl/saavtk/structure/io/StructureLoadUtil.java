@@ -13,9 +13,9 @@ import org.w3c.dom.Element;
 
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.structure.Ellipse;
-import edu.jhuapl.saavtk.structure.FontAttr;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.util.FileUtil;
+import edu.jhuapl.saavtk.vtk.font.FontAttr;
 
 /**
  * Collection of utility methods to support loading of SBMT structures and
