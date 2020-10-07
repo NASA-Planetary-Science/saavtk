@@ -10,7 +10,6 @@ import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -318,11 +317,6 @@ public abstract class View extends JPanel
         return pickManager;
     }
 
-    protected void setModels(HashMap<ModelNames, Model> models)
-    {
-        modelManager.setModels(models);
-    }
-
     protected void registerPopup(Model model, PopupMenu menu)
     {
         popupManager.registerPopup(model, menu);
@@ -405,7 +399,8 @@ public abstract class View extends JPanel
     protected void setupRenderer()
     {
         ModelManager manager = getModelManager();
-        Renderer renderer = new Renderer(manager);
+        Renderer renderer = new Renderer(manager.getPolyhedralModel());
+        renderer.addVtkPropProvider(modelManager);
         renderer.addPropertyChangeListener(manager);
         setRenderer(renderer);
 

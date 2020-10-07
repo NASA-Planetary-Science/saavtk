@@ -10,7 +10,7 @@ import edu.jhuapl.saavtk.camera.CameraFrame;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
-import edu.jhuapl.saavtk.model.ModelManager;
+import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.MathUtil;
 import vtk.vtkBMPWriter;
 import vtk.vtkCamera;
@@ -38,14 +38,14 @@ public class RenderIoUtil
 		return new File(aFile.getAbsolutePath().replaceAll("." + extension, ".axes." + extension));
 	}
 
-	public static CameraFrame createCameraFrameInDirectionOfAxis(ModelManager aModelManager, RenderPanel aRenderPanel,
+	public static CameraFrame createCameraFrameInDirectionOfAxis(PolyhedralModel aSmallBody, RenderPanel aRenderPanel,
 			AxisType aAxisType, boolean preserveCurrentDistance, File aFile, int aDelayMS)
 	{
 		CameraFrame result = new CameraFrame();
 		result.file = aFile;
 		result.delay = aDelayMS;
 
-		double[] bounds = aModelManager.getPolyhedralModel().getBoundingBox().getBounds();
+		double[] bounds = aSmallBody.getBoundingBox().getBounds();
 		double xSize = Math.abs(bounds[1] - bounds[0]);
 		double ySize = Math.abs(bounds[3] - bounds[2]);
 		double zSize = Math.abs(bounds[5] - bounds[4]);
