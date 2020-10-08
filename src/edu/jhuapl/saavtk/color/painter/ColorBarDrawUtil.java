@@ -70,7 +70,8 @@ public class ColorBarDrawUtil
 	 * @param aTmpCMA The {@link ColorMapAttr} associated with the color bar.
 	 * @param aTmpLA  The {@link LayoutAttr} associated with the color bar
 	 */
-	public static List<vtkTextActor> drawLabels(List<vtkTextActor> aLabelL, ColorMapAttr aTmpCMA, LayoutAttr aTmpLA)
+	public static List<vtkTextActor> drawLabels(List<vtkTextActor> aLabelL, ColorMapAttr aTmpCMA, LayoutAttr aTmpLA,
+			FontAttr aLabelFA)
 	{
 		// Retrieve the range of data values
 		double minDV = aTmpCMA.getMinVal();
@@ -120,9 +121,9 @@ public class ColorBarDrawUtil
 
 		// Delegate
 		if (aTmpLA.getIsHorizontal() == true)
-			return drawLabelsHorizontal(aLabelL, aTmpLA, tmpAxisTransform, tmpIter);
+			return drawLabelsHorizontal(aLabelL, aTmpLA, aLabelFA, tmpAxisTransform, tmpIter);
 		else
-			return drawLabelsVertical(aLabelL, aTmpLA, tmpAxisTransform, tmpIter);
+			return drawLabelsVertical(aLabelL, aTmpLA, aLabelFA, tmpAxisTransform, tmpIter);
 	}
 
 	/**
@@ -135,22 +136,24 @@ public class ColorBarDrawUtil
 	 * @param aUtilizedLabelL The list of utilized labels. These labels should be
 	 *                        positioned in a "normalized" position.
 	 */
-	public static void drawTitle(vtkTextActor aVtkTitleTA, LayoutAttr aTmpLA, FontAttr aLabelFA,
+	public static void drawTitle(vtkTextActor aVtkTitleTA, LayoutAttr aTmpLA, FontAttr aLabelFA, FontAttr aTitleFA,
 			List<vtkTextActor> aUtilizedLabelL)
 	{
+		double padAmt = calculateDefaultPadAmt(aTitleFA);
+
 		boolean isHorizontal = aTmpLA.getIsHorizontal();
 		double normX, normY;
 		if (isHorizontal == true)
 		{
 			normX = 0 + aTmpLA.getBarLength() / 2.0;
-			normY = 0 + aTmpLA.getBarWidth();
+			normY = 0 + aTmpLA.getBarWidth() + padAmt;
 			aVtkTitleTA.GetTextProperty().SetJustificationToCentered();
 			aVtkTitleTA.GetTextProperty().SetVerticalJustificationToBottom();
 		}
 		else
 		{
 			normX = 0;
-			normY = 0 + aTmpLA.getBarLength();
+			normY = 0 + aTmpLA.getBarLength() + padAmt;
 
 			// Determine the label with the maximum y-position
 			double maxLabelY = 0;
@@ -163,7 +166,7 @@ public class ColorBarDrawUtil
 			}
 
 			if (maxLabelY > normY)
-				normY = maxLabelY;
+				normY = maxLabelY + padAmt;
 
 			aVtkTitleTA.GetTextProperty().SetJustificationToLeft();
 			aVtkTitleTA.GetTextProperty().SetVerticalJustificationToBottom();
@@ -172,14 +175,30 @@ public class ColorBarDrawUtil
 	}
 
 	/**
+	 * Calculates a default pad amount to pad text with the specified
+	 * {@link FontAttr}.
+	 */
+	private static double calculateDefaultPadAmt(FontAttr aTmpFA)
+	{
+		double padAmt = aTmpFA.getSize() * 0.12;
+		if (padAmt < 3)
+			padAmt = 3;
+		if (padAmt > 10)
+			padAmt = 10;
+
+		return padAmt;
+	}
+
+	/**
 	 * Helper utility method that will draw the the axis labels along the x-axis
 	 * direction.
 	 */
 	private static List<vtkTextActor> drawLabelsHorizontal(List<vtkTextActor> aLabelL, LayoutAttr aTmpLA,
-			AxisTransform tmpAxisTransform, Iterator<Double> tmpIter)
+			FontAttr aLabelFA, AxisTransform tmpAxisTransform, Iterator<Double> tmpIter)
 	{
 		SigFigNumberFormat numFormat = new SigFigNumberFormat(3);
 		double axisLen = aTmpLA.getBarLength();
+		double padAmt = 2 + calculateDefaultPadAmt(aLabelFA);
 
 		List<vtkTextActor> retLabelL = new ArrayList<>();
 		for (int c1 = 0; c1 < aLabelL.size(); c1++)
@@ -191,7 +210,7 @@ public class ColorBarDrawUtil
 			double rawVal = tmpIter.next();
 
 			double absX = tmpAxisTransform.getAxisValForPlotVal(rawVal);
-			double normY = 0.0;
+			double normY = 0.0 - padAmt;
 			double normX = absX;
 			if (aTmpLA.getIsReverseOrder() == true)
 				normX = axisLen - absX;
@@ -212,10 +231,11 @@ public class ColorBarDrawUtil
 	 * direction.
 	 */
 	private static List<vtkTextActor> drawLabelsVertical(List<vtkTextActor> aLabelL, LayoutAttr aTmpLA,
-			AxisTransform tmpAxisTransform, Iterator<Double> tmpIter)
+			FontAttr aLabelFA, AxisTransform tmpAxisTransform, Iterator<Double> tmpIter)
 	{
 		SigFigNumberFormat numFormat = new SigFigNumberFormat(3);
 		double axisLen = aTmpLA.getBarLength();
+		double padAmt = calculateDefaultPadAmt(aLabelFA);
 
 		List<vtkTextActor> retLabelL = new ArrayList<>();
 		for (int c1 = 0; c1 < aLabelL.size(); c1++)
@@ -227,7 +247,7 @@ public class ColorBarDrawUtil
 			double rawVal = tmpIter.next();
 
 			double absY = tmpAxisTransform.getAxisValForPlotVal(rawVal);
-			double normX = aTmpLA.getBarWidth();
+			double normX = aTmpLA.getBarWidth() + padAmt;
 			double normY = absY;
 			if (aTmpLA.getIsReverseOrder() == true)
 				normY = axisLen - absY;
