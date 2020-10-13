@@ -578,6 +578,7 @@ public class ColorBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 			}
 			else
 			{
+				adjMaxX = +tmpLabelW;
 				adjMinY = -tmpLabelH / 2.0;
 				adjMaxY = +tmpLabelH / 2.0;
 			}
@@ -621,6 +622,7 @@ public class ColorBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 			{
 				adjMinX = -titleW / 2.0;
 				adjMaxX = +titleW / 2.0;
+				adjMaxY = +titleH;
 			}
 			else
 			{
@@ -651,12 +653,18 @@ public class ColorBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 				barPosX = titleMinX;
 			if (titleMaxX > barPosX + barDimX)
 				barDimX = titleMaxX - barPosX;
+
+			if (titleMaxY > barPosY + barDimY)
+				barDimY = titleMaxY - barPosY;
 		}
 		else
 		{
 			barDimX += labelW;
 			if (titleW > barDimX)
 				barDimX = titleW;
+
+			if (labelMaxX > barPosX + barDimX)
+				barDimX = labelMaxX - barPosX;
 
 			if (labelMinY < barPosY)
 				barPosY = labelMinY;
@@ -679,8 +687,8 @@ public class ColorBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 	 */
 	private Location calcResetLocation()
 	{
-		int panelW = refRenderer.getRenderWindowPanel().getComponent().getWidth();
-		int panelH = refRenderer.getRenderWindowPanel().getComponent().getHeight();
+		// Update the list (and normalized positioning) of utilized labels
+		drawComponentsToNormalizedCoordinates();
 
 		double[] bbArr = new double[4];
 		double labelH = 0;
@@ -704,6 +712,9 @@ public class ColorBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 		Location bordLoc = calcBorderLocation(mainLoc);
 
 		// Compute the "reset" location of the color bar
+		int panelW = refRenderer.getRenderWindowPanel().getComponent().getWidth();
+		int panelH = refRenderer.getRenderWindowPanel().getComponent().getHeight();
+
 		int barWid = mainLA.getBarWidth();
 		int barLen = mainLA.getBarLength();
 		if (mainLA.getIsHorizontal() == false)
@@ -750,11 +761,11 @@ public class ColorBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 			}
 
 			// Draw the labels
-			cUtilizedLabelL = ColorBarDrawUtil.drawLabels(vLabelL, mainCMA, mainLA);
+			cUtilizedLabelL = ColorBarDrawUtil.drawLabels(vLabelL, mainCMA, mainLA, labelFA);
 		}
 
 		// Update the title
-		ColorBarDrawUtil.drawTitle(vTitleTA, mainLA, labelFA, cUtilizedLabelL);
+		ColorBarDrawUtil.drawTitle(vTitleTA, mainLA, labelFA, titleFA, cUtilizedLabelL);
 	}
 
 	/**
