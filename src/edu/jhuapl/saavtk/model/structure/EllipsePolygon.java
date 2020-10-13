@@ -10,8 +10,8 @@ import crucible.crust.metadata.impl.InstanceGetter;
 import crucible.crust.metadata.impl.SettableMetadata;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.structure.Ellipse;
-import edu.jhuapl.saavtk.structure.FontAttr;
 import edu.jhuapl.saavtk.structure.io.StructureLegacyUtil;
+import edu.jhuapl.saavtk.vtk.font.FontAttr;
 
 public class EllipsePolygon
 {

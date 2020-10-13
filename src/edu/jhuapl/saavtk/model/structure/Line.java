@@ -20,10 +20,10 @@ import crucible.crust.settings.impl.SettableStoredFactory;
 import crucible.crust.settings.impl.StoredFactory;
 import crucible.crust.settings.impl.Version;
 import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
-import edu.jhuapl.saavtk.structure.FontAttr;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.io.StructureLegacyUtil;
 import edu.jhuapl.saavtk.util.LatLon;
+import edu.jhuapl.saavtk.vtk.font.FontAttr;
 
 public class Line
 {

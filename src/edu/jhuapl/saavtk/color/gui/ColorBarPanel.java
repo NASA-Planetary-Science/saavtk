@@ -3,123 +3,197 @@ package edu.jhuapl.saavtk.color.gui;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
+import java.text.NumberFormat;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 
+import com.google.common.collect.Range;
+
+import edu.jhuapl.saavtk.color.painter.ColorBarChangeListener;
+import edu.jhuapl.saavtk.color.painter.ColorBarChangeType;
+import edu.jhuapl.saavtk.color.painter.ColorBarPainter;
 import edu.jhuapl.saavtk.color.table.ColorMapAttr;
 import edu.jhuapl.saavtk.color.table.ColorTable;
 import edu.jhuapl.saavtk.color.table.ColorTableUtil;
-import edu.jhuapl.saavtk.colormap.SigFigNumberFormat;
 import edu.jhuapl.saavtk.feature.FeatureType;
+import edu.jhuapl.saavtk.gui.util.IconUtil;
+import edu.jhuapl.saavtk.gui.util.ToolTipUtil;
+import glum.gui.GuiExeUtil;
+import glum.gui.GuiUtil;
 import glum.gui.component.GComboBox;
 import glum.gui.component.GNumberField;
 import glum.gui.misc.CustomListCellRenderer;
+import glum.gui.panel.GPanel;
+import glum.text.SigFigNumberFormat;
 import net.miginfocom.swing.MigLayout;
 
 /**
  * UI that allows the user to select a color bar and specify the range of values
  * associated with the color bar.
+ * <P>
+ * Usage of this UI component requires the manual addition of various
+ * {@link FeatureType}s. The {@link FeatureType#Invalid} is used to designate an
+ * invalid or no choice selection. When this FeatureType is selected relevant UI
+ * components will be disabled.
  *
  * @author lopeznr1
  */
-public class ColorBarPanel extends JPanel implements ActionListener
+public class ColorBarPanel extends GPanel implements ActionListener, ColorBarChangeListener
 {
+	// Ref vars
+	private final ColorBarPainter refColorBarPainter;
+
 	// State vars
-	private List<ActionListener> listenerL;
-	private double defaultMin, defaultMax;
+	private final Map<FeatureType, Range<Double>> resetRangeM;
+
+	// Cache vars
+	private FeatureType cFeatureType;
+	private ColorMapAttr cColorMapAttr;
 
 	// Gui vars
+	private final ColorBarConfigPanel painterCBCP;
 	private final JLabel featureL;
 	private final CustomListCellRenderer featureLCR;
-	private final GComboBox<FeatureType> featureTypeBox;
+	private final GComboBox<FeatureType> featureBox;
 	private final GComboBox<ColorTable> colorTableBox;
 	private final JLabel colorTableL;
+	private final JButton resetAllB, resetMinB, resetMaxB;
 	private final JLabel minValueL, maxValueL, numLevelsL;
 	private final GNumberField minValueNF, maxValueNF, numLevelsNF;
 	private final JCheckBox logScaleCB;
 	private final JCheckBox showColorBarCB;
-	private final JButton resetB;
-	private final JButton applyB;
-	private final JToggleButton syncB;
+	private final JButton applyB, configB;
+	private final JToggleButton syncTB;
 
-	/** Standard Constructor */
-	public ColorBarPanel()
+	/**
+	 * Standard Constructor
+	 *
+	 * Constructs a panel that allows a user to provide configuration of a
+	 * {@link ColorBarPainter}. This panel supports two modes: "regular" and
+	 * "compact".
+	 *
+	 * A compact panel will be similar to the regular panel but be missing the
+	 * following UI elements:
+	 * <UL>
+	 * <LI>Log UI control
+	 * <LI>Colorize UI label
+	 * <LI>Feature UI label
+	 * </UL>
+	 *
+	 * @param aColorBarPainter Reference {@link ColorBarPainter} to be controlled by
+	 *                         this panel.
+	 * @param aIsRegular       If set to true then a regular panel will be created
+	 *                         instead of a compact panel.
+	 */
+	public ColorBarPanel(ColorBarPainter aColorBarPainter, boolean aIsRegular)
 	{
-		listenerL = new ArrayList<>();
-		defaultMin = Double.NaN;
-		defaultMax = Double.NaN;
+		refColorBarPainter = aColorBarPainter;
+
+		resetRangeM = new HashMap<>();
+
+		cFeatureType = FeatureType.Invalid;
+		cColorMapAttr = ColorMapAttr.Invalid;
+
+		// Set up the GUI
+		setLayout(new MigLayout("", "0[][right][]0", "0[][]"));
+
+		painterCBCP = new ColorBarConfigPanel(this, refColorBarPainter);
+		painterCBCP.addActionListener(this);
 
 		// Feature area
 		featureL = new JLabel("Property:");
 		featureLCR = new CustomListCellRenderer();
-		featureTypeBox = new GComboBox<>(this, featureLCR);
+		featureBox = new GComboBox<>(this, featureLCR);
+		if (aIsRegular == true)
+			add(featureL, "span,split");
+		add(featureBox, "growx,span,w 0:0:,wrap");
 
-		// Color table area
+		// ColorTable area
 		colorTableL = new JLabel();
 		colorTableBox = new GComboBox<>(this, ColorTableUtil.getSystemColorTableList());
 		colorTableBox.setRenderer(new ColorTableListCellRenderer(colorTableBox));
 		colorTableBox.setChosenItem(ColorTableUtil.getSystemColorTableDefault());
 
-		// Range, NumColorLevels components
-		minValueL = new JLabel("Min Val:");
-		maxValueL = new JLabel("Max Val:");
+		add(colorTableL, "growx,span,w 10::,wrap 3");
+		add(colorTableBox, "growx,span,w 0:0:,wrap");
+
+		// Min value area
+		resetMinB = GuiUtil.formButton(this, IconUtil.getActionReset());
+		resetMinB.setToolTipText(ToolTipUtil.getItemResetMinVal(null, Double.NaN));
+		minValueL = new JLabel("Min:");
+		minValueNF = new GNumberField(this, new SigFigNumberFormat(5));
+		minValueNF.setColumns(7);
+		add(resetMinB, "w 24!,h 24!");
+		add(minValueL, "");
+		add(minValueNF, "growx,pushx,wrap");
+
+		// Max value area
+		resetMaxB = GuiUtil.formButton(this, IconUtil.getActionReset());
+		resetMaxB.setToolTipText(ToolTipUtil.getItemResetMaxVal(null, Double.NaN));
+		maxValueL = new JLabel("Max:");
+		maxValueNF = new GNumberField(this, new SigFigNumberFormat(5));
+		maxValueNF.setColumns(7);
+		add(resetMaxB, "w 24!,h 24!");
+		add(maxValueL, "");
+		add(maxValueNF, "growx,wrap");
+
+		// Num color levels area
 		numLevelsL = new JLabel("# Levels:");
-		minValueNF = new GNumberField(this, new SigFigNumberFormat(3));
-		maxValueNF = new GNumberField(this, new SigFigNumberFormat(3));
 		numLevelsNF = new GNumberField(this);
 		numLevelsNF.setValue(32);
+		add(numLevelsL, "ax right,span 2");
+		if (aIsRegular == true)
+			add(numLevelsNF, "growx,split");
+		else
+			add(numLevelsNF, "growx,wrap");
+
+		// Log scale area
+		logScaleCB = GuiUtil.createJCheckBox("Log scale", this);
+		if (aIsRegular == true)
+			add(logScaleCB, "gapx 20,w 20::,wrap");
+//		add(logScaleCB, "span,wrap");
+
+		// Show ColorBar area
+		showColorBarCB = GuiUtil.createJCheckBox("Show Color Bar", this);
+//		add(showColorBarCB, "span,wrap");
 
 		// Action buttons
-		logScaleCB = new JCheckBox("Log scale");
-		logScaleCB.addActionListener(this);
-		showColorBarCB = new JCheckBox("Show Color Bar");
-		showColorBarCB.addActionListener(this);
-		resetB = new JButton("Range Reset");
-		resetB.addActionListener(this);
-		syncB = new JToggleButton("Sync", true);
-		syncB.addActionListener(this);
-		applyB = new JButton("Apply");
-		applyB.addActionListener(this);
+		resetAllB = GuiUtil.formButton(this, IconUtil.getActionReset());
+		resetAllB.setToolTipText("Reset Min, Max");
+		syncTB = GuiUtil.formToggleButton(this, IconUtil.getItemSyncFalse(), IconUtil.getItemSyncTrue());
+		syncTB.setSelected(true);
+		syncTB.setToolTipText("Keep synchronized");
+		applyB = GuiUtil.formButton(this, "Apply");
+		configB = GuiUtil.formButton(this, IconUtil.getActionConfig());
+		configB.setToolTipText("Configure ColorBar");
+		add(configB, "w 24!,h 24!,span,split");
+		add(resetAllB, "w 24!,h 24!");
+		add(syncTB, "w 24!,h 24!");
+		add(applyB, "ax right,gapleft push,wrap 0");
 
-		// Construct the GUI
-		buildGui();
-
-		updateColorMapArea();
+		// Register for events of interest
+		GuiExeUtil.executeOnceWhenShowing(this, () -> updateColorTableArea());
+		refColorBarPainter.addListener(this);
 	}
 
 	/**
-	 * Registers a listener with this panel.
+	 * Adds in a {@link FeatureType} to the supported list of features. The feature
+	 * will be displayed in the combo box with the provided label.
 	 */
-	public void addActionListener(ActionListener aListener)
+	public void addFeatureType(FeatureType aType, String aLabel)
 	{
-		listenerL.add(aListener);
+		featureLCR.addMapping(aType, aLabel);
+		featureBox.addItem(aType);
 	}
 
 	/**
-	 * Adds in a feature to the supported list of features.
-	 */
-	public void addFeatureType(FeatureType aFeature, String aLabel)
-	{
-		featureLCR.addMapping(aFeature, aLabel);
-		featureTypeBox.addItem(aFeature);
-	}
-
-	/**
-	 * Deregisters a listener with this panel.
-	 */
-	public void delActionListener(ActionListener aListener)
-	{
-		listenerL.remove(aListener);
-	}
-
-	/**
-	 * Returns the user configured {@link ColorMapAttr} .
+	 * Returns the {@link ColorMapAttr} as configured in the gui.
 	 */
 	public ColorMapAttr getColorMapAttr()
 	{
@@ -133,137 +207,122 @@ public class ColorBarPanel extends JPanel implements ActionListener
 	}
 
 	/**
-	 * Returns the FeatureType associated with this panel.
+	 * Returns the selected {@link FeatureType}.
 	 * <P>
 	 * The FeatureType is the physical quality attribute that coloring will be based
 	 * off of.
 	 */
 	public FeatureType getFeatureType()
 	{
-		return featureTypeBox.getChosenItem();
+		return featureBox.getChosenItem();
 	}
 
 	/**
-	 * Returns the default min value.
+	 * Returns the default (reset) min, max range for the specified
+	 * {@link FeatureType}.
 	 */
-	public double getDefaultMinValue()
+	public Range<Double> getResetRange(FeatureType aType)
 	{
-		return defaultMin;
+		return resetRangeM.get(aType);
 	}
 
 	/**
-	 * Returns the default max value.
+	 * Configures the gui to reflect the specified {@link ColorMapAttr}.
 	 */
-	public double getDefaultMaxValue()
+	public void setColorMapAttr(ColorMapAttr aColorMapAttr)
 	{
-		return defaultMax;
+		ColorTable tmpCT = aColorMapAttr.getColorTable();
+		if (tmpCT != null)
+			colorTableBox.setChosenItem(tmpCT);
+
+		minValueNF.setValue(aColorMapAttr.getMinVal());
+		maxValueNF.setValue(aColorMapAttr.getMaxVal());
+		numLevelsNF.setValue(aColorMapAttr.getNumLevels());
+		logScaleCB.setSelected(aColorMapAttr.getIsLogScale());
 	}
 
 	/**
-	 * Updates the GUI to reflect the new min,max range values.
-	 * <P>
-	 * This method will not trigger an event.
-	 */
-	public void setCurrentMinMax(double aMin, double aMax)
-	{
-		minValueNF.setValue(aMin);
-		maxValueNF.setValue(aMax);
-
-		updateControlArea();
-	}
-
-	/**
-	 * Sets in the default values for the range. This will have an effect on the
-	 * resetB UI.
-	 */
-	public void setDefaultRange(double aMin, double aMax)
-	{
-		defaultMin = aMin;
-		defaultMax = aMax;
-
-		updateControlArea();
-	}
-
-	/**
-	 * Sets in the active selected feature.
+	 * Sets in the selected {@link FeatureType}.
 	 */
 	public void setFeatureType(FeatureType aFeature)
 	{
-		featureTypeBox.setSelectedItem(aFeature);
+		featureBox.setChosenItem(aFeature);
+
+		updateFeatureToolTips();
+		updateControlArea();
+	}
+
+	/**
+	 * Sets in the (default) reset min and max values for the specified
+	 * {@link FeatureType}.
+	 */
+	public void setResetRange(FeatureType aType, Range<Double> aResetRange)
+	{
+		resetRangeM.put(aType, aResetRange);
+		if (featureBox.getChosenItem() != aType)
+			return;
+
+		updateFeatureToolTips();
+		updateControlArea();
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent aEvent)
 	{
 		Object source = aEvent.getSource();
+		if (source == applyB)
+			doActionApply();
 
-		// Reset the defaults
-		if (source == resetB)
-		{
-			setCurrentMinMax(defaultMin, defaultMax);
-			doAutoSync();
-		}
+		else if (source == configB)
+			painterCBCP.setVisibleAsModal();
 
-		// Apply the settings
-		else if (source == applyB)
-		{
-			notifyListeners();
-		}
-
-		// Sync toggle
-		else if (source == syncB)
-		{
-			updateControlArea();
-			doAutoSync();
-		}
-
-		// LogScale UI
-		else if (source == logScaleCB)
-		{
-			notifyListeners();
-		}
-
-		// ColorMap ComboBox UI
 		else if (source == colorTableBox)
-		{
-			updateColorMapArea();
+			doActionColorTableBox();
+
+		else if (source == featureBox)
+			doActionFeatureBox();
+
+		else if (source == logScaleCB)
 			doAutoSync();
-		}
 
-		// Property ComboBox UI
-		else if (source == featureTypeBox)
-		{
-			updateColorMapArea();
+		else if (source == resetAllB)
+			doActionResetAll();
+		else if (source == resetMinB)
+			doActionResetMin();
+		else if (source == resetMaxB)
+			doActionResetMax();
 
-			updateDefaultRange();
-			setCurrentMinMax(defaultMin, defaultMax);
-
+		else if (source == syncTB)
 			doAutoSync();
-		}
 
-		// Various NumberFields UI
 		else if (source == minValueNF || source == maxValueNF || source == numLevelsNF)
 		{
-			updateControlArea();
-
 			if (source == numLevelsNF)
-				updateColorMapArea();
+				updateColorTableArea();
 
 			doAutoSync();
 		}
 
-		// Color Bar display UI
 		else if (source == showColorBarCB)
-		{
-			notifyListeners();
-		}
+			notifyListeners(this);
+
+		updateControlArea();
+	}
+
+	@Override
+	public void handleColorBarChanged(Object aSource, ColorBarChangeType aType)
+	{
+		if (aType == ColorBarChangeType.ColorMap)
+			setColorMapAttr(refColorBarPainter.getColorMapAttr());
+
+		notifyListeners(this);
 	}
 
 	/**
-	 * Helper method that updates the colorMapL to reflect the selection of
-	 * colorMapBox and numColorLevelsNF.
+	 * Helper method that updates the colorTableL to reflect the selection of
+	 * colorTableBox and numLevelsNF.
 	 */
-	protected void updateColorMapArea()
+	protected void updateColorTableArea()
 	{
 		int iconW = colorTableL.getWidth();
 		if (iconW < 16)
@@ -281,85 +340,130 @@ public class ColorBarPanel extends JPanel implements ActionListener
 	}
 
 	/**
-	 * Helper method that will updates the default range.
-	 * <P>
-	 * This method should be overridden to get custom default ranges.
+	 * Helper method that handles the Apply action.
 	 */
-	protected void updateDefaultRange()
+	private void doActionApply()
 	{
-		setDefaultRange(0, 1.0);
+		cColorMapAttr = getColorMapAttr();
+		cFeatureType = getFeatureType();
+
+		notifyListeners(this);
 	}
 
 	/**
-	 * Helper method which layouts the panel.
+	 * Helper method that handles the colorTableBox action.
 	 */
-	private void buildGui()
+	private void doActionColorTableBox()
 	{
-		setLayout(new MigLayout("", "0[right][120::,fill]15[left]0", "0[][]"));
+		updateColorTableArea();
 
-		// Property feature
-		add(featureL, "");
-		add(featureTypeBox, "growx,span,wrap");
-
-		// Colormap selector area
-		add(colorTableL, "growx,span,w 10::,wrap 3");
-		add(colorTableBox, "growx,span,wrap");
-
-		// Range, # Color levels, and # Ticks area
-		add(minValueL, "");
-		add(minValueNF, "");
-		add(resetB, "sg g1,wrap");
-
-		add(maxValueL, "");
-		add(maxValueNF, "");
-		add(syncB, "sg g1,wrap");
-
-		add(numLevelsL, "");
-		add(numLevelsNF, "");
-		add(applyB, "sg g1,wrap 0");
-//
-//		add(showColorBarCB, "skip 2,sg g1,wrap 0");
+		doAutoSync();
 	}
 
 	/**
-	 * Helper method that synchronizes the ColorMap when the sync toggle is enabled.
-	 * Notification will be sent out to the listeners.
+	 * Helper method that handles the featureBox action.
+	 */
+	private void doActionFeatureBox()
+	{
+		updateColorTableArea();
+
+		// Retrieve the default min / max values
+		double resetMin = Double.NaN;
+		double resetMax = Double.NaN;
+		Range<Double> resetRange = resetRangeM.get(featureBox.getChosenItem());
+		if (resetRange != null)
+		{
+			resetMin = resetRange.lowerEndpoint();
+			resetMax = resetRange.upperEndpoint();
+		}
+
+		// Update the min / max UI to reflect the default values
+		minValueNF.setValue(resetMin);
+		maxValueNF.setValue(resetMax);
+
+		doAutoSync();
+		updateFeatureToolTips();
+	}
+
+	/**
+	 * Helper method that handles the min,max reset action.
+	 */
+	private void doActionResetAll()
+	{
+		double resetMin = Double.NaN;
+		double resetMax = Double.NaN;
+		Range<Double> resetRange = resetRangeM.get(featureBox.getChosenItem());
+		if (resetRange != null)
+		{
+			resetMin = resetRange.lowerEndpoint();
+			resetMax = resetRange.upperEndpoint();
+		}
+
+		minValueNF.setValue(resetMin);
+		maxValueNF.setValue(resetMax);
+		doAutoSync();
+	}
+
+	/**
+	 * Helper method that handles the min reset action.
+	 */
+	private void doActionResetMin()
+	{
+		double resetMin = Double.NaN;
+		Range<Double> resetRange = resetRangeM.get(featureBox.getChosenItem());
+		if (resetRange != null)
+			resetMin = resetRange.lowerEndpoint();
+
+		minValueNF.setValue(resetMin);
+		doAutoSync();
+	}
+
+	/**
+	 * Helper method that handles the max reset action.
+	 */
+	private void doActionResetMax()
+	{
+		double resetMax = Double.NaN;
+		Range<Double> resetRange = resetRangeM.get(featureBox.getChosenItem());
+		if (resetRange != null)
+			resetMax = resetRange.upperEndpoint();
+
+		maxValueNF.setValue(resetMax);
+		doAutoSync();
+	}
+
+	/**
+	 * Helper method that will send out auto notification (to registered listeners)
+	 * when the sync toggle is enabled.
 	 */
 	private void doAutoSync()
 	{
-		// Bail if the syncB is not selected
-		if (syncB.isSelected() == false)
+		// Bail if the syncTB is not selected
+		if (syncTB.isSelected() == false)
 			return;
 
-		// Bail if action GUI is not in a valid state
-		if (isColorMapConfigValid() == false)
+		// Bail if GUI is not in a valid state
+		boolean isValidFeature = featureBox.getChosenItem() != FeatureType.Invalid;
+		if (isValidFeature == true && isGuiValid() == false)
 			return;
 
-		// Send out notification of the changes
-		notifyListeners();
+		// Delegate
+		doActionApply();
 	}
 
 	/**
-	 * Helper method to determine if the Colormap configuration is even valid
+	 * Helper method to determine if the configuration as specified in the GUI is
+	 * valid.
 	 */
-	private boolean isColorMapConfigValid()
+	private boolean isGuiValid()
 	{
 		boolean isValid = true;
-		isValid &= minValueNF.isValidInput();
-		isValid &= maxValueNF.isValidInput();
+		isValid &= minValueNF.isValidInput() == true;
+		isValid &= maxValueNF.isValidInput() == true;
 		isValid &= minValueNF.getValue() <= maxValueNF.getValue();
-		isValid &= numLevelsNF.isValidInput();
+		isValid &= numLevelsNF.isValidInput() == true;
 
 		return isValid;
-	}
-
-	/**
-	 * Helper method that sends out notification to our listeners
-	 */
-	private void notifyListeners()
-	{
-		for (ActionListener aListener : listenerL)
-			aListener.actionPerformed(new ActionEvent(this, 0, ""));
 	}
 
 	/**
@@ -399,16 +503,61 @@ public class ColorBarPanel extends JPanel implements ActionListener
 		minValueL.setToolTipText(errMsgMin);
 		maxValueL.setToolTipText(errMsgMax);
 
-		// Update enable state of resetB
-		isEnabled = false;
-		isEnabled |= Double.compare(defaultMin, minValueNF.getValue()) != 0;
-		isEnabled |= Double.compare(defaultMax, maxValueNF.getValue()) != 0;
-		resetB.setEnabled(isEnabled);
+		// Update enable state of various UI elements
+		boolean isValidFeature = featureBox.getSelectedItem() != FeatureType.Invalid;
 
-		// Update enable state of applyB
-		isEnabled = syncB.isSelected() != true;
-		isEnabled &= isColorMapConfigValid();
+		isEnabled = isValidFeature;
+		GuiUtil.setEnabled(isEnabled, minValueL, minValueNF);
+		GuiUtil.setEnabled(isEnabled, maxValueL, maxValueNF);
+		GuiUtil.setEnabled(isEnabled, numLevelsL, numLevelsNF);
+		GuiUtil.setEnabled(isEnabled, colorTableL, colorTableBox);
+		configB.setEnabled(isEnabled);
+		syncTB.setEnabled(isEnabled);
+
+		double resetMin = Double.NaN;
+		double resetMax = Double.NaN;
+		Range<Double> resetRange = resetRangeM.get(featureBox.getChosenItem());
+		if (resetRange != null)
+		{
+			resetMin = resetRange.lowerEndpoint();
+			resetMax = resetRange.upperEndpoint();
+		}
+
+		isEnabled = isValidFeature == true && Double.compare(resetMin, minValueNF.getValue()) != 0;
+		resetMinB.setEnabled(isEnabled);
+
+		isEnabled = isValidFeature == true && Double.compare(resetMax, maxValueNF.getValue()) != 0;
+		resetMaxB.setEnabled(isEnabled);
+
+		isEnabled = resetMinB.isEnabled() == true || resetMaxB.isEnabled() == true;
+		resetAllB.setEnabled(isEnabled);
+
+		boolean isChanged;
+		isChanged = cFeatureType != featureBox.getChosenItem();
+		isChanged |= Objects.equals(cColorMapAttr, getColorMapAttr()) == false;
+
+		isEnabled = syncTB.isSelected() == false && isChanged == true;
+		isEnabled &= isGuiValid() == true;
 		applyB.setEnabled(isEnabled);
+	}
+
+	/**
+	 * Helper method to update the tool tips of the reset buttons.
+	 */
+	private void updateFeatureToolTips()
+	{
+		double resetMin = Double.NaN;
+		double resetMax = Double.NaN;
+		Range<Double> resetRange = resetRangeM.get(featureBox.getChosenItem());
+		if (resetRange != null)
+		{
+			resetMin = resetRange.lowerEndpoint();
+			resetMax = resetRange.upperEndpoint();
+		}
+
+		NumberFormat tmpNF = new SigFigNumberFormat(5);
+		resetMinB.setToolTipText(ToolTipUtil.getItemResetMinVal(tmpNF, resetMin));
+		resetMaxB.setToolTipText(ToolTipUtil.getItemResetMaxVal(tmpNF, resetMax));
 	}
 
 }

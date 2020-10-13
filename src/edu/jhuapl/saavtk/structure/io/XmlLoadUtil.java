@@ -26,11 +26,11 @@ import org.w3c.dom.NodeList;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.LineModel;
-import edu.jhuapl.saavtk.structure.FontAttr;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.Polygon;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.util.LatLon;
+import edu.jhuapl.saavtk.vtk.font.FontAttr;
 import glum.io.ParseUtil;
 
 /**

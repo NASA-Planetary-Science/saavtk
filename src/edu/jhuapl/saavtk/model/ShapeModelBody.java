@@ -83,6 +83,7 @@ public enum ShapeModelBody
     DIDYMOS("65803 Didymos"),
     DIDYMOSA("65803 Didymos A"),
     DIDYMOSB("65803 Didymos B"),
+    PSYCHE("16 Psyche")
 	;
 
 	final private String str;

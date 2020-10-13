@@ -88,6 +88,16 @@ public class ColorTable
 		return nanColor;
 	}
 
+	/**
+	 * Returns a "reverse" {@link ColorTable}.
+	 * <P>
+	 * A reverse ColorTable will have the colors in the opposite order.
+	 */
+	public ColorTable reverse()
+	{
+		return new ColorTable(name, interpolateL, colorL.reverse(), nanColor, colorSpace);
+	}
+
 	@Override
 	public boolean equals(Object obj)
 	{

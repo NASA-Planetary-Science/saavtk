@@ -16,11 +16,13 @@ public class ConstFeatureAttr implements FeatureAttr
 	/**
 	 * Standard Constructor
 	 *
-	 * @param aValArr An array containing all of the values associated with the
-	 *                feature. This array must be effectively immutable since a copy
-	 *                will NOT be made.
-	 * @param aMinVal The minimum value that occurs in aValArr.
-	 * @param aMaxVal The maximum value that occurs in aValArr.
+	 * @param aNumVals  The number of (constant) values contained by this
+	 *                  {@link FeatureAttr}.
+	 * @param aMinVal   The minimum value that would have potentially occurred in
+	 *                  this {@link FeatureAttr}.
+	 * @param aMinVal   The maximum value that would have potentially occurred in
+	 *                  this {@link FeatureAttr}.
+	 * @param aConstVal The constant value that all values will be equal to.
 	 */
 	public ConstFeatureAttr(int aNumVals, double aMinVal, double aMaxVal, double aConstVal)
 	{
