@@ -296,7 +296,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
                     ImmutableList<String> elementNames = ImmutableList.of(name);
                     String units = coloringUnits.length > index ? coloringUnits[index] : "";
                     boolean hasNulls = coloringHasNulls.length > index ? coloringHasNulls[index] : false;
-					coloringDataManager.addBuiltIn(ColoringData.of(name, fileName, elementNames, units,
+					coloringDataManager.addBuiltIn(BasicColoringData.of(name, fileName, elementNames, units,
 							numberElements.get(resolutionLevel), hasNulls));
                 }
             }
@@ -475,7 +475,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         {
             int numberElements = coloringValues[i].GetNumberOfTuples();
             ImmutableList<String> elementNames = ImmutableList.of(coloringNames[i]);
-			coloringDataManager.addBuiltIn(ColoringData.of(coloringNames[i], elementNames, coloringUnits[i],
+			coloringDataManager.addBuiltIn(BasicColoringData.of(coloringNames[i], elementNames, coloringUnits[i],
 					numberElements, false, coloringValues[i]));
         }
         this.coloringValueType = coloringValueType;
@@ -662,7 +662,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
                             resolutionLevel = 0;
                         }
                         int customNumberElements = config.getResolutionNumberElements().get(resolutionLevel);
-						coloringDataManager.addCustom(ColoringData.of(coloringName, coloringFile,
+						coloringDataManager.addCustom(BasicColoringData.of(coloringName, coloringFile,
 								ImmutableList.of(coloringName), coloringUnits, customNumberElements, coloringHasNulls));
                     }
                 }

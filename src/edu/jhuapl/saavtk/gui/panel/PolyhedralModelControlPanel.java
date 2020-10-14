@@ -47,6 +47,7 @@ import edu.jhuapl.saavtk.gui.MetadataDisplay;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomPlateDataDialog;
 import edu.jhuapl.saavtk.gui.render.Renderer;
+import edu.jhuapl.saavtk.model.BasicColoringData;
 import edu.jhuapl.saavtk.model.ColoringDataManager;
 import edu.jhuapl.saavtk.model.Graticule;
 import edu.jhuapl.saavtk.model.ModelManager;
@@ -620,27 +621,36 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         {
             PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
             int index = smallBodyModel.getColoringIndex();
-            File file = FileCache.getFileFromServer(smallBodyModel.getAllColoringData().get(index).getFileName());
 
-            JTabbedPane jTabbedPane = MetadataDisplay.summary(file);
-            int tabCount = jTabbedPane.getTabCount();
-            if (tabCount > 0)
+            BasicColoringData coloringData = BasicColoringData.of(smallBodyModel.getAllColoringData().get(index));
+            String fileName = coloringData.getFileName();
+            if (fileName != null)
             {
-                JFrame jFrame = new JFrame("Coloring File Properties");
+                File file = FileCache.getFileFromServer(coloringData.getFileName());
 
-                jFrame.add(jTabbedPane);
-                jFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                jFrame.pack();
-                jFrame.setVisible(true);
+                JTabbedPane jTabbedPane = MetadataDisplay.summary(file);
+                int tabCount = jTabbedPane.getTabCount();
+                if (tabCount > 0)
+                {
+                    JFrame jFrame = new JFrame("Coloring File Properties");
+
+                    jFrame.add(jTabbedPane);
+                    jFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                    jFrame.pack();
+                    jFrame.setVisible(true);
+                }
+                else
+                {
+                    JOptionPane.showMessageDialog(null, "No properties available for file " + file, "Coloring File Properties", JOptionPane.INFORMATION_MESSAGE);
+                }
             }
             else
             {
-                JOptionPane.showMessageDialog(null, "No properties available for file " + file, "Coloring File Properties", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(null, "No properties available for coloring " + coloringData.getName(), "Coloring Properties", JOptionPane.INFORMATION_MESSAGE);
             }
         }
-        catch (IOException e)
+        catch (Exception e)
         {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
@@ -699,7 +709,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                 }
                 else
                 {
-                    String urlString = coloringDataManager.get(name, numberElements).getFileName();
+                    String urlString = BasicColoringData.of(coloringDataManager.get(name, numberElements)).getFileName();
                     if (urlString == null) continue;
                     box.setEnabled(name, FileCache.instance().isAccessible(urlString));
                     StateListener listener = e -> {

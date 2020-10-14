@@ -226,7 +226,7 @@ public class BasicColoringDataManager implements ColoringDataManager
 					{
 						if (has(name, numberElements))
 						{
-							builder.add(get(name, numberElements).getMetadata());
+							builder.add(BasicColoringData.of(get(name, numberElements)).getMetadata());
 						}
 					}
 				}
@@ -241,7 +241,7 @@ public class BasicColoringDataManager implements ColoringDataManager
 				List<Metadata> metadataList = source.get(Key.of(dataId));
 				for (Metadata metadata : metadataList)
 				{
-					add(ColoringData.of(metadata));
+					add(BasicColoringData.of(metadata));
 				}
 			}
 

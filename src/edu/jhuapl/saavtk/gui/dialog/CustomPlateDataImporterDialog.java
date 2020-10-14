@@ -25,7 +25,7 @@ import javax.swing.JOptionPane;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.model.ColoringData;
+import edu.jhuapl.saavtk.model.BasicColoringData;
 import edu.jhuapl.saavtk.model.ColoringDataManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.FileCache;
@@ -49,8 +49,8 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
     private final int numCells;
     private final boolean isEditMode;
     private boolean okayPressed;
-    private ColoringData origData; // Used in edit mode.
-    private ColoringData currentData;
+    private BasicColoringData origData; // Used in edit mode.
+    private BasicColoringData currentData;
 
     /** Creates new form ShapeModelImporterDialog */
     public CustomPlateDataImporterDialog(java.awt.Window parent, ColoringDataManager coloringDataManager, boolean isEditMode, int numCells)
@@ -65,12 +65,12 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
         initComponents();
     }
 
-    public ColoringData getColoringData()
+    public BasicColoringData getColoringData()
     {
         return currentData;
     }
 
-    public void setColoringData(ColoringData data)
+    public void setColoringData(BasicColoringData data)
     {
         nameTextField.setText(data.getName());
         unitsTextField.setText(data.getUnits());
@@ -830,7 +830,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
         //
         // if (origVtkArray == null)
         // {
-        currentData = ColoringData.of(nameTextField.getText(), SafeURLPaths.instance().getUrl(fileName), elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
+        currentData = BasicColoringData.of(nameTextField.getText(), SafeURLPaths.instance().getUrl(fileName), elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
         try
         {
             currentData.getData();
@@ -847,10 +847,10 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
         // {
         // // Preserve any loaded vtk data by constructing the new coloring data in two
         // steps.
-        // ColoringData withoutFileName = ColoringData.of(nameTextField.getText(),
+        // BasicColoringData withoutFileName = BasicColoringData.of(nameTextField.getText(),
         // elementNames, columnIdentifiers, unitsTextField.getText(), numCells,
         // hasNullsCheckBox.isSelected(), origVtkArray);
-        // currentData = ColoringData.renameFile(withoutFileName, fileName);
+        // currentData = BasicColoringData.renameFile(withoutFileName, fileName);
         // }
 
         okayPressed = true;
