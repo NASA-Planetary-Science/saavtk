@@ -1662,7 +1662,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
     protected void loadColoringData() throws IOException
     {
         ColoringData coloringData = getColoringData(coloringIndex);
-        coloringData.load();
+        coloringData.getData();
     }
 
 	private static String getColoringFileName(String baseFileName, int resolutionLevel, Format format,
@@ -1723,7 +1723,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
     {
         for (ColoringData data : getAllColoringData())
         {
-            data.load();
+            data.getData();
         }
     }
 
@@ -1921,14 +1921,6 @@ public class GenericPolyhedralModel extends PolyhedralModel
     public double getColoringValue(int index, double[] pt)
     {
         ColoringData coloringData = getColoringData(index);
-        try
-        {
-            coloringData.load();
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
 
         return getScalarValue(pt, coloringData.getData());
     }
@@ -2111,7 +2103,6 @@ public class GenericPolyhedralModel extends PolyhedralModel
         if (isColoringAvailable(coloringIndex))
         {
             ColoringData coloringData = getColoringData(coloringIndex);
-            coloringData.load();
             int size = coloringData.getNumberElements();
 
             final vtkFloatArray floatArray = coloringData.getData();
@@ -2598,7 +2589,6 @@ public class GenericPolyhedralModel extends PolyhedralModel
             }
 			ColoringData gravColoring = coloringDataManager.get(GravPotStr,
 					coloringDataManager.getResolutions().get(resolutionLevel));
-            gravColoring.load();
             vtkFloatArray floatArray = gravColoring.getData();
 
             double potTimesAreaSum = 0.0;

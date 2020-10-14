@@ -104,7 +104,6 @@ public class FacetColoringData
 
 	private double[] getColoringValuesFor(ColoringData data) throws IOException
 	{
-		data.load();
 		vtkFloatArray array = data.getData();
 		int number = data.getElementNames().size();
 		double[] vals = new double[number];

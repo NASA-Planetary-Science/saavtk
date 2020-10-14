@@ -833,7 +833,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
         currentData = ColoringData.of(nameTextField.getText(), SafeURLPaths.instance().getUrl(fileName), elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
         try
         {
-            currentData.load();
+            currentData.getData();
         }
         catch (Exception e)
         {

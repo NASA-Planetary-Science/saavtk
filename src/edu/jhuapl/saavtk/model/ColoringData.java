@@ -223,16 +223,16 @@ public class ColoringData
 		return getMetadata().get(HAS_NULLS);
 	}
 
-	public boolean isLoaded()
+	private boolean isLoaded()
 	{
 		return (data != null && defaultRange != null);
 	}
 
-	public void load() throws IOException
+	private void load()
 	{
 		if (loadFailed)
 		{
-			throw new IOException("Data failed to load previously");
+			throw new RuntimeException("Data failed to load previously");
 		}
 		if (!isLoaded())
 		{
@@ -249,7 +249,7 @@ public class ColoringData
 			{
 				String message = "Unable to download file " + fileName;
 				JOptionPane.showMessageDialog(null, message, "error", JOptionPane.ERROR_MESSAGE);
-				throw new IOException(message);
+				throw new RuntimeException(message);
 			}
 
 			// If we get this far, the file was successfully downloaded.
@@ -257,49 +257,56 @@ public class ColoringData
 
 			String coloringName = getName();
 			List<?> columnIdentifiers = getColumnIdentifiers();
-			if (columnIdentifiers == null || columnIdentifiers.isEmpty())
+			try
 			{
-				if (coloringName.toLowerCase().contains("error"))
-				{
-					// Try first for a vector.
-					indexable = tryLoadFitsTuplesOnly(file, FitsColumnId.VECTOR_ERROR.getColumnNumbers());
-					if (indexable == null)
-					{
-						indexable = tryLoadFitsTuplesOnly(file, FitsColumnId.SCALAR_ERROR.getColumnNumbers());
-					}
-				}
-				else
-				{
-					// Try first for a vector.
-					indexable = tryLoadTuples(file, FitsColumnId.VECTOR.getColumnNumbers(), CsvColumnId.VECTOR.getColumnNumbers());
-					if (indexable == null)
-					{
-						indexable = tryLoadTuples(file, FitsColumnId.SCALAR.getColumnNumbers(), CsvColumnId.SCALAR.getColumnNumbers());
-					}
-				}
-				if (indexable == null)
-				{
-					throw new IOException("Could not find coloring " + coloringName + " as vector or scalar data in file " + file);
-				}
+	            if (columnIdentifiers == null || columnIdentifiers.isEmpty())
+	            {
+	                if (coloringName.toLowerCase().contains("error"))
+	                {
+	                    // Try first for a vector.
+	                    indexable = tryLoadFitsTuplesOnly(file, FitsColumnId.VECTOR_ERROR.getColumnNumbers());
+	                    if (indexable == null)
+	                    {
+	                        indexable = tryLoadFitsTuplesOnly(file, FitsColumnId.SCALAR_ERROR.getColumnNumbers());
+	                    }
+	                }
+	                else
+	                {
+	                    // Try first for a vector.
+	                    indexable = tryLoadTuples(file, FitsColumnId.VECTOR.getColumnNumbers(), CsvColumnId.VECTOR.getColumnNumbers());
+	                    if (indexable == null)
+	                    {
+	                        indexable = tryLoadTuples(file, FitsColumnId.SCALAR.getColumnNumbers(), CsvColumnId.SCALAR.getColumnNumbers());
+	                    }
+	                }
+	                if (indexable == null)
+	                {
+	                    throw new RuntimeException("Could not find coloring " + coloringName + " as vector or scalar data in file " + file);
+	                }
+	            }
+	            else
+	            {
+	                Object id0 = columnIdentifiers.get(0);
+	                if (id0 instanceof Integer)
+	                {
+	                    @SuppressWarnings("unchecked")
+	                    List<Integer> columnNumbers = (List<Integer>) columnIdentifiers;
+	                    indexable = tryLoadTuples(file, columnNumbers, columnNumbers);
+	                }
+	                else
+	                {
+	                    indexable = null;
+	                }
+	            }
 			}
-			else
+			catch (IOException e)
 			{
-				Object id0 = columnIdentifiers.get(0);
-				if (id0 instanceof Integer)
-				{
-					@SuppressWarnings("unchecked")
-					List<Integer> columnNumbers = (List<Integer>) columnIdentifiers;
-					indexable = tryLoadTuples(file, columnNumbers, columnNumbers);
-				}
-				else
-				{
-					indexable = null;
-				}
+			    throw new RuntimeException(e);
 			}
 
 			if (indexable == null)
 			{
-				throw new IOException("Unable to load coloring data from file " + file);
+				throw new RuntimeException("Unable to load coloring data from file " + file);
 			}
 
 			vtkFloatArray data = new vtkFloatArray();
@@ -308,7 +315,7 @@ public class ColoringData
 
 			if (numberRecords != getNumberElements())
 			{
-				throw new IOException("Plate coloring has " + numberRecords + " values, not " + getNumberElements() + " as expected in file " + file);
+				throw new RuntimeException("Plate coloring has " + numberRecords + " values, not " + getNumberElements() + " as expected in file " + file);
 			}
 			data.SetNumberOfComponents(numberCells);
 			data.SetNumberOfTuples(numberRecords);
@@ -362,28 +369,25 @@ public class ColoringData
 		}
 	}
 
-	public void reload() throws IOException
-	{
-		clear();
-		load();
-	}
-
 	public vtkFloatArray getData()
 	{
-		Preconditions.checkState(data != null);
-		return data;
+	    load();
+
+	    return data;
 	}
 
 	public double[] getCurrentRange()
 	{
-		Preconditions.checkState(data != null);
-		return data.GetRange();
+	    load();
+
+	    return data.GetRange();
 	}
 
 	public double[] getDefaultRange()
 	{
-		Preconditions.checkState(defaultRange != null);
-		return defaultRange;
+	    load();
+
+	    return defaultRange;
 	}
 
 	public ColoringData copy()
