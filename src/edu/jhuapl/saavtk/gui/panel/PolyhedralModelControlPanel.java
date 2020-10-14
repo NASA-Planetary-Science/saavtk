@@ -47,7 +47,7 @@ import edu.jhuapl.saavtk.gui.MetadataDisplay;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomPlateDataDialog;
 import edu.jhuapl.saavtk.gui.render.Renderer;
-import edu.jhuapl.saavtk.model.BasicColoringData;
+import edu.jhuapl.saavtk.model.FileBasedColoringData;
 import edu.jhuapl.saavtk.model.ColoringDataManager;
 import edu.jhuapl.saavtk.model.Graticule;
 import edu.jhuapl.saavtk.model.ModelManager;
@@ -622,7 +622,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
             int index = smallBodyModel.getColoringIndex();
 
-            BasicColoringData coloringData = BasicColoringData.of(smallBodyModel.getAllColoringData().get(index));
+            FileBasedColoringData coloringData = FileBasedColoringData.of(smallBodyModel.getAllColoringData().get(index));
             String fileName = coloringData.getFileName();
             if (fileName != null)
             {
@@ -709,7 +709,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                 }
                 else
                 {
-                    String urlString = BasicColoringData.of(coloringDataManager.get(name, numberElements)).getFileName();
+                    String urlString = FileBasedColoringData.of(coloringDataManager.get(name, numberElements)).getFileName();
                     if (urlString == null) continue;
                     box.setEnabled(name, FileCache.instance().isAccessible(urlString));
                     StateListener listener = e -> {

@@ -25,7 +25,7 @@ import javax.swing.JOptionPane;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.model.BasicColoringData;
+import edu.jhuapl.saavtk.model.FileBasedColoringData;
 import edu.jhuapl.saavtk.model.ColoringDataManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.FileCache;
@@ -49,8 +49,8 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
     private final int numCells;
     private final boolean isEditMode;
     private boolean okayPressed;
-    private BasicColoringData origData; // Used in edit mode.
-    private BasicColoringData currentData;
+    private FileBasedColoringData origData; // Used in edit mode.
+    private FileBasedColoringData currentData;
 
     /** Creates new form ShapeModelImporterDialog */
     public CustomPlateDataImporterDialog(java.awt.Window parent, ColoringDataManager coloringDataManager, boolean isEditMode, int numCells)
@@ -65,12 +65,12 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
         initComponents();
     }
 
-    public BasicColoringData getColoringData()
+    public FileBasedColoringData getColoringData()
     {
         return currentData;
     }
 
-    public void setColoringData(BasicColoringData data)
+    public void setColoringData(FileBasedColoringData data)
     {
         nameTextField.setText(data.getName());
         unitsTextField.setText(data.getUnits());
@@ -80,7 +80,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
         {
             cellDataPathTextField.setText(LEAVE_UNMODIFIED);
             origData = data;
-            List<String> elementNames = data.getElementNames();
+            List<String> elementNames = data.getTupleNames();
             int numberColumns = elementNames.size();
 
             if (numberColumns == 1)
@@ -830,7 +830,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
         //
         // if (origVtkArray == null)
         // {
-        currentData = BasicColoringData.of(nameTextField.getText(), SafeURLPaths.instance().getUrl(fileName), elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
+        currentData = FileBasedColoringData.of(nameTextField.getText(), SafeURLPaths.instance().getUrl(fileName), elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
         try
         {
             currentData.getData();

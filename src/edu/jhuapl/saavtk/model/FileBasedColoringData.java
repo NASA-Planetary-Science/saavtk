@@ -23,7 +23,7 @@ import edu.jhuapl.saavtk.util.file.IndexableTuple;
 import edu.jhuapl.saavtk.util.file.Tuple;
 import vtk.vtkFloatArray;
 
-public class BasicColoringData implements ColoringData
+public class FileBasedColoringData implements ColoringData
 {
 	protected static final Version COLORING_DATA_VERSION = Version.of(1, 1);
 
@@ -46,30 +46,30 @@ public class BasicColoringData implements ColoringData
 	private static final Key<Integer> NUMBER_ELEMENTS = Key.of("Number of elements"); // 49xxx
 	private static final Key<Boolean> HAS_NULLS = Key.of("Coloring has nulls");
 
-	public static BasicColoringData of(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
+	public static FileBasedColoringData of(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
 	{
 		return of(name, fileName, elementNames, null, units, numberElements, hasNulls, null);
 	}
 
-	public static BasicColoringData of(String name, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
+	public static FileBasedColoringData of(String name, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
 	{
 		return of(name, null, elementNames, null, units, numberElements, hasNulls, data);
 	}
 
-	public static BasicColoringData of(String name, String fileName, Iterable<String> elementNames, Iterable<?> columnIdentifiers, String units, int numberElements, boolean hasNulls)
+	public static FileBasedColoringData of(String name, String fileName, Iterable<String> elementNames, Iterable<?> columnIdentifiers, String units, int numberElements, boolean hasNulls)
 	{
 		return of(name, fileName, elementNames, columnIdentifiers, units, numberElements, hasNulls, null);
 	}
 
-    public static BasicColoringData of(ColoringData coloringData)
+    public static FileBasedColoringData of(ColoringData coloringData)
     {
         String fileName = null;
         Iterable<?> columnIdentifiers = null;
-        return coloringData instanceof BasicColoringData ? (BasicColoringData) coloringData
+        return coloringData instanceof FileBasedColoringData ? (FileBasedColoringData) coloringData
                 : of( //
                         coloringData.getName(), //
                         fileName, //
-                        coloringData.getElementNames(), //
+                        coloringData.getTupleNames(), //
                         columnIdentifiers, //
                         coloringData.getUnits(), //
                         coloringData.getNumberElements(), //
@@ -78,7 +78,7 @@ public class BasicColoringData implements ColoringData
                 );
     }
 
-	static BasicColoringData of(Metadata metadata)
+	static FileBasedColoringData of(Metadata metadata)
 	{
 		Preconditions.checkNotNull(metadata);
 		String name = metadata.get(NAME);
@@ -95,10 +95,10 @@ public class BasicColoringData implements ColoringData
 		return of(name, fileName, elementNames, columnIdentifiers, units, numberElements, hasNulls);
 	}
 
-	private static BasicColoringData of(String name, String fileName, Iterable<String> elementNames, Iterable<?> columnIdentifiers, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
+	private static FileBasedColoringData of(String name, String fileName, Iterable<String> elementNames, Iterable<?> columnIdentifiers, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
 	{
 		FixedMetadata metadata = createMetadata(name, fileName, elementNames, columnIdentifiers, units, numberElements, hasNulls);
-		return new BasicColoringData(metadata, data);
+		return new FileBasedColoringData(metadata, data);
 	}
 
 	private static FixedMetadata createMetadata(String name, String fileName, Iterable<String> elementNames, Iterable<?> columnIdentifiers, String units, int numberElements, boolean hasNulls)
@@ -110,15 +110,15 @@ public class BasicColoringData implements ColoringData
 		Preconditions.checkNotNull(units);
 
 		SettableMetadata metadata = SettableMetadata.of(COLORING_DATA_VERSION);
-		metadata.put(BasicColoringData.NAME, name);
+		metadata.put(FileBasedColoringData.NAME, name);
 
-		metadata.put(BasicColoringData.FILE_NAME, fileName);
-		metadata.put(BasicColoringData.ELEMENT_NAMES, ImmutableList.copyOf(elementNames));
+		metadata.put(FileBasedColoringData.FILE_NAME, fileName);
+		metadata.put(FileBasedColoringData.ELEMENT_NAMES, ImmutableList.copyOf(elementNames));
 
-		metadata.put(BasicColoringData.COLUMN_IDS, columnIdentifiers != null ? ImmutableList.copyOf(columnIdentifiers) : null);
-		metadata.put(BasicColoringData.UNITS, units);
-		metadata.put(BasicColoringData.NUMBER_ELEMENTS, numberElements);
-		metadata.put(BasicColoringData.HAS_NULLS, hasNulls);
+		metadata.put(FileBasedColoringData.COLUMN_IDS, columnIdentifiers != null ? ImmutableList.copyOf(columnIdentifiers) : null);
+		metadata.put(FileBasedColoringData.UNITS, units);
+		metadata.put(FileBasedColoringData.NUMBER_ELEMENTS, numberElements);
+		metadata.put(FileBasedColoringData.HAS_NULLS, hasNulls);
 
 		return FixedMetadata.of(metadata);
 	}
@@ -128,7 +128,7 @@ public class BasicColoringData implements ColoringData
 	private double[] defaultRange;
 	private boolean loadFailed;
 
-	protected BasicColoringData(Metadata metadata, vtkFloatArray data)
+	protected FileBasedColoringData(Metadata metadata, vtkFloatArray data)
 	{
 		Preconditions.checkArgument(metadata.hasKey(FILE_NAME) || data != null);
 		this.metadata = FixedMetadata.of(metadata);
@@ -150,7 +150,7 @@ public class BasicColoringData implements ColoringData
 	}
 
 	@Override
-    public Integer getNumberElements()
+    public int getNumberElements()
 	{
 		return getMetadata().get(NUMBER_ELEMENTS);
 	}
@@ -161,7 +161,7 @@ public class BasicColoringData implements ColoringData
 	}
 
 	@Override
-    public List<String> getElementNames()
+    public List<String> getTupleNames()
 	{
 		return ImmutableList.copyOf(getMetadata().get(ELEMENT_NAMES));
 	}
@@ -182,7 +182,7 @@ public class BasicColoringData implements ColoringData
 	}
 
 	@Override
-    public Boolean hasNulls()
+    public boolean hasNulls()
 	{
 		return getMetadata().get(HAS_NULLS);
 	}
@@ -374,11 +374,11 @@ public class BasicColoringData implements ColoringData
 		{
 			return true;
 		}
-		if (!(other instanceof BasicColoringData))
+		if (!(other instanceof FileBasedColoringData))
 		{
 			return false;
 		}
-		BasicColoringData that = (BasicColoringData) other;
+		FileBasedColoringData that = (FileBasedColoringData) other;
 		if (!this.getMetadata().equals(that.getMetadata()))
 		{
 			return false;

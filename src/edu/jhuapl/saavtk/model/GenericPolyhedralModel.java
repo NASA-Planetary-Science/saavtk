@@ -296,7 +296,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
                     ImmutableList<String> elementNames = ImmutableList.of(name);
                     String units = coloringUnits.length > index ? coloringUnits[index] : "";
                     boolean hasNulls = coloringHasNulls.length > index ? coloringHasNulls[index] : false;
-					coloringDataManager.addBuiltIn(BasicColoringData.of(name, fileName, elementNames, units,
+					coloringDataManager.addBuiltIn(FileBasedColoringData.of(name, fileName, elementNames, units,
 							numberElements.get(resolutionLevel), hasNulls));
                 }
             }
@@ -475,7 +475,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         {
             int numberElements = coloringValues[i].GetNumberOfTuples();
             ImmutableList<String> elementNames = ImmutableList.of(coloringNames[i]);
-			coloringDataManager.addBuiltIn(BasicColoringData.of(coloringNames[i], elementNames, coloringUnits[i],
+			coloringDataManager.addBuiltIn(FileBasedColoringData.of(coloringNames[i], elementNames, coloringUnits[i],
 					numberElements, false, coloringValues[i]));
         }
         this.coloringValueType = coloringValueType;
@@ -662,7 +662,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
                             resolutionLevel = 0;
                         }
                         int customNumberElements = config.getResolutionNumberElements().get(resolutionLevel);
-						coloringDataManager.addCustom(BasicColoringData.of(coloringName, coloringFile,
+						coloringDataManager.addCustom(FileBasedColoringData.of(coloringName, coloringFile,
 								ImmutableList.of(coloringName), coloringUnits, customNumberElements, coloringHasNulls));
                     }
                 }
@@ -1945,14 +1945,14 @@ public class GenericPolyhedralModel extends PolyhedralModel
         int numColorColumns = 0;
         for (ColoringData data : coloringData)
         {
-            numColorColumns += data.getElementNames().size();
+            numColorColumns += data.getTupleNames().size();
         }
 
         double[] result = new double[numColorColumns];
         int valueIndex = 0;
         for (ColoringData data : coloringData)
         {
-            double[] coloringVector = getVectorValue(closestPoint, data.getData(), cellId, data.getElementNames().size());
+            double[] coloringVector = getVectorValue(closestPoint, data.getData(), cellId, data.getTupleNames().size());
             for (int index = 0; index < coloringVector.length; ++index, ++valueIndex)
             {
                 result[valueIndex] = coloringVector[index];
@@ -2844,7 +2844,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
                 for (ColoringData data : allColoringData)
                 {
                     String units = data.getUnits();
-                    for (String name : data.getElementNames())
+                    for (String name : data.getTupleNames())
                     {
                         out.write("," + name);
                         if (units != null && !units.isEmpty())

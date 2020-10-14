@@ -80,7 +80,7 @@ public class FacetColoringData
 		Vector<ColoringData> oneDColorings = new Vector<ColoringData>();
 		for (ColoringData data : allColoringData)
 		{
-			if (data.getElementNames().size() == 1)
+			if (data.getTupleNames().size() == 1)
 				oneDColorings.add(data);
 		}
 		return oneDColorings;
@@ -105,7 +105,7 @@ public class FacetColoringData
 	private double[] getColoringValuesFor(ColoringData data) throws IOException
 	{
 		vtkFloatArray array = data.getData();
-		int number = data.getElementNames().size();
+		int number = data.getTupleNames().size();
 		double[] vals = new double[number];
 		switch (number)
 		{
