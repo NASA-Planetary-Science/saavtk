@@ -28,9 +28,9 @@ public class ColoringData
 	protected static final Version COLORING_DATA_VERSION = Version.of(1, 1);
 
 	// Metadata keys.
-	static final Key<String> NAME = Key.of("Coloring name"); // Slope or Gravitational Vector
+	private static final Key<String> NAME = Key.of("Coloring name"); // Slope or Gravitational Vector
 
-	static final Key<String> FILE_NAME = Key.of("File name");
+	private static final Key<String> FILE_NAME = Key.of("File name");
 
 	// Note: the metadata associated with this key is not yet being used. The
 	// ELEMENT_NAMES are supposed to tell
@@ -40,11 +40,11 @@ public class ColoringData
 	// metadata is set up before the files
 	// are downloaded. If/when metadata is downloaded from the server, this key may
 	// be used.
-	static final Key<List<String>> ELEMENT_NAMES = Key.of("Element names"); // [ "Slope" ] or [ "G_x", "G_y", "G_z" ]
-	static final Key<List<?>> COLUMN_IDS = Key.of("Column identifiers"); // [ "Slope" ] or [ 5, 7, 9 ]
-	static final Key<String> UNITS = Key.of("Coloring units"); // deg or m/s^2
-	static final Key<Integer> NUMBER_ELEMENTS = Key.of("Number of elements"); // 49xxx
-	static final Key<Boolean> HAS_NULLS = Key.of("Coloring has nulls");
+	private static final Key<List<String>> ELEMENT_NAMES = Key.of("Element names"); // [ "Slope" ] or [ "G_x", "G_y", "G_z" ]
+	private static final Key<List<?>> COLUMN_IDS = Key.of("Column identifiers"); // [ "Slope" ] or [ 5, 7, 9 ]
+	private static final Key<String> UNITS = Key.of("Coloring units"); // deg or m/s^2
+	private static final Key<Integer> NUMBER_ELEMENTS = Key.of("Number of elements"); // 49xxx
+	private static final Key<Boolean> HAS_NULLS = Key.of("Coloring has nulls");
 
 	public static ColoringData of(String name, String fileName, Iterable<String> elementNames, String units, int numberElements, boolean hasNulls)
 	{
@@ -59,53 +59,6 @@ public class ColoringData
 	public static ColoringData of(String name, String fileName, Iterable<String> elementNames, Iterable<?> columnIdentifiers, String units, int numberElements, boolean hasNulls)
 	{
 		return of(name, fileName, elementNames, columnIdentifiers, units, numberElements, hasNulls, null);
-	}
-
-	public static ColoringData of(String name, Iterable<String> elementNames, Iterable<?> columnIdentifiers, String units, int numberElements, boolean hasNulls, vtkFloatArray data)
-	{
-		return of(name, null, elementNames, columnIdentifiers, units, numberElements, hasNulls, data);
-	}
-
-	public static ColoringData rename(ColoringData source, String newColoringName)
-	{
-		ColoringData result;
-		if (source.getName().equals(newColoringName))
-		{
-			result = source;
-		}
-		else
-		{
-			// Don't call getData for the last argument -- it throws if data are not loaded,
-			// but that is not a problem in this case.
-			result = of(newColoringName, source.getFileName(), source.getElementNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls(), source.data);
-		}
-
-		return result;
-	}
-
-	public static ColoringData renameFile(ColoringData source, String newFileName)
-	{
-		String sourceFileName = source.getFileName();
-
-		ColoringData result;
-		if (sourceFileName == newFileName || (sourceFileName != null && sourceFileName.equals(newFileName)))
-		{
-			result = source;
-		}
-		else
-		{
-			// Don't call getData for the last argument -- it throws if data are not loaded,
-			// but that is not a problem in this case.
-			result = of(source.getName(), newFileName, source.getElementNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls(), source.data);
-		}
-
-		return result;
-	}
-
-	static ColoringData of(String name, File file)
-	{
-		FixedMetadata metadata = loadMetadata(name, file);
-		return new ColoringData(metadata, null);
 	}
 
 	static ColoringData of(Metadata metadata)
@@ -149,17 +102,6 @@ public class ColoringData
 		metadata.put(ColoringData.UNITS, units);
 		metadata.put(ColoringData.NUMBER_ELEMENTS, numberElements);
 		metadata.put(ColoringData.HAS_NULLS, hasNulls);
-
-		return FixedMetadata.of(metadata);
-	}
-
-	private static FixedMetadata loadMetadata(String name, File coloringFile)
-	{
-		Preconditions.checkNotNull(name);
-		Preconditions.checkNotNull(coloringFile);
-		Preconditions.checkArgument(coloringFile.exists());
-
-		SettableMetadata metadata = SettableMetadata.of(COLORING_DATA_VERSION);
 
 		return FixedMetadata.of(metadata);
 	}
@@ -388,11 +330,6 @@ public class ColoringData
 	    load();
 
 	    return defaultRange;
-	}
-
-	public ColoringData copy()
-	{
-		return new ColoringData(getMetadata().copy(), data);
 	}
 
 	@Override
