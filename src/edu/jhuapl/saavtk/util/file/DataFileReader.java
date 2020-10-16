@@ -1,7 +1,12 @@
 package edu.jhuapl.saavtk.util.file;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.util.zip.GZIPInputStream;
+
+import org.apache.commons.io.IOUtils;
 
 import com.google.common.base.Preconditions;
 
@@ -63,6 +68,33 @@ public abstract class DataFileReader
 	protected static final IndexableTuple EMPTY_INDEXABLE = createEmptyIndexable();
 
 	private static final DataFileReader INSTANCE = createInstance();
+
+    public static File gunzip(File file) throws IOException
+    {
+        String gzippedFileName = file.toString();
+        String unGzippedFileName = gzippedFileName.replaceFirst("\\.[gG][Z]$", "");
+        Preconditions.checkArgument(!gzippedFileName.equals(unGzippedFileName), "File " + gzippedFileName + " does not appear to be Gzipped");
+
+        File result = new File(unGzippedFileName);
+
+        if (!result.isFile())
+        {
+            try (GZIPInputStream inputStream = new GZIPInputStream(new FileInputStream(file)))
+            {
+                try (FileWriter outputStream = new FileWriter(result))
+                {
+                    IOUtils.copy(inputStream, outputStream);
+                }
+            }
+            catch (Exception e)
+            {
+                result.delete();
+                throw e;
+            }
+        }
+
+        return result;
+    }
 
 	public static DataFileReader of()
 	{
