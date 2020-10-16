@@ -25,9 +25,9 @@ import javax.swing.JOptionPane;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.model.FileBasedColoringData;
-import edu.jhuapl.saavtk.model.ColoringDataManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringDataManager;
+import edu.jhuapl.saavtk.model.plateColoring.FileBasedColoringData;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.SafeURLPaths;
 import edu.jhuapl.saavtk.util.file.DataFileReader;

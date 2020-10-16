@@ -35,7 +35,7 @@ import org.jfree.data.statistics.HistogramDataset;
 import org.jfree.data.statistics.Statistics;
 import org.jfree.ui.RectangleEdge;
 
-import edu.jhuapl.saavtk.model.FacetColoringData;
+import edu.jhuapl.saavtk.model.plateColoring.FacetColoringData;
 
 public class ColoringInfoPanel extends JPanel 
 {

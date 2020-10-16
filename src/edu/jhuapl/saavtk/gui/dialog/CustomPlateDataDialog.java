@@ -24,11 +24,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.gui.panel.PolyhedralModelControlPanel;
-import edu.jhuapl.saavtk.model.ColoringData;
-import edu.jhuapl.saavtk.model.FileBasedColoringData;
-import edu.jhuapl.saavtk.model.CustomizableColoringDataManager;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
+import edu.jhuapl.saavtk.model.plateColoring.CustomizableColoringDataManager;
+import edu.jhuapl.saavtk.model.plateColoring.FileBasedColoringData;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.FileUtil;
 import edu.jhuapl.saavtk.util.MapUtil;

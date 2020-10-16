@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.model;
+package edu.jhuapl.saavtk.model.plateColoring;
 
 import com.google.common.collect.ImmutableList;
 
