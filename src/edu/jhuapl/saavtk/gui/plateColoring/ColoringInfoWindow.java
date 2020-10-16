@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.gui.coloringData;
+package edu.jhuapl.saavtk.gui.plateColoring;
 
 import java.io.IOException;
 
