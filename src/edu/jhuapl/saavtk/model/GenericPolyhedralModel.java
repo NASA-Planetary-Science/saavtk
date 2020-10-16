@@ -2061,7 +2061,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         if (colormap != null)
             return new double[] { colormap.getRangeMin(), colormap.getRangeMax() };
 
-        return getColoringData(coloringIndex).getCurrentRange();
+        return getDefaultColoringRange(coloringIndex);
     }
 
     @Override

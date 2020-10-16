@@ -46,7 +46,9 @@ public interface ColoringData
      * column titles in a coloring data file. For example, for 3-d vector data this
      * would give the names of the (X, Y, Z) columns.
      * <p>
-     * Implementations may not return null, nor an empty list.
+     * Implementations may not return null, nor an empty list. The number of
+     * elements must match the rank of the data (number of VTK components) expected
+     * to be returned by the {@link #getData()} method.
      * 
      * @return the list of tuple names
      */
@@ -69,14 +71,6 @@ public interface ColoringData
      * @return the coloring data
      */
     vtkFloatArray getData();
-
-    /**
-     * Return the current range of data values. Implementations must return a
-     * 2-element array in ascending order.
-     * 
-     * @return the data range
-     */
-    double[] getCurrentRange();
 
     /**
      * Return the default/intrinsic/maximum range of data values. Implementations

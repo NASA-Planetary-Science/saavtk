@@ -343,14 +343,6 @@ public class FileBasedColoringData implements ColoringData
 	}
 
 	@Override
-    public double[] getCurrentRange()
-	{
-	    load();
-
-	    return data.GetRange();
-	}
-
-	@Override
     public double[] getDefaultRange()
 	{
 	    load();
