@@ -204,7 +204,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         if (Configuration.useFileCache())
         {
             if (lowestResolutionModelStoredInResource)
-				defaultModelFile = ConvertResourceToFile.convertResourceToRealFile(this, modelFiles[0],
+				defaultModelFile = ConvertResourceToFile.convertResourceToRealFile(this.getClass(), modelFiles[0],
 						Configuration.getApplicationDataDir());
             else
                 defaultModelFile = FileCache.getFileFromServer(modelFiles[0]);
@@ -370,7 +370,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         if (Configuration.useFileCache())
         {
             if (lowestResolutionModelStoredInResource)
-				defaultModelFile = ConvertResourceToFile.convertResourceToRealFile(this, modelFiles[0],
+				defaultModelFile = ConvertResourceToFile.convertResourceToRealFile(this.getClass(), modelFiles[0],
 						Configuration.getApplicationDataDir());
             else
                 defaultModelFile = FileCache.getFileFromServer(modelFiles[0]);

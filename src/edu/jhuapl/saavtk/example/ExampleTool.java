@@ -29,7 +29,7 @@ public class ExampleTool
         {
             System.setProperty("apple.laf.useScreenMenuBar", "true");
             ImageIcon erosIcon = new ImageIcon("data/black-sphere.png");
-            OSXAdapter.setDockIconImage(erosIcon.getImage());
+            java.awt.Taskbar.getTaskbar().setIconImage(erosIcon.getImage());
         }
     }
 

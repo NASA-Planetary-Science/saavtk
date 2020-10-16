@@ -53,13 +53,17 @@ public class HelpMenu extends JMenu
         {
             try
             {
-                OSXAdapter.setAboutHandler(this, getClass().getDeclaredMethod("showAbout", (Class[])null));
+                java.awt.Desktop.getDesktop().setAboutHandler(new java.awt.desktop.AboutHandler() {
+                    public void handleAbout(java.awt.desktop.AboutEvent e) {
+                        try {
+                            getClass().getDeclaredMethod("showAbout", (Class[])null);
+                        } catch (NoSuchMethodException ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                });
             }
             catch (SecurityException e)
-            {
-                e.printStackTrace();
-            }
-            catch (NoSuchMethodException e)
             {
                 e.printStackTrace();
             }

@@ -106,14 +106,18 @@ public class FileMenu extends JMenu
 		{
 			try
 			{
-				OSXAdapter.setPreferencesHandler(this, getClass().getDeclaredMethod("showPreferences", (Class[]) null));
-				OSXAdapter.setQuitHandler(this, getClass().getDeclaredMethod("exitTool", (Class[]) null));
+				java.awt.Desktop.getDesktop().setPreferencesHandler(new java.awt.desktop.PreferencesHandler() {
+                    public void handlePreferences(java.awt.desktop.PreferencesEvent e) {
+                        showPreferences();
+                    }
+                });
+				java.awt.Desktop.getDesktop().setQuitHandler(new java.awt.desktop.QuitHandler() {
+                    public void handleQuitRequestWith(java.awt.desktop.QuitEvent e, java.awt.desktop.QuitResponse r) {
+                        exitTool();
+                    }
+                });
 			}
 			catch (SecurityException e)
-			{
-				e.printStackTrace();
-			}
-			catch (NoSuchMethodException e)
 			{
 				e.printStackTrace();
 			}
