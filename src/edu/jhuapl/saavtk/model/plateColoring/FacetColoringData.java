@@ -8,7 +8,6 @@ import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
-import vtk.vtkFloatArray;
 import vtk.vtkIdList;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
@@ -77,7 +76,7 @@ public class FacetColoringData
 
 	private Vector<ColoringData> get1DColorings()
 	{
-		Vector<ColoringData> oneDColorings = new Vector<ColoringData>();
+		Vector<ColoringData> oneDColorings = new Vector<>();
 		for (ColoringData data : allColoringData)
 		{
 			if (data.getTupleNames().size() == 1)
@@ -99,38 +98,7 @@ public class FacetColoringData
 			throw new IllegalArgumentException("Cannot find values for coloring " + coloringName);
 		}
 
-		return getColoringValuesFor(data);
-	}
-
-	private double[] getColoringValuesFor(ColoringData data) throws IOException
-	{
-		vtkFloatArray array = data.getData();
-		int number = data.getTupleNames().size();
-		double[] vals = new double[number];
-		switch (number)
-		{
-		case 1:
-			vals = new double[] { array.GetTuple1(cellId) };
-			break;
-		case 2:
-			vals = array.GetTuple2(cellId);
-			break;
-		case 3:
-			vals = array.GetTuple3(cellId);
-			break;
-		case 4:
-			vals = array.GetTuple4(cellId);
-			break;
-		case 6:
-			vals = array.GetTuple6(cellId);
-			break;
-		case 9:
-			vals = array.GetTuple9(cellId);
-			break;
-		default:
-			throw new AssertionError();
-		}
-		return vals;
+		return data.getData().get(cellId).get();
 	}
 
 	public void generateDataFromPolydata(vtkPolyData smallBodyPolyData)

@@ -65,17 +65,29 @@ public class FileBasedColoringData implements ColoringData
     {
         String fileName = null;
         Iterable<?> columnIdentifiers = null;
-        return coloringData instanceof FileBasedColoringData ? (FileBasedColoringData) coloringData
-                : of( //
-                        coloringData.getName(), //
-                        fileName, //
-                        coloringData.getTupleNames(), //
-                        columnIdentifiers, //
-                        coloringData.getUnits(), //
-                        coloringData.getNumberElements(), //
-                        coloringData.hasNulls(), //
-                        coloringData.getData() //
-                );
+        FileBasedColoringData fileBasedColoringData;
+        if (coloringData instanceof FileBasedColoringData)
+        {
+            fileBasedColoringData = (FileBasedColoringData) coloringData;
+        }
+        else
+        {
+            vtkFloatArray vtkArray = new vtkFloatArray();
+            VtkColoringDataUtils.copyIndexableToVtkArray(coloringData.getData(), vtkArray);
+
+            fileBasedColoringData = of( //
+                    coloringData.getName(), //
+                    fileName, //
+                    coloringData.getTupleNames(), //
+                    columnIdentifiers, //
+                    coloringData.getUnits(), //
+                    coloringData.getNumberElements(), //
+                    coloringData.hasNulls(), //
+                    vtkArray //
+            );
+        }
+
+        return fileBasedColoringData;
     }
 
 	static FileBasedColoringData of(Metadata metadata)
@@ -328,14 +340,18 @@ public class FileBasedColoringData implements ColoringData
 	{
 		if (getFileName() != null)
 		{
-			data = null;
+		    if (data != null)
+		    {
+		        data.Delete();
+		    }
+
+		    data = null;
 			defaultRange = null;
 			loadFailed = false;
 		}
 	}
 
-	@Override
-    public vtkFloatArray getData()
+    private vtkFloatArray getVtkData()
 	{
 	    load();
 
@@ -511,4 +527,11 @@ public class FileBasedColoringData implements ColoringData
 		}
 
 	}
+
+    @Override
+    public IndexableTuple getData()
+    {
+        return VtkColoringDataUtils.createIndexableFromVtkArray(getVtkData());
+    }
+
 }

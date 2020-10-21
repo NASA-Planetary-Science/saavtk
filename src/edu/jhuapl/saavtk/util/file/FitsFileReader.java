@@ -277,6 +277,19 @@ public final class FitsFileReader extends DataFileReader
 					}
 
 					@Override
+					public double[] get()
+					{
+					    double[] array = new double[numberCells];
+					    
+					    for (int cellIndex = 0; cellIndex < numberCells; ++cellIndex)
+					    {
+					        array[cellIndex] = columns.get(cellIndex).get(index);
+					    }
+
+					    return array;
+					}
+
+					@Override
 					public String getAsString(int cellIndex)
 					{
 						return Double.toString(get(cellIndex));

@@ -12,6 +12,7 @@ import java.util.zip.GZIPInputStream;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.Doubles;
 
 import edu.jhuapl.saavtk.util.file.DataFileInfo.FileFormat;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo.Description;
@@ -314,6 +315,12 @@ public class CsvFileReader extends DataFileReader
 					public int size()
 					{
 						return numberCells;
+					}
+					
+					@Override
+					public double[] get()
+					{
+					    return Doubles.toArray(valuesList.get(index));
 					}
 
 					@Override

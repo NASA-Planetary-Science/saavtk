@@ -2,7 +2,7 @@ package edu.jhuapl.saavtk.model.plateColoring;
 
 import java.util.List;
 
-import vtk.vtkFloatArray;
+import edu.jhuapl.saavtk.util.file.IndexableTuple;
 
 /**
  * General interface to coloring data.
@@ -47,8 +47,8 @@ public interface ColoringData
      * would give the names of the (X, Y, Z) columns.
      * <p>
      * Implementations may not return null, nor an empty list. The number of
-     * elements must match the rank of the data (number of VTK components) expected
-     * to be returned by the {@link #getData()} method.
+     * elements must match the rank of the data expected to be returned by the
+     * {@link #getData()} method.
      * 
      * @return the list of tuple names
      */
@@ -64,13 +64,13 @@ public interface ColoringData
     boolean hasNulls();
 
     /**
-     * Return the coloring data as a VTK data object. Implementations must return a
-     * valid data array with the same number of elements as that returned by the
-     * {@link #getNumberElements()} method.
+     * Return the coloring data as an {@link IndexableTuple}. Implementations must
+     * return a valid data object with the same number of tuples as the number of
+     * elements returned by the {@link #getNumberElements()} method.
      * 
      * @return the coloring data
      */
-    vtkFloatArray getData();
+    IndexableTuple getData();
 
     /**
      * Return the default/intrinsic/maximum range of data values. Implementations
@@ -81,15 +81,12 @@ public interface ColoringData
     double[] getDefaultRange();
 
     /**
-     * For colorings with a serialized form, implementations of this method may
+     * For colorings with a serialized form, implementations of this method *may*
      * discard any/all data asscoiated with this coloring, allowing resident
      * resources to be garbage-collected. Subsequenct calls to {@link #getData()}
-     * would require the data to be reloaded. For colorings that do not have a
-     * serialized form, this method's default (empty) implementation suffices.
+     * would require the data to be reloaded. For colorings that have no serialized
+     * form, this method should have no effect.
      */
-    default void clear()
-    {
-
-    }
+    void clear();
 
 }

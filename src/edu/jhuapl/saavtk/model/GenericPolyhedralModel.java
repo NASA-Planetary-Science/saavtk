@@ -28,6 +28,7 @@ import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
 import edu.jhuapl.saavtk.model.plateColoring.CustomizableColoringDataManager;
 import edu.jhuapl.saavtk.model.plateColoring.FacetColoringData;
 import edu.jhuapl.saavtk.model.plateColoring.FileBasedColoringData;
+import edu.jhuapl.saavtk.model.plateColoring.VtkColoringDataUtils;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.ConvertResourceToFile;
@@ -40,6 +41,7 @@ import edu.jhuapl.saavtk.util.PolyDataUtil;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SafeURLPaths;
 import edu.jhuapl.saavtk.util.SmallBodyCubes;
+import edu.jhuapl.saavtk.util.file.IndexableTuple;
 import edu.jhuapl.saavtk.view.lod.LodMode;
 import edu.jhuapl.saavtk.view.lod.LodUtil;
 import edu.jhuapl.saavtk.view.lod.VtkLodActor;
@@ -78,7 +80,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 	//This is a placeholder for enabling a series of diagnostic tools we hope to bring into the renderer.  Currently in place but with no UI hooks to enable it (yet) is a
 	//block of code that can display the body cubes used during a database search that allows you to see what exactly it is you're choosing.
 	private boolean diagnosticModeEnabled = false;
-	private List<vtkProp> diagnosticCubes = new ArrayList<vtkProp>();
+	private List<vtkProp> diagnosticCubes = new ArrayList<>();
 
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
 
@@ -1794,7 +1796,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
                 smallBodyActor.GetMapper().SetLookupTable(colormap.getLookupTable());
 
-                double[] range = getColoringData(coloringIndex).getData().GetRange();
+                double[] range = getColoringData(coloringIndex).getDefaultRange();
                 setCurrentColoringRange(coloringIndex, range);
             }
 
@@ -1865,34 +1867,29 @@ public class GenericPolyhedralModel extends PolyhedralModel
         return getColoringData(i).getUnits();
     }
 
-    private double getScalarValue(double[] pt, vtkFloatArray pointOrCellData)
-    {
-        double[] closestPoint = new double[3];
-        int cellId = findClosestCell(pt, closestPoint);
-        return getScalarValue(closestPoint, pointOrCellData, cellId);
-    }
-
     /**
      * Get value assuming pt is exactly on the asteroid and cellId is provided
      *
      * @param pt
      * @param pointOrCellData
-     * @param cellId
      * @return
      */
-    private double getScalarValue(double[] pt, vtkFloatArray pointOrCellData, int cellId)
+    private double getScalarValue(double[] pt, IndexableTuple pointOrCellData)
     {
+        double[] closestPointIgnored = new double[3];
+        int cellId = findClosestCell(pt, closestPointIgnored);
+
         if (coloringValueType == ColoringValueType.POINT_DATA)
         {
-            return PolyDataUtil.interpolateWithinCell(smallBodyPolyData, pointOrCellData, cellId, pt, idList);
+            return PolyDataUtil.interpolateWithinCell(smallBodyPolyData, pointOrCellData, cellId, pt, idList, 1)[0];
         }
         else
         {
-            return pointOrCellData.GetTuple1(cellId);
+            return pointOrCellData.get(cellId).get(0);
         }
     }
 
-    private double[] getVectorValue(double[] pt, vtkFloatArray pointOrCellData, int cellId, int numberAxes)
+    private double[] getVectorValue(double[] pt, IndexableTuple pointOrCellData, int cellId, int numberAxes)
     {
         double[] result = null;
         if (coloringValueType == ColoringValueType.POINT_DATA)
@@ -1902,17 +1899,9 @@ public class GenericPolyhedralModel extends PolyhedralModel
         }
         else
         {
-            if (numberAxes == 1)
+            if (numberAxes >= 1 && numberAxes <= 3)
             {
-                result = new double[] { pointOrCellData.GetTuple1(cellId) };
-            }
-            else if (numberAxes == 2)
-            {
-                result = pointOrCellData.GetTuple2(cellId);
-            }
-            else if (numberAxes == 3)
-            {
-                result = pointOrCellData.GetTuple3(cellId);
+                result = pointOrCellData.get(cellId).get();
             }
             else
             {
@@ -2110,8 +2099,8 @@ public class GenericPolyhedralModel extends PolyhedralModel
             ColoringData coloringData = getColoringData(coloringIndex);
             int size = coloringData.getNumberElements();
 
-            final vtkFloatArray floatArray = coloringData.getData();
-            final double[] range = floatArray.GetRange();
+            IndexableTuple tuples = coloringData.getData();
+            final double[] range = coloringData.getDefaultRange();
             final double extent = range[1] - range[0];
             if (Double.compare(extent, 0.) < 0)
             {
@@ -2130,7 +2119,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
                 @Override
                 public Double get(int index)
                 {
-                    return scale * (floatArray.GetTuple1(index) - range[0]) / extent;
+                    return scale * (tuples.get(index).get(0) - range[0]) / extent;
                 }
 
             };
@@ -2238,7 +2227,8 @@ public class GenericPolyhedralModel extends PolyhedralModel
             doPaint |= checkAndSave("title", title, newPaintingAttributes);
             scalarBarActor.SetTitle(title);
 
-            vtkFloatArray floatArray = coloringData.getData();
+            vtkFloatArray floatArray = new vtkFloatArray();
+            VtkColoringDataUtils.copyIndexableToVtkArray(coloringData.getData(), floatArray);
             doPaint |= checkAndSave("floatArray", floatArray, newPaintingAttributes);
 
             initColormap();
@@ -2594,7 +2584,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
             }
 			ColoringData gravColoring = coloringDataManager.get(GravPotStr,
 					coloringDataManager.getResolutions().get(resolutionLevel));
-            vtkFloatArray floatArray = gravColoring.getData();
+            IndexableTuple tuples = gravColoring.getData();
 
             double potTimesAreaSum = 0.0;
             double totalArea = 0.0;
@@ -2602,7 +2592,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
             int numFaces = smallBodyPolyData.GetNumberOfCells();
             for (int i = 0; i < numFaces; ++i)
             {
-                double potential = floatArray.GetTuple1(i);
+                double potential = tuples.get(i).get(0);
                 if (potential < minRefPot)
                 {
                     minRefPot = potential;

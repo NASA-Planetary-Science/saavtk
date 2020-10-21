@@ -163,7 +163,9 @@ public abstract class DataFileReader
 
 	private static IndexableTuple createEmptyIndexable()
 	{
-		return new IndexableTuple() {
+	    double[] emptyArray = new double[0];
+
+	    return new IndexableTuple() {
 			@Override
 			public int getNumberCells()
 			{
@@ -197,6 +199,12 @@ public abstract class DataFileReader
 					public int size()
 					{
 						return 0;
+					}
+
+					@Override
+                    public double[] get()
+					{
+					    return emptyArray;
 					}
 
 					@Override
