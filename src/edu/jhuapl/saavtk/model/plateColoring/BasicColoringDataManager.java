@@ -111,24 +111,6 @@ public class BasicColoringDataManager implements ColoringDataManager
 		return builder.build();
 	}
 
-	@Override
-	public BasicColoringDataManager copy()
-	{
-		ImmutableList.Builder<ColoringData> builder = ImmutableList.builder();
-		for (String name : names)
-		{
-			for (Integer resolution : resolutions)
-			{
-				ColoringData coloringData = dataTable.get(name, resolution);
-				if (coloringData != null)
-				{
-					builder.add(coloringData);
-				}
-			}
-		}
-		return new BasicColoringDataManager(dataId, builder.build());
-	}
-
 	public final boolean has(ColoringData data)
 	{
 		Preconditions.checkNotNull(data);
