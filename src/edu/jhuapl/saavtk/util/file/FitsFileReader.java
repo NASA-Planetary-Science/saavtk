@@ -186,7 +186,7 @@ public final class FitsFileReader extends DataFileReader
 
 	private interface GettableAsDouble
 	{
-		double get(int cellIndex);
+		double get(int fieldIndex);
 	}
 
 	private IndexableTuple readTuples(TableHDU<?> table, int tableHduNumber, Iterable<Integer> columnNumbers) throws FitsException, FieldNotFoundException, IOException
@@ -208,26 +208,26 @@ public final class FitsFileReader extends DataFileReader
 			Object column = table.getColumn(columnNumber);
 			if (column instanceof double[])
 			{
-				columnBuilder.add((cellIndex) -> {
-					return ((double[]) column)[cellIndex];
+				columnBuilder.add((fieldIndex) -> {
+					return ((double[]) column)[fieldIndex];
 				});
 			}
 			else if (column instanceof float[])
 			{
-				columnBuilder.add((cellIndex) -> {
-					return ((float[]) column)[cellIndex];
+				columnBuilder.add((fieldIndex) -> {
+					return ((float[]) column)[fieldIndex];
 				});
 			}
 			else if (column instanceof int[])
 			{
-				columnBuilder.add((cellIndex) -> {
-					return ((int[]) column)[cellIndex];
+				columnBuilder.add((fieldIndex) -> {
+					return ((int[]) column)[fieldIndex];
 				});
 			}
 			else if (column instanceof long[])
 			{
-				columnBuilder.add((cellIndex) -> {
-					return ((long[]) column)[cellIndex];
+				columnBuilder.add((fieldIndex) -> {
+					return ((long[]) column)[fieldIndex];
 				});
 			}
 			else
@@ -237,26 +237,26 @@ public final class FitsFileReader extends DataFileReader
 		}
 		final ImmutableList<GettableAsDouble> columns = columnBuilder.build();
 
-		final int numberCells = columns.size();
+		final int numberFields = columns.size();
 
 		return new IndexableTuple() {
 
 			@Override
-			public int getNumberCells()
+			public int getNumberFields()
 			{
-				return numberCells;
+				return numberFields;
 			}
 
 			@Override
-			public String getName(int cellIndex)
+			public String getName(int fieldIndex)
 			{
-				return dataObjectInfo.getColumnInfo(cellIndex).getName();
+				return dataObjectInfo.getColumnInfo(fieldIndex).getName();
 			}
 
 			@Override
-			public String getUnits(int cellIndex)
+			public String getUnits(int fieldIndex)
 			{
-				return dataObjectInfo.getColumnInfo(cellIndex).getUnits();
+				return dataObjectInfo.getColumnInfo(fieldIndex).getUnits();
 			}
 
 			@Override
@@ -273,32 +273,32 @@ public final class FitsFileReader extends DataFileReader
 					@Override
 					public int size()
 					{
-						return numberCells;
+						return numberFields;
 					}
 
 					@Override
 					public double[] get()
 					{
-					    double[] array = new double[numberCells];
+					    double[] array = new double[numberFields];
 					    
-					    for (int cellIndex = 0; cellIndex < numberCells; ++cellIndex)
+					    for (int fieldIndex = 0; fieldIndex < numberFields; ++fieldIndex)
 					    {
-					        array[cellIndex] = columns.get(cellIndex).get(index);
+					        array[fieldIndex] = columns.get(fieldIndex).get(index);
 					    }
 
 					    return array;
 					}
 
 					@Override
-					public String getAsString(int cellIndex)
+					public String getAsString(int fieldIndex)
 					{
-						return Double.toString(get(cellIndex));
+						return Double.toString(get(fieldIndex));
 					}
 
 					@Override
-					public double get(int cellIndex)
+					public double get(int fieldIndex)
 					{
-						return columns.get(cellIndex).get(index);
+						return columns.get(fieldIndex).get(index);
 					}
 				};
 			}

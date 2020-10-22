@@ -286,40 +286,40 @@ public class FileBasedColoringData implements ColoringData
 			}
 
 			vtkFloatArray data = new vtkFloatArray();
-			final int numberCells = indexable.getNumberCells();
 			final int numberRecords = indexable.size();
+			final int numberFields = indexable.getNumberFields();
 
 			if (numberRecords != getNumberElements())
 			{
 				throw new RuntimeException("Plate coloring has " + numberRecords + " values, not " + getNumberElements() + " as expected in file " + file);
 			}
-			data.SetNumberOfComponents(numberCells);
+			data.SetNumberOfComponents(numberFields);
 			data.SetNumberOfTuples(numberRecords);
 
 			for (int index = 0; index < numberRecords; ++index)
 			{
 				Tuple tuple = indexable.get(index);
-				if (numberCells == 1)
+				if (numberFields == 1)
 				{
 					data.SetTuple1(index, tuple.get(0));
 				}
-				else if (numberCells == 2)
+				else if (numberFields == 2)
 				{
 					data.SetTuple2(index, tuple.get(0), tuple.get(1));
 				}
-				else if (numberCells == 3)
+				else if (numberFields == 3)
 				{
 					data.SetTuple3(index, tuple.get(0), tuple.get(1), tuple.get(2));
 				}
-				else if (numberCells == 4)
+				else if (numberFields == 4)
 				{
 					data.SetTuple4(index, tuple.get(0), tuple.get(1), tuple.get(2), tuple.get(3));
 				}
-				else if (numberCells == 6)
+				else if (numberFields == 6)
 				{
 					data.SetTuple6(index, tuple.get(0), tuple.get(1), tuple.get(2), tuple.get(3), tuple.get(4), tuple.get(5));
 				}
-				else if (numberCells == 9)
+				else if (numberFields == 9)
 				{
 					data.SetTuple9(index, tuple.get(0), tuple.get(1), tuple.get(2), tuple.get(3), tuple.get(4), tuple.get(5), tuple.get(6), tuple.get(7), tuple.get(8));
 				}

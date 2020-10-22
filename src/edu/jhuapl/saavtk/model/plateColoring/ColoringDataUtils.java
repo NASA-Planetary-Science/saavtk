@@ -35,21 +35,21 @@ public class ColoringDataUtils
             @Override
             public int size()
             {
-                return getNumberCells();
+                return getNumberFields();
             }
 
             @Override
-            public String getAsString(int cellIndex)
+            public String getAsString(int fieldIndex)
             {
-                return Double.toString(get(cellIndex));
+                return Double.toString(get(fieldIndex));
             }
 
             @Override
-            public double get(int cellIndex)
+            public double get(int fieldIndex)
             {
-                checkCellIndex(cellIndex);
+                checkFieldIndex(fieldIndex);
 
-                return getVtkArray().GetComponent(tupleIndex, cellIndex);
+                return getVtkArray().GetComponent(tupleIndex, fieldIndex);
             }
 
         }
@@ -79,29 +79,29 @@ public class ColoringDataUtils
         }
 
         @Override
-        public int getNumberCells()
+        public int getNumberFields()
         {
             return getVtkArray().GetNumberOfComponents();
         }
 
         @Override
-        public String getName(int cellIndex)
+        public String getName(int fieldIndex)
         {
-            checkCellIndex(cellIndex);
+            checkFieldIndex(fieldIndex);
 
             vtkDataArray vtkArray = getVtkArray();
 
-            String name = vtkArray.HasAComponentName() ? vtkArray.GetComponentName(cellIndex) : null;
+            String name = vtkArray.HasAComponentName() ? vtkArray.GetComponentName(fieldIndex) : null;
             if (name == null || name.equals(""))
             {
-                name = Integer.toString(cellIndex);
+                name = Integer.toString(fieldIndex);
             }
 
             return name;
         }
 
         @Override
-        public String getUnits(int cellIndex)
+        public String getUnits(int fieldIndex)
         {
             return "";
         }
@@ -116,15 +116,15 @@ public class ColoringDataUtils
         {
             if (tupleIndex < 0 || tupleIndex > size())
             {
-                throw new IndexOutOfBoundsException("cellIndex = " + tupleIndex + " is out of half-open range [0, " + size() + ")");
+                throw new IndexOutOfBoundsException("tupleIndex = " + tupleIndex + " is out of half-open range [0, " + size() + ")");
             }
         }
 
-        protected void checkCellIndex(int cellIndex)
+        protected void checkFieldIndex(int fieldIndex)
         {
-            if (cellIndex < 0 || cellIndex > getNumberCells())
+            if (fieldIndex < 0 || fieldIndex > getNumberFields())
             {
-                throw new IndexOutOfBoundsException("cellIndex = " + cellIndex + " is out of half-open range [0, " + getNumberCells() + ")");
+                throw new IndexOutOfBoundsException("fieldIndex = " + fieldIndex + " is out of half-open range [0, " + getNumberFields() + ")");
             }
         }
 
@@ -177,17 +177,17 @@ public class ColoringDataUtils
         }
         else
         {
-            int numberCells = tuples.getNumberCells();
-            vtkArray.SetNumberOfComponents(numberCells);
+            int numberFields = tuples.getNumberFields();
+            vtkArray.SetNumberOfComponents(numberFields);
 
             int numberRecords = tuples.size();
             vtkArray.SetNumberOfTuples(numberRecords);
 
             for (int recordIndex = 0; recordIndex < numberRecords; ++recordIndex)
             {
-                for (int cellIndex = 0; cellIndex < numberCells; ++cellIndex)
+                for (int fieldIndex = 0; fieldIndex < numberFields; ++fieldIndex)
                 {
-                    vtkArray.SetComponent(recordIndex, cellIndex, tuples.get(recordIndex).get(cellIndex));
+                    vtkArray.SetComponent(recordIndex, fieldIndex, tuples.get(recordIndex).get(fieldIndex));
                 }
             }
         }
@@ -355,9 +355,9 @@ public class ColoringDataUtils
                             vtkDataArray vtkArray = getVtkArray();
 
                             double[] array = new double[vtkArray.GetNumberOfComponents()];
-                            for (int cellIndex = 0; cellIndex < array.length; ++cellIndex)
+                            for (int fieldIndex = 0; fieldIndex < array.length; ++fieldIndex)
                             {
-                                array[cellIndex] = vtkArray.GetComponent(tupleIndex, cellIndex);
+                                array[fieldIndex] = vtkArray.GetComponent(tupleIndex, fieldIndex);
                             }
 
                             return array;

@@ -65,10 +65,15 @@ public abstract class DataFileReader
 		}
 	}
 
-	protected static final IndexableTuple EMPTY_INDEXABLE = createEmptyIndexable();
+	private static final IndexableTuple EMPTY_INDEXABLE = createEmptyIndexable();
 
 	private static final DataFileReader INSTANCE = createInstance();
 
+	public static IndexableTuple emptyIndexable()
+	{
+	    return EMPTY_INDEXABLE;
+	}
+	
     public static File gunzip(File file) throws IOException
     {
         String gzippedFileName = file.toString();
@@ -167,19 +172,19 @@ public abstract class DataFileReader
 
 	    return new IndexableTuple() {
 			@Override
-			public int getNumberCells()
+			public int getNumberFields()
 			{
 				return 0;
 			}
 
 			@Override
-			public String getName(@SuppressWarnings("unused") int cellIndex)
+			public String getName(int fieldIndex)
 			{
 				throw new IndexOutOfBoundsException();
 			}
 
 			@Override
-			public String getUnits(@SuppressWarnings("unused") int cellIndex)
+			public String getUnits(int fieldIndex)
 			{
 				throw new IndexOutOfBoundsException();
 			}
@@ -191,7 +196,7 @@ public abstract class DataFileReader
 			}
 
 			@Override
-			public Tuple get(@SuppressWarnings("unused") int index)
+			public Tuple get(int index)
 			{
 				return new Tuple() {
 
@@ -208,13 +213,13 @@ public abstract class DataFileReader
 					}
 
 					@Override
-					public String getAsString(@SuppressWarnings("unused") int cellIndex)
+					public String getAsString(int fieldIndex)
 					{
 						throw new IndexOutOfBoundsException();
 					}
 
 					@Override
-					public double get(@SuppressWarnings("unused") int cellIndex)
+					public double get(int fieldIndex)
 					{
 						throw new IndexOutOfBoundsException();
 					}

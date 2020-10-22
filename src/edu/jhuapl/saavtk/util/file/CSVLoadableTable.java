@@ -79,9 +79,9 @@ abstract class CSVLoadableTable extends LoadableTable
 			return null;
 		}
 		ImmutableList.Builder<Double> builder = ImmutableList.builder();
-		for (String cell : line)
+		for (String field : line)
 		{
-			builder.add(Double.parseDouble(cell));
+			builder.add(Double.parseDouble(field));
 		}
 		return builder.build();
 	}

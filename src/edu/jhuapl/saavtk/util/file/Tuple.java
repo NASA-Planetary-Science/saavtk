@@ -6,7 +6,7 @@ public interface Tuple
 	
 	double[] get();
 
-	String getAsString(int cellIndex);
+	String getAsString(int fieldIndex);
 
-	double get(int cellIndex);
+	double get(int fieldIndex);
 }

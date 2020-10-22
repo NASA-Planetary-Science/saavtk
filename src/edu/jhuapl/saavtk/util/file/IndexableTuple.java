@@ -2,11 +2,11 @@ package edu.jhuapl.saavtk.util.file;
 
 public interface IndexableTuple extends DataObject
 {
-	int getNumberCells();
+	int getNumberFields();
 
-	String getName(int cellIndex);
+	String getName(int fieldIndex);
 
-	String getUnits(int cellIndex);
+	String getUnits(int fieldIndex);
 
 	int size();
 
