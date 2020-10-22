@@ -16,12 +16,12 @@ public abstract class DataFileReader
 	{
 		private static final long serialVersionUID = -5934810207683523722L;
 
-		FileFormatException(String msg)
+		public FileFormatException(String msg)
 		{
 			super(msg);
 		}
 
-		FileFormatException(Exception e)
+		public FileFormatException(Exception e)
 		{
 			super(e);
 		}
@@ -35,12 +35,12 @@ public abstract class DataFileReader
 	{
 		private static final long serialVersionUID = -3268081959880597315L;
 
-		IncorrectFileFormatException(String msg)
+		public IncorrectFileFormatException(String msg)
 		{
 			super(msg);
 		}
 
-		IncorrectFileFormatException(Exception e)
+		public IncorrectFileFormatException(Exception e)
 		{
 			super(e);
 		}
@@ -54,12 +54,12 @@ public abstract class DataFileReader
 	{
 		private static final long serialVersionUID = -8918875089497257976L;
 
-		InvalidFileFormatException(String msg)
+		public InvalidFileFormatException(String msg)
 		{
 			super(msg);
 		}
 
-		InvalidFileFormatException(Exception e)
+		public InvalidFileFormatException(Exception e)
 		{
 			super(e);
 		}
