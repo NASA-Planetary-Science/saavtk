@@ -79,7 +79,7 @@ public class FacetColoringData
 		Vector<ColoringData> oneDColorings = new Vector<>();
 		for (ColoringData data : allColoringData)
 		{
-			if (data.getTupleNames().size() == 1)
+			if (data.getFieldNames().size() == 1)
 				oneDColorings.add(data);
 		}
 		return oneDColorings;

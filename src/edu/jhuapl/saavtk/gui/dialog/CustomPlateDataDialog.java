@@ -183,7 +183,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
             // After copying the file, convert the file path to a URL format.
             destFilePath = safeUrlPaths.getUrl(safeUrlPaths.getString(getCustomDataFolder(), destFileName));
-            FileBasedColoringData newColoringData = FileBasedColoringData.of(source.getName(), destFilePath, source.getTupleNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls());
+            FileBasedColoringData newColoringData = FileBasedColoringData.of(source.getName(), destFilePath, source.getFieldNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls());
 
             DefaultListModel<FileBasedColoringData> model = (DefaultListModel<FileBasedColoringData>) cellDataList.getModel();
             if (index >= model.getSize())

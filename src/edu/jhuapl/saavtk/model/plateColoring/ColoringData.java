@@ -39,7 +39,7 @@ public interface ColoringData
     int getNumberElements();
 
     /**
-     * Return a list of strings identifying the tuples associated with each element
+     * Return a list of strings identifying the fields associated with each element
      * (facet). For scalar-valued coloring data, this is typically a list with a
      * single string equal to the name of the coloring returned by
      * {@link #getName()}. For higher order colorings these names typically reflect
@@ -50,9 +50,9 @@ public interface ColoringData
      * elements must match the rank of the data expected to be returned by the
      * {@link #getData()} method.
      * 
-     * @return the list of tuple names
+     * @return the list of field names
      */
-    List<String> getTupleNames();
+    List<String> getFieldNames();
 
     /**
      * Return a flag indicating whether the coloring might contain

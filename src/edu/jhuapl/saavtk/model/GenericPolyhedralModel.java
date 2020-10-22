@@ -1939,14 +1939,14 @@ public class GenericPolyhedralModel extends PolyhedralModel
         int numColorColumns = 0;
         for (ColoringData data : coloringData)
         {
-            numColorColumns += data.getTupleNames().size();
+            numColorColumns += data.getFieldNames().size();
         }
 
         double[] result = new double[numColorColumns];
         int valueIndex = 0;
         for (ColoringData data : coloringData)
         {
-            double[] coloringVector = getVectorValue(closestPoint, data.getData(), cellId, data.getTupleNames().size());
+            double[] coloringVector = getVectorValue(closestPoint, data.getData(), cellId, data.getFieldNames().size());
             for (int index = 0; index < coloringVector.length; ++index, ++valueIndex)
             {
                 result[valueIndex] = coloringVector[index];
@@ -2839,7 +2839,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
                 for (ColoringData data : allColoringData)
                 {
                     String units = data.getUnits();
-                    for (String name : data.getTupleNames())
+                    for (String name : data.getFieldNames())
                     {
                         out.write("," + name);
                         if (units != null && !units.isEmpty())

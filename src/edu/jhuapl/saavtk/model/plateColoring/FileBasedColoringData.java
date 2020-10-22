@@ -78,7 +78,7 @@ public class FileBasedColoringData implements ColoringData
             fileBasedColoringData = of( //
                     coloringData.getName(), //
                     fileName, //
-                    coloringData.getTupleNames(), //
+                    coloringData.getFieldNames(), //
                     columnIdentifiers, //
                     coloringData.getUnits(), //
                     coloringData.getNumberElements(), //
@@ -173,7 +173,7 @@ public class FileBasedColoringData implements ColoringData
 	}
 
 	@Override
-    public List<String> getTupleNames()
+    public List<String> getFieldNames()
 	{
 		return ImmutableList.copyOf(getMetadata().get(ELEMENT_NAMES));
 	}

@@ -80,7 +80,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
         {
             cellDataPathTextField.setText(LEAVE_UNMODIFIED);
             origData = data;
-            List<String> elementNames = data.getTupleNames();
+            List<String> elementNames = data.getFieldNames();
             int numberColumns = elementNames.size();
 
             if (numberColumns == 1)

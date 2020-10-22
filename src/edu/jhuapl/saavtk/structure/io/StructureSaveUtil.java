@@ -153,7 +153,7 @@ public class StructureSaveUtil
 		for (ColoringData coloring : colorings)
 		{
 			String units = coloring.getUnits();
-			for (String element : coloring.getTupleNames())
+			for (String element : coloring.getFieldNames())
 			{
 				out.write("," + element);
 				if (!units.isEmpty())
