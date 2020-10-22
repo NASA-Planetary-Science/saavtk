@@ -28,7 +28,7 @@ import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
 import edu.jhuapl.saavtk.model.plateColoring.CustomizableColoringDataManager;
 import edu.jhuapl.saavtk.model.plateColoring.FacetColoringData;
 import edu.jhuapl.saavtk.model.plateColoring.FileBasedColoringData;
-import edu.jhuapl.saavtk.model.plateColoring.VtkColoringDataUtils;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringDataUtils;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.ConvertResourceToFile;
@@ -2228,7 +2228,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
             scalarBarActor.SetTitle(title);
 
             vtkFloatArray floatArray = new vtkFloatArray();
-            VtkColoringDataUtils.copyIndexableToVtkArray(coloringData.getData(), floatArray);
+            ColoringDataUtils.copyIndexableToVtkArray(coloringData.getData(), floatArray);
             doPaint |= checkAndSave("floatArray", floatArray, newPaintingAttributes);
 
             initColormap();

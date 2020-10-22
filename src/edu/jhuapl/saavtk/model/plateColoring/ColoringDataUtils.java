@@ -1,5 +1,9 @@
 package edu.jhuapl.saavtk.model.plateColoring;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+
 import com.google.common.base.Preconditions;
 
 import edu.jhuapl.saavtk.util.file.IndexableTuple;
@@ -7,97 +11,107 @@ import edu.jhuapl.saavtk.util.file.Tuple;
 import vtk.vtkDataArray;
 
 /**
- * Static utility methods useful for converting coloring-related abstractions to
- * VTK abstractions.
+ * Static utility methods useful for manipulating coloring-related abstractions.
  * 
  * @author James Peachey
  *
  */
-public class VtkColoringDataUtils
+public class ColoringDataUtils
 {
 
     private static abstract class VtkArrayIndexable implements IndexableTuple
     {
-    
+
         protected abstract class VtkArrayTuple implements Tuple
         {
             private final int tupleIndex;
-    
+
             protected VtkArrayTuple(int tupleIndex)
             {
                 super();
                 this.tupleIndex = tupleIndex;
             }
-    
+
             @Override
             public int size()
             {
                 return getNumberCells();
             }
-    
+
             @Override
             public String getAsString(int cellIndex)
             {
                 return Double.toString(get(cellIndex));
             }
-    
+
             @Override
             public double get(int cellIndex)
             {
                 checkCellIndex(cellIndex);
-    
+
                 return getVtkArray().GetComponent(tupleIndex, cellIndex);
             }
-    
+
         }
-    
-        private final vtkDataArray vtkArray;
-    
+
+        private vtkDataArray vtkArray;
+
         protected VtkArrayIndexable(vtkDataArray vtkArray)
         {
             super();
             this.vtkArray = vtkArray;
         }
-    
+
         protected vtkDataArray getVtkArray()
         {
+            Preconditions.checkState(vtkArray != null, "VTK-backed data array has been deleted; cannot access it further");
+
             return vtkArray;
         }
-    
+
+        protected void deleteVtkData()
+        {
+            if (vtkArray != null)
+            {
+                vtkArray.Delete();
+            }
+            vtkArray = null;
+        }
+
         @Override
         public int getNumberCells()
         {
             return getVtkArray().GetNumberOfComponents();
         }
-    
+
         @Override
         public String getName(int cellIndex)
         {
             checkCellIndex(cellIndex);
-    
+
             vtkDataArray vtkArray = getVtkArray();
-    
+
             String name = vtkArray.HasAComponentName() ? vtkArray.GetComponentName(cellIndex) : null;
             if (name == null || name.equals(""))
             {
                 name = Integer.toString(cellIndex);
             }
-    
+
             return name;
         }
-    
+
         @Override
         public String getUnits(int cellIndex)
         {
             return "";
         }
-    
+
         @Override
         public int size()
         {
             return getVtkArray().GetNumberOfTuples();
         }
-    
+
         protected void checkTupleIndex(int tupleIndex)
         {
             if (tupleIndex < 0 || tupleIndex > size())
@@ -105,7 +119,7 @@ public class VtkColoringDataUtils
                 throw new IndexOutOfBoundsException("cellIndex = " + tupleIndex + " is out of half-open range [0, " + size() + ")");
             }
         }
-    
+
         protected void checkCellIndex(int cellIndex)
         {
             if (cellIndex < 0 || cellIndex > getNumberCells())
@@ -113,7 +127,31 @@ public class VtkColoringDataUtils
                 throw new IndexOutOfBoundsException("cellIndex = " + cellIndex + " is out of half-open range [0, " + getNumberCells() + ")");
             }
         }
-    
+
+    }
+
+    /**
+     * For specified {@link IndexableTuple} object, if its implementation was
+     * provided by a previous call to
+     * {@link ColoringDataUtils#createIndexableFromVtkArray(vtkDataArray)}, this
+     * method calls the Delete() method of the underlying VTK data object to free
+     * the associated memory that VTK allocated.
+     * <p>
+     * After this method is called, an {@link IllegalStateException} will be thrown
+     * if any further attempt is made to access elements of data belonging to the
+     * specified {@link IndexableTuple}.
+     * <p>
+     * It is safe to call this method for any object, and safe to call it multiple
+     * times for the same object, regardless of the object's implementation.
+     * 
+     * @param tuples
+     */
+    public static void deleteVtkData(IndexableTuple tuples)
+    {
+        if (tuples instanceof VtkArrayIndexable)
+        {
+            ((VtkArrayIndexable) tuples).deleteVtkData();
+        }
     }
 
     /**
@@ -128,11 +166,11 @@ public class VtkColoringDataUtils
         Preconditions.checkNotNull(tuples);
         Preconditions.checkNotNull(vtkArray);
 
-        if (tuples instanceof VtkColoringDataUtils.VtkArrayIndexable)
+        if (tuples instanceof ColoringDataUtils.VtkArrayIndexable)
         {
             // Optimization in this case: use VTK intrinsic method to copy the array
             // associated with the input Indexable.
-            vtkDataArray inputArray = ((VtkColoringDataUtils.VtkArrayIndexable) tuples).getVtkArray();
+            vtkDataArray inputArray = ((ColoringDataUtils.VtkArrayIndexable) tuples).getVtkArray();
 //            long startTime = System.currentTimeMillis();
             vtkArray.DeepCopy(inputArray);
 //            System.err.println("Time to copy was " + (System.currentTimeMillis() - startTime));
@@ -169,7 +207,7 @@ public class VtkColoringDataUtils
         // output object to call the correct variation of GetTuple accordingly.
         if (vtkArray.GetNumberOfComponents() == 1)
         {
-            return new VtkColoringDataUtils.VtkArrayIndexable(vtkArray) {
+            return new ColoringDataUtils.VtkArrayIndexable(vtkArray) {
 
                 @Override
                 public Tuple get(int tupleIndex)
@@ -191,7 +229,7 @@ public class VtkColoringDataUtils
         }
         else if (vtkArray.GetNumberOfComponents() == 2)
         {
-            return new VtkColoringDataUtils.VtkArrayIndexable(vtkArray) {
+            return new ColoringDataUtils.VtkArrayIndexable(vtkArray) {
 
                 @Override
                 public Tuple get(int tupleIndex)
@@ -213,7 +251,7 @@ public class VtkColoringDataUtils
         }
         else if (vtkArray.GetNumberOfComponents() == 3)
         {
-            return new VtkColoringDataUtils.VtkArrayIndexable(vtkArray) {
+            return new ColoringDataUtils.VtkArrayIndexable(vtkArray) {
 
                 @Override
                 public Tuple get(int tupleIndex)
@@ -235,7 +273,7 @@ public class VtkColoringDataUtils
         }
         else if (vtkArray.GetNumberOfComponents() == 4)
         {
-            return new VtkColoringDataUtils.VtkArrayIndexable(vtkArray) {
+            return new ColoringDataUtils.VtkArrayIndexable(vtkArray) {
 
                 @Override
                 public Tuple get(int tupleIndex)
@@ -257,7 +295,7 @@ public class VtkColoringDataUtils
         }
         else if (vtkArray.GetNumberOfComponents() == 6)
         {
-            return new VtkColoringDataUtils.VtkArrayIndexable(vtkArray) {
+            return new ColoringDataUtils.VtkArrayIndexable(vtkArray) {
 
                 @Override
                 public Tuple get(int tupleIndex)
@@ -279,7 +317,7 @@ public class VtkColoringDataUtils
         }
         else if (vtkArray.GetNumberOfComponents() == 9)
         {
-            return new VtkColoringDataUtils.VtkArrayIndexable(vtkArray) {
+            return new ColoringDataUtils.VtkArrayIndexable(vtkArray) {
 
                 @Override
                 public Tuple get(int tupleIndex)
@@ -302,7 +340,7 @@ public class VtkColoringDataUtils
         else
         {
             // This case probably never arises, but may as well cover it.
-            return new VtkColoringDataUtils.VtkArrayIndexable(vtkArray) {
+            return new ColoringDataUtils.VtkArrayIndexable(vtkArray) {
 
                 @Override
                 public Tuple get(int tupleIndex)
@@ -330,6 +368,27 @@ public class VtkColoringDataUtils
 
             };
         }
+    }
+
+    /**
+     * Create the parent of the provided file. Creates all parts of the path needed.
+     * Does nothing if the parent directory already exists.
+     * 
+     * @param file the file whose parent to create
+     * @see {@link Files#createDirectories(java.nio.file.Path, java.nio.file.attribute.FileAttribute...)}
+     *      for exceptions thrown
+     */
+    public static void createParentDirectory(File file) throws IOException
+    {
+        File parent = file.getParentFile();
+        if (parent != null)
+        {
+            if (!parent.isDirectory())
+            {
+                Files.createDirectories(parent.toPath());
+            }
+        }
+
     }
 
 }

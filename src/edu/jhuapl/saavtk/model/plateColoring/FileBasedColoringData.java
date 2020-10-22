@@ -73,7 +73,7 @@ public class FileBasedColoringData implements ColoringData
         else
         {
             vtkFloatArray vtkArray = new vtkFloatArray();
-            VtkColoringDataUtils.copyIndexableToVtkArray(coloringData.getData(), vtkArray);
+            ColoringDataUtils.copyIndexableToVtkArray(coloringData.getData(), vtkArray);
 
             fileBasedColoringData = of( //
                     coloringData.getName(), //
@@ -531,7 +531,7 @@ public class FileBasedColoringData implements ColoringData
     @Override
     public IndexableTuple getData()
     {
-        return VtkColoringDataUtils.createIndexableFromVtkArray(getVtkData());
+        return ColoringDataUtils.createIndexableFromVtkArray(getVtkData());
     }
 
 }
