@@ -306,7 +306,7 @@ public class CsvFileReader extends DataFileReader
 			}
 
 			@Override
-			public Tuple get(int index)
+			public Tuple get(int tupleIndex)
 			{
 				return new Tuple() {
 
@@ -319,19 +319,13 @@ public class CsvFileReader extends DataFileReader
 					@Override
 					public double[] get()
 					{
-					    return Doubles.toArray(valuesList.get(index));
-					}
-
-					@Override
-					public String getAsString(int fieldIndex)
-					{
-						return Double.toString(get(fieldIndex));
+					    return Doubles.toArray(valuesList.get(tupleIndex));
 					}
 
 					@Override
 					public double get(int fieldIndex)
 					{
-						return valuesList.get(index).get(fieldIndex);
+						return valuesList.get(tupleIndex).get(fieldIndex);
 					}
 				};
 			}

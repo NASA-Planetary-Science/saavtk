@@ -266,7 +266,7 @@ public final class FitsFileReader extends DataFileReader
 			}
 
 			@Override
-			public Tuple get(int index)
+			public Tuple get(int tupleIndex)
 			{
 				return new Tuple() {
 
@@ -277,28 +277,9 @@ public final class FitsFileReader extends DataFileReader
 					}
 
 					@Override
-					public double[] get()
-					{
-					    double[] array = new double[numberFields];
-					    
-					    for (int fieldIndex = 0; fieldIndex < numberFields; ++fieldIndex)
-					    {
-					        array[fieldIndex] = columns.get(fieldIndex).get(index);
-					    }
-
-					    return array;
-					}
-
-					@Override
-					public String getAsString(int fieldIndex)
-					{
-						return Double.toString(get(fieldIndex));
-					}
-
-					@Override
 					public double get(int fieldIndex)
 					{
-						return columns.get(fieldIndex).get(index);
+						return columns.get(fieldIndex).get(tupleIndex);
 					}
 				};
 			}

@@ -27,11 +27,12 @@ import edu.jhuapl.saavtk.model.plateColoring.BasicColoringDataManager;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
 import edu.jhuapl.saavtk.model.plateColoring.CustomizableColoringDataManager;
 import edu.jhuapl.saavtk.model.plateColoring.FacetColoringData;
-import edu.jhuapl.saavtk.model.plateColoring.FileBasedColoringData;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringDataFactory;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringDataUtils;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.ConvertResourceToFile;
+import edu.jhuapl.saavtk.util.Debug;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.Frustum;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -287,42 +288,51 @@ public class GenericPolyhedralModel extends PolyhedralModel
 			// legacy behavior.
         }
 
-        boolean sbmt2style = false;
-        for (int index = 0; index < coloringFiles.length; ++index)
+        Exception firstException = null;
+
+        try
         {
-            String baseFileName = coloringFiles[index];
-            Format fileFormat = guessFormat(baseFileName);
-            for (int resolutionLevel = 0; resolutionLevel < numberElements.size(); ++resolutionLevel)
+            boolean sbmt2style = false;
+            for (int index = 0; index < coloringFiles.length; ++index)
             {
-                String fileName = getColoringFileName(baseFileName, resolutionLevel, fileFormat, sbmt2style);
-                if (fileName != null)
+                String baseFileName = coloringFiles[index];
+                Format fileFormat = guessFormat(baseFileName);
+                for (int resolutionLevel = 0; resolutionLevel < numberElements.size(); ++resolutionLevel)
                 {
-                    fileFormat = guessFormat(fileName);
-                    sbmt2style = guessSbmt2Style(fileName);
-                    String name = coloringNames[index];
-                    ImmutableList<String> elementNames = ImmutableList.of(name);
-                    String units = coloringUnits.length > index ? coloringUnits[index] : "";
-                    boolean hasNulls = coloringHasNulls.length > index ? coloringHasNulls[index] : false;
-					coloringDataManager.addBuiltIn(FileBasedColoringData.of(name, fileName, elementNames, units,
-							numberElements.get(resolutionLevel), hasNulls));
+                    try
+                    {
+                        String fileName = getColoringFileName(baseFileName, resolutionLevel, fileFormat, sbmt2style);
+                        if (fileName != null)
+                        {
+                            fileFormat = guessFormat(fileName);
+                            sbmt2style = guessSbmt2Style(fileName);
+                            String name = coloringNames[index];
+                            ImmutableList<String> elementNames = ImmutableList.of(name);
+                            String units = coloringUnits.length > index ? coloringUnits[index] : "";
+                            boolean hasNulls = coloringHasNulls.length > index ? coloringHasNulls[index] : false;
+                            coloringDataManager.addBuiltIn(ColoringDataFactory.of(name, units, numberElements.get(resolutionLevel), elementNames, hasNulls, fileName));
+                        }                        
+                    }
+                    catch (Exception e)
+                    {
+                        if (firstException == null)
+                        {
+                            firstException = e;
+                        }
+                        e.printStackTrace(Debug.of().err());
+                    }
                 }
             }
+            if (firstException != null)
+            {
+                throw new RuntimeException("One or more colorings failed to load. First exception was ", firstException);
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
         }
 
-        // metadataFileName = SafePaths.getString(Configuration.getCacheDir(),
-        // metadataFileName);
-        // try
-        // {
-        // Serializers.serialize(COLORING_METADATA_ID,
-        // coloringDataManager.getMetadataManager(false).store(), new
-        // File(metadataFileName));
-        // }
-        // catch (IOException e)
-        // {
-        // System.err.println("Exception when trying to save plate coloring metadata
-        // file");
-        // e.printStackTrace();
-        // }
     }
 
     private static Format guessFormat(String baseFileName)
@@ -482,8 +492,8 @@ public class GenericPolyhedralModel extends PolyhedralModel
         {
             int numberElements = coloringValues[i].GetNumberOfTuples();
             ImmutableList<String> elementNames = ImmutableList.of(coloringNames[i]);
-			coloringDataManager.addBuiltIn(FileBasedColoringData.of(coloringNames[i], elementNames, coloringUnits[i],
-					numberElements, false, coloringValues[i]));
+
+            coloringDataManager.addBuiltIn(ColoringDataFactory.of(coloringNames[i], coloringUnits[i], numberElements, elementNames, false, coloringValues[i]));
         }
         this.coloringValueType = coloringValueType;
 
@@ -669,8 +679,13 @@ public class GenericPolyhedralModel extends PolyhedralModel
                             resolutionLevel = 0;
                         }
                         int customNumberElements = config.getResolutionNumberElements().get(resolutionLevel);
-						coloringDataManager.addCustom(FileBasedColoringData.of(coloringName, coloringFile,
-								ImmutableList.of(coloringName), coloringUnits, customNumberElements, coloringHasNulls));
+                        coloringDataManager.addCustom(ColoringDataFactory.of( //
+                                coloringName, //
+                                coloringUnits, //
+                                customNumberElements, //
+                                ImmutableList.of(coloringName), //
+                                coloringHasNulls, coloringFile //
+                        ));
                     }
                 }
             }

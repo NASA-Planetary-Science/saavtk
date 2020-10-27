@@ -196,7 +196,7 @@ public abstract class DataFileReader
 			}
 
 			@Override
-			public Tuple get(int index)
+			public Tuple get(int tupleIndex)
 			{
 				return new Tuple() {
 
@@ -210,12 +210,6 @@ public abstract class DataFileReader
                     public double[] get()
 					{
 					    return emptyArray;
-					}
-
-					@Override
-					public String getAsString(int fieldIndex)
-					{
-						throw new IndexOutOfBoundsException();
 					}
 
 					@Override

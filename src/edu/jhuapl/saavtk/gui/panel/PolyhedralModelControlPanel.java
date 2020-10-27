@@ -51,8 +51,9 @@ import edu.jhuapl.saavtk.model.Graticule;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringDataManager;
-import edu.jhuapl.saavtk.model.plateColoring.FileBasedColoringData;
+import edu.jhuapl.saavtk.model.plateColoring.LoadableColoringData;
 import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
@@ -622,18 +623,17 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
             int index = smallBodyModel.getColoringIndex();
 
-            FileBasedColoringData coloringData = FileBasedColoringData.of(smallBodyModel.getAllColoringData().get(index));
-            String fileName = coloringData.getFileName();
-            if (fileName != null)
+            ColoringData coloringData = smallBodyModel.getAllColoringData().get(index);
+            if (coloringData instanceof LoadableColoringData)
             {
-                File file = FileCache.getFileFromServer(coloringData.getFileName());
-
+                File file = ((LoadableColoringData) coloringData).getFile();
+                
                 JTabbedPane jTabbedPane = MetadataDisplay.summary(file);
                 int tabCount = jTabbedPane.getTabCount();
                 if (tabCount > 0)
                 {
                     JFrame jFrame = new JFrame("Coloring File Properties");
-
+                    
                     jFrame.add(jTabbedPane);
                     jFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
                     jFrame.pack();
@@ -709,13 +709,17 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                 }
                 else
                 {
-                    String urlString = FileBasedColoringData.of(coloringDataManager.get(name, numberElements)).getFileName();
-                    if (urlString == null) continue;
-                    box.setEnabled(name, FileCache.instance().isAccessible(urlString));
-                    StateListener listener = e -> {
-                        box.setEnabled(name, e.isAccessible());
-                    };
-                    boxListeners.addStateChangeListener(urlString, listener);
+                    ColoringData coloringData = coloringDataManager.get(name, numberElements);
+                    if (coloringData instanceof LoadableColoringData)
+                    {
+                        String urlString = ((LoadableColoringData) coloringData).getFileId();
+
+                        box.setEnabled(name, FileCache.instance().isAccessible(urlString));
+                        StateListener listener = e -> {
+                            box.setEnabled(name, e.isAccessible());
+                        };
+                        boxListeners.addStateChangeListener(urlString, listener);                        
+                    }
                 }
             }
 

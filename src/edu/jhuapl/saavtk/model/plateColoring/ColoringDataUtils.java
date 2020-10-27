@@ -19,115 +19,27 @@ import vtk.vtkDataArray;
 public class ColoringDataUtils
 {
 
-    private static abstract class VtkArrayIndexable implements IndexableTuple
+    /**
+     * This will also copy a null to a null.
+     * @param source
+     * @return
+     */
+    public static IndexableTuple copy(IndexableTuple source)
     {
-
-        protected abstract class VtkArrayTuple implements Tuple
+        IndexableTuple dest;
+        if (source instanceof VtkArrayIndexable)
         {
-            private final int tupleIndex;
-
-            protected VtkArrayTuple(int tupleIndex)
-            {
-                super();
-                this.tupleIndex = tupleIndex;
-            }
-
-            @Override
-            public int size()
-            {
-                return getNumberFields();
-            }
-
-            @Override
-            public String getAsString(int fieldIndex)
-            {
-                return Double.toString(get(fieldIndex));
-            }
-
-            @Override
-            public double get(int fieldIndex)
-            {
-                checkFieldIndex(fieldIndex);
-
-                return getVtkArray().GetComponent(tupleIndex, fieldIndex);
-            }
-
+            vtkDataArray arrayCopy = new vtkDataArray();
+            copyIndexableToVtkArray(source, arrayCopy);
+            dest = createIndexableFromVtkArray(arrayCopy);
+        }
+        else
+        {
+            // Other known implementations are assumed to be immutable.
+            dest = source;
         }
 
-        private vtkDataArray vtkArray;
-
-        protected VtkArrayIndexable(vtkDataArray vtkArray)
-        {
-            super();
-            this.vtkArray = vtkArray;
-        }
-
-        protected vtkDataArray getVtkArray()
-        {
-            Preconditions.checkState(vtkArray != null, "VTK-backed data array has been deleted; cannot access it further");
-
-            return vtkArray;
-        }
-
-        protected void deleteVtkData()
-        {
-            if (vtkArray != null)
-            {
-                vtkArray.Delete();
-            }
-            vtkArray = null;
-        }
-
-        @Override
-        public int getNumberFields()
-        {
-            return getVtkArray().GetNumberOfComponents();
-        }
-
-        @Override
-        public String getName(int fieldIndex)
-        {
-            checkFieldIndex(fieldIndex);
-
-            vtkDataArray vtkArray = getVtkArray();
-
-            String name = vtkArray.HasAComponentName() ? vtkArray.GetComponentName(fieldIndex) : null;
-            if (name == null || name.equals(""))
-            {
-                name = Integer.toString(fieldIndex);
-            }
-
-            return name;
-        }
-
-        @Override
-        public String getUnits(int fieldIndex)
-        {
-            return "";
-        }
-
-        @Override
-        public int size()
-        {
-            return getVtkArray().GetNumberOfTuples();
-        }
-
-        protected void checkTupleIndex(int tupleIndex)
-        {
-            if (tupleIndex < 0 || tupleIndex > size())
-            {
-                throw new IndexOutOfBoundsException("tupleIndex = " + tupleIndex + " is out of half-open range [0, " + size() + ")");
-            }
-        }
-
-        protected void checkFieldIndex(int fieldIndex)
-        {
-            if (fieldIndex < 0 || fieldIndex > getNumberFields())
-            {
-                throw new IndexOutOfBoundsException("fieldIndex = " + fieldIndex + " is out of half-open range [0, " + getNumberFields() + ")");
-            }
-        }
-
+        return dest;
     }
 
     /**
@@ -202,6 +114,8 @@ public class ColoringDataUtils
      */
     public static IndexableTuple createIndexableFromVtkArray(vtkDataArray vtkArray)
     {
+        Preconditions.checkNotNull(vtkArray);
+
         // This looks clunky, but it is a performant unpacking of VTK's interface that
         // determines the dimensions of the source array one time, and sets up the
         // output object to call the correct variation of GetTuple accordingly.
@@ -371,7 +285,7 @@ public class ColoringDataUtils
     }
 
     /**
-     * Create the parent of the provided file. Creates all parts of the path needed.
+     * Create the parent directory of the provided file. Creates all parts of the path needed.
      * Does nothing if the parent directory already exists.
      * 
      * @param file the file whose parent to create
@@ -389,6 +303,120 @@ public class ColoringDataUtils
             }
         }
 
+    }
+    
+    /**
+     * Implementation of {@link IndexableTuple} that is backed by a
+     * {@link vtkDataArray}.
+     */
+    private static abstract class VtkArrayIndexable implements IndexableTuple
+    {
+
+        protected abstract class VtkArrayTuple implements Tuple
+        {
+            private final int tupleIndex;
+
+            protected VtkArrayTuple(int tupleIndex)
+            {
+                super();
+                this.tupleIndex = tupleIndex;
+            }
+
+            @Override
+            public int size()
+            {
+                return getNumberFields();
+            }
+
+            @Override
+            public double get(int fieldIndex)
+            {
+                checkFieldIndex(fieldIndex);
+
+                return getVtkArray().GetComponent(tupleIndex, fieldIndex);
+            }
+
+        }
+
+        private vtkDataArray vtkArray;
+
+        protected VtkArrayIndexable(vtkDataArray vtkArray)
+        {
+            super();
+            this.vtkArray = vtkArray;
+        }
+
+        protected vtkDataArray getVtkArray()
+        {
+            Preconditions.checkState(vtkArray != null, "VTK-backed data array has been deleted; cannot access it further");
+
+            return vtkArray;
+        }
+
+        protected void deleteVtkData()
+        {
+            if (vtkArray != null)
+            {
+                vtkArray.Delete();
+            }
+            vtkArray = null;
+        }
+
+        @Override
+        public int getNumberFields()
+        {
+            return getVtkArray().GetNumberOfComponents();
+        }
+
+        @Override
+        public String getName(int fieldIndex)
+        {
+            checkFieldIndex(fieldIndex);
+
+            vtkDataArray vtkArray = getVtkArray();
+
+            String name = vtkArray.HasAComponentName() ? vtkArray.GetComponentName(fieldIndex) : null;
+            if (name == null || name.equals(""))
+            {
+                name = Integer.toString(fieldIndex);
+            }
+
+            return name;
+        }
+
+        @Override
+        public String getUnits(int fieldIndex)
+        {
+            return "";
+        }
+
+        @Override
+        public int size()
+        {
+            return getVtkArray().GetNumberOfTuples();
+        }
+
+        protected void checkTupleIndex(int tupleIndex)
+        {
+            if (tupleIndex < 0 || tupleIndex > size())
+            {
+                throw new IndexOutOfBoundsException("tupleIndex = " + tupleIndex + " is out of half-open range [0, " + size() + ")");
+            }
+        }
+
+        protected void checkFieldIndex(int fieldIndex)
+        {
+            if (fieldIndex < 0 || fieldIndex > getNumberFields())
+            {
+                throw new IndexOutOfBoundsException("fieldIndex = " + fieldIndex + " is out of half-open range [0, " + getNumberFields() + ")");
+            }
+        }
+
+    }
+
+    private ColoringDataUtils()
+    {
+        throw new AssertionError("Static-only class");
     }
 
 }

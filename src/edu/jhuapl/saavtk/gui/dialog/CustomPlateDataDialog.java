@@ -13,6 +13,7 @@ package edu.jhuapl.saavtk.gui.dialog;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -28,8 +29,8 @@ import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
 import edu.jhuapl.saavtk.model.plateColoring.CustomizableColoringDataManager;
-import edu.jhuapl.saavtk.model.plateColoring.FileBasedColoringData;
-import edu.jhuapl.saavtk.util.FileCache;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringDataFactory;
+import edu.jhuapl.saavtk.model.plateColoring.LoadableColoringData;
 import edu.jhuapl.saavtk.util.FileUtil;
 import edu.jhuapl.saavtk.util.MapUtil;
 import edu.jhuapl.saavtk.util.SafeURLPaths;
@@ -50,7 +51,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 		initComponents();
 
-		DefaultListModel<FileBasedColoringData> model = new DefaultListModel<>();
+		DefaultListModel<ColoringData> model = new DefaultListModel<>();
 		cellDataList.setModel(model);
 
 		initializeList(model);
@@ -58,7 +59,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		pack();
 	}
 
-	private final void initializeList(DefaultListModel<FileBasedColoringData> model)
+	private final void initializeList(DefaultListModel<ColoringData> model)
 	{
 		int resolution = modelManager.getPolyhedralModel().getModelResolution();
 		ImmutableList<Integer> resolutions = coloringDataManager.getResolutions();
@@ -67,7 +68,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 			int numberElements = resolutions.get(resolution);
 			for (ColoringData data : coloringDataManager.get(numberElements))
 			{
-				model.addElement(FileBasedColoringData.of(data));
+				model.addElement(data);
 			}
 		}
 	}
@@ -107,26 +108,25 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 					continue;
 				}
 
-				String fileName = FileBasedColoringData.of(coloringData).getFileName();
-				if (fileName == null)
+				if (coloringData instanceof LoadableColoringData)
 				{
-					continue;
+				    String fileName = ((LoadableColoringData) coloringData).getFileId();
+				    
+				    if (!cellDataFilenames.isEmpty())
+				    {
+				        cellDataFilenames += PolyhedralModel.LIST_SEPARATOR;
+				        cellDataNames += PolyhedralModel.LIST_SEPARATOR;
+				        cellDataUnits += PolyhedralModel.LIST_SEPARATOR;
+				        cellDataHasNulls += PolyhedralModel.LIST_SEPARATOR;
+				        cellDataResolutionLevels += PolyhedralModel.LIST_SEPARATOR;
+				    }
+				    
+				    cellDataFilenames += fileName.replaceFirst(".*/", "");
+				    cellDataNames += coloringData.getName();
+				    cellDataUnits += coloringData.getUnits();
+				    cellDataHasNulls += new Boolean(coloringData.hasNulls()).toString();
+				    cellDataResolutionLevels += new Integer(index).toString();
 				}
-
-				if (!cellDataFilenames.isEmpty())
-				{
-					cellDataFilenames += PolyhedralModel.LIST_SEPARATOR;
-					cellDataNames += PolyhedralModel.LIST_SEPARATOR;
-					cellDataUnits += PolyhedralModel.LIST_SEPARATOR;
-					cellDataHasNulls += PolyhedralModel.LIST_SEPARATOR;
-					cellDataResolutionLevels += PolyhedralModel.LIST_SEPARATOR;
-				}
-
-				cellDataFilenames += fileName.replaceFirst(".*/", "");
-				cellDataNames += coloringData.getName();
-				cellDataUnits += coloringData.getUnits();
-				cellDataHasNulls += new Boolean(coloringData.hasNulls()).toString();
-				cellDataResolutionLevels += new Integer(index).toString();
 			}
 		}
 
@@ -153,8 +153,10 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
     /**
      * Copy the source data file into a stored location under the custom data area.
-     * This method assumes the source's {@link FileBasedColoringData#getFileName()}
-     * method returns a valid file name. It is up to the caller to ensure this.
+     * If the source coloring object is itself a {@link LoadableColoringData}, its
+     * associated file is copied so that the format and original data are preserved.
+     * Otherwise, the coloring data will be written as a VTK file. In any case, a
+     * new {@link LoadableColoringData} that points to the copied location is returned.
      * <p>
      * The stored location is randomly generated using {@link UUID}.
      *
@@ -162,30 +164,51 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
      * @param source the input coloring data object
      * @return output coloring data object.
      */
-    private ColoringData copyCellData(int index, FileBasedColoringData source)
+    private LoadableColoringData copyColoringData(int index, ColoringData source)
     {
         final SafeURLPaths safeUrlPaths = SafeURLPaths.instance();
 
         // Copy the cell data file to the model directory
         try
         {
-            String sourceFilePath = source.getFileName();
-            Preconditions.checkState(sourceFilePath != null, "cannot copy coloring data with no associated source file");
+            LoadableColoringData loadableSource;
+            String destFileName;
 
-            String sourceFileName = sourceFilePath.replaceFirst(".*[/\\\\]", "");
-            String extension = sourceFileName.replaceFirst("[^\\.]*\\.", ".");
-            String uuid = UUID.randomUUID().toString();
-            String destFileName = "platedata-" + uuid + extension;
-            String destFilePath = safeUrlPaths.getString(getCustomDataFolder(), destFileName);
+            String destFileBaseName = "platedata-" + UUID.randomUUID().toString();
+            if (source instanceof LoadableColoringData)
+            {
+                loadableSource = (LoadableColoringData) source;
 
-            File fileCache = FileCache.getFileFromServer(sourceFilePath);
-            FileUtil.copyFile(fileCache.getAbsolutePath(), destFilePath);
+                // There must be a source file; copy it to the destination file.
+                File sourceFile = loadableSource.getFile();
+                String sourceFileName = sourceFile.toString().replaceFirst(".*[/\\\\]", "");
+                String extension = sourceFileName.replaceFirst("[^\\.]*\\.", ".");
+                destFileName = destFileBaseName + extension;
+                String destFilePath = safeUrlPaths.getString(getCustomDataFolder(), destFileName);
 
-            // After copying the file, convert the file path to a URL format.
-            destFilePath = safeUrlPaths.getUrl(safeUrlPaths.getString(getCustomDataFolder(), destFileName));
-            FileBasedColoringData newColoringData = FileBasedColoringData.of(source.getName(), destFilePath, source.getFieldNames(), source.getColumnIdentifiers(), source.getUnits(), source.getNumberElements(), source.hasNulls());
+                FileUtil.copyFile(sourceFile.getAbsolutePath(), destFilePath);
+            }
+            else
+            {
+                // There is no source file, so create the coloring object and use it to save to
+                // the destination file.
+                destFileName = destFileBaseName + ".vtk";
+                Path destFilePath = safeUrlPaths.get(getCustomDataFolder(), destFileName);
 
-            DefaultListModel<FileBasedColoringData> model = (DefaultListModel<FileBasedColoringData>) cellDataList.getModel();
+                loadableSource = ColoringDataFactory.of(source, destFilePath.toString());
+
+                loadableSource.save();
+            }
+
+            // Now create the output coloring object.
+            LoadableColoringData newColoringData;
+
+            // Convert the file path to a URL format.
+            String destFilePath = safeUrlPaths.getUrl(safeUrlPaths.getString(getCustomDataFolder(), destFileName));
+
+                newColoringData = ColoringDataFactory.of(loadableSource, destFilePath);
+
+            DefaultListModel<ColoringData> model = (DefaultListModel<ColoringData>) cellDataList.getModel();
             if (index >= model.getSize())
             {
                 model.addElement(newColoringData);
@@ -213,13 +236,15 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 	{
 		try
 		{
-			DefaultListModel<FileBasedColoringData> model = (DefaultListModel<FileBasedColoringData>) cellDataList.getModel();
-			FileBasedColoringData cellDataInfo = model.get(index);
+			DefaultListModel<ColoringData> model = (DefaultListModel<ColoringData>) cellDataList.getModel();
+			ColoringData cellDataInfo = model.get(index);
 			model.remove(index);
 			coloringDataManager.removeCustom(cellDataInfo);
 
-			File file = FileCache.getFileFromServer(cellDataInfo.getFileName());
-			Files.delete(file.toPath());
+			if (cellDataInfo instanceof LoadableColoringData)
+			{			    
+			    Files.delete(((LoadableColoringData) cellDataInfo).getFile().toPath());
+			}
 		}
 		catch (Exception e)
 		{
@@ -357,7 +382,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		// If user clicks okay add to list
 		if (dialog.getOkayPressed())
 		{
-			ColoringData coloringData = copyCellData(cellDataList.getModel().getSize(), dialog.getColoringData());
+			LoadableColoringData coloringData = copyColoringData(cellDataList.getModel().getSize(), dialog.getColoringData());
 			coloringDataManager.addCustom(coloringData);
 			updateConfigFile();
 		}
@@ -379,18 +404,19 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		int selectedItem = cellDataList.getSelectedIndex();
 		if (selectedItem >= 0)
 		{
-			DefaultListModel<FileBasedColoringData> cellDataListModel = (DefaultListModel<FileBasedColoringData>) cellDataList.getModel();
-			FileBasedColoringData oldColoringData = cellDataListModel.get(selectedItem);
+			DefaultListModel<ColoringData> cellDataListModel = (DefaultListModel<ColoringData>) cellDataList.getModel();
+			ColoringData oldColoringData = cellDataListModel.get(selectedItem);
+			Preconditions.checkState(oldColoringData instanceof LoadableColoringData);
 
 			CustomPlateDataImporterDialog dialog = new CustomPlateDataImporterDialog(JOptionPane.getFrameForComponent(this), coloringDataManager, true, modelManager.getPolyhedralModel().getSmallBodyPolyData().GetNumberOfCells());
-			dialog.setColoringData(oldColoringData);
+			dialog.setColoringData((LoadableColoringData) oldColoringData);
 			dialog.setLocationRelativeTo(this);
 			dialog.setVisible(true);
 
 			// If user clicks okay replace item in list
 			if (dialog.getOkayPressed())
 			{
-				FileBasedColoringData newColoringData = dialog.getColoringData();
+				ColoringData newColoringData = dialog.getColoringData();
 				if (!oldColoringData.equals(newColoringData))
 				{
 					cellDataListModel.set(selectedItem, newColoringData);
@@ -412,7 +438,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		int selectedItem = cellDataList.getSelectedIndex();
 		if (selectedItem >= 0)
 		{
-			DefaultListModel<FileBasedColoringData> cellDataListModel = (DefaultListModel<FileBasedColoringData>) cellDataList.getModel();
+			DefaultListModel<ColoringData> cellDataListModel = (DefaultListModel<ColoringData>) cellDataList.getModel();
 
 			ColoringData coloringData = cellDataListModel.get(selectedItem);
 			boolean builtIn = coloringDataManager.isBuiltIn(coloringData);
@@ -427,7 +453,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 	}//GEN-LAST:event_cellDataListValueChanged
 
 	// Variables declaration - do not modify//GEN-BEGIN:variables
-	private javax.swing.JList<FileBasedColoringData> cellDataList;
+	private javax.swing.JList<ColoringData> cellDataList;
 	private javax.swing.JButton closeButton;
 	private javax.swing.JButton deleteButton;
 	private javax.swing.JButton editButton;
