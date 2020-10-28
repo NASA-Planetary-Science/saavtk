@@ -129,9 +129,17 @@ abstract class LegacyColoringData extends LoadableColoringData
     {
         LoadableColoringData tmpData = of(metadata, DummyHandler);
 
-        ImmutableList<?> columnIdentifiers = (metadata.hasKey(COLUMN_IDS)) ? ImmutableList.copyOf(metadata.get(COLUMN_IDS)) : null;
+        ImmutableList<?> columnIdList = null;
+        if (metadata.hasKey(COLUMN_IDS))
+        {
+            List<?> columnIds = metadata.get(COLUMN_IDS);
+            if (columnIds != null)
+            {
+                columnIdList = ImmutableList.copyOf(columnIds);
+            }
+        }
 
-        return of(tmpData.getName(), tmpData.getUnits(), tmpData.getNumberElements(), tmpData.getFieldNames(), tmpData.hasNulls(), tmpData.getFileId(), columnIdentifiers);
+        return of(tmpData.getName(), tmpData.getUnits(), tmpData.getNumberElements(), tmpData.getFieldNames(), tmpData.hasNulls(), tmpData.getFileId(), columnIdList);
     }
 
     /**
