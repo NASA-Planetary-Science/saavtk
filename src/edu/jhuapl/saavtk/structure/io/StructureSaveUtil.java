@@ -9,8 +9,8 @@ import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.structure.Ellipse;
@@ -153,7 +153,7 @@ public class StructureSaveUtil
 		for (ColoringData coloring : colorings)
 		{
 			String units = coloring.getUnits();
-			for (String element : coloring.getElementNames())
+			for (String element : coloring.getFieldNames())
 			{
 				out.write("," + element);
 				if (!units.isEmpty())

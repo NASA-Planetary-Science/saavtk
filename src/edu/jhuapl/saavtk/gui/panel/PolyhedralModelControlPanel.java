@@ -47,11 +47,13 @@ import edu.jhuapl.saavtk.gui.MetadataDisplay;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomPlateDataDialog;
 import edu.jhuapl.saavtk.gui.render.Renderer;
-import edu.jhuapl.saavtk.model.ColoringDataManager;
 import edu.jhuapl.saavtk.model.Graticule;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringDataManager;
+import edu.jhuapl.saavtk.model.plateColoring.LoadableColoringData;
 import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
@@ -620,27 +622,35 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
         {
             PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
             int index = smallBodyModel.getColoringIndex();
-            File file = FileCache.getFileFromServer(smallBodyModel.getAllColoringData().get(index).getFileName());
 
-            JTabbedPane jTabbedPane = MetadataDisplay.summary(file);
-            int tabCount = jTabbedPane.getTabCount();
-            if (tabCount > 0)
+            ColoringData coloringData = smallBodyModel.getAllColoringData().get(index);
+            if (coloringData instanceof LoadableColoringData)
             {
-                JFrame jFrame = new JFrame("Coloring File Properties");
-
-                jFrame.add(jTabbedPane);
-                jFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                jFrame.pack();
-                jFrame.setVisible(true);
+                File file = ((LoadableColoringData) coloringData).getFile();
+                
+                JTabbedPane jTabbedPane = MetadataDisplay.summary(file);
+                int tabCount = jTabbedPane.getTabCount();
+                if (tabCount > 0)
+                {
+                    JFrame jFrame = new JFrame("Coloring File Properties");
+                    
+                    jFrame.add(jTabbedPane);
+                    jFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                    jFrame.pack();
+                    jFrame.setVisible(true);
+                }
+                else
+                {
+                    JOptionPane.showMessageDialog(null, "No properties available for file " + file, "Coloring File Properties", JOptionPane.INFORMATION_MESSAGE);
+                }
             }
             else
             {
-                JOptionPane.showMessageDialog(null, "No properties available for file " + file, "Coloring File Properties", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(null, "No properties available for coloring " + coloringData.getName(), "Coloring Properties", JOptionPane.INFORMATION_MESSAGE);
             }
         }
-        catch (IOException e)
+        catch (Exception e)
         {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
@@ -699,13 +709,17 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
                 }
                 else
                 {
-                    String urlString = coloringDataManager.get(name, numberElements).getFileName();
-                    if (urlString == null) continue;
-                    box.setEnabled(name, FileCache.instance().isAccessible(urlString));
-                    StateListener listener = e -> {
-                        box.setEnabled(name, e.isAccessible());
-                    };
-                    boxListeners.addStateChangeListener(urlString, listener);
+                    ColoringData coloringData = coloringDataManager.get(name, numberElements);
+                    if (coloringData instanceof LoadableColoringData)
+                    {
+                        String urlString = ((LoadableColoringData) coloringData).getFileId();
+
+                        box.setEnabled(name, FileCache.instance().isAccessible(urlString));
+                        StateListener listener = e -> {
+                            box.setEnabled(name, e.isAccessible());
+                        };
+                        boxListeners.addStateChangeListener(urlString, listener);                        
+                    }
                 }
             }
 

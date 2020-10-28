@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.model;
+package edu.jhuapl.saavtk.model.plateColoring;
 
 import java.io.IOException;
 
@@ -76,12 +76,6 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 	public ImmutableList<ColoringData> get(int numberElements)
 	{
 		return all.get(numberElements);
-	}
-
-	@Override
-	public CustomizableColoringDataManager copy()
-	{
-		return new CustomizableColoringDataManager(all.getId(), builtIn.copy(), custom.copy());
 	}
 
 	public boolean isBuiltIn(ColoringData data)

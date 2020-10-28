@@ -1,10 +1,10 @@
-package edu.jhuapl.saavtk.gui.coloringData;
+package edu.jhuapl.saavtk.gui.plateColoring;
 
 import java.io.IOException;
 
 import javax.swing.JFrame;
 
-import edu.jhuapl.saavtk.model.FacetColoringData;
+import edu.jhuapl.saavtk.model.plateColoring.FacetColoringData;
 
 
 public class ColoringInfoWindow extends JFrame //implements PropertyChangeListener

@@ -18,6 +18,7 @@ import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import edu.jhuapl.saavtk.util.file.IndexableTuple;
 import edu.jhuapl.saavtk.vtk.VtkDrawUtil;
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
@@ -1813,7 +1814,65 @@ public class PolyDataUtil
 		throw new IllegalArgumentException("Cannot interpolate a tuple of degree " + tupleDegree);
 	}
 
-	/**
+    /**
+     *
+     * @param polydata
+     * @param pointData
+     * @param cellId
+     * @param pt
+     * @param idList this parameter is needed only to avoid repeated memory
+     *            allocation when this function is called within a loop.
+     * @param tupleDegree the degree of tuple returned (size of output array). Must
+     *            be 1, 2, or 3.
+     * @return interpolated vector value from a vtk N-tuple (N = 1, 2, or 3)
+     */
+    public static double[] interpolateWithinCell(vtkPolyData polydata, IndexableTuple pointData, int cellId, double[] pt, vtkIdList idList, int tupleDegree)
+    {
+        polydata.GetCellPoints(cellId, idList);
+
+        int numberOfCells = idList.GetNumberOfIds();
+        if (numberOfCells != 3)
+        {
+            throw new AssertionError("Error: Cells must have exactly 3 vertices!");
+        }
+
+        double[] p1 = new double[3];
+        double[] p2 = new double[3];
+        double[] p3 = new double[3];
+        polydata.GetPoint(idList.GetId(0), p1);
+        polydata.GetPoint(idList.GetId(1), p2);
+        polydata.GetPoint(idList.GetId(2), p3);
+
+        double[] v1 = pointData.get(idList.GetId(0)).get();
+        double[] v2 = pointData.get(idList.GetId(1)).get();
+        double[] v3 = pointData.get(idList.GetId(2)).get();
+
+        if (tupleDegree == 1)
+        {
+            double result0 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[0], v2[0], v3[0]);
+
+            return new double[] { result0 };
+        }
+        else if (tupleDegree == 2)
+        {
+            double result0 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[0], v2[0], v3[0]);
+            double result1 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[1], v2[1], v3[1]);
+
+            return new double[] { result0, result1 };
+        }
+        else if (tupleDegree == 3)
+        {
+            double result0 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[0], v2[0], v3[0]);
+            double result1 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[1], v2[1], v3[1]);
+            double result2 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[2], v2[2], v3[2]);
+
+            return new double[] { result0, result1, result2 };
+        }
+
+        throw new IllegalArgumentException("Cannot interpolate a tuple of degree " + tupleDegree);
+    }
+
+    /**
 	 * This function takes cell data and computes point data from it by computing an
 	 * average over all cells that share that point. Cells that are large carry more
 	 * weight than those that are smaller.

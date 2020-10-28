@@ -1,7 +1,12 @@
 package edu.jhuapl.saavtk.util.file;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.util.zip.GZIPInputStream;
+
+import org.apache.commons.io.IOUtils;
 
 import com.google.common.base.Preconditions;
 
@@ -11,12 +16,12 @@ public abstract class DataFileReader
 	{
 		private static final long serialVersionUID = -5934810207683523722L;
 
-		FileFormatException(String msg)
+		public FileFormatException(String msg)
 		{
 			super(msg);
 		}
 
-		FileFormatException(Exception e)
+		public FileFormatException(Exception e)
 		{
 			super(e);
 		}
@@ -30,12 +35,12 @@ public abstract class DataFileReader
 	{
 		private static final long serialVersionUID = -3268081959880597315L;
 
-		IncorrectFileFormatException(String msg)
+		public IncorrectFileFormatException(String msg)
 		{
 			super(msg);
 		}
 
-		IncorrectFileFormatException(Exception e)
+		public IncorrectFileFormatException(Exception e)
 		{
 			super(e);
 		}
@@ -49,20 +54,52 @@ public abstract class DataFileReader
 	{
 		private static final long serialVersionUID = -8918875089497257976L;
 
-		InvalidFileFormatException(String msg)
+		public InvalidFileFormatException(String msg)
 		{
 			super(msg);
 		}
 
-		InvalidFileFormatException(Exception e)
+		public InvalidFileFormatException(Exception e)
 		{
 			super(e);
 		}
 	}
 
-	protected static final IndexableTuple EMPTY_INDEXABLE = createEmptyIndexable();
+	private static final IndexableTuple EMPTY_INDEXABLE = createEmptyIndexable();
 
 	private static final DataFileReader INSTANCE = createInstance();
+
+	public static IndexableTuple emptyIndexable()
+	{
+	    return EMPTY_INDEXABLE;
+	}
+	
+    public static File gunzip(File file) throws IOException
+    {
+        String gzippedFileName = file.toString();
+        String unGzippedFileName = gzippedFileName.replaceFirst("\\.[gG][Z]$", "");
+        Preconditions.checkArgument(!gzippedFileName.equals(unGzippedFileName), "File " + gzippedFileName + " does not appear to be Gzipped");
+
+        File result = new File(unGzippedFileName);
+
+        if (!result.isFile())
+        {
+            try (GZIPInputStream inputStream = new GZIPInputStream(new FileInputStream(file)))
+            {
+                try (FileWriter outputStream = new FileWriter(result))
+                {
+                    IOUtils.copy(inputStream, outputStream);
+                }
+            }
+            catch (Exception e)
+            {
+                result.delete();
+                throw e;
+            }
+        }
+
+        return result;
+    }
 
 	public static DataFileReader of()
 	{
@@ -131,21 +168,23 @@ public abstract class DataFileReader
 
 	private static IndexableTuple createEmptyIndexable()
 	{
-		return new IndexableTuple() {
+	    double[] emptyArray = new double[0];
+
+	    return new IndexableTuple() {
 			@Override
-			public int getNumberCells()
+			public int getNumberFields()
 			{
 				return 0;
 			}
 
 			@Override
-			public String getName(@SuppressWarnings("unused") int cellIndex)
+			public String getName(int fieldIndex)
 			{
 				throw new IndexOutOfBoundsException();
 			}
 
 			@Override
-			public String getUnits(@SuppressWarnings("unused") int cellIndex)
+			public String getUnits(int fieldIndex)
 			{
 				throw new IndexOutOfBoundsException();
 			}
@@ -157,7 +196,7 @@ public abstract class DataFileReader
 			}
 
 			@Override
-			public Tuple get(@SuppressWarnings("unused") int index)
+			public Tuple get(int tupleIndex)
 			{
 				return new Tuple() {
 
@@ -168,13 +207,13 @@ public abstract class DataFileReader
 					}
 
 					@Override
-					public String getAsString(@SuppressWarnings("unused") int cellIndex)
+                    public double[] get()
 					{
-						throw new IndexOutOfBoundsException();
+					    return emptyArray;
 					}
 
 					@Override
-					public double get(@SuppressWarnings("unused") int cellIndex)
+					public double get(int fieldIndex)
 					{
 						throw new IndexOutOfBoundsException();
 					}

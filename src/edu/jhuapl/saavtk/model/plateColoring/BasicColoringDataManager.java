@@ -1,4 +1,4 @@
-package edu.jhuapl.saavtk.model;
+package edu.jhuapl.saavtk.model.plateColoring;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -111,24 +111,6 @@ public class BasicColoringDataManager implements ColoringDataManager
 		return builder.build();
 	}
 
-	@Override
-	public BasicColoringDataManager copy()
-	{
-		ImmutableList.Builder<ColoringData> builder = ImmutableList.builder();
-		for (String name : names)
-		{
-			for (Integer resolution : resolutions)
-			{
-				ColoringData coloringData = dataTable.get(name, resolution);
-				if (coloringData != null)
-				{
-					builder.add(coloringData);
-				}
-			}
-		}
-		return new BasicColoringDataManager(dataId, builder.build());
-	}
-
 	public final boolean has(ColoringData data)
 	{
 		Preconditions.checkNotNull(data);
@@ -226,7 +208,7 @@ public class BasicColoringDataManager implements ColoringDataManager
 					{
 						if (has(name, numberElements))
 						{
-							builder.add(get(name, numberElements).getMetadata());
+							builder.add(ColoringDataFactory.getMetadata(get(name, numberElements)));
 						}
 					}
 				}
@@ -241,7 +223,7 @@ public class BasicColoringDataManager implements ColoringDataManager
 				List<Metadata> metadataList = source.get(Key.of(dataId));
 				for (Metadata metadata : metadataList)
 				{
-					add(ColoringData.of(metadata));
+					add(ColoringDataFactory.of(metadata));
 				}
 			}
 
