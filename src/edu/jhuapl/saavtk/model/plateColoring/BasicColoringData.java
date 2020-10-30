@@ -110,7 +110,7 @@ public abstract class BasicColoringData implements ColoringData
              * data after a clear operation, so override this to take no action.
              */
             @Override
-            public void clear()
+            public synchronized void clear()
             {
 
             }
@@ -157,31 +157,6 @@ public abstract class BasicColoringData implements ColoringData
         };
     }
 
-    /**
-     * Create and return a {@link BasicColoringData} instance that is copied from a
-     * source {@link ColoringData} object. Most properties from the source object
-     * are simply reused, but the source object's {@link IndexableTuple} data
-     * returned by its {@link ColoringData#getData()} method is copied. Thus, this
-     * method will force the source object to load its data if it hasn't already.
-     * The new instance will use this copy and recompute the range.
-     * <p>
-     * The returned instance may not be loaded or saved by a {@link ColoringDataIO}
-     * object, nor may it be represented as metadata. As-is, it is suitable only for
-     * use within a running program. However, the object can be enhanced to make it
-     * loadable/savable, and/or represented as metadata by other classes. See
-     * {@link LoadableColoringData} and classes that use it for more information.
-     * 
-     * @param sourceData the input source {@link ColoringData} object
-     * @return the copied {@link BasicColoringData} object.
-     */
-    static BasicColoringData of(ColoringData sourceData)
-    {
-        Preconditions.checkNotNull(sourceData);
-        IndexableTuple destTuples = ColoringDataUtils.copy(sourceData.getData());
-
-        return of(sourceData.getName(), sourceData.getUnits(), sourceData.getNumberElements(), sourceData.getFieldNames(), sourceData.hasNulls(), destTuples);
-    }
-
     protected BasicColoringData()
     {
         super();
@@ -200,7 +175,7 @@ public abstract class BasicColoringData implements ColoringData
      * {@inheritDoc}
      */
     @Override
-    public IndexableTuple getData()
+    public final synchronized IndexableTuple getData()
     {
         load();
 
@@ -214,7 +189,7 @@ public abstract class BasicColoringData implements ColoringData
      * {@inheritDoc}
      */
     @Override
-    public double[] getDefaultRange()
+    public final double[] getDefaultRange()
     {
         load();
 
@@ -230,7 +205,7 @@ public abstract class BasicColoringData implements ColoringData
      * {@inheritDoc}
      */
     @Override
-    public void clear()
+    public synchronized void clear()
     {
         IndexableTuple data = getDataReference().getAndSet(null);
         getRangeReference().set(null);
@@ -248,7 +223,7 @@ public abstract class BasicColoringData implements ColoringData
      * If overriding this method, it is very important to review and possibly
      * override the {@link #clear()} method!
      */
-    protected void load()
+    protected final synchronized void load()
     {
         AtomicReference<IndexableTuple> dataReference = getDataReference();
 
@@ -327,7 +302,7 @@ public abstract class BasicColoringData implements ColoringData
         }
     }
 
-    protected void copyData(ColoringData sourceData)
+    protected synchronized void copyData(ColoringData sourceData)
     {
         // Copy data and range. This will force a load if it hasn't happened yet.
         IndexableTuple destTuples = ColoringDataUtils.copy(sourceData.getData());

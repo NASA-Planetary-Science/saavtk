@@ -2,10 +2,9 @@ package edu.jhuapl.saavtk.model.plateColoring;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -32,158 +31,6 @@ import edu.jhuapl.saavtk.util.file.IndexableTuple;
  */
 public abstract class LoadableColoringData extends BasicColoringData
 {
-
-    /**
-     * Create and return a {@link LoadableColoringData} instance with the specified
-     * properties. The returned object will automatically load and cache the data
-     * and the range the first time the data or the range are requested via either
-     * the {@link #getData()} or {@link #getDefaultRange()} methods. It follows that
-     * these methods might throw exceptions even if this factory method returns a
-     * validly constructed instance of {@link LoadableColoringData}. The returned
-     * object's {@link #clear()} method will discard and free up any loaded objects.
-     * 
-     * @param name the name of the coloring, e.g., "Slope"
-     * @param units the units of the coloring, e.g., "degrees"
-     * @param numberElements the number of facets/elements of the coloring, which
-     *            must match the {@link PolyhedralModel} on which the coloring is
-     *            displayed.
-     * @param fieldNames the names of the fields within the coloring. Typically
-     *            there is either one name (usually the same as the name of the
-     *            coloring) for a scalar coloring, or 3 for a vector coloring. In
-     *            any case, the field names should reflect the names of columns in
-     *            any corresponding data files.
-     * @param hasNulls if true, the minimum value in the input
-     *            {@link IndexableTuple} will be treated as
-     *            null/indef/NaN/undefined.
-     * @param fileId the file identifier (relative path or a URL) that locates the
-     *            coloring data file
-     * @param ioHandler the {@link ColoringDataIO} object that will be used to
-     *            load/save this object's coloring data from/to a file
-     * @return the coloring data object
-     */
-    static LoadableColoringData of(String name, String units, int numberElements, Iterable<String> fieldNames, boolean hasNulls, String fileId, ColoringDataIO ioHandler)
-    {
-        Preconditions.checkNotNull(ioHandler);
-
-        AtomicReference<IndexableTuple> dataReference = new AtomicReference<>();
-        AtomicReference<double[]> rangeReference = new AtomicReference<>();
-
-        return new LoadableColoringData(name, units, numberElements, ImmutableList.copyOf(fieldNames), hasNulls, fileId) {
-
-            @Override
-            protected AtomicReference<IndexableTuple> getDataReference()
-            {
-                return dataReference;
-            }
-
-            @Override
-            protected AtomicReference<double[]> getRangeReference()
-            {
-                return rangeReference;
-            }
-
-            @Override
-            protected ColoringDataIO getIOHandler()
-            {
-                return ioHandler;
-            }
-
-            @Override
-            public int hashCode()
-            {
-                return LoadableColoringData.hashCode(this);
-            }
-
-            @Override
-            public boolean equals(Object object)
-            {
-                if (this == object)
-                {
-                    return true;
-                }
-
-                if (object instanceof LoadableColoringData)
-                {
-                    return LoadableColoringData.equals(this, (LoadableColoringData) object);
-                }
-
-                return false;
-            }
-        };
-    }
-
-    /**
-     * Create and return a {@link LoadableColoringData} instance whose properties
-     * are extracted from the specified {@link Metadata} object.
-     * <p>
-     * The returned object will automatically load and cache the data and the range
-     * the first time the data or the range are requested via either the
-     * {@link #getData()} or {@link #getDefaultRange()} methods. It follows that
-     * these methods might throw exceptions even if this factory method returns a
-     * validly constructed instance of {@link LoadableColoringData}. The returned
-     * object's {@link #clear()} method will discard and free up any loaded objects.
-     * <p>
-     * The metadata currently does not identify the file format, so this method
-     * requires another argument to specify the {@link ColoringDataIO}. This could
-     * be changed in the future.
-     * 
-     * @param metadata the metadata describing this coloring and identifying its
-     *            file
-     * @param ioHandler the {@link ColoringDataIO} object to be used for
-     *            loading/saving this coloring object.
-     * @return the coloring data object
-     */
-    static LoadableColoringData of(Metadata metadata, ColoringDataIO ioHandler)
-    {
-        Preconditions.checkNotNull(metadata);
-
-        String name = metadata.get(NAME);
-        String units = metadata.get(UNITS);
-        int numberElements = metadata.get(NUMBER_ELEMENTS);
-        ImmutableList<String> fieldNames = ImmutableList.copyOf(metadata.get(ELEMENT_NAMES));
-        boolean hasNulls = metadata.get(HAS_NULLS);
-        String fileId = metadata.get(FILE_ID);
-
-        return of(name, units, numberElements, fieldNames, hasNulls, fileId, ioHandler);
-    }
-
-    /**
-     * Create and return a {@link LoadableColoringData} instance whose properties
-     * and data are copied from the specified input {@link ColoringData} object, and
-     * augmented with the specified file identifier and {@link ColoringDataIO}
-     * object. This method effectively associates a coloring that may have been
-     * created on the fly with a file on disk. If the provided source coloring
-     * already associates with a file on disk, the new object will be "re-pointed"
-     * to the specified file identifier.
-     * <p>
-     * Most properties from the source object are simply reused, but the source
-     * object's {@link IndexableTuple} data returned by its
-     * {@link ColoringData#getData()} method is copied. Thus, this method will force
-     * the source object to load its data if it hasn't already. The new instance
-     * will use this copy and recompute the range.
-     * <p>
-     * This method only creates the coloring data object -- it does not copy the
-     * data file on disk. However, the caller may follow this with an explicit
-     * command to copy the file, or save the newly created coloring data object.
-     * 
-     * @param sourceData the input {@link LoadableColoringData} object to be
-     *            (mostly) copied
-     * @param fileId the identifier for the new coloring data file
-     * @param ioHandler the {@link ColoringDataIO} object used to load/save the
-     *            coloring data from/to disk
-     * @return the coloring data object
-     */
-    static LoadableColoringData of(ColoringData sourceData, String fileId, ColoringDataIO ioHandler)
-    {
-        Preconditions.checkNotNull(sourceData);
-
-        LoadableColoringData dest = of(sourceData.getName(), sourceData.getUnits(), sourceData.getNumberElements(), sourceData.getFieldNames(), sourceData.hasNulls(), fileId, ioHandler);
-
-        dest.copyData(sourceData);
-
-        return dest;
-    }
-
     private final String name;
     private final String units;
     private final int numberElements;
@@ -203,28 +50,13 @@ public abstract class LoadableColoringData extends BasicColoringData
         this.fileId = Preconditions.checkNotNull(fileId);
     }
 
-    public Metadata getMetadata()
-    {
-        SettableMetadata metadata = SettableMetadata.of(COLORING_DATA_VERSION);
-        metadata.put(NAME, getName());
-        metadata.put(UNITS, getUnits());
-        metadata.put(NUMBER_ELEMENTS, getNumberElements());
-        metadata.put(ELEMENT_NAMES, getFieldNames());
-        metadata.put(HAS_NULLS, hasNulls());
-        metadata.put(FILE_ID, getFileId());
-
-        return FixedMetadata.of(metadata);
-    }
-
-    protected abstract ColoringDataIO getIOHandler();
-
     @Override
     protected IndexableTuple provideData()
     {
         IndexableTuple data;
         try
         {
-            data = getIOHandler().loadColoringData(getFile());
+            data = getIOHandler().loadColoringData(fetchFile());
         }
         catch (Exception e)
         {
@@ -264,6 +96,21 @@ public abstract class LoadableColoringData extends BasicColoringData
         return hasNulls;
     }
 
+    public Metadata getMetadata()
+    {
+        SettableMetadata metadata = SettableMetadata.of(COLORING_DATA_VERSION);
+        metadata.put(NAME, getName());
+        metadata.put(UNITS, getUnits());
+        metadata.put(NUMBER_ELEMENTS, getNumberElements());
+        metadata.put(ELEMENT_NAMES, getFieldNames());
+        metadata.put(HAS_NULLS, hasNulls());
+        metadata.put(FILE_ID, getFileId());
+
+        return FixedMetadata.of(metadata);
+    }
+
+    protected abstract ColoringDataIO getIOHandler();
+
     /**
      * Return the file identifier, that is a string that may be used to identify
      * uniquely the file containing the data associated with this plate coloring.
@@ -273,31 +120,42 @@ public abstract class LoadableColoringData extends BasicColoringData
      * 
      * @return the identifier
      */
-    public String getFileId()
+    public final String getFileId()
     {
         return fileId;
     }
 
     /**
-     * Return the {@link File} associated with the file identifier. The returned
-     * object is (obviously) associated with the file system.
+     * Return the {@link File} associated with the file identifier. This is final to
+     * make sure the {@link FileCache} provides the {@link File} object based on the
+     * file identifier string. This is necessary even for files that do not
+     * originate on the server so that UI components can listen for changes in file
+     * accessibility.
      * <p>
-     * The base implementation uses the {@link FileCache} facility to locate and
-     * download the {@link File}. It follows that if this method executes
-     * successfully, the returned file most likely does exist, but nonetheless it is
-     * safest to confirm with the {@link File#isFile()} method before attempting to
-     * open it.
-     * <p>
-     * Also, note that, since this method *may* cause the file to be downloaded, it
-     * may take time for a large file. Thread accordingly.
+     * This only gets the file object; it does not download/create/check for
+     * existence etc.
      * 
      * @return the file
      */
-    public File getFile()
+    public final File getFile()
     {
         String fileId = getFileId();
 
-        return FileCache.getFileFromServer(fileId);
+        // This method just determines what file would be downloaded, without actually
+        // downloading it.
+        return FileCache.getState(fileId).getFileState().getFile();
+    }
+
+    /**
+     * If possible and necessary, ensure the existence of the file required to load
+     * the data. Override this to get the file from the cache, for example. The
+     * base implementation is a no-op, and in general, despite the name of the
+     * method, there is no guarantee that the file returned exists.
+     * @throws IOException if an IO error prevents obtaining the file.
+     */
+    protected File fetchFile() throws IOException
+    {
+        return getFile();
     }
 
     /**
@@ -311,14 +169,18 @@ public abstract class LoadableColoringData extends BasicColoringData
         getIOHandler().saveColoringData(getData(), getFile());
     }
 
-    // Metadata constants.
-    protected static final Version COLORING_DATA_VERSION = Version.of(1, 0);
-    protected static final Key<String> NAME = Key.of("Coloring name"); // Slope, Gravitational Vector...
-    protected static final Key<List<String>> ELEMENT_NAMES = Key.of("Element names"); // [ "Slope" ], [ "G_x", "G_y", "G_z" ]...
-    protected static final Key<String> UNITS = Key.of("Coloring units"); // deg, m/s^2...
-    protected static final Key<Integer> NUMBER_ELEMENTS = Key.of("Number of elements"); // 49152...
-    protected static final Key<Boolean> HAS_NULLS = Key.of("Coloring has nulls"); // If true, range excludes minimum value
-    protected static final Key<String> FILE_ID = Key.of("File name"); // Keep as "File name" for backward compatibility
+    protected static String getFileIdFromFile(File file)
+    {
+        try
+        {
+            return file.toURI().toURL().toString();
+        }
+        catch (MalformedURLException e)
+        {
+            // This really shouldn't happen.
+            throw new AssertionError("Unable to create a URL from file named " + file, e);
+        }
+    }
 
     protected static int hashCode(LoadableColoringData data)
     {
@@ -369,5 +231,14 @@ public abstract class LoadableColoringData extends BasicColoringData
         }
 
     };
+
+    // Metadata constants.
+    protected static final Version COLORING_DATA_VERSION = Version.of(1, 0);
+    protected static final Key<String> NAME = Key.of("Coloring name"); // Slope, Gravitational Vector...
+    protected static final Key<List<String>> ELEMENT_NAMES = Key.of("Element names"); // [ "Slope" ], [ "G_x", "G_y", "G_z" ]...
+    protected static final Key<String> UNITS = Key.of("Coloring units"); // deg, m/s^2...
+    protected static final Key<Integer> NUMBER_ELEMENTS = Key.of("Number of elements"); // 49152...
+    protected static final Key<Boolean> HAS_NULLS = Key.of("Coloring has nulls"); // If true, range excludes minimum value
+    protected static final Key<String> FILE_ID = Key.of("File name"); // Keep as "File name" for backward compatibility
 
 }

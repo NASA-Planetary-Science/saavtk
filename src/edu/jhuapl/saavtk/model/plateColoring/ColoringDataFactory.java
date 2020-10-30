@@ -1,5 +1,7 @@
 package edu.jhuapl.saavtk.model.plateColoring;
 
+import java.io.File;
+
 import com.google.common.base.Preconditions;
 import crucible.crust.metadata.api.Metadata;
 import edu.jhuapl.saavtk.util.file.IndexableTuple;
@@ -31,12 +33,14 @@ import vtk.vtkDataArray;
  * {@link ColoringData#getDefaultRange()}, the coloring object will attempt to
  * load the data from its associated file. The {@link ColoringData#clear()}
  * method will discard any loaded data and delete any associated
- * {@link vtkDataArray} objects. Subsequent calls that access the data will
- * cause the data to be reloaded.
+ * {@link vtkDataArray} objects. The first subsequent call that accesses the
+ * data will cause the data to be reloaded.
+ * <li>In keeping with the point above, the returned instance will also not
+ * automatically save its data to its associated file.
  * <li>The returned instance may be saved to its file. Calling the save method
  * multiple times will result in multiple writes to that file. Existing copies
- * of the file will be overwritten. The returned instance will only load its
- * data once, the first time it is needed, unless the
+ * of the file will be overwritten without warning. The returned instance will
+ * only load its data once, the first time it is needed, unless the
  * {@link ColoringData#clear()} method is called; after that the data would be
  * reloaded.
  * <li>The {@link LoadableColoringData#getMetadata()} method will return
@@ -61,13 +65,16 @@ public class ColoringDataFactory
     /**
      * Create a {@link ColoringData} object from {@link IndexableTuple} data and
      * other specified properties.
+     * <p>
+     * See the description of {@link ColoringDataFactory} for further details about
+     * the properties of the returned instance.
      * 
      * @param name
      * @param units
      * @param numberElements
      * @param fieldNames
      * @param hasNulls
-     * @param tuples
+     * @param tuples the coloring data as an {@link IndexableTuple}
      * @return
      */
     public static ColoringData of(String name, String units, int numberElements, Iterable<String> fieldNames, boolean hasNulls, IndexableTuple tuples)
@@ -76,14 +83,18 @@ public class ColoringDataFactory
     }
 
     /**
-     * Create a {@link ColoringData} object from {@link vtkDataArray} data.
+     * Create a {@link ColoringData} object from {@link vtkDataArray} data and other
+     * specified properties.
+     * <p>
+     * See the description of {@link ColoringDataFactory} for further details about
+     * the properties of the returned instance.
      * 
      * @param name
      * @param units
      * @param numberElements
      * @param fieldNames
      * @param hasNulls
-     * @param vtkArray
+     * @param vtkArray the coloring data as a {@link vtkDataArray}
      * @return
      */
     public static ColoringData of(String name, String units, int numberElements, Iterable<String> fieldNames, boolean hasNulls, vtkDataArray vtkArray)
@@ -97,6 +108,9 @@ public class ColoringDataFactory
      * Create a {@link LoadableColoringData} object that will auto-load its data
      * from a disk file, choosing columns automatically based on conventions
      * established for Osiris-REx coloring FITS files.
+     * <p>
+     * See the description of {@link ColoringDataFactory} for further details about
+     * the properties of the returned instance.
      * 
      * @param name
      * @param units
@@ -117,17 +131,20 @@ public class ColoringDataFactory
      * Create a {@link LoadableColoringData} object that will auto-load its data
      * from a disk file, using explicitly specified column identifiers (currently
      * these must be integer column numbers).
+     * <p>
+     * See the description of {@link ColoringDataFactory} for further details about
+     * the properties of the returned instance.
      *
      * @param name
-     * @param fileId
-     * @param fieldNames
-     * @param columnIdentifiers
      * @param units
      * @param numberElements
+     * @param fieldNames
      * @param hasNulls
+     * @param fileId
+     * @param columnIdentifiers
      * @return
      */
-    public static LoadableColoringData of(String name, String fileId, Iterable<String> fieldNames, Iterable<?> columnIdentifiers, String units, int numberElements, boolean hasNulls)
+    public static LoadableColoringData of(String name, String units, int numberElements, Iterable<String> fieldNames, boolean hasNulls, String fileId, Iterable<?> columnIdentifiers)
     {
         Preconditions.checkNotNull(columnIdentifiers);
 
@@ -142,6 +159,9 @@ public class ColoringDataFactory
      * identifiers, or if the column identifiers field is null, columns will be
      * chosen automatically based on conventions established for Osiris-REx coloring
      * FITS files.
+     * <p>
+     * See the description of {@link ColoringDataFactory} for further details about
+     * the properties of the returned instance.
      * 
      * @param metadata
      * @return
@@ -155,11 +175,16 @@ public class ColoringDataFactory
      * Return a {@link LoadableColoringData} object that was created by copying
      * properties and/or data from the specified source data object, overriding only
      * the location of the file used to load/save data. For all types of input
-     * coloring data, this method forces any data on disk to be loaded.
+     * coloring data, this method <b>DOES</b> force any data on disk to be loaded by
+     * the source data object. However, this method does <b>NOT</b> automatically
+     * save the copied data on behalf of the returned instance.
      * <p>
      * This method tries to come as close as it can to creating an object that
      * behaves just like the source object, except that it is guaranteed to support
      * load/save operations and points to the specified file identifier.
+     * <p>
+     * See the description of {@link ColoringDataFactory} for further details about
+     * the properties of the returned instance.
      * 
      * @param sourceData
      * @param fileId
@@ -172,15 +197,49 @@ public class ColoringDataFactory
 
         if (sourceData instanceof LegacyColoringData)
         {
-            return LegacyColoringData.of(sourceData, fileId, LegacyColoringDataIO.of(sourceData.getName()));
+            return LegacyColoringData.of(sourceData, fileId, ((LegacyColoringData) sourceData).getColumnIdentifiers());
         }
         else if (sourceData instanceof LoadableColoringData)
         {
-            return LoadableColoringData.of(sourceData, fileId, ((LoadableColoringData) sourceData).getIOHandler());
+            return StandardColoringData.of(sourceData, fileId, ((LoadableColoringData) sourceData).getIOHandler());
         }
         else
         {
-            return LoadableColoringData.of(sourceData, fileId, LegacyColoringDataIO.of(sourceData.getName()));
+            return StandardColoringData.of(sourceData, fileId, LegacyColoringDataIO.of(sourceData.getName()));
+        }
+    }
+
+    public static LoadableColoringData of(ColoringData sourceData, String fileId, Iterable<?> columnIdentifiers)
+    {
+        Preconditions.checkNotNull(sourceData);
+        Preconditions.checkNotNull(fileId);
+        Preconditions.checkNotNull(columnIdentifiers);
+
+        return LegacyColoringData.of(sourceData, fileId, columnIdentifiers);
+    }
+
+    /**
+     * 
+     * @param sourceData
+     * @param file
+     * @return
+     */
+    public static LoadableColoringData of(ColoringData sourceData, File file)
+    {
+        Preconditions.checkNotNull(sourceData);
+        Preconditions.checkNotNull(file);
+
+        if (sourceData instanceof LegacyColoringData)
+        {
+            return LegacyColoringData.of(sourceData, file, ((LegacyColoringData) sourceData).getColumnIdentifiers());
+        }
+        else if (sourceData instanceof LoadableColoringData)
+        {
+            return StandardColoringData.of(sourceData, file, ((LoadableColoringData) sourceData).getIOHandler());
+        }
+        else
+        {
+            return StandardColoringData.of(sourceData, file, LegacyColoringDataIO.of(sourceData.getName()));
         }
     }
 
