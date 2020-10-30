@@ -1,5 +1,7 @@
 package edu.jhuapl.saavtk.model.plateColoring;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.io.IOException;
 
 import com.google.common.base.Preconditions;
@@ -31,6 +33,7 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 	private final BasicColoringDataManager builtIn;
 	private final BasicColoringDataManager custom;
 	private final BasicColoringDataManager all;
+    private final PropertyChangeSupport pcs;
 
 	private CustomizableColoringDataManager(String dataId, BasicColoringDataManager builtIn, BasicColoringDataManager custom)
 	{
@@ -39,6 +42,7 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 		this.builtIn = builtIn;
 		this.custom = custom;
 		this.all = BasicColoringDataManager.of(dataId);
+		this.pcs = new PropertyChangeSupport(this);
 		update();
 	}
 
@@ -130,6 +134,18 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 		Serializers.serialize("Custom Coloring", custom.getMetadataManager(), SafeURLPaths.instance().get(folder, CUSTOM_METADATA_FILE_NAME).toFile());
 	}
 
+    @Override
+    public void addPropertyChangeListener(PropertyChangeListener listener)
+    {
+        pcs.addPropertyChangeListener(listener);
+    }
+
+    @Override
+    public void removePropertyChangeListener(PropertyChangeListener listener)
+    {
+        pcs.removePropertyChangeListener(listener);
+    }
+
 	@Override
 	public String toString()
 	{
@@ -212,6 +228,7 @@ public final class CustomizableColoringDataManager implements ColoringDataManage
 		all.clear();
 		addAll(builtIn);
 		addAll(custom);
+		pcs.firePropertyChange(BasicColoringDataManager.COLORING_DATA_CHANGE, null, null);
 	}
 
 	private final void addAll(ColoringDataManager other)
