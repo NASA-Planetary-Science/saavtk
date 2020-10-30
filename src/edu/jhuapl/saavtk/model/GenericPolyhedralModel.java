@@ -227,6 +227,24 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
         initialize(defaultModelFile);
 
+        this.coloringDataManager.addPropertyChangeListener(event -> {
+            if (BasicColoringDataManager.COLORING_DATA_CHANGE.equals(event.getPropertyName()))
+            {
+                try
+                {
+                    coloringDataManager.saveCustomMetadata(getCustomDataFolder());
+                }
+                catch (Exception e)
+                {
+                    // This should not fail, but if it does it should not disrupt what the user is
+                    // doing.
+                    // Thus in this case it is appropriate to log the problem and then continue.
+                    e.printStackTrace();
+                }
+
+            }
+        });
+
     }
 
     private static final String COLORING_METADATA_ID = "Coloring Metadata";

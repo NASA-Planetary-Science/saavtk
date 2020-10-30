@@ -140,11 +140,11 @@ abstract class LegacyColoringDataIO implements ColoringDataIO
                     IndexableTuple tuples = ioHandler.loadColoringData(file);
 
                     // Extra sanity check needed here because the VTK loader ignores column numbers.
-                    if (tuples.getNumberFields() != fitsColumnList.size())
+                    if (tuples.getNumberFields() > fitsColumnList.size())
                     {
-                        throw new IOException("Loaded coloring with " + tuples.getNumberFields() + //
-                                " fields, not the expected number " + fitsColumnList.size() + //
-                                " from file " + file);
+                        throw new IOException("Attempted to coloring with " + tuples.getNumberFields() + //
+                                " fields, but only " + fitsColumnList.size() + //
+                                " fields in file " + file);
                     }
                     return tuples;
                 }

@@ -2,12 +2,14 @@ package edu.jhuapl.saavtk.gui.panel;
 
 import java.awt.BorderLayout;
 import java.awt.Cursor;
+import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -53,6 +55,7 @@ import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringDataManager;
+import edu.jhuapl.saavtk.model.plateColoring.CustomizableColoringDataManager;
 import edu.jhuapl.saavtk.model.plateColoring.LoadableColoringData;
 import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.util.BoundingBox;
@@ -383,6 +386,15 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
 
             panel.add(saveColoringButton, "wrap, gapleft 25");
             panel.add(customizeColoringButton, "wrap, gapleft 25");
+
+            PropertyChangeListener coloringListener = event -> {
+                EventQueue.invokeLater(() -> {
+                    updateColoringOptions();
+                    updateColoringControls();
+                });
+            };                
+
+            smallBodyModel.getColoringDataManager().addPropertyChangeListener(coloringListener);
         }
 
         addCustomControls(panel);
@@ -626,6 +638,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             ColoringData coloringData = smallBodyModel.getAllColoringData().get(index);
             if (coloringData instanceof LoadableColoringData)
             {
+                // Force data to load.
+                coloringData.getData();
+                
                 File file = ((LoadableColoringData) coloringData).getFile();
                 
                 JTabbedPane jTabbedPane = MetadataDisplay.summary(file);

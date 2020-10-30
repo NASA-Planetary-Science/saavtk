@@ -12,7 +12,6 @@ package edu.jhuapl.saavtk.gui.dialog;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -139,16 +138,6 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 		newMap.put(PolyhedralModel.CELL_DATA_RESOLUTION_LEVEL, cellDataResolutionLevels);
 
 		configMap.put(newMap);
-		try
-		{
-			coloringDataManager.saveCustomMetadata(modelManager.getPolyhedralModel().getCustomDataFolder());
-		}
-		catch (IOException e)
-		{
-			// This should not fail, but if it does it should not disrupt what the user is doing.
-			// Thus in this case it is appropriate to log the problem and then continue.
-			e.printStackTrace();
-		}
 	}
 
     /**
@@ -178,6 +167,9 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
             if (source instanceof LoadableColoringData)
             {
                 loadableSource = (LoadableColoringData) source;
+
+                // Force the coloring data to load if it hasn't already.
+                source.getData();
 
                 // There must be a source file; copy it to the destination file.
                 File sourceFile = loadableSource.getFile();
@@ -243,7 +235,7 @@ public class CustomPlateDataDialog extends javax.swing.JDialog
 
 			if (cellDataInfo instanceof LoadableColoringData)
 			{			    
-			    Files.delete(((LoadableColoringData) cellDataInfo).getFile().toPath());
+			    ((LoadableColoringData) cellDataInfo).getFile().delete();
 			}
 		}
 		catch (Exception e)

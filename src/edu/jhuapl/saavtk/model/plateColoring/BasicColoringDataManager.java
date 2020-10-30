@@ -1,5 +1,7 @@
 package edu.jhuapl.saavtk.model.plateColoring;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
@@ -18,6 +20,8 @@ import crucible.crust.metadata.impl.SettableMetadata;
 
 public class BasicColoringDataManager implements ColoringDataManager
 {
+    public static final String COLORING_DATA_CHANGE = "Coloring data change";
+
 	private static final Version METADATA_VERSION = Version.of(1, 0);
 
 	public static BasicColoringDataManager of(String dataId)
@@ -47,6 +51,7 @@ public class BasicColoringDataManager implements ColoringDataManager
 	private final List<String> names;
 	private final SortedSet<Integer> resolutions;
 	private final Table<String, Integer, ColoringData> dataTable;
+	private final PropertyChangeSupport pcs;
 
 	private BasicColoringDataManager(String dataId, Iterable<? extends ColoringData> coloringData)
 	{
@@ -58,6 +63,7 @@ public class BasicColoringDataManager implements ColoringDataManager
 		{
 			add(data);
 		}
+		this.pcs = new PropertyChangeSupport(this);
 	}
 
 	@Override
@@ -134,11 +140,15 @@ public class BasicColoringDataManager implements ColoringDataManager
 			resolutions.add(numberElements);
 		}
 		dataTable.put(name, numberElements, data);
+
+		pcs.firePropertyChange(COLORING_DATA_CHANGE, null, null);
 	}
 
 	public final void remove(ColoringData data)
 	{
 		remove(data.getName(), data.getNumberElements());
+
+        pcs.firePropertyChange(COLORING_DATA_CHANGE, null, null);
 	}
 
 	/**
@@ -184,6 +194,8 @@ public class BasicColoringDataManager implements ColoringDataManager
 		resolutions.add(resolution);
 
 		dataTable.put(newName, resolution, newData);
+
+        pcs.firePropertyChange(COLORING_DATA_CHANGE, null, null);
 	}
 
 	public void clear()
@@ -191,6 +203,8 @@ public class BasicColoringDataManager implements ColoringDataManager
 		names.clear();
 		resolutions.clear();
 		dataTable.clear();
+
+        pcs.firePropertyChange(COLORING_DATA_CHANGE, null, null);
 	}
 
 	public MetadataManager getMetadataManager()
@@ -229,6 +243,18 @@ public class BasicColoringDataManager implements ColoringDataManager
 
 		};
 	}
+
+	@Override
+    public void addPropertyChangeListener(PropertyChangeListener listener)
+	{
+	    pcs.addPropertyChangeListener(listener);
+	}
+
+	@Override
+    public void removePropertyChangeListener(PropertyChangeListener listener)
+    {
+        pcs.removePropertyChangeListener(listener);
+    }
 
 	@Override
 	public String toString()

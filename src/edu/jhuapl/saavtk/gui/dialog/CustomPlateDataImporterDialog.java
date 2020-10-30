@@ -182,7 +182,7 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
         ImmutableList.Builder<String> builder = ImmutableList.builder();
         File file = new File(cellDataPath);
         ImmutableList<DataObjectInfo> dataInfoList;
-        dataInfoList = DataFileReader.of().readFileInfo(file).getDataObjectInfo();
+        dataInfoList = DataFileReader.multiFileFormatReader().readFileInfo(file).getDataObjectInfo();
         for (DataObjectInfo dataObjectInfo : dataInfoList)
         {
             if (dataObjectInfo instanceof TableInfo)
@@ -819,7 +819,20 @@ public class CustomPlateDataImporterDialog extends javax.swing.JDialog
         //
         // if (origVtkArray == null)
         // {
-        currentData = ColoringDataFactory.of(nameTextField.getText(), SafeURLPaths.instance().getUrl(fileName), elementNames, columnIdentifiers, unitsTextField.getText(), numCells, hasNullsCheckBox.isSelected());
+
+        String name = nameTextField.getText();
+        if (elementNames.isEmpty())
+        {
+            elementNames = ImmutableList.of(name);
+        }
+        currentData = columnIdentifiers != null ? //
+                ColoringDataFactory.of( //
+                        name, unitsTextField.getText(), numCells, elementNames, //
+                        hasNullsCheckBox.isSelected(), SafeURLPaths.instance().getUrl(fileName), columnIdentifiers) //
+                : //
+                ColoringDataFactory.of( //
+                        name, unitsTextField.getText(), numCells, elementNames, //
+                        hasNullsCheckBox.isSelected(), SafeURLPaths.instance().getUrl(fileName));
         try
         {
             currentData.getData();
