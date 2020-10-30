@@ -9,6 +9,13 @@ import vtk.vtkPolyDataReader;
 
 public class VtkFileReader extends DataFileReader
 {
+    private static final VtkFileReader INSTANCE = new VtkFileReader();
+    
+    public static VtkFileReader of()
+    {
+        return INSTANCE;
+    }
+
     public static final FileFormat VTK_FORMAT = new FileFormat() {
         @Override
         public String toString()
