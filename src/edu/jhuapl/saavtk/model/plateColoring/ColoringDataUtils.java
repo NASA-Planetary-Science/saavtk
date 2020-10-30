@@ -9,6 +9,7 @@ import com.google.common.base.Preconditions;
 import edu.jhuapl.saavtk.util.file.IndexableTuple;
 import edu.jhuapl.saavtk.util.file.Tuple;
 import vtk.vtkDataArray;
+import vtk.vtkDoubleArray;
 
 /**
  * Static utility methods useful for manipulating coloring-related abstractions.
@@ -29,7 +30,7 @@ public class ColoringDataUtils
         IndexableTuple dest;
         if (source instanceof VtkArrayIndexable)
         {
-            vtkDataArray arrayCopy = new vtkDataArray();
+            vtkDataArray arrayCopy = new vtkDoubleArray();
             copyIndexableToVtkArray(source, arrayCopy);
             dest = createIndexableFromVtkArray(arrayCopy);
         }
