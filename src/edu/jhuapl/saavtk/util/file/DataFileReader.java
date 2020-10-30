@@ -9,6 +9,7 @@ import java.util.zip.GZIPInputStream;
 import org.apache.commons.io.IOUtils;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 public abstract class DataFileReader
 {
@@ -131,37 +132,54 @@ public abstract class DataFileReader
 	{
 		return new DataFileReader() {
 
-			@Override
-			public void checkFormat(File file) throws FileFormatException, IOException
-			{
-				Preconditions.checkNotNull(file);
-				Preconditions.checkArgument(file.exists(), "File not found: " + file.getPath());
+            @Override
+            public void checkFormat(File file) throws FileFormatException, IOException
+            {
+                Preconditions.checkNotNull(file);
+                Preconditions.checkArgument(file.exists(), "File not found: " + file.getPath());
 
-				try
-				{
-					FitsFileReader.of().checkFormat(file);
-				}
-				catch (@SuppressWarnings("unused") IncorrectFileFormatException e)
-				{
-					CsvFileReader.of().checkFormat(file);
-				}
-			}
+                ImmutableList<DataFileReader> readers = ImmutableList.of(FitsFileReader.of(), VtkFileReader.of(), CsvFileReader.of());
 
-			@Override
-			public DataFileInfo readFileInfo(File file) throws IOException, FileFormatException
-			{
-				Preconditions.checkNotNull(file);
-				Preconditions.checkArgument(file.exists(), "File not found: " + file.getPath());
+                for (DataFileReader reader : readers)
+                {
+                    try
+                    {
+                        reader.checkFormat(file);
+                        return;
+                    }
+                    catch (IncorrectFileFormatException e)
+                    {
+                        // Ignore this exception and hope one of the other readers can handle this file.
+                    }
+                }
+                // If execution reaches this point, all the handlers threw the "incorrect
+                // format" exception.
+                throw new IOException("Could not determine format from file " + file + "; tried FITS, VTK and CSV formats");
+            }
 
-				try
-				{
-					return FitsFileReader.of().readFileInfo(file);
-				}
-				catch (@SuppressWarnings("unused") IncorrectFileFormatException e)
-				{
-					return CsvFileReader.of().readFileInfo(file);
-				}
-			}
+            @Override
+            public DataFileInfo readFileInfo(File file) throws IOException, FileFormatException
+            {
+                Preconditions.checkNotNull(file);
+                Preconditions.checkArgument(file.exists(), "File not found: " + file.getPath());
+
+                ImmutableList<DataFileReader> readers = ImmutableList.of(FitsFileReader.of(), VtkFileReader.of(), CsvFileReader.of());
+
+                for (DataFileReader reader : readers)
+                {
+                    try
+                    {
+                        return reader.readFileInfo(file);
+                    }
+                    catch (IncorrectFileFormatException e)
+                    {
+                        // Ignore this exception and hope one of the other readers can handle this file.
+                    }
+                }
+                // If execution reaches this point, all the handlers threw the "incorrect
+                // format" exception.
+                throw new IOException("Could not read file " + file + "; tried FITS, VTK and CSV formats");
+            }
 
 		};
 	}
