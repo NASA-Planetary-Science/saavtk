@@ -102,7 +102,7 @@ public abstract class DataFileReader
         return result;
     }
 
-	public static DataFileReader of()
+	public static DataFileReader multiFileFormatReader()
 	{
 		return INSTANCE;
 	}
@@ -154,7 +154,7 @@ public abstract class DataFileReader
                 }
                 // If execution reaches this point, all the handlers threw the "incorrect
                 // format" exception.
-                throw new IOException("Could not determine format from file " + file + "; tried FITS, VTK and CSV formats");
+                throw new IncorrectFileFormatException("Could not determine format from file " + file + "; tried FITS, VTK and CSV formats");
             }
 
             @Override
@@ -178,7 +178,7 @@ public abstract class DataFileReader
                 }
                 // If execution reaches this point, all the handlers threw the "incorrect
                 // format" exception.
-                throw new IOException("Could not read file " + file + "; tried FITS, VTK and CSV formats");
+                throw new IncorrectFileFormatException("Could not read file " + file + "; tried FITS, VTK and CSV formats");
             }
 
 		};
