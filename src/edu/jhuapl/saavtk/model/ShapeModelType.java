@@ -141,6 +141,7 @@ public final class ShapeModelType
     public static final ShapeModelType WEAVER = create("Weaver");
     public static final ShapeModelType HANUS = create("Hanus");
     public static final ShapeModelType VIIKINKOSKI = create("Viikinkoski");
+    public static final ShapeModelType DALY = create("Daly");
     //***********************************************************************************
     //***********************************************************************************
     // DO NOT ADD ANY MORE STATIC FIELDS HERE FOR NEW AUTHORS. INSTEAD, PROVIDE THEM
