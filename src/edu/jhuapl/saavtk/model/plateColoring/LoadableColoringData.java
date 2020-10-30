@@ -148,9 +148,10 @@ public abstract class LoadableColoringData extends BasicColoringData
 
     /**
      * If possible and necessary, ensure the existence of the file required to load
-     * the data. Override this to get the file from the cache, for example. The
-     * base implementation is a no-op, and in general, despite the name of the
-     * method, there is no guarantee that the file returned exists.
+     * the data. Override this to get the file from the cache, for example. The base
+     * implementation is a no-op, and in general, despite the name of the method,
+     * there is no guarantee that the file returned exists.
+     * 
      * @throws IOException if an IO error prevents obtaining the file.
      */
     protected File fetchFile() throws IOException
@@ -160,13 +161,16 @@ public abstract class LoadableColoringData extends BasicColoringData
 
     /**
      * Save the coloring data in memory to the disk file specified by the
-     * {@link #getFile()} method.
+     * {@link #getFile()} method. Force the file cache to update after a successful
+     * save operation.
      * 
      * @throws IOException if unable to write the file.
      */
-    public void save() throws IOException
+    public final void save() throws IOException
     {
         getIOHandler().saveColoringData(getData(), getFile());
+
+        FileCache.refreshStateInfo(getFileId());
     }
 
     protected static String getFileIdFromFile(File file)
