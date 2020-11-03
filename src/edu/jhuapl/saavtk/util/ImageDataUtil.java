@@ -1,5 +1,7 @@
 package edu.jhuapl.saavtk.util;
 
+import com.google.common.collect.ImmutableSet;
+
 import vtk.vtkFloatArray;
 import vtk.vtkImageData;
 import vtk.vtkImageFlip;
@@ -152,6 +154,13 @@ public class ImageDataUtil
         };
     }
 
+    public static FillDetector<Float> getMultiFillValueDetector(Iterable<Float> fillValues)
+    {
+        ImmutableSet<Float> fillValueSet = ImmutableSet.copyOf(fillValues);
+        return value -> {
+            return fillValueSet.contains(value);
+        };
+    }
 
     /**
      * Accessing individual pixels of a vtkImageData is slow in java.
