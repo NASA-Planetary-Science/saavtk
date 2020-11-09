@@ -119,6 +119,10 @@ public final class FileCache
                 {
                     exception = new NoInternetAccessException("Cannot get file: unable to connect to server", url);
                 }
+                else if (fileState.isURLNotFound())
+                {
+                    exception = new NonexistentRemoteFile("Remote file was not found", url);
+                }
                 else
                 {
                     exception = new RuntimeException("Unknown problem trying to update file from URL: " + url);
