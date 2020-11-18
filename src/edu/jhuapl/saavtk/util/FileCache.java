@@ -117,7 +117,11 @@ public final class FileCache
                 }
                 else if (!fileState.getUrlState().wasCheckedOnline())
                 {
-                    exception = new NoInternetAccessException("Cannot get file: unable to connect to server", url);
+                    exception = new NoInternetAccessException("Cannot get file: unable to connect to server for file " + url, url);
+                }
+                else if (fileState.isURLNotFound())
+                {
+                    exception = new NonexistentRemoteFile("Remote file was not found: " + url, url);
                 }
                 else
                 {
