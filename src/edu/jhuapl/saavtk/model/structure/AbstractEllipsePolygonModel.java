@@ -19,8 +19,9 @@ import crucible.crust.metadata.api.Metadata;
 import crucible.crust.metadata.api.MetadataManager;
 import crucible.crust.metadata.api.Version;
 import crucible.crust.metadata.impl.SettableMetadata;
-import edu.jhuapl.saavtk.model.CommonData;
+import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.structure.BaseStructureManager;
 import edu.jhuapl.saavtk.structure.Ellipse;
 import edu.jhuapl.saavtk.structure.io.StructureLegacyUtil;
@@ -53,14 +54,14 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 	// Attributes
 	private final PolyhedralModel refSmallBody;
 	private final Mode mode;
-	private final String type;
 
 	// State vars
 	private Map<Ellipse, VtkDrawState> drawM;
-	private double defaultRadius;
+
 	private final int numSides;
-	private Color defaultColor = new Color(0, 191, 255);
-	private double interiorOpacity = 0.3;
+	private Color defaultColor;
+	private double defaultRadius;
+	private double interiorOpacity;
 	private double offset;
 	private double lineWidth;
 
@@ -91,28 +92,49 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 
 	public enum Mode
 	{
-		POINT_MODE, CIRCLE_MODE, ELLIPSE_MODE
+		POINT_MODE("Point"),
+
+		CIRCLE_MODE("Circle"),
+
+		ELLIPSE_MODE("Ellipse");
+
+		private final String label;
+
+		private Mode(String aLabel)
+		{
+			label = aLabel;
+		}
+
+		/**
+		 * Returns a user friendly label of the mode.
+		 */
+		public String getLabel()
+		{
+			return label;
+		}
 	}
 
-	public AbstractEllipsePolygonModel(PolyhedralModel aSmallBody, int aNumSides, Mode aMode, String aType)
+	/** Standard Constructor */
+	public AbstractEllipsePolygonModel(SceneChangeNotifier aSceneChangeNotifier, StatusNotifier aStatusNotifier,
+			PolyhedralModel aSmallBody, int aNumSides, Mode aMode)
 	{
-		super(aSmallBody);
+		super(aSceneChangeNotifier, aStatusNotifier, aSmallBody);
 
 		refSmallBody = aSmallBody;
 		mode = aMode;
-		type = aType;
 
 		drawM = new HashMap<>();
 
-		offset = getDefaultOffset();
-
+		numSides = aNumSides;
+		defaultColor = new Color(0, 191, 255);
 		defaultRadius = aSmallBody.getBoundingBoxDiagonalLength() / 155.0;
+		interiorOpacity = 0.3;
+		offset = 5.0 * refSmallBody.getMinShiftAmount();
+		lineWidth = 2.0;
 
 		refSmallBody.addPropertyChangeListener(this);
 
 		vEmptyPD = new vtkPolyData();
-
-		numSides = aNumSides;
 
 		vExteriorColorsRegUCA = new vtkUnsignedCharArray();
 		vExteriorColorsDecUCA = new vtkUnsignedCharArray();
@@ -135,7 +157,6 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 		vExteriorActor = new VtkLodActor(this);
 		vtkProperty boundaryProperty = vExteriorActor.GetProperty();
 		boundaryProperty.LightingOff();
-		lineWidth = 2.;
 		boundaryProperty.SetLineWidth(lineWidth);
 
 		vInteriorRegPD = new vtkPolyData();
@@ -155,6 +176,15 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 		actorL = new ArrayList<>();
 	}
 
+	/**
+	 * Returns the default color that will be used for structures where the color is
+	 * not (initially) specified.
+	 */
+	public Color getDefaultColor()
+	{
+		return defaultColor;
+	}
+
 	public void setDefaultColor(Color aColor)
 	{
 		defaultColor = aColor;
@@ -169,7 +199,7 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 	{
 		interiorOpacity = opacity;
 		vInteriorActor.GetProperty().SetOpacity(opacity);
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		notifyVtkStateChange();
 	}
 
 	public Mode getMode()
@@ -224,21 +254,6 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 	}
 
 	@Override
-	public String getClickStatusBarText(vtkProp prop, int cellId, double[] pickPosition)
-	{
-		if (prop != vExteriorActor && prop != vInteriorActor)
-			return "";
-
-		Ellipse tmpItem = getItemFromCellId(cellId, prop);
-		if (tmpItem == null)
-			return "";
-
-		String retStr = type + ", Id = " + tmpItem.getId();
-		retStr += ", Diameter = " + 2.0 * tmpItem.getRadius() + " km";
-		return retStr;
-	}
-
-	@Override
 	public void installItems(Task aTask, List<Ellipse> aItemL)
 	{
 		// Ensure all items are fully initialized
@@ -256,6 +271,8 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 	@Override
 	public void notifyItemsMutated(Collection<Ellipse> aItemC)
 	{
+		super.notifyItemsMutated(aItemC);
+
 		if (aItemC.isEmpty() == true)
 			return;
 
@@ -390,12 +407,6 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 	}
 
 	@Override
-	public double getDefaultOffset()
-	{
-		return 5.0 * refSmallBody.getMinShiftAmount();
-	}
-
-	@Override
 	public void setOffset(double aOffset)
 	{
 		offset = aOffset;
@@ -425,8 +436,9 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 			vtkProperty boundaryProperty = vExteriorActor.GetProperty();
 			boundaryProperty.SetLineWidth(lineWidth);
 
+			// Send out the appropriate notifications
 			notifyListeners(this, ItemEventType.ItemsMutated);
-			pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+			notifyVtkStateChange();
 		}
 	}
 
@@ -452,18 +464,18 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 		notifyListeners(this, ItemEventType.ItemsMutated);
 	}
 
-	@Override
-	protected VtkEllipsePainter createPainter(Ellipse aItem)
-	{
-		return new VtkEllipsePainter(refSmallBody, aItem, numSides);
-	}
-
 	/**
 	 * Helper method that will return the proper VTK painter for the specified item.
 	 */
 	protected VtkEllipsePainter getOrCreateVtkMainPainterFor(Ellipse aItem)
 	{
 		return getOrCreateVtkPainterFor(aItem, refSmallBody).getMainPainter();
+	}
+
+	@Override
+	protected VtkEllipsePainter createPainter(Ellipse aItem)
+	{
+		return new VtkEllipsePainter(refSmallBody, aItem, numSides);
 	}
 
 	@Override
@@ -595,18 +607,12 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 		vExteriorActor.Modified();
 		vInteriorActor.Modified();
 
-		// Notify model change listeners
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		notifyVtkStateChange();
 	}
 
 	@Override
 	protected void updateVtkColorsFor(Collection<Ellipse> aItemC, boolean aSendNotification)
 	{
-		Color pickColor = null;
-		CommonData commonData = getCommonData();
-		if (commonData != null)
-			pickColor = commonData.getSelectionColor();
-
 		// Update internal VTK state
 		for (Ellipse aItem : aItemC)
 		{
@@ -625,10 +631,7 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 				continue;
 
 			// Update the color related state
-			Color tmpColor = aItem.getColor();
-			if (pickColor != null && getSelectedItems().contains(aItem) == true)
-				tmpColor = pickColor;
-
+			Color tmpColor = getDrawColor(aItem);
 			int begIdx, endIdx;
 
 			begIdx = vDrawState.extBegIdxReg;
@@ -661,7 +664,7 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 		vInteriorColorsRegUCA.Modified();
 		vInteriorColorsDecUCA.Modified();
 
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		notifyVtkStateChange();
 	}
 
 	/**
