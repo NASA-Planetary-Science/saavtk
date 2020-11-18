@@ -829,7 +829,7 @@ public class DownloadableFileManager
     {
         try
         {
-            URL getUserAccessPhp = new URL("http://sbmt.jhuapl.edu/sbmt/prod/query/" + "checkfileaccess.php");
+            URL getUserAccessPhp = new URL("http://sbmt.jhuapl.edu/sbmt/prod/query/" + "checkfilesystemaccess.php");
             try (CloseableUrlConnection closeableConn = CloseableUrlConnection.of(getUserAccessPhp, HttpRequestMethod.GET))
             {
                 URLConnection conn = closeableConn.getConnection();
