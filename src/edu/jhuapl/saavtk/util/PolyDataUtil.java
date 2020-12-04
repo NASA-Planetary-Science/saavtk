@@ -15,9 +15,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import edu.jhuapl.saavtk.gui.render.RenderView;
 import edu.jhuapl.saavtk.util.file.IndexableTuple;
 import edu.jhuapl.saavtk.vtk.VtkDrawUtil;
 import nom.tam.fits.BasicHDU;
@@ -25,23 +31,34 @@ import nom.tam.fits.Fits;
 import nom.tam.fits.Header;
 import nom.tam.fits.HeaderCard;
 import vtk.vtkAbstractPointLocator;
+import vtk.vtkActor;
 import vtk.vtkAlgorithmOutput;
 import vtk.vtkAppendPolyData;
+import vtk.vtkCamera;
 import vtk.vtkCell;
 import vtk.vtkCellArray;
 import vtk.vtkCleanPolyData;
 import vtk.vtkClipPolyData;
 import vtk.vtkDataArray;
+import vtk.vtkDataObject;
+import vtk.vtkDataSetMapper;
 import vtk.vtkDecimatePro;
+import vtk.vtkDoubleArray;
+import vtk.vtkExtractSelectedFrustum;
 import vtk.vtkFeatureEdges;
 import vtk.vtkFloatArray;
+import vtk.vtkFrustumSource;
 import vtk.vtkGenericCell;
+import vtk.vtkGeometryFilter;
 import vtk.vtkIdList;
 import vtk.vtkIdTypeArray;
+import vtk.vtkNamedColors;
 import vtk.vtkOBJReader;
 import vtk.vtkObject;
 import vtk.vtkPLYReader;
 import vtk.vtkPlane;
+import vtk.vtkPlaneSource;
+import vtk.vtkPlanes;
 import vtk.vtkPointData;
 import vtk.vtkPointLocator;
 import vtk.vtkPoints;
@@ -50,10 +67,14 @@ import vtk.vtkPolyDataConnectivityFilter;
 import vtk.vtkPolyDataNormals;
 import vtk.vtkPolyDataReader;
 import vtk.vtkPolyDataWriter;
+import vtk.vtkProperty;
 import vtk.vtkRegularPolygonSource;
 import vtk.vtkSTLReader;
 import vtk.vtkSTLWriter;
+import vtk.vtkSelection;
+import vtk.vtkShrinkFilter;
 import vtk.vtkTriangle;
+import vtk.vtkUnstructuredGrid;
 import vtk.vtksbCellLocator;
 
 /**
@@ -111,8 +132,308 @@ public class PolyDataUtil
 		return polyData;
 	}
 	
+	public static vtkPlanes computeFrustumPlanes(/*vtkPolyData polyData,*/ double[] origin, double[] ul, double[] ur, double[] lr, double[] ll)
+	{
+//		Logger.getAnonymousLogger().log(Level.INFO, "!!!!!!!!!!!!!!1Computing Frustum Planes");
+
+//		double[] top = new double[3];
+//		double[] right = new double[3];
+//		double[] bottom = new double[3];
+//		double[] left = new double[3];
+//
+//		MathUtil.vcrss(ur, ul, top);
+//		MathUtil.vcrss(lr, ur, right);
+//		MathUtil.vcrss(ll, lr, bottom);
+//		MathUtil.vcrss(ul, ll, left);
+//		double dx = MathUtil.vnorm(origin);
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: origin " + new Vector3D(origin));
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: UL2 " + new Vector3D(ul));
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: dx is " + dx);
+//		double[] UL2 = { origin[0] + ul[0] * dx, origin[1] + ul[1] * dx, origin[2] + ul[2] * dx };
+//		System.out.println("PolyDataUtil: computeFrustumPlanes: UL2 " + UL2[0] + "," + UL2[1] + "," + UL2[2]);
+//		double[] UR2 = { origin[0] + ur[0] * dx, origin[1] + ur[1] * dx, origin[2] + ur[2] * dx };
+//		System.out.println("PolyDataUtil: computeFrustumPlanes: UR2 " + UR2[0] + "," + UR2[1] + "," + UR2[2]);
+//		double[] LL2 = { origin[0] + ll[0] * dx, origin[1] + ll[1] * dx, origin[2] + ll[2] * dx };
+//		System.out.println("PolyDataUtil: computeFrustumPlanes: LL2 " + LL2[0] + "," + LL2[1] + "," + LL2[2]);
+//		double[] LR2 = { origin[0] + lr[0] * dx, origin[1] + lr[1] * dx, origin[2] + lr[2] * dx };
+//		System.out.println("PolyDataUtil: computeFrustumPlanes: LR2 " + LR2[0] + "," + LR2[1] + "," + LR2[2]);
+//		
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: top " + new Vector3D(top));
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: right " + new Vector3D(right));
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: bottom " + new Vector3D(bottom));
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: left " + new Vector3D(left));
+//		
+////		vtkPlane plane1 = new vtkPlane();
+////		plane1.SetOrigin(UL2);
+////		plane1.SetNormal(top);
+////		vtkPlane plane2 = new vtkPlane();
+////		plane2.SetOrigin(UR2);
+////		plane2.SetNormal(right);
+////		vtkPlane plane3 = new vtkPlane();
+////		plane3.SetOrigin(LR2);
+////		plane3.SetNormal(bottom);
+////		vtkPlane plane4 = new vtkPlane();
+////		plane4.SetOrigin(LL2);
+////		plane4.SetNormal(left);
+////		
+////		vtkPlane plane5 = new vtkPlane();
+////		plane5.SetOrigin(origin[0], origin[1], origin[2]);
+////		plane5.SetNormal(-origin[0], -origin[1], -origin[2]);
+////		
+////		vtkPlane plane6 = new vtkPlane();
+////		plane6.SetOrigin(0, 0, 0);
+////		plane6.SetNormal(origin[0], origin[1], origin[2]);
+//				
+//		vtkPoints planePoints = new vtkPoints();
+//		planePoints.SetNumberOfPoints(1);
+//		planePoints.InsertPoint(0, UL2);
+//		planePoints.InsertPoint(1, UR2);
+//		planePoints.InsertPoint(2, LR2);
+//		planePoints.InsertPoint(3, LL2);
+//		planePoints.InsertPoint(4, new double[] {origin[0], origin[1], origin[2]});
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: origin " + origin[0] + "," + origin[1] + "," + origin[2]);
+////
+//		planePoints.InsertPoint(5, new double[] {0, 0, 0});
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: origin 0,0,0");
+//
+//		
+//		vtkDoubleArray planeNormals = new vtkDoubleArray();
+//		planeNormals.SetNumberOfComponents(3);
+//		planeNormals.SetNumberOfTuples(1);
+//		planeNormals.InsertTuple3(0, top[0], top[1], top[2]);
+//		planeNormals.InsertTuple3(1, right[0], right[1], right[2]);
+//		planeNormals.InsertTuple3(2, bottom[0], bottom[1], bottom[2]);
+//		planeNormals.InsertTuple3(3, left[0], left[1], left[2]);
+//		planeNormals.InsertTuple3(4, origin[0], origin[1], origin[2]);
+//		planeNormals.InsertTuple3(5, -origin[0], -origin[1], -origin[2]);
+//		System.out.println("PolyDataUtil: computeFrustumPlanes: normal " + top[0] + "," + top[1] + "," + top[2]);
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: normal " + right[0] + "," + right[1] + "," + right[2]);
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: normal " + bottom[0] + "," + bottom[1] + "," + bottom[2]);
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: normal " + left[0] + "," + left[1] + "," + left[2]);
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: normal " + origin[0] + "," + origin[1] + "," + origin[2]);
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: normal " + -origin[0] + "," + -origin[1] + "," + -origin[2]);
+//
+//		
+//		vtkPlanes planes = new vtkPlanes();
+//		planes.SetPoints(planePoints);
+//		planes.SetNormals(planeNormals);
+//		System.out.println("PolyDataUtil: computeFrustumPlanes: number of normals tuples " + planeNormals.GetNumberOfTuples());
+//		
+//		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: planes " + planes.GetNumberOfPlanes());
+//		return planes;
+		
+		edu.jhuapl.saavtk2.geom.euclidean.Frustum frustum = new edu.jhuapl.saavtk2.geom.euclidean.Frustum(origin, ul, ur, lr, ll);
+		
+		vtkCamera Camera = new vtkCamera();
+//	    System.out.println("PolyDataUtil: renderFrustumPlanes: origin " + new Vector3D(origin));
+	    Camera.SetPosition(origin[0], origin[1], origin[2]);
+	    
+//	    Camera.SetFocalPoint(0, 0, 0);
+//	    System.out.println("PolyDataUtil: computeFrustumPlanes: frustum boresight " + frustum.getBoresightUnit());
+	    Vector3D focalPoint = new Vector3D(origin).add(frustum.getBoresightUnit().scalarMultiply(10000));
+//	    System.out.println("PolyDataUtil: computeFrustumPlanes: focal point " + focalPoint);
+	    Camera.SetFocalPoint(focalPoint.toArray());
+	    Camera.SetViewAngle(frustum.getFovXDeg());
+	    Camera.SetViewUp(frustum.getR().toArray());
+	    Camera.SetClippingRange(0.1,new Vector3D(origin).getNorm()*2);
+	    double PlanesArray[] = new double[24];
+
+	    Camera.GetFrustumPlanes(1.0, PlanesArray);
+
+	    vtkPlanes Planes = new vtkPlanes();
+	    Planes.SetFrustumPlanes(PlanesArray);
+	    return Planes;
+	}
+	
+	public static vtkActor renderFrustumPlanes(/*vtkPolyData polyData,*/ double[] origin, double[] ul, double[] ur, double[] lr, double[] ll)
+	{		
+	    vtkNamedColors Color = new vtkNamedColors();
+	    //For Actor Color
+	    double ActorColor[] = new double[4];
+	    //Renderer Background Color
+	    double BgColor[] = new double[4];
+	    //BackFace color
+	    double BackColor[] = new double[4];
+
+	    //Change Color Name to Use your own Color for Change Actor Color
+	    Color.GetColor("GreenYellow",ActorColor);
+	    //Change Color Name to Use your own Color for Renderer Background
+	    Color.GetColor("RoyalBlue",BgColor);
+	    //Change Color Name to Use your own Color for BackFace Color
+	    Color.GetColor("PeachPuff",BackColor);
+	    
+//	    vtkCamera Camera = new vtkCamera();
+//	    System.out.println("PolyDataUtil: renderFrustumPlanes: origin " + new Vector3D(origin));
+//	    Camera.SetPosition(origin[0], origin[1], origin[2]);
+//	    Camera.SetFocalPoint(0, 0, 0);
+//	    Camera.SetViewAngle(2);
+//	    Camera.SetClippingRange(0.1,new Vector3D(origin).getNorm());
+//	    double PlanesArray[] = new double[24];
+//
+//	    Camera.GetFrustumPlanes(1.0, PlanesArray);
+//
+//	    vtkPlanes Planes = new vtkPlanes();
+//	    Planes.SetFrustumPlanes(PlanesArray);
+	    
+	    vtkPlanes Planes = computeFrustumPlanes(/*polyData,*/ origin, ul, ur, lr, ll);
+
+	    //To create a frustum defined by a set of planes.
+	    vtkFrustumSource FrustumSource = new vtkFrustumSource();
+	    FrustumSource.ShowLinesOff();
+	    FrustumSource.SetPlanes(Planes);
+
+	    //Create a Mapper and Actor
+	    vtkDataSetMapper Mapper = new vtkDataSetMapper();
+	    Mapper.SetInputConnection(FrustumSource.GetOutputPort());
+
+	    vtkProperty Back = new vtkProperty();
+	    Back.SetColor(BackColor);
+
+	    vtkActor Actor = new vtkActor();
+	    Actor.SetMapper(Mapper);
+	    Actor.GetProperty().EdgeVisibilityOn();
+	    Actor.GetProperty().SetColor(ActorColor);
+	    Actor.SetBackfaceProperty(Back);
+
+		return Actor;
+	}
+	
+	public static vtkActor renderFrustumPlane(double[] origin, double[] ul, double[] ur, double[] lr, double[] ll, int i)
+	{		
+		vtkPlanes planes = computeFrustumPlanes(origin, ul, ur, lr, ll);
+		vtkPlane plane = planes.GetPlane(i);
+//		System.out.println("PolyDataUtil: renderFrustumPlane: plane " + plane);
+	    vtkNamedColors Color = new vtkNamedColors();
+	    //For Actor Color
+	    double ActorColor[] = new double[4];
+	    //Renderer Background Color
+	    double BgColor[] = new double[4];
+	    //BackFace color
+	    double BackColor[] = new double[4];
+
+	    //Change Color Name to Use your own Color for Change Actor Color
+	    Color.GetColor("GreenYellow",ActorColor);
+	    //Change Color Name to Use your own Color for Renderer Background
+	    Color.GetColor("RoyalBlue",BgColor);
+	    //Change Color Name to Use your own Color for BackFace Color
+	    Color.GetColor("PeachPuff",BackColor);
+	    
+	    vtkPlaneSource planeSource = new vtkPlaneSource();
+	    planeSource.SetOrigin(plane.GetOrigin());
+	    planeSource.SetNormal(plane.GetNormal());
+	    planeSource.Update();
+	    
+	    //Create a Mapper and Actor
+	    vtkDataSetMapper Mapper = new vtkDataSetMapper();
+	    Mapper.SetInputConnection(planeSource.GetOutputPort());
+
+	    vtkProperty Back = new vtkProperty();
+	    Back.SetColor(BackColor);
+
+	    vtkActor Actor = new vtkActor();
+	    Actor.SetMapper(Mapper);
+	    Actor.GetProperty().EdgeVisibilityOn();
+	    Actor.GetProperty().SetColor(ActorColor);
+	    Actor.SetBackfaceProperty(Back);
+
+		return Actor;
+	}
+	
+	public static vtkPolyData computeVTKFrustumIntersection(vtkPolyData polyData, double[] origin, double[] ul, double[] ur, double[] lr, double[] ll)
+	{
+//		Logger.getAnonymousLogger().log(Level.INFO, "!!!!!!!!!!!!!!1Computing VTK Frustum Intersection");
+
+		vtkPlanes planes = computeFrustumPlanes(/*polyData,*/ origin, ul, ur, lr, ll);
+
+		vtkExtractSelectedFrustum extractor = new vtkExtractSelectedFrustum();
+		extractor.SetFrustum(planes);
+//		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: planes " + extractor.GetFrustum());
+		extractor.PreserveTopologyOff();
+		extractor.SetInputData(polyData);
+		extractor.InsideOutOff();
+		extractor.SetFieldType(0);
+//		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: extractor field type " + extractor.GetFieldType());
+		extractor.Update();
+//		vtkDataObject output = extractor.GetOutput();
+		
+		vtkUnstructuredGrid selectedGeometry = (vtkUnstructuredGrid) extractor.GetOutput();
+		vtkGeometryFilter geometryFilter = new vtkGeometryFilter();
+		geometryFilter.SetInputData(selectedGeometry);
+		geometryFilter.Update();
+//		
+//		vtkPolyDataNormals normalsFilter = new vtkPolyDataNormals();
+//		normalsFilter.SetInputConnection(geometryFilter.GetOutputPort());
+//		normalsFilter.SetComputeCellNormals(1);
+//		normalsFilter.SetComputePointNormals(0);
+//		normalsFilter.SplittingOff();
+//		normalsFilter.Update();
+//		vtkPolyData normalsFilterOutput = normalsFilter.GetOutput();
+//
+//		vtkPolyData tmpPolyData = new vtkPolyData();
+//		tmpPolyData.DeepCopy(normalsFilterOutput);
+		// Now remove from this clipped poly data all the cells that are facing away from the viewer.
+//		vtkDataArray cellNormals = tmpPolyData.GetCellData().GetNormals();
+//		vtkPoints points = tmpPolyData.GetPoints();
+//
+//		int numCells = cellNormals.GetNumberOfTuples();
+//
+//		vtkIdList idList = new vtkIdList();
+//		idList.SetNumberOfIds(0);
+//		double[] viewDir = new double[3];
+//		for (int i = 0; i < numCells; ++i)
+//		{
+//			double[] n = cellNormals.GetTuple3(i);
+//			MathUtil.vhat(n, n);
+//
+//			// Compute the direction to the viewer from one of the point of the cell.
+//			tmpPolyData.GetCellPoints(i, idList);
+//			double[] pt = points.GetPoint(idList.GetId(0));
+//
+//			viewDir[0] = origin[0] - pt[0];
+//			viewDir[1] = origin[1] - pt[1];
+//			viewDir[2] = origin[2] - pt[2];
+//			MathUtil.vhat(viewDir, viewDir);
+//
+//			double dot = MathUtil.vdot(n, viewDir);
+//			if (dot <= 0.0)
+//				tmpPolyData.DeleteCell(i);
+//		}
+//		
+//		tmpPolyData.RemoveDeletedCells();
+//		tmpPolyData.Modified();
+//		tmpPolyData.GetCellData().SetNormals(null);
+//
+//		vtkCleanPolyData cleanPoly = new vtkCleanPolyData();
+//		cleanPoly.SetInputData(tmpPolyData);
+//		cleanPoly.Update();
+//		vtkPolyData cleanPolyOutput = cleanPoly.GetOutput();
+//
+//		//polyData = new vtkPolyData();
+//		tmpPolyData.DeepCopy(cleanPolyOutput);
+
+//		vtkPolyData result = new vtkPolyData();
+//		result.DeepCopy(normalsFilter.GetOutput());
+//		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: result num cells " + result.GetNumberOfCells());
+//		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: result num points " + result.GetNumberOfPoints());
+//		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: result num polys " + result.GetNumberOfPolys());
+//		Logger.getAnonymousLogger().log(Level.INFO, "Returning poly");
+		vtkPolyData result = new vtkPolyData();
+		result.DeepCopy(geometryFilter.GetOutput());
+		return result;
+//		return tmpPolyData;
+//		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: output " + output);
+//		vtkUnstructuredGrid grid = new vtkUnstructuredGrid();
+//		grid.ShallowCopy(output);
+//		Logger.getAnonymousLogger().log(Level.INFO, "Number of cells filtered " + grid.GetNumberOfCells());
+	}
+	
 	public static vtkPolyData computeFrustumIntersection(vtkPolyData polyData, vtksbCellLocator locator, vtkAbstractPointLocator pointLocator, double[] origin, double[] ul, double[] ur, double[] lr, double[] ll)
 	{
+//		vtkPlanes planes = computeFrustumPlanes(origin, ul, ur, lr, ll);
+//		vtkPlane plane1 = planes.GetPlane(0); 
+//		vtkPlane plane2 = planes.GetPlane(1); 
+//		vtkPlane plane3 = planes.GetPlane(2); 
+//		vtkPlane plane4 = planes.GetPlane(3); 
 		//printpt(origin, "origin");
 		//printpt(ul, "ul");
 		//printpt(ur, "ur");
@@ -147,44 +468,53 @@ public class PolyDataUtil
 		vtkPlane plane4 = new vtkPlane();
 		plane4.SetOrigin(LL2);
 		plane4.SetNormal(left);
-		vtkPlane backPlane = new vtkPlane();
-		backPlane.SetOrigin(0, 0, 0);
-		backPlane.SetNormal(-origin[0], -origin[1], -origin[2]);
-		vtkClipPolyData backPlaneClip = new vtkClipPolyData();
-		backPlaneClip.SetInputData(polyData);
-		backPlaneClip.SetClipFunction(backPlane);
-		backPlaneClip.SetInsideOut(1);
-		backPlaneClip.Update();
-
+//		vtkPlane backPlane = new vtkPlane();
+//		backPlane.SetOrigin(0, 0, 0);
+//		backPlane.SetNormal(-origin[0], -origin[1], -origin[2]);
+//		vtkClipPolyData backPlaneClip = new vtkClipPolyData();
+//		backPlaneClip.SetInputData(polyData);
+//		backPlaneClip.SetClipFunction(backPlane);
+//		backPlaneClip.SetInsideOut(1);
+//		backPlaneClip.Update();
+//		System.out.println("PolyDataUtil: computeFrustumIntersection: polydata size " + polyData.GetNumberOfCells());
 		// I found that the results are MUCH better when you use a separate vtkClipPolyData
 		// for each plane of the frustum rather than trying to use a single vtkClipPolyData
 		// with an vtkImplicitBoolean or vtkPlanes that combines all the planes together.
 		vtkClipPolyData clipPolyData1 = new vtkClipPolyData();
-		clipPolyData1.SetInputConnection(backPlaneClip.GetOutputPort());
+		clipPolyData1.SetInputData(polyData);
 		clipPolyData1.SetClipFunction(plane1);
 		clipPolyData1.SetInsideOut(1);
 		vtkAlgorithmOutput clipPolyData1OutputPort = clipPolyData1.GetOutputPort();
+//		System.out.println("PolyDataUtil: computeFrustumIntersection: plane 1 " + plane1);
+//		System.out.println("PolyDataUtil: computeFrustumIntersection: number after plane 1 " + clipPolyData1.GetOutput().GetNumberOfCells());
 		
 		vtkClipPolyData clipPolyData2 = new vtkClipPolyData();
 		clipPolyData2.SetInputConnection(clipPolyData1OutputPort);
 		clipPolyData2.SetClipFunction(plane2);
 		clipPolyData2.SetInsideOut(1);
 		vtkAlgorithmOutput clipPolyData2OutputPort = clipPolyData2.GetOutputPort();
+//		System.out.println("PolyDataUtil: computeFrustumIntersection: number after plane 2 " + clipPolyData2.GetOutput().GetNumberOfCells());
+
 
 		vtkClipPolyData clipPolyData3 = new vtkClipPolyData();
 		clipPolyData3.SetInputConnection(clipPolyData2OutputPort);
 		clipPolyData3.SetClipFunction(plane3);
 		clipPolyData3.SetInsideOut(1);
 		vtkAlgorithmOutput clipPolyData3OutputPort = clipPolyData3.GetOutputPort();
+//		System.out.println("PolyDataUtil: computeFrustumIntersection: number after plane 3 " + clipPolyData3.GetOutput().GetNumberOfCells());
+
 
 		vtkClipPolyData clipPolyData4 = new vtkClipPolyData();
 		clipPolyData4.SetInputConnection(clipPolyData3OutputPort);
 		clipPolyData4.SetClipFunction(plane4);
 		clipPolyData4.SetInsideOut(1);
+//		Logger.getAnonymousLogger().log(Level.INFO, "Clipping data");
 		clipPolyData4.Update();
+//		Logger.getAnonymousLogger().log(Level.INFO, "Clipped Data");
 		vtkAlgorithmOutput clipPolyData4OutputPort = clipPolyData4.GetOutputPort();
 		if (clipPolyData4.GetOutput().GetNumberOfCells() == 0)
 		{
+//			System.out.println("PolyDataUtil: computeFrustumIntersection: no cells after clipping");
 			return null;
 		}
 
