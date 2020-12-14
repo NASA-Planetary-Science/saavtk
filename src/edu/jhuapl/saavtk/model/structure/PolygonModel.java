@@ -7,16 +7,16 @@ import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.structure.PolyLineMode;
 import edu.jhuapl.saavtk.structure.Polygon;
 import edu.jhuapl.saavtk.structure.util.ControlPointUtil;
-import edu.jhuapl.saavtk.structure.vtk.VtkPolyLinePainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkPolygonPainter;
 import edu.jhuapl.saavtk.util.IdPair;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
-import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.view.lod.LodMode;
 import edu.jhuapl.saavtk.view.lod.VtkLodActor;
 import edu.jhuapl.saavtk.vtk.VtkUtil;
@@ -55,14 +55,13 @@ public class PolygonModel extends LineModel<Polygon>
 
 	private static final String POLYGONS = "polygons";
 
-	/**
-	 * Standard Constructor
-	 */
-	public PolygonModel(PolyhedralModel aSmallBodyModel)
+	/** Standard Constructor */
+	public PolygonModel(SceneChangeNotifier aSceneChangeNotifier, StatusNotifier aStatusNotifier,
+			PolyhedralModel aSmallBody)
 	{
-		super(aSmallBodyModel, PolyLineMode.CLOSED);
+		super(aSceneChangeNotifier, aStatusNotifier, aSmallBody, PolyLineMode.CLOSED);
 
-		refSmallBody = aSmallBodyModel;
+		refSmallBody = aSmallBody;
 
 		vInteriorColorsRegUCA = new vtkUnsignedCharArray();
 		vInteriorColorsDecUCA = new vtkUnsignedCharArray();
@@ -177,9 +176,7 @@ public class PolygonModel extends LineModel<Polygon>
 			for (int i = 0; i < numberOfStructures; ++i)
 			{
 				Polygon tmpItem = getItem(i);
-				Color tmpColor = tmpItem.getColor();
-				if (getSelectedItems().contains(tmpItem) == true)
-					tmpColor = getCommonData().getSelectionColor();
+				Color tmpColor = getDrawColor(tmpItem);
 
 				IdPair range = getCellIdRangeOfPolygon(i);
 				for (int j = range.id1; j < range.id2; ++j)
@@ -217,28 +214,7 @@ public class PolygonModel extends LineModel<Polygon>
 		vInteriorActor.setLodMapper(LodMode.MaxSpeed, vInteriorMapperDecPDM);
 		vInteriorActor.Modified();
 
-		// Notify model change listeners
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-	}
-
-	@Override
-	public String getClickStatusBarText(vtkProp prop, int cellId, double[] pickPosition)
-	{
-		// Bail if no item clicked on
-		Polygon tmpItem = getItemFromCellId(cellId, prop);
-		if (tmpItem == null)
-			return "";
-
-		// Bail if no associated painter
-		VtkPolyLinePainter<?> tmpPainter = getVtkMainPainter(tmpItem);
-		if (tmpPainter == null)
-			return "";
-
-		String retStr = "Polygon, Id = " + tmpItem.getId();
-		retStr += ", Length = " + decimalFormatter.format(tmpItem.getPathLength()) + " km";
-		retStr += ", Surface Area = " + decimalFormatter.format(tmpItem.getSurfaceArea()) + " km" + (char) 0x00B2;
-		retStr += ", Number of Vertices = " + tmpItem.getControlPoints().size();
-		return retStr;
+		notifyVtkStateChange();
 	}
 
 	@Override
@@ -301,13 +277,6 @@ public class PolygonModel extends LineModel<Polygon>
 		}
 
 		return super.getItemFromCellId(aCellId, aProp);
-	}
-
-	@Override
-	public void setVisible(boolean b)
-	{
-		vInteriorActor.SetVisibility(b ? 1 : 0);
-		super.setVisible(b);
 	}
 
 	/**

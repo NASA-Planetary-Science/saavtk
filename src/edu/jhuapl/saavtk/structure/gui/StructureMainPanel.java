@@ -20,7 +20,6 @@ import javax.swing.JPanel;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 
-import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.funk.PopupButton;
 import edu.jhuapl.saavtk.gui.render.Renderer;
@@ -28,6 +27,7 @@ import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.pick.PickManager;
+import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.structure.Ellipse;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
@@ -49,10 +49,8 @@ public class StructureMainPanel extends JPanel implements ActionListener
 	private JButton loadB;
 	private JButton saveB;
 
-	/**
-	 * Standard Constructor
-	 */
-	public StructureMainPanel(PickManager aPickManager, Renderer aRenderer, StatusBar aStatusBar,
+	/** Standard Constructor */
+	public StructureMainPanel(PickManager aPickManager, Renderer aRenderer, StatusNotifier aStatusNotifier,
 			ModelManager aModelManager)
 	{
 		refModelManager = aModelManager;
@@ -60,7 +58,7 @@ public class StructureMainPanel extends JPanel implements ActionListener
 		// Form the GUI
 		setLayout(new MigLayout("", "", "[]"));
 
-		PopupButton loadEsriB = formEsriLoadButton(aStatusBar);
+		PopupButton loadEsriB = formEsriLoadButton(aStatusNotifier);
 
 		loadB = GuiUtil.createJButton("Load", this);
 		saveB = GuiUtil.createJButton("Save", this);
@@ -145,19 +143,19 @@ public class StructureMainPanel extends JPanel implements ActionListener
 	/**
 	 * Helper method to form the PopupButton used to load ESRI data structures.
 	 */
-	private PopupButton formEsriLoadButton(StatusBar aStatusBar)
+	private PopupButton formEsriLoadButton(StatusNotifier aStatusNotifier)
 	{
 		PopupButton retB = new PopupButton("ESRI...");
 
 		StructureManager<?> pathStructureManager = (StructureManager<?>) refModelManager
 				.getModel(ModelNames.LINE_STRUCTURES);
 		retB.getPopup().add(new JMenuItem(new LoadEsriShapeFileAction<>(this, "Load Path Shapefile Datastore",
-				pathStructureManager, refModelManager, aStatusBar)));
+				pathStructureManager, refModelManager, aStatusNotifier)));
 
 		StructureManager<?> polygonStructureManager = (StructureManager<?>) refModelManager
 				.getModel(ModelNames.POLYGON_STRUCTURES);
 		retB.getPopup().add(new JMenuItem(new LoadEsriShapeFileAction<>(this, "Load Polygon Shapefile Datastore",
-				polygonStructureManager, refModelManager, aStatusBar)));
+				polygonStructureManager, refModelManager, aStatusNotifier)));
 
 		JMenuItem circleMI = new JMenuItem("Load Circle Shapefile Datastore");
 		circleMI.setToolTipText("ESRI circles can be imported using the Polygons tab");
@@ -172,7 +170,7 @@ public class StructureMainPanel extends JPanel implements ActionListener
 		StructureManager<?> pointStructureManager = (StructureManager<?>) refModelManager
 				.getModel(ModelNames.POINT_STRUCTURES);
 		retB.getPopup().add(new JMenuItem(new LoadEsriShapeFileAction<>(this, "Load Point Shapefile Datastore",
-				pointStructureManager, refModelManager, aStatusBar)));
+				pointStructureManager, refModelManager, aStatusNotifier)));
 
 		return retB;
 	}

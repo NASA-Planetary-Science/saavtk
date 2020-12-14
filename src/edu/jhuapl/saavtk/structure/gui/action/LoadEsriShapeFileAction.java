@@ -17,7 +17,6 @@ import org.opengis.feature.simple.SimpleFeature;
 
 import com.google.common.collect.Lists;
 
-import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.ModelManager;
@@ -28,6 +27,7 @@ import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.model.structure.esri.FeatureUtil;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
 import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
+import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.Polygon;
 import edu.jhuapl.saavtk.structure.Structure;
@@ -39,10 +39,10 @@ import edu.jhuapl.saavtk.util.MathUtil;
 
 /**
  * Object that defines the behavior associated with this action.
- * <P>
+ * <p>
  * This class was originally part of the single monolithic file:
  * edu.jhuaple.saavtk.gui.panel.AbstractStructureMappingControlPanel.
- * <P>
+ * <p>
  * Subclasses that were implementations of {@link Action} have been refactored
  * to the package edu.jhuapl.saavtk.structure.gui.action on ~2019Sep09.
  */
@@ -55,24 +55,24 @@ public class LoadEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 	private final Component refParent;
 	private final StructureManager<G1> refStructureManager;
 	private final ModelManager refModelManager;
-	private final StatusBar refStatusBar;
+	private final StatusNotifier refStatusNotifier;
 
 	public LoadEsriShapeFileAction(Component aParent, String aName, StructureManager<G1> aManager,
-			ModelManager aModelManager, StatusBar aStatusBar)
+			ModelManager aModelManager, StatusNotifier aStatusNotifier)
 	{
 		super(aName);
 
 		refParent = aParent;
 		refStructureManager = aManager;
 		refModelManager = aModelManager;
-		refStatusBar = aStatusBar;
+		refStatusNotifier = aStatusNotifier;
 	}
 
 	protected void updateStatusBar(Feature f, int m, int mtot)
 	{
-		refStatusBar.setLeftText(
-				"Loading " + f.getDefaultGeometryProperty().getClass().getSimpleName() + " [" + (m + 1) + "/" + mtot + "]");
-		refStatusBar.repaint();
+		refStatusNotifier.setPriStatus(
+				"Loading " + f.getDefaultGeometryProperty().getClass().getSimpleName() + " [" + (m + 1) + "/" + mtot + "]",
+				null);
 	}
 
 	@Override
