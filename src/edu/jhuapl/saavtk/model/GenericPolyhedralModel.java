@@ -1007,6 +1007,13 @@ public class GenericPolyhedralModel extends PolyhedralModel
             vtkCellData normalsFilterOutputCellData = normalsFilterOutput.GetCellData();
             vtkFloatArray normals = (vtkFloatArray) normalsFilterOutputCellData.GetNormals();
 
+            // Bail if no data
+            if (normals == null)
+            {
+            	cellNormals = new vtkFloatArray();
+            	return cellNormals;
+            }
+
             cellNormals = new vtkFloatArray();
             cellNormals.DeepCopy(normals);
 
@@ -1299,11 +1306,6 @@ public class GenericPolyhedralModel extends PolyhedralModel
             return cellId[0];
         else
             return -1;
-    }
-
-    public void reinitialize()
-    {
-        smallBodyActor = null;
     }
 
     protected void initializeActorsAndMappers()
@@ -2533,30 +2535,6 @@ public class GenericPolyhedralModel extends PolyhedralModel
         if (smallBodyPolyData != null)
             smallBodyPolyData.Delete();
         // if (lowResSmallBodyPolyData != null) lowResSmallBodyPolyData.Delete();
-    }
-
-    @Override
-    public void saveAsPLT(File file) throws IOException
-    {
-        PolyDataUtil.saveShapeModelAsPLT(smallBodyPolyData, file.getAbsolutePath());
-    }
-
-    @Override
-    public void saveAsOBJ(File file) throws IOException
-    {
-        PolyDataUtil.saveShapeModelAsOBJ(smallBodyPolyData, file.getAbsolutePath());
-    }
-
-    @Override
-    public void saveAsVTK(File file) throws IOException
-    {
-        PolyDataUtil.saveShapeModelAsVTK(smallBodyPolyData, file.getAbsolutePath());
-    }
-
-    @Override
-    public void saveAsSTL(File file) throws IOException
-    {
-        PolyDataUtil.saveShapeModelAsSTL(smallBodyPolyData, file.getAbsolutePath());
     }
 
     /**

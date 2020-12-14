@@ -9,6 +9,7 @@ import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,25 +18,25 @@ import javax.swing.event.MouseInputListener;
 
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
+import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.Preferences;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 /**
  * Object that manages a collection of Pickers.
- * <P>
+ * <p>
  * The PickManager supports the following:
- * <UL>
- * <LI>A default Picker which is always active
- * <LI>A set of non-default Pickers of which at most only 1 is active at any
+ * <ul>
+ * <li>A default Picker which is always active
+ * <li>A set of non-default Pickers of which at most only 1 is active at any
  * time.
- * <LI>The non-default Picker is enabled via the method
+ * <li>The non-default Picker is enabled via the method
  * {@link #setPickMode(PickMode)}.
- * </UL>
- * <P>
+ * </ul>
  * This class still relies on VTK's Interactor to accomplish manipulation of the
  * ShapeModel. It would be ideal to do away with the reliance of this VTK code
  * and have a custom "Picker" that performs the manipulations natively via Java.
- * 
+ *
  * @author lopeznr1
  */
 public class PickManager
@@ -66,9 +67,31 @@ public class PickManager
 	@Deprecated
 	private Map<PickMode, Picker> nondefaultPickers;
 
-	/**
-	 * Standard Constructor
-	 */
+	/** Standard Constructor */
+	public PickManager(Renderer aRenderer, PolyhedralModel aSmallBody)
+	{
+		refRenderer = aRenderer;
+		refRenWin = aRenderer.getRenderWindowPanel();
+
+		listenerL = new ArrayList<>();
+		activePicker = NonePicker.Instance;
+		defaultPicker = new DefaultPicker(aRenderer, aSmallBody);
+		pickMode = PickMode.DEFAULT;
+		currExclusiveMode = false;
+		pickTolerance = Picker.DEFAULT_PICK_TOLERANCE;
+
+		nondefaultPickers = new HashMap<>();
+
+		// Set the pick tolerance to the default value
+		double tmpPickTolerance = Preferences.getInstance().getAsDouble(Preferences.PICK_TOLERANCE,
+				Picker.DEFAULT_PICK_TOLERANCE);
+		setPickTolerance(tmpPickTolerance);
+
+		// Register for events of interest
+		registerEventHandler();
+	}
+
+	/** Legacy Constructor */
 	public PickManager(Renderer aRenderer, ModelManager aModelManager)
 	{
 		refRenderer = aRenderer;
@@ -110,7 +133,7 @@ public class PickManager
 
 	/**
 	 * Returns the Picker that corresponds to the specified PickMode
-	 * <P>
+	 * <p>
 	 * Method to support the transition away from a shared (coupled) Picker system
 	 * to a decoupled Picker system.
 	 */
@@ -122,7 +145,7 @@ public class PickManager
 
 	/**
 	 * Sets the PickMode which will activate the corresponding (non-default) Picker.
-	 * <P>
+	 * <p>
 	 * This method will eventually go away. Please use
 	 * {@link #setActivePicker(Picker)}
 	 *
@@ -150,7 +173,7 @@ public class PickManager
 
 	/**
 	 * Sets the active Picker.
-	 * <P>
+	 * <p>
 	 * If null is specified a no-operation Picker will be installed.
 	 */
 	public void setActivePicker(Picker aPicker)
@@ -204,7 +227,7 @@ public class PickManager
 	/**
 	 * Helper method that determines if the active Picker has entered into an
 	 * activated state.
-	 * <P>
+	 * <p>
 	 * An activated state is a state where the Picker is in the process of a complex
 	 * action and wants exclusive "control" of the mouse / keyboard.
 	 */
@@ -395,7 +418,7 @@ public class PickManager
 
 	/**
 	 * Picker which is equivalent to a no-operation Picker.
-	 * <P>
+	 * <p>
 	 * This class (should have) has no state data and thus is a singleton. Currently
 	 * since Picker is an class (with implementation details) rather than an
 	 * interface this is not strictly true.

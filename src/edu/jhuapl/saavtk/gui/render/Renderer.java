@@ -193,6 +193,14 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	}
 
 	/**
+	 * Returns true if the {@link VtkPropProvider} is registered with this Renderer.
+	 */
+	public boolean hasVtkPropProvider(VtkPropProvider aPropProvider)
+	{
+		return propProviderS.contains(aPropProvider);
+	}
+
+	/**
 	 * Deregisters a {@link VtkPropProvider} with this Renderer.
 	 */
 	public void delVtkPropProvider(VtkPropProvider aPropProvider)

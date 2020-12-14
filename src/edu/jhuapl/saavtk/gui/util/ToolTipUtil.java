@@ -87,6 +87,30 @@ public class ToolTipUtil
 	}
 
 	/**
+	 * Returns the tool tip that should be used for "Add Profile" buttons
+	 */
+	public static String getProfileAdd()
+	{
+		return "Add Profile";
+	}
+
+	/**
+	 * Returns the tool tip that should be used for "Delete Profile" buttons
+	 */
+	public static String getProfileDel()
+	{
+		return "Delete Profile";
+	}
+
+	/**
+	 * Returns the tool tip that should be used for "Edit Profile" buttons
+	 */
+	public static String getProfileEdit()
+	{
+		return "Edit Profiles";
+	}
+
+	/**
 	 * Returns the tool tip that should be used for "Select All" buttons
 	 */
 	public static String getSelectAll()
