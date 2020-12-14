@@ -72,15 +72,26 @@ public class LegacyStatusHandler implements PickListener, PropertyChangeListener
 			}
 		}
 
-		// Retrieve the model associated with the actor
+		// Retrieve the relevant model (primary takes precedence over surface)
+		PickTarget tmpTarg = aPrimaryTarg;
+		vtkProp tmpActor = priActor;
 		Model tmpModel = refModelManager.getModel(priActor);
-
-		// Otherwise, update the left side
-		int priCellId = aPrimaryTarg.getCellId();
 		if (tmpModel == null)
+		{
+			tmpTarg = aSurfaceTarg;
+			tmpActor = aSurfaceTarg.getActor();
+			tmpModel = refModelManager.getModel(tmpActor);
+		}
+
+		// Update the left side
+		if (tmpModel == null)
+		{
 			setLeftText(" ", true);
-		else
-			setLeftTextSource(tmpModel, priActor, priCellId, aPrimaryTarg.getPosition().toArray());
+			return;
+		}
+
+		int tmpCellId = tmpTarg.getCellId();
+		setLeftTextSource(tmpModel, tmpActor, tmpCellId, tmpTarg.getPosition().toArray());
 	}
 
 	// Sets up auto-refreshing left status text
