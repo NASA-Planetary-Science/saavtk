@@ -109,5 +109,37 @@ public class ToolTipUtil
 	{
 		return "Clear Selection";
 	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Add Items" buttons
+	 */
+	public static String getItemLoad()
+	{
+		return "Load";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Add Items" buttons
+	 */
+	public static String getItemSave()
+	{
+		return "Save";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Add Items" buttons
+	 */
+	public static String getItemShow()
+	{
+		return "Show";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Add Items" buttons
+	 */
+	public static String getItemHide()
+	{
+		return "Hide";
+	}
 
 }
