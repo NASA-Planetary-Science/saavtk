@@ -109,14 +109,6 @@ public abstract class PolyhedralModel extends AbstractModel implements PolyModel
 
 	public abstract CustomizableColoringDataManager getColoringDataManager();
 
-	public abstract void saveAsPLT(File file) throws IOException;
-
-	public abstract void saveAsOBJ(File file) throws IOException;
-
-	public abstract void saveAsVTK(File file) throws IOException;
-
-	public abstract void saveAsSTL(File file) throws IOException;
-
 	public abstract int getNumberResolutionLevels();
 
 	public abstract boolean isResolutionLevelAvailable(int resolutionLevel);

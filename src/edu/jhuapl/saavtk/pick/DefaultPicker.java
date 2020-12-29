@@ -9,6 +9,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
+import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.Properties;
 
 /**
@@ -24,9 +25,20 @@ public class DefaultPicker extends BaseDefaultPicker implements PickListener, Pr
 	// State vars
 	private final PropertyChangeSupport pcs;
 
-	/**
-	 * Standard Constructor
-	 */
+	/** Standard Constructor */
+	public DefaultPicker(Renderer aRenderer, PolyhedralModel aSmallBody)
+	{
+		super(aRenderer, aSmallBody);
+
+		pcs = new PropertyChangeSupport(this);
+
+		// Register ourself as a listener so we can propagate relevant events
+		// to the registered PropertyChangeListeners
+		addListener(this);
+	}
+
+	/** Legacy Constructor */
+	@Deprecated
 	public DefaultPicker(Renderer aRenderer, ModelManager aModelManager)
 	{
 		super(aRenderer, aModelManager);
@@ -40,7 +52,7 @@ public class DefaultPicker extends BaseDefaultPicker implements PickListener, Pr
 
 	/**
 	 * Notification of default pick events via this method are deprecated.
-	 * <P>
+	 * <p>
 	 * Please use {@link #addListener(PickListener)} instead.
 	 */
 	@Deprecated
@@ -51,7 +63,7 @@ public class DefaultPicker extends BaseDefaultPicker implements PickListener, Pr
 
 	/**
 	 * Notification of default pick events via this method are deprecated.
-	 * <P>
+	 * <p>
 	 * Please use {@link #delListener(PickListener)} instead.
 	 */
 	@Deprecated

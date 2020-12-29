@@ -5,13 +5,19 @@ import java.awt.Color;
 import edu.jhuapl.saavtk.feature.FeatureType;
 
 /**
- * Object that provides the color that should be utilized given a value with a
- * range.
+ * Interface that provides the color that should be utilized given a value with
+ * a range.
+ * <p>
+ * Implementations of this interface should be immutable.
  *
  * @author lopeznr1
  */
 public interface ColorProvider
 {
+	// Constants
+	/** The "invalid" {@link ColorProvider}. */
+	public static final ColorProvider Invalid = InvalidColorProvider.Instance;
+
 	/**
 	 * Returns the base color. The base color is the primary color for which all
 	 * other returned values are a function of.
