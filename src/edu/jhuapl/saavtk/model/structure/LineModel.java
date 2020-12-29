@@ -3,7 +3,6 @@ package edu.jhuapl.saavtk.model.structure;
 import java.awt.Color;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -28,8 +27,9 @@ import crucible.crust.settings.impl.SettableStoredFactory;
 import crucible.crust.settings.impl.StoredFactory;
 import crucible.crust.settings.impl.Version;
 import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
-import edu.jhuapl.saavtk.model.CommonData;
+import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.structure.BaseStructureManager;
 import edu.jhuapl.saavtk.structure.ControlPointsHandler;
 import edu.jhuapl.saavtk.structure.PolyLine;
@@ -65,7 +65,6 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		implements ControlPointsHandler<G1>, PropertyChangeListener, MetadataManager
 {
 	// Constants
-	protected static DecimalFormat decimalFormatter = new DecimalFormat("#.###");
 	private static final String LINES = "lines";
 
 	private static final Color redColor = Color.RED;
@@ -77,13 +76,15 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 
 	// State vars
 	private Map<PolyLine, Vector3D> propM;
+
 	private final PolyLineMode mode;
 	private double offset;
 	private double lineWidth;
 	private G1 activatedLine;
 	private int activatedControlPointIdx;
 
-	private int maximumVerticesPerLine = Integer.MAX_VALUE;
+	private Color spawnColor;
+	private int maximumVerticesPerLine;
 
 	// VTK vars
 	private final VtkControlPointPainter activationPainter;
@@ -102,22 +103,23 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 
 	private final vtkPolyData vEmptyPD;
 
-	/**
-	 * Standard Constructor
-	 */
-	public LineModel(PolyhedralModel aSmallBodyModel, PolyLineMode aMode)
+	/** Standard Constructor */
+	public LineModel(SceneChangeNotifier aSceneChangeNotifier, StatusNotifier aStatusNotifier,
+			PolyhedralModel aSmallBody, PolyLineMode aMode)
 	{
-		super(aSmallBodyModel);
+		super(aSceneChangeNotifier, aStatusNotifier, aSmallBody);
 
-		refSmallBody = aSmallBodyModel;
+		refSmallBody = aSmallBody;
 
 		propM = new HashMap<>();
 
 		mode = aMode;
-		offset = getDefaultOffset();
+		offset = 5.0 * refSmallBody.getMinShiftAmount();
 		activatedLine = null;
 		activatedControlPointIdx = -1;
 
+		spawnColor = Color.MAGENTA;
+		maximumVerticesPerLine = Integer.MAX_VALUE;
 		if (hasProfileMode() == true)
 			setMaximumVerticesPerLine(2);
 
@@ -162,9 +164,11 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		vLineActivationActor.Modified();
 	}
 
-	public LineModel(PolyhedralModel smallBodyModel)
+	/** Simplified Constructor */
+	public LineModel(SceneChangeNotifier aSceneChangeNotifier, StatusNotifier aStatusNotifier,
+			PolyhedralModel aSmallBody)
 	{
-		this(smallBodyModel, PolyLineMode.DEFAULT);
+		this(aSceneChangeNotifier, aStatusNotifier, aSmallBody, PolyLineMode.DEFAULT);
 	}
 
 	@Override
@@ -173,6 +177,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		// Create the item
 		List<LatLon> tmpLatLonL = ControlPointUtil.convertToLatLonList(aControlPointL);
 		G1 retItem = (G1) new PolyLine(aId, null, tmpLatLonL);
+		retItem.setColor(spawnColor);
 
 		// Install the item
 		List<G1> tmpL = new ArrayList<>(getAllItems());
@@ -217,7 +222,18 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	 */
 	public void notifyModelChanged()
 	{
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		notifyVtkStateChange();
+
+		if (activatedLine != null)
+			notifyItemsMutated(ImmutableList.of(activatedLine));
+	}
+
+	/**
+	 * Sets the color for which newly created items will be set to.
+	 */
+	public void setSpawnColor(Color aColor)
+	{
+		spawnColor = aColor;
 	}
 
 	@Override
@@ -242,21 +258,12 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 
 		List<G1> tmpL = getAllItems();
 
-		Color pickColor = null;
-		CommonData commonData = getCommonData();
-		if (commonData != null)
-			pickColor = commonData.getSelectionColor();
-
 		int c = 0;
 		for (G1 aItem : tmpL)
 		{
 			// Ensure the painters are synchronized
 			VtkCompositePainter<?, VtkPolyLinePainter<G1>> tmpPainter = getOrCreateVtkPainterFor(aItem, refSmallBody);
 			tmpPainter.vtkUpdateState();
-
-			Color tmpColor = aItem.getColor();
-			if (pickColor != null && getSelectedItems().contains(aItem) == true)
-				tmpColor = pickColor;
 
 			List<Vector3D> xyzPointL = tmpPainter.getMainPainter().getXyzPointList();
 			int size = xyzPointL.size();
@@ -287,6 +294,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 					vIdRegIL.SetId(size, startId);
 			}
 
+			Color tmpColor = getDrawColor(aItem);
 			lineCells.InsertNextCell(vIdRegIL);
 			colors.InsertNextTuple4(tmpColor.getRed(), tmpColor.getGreen(), tmpColor.getBlue(), 255);
 		}
@@ -302,10 +310,6 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		int drawId = 0;
 		for (G1 aItem : tmpL)
 		{
-			Color tmpColor = aItem.getColor();
-			if (pickColor != null && getSelectedItems().contains(aItem) == true)
-				tmpColor = pickColor;
-
 			VtkPolyLinePainter<?> tmpPainter = getOrCreateVtkPainterFor(aItem, refSmallBody).getMainPainter();
 			tmpPainter.setVtkDrawId(drawId);
 			drawId++;
@@ -343,6 +347,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 					vIdDecIL.SetId(size, startId);
 			}
 
+			Color tmpColor = getDrawColor(aItem);
 			decimatedLineCells.InsertNextCell(vIdDecIL);
 			decimatedColors.InsertNextTuple4(tmpColor.getRed(), tmpColor.getGreen(), tmpColor.getBlue(), 255);
 		}
@@ -362,8 +367,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		vLineActor.setLodMapper(LodMode.MaxSpeed, vLineMapperDecPDM);
 		vLineActor.Modified();
 
-		// Notify model change listeners
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		notifyVtkStateChange();
 	}
 
 	@Override
@@ -398,41 +402,6 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	}
 
 	@Override
-	public String getClickStatusBarText(vtkProp aProp, int aCellId, double[] aPickPosition)
-	{
-		if (aProp != vLineActor)
-			return "";
-
-		// Bail if no item clicked on
-		G1 tmpItem = getItem(aCellId);
-		if (tmpItem == null)
-			return "";
-
-		// Bail if no associated painter
-		VtkPolyLinePainter<?> tmpPainter = getVtkMainPainter(tmpItem);
-		if (tmpPainter == null)
-			return "";
-
-		String retStr = "Path, Id = " + tmpItem.getId();
-		retStr += ", Length = " + decimalFormatter.format(tmpItem.getPathLength()) + " km";
-		retStr += ", Number of Vertices = " + tmpItem.getControlPoints().size();
-		return retStr;
-	}
-
-	@Override
-	public void notifyItemsMutated(Collection<G1> aItemC)
-	{
-		if (aItemC.isEmpty() == true)
-			return;
-
-		for (G1 aItem : aItemC)
-			markPainterStale(aItem);
-
-		updatePolyData();
-		notifyListeners(this, ItemEventType.ItemsMutated);
-	}
-
-	@Override
 	public void addControlPoint(int aIdx, Vector3D aPoint)
 	{
 		// Bail if no activated line
@@ -461,6 +430,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		updateLineActivation();
 
 		notifyListeners(this, ItemEventType.ItemsMutated);
+		notifyItemsMutated(ImmutableList.of(tmpLine));
 	}
 
 	@Override
@@ -508,6 +478,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		updateLineActivation();
 
 		notifyListeners(this, ItemEventType.ItemsMutated);
+		notifyItemsMutated(ImmutableList.of(tmpLine));
 	}
 
 	@Override
@@ -525,7 +496,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 			vActivationPD.Modified();
 
 			notifyListeners(this, ItemEventType.ItemsMutated);
-			pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+			notifyVtkStateChange();
 			return;
 		}
 
@@ -609,7 +580,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		{
 			if (activatedLine == null)
 			{
-				pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+				notifyVtkStateChange();
 				return;
 			}
 
@@ -645,7 +616,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 			refSmallBody.shiftPolyLineInNormalDirection(vActivationPD, getOffset());
 		}
 
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		notifyVtkStateChange();
 	}
 
 	@Override
@@ -774,12 +745,6 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	}
 
 	@Override
-	public double getDefaultOffset()
-	{
-		return 5.0 * refSmallBody.getMinShiftAmount();
-	}
-
-	@Override
 	public void setOffset(double aOffset)
 	{
 		offset = aOffset;
@@ -788,7 +753,6 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		propM.clear();
 
 		updatePolyData();
-
 		notifyListeners(this, ItemEventType.ItemsMutated);
 	}
 
@@ -874,7 +838,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 			lineProperty.SetLineWidth(lineWidth);
 
 			notifyListeners(this, ItemEventType.ItemsMutated);
-			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+			notifyVtkStateChange();
 		}
 	}
 
@@ -976,14 +940,22 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		return new VtkPolyLinePainter<>(refSmallBody, aItem, mode);
 	}
 
+	/**
+	 * Helper method that returns the color for which the item should be drawn.
+	 */
+	@Override
+	protected Color getDrawColor(G1 aItem)
+	{
+		// Profile mode does not render selected lines in a different color
+		if (mode == PolyLineMode.PROFILE)
+			return aItem.getColor();
+
+		return super.getDrawColor(aItem);
+	}
+
 	@Override
 	protected void updateVtkColorsFor(Collection<G1> aItemC, boolean aSendNotification)
 	{
-		Color pickColor = null;
-		CommonData commonData = getCommonData();
-		if (commonData != null)
-			pickColor = commonData.getSelectionColor();
-
 		// Gather VTK vars of interest
 		vtkCellData regCD = vLinesRegPD.GetCellData();
 		vtkUnsignedCharArray regColorUCA = (vtkUnsignedCharArray) regCD.GetScalars();
@@ -1008,10 +980,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 				continue;
 
 			// Update the color related state
-			Color tmpColor = aItem.getColor();
-			if (pickColor != null && getSelectedItems().contains(aItem) == true)
-				tmpColor = pickColor;
-
+			Color tmpColor = getDrawColor(aItem);
 			int tmpId = tmpPainter.getVtkDrawId();
 			VtkUtil.setColorOnUCA4(regColorUCA, tmpId, tmpColor);
 			VtkUtil.setColorOnUCA4(decColorUCA, tmpId, tmpColor);
@@ -1020,7 +989,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		regColorUCA.Modified();
 		decColorUCA.Modified();
 
-		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+		notifyVtkStateChange();
 	}
 
 	/**
@@ -1070,6 +1039,8 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		updateLineActivation();
 
 		notifyListeners(this, ItemEventType.ItemsMutated);
+		if (activatedLine != null)
+			notifyItemsMutated(ImmutableList.of(activatedLine));
 	}
 
 	// TODO: Add comments
@@ -1091,20 +1062,6 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		updatePolyData();
 
 		updateLineActivation();
-	}
-
-	/**
-	 * Helper method to mark the painter(s) associated with the specified item as
-	 * stale.
-	 */
-	private void markPainterStale(G1 aItem)
-	{
-		VtkCompositePainter<?, VtkPolyLinePainter<G1>> tmpPainter = getVtkCompPainter(aItem);
-		if (tmpPainter == null)
-			return;
-
-		tmpPainter.getMainPainter().markStale();
-		tmpPainter.getTextPainter().markStale();
 	}
 
 }

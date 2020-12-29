@@ -5,14 +5,16 @@ import java.awt.Color;
 import edu.jhuapl.saavtk.feature.FeatureType;
 
 /**
- * Singleton instance of a ColorProvider that defines the invalid ColorProvider.
+ * Singleton instance of a {@link ColorProvider} that defines the invalid
+ * {@link ColorProvider}.
  *
  * @author lopeznr1
  */
-public class InvalidColorProvider implements ColorProvider
+class InvalidColorProvider implements ColorProvider
 {
 	// Constants
-	public static InvalidColorProvider Instance = new InvalidColorProvider();
+	/** The "invalid" {@link ColorProvider}. */
+	static InvalidColorProvider Instance = new InvalidColorProvider();
 
 	/** Private Singleton Constructor */
 	private InvalidColorProvider()

@@ -12,7 +12,10 @@ import javax.swing.ImageIcon;
 public class IconUtil
 {
 	// Cache vars
+	private static Icon cIconAppMain = null;
+
 	private static Icon cIconActionAbort = null;
+	private static Icon cIconActionCenter = null;
 	private static Icon cIconActionConfig = null;
 	private static Icon cIconActionReset = null;
 
@@ -40,6 +43,17 @@ public class IconUtil
 	}
 
 	/**
+	 * Returns the icon that should be used for "Center" action buttons
+	 */
+	public static Icon getActionCenter()
+	{
+		if (cIconActionCenter == null)
+			cIconActionCenter = IconUtil.loadIcon("resources/icons/ActionCenter.24.png");
+
+		return cIconActionCenter;
+	}
+
+	/**
 	 * Returns the icon that should be used for "Configure" action buttons
 	 */
 	public static Icon getActionConfig()
@@ -59,6 +73,27 @@ public class IconUtil
 			cIconActionReset = IconUtil.loadIcon("resources/icons/ActionReset.24.png");
 
 		return cIconActionReset;
+	}
+
+	/**
+	 * Returns the icon that should be used as the application icon.
+	 */
+	public static Icon getAppMain()
+	{
+		if (cIconAppMain == null)
+			cIconAppMain = IconUtil.loadIcon("resources/icons/MainApp.Eros.png");
+
+		return cIconAppMain;
+	}
+
+	/**
+	 * Returns the icon image that should be used as the application icon.
+	 * <P>
+	 * Note this method does not utilize any caching mechanism.
+	 */
+	public static ImageIcon getAppMainImage()
+	{
+		return IconUtil.loadIcon("resources/icons/MainApp.Eros.png");
 	}
 
 	/**

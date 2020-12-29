@@ -11,8 +11,6 @@ import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
-import edu.jhuapl.saavtk.gui.StatusBar;
-import edu.jhuapl.saavtk.gui.StatusBarDefaultPickHandler;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
@@ -24,14 +22,14 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 /**
  * Utility class for configuration of Picker related code.
- * <P>
+ * <p>
  * Please note the following:
- * <UL>
- * <LI>The method {@link #formNonDefaultPickerMap(Renderer, ModelManager)} is
+ * <ul>
+ * <li>The method {@link #formNonDefaultPickerMap(Renderer, ModelManager)} is
  * marked for removal.
- * <LI>The method {@link #setPickingEnabled(boolean)} should be investigated
+ * <li>The method {@link #setPickingEnabled(boolean)} should be investigated
  * further and eventually removed if possible.
- * <UL>
+ * <ul>
  *
  * @author lopeznr1
  */
@@ -70,33 +68,17 @@ public class PickUtil
 	}
 
 	/**
-	 * Registers a {@link StatusBarDefaultPickHandler} with the
-	 * {@link PickManager}'s {@link DefaultPicker}.
-	 * <P>
-	 * The installed {@link StatusBarDefaultPickHandler} will handle updates
-	 * relevant to the status bar.
-	 */
-	public static void installDefaultPickHandler(PickManager aPickManager, StatusBar aStatusBar, Renderer aRenderer,
-			ModelManager aModelManager)
-	{
-		DefaultPicker tmpDefaultPicker = aPickManager.getDefaultPicker();
-		StatusBarDefaultPickHandler tmpStatusBarHandler = new StatusBarDefaultPickHandler(aStatusBar, aRenderer,
-				aModelManager);
-		tmpDefaultPicker.addListener(tmpStatusBarHandler);
-	}
-
-	/**
 	 * Determines if the specified {@link InputEvent} is a valid popup trigger.
-	 * <P>
+	 * <p>
 	 * To be considered a valid popup trigger, the following must be true:
-	 * <UL>
-	 * <LI>InputEvent must be of type {@link MouseEvent}
-	 * <LI>On Linux / Windows systems, the event must be associated with the
+	 * <ul>
+	 * <li>InputEvent must be of type {@link MouseEvent}
+	 * <li>On Linux / Windows systems, the event must be associated with the
 	 * right-mouse-button.
-	 * <LI>On Mac systems the event must be either associated with the
+	 * <li>On Mac systems the event must be either associated with the
 	 * {@link MouseEvent#BUTTON3} or <CTRL> key is pressed while
 	 * {@link MouseEvent#BUTTON1} is pressed.
-	 * </UL>
+	 * </ul>
 	 */
 	public static boolean isPopupTrigger(InputEvent aEvent)
 	{

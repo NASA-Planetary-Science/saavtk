@@ -8,6 +8,8 @@ import javax.swing.JFrame;
 import javax.swing.JMenuBar;
 
 import edu.jhuapl.saavtk.gui.menu.FileMenu;
+import edu.jhuapl.saavtk.status.StatusNotifier;
+import edu.jhuapl.saavtk.status.gui.StatusBarPanel;
 
 /**
  * This class contains the "main" function called at the start of the program.
@@ -33,7 +35,7 @@ public abstract class MainWindow extends JFrame
     }
 
     private static final long serialVersionUID = -1837887362465597229L;
-    private StatusBar statusBar;
+    private StatusBarPanel statusBar;
     protected ViewManager rootPanel;
 
     /**
@@ -87,7 +89,7 @@ public abstract class MainWindow extends JFrame
         return new ImageIcon("data/yin-yang.gif");
     }
 
-    protected abstract ViewManager createViewManager(StatusBar statusBar, String tempCustomShapeModelPath);
+    protected abstract ViewManager createViewManager(StatusNotifier aStatusNotifier, String tempCustomShapeModelPath);
 
     protected FileMenu createFileMenu(ViewManager rootPanel)
     {
@@ -103,7 +105,7 @@ public abstract class MainWindow extends JFrame
 
     protected void createStatusBar(boolean editableLeftLabel)
     {
-        statusBar = new StatusBar(editableLeftLabel);
+   	 statusBar = new StatusBarPanel();
         this.getContentPane().add(statusBar, BorderLayout.PAGE_END);
     }
 }
