@@ -334,7 +334,6 @@ public class CameraRecorderPanel extends JPanel implements ActionListener, ViewA
 				{
 					int width = renderer.getWidth()%2 == 0 ? renderer.getWidth() : renderer.getWidth() + 1;
 					int height = renderer.getHeight()%2 == 0 ? renderer.getHeight() : renderer.getHeight() + 1;
-					System.out.println("CameraRecorderPanel.doRecord().new Runnable() {...}: run: width height is " + width + " " + height);
 					MovieGenerator.create(filenames, new File(path+base + ".mp4"), width, height);
 					for (String filename : filenames)
 					{
