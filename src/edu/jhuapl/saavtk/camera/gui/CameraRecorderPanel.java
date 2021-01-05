@@ -202,7 +202,7 @@ public class CameraRecorderPanel extends JPanel implements ActionListener, ViewA
 		rotationZNF.setEditable(true);
 		add(rotationZNF, "width 40, wrap");
 		
-		JLabel recordLabel = new JLabel("Record for duration (seconds):");
+		JLabel recordLabel = new JLabel("Record 30 fps for duration (seconds):");
 		add(recordLabel, "growx, span, split");
 		recordDurationNF = new GNumberField(this);
 		recordDurationNF.setValue(60);

@@ -30,6 +30,8 @@ public class MovieGenerator
 		for (String filename : frames)
 		{
 			BufferedImage image = ImageIO.read(new File(filename));
+			if (image.getHeight()%2 != 0) image = image.getSubimage(0, 0, image.getWidth(), image.getHeight()-1);
+			if (image.getWidth()%2 != 0) image = image.getSubimage(0, 0, image.getWidth()-1, image.getHeight());
 			enc.encodeImage(image);
 		}
 		enc.finish();
