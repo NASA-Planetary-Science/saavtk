@@ -1,8 +1,5 @@
 package edu.jhuapl.saavtk.gui.jogl;
 
-import java.lang.reflect.Method;
-
-import javax.annotation.PostConstruct;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLContext;
 import javax.media.opengl.GLEventListener;
