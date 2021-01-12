@@ -80,9 +80,9 @@ public enum ShapeModelBody
 	HELENE("Helene"),
 	RYUGU("162173 Ryugu"),
 	MU69("2014 MU69"),
-    DIDYMOS("65803 Didymos"),
-    DIDYMOSA("65803 Didymos A"),
-    DIDYMOSB("65803 Didymos B"),
+    DIDYMOS_SYSTEM("65803 Didymos"),
+    DIDYMOS("Didymos"),
+    DIMORPHOS("Dimorphos"),
     PSYCHE("16 Psyche")
 	;
 
