@@ -68,7 +68,7 @@ public abstract class DataFileReader
 
 	private static final IndexableTuple EMPTY_INDEXABLE = createEmptyIndexable();
 
-	private static final DataFileReader INSTANCE = createInstance();
+	private static DataFileReader instance = null;
 
 	public static IndexableTuple emptyIndexable()
 	{
@@ -102,10 +102,14 @@ public abstract class DataFileReader
         return result;
     }
 
-	public static DataFileReader multiFileFormatReader()
-	{
-		return INSTANCE;
-	}
+    public static DataFileReader multiFileFormatReader()
+    {
+        if (instance == null)
+        {
+            instance = createInstance();
+        }
+        return instance;
+    }
 
 	public abstract void checkFormat(File file) throws IOException, FileFormatException;
 
@@ -130,15 +134,15 @@ public abstract class DataFileReader
 
 	private static DataFileReader createInstance()
 	{
-		return new DataFileReader() {
+	    ImmutableList<DataFileReader> readers = ImmutableList.of(FitsFileReader.of(), CsvFileReader.of());
+
+	    return new DataFileReader() {
 
             @Override
             public void checkFormat(File file) throws FileFormatException, IOException
             {
                 Preconditions.checkNotNull(file);
                 Preconditions.checkArgument(file.exists(), "File not found: " + file.getPath());
-
-                ImmutableList<DataFileReader> readers = ImmutableList.of(FitsFileReader.of(), VtkFileReader.of(), CsvFileReader.of());
 
                 for (DataFileReader reader : readers)
                 {
@@ -162,8 +166,6 @@ public abstract class DataFileReader
             {
                 Preconditions.checkNotNull(file);
                 Preconditions.checkArgument(file.exists(), "File not found: " + file.getPath());
-
-                ImmutableList<DataFileReader> readers = ImmutableList.of(FitsFileReader.of(), VtkFileReader.of(), CsvFileReader.of());
 
                 for (DataFileReader reader : readers)
                 {
