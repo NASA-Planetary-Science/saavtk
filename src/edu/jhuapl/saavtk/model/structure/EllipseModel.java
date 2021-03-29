@@ -4,10 +4,11 @@ import java.awt.Color;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.structure.util.EllipseUtil;
 import edu.jhuapl.saavtk.util.MathUtil;
-import edu.jhuapl.saavtk.util.Properties;
 import vtk.vtkActor;
 import vtk.vtkCellArray;
 import vtk.vtkIdList;
@@ -30,9 +31,10 @@ public class EllipseModel extends AbstractEllipsePolygonModel
 	private double[] unshiftedPoint1;
 	private double[] unshiftedPoint2;
 
-	public EllipseModel(PolyhedralModel aSmallBody)
+	public EllipseModel(SceneChangeNotifier aSceneChangeNotifier, StatusNotifier aStatusNotifier,
+			PolyhedralModel aSmallBody)
 	{
-		super(aSmallBody, 20, Mode.ELLIPSE_MODE, "ellipse");
+		super(aSceneChangeNotifier, aStatusNotifier, aSmallBody, 20, Mode.ELLIPSE_MODE);
 
 		refSmallBody = aSmallBody;
 
@@ -102,9 +104,9 @@ public class EllipseModel extends AbstractEllipsePolygonModel
 			}
 
 			refSmallBody.shiftPolyLineInNormalDirection(vActivationPD, getOffset());
-
 			vActivationPD.Modified();
-			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+
+			notifyVtkStateChange();
 		}
 		else
 		{
@@ -159,9 +161,9 @@ public class EllipseModel extends AbstractEllipsePolygonModel
 			vtkCellArray cells = new vtkCellArray();
 			vActivationPD.SetPoints(points);
 			vActivationPD.SetVerts(cells);
-
 			vActivationPD.Modified();
-			this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+
+			notifyVtkStateChange();
 		}
 	}
 

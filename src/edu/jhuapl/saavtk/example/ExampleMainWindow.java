@@ -4,10 +4,10 @@ import javax.swing.ImageIcon;
 
 import edu.jhuapl.saavtk.gui.MainWindow;
 import edu.jhuapl.saavtk.gui.RecentlyViewed;
-import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.ViewMenu;
 import edu.jhuapl.saavtk.gui.menu.HelpMenu;
+import edu.jhuapl.saavtk.status.StatusNotifier;
 
 
 
@@ -24,9 +24,9 @@ public class ExampleMainWindow extends MainWindow
    }
 
     @Override
-	protected ViewManager createViewManager(StatusBar statusBar, String tempCustomShapeModelPath)
+	protected ViewManager createViewManager(StatusNotifier aStatusNotifier, String tempCustomShapeModelPath)
     {
-        return new ExampleViewManager(statusBar, this, tempCustomShapeModelPath);
+        return new ExampleViewManager(aStatusNotifier, this, tempCustomShapeModelPath);
     }
 
     protected ViewMenu createViewMenu(ViewManager rootPanel, RecentlyViewed recentsMenu)
