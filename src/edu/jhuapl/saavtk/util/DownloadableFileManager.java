@@ -829,7 +829,7 @@ public class DownloadableFileManager
     {
         try
         {
-            URL getUserAccessPhp = new URL("http://sbmt.jhuapl.edu/sbmt/prod/query/" + "checkfilesystemaccess.php");
+            URL getUserAccessPhp = new URL("https://sbmt.jhuapl.edu/sbmt/prod/query/" + "checkfilesystemaccess.php");
             try (CloseableUrlConnection closeableConn = CloseableUrlConnection.of(getUserAccessPhp, HttpRequestMethod.GET))
             {
                 URLConnection conn = closeableConn.getConnection();
@@ -838,7 +838,7 @@ public class DownloadableFileManager
                 conn.setRequestProperty("User-Agent", "Mozilla/4.0");
                 try (OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream()))
                 {
-                    wr.write("rootURL=http://sbmt.jhuapl.edu/sbmt/prod&userName=sbmt-test&password=wide-open&args=&stdin=/prometheus/gaskell/Gaskell_Prometheus_v7.8.json\n/GASKELL/EROS/Gaskell_433_Eros_v7.8.json");
+                    wr.write("rootURL=https://sbmt.jhuapl.edu/sbmt/prod&userName=sbmt-test&password=wide-open&args=&stdin=/prometheus/gaskell/Gaskell_Prometheus_v7.8.json\n/GASKELL/EROS/Gaskell_433_Eros_v7.8.json");
                     wr.flush();
                 }
 

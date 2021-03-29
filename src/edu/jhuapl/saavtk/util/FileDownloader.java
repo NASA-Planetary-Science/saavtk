@@ -347,8 +347,13 @@ public abstract class FileDownloader implements Runnable
         
         try
         {
-            Path passwordFilePath = SafeURLPaths.instance().get(System.getProperty("user.home"), ".sbmt", "password.txt");
+            Configuration.setAppName("FileDownloader");
+            Path passwordFilePath = SafeURLPaths.instance().get(System.getProperty("user.home"), ".sbmt-apl", "password.txt");
             File downloadedFile = SafeURLPaths.instance().get(System.getProperty("user.home"), args[1]).toFile();
+
+            System.out.println("Using credentials in file " + passwordFilePath);
+            System.out.println("Trying to download file from " + args[0] + " to local file " + args[1]);
+            System.out.println("This transfer may fail if the file contains text indicating the request was rejected.");
 
             Authorizor authorizor = new Authorizor(passwordFilePath);
             authorizor.loadCredentials();
