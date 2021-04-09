@@ -8,10 +8,18 @@ import crucible.crust.metadata.impl.InstanceGetter;
 import crucible.crust.metadata.impl.SettableMetadata;
 
 /**
+ * Immutable object used to store a position specified as latitude, longitude,
+ * and radius.
+ * <p>
  * Note it is unspecified whether lat and lon are in degrees or radians.
  */
 public class LatLon
 {
+	// Constants
+	public static final LatLon NaN = new LatLon(Double.NaN, Double.NaN, Double.NaN);
+	public static final LatLon Zero = new LatLon(0.0, 0.0, 0.0);
+
+	// Attributes
 	public final double lat;
 	public final double lon;
 	public final double rad;
@@ -25,6 +33,7 @@ public class LatLon
 		this.rad = latLonRad[2];
 	}
 
+	/** Standard Constructor */
 	public LatLon(double lat, double lon, double rad)
 	{
 		this.lat = lat;
@@ -32,18 +41,10 @@ public class LatLon
 		this.rad = rad;
 	}
 
+	/** Simplified Constructor */
 	public LatLon(double lat, double lon)
 	{
-		this.lat = lat;
-		this.lon = lon;
-		this.rad = 1.0;
-	}
-
-	public LatLon()
-	{
-		this.lat = 0.0;
-		this.lon = 0.0;
-		this.rad = 1.0;
+		this(lat, lon, 1.0);
 	}
 
 	public double[] get()
@@ -60,7 +61,7 @@ public class LatLon
 	/**
 	 * Assuming this instance is in radians, return a new instance converted to
 	 * degrees.
-	 * 
+	 *
 	 * @return
 	 */
 	public LatLon toDegrees()
@@ -71,7 +72,7 @@ public class LatLon
 	/**
 	 * Assuming this instance is in degrees, return a new instance converted to
 	 * radians.
-	 * 
+	 *
 	 * @return
 	 */
 	public LatLon toRadians()
@@ -80,9 +81,37 @@ public class LatLon
 	}
 
 	@Override
-	protected Object clone()
+	public boolean equals(Object obj)
 	{
-		return new LatLon(lat, lon, rad);
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		LatLon other = (LatLon) obj;
+		if (Double.doubleToLongBits(lat) != Double.doubleToLongBits(other.lat))
+			return false;
+		if (Double.doubleToLongBits(lon) != Double.doubleToLongBits(other.lon))
+			return false;
+		if (Double.doubleToLongBits(rad) != Double.doubleToLongBits(other.rad))
+			return false;
+		return true;
+	}
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		long temp;
+		temp = Double.doubleToLongBits(lat);
+		result = prime * result + (int) (temp ^ (temp >>> 32));
+		temp = Double.doubleToLongBits(lon);
+		result = prime * result + (int) (temp ^ (temp >>> 32));
+		temp = Double.doubleToLongBits(rad);
+		result = prime * result + (int) (temp ^ (temp >>> 32));
+		return result;
 	}
 
 	private static final Version METADATA_VERSION = Version.of(1, 0);
