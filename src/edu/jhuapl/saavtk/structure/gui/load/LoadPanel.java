@@ -4,6 +4,8 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,7 +53,7 @@ import net.miginfocom.swing.MigLayout;
  *
  * @author lopeznr1
  */
-public class LoadPanel extends GlassPanel implements ActionListener, TaskListener
+public class LoadPanel extends GlassPanel implements ActionListener, ItemListener, TaskListener
 {
 	// Constants
 	private static final String ERR_MSG_NO_STRUCTURES_LOADED = "Failed to load any structures.";
@@ -114,11 +116,10 @@ public class LoadPanel extends GlassPanel implements ActionListener, TaskListene
 		JLabel titleL = new JLabel("Load Structures", JLabel.CENTER);
 		add(titleL, "growx,span,wrap");
 
-		appendWithOrignalRB = GuiUtil.createJRadioButton("Append structures with original ids", this);
-		appendWithOrignalRB.setSelected(true);
-		appendWithUniqueRB = GuiUtil.createJRadioButton("Append structures with unique ids", this);
-		replaceAllRB = GuiUtil.createJRadioButton("Replace all structures", this);
-		replaceCollideRB = GuiUtil.createJRadioButton("Replace structures with colliding ids", this);
+		appendWithOrignalRB = GuiUtil.createJRadioButton(this, "Append structures with original ids");
+		appendWithUniqueRB = GuiUtil.createJRadioButton(this, "Append structures with unique ids");
+		replaceAllRB = GuiUtil.createJRadioButton(this, "Replace all structures");
+		replaceCollideRB = GuiUtil.createJRadioButton(this, "Replace structures with colliding ids");
 		projToBodyCB = GuiUtil.createJCheckBox("Project to body", this);
 		projToBodyCB.setToolTipText("Project structures to the surface of the shape model.");
 
@@ -146,6 +147,8 @@ public class LoadPanel extends GlassPanel implements ActionListener, TaskListene
 		add(cancelB, "align right,span,split");
 		add(acceptB, "");
 		add(closeB, "gap right 3");
+
+		appendWithOrignalRB.setSelected(true);
 	}
 
 	/**
@@ -206,6 +209,12 @@ public class LoadPanel extends GlassPanel implements ActionListener, TaskListene
 		if (source == closeB)
 			doActionClose();
 
+		updateGui();
+	}
+
+	@Override
+	public void itemStateChanged(ItemEvent aEvent)
+	{
 		updateGui();
 	}
 

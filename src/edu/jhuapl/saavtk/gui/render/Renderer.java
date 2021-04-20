@@ -47,10 +47,11 @@ import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.pick.PickUtilEx;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
-import edu.jhuapl.saavtk.util.Preferences;
 import edu.jhuapl.saavtk.view.View;
 import edu.jhuapl.saavtk.view.ViewActionListener;
 import edu.jhuapl.saavtk.view.ViewChangeReason;
+import edu.jhuapl.saavtk.view.light.LightCfg;
+import edu.jhuapl.saavtk.view.light.LightingType;
 import edu.jhuapl.saavtk.view.lod.LodActor;
 import edu.jhuapl.saavtk.view.lod.LodMode;
 import vtk.vtkCamera;
@@ -69,14 +70,6 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 public class Renderer extends JPanel implements ActionListener, CameraActionListener, PickListener, SceneChangeNotifier, View
 {
-	public enum LightingType
-	{
-		NONE,
-		HEADLIGHT,
-		LIGHT_KIT,
-		FIXEDLIGHT
-	}
-
 	public enum AxisType
 	{
 		NONE,
@@ -105,6 +98,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	private boolean isMode2D;
 
 	// Cache vars
+	private LightCfg cLightCfg;
 	private LodMode cLodModeInstant;
 
 	// GUI vars
@@ -117,7 +111,6 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	private vtkLightKit lightKit;
 	private vtkLight headlight;
 	private vtkLight fixedLight;
-	private LightingType currentLighting = LightingType.NONE;
 
 	/**
 	 * Standard Constructor
@@ -137,6 +130,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		nominalPixelSpan = Double.NaN;
 		isMode2D = false;
 
+		cLightCfg = LightCfg.Invalid;
 		cLodModeInstant = null;
 
 		mainCanvas = new RenderPanel();
@@ -150,7 +144,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 
 		setBackgroundColor(new int[] { 0, 0, 0 });// Preferences.getInstance().getAsIntArray(Preferences.BACKGROUND_COLOR,
 																// new int[]{0, 0, 0}));
-		initLights();
+		initVtkLights();
 		setLayout(new BorderLayout());
 
 		add(toolbar, BorderLayout.NORTH);
@@ -232,32 +226,6 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	public double getNominalPixelSpan()
 	{
 		return nominalPixelSpan;
-	}
-
-	void initLights()
-	{
-		headlight = mainCanvas.getRenderer().MakeLight();
-		headlight.SetLightTypeToHeadlight();
-		headlight.SetConeAngle(180.0);
-
-		fixedLight = mainCanvas.getRenderer().MakeLight();
-		fixedLight.SetLightTypeToSceneLight();
-		fixedLight.PositionalOn();
-		fixedLight.SetConeAngle(180.0);
-		LatLon defaultPosition = new LatLon(Preferences.getInstance().getAsDouble(Preferences.FIXEDLIGHT_LATITUDE, 90.0),
-				Preferences.getInstance().getAsDouble(Preferences.FIXEDLIGHT_LONGITUDE, 0.0),
-				Preferences.getInstance().getAsDouble(Preferences.FIXEDLIGHT_DISTANCE, 1.0e8));
-		setFixedLightPosition(defaultPosition);
-		setLightIntensity(Preferences.getInstance().getAsDouble(Preferences.LIGHT_INTENSITY, 1.0));
-
-		mainCanvas.getRenderer().AutomaticLightCreationOff();
-		lightKit = new vtkLightKit();
-		lightKit.SetKeyToFillRatio(1.0);
-		lightKit.SetKeyToHeadRatio(20.0);
-
-		LightingType lightingType = LightingType
-				.valueOf(Preferences.getInstance().get(Preferences.LIGHTING_TYPE, LightingType.LIGHT_KIT.toString()));
-		setLighting(lightingType);
 	}
 
 	List<KeyListener> listeners = Lists.newArrayList();
@@ -450,91 +418,85 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		mainCanvas.setInteractorEnableState(aBool);
 	}
 
-	public void setLighting(LightingType type)
+	/**
+	 * Gets the Renderer's {@link LightCfg}.
+	 */
+	public LightCfg getLightCfg()
 	{
+		return cLightCfg;
+	}
+
+	/**
+	 * Sets the Renderer's {@link LightCfg}.
+	 */
+	public void setLightCfg(LightCfg aLightCfg)
+	{
+		// Bail if configuration has not changed
+		if (cLightCfg.equals(aLightCfg) == true)
+			return;
+
+		// Update the intensity
+		double intensity = aLightCfg.getIntensity();
+		boolean isValidIntensity = true;
+		isValidIntensity &= Double.isNaN(intensity) == false;
+		isValidIntensity &= intensity >= 0.0 && intensity <= 1.0;
+		if (isValidIntensity == true)
+		{
+			headlight.SetIntensity(intensity);
+			fixedLight.SetIntensity(intensity);
+		}
+
+		// Update (fixed) position
+		LatLon positionLL = aLightCfg.getPositionLL();
+		boolean isValidPosition = true;
+		isValidPosition &= aLightCfg.getType() == LightingType.FIXEDLIGHT;
+		isValidPosition &= Double.isNaN(positionLL.lat) == false && Double.isNaN(positionLL.lon) == false;
+		isValidPosition &= Double.isNaN(positionLL.rad) == false;
+		if (isValidPosition == true)
+			fixedLight.SetPosition(MathUtil.latrec(positionLL));
+
+		// Update the light source
+		LightingType tmpType = aLightCfg.getType();
 		mainCanvas.getRenderer().RemoveAllLights();
-		if (type == LightingType.LIGHT_KIT)
-		{
-			lightKit.AddLightsToRenderer(mainCanvas.getRenderer());
-		}
-		else if (type == LightingType.HEADLIGHT)
-		{
-			mainCanvas.getRenderer().AddLight(headlight);
-		}
-		else
-		{
+		if (tmpType == LightingType.FIXEDLIGHT && isValidIntensity == true && isValidPosition == true)
 			mainCanvas.getRenderer().AddLight(fixedLight);
-		}
-		currentLighting = type;
+		else if (tmpType == LightingType.HEADLIGHT && isValidIntensity == true)
+			mainCanvas.getRenderer().AddLight(headlight);
+		else if (tmpType != LightingType.NONE)
+			lightKit.AddLightsToRenderer(mainCanvas.getRenderer());
+
+		// Update our cache copy
+		cLightCfg = aLightCfg;
+
+		// Render the scene
 		if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
 			mainCanvas.Render();
-	}
 
-	public LightingType getLighting()
-	{
-		return currentLighting;
-	}
-
-	public void setLightIntensity(double percentage)
-	{
-		if (percentage != getLightIntensity())
-		{
-			headlight.SetIntensity(percentage);
-			fixedLight.SetIntensity(percentage);
-			if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-				mainCanvas.Render();
-		}
+		// Sends out notification to the ViewChangeListeners
+		for (ViewActionListener aListener : viewActionListenerL)
+			aListener.handleViewAction(this, ViewChangeReason.Light);
 	}
 
 	/**
-	 * Get the absolute position of the light in lat/lon/rad where lat and lon are
-	 * in degress.
-	 *
-	 * @return
+	 * Method to switch to the fixed light and set the direction of the light source
+	 * in the body frame.
+	 * <p>
+	 * For the distance we utilize a large multiple of the shape model bounding box
+	 * diagonal.
 	 */
-	public LatLon getFixedLightPosition()
+	public void setLightCfgToFixedLightAtDirection(Vector3D aDirection)
 	{
-		double[] position = fixedLight.GetPosition();
-		return MathUtil.reclat(position).toDegrees();
-	}
-
-	/**
-	 * Set the absolute position of the light in lat/lon/rad. Lat and lon must be in
-	 * degrees.
-	 *
-	 * @param latLon
-	 */
-	public void setFixedLightPosition(LatLon latLon)
-	{
-		fixedLight.SetPosition(MathUtil.latrec(latLon.toRadians()));
-		if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-			mainCanvas.Render();
-	}
-
-	/**
-	 * Rather than setting the absolute position of the light as in the previous
-	 * function, set the direction of the light source in the body frame. We still
-	 * need a distance for the light, so simply use a large multiple of the shape
-	 * model bounding box diagonal.
-	 *
-	 * @param dir
-	 */
-	public void setFixedLightDirection(double[] dir)
-	{
-		dir = dir.clone();
+		double[] dir = aDirection.toArray();
 		MathUtil.vhat(dir, dir);
 		double bbd = refSmallBody.getBoundingBoxDiagonalLength();
 		dir[0] *= (1.0e5 * bbd);
 		dir[1] *= (1.0e5 * bbd);
 		dir[2] *= (1.0e5 * bbd);
-		fixedLight.SetPosition(dir);
-		if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-			mainCanvas.Render();
-	}
 
-	public double getLightIntensity()
-	{
-		return headlight.GetIntensity();
+		// Delegate updating the light configuration
+		LatLon positionLL = MathUtil.reclat(dir);
+		LightCfg tmpLightCfg = new LightCfg(LightingType.FIXEDLIGHT, positionLL, cLightCfg.getIntensity());
+		setLightCfg(tmpLightCfg);
 	}
 
 	public int[] getBackgroundColor()
@@ -763,6 +725,27 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		double tmpDistance = aPolyModel.getBoundingBoxDiagonalLength() * 2.0;
 
 		return new StandardCamera(aMainCanvas, tmpCoordinateSystem, tmpDistance);
+	}
+
+	/**
+	 * Helper method to initialize the various light sources available to this
+	 * {@link Renderer}.
+	 */
+	private void initVtkLights()
+	{
+		fixedLight = mainCanvas.getRenderer().MakeLight();
+		fixedLight.SetLightTypeToSceneLight();
+		fixedLight.PositionalOn();
+		fixedLight.SetConeAngle(180.0);
+
+		headlight = mainCanvas.getRenderer().MakeLight();
+		headlight.SetLightTypeToHeadlight();
+		headlight.SetConeAngle(180.0);
+
+		mainCanvas.getRenderer().AutomaticLightCreationOff();
+		lightKit = new vtkLightKit();
+		lightKit.SetKeyToFillRatio(1.0);
+		lightKit.SetKeyToHeadRatio(20.0);
 	}
 
 	/**

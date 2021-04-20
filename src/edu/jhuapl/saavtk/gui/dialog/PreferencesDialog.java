@@ -25,11 +25,9 @@ import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.render.RenderPanel;
 import edu.jhuapl.saavtk.gui.render.Renderer;
-import edu.jhuapl.saavtk.gui.render.Renderer.LightingType;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.util.ColorIcon;
-import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.Preferences;
 
 public class PreferencesDialog extends javax.swing.JDialog
@@ -56,18 +54,6 @@ public class PreferencesDialog extends javax.swing.JDialog
     {
         if (b)
         {
-            Renderer renderer = viewManager.getCurrentView().getRenderer();
-            if (renderer.getLighting() == Renderer.LightingType.LIGHT_KIT)
-                lightKitRadioButton.setSelected(true);
-            else if (renderer.getLighting() == Renderer.LightingType.HEADLIGHT)
-                headlightRadioButton.setSelected(true);
-            else
-                fixedLightRadioButton.setSelected(true);
-            intensitySpinner.setValue(renderer.getLightIntensity());
-            LatLon position = renderer.getFixedLightPosition();
-            latitudeTextField.setValue(position.lat);
-            longitudeTextField.setValue(position.lon);
-            distanceTextField.setValue(position.rad);
 //            showAxesCheckBox.setSelected(renderer.getShowOrientationAxes());
 //            interactiveCheckBox.setSelected(renderer.getOrientationAxesInteractive());
 
@@ -93,7 +79,7 @@ public class PreferencesDialog extends javax.swing.JDialog
             int[] rgbArr = viewManager.getCurrentView().getRenderer().getBackgroundColor();
             updateColorLabel(rgbArr, backgroundColorLabel);
 
-            RenderPanel renderPanel = (RenderPanel) viewManager.getCurrentView().getRenderer().getRenderWindowPanel();
+            RenderPanel renderPanel = viewManager.getCurrentView().getRenderer().getRenderWindowPanel();
             AxesPanel axesPanel = renderPanel.getAxesPanel();
 
             defaultColorMapSelection.setSelectedItem(Colormaps.getCurrentColormapName());
@@ -111,25 +97,9 @@ public class PreferencesDialog extends javax.swing.JDialog
              * axesConeLengthSpinner.setValue(axesPanel.getConelength());
              * axesConeRadiusSpinner.setValue(axesPanel.getConeradius());
              */
-
-            updateEnabledItems();
         }
 
         super.setVisible(b);
-    }
-
-    private void updateEnabledItems()
-    {
-        boolean enabled = headlightRadioButton.isSelected() || fixedLightRadioButton.isSelected();
-        intensityLabel.setEnabled(enabled);
-        intensitySpinner.setEnabled(enabled);
-        enabled = fixedLightRadioButton.isSelected();
-        latitudeLabel.setEnabled(enabled);
-        latitudeTextField.setEnabled(enabled);
-        longitudeLabel.setEnabled(enabled);
-        longitudeTextField.setEnabled(enabled);
-        distanceLabel.setEnabled(enabled);
-        distanceTextField.setEnabled(enabled);
     }
 
     private void applyToView(View v)
@@ -137,24 +107,6 @@ public class PreferencesDialog extends javax.swing.JDialog
         Renderer renderer = v.getRenderer();
         if (renderer != null)
         {
-            if (lightKitRadioButton.isSelected())
-            {
-                renderer.setLighting(LightingType.LIGHT_KIT);
-            }
-            else if (headlightRadioButton.isSelected())
-            {
-                renderer.setLighting(LightingType.HEADLIGHT);
-            }
-            else
-            {
-                renderer.setLighting(LightingType.FIXEDLIGHT);
-            }
-
-            renderer.setLightIntensity((Double) intensitySpinner.getValue());
-
-            LatLon position = new LatLon(Double.parseDouble(latitudeTextField.getText()), Double.parseDouble(longitudeTextField.getText()), Double.parseDouble(distanceTextField.getText()));
-
-            renderer.setFixedLightPosition(position);
 //            renderer.setShowOrientationAxes(showAxesCheckBox.isSelected());
 //            renderer.setOrientationAxesInteractive(interactiveCheckBox.isSelected());
 
@@ -177,7 +129,7 @@ public class PreferencesDialog extends javax.swing.JDialog
             int[] rgbArr = getColorFromLabel(backgroundColorLabel);
             renderer.setBackgroundColor(rgbArr);
 
-            RenderPanel renderPanel = (RenderPanel) v.getRenderer().getRenderWindowPanel();
+            RenderPanel renderPanel = v.getRenderer().getRenderWindowPanel();
             AxesPanel axesPanel = renderPanel.getAxesPanel();
             axesPanel.getRenderer().SetBackground(rgbArr[0] / 255.0, rgbArr[1] / 255.0, rgbArr[2] / 255.0);
             axesPanel.Render();
@@ -263,15 +215,11 @@ public class PreferencesDialog extends javax.swing.JDialog
     {
         java.awt.GridBagConstraints gridBagConstraints;
 
-        lightingButtonGroup = new javax.swing.ButtonGroup();
         interactorStyleButtonGroup = new javax.swing.ButtonGroup();
         jScrollPane1 = new javax.swing.JScrollPane();
         jPanel11 = new javax.swing.JPanel();
-        headlightRadioButton = new javax.swing.JRadioButton();
-        intensityLabel = new javax.swing.JLabel();
 //        showAxesCheckBox = new javax.swing.JCheckBox();
 //        interactiveCheckBox = new javax.swing.JCheckBox();
-        lightKitRadioButton = new javax.swing.JRadioButton();
         jPanel1 = new javax.swing.JPanel();
         applyToCurrentButton = new javax.swing.JButton();
         applyToAllButton = new javax.swing.JButton();
@@ -282,14 +230,6 @@ public class PreferencesDialog extends javax.swing.JDialog
 //        jPanel3 = new javax.swing.JPanel();
         jLabel3 = new javax.swing.JLabel();
         jSeparator2 = new javax.swing.JSeparator();
-        intensitySpinner = new javax.swing.JSpinner();
-        fixedLightRadioButton = new javax.swing.JRadioButton();
-        latitudeLabel = new javax.swing.JLabel();
-        latitudeTextField = new javax.swing.JFormattedTextField();
-        longitudeLabel = new javax.swing.JLabel();
-        longitudeTextField = new javax.swing.JFormattedTextField();
-        distanceLabel = new javax.swing.JLabel();
-        distanceTextField = new javax.swing.JFormattedTextField();
         jPanel5 = new javax.swing.JPanel();
         jLabel4 = new javax.swing.JLabel();
         jSeparator4 = new javax.swing.JSeparator();
@@ -347,31 +287,6 @@ public class PreferencesDialog extends javax.swing.JDialog
 
         jPanel11.setLayout(new java.awt.GridBagLayout());
 
-        lightingButtonGroup.add(headlightRadioButton);
-        headlightRadioButton.setText("Headlight");
-        headlightRadioButton.setToolTipText("A Headlight is a single light always positioned at the virtual camera. It's intensity can be changed below.");
-        headlightRadioButton.addActionListener(new java.awt.event.ActionListener() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent evt)
-            {
-                headlightRadioButtonActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 2;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 0);
-        jPanel11.add(headlightRadioButton, gridBagConstraints);
-
-        intensityLabel.setText("Intensity");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 4;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 4);
-        jPanel11.add(intensityLabel, gridBagConstraints);
-
 //        showAxesCheckBox.setText("Show Axes");
 //        gridBagConstraints = new java.awt.GridBagConstraints();
 //        gridBagConstraints.gridx = 1;
@@ -387,23 +302,6 @@ public class PreferencesDialog extends javax.swing.JDialog
 //        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
 //        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 0);
 //        jPanel11.add(interactiveCheckBox, gridBagConstraints);
-
-        lightingButtonGroup.add(lightKitRadioButton);
-        lightKitRadioButton.setText("Light Kit");
-        lightKitRadioButton.setToolTipText("A Light Kit is a set of several lights of various strengths positioned to provide suitable illumination for most situations.");
-        lightKitRadioButton.addActionListener(new java.awt.event.ActionListener() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent evt)
-            {
-                lightKitRadioButtonActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 0);
-        jPanel11.add(lightKitRadioButton, gridBagConstraints);
 
         jPanel1.setLayout(new java.awt.GridBagLayout());
 
@@ -458,29 +356,6 @@ public class PreferencesDialog extends javax.swing.JDialog
 
         jPanel2.setLayout(new java.awt.GridBagLayout());
 
-        jLabel1.setText("Lighting");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 4);
-        jPanel2.add(jLabel1, gridBagConstraints);
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1.0;
-        jPanel2.add(jSeparator1, gridBagConstraints);
-
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.gridwidth = 4;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.insets = new java.awt.Insets(10, 4, 5, 0);
-        jPanel11.add(jPanel2, gridBagConstraints);
-
 //        jPanel3.setLayout(new java.awt.GridBagLayout());
 //
 //        jLabel3.setText("Orientation Axes");
@@ -503,83 +378,6 @@ public class PreferencesDialog extends javax.swing.JDialog
 //        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
 //        gridBagConstraints.insets = new java.awt.Insets(15, 4, 5, 0);
 //        jPanel11.add(jPanel3, gridBagConstraints);
-
-        intensitySpinner.setModel(new javax.swing.SpinnerNumberModel(1.0d, 0.0d, 1.0d, 0.1d));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 4;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.ipadx = 50;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        jPanel11.add(intensitySpinner, gridBagConstraints);
-
-        lightingButtonGroup.add(fixedLightRadioButton);
-        fixedLightRadioButton.setText("Fixed Light");
-        fixedLightRadioButton.setToolTipText("A Fixed Light is a light fixed in space that does not move with the virtual camera. Its intensity and positon can be changed below.");
-        fixedLightRadioButton.addActionListener(new java.awt.event.ActionListener() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent evt)
-            {
-                fixedLightRadioButtonActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 3;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 0);
-        jPanel11.add(fixedLightRadioButton, gridBagConstraints);
-
-        latitudeLabel.setText("Latitude");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 5;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 4);
-        jPanel11.add(latitudeLabel, gridBagConstraints);
-
-        latitudeTextField.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#0.00"))));
-        latitudeTextField.setPreferredSize(new java.awt.Dimension(100, 22));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 5;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        jPanel11.add(latitudeTextField, gridBagConstraints);
-
-        longitudeLabel.setText("Longitude");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 6;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 4);
-        jPanel11.add(longitudeLabel, gridBagConstraints);
-
-        longitudeTextField.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#0.00"))));
-        longitudeTextField.setPreferredSize(new java.awt.Dimension(100, 22));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 6;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        jPanel11.add(longitudeTextField, gridBagConstraints);
-
-        distanceLabel.setText("Distance");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 7;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 4);
-        jPanel11.add(distanceLabel, gridBagConstraints);
-
-        distanceTextField.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#0.00"))));
-        distanceTextField.setPreferredSize(new java.awt.Dimension(100, 22));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 7;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        jPanel11.add(distanceTextField, gridBagConstraints);
 
         jPanel5.setLayout(new java.awt.GridBagLayout());
 
@@ -1011,18 +809,6 @@ public class PreferencesDialog extends javax.swing.JDialog
 
         // In addition, save in preferences file for future use
         LinkedHashMap<String, String> preferencesMap = new LinkedHashMap<String, String>();
-        if (lightKitRadioButton.isSelected())
-        {
-            preferencesMap.put(Preferences.LIGHTING_TYPE, LightingType.LIGHT_KIT.toString());
-        }
-        else if (headlightRadioButton.isSelected())
-        {
-            preferencesMap.put(Preferences.LIGHTING_TYPE, LightingType.HEADLIGHT.toString());
-        }
-        else
-        {
-            preferencesMap.put(Preferences.LIGHTING_TYPE, LightingType.FIXEDLIGHT.toString());
-        }
 
 //        if (joystickRadioButton.isSelected())
         // preferencesMap.put(Preferences.INTERACTOR_STYLE_TYPE,
@@ -1031,13 +817,8 @@ public class PreferencesDialog extends javax.swing.JDialog
         // preferencesMap.put(Preferences.INTERACTOR_STYLE_TYPE,
         // InteractorStyleType.TRACKBALL_CAMERA.toString());
 
-        preferencesMap.put(Preferences.LIGHT_INTENSITY, ((Double) intensitySpinner.getValue()).toString());
-        preferencesMap.put(Preferences.FIXEDLIGHT_LATITUDE, Double.valueOf(latitudeTextField.getText()).toString());
-        preferencesMap.put(Preferences.FIXEDLIGHT_LONGITUDE, Double.valueOf(longitudeTextField.getText()).toString());
-        preferencesMap.put(Preferences.FIXEDLIGHT_DISTANCE, Double.valueOf(distanceTextField.getText()).toString());
 //        preferencesMap.put(Preferences.SHOW_AXES, ((Boolean)showAxesCheckBox.isSelected()).toString());
 //        preferencesMap.put(Preferences.INTERACTIVE_AXES, ((Boolean)interactiveCheckBox.isSelected()).toString());
-        preferencesMap.put(Preferences.LIGHT_INTENSITY, ((Double) intensitySpinner.getValue()).toString());
         preferencesMap.put(Preferences.PICK_TOLERANCE, Double.valueOf(getToleranceFromSliderValue(pickToleranceSlider.getValue())).toString());
 //        preferencesMap.put(Preferences.MOUSE_WHEEL_MOTION_FACTOR, ((Double)mouseWheelMotionFactorSpinner.getValue()).toString());
         preferencesMap.put(Preferences.DEFAULT_COLORMAP_NAME, (String) colormapSelection);
@@ -1059,21 +840,6 @@ public class PreferencesDialog extends javax.swing.JDialog
     {// GEN-FIRST:event_closeButtonActionPerformed
         setVisible(false);
     }// GEN-LAST:event_closeButtonActionPerformed
-
-    private void lightKitRadioButtonActionPerformed(java.awt.event.ActionEvent evt)
-    {// GEN-FIRST:event_lightKitRadioButtonActionPerformed
-        updateEnabledItems();
-    }// GEN-LAST:event_lightKitRadioButtonActionPerformed
-
-    private void headlightRadioButtonActionPerformed(java.awt.event.ActionEvent evt)
-    {// GEN-FIRST:event_headlightRadioButtonActionPerformed
-        updateEnabledItems();
-    }// GEN-LAST:event_headlightRadioButtonActionPerformed
-
-    private void fixedLightRadioButtonActionPerformed(java.awt.event.ActionEvent evt)
-    {// GEN-FIRST:event_fixedLightRadioButtonActionPerformed
-        updateEnabledItems();
-    }// GEN-LAST:event_fixedLightRadioButtonActionPerformed
 
     private void selectionColorButtonActionPerformed(java.awt.event.ActionEvent evt)
     {// GEN-FIRST:event_selectionColorButtonActionPerformed
@@ -1113,14 +879,8 @@ public class PreferencesDialog extends javax.swing.JDialog
     private javax.swing.JButton backgroundColorButton;
     private javax.swing.JLabel backgroundColorLabel;
     private javax.swing.JButton closeButton;
-    private javax.swing.JLabel distanceLabel;
-    private javax.swing.JFormattedTextField distanceTextField;
-    private javax.swing.JRadioButton fixedLightRadioButton;
     private javax.swing.JButton fontColorButton;
     private javax.swing.JLabel fontColorLabel;
-    private javax.swing.JRadioButton headlightRadioButton;
-    private javax.swing.JLabel intensityLabel;
-    private javax.swing.JSpinner intensitySpinner;
 //    private javax.swing.JCheckBox interactiveCheckBox;
     private javax.swing.ButtonGroup interactorStyleButtonGroup;
     private javax.swing.JLabel jLabel1;
@@ -1161,12 +921,6 @@ public class PreferencesDialog extends javax.swing.JDialog
     private javax.swing.JSeparator jSeparator7;
     private javax.swing.JSeparator jSeparator9;
     private javax.swing.JRadioButton joystickRadioButton;
-    private javax.swing.JLabel latitudeLabel;
-    private javax.swing.JFormattedTextField latitudeTextField;
-    private javax.swing.JRadioButton lightKitRadioButton;
-    private javax.swing.ButtonGroup lightingButtonGroup;
-    private javax.swing.JLabel longitudeLabel;
-    private javax.swing.JFormattedTextField longitudeTextField;
 //    private javax.swing.JSpinner mouseWheelMotionFactorSpinner;
     private javax.swing.JSlider pickToleranceSlider;
     private javax.swing.JLabel defaultColorMapLabel;
