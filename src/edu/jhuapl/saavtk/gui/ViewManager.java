@@ -53,6 +53,9 @@ public abstract class ViewManager extends JPanel
 
     private List<InitListener> initListenerL;
 
+    /** Global that holds the {@link ViewManager} singleton. */
+    private static ViewManager globViewManager = null;
+
     /**
      * The top level frame is required so that the title can be updated when the
      * view changes.
@@ -77,9 +80,22 @@ public abstract class ViewManager extends JPanel
 
         initListenerL = new ArrayList<>();
 
+        globViewManager = this;
+
         // Subclass constructors should call this. It should not be called here because
         // it is not final.
         // setupViews();
+    }
+
+    /**
+     * Returns the (global) singleton {@link ViewManager}.
+     * <p>
+     * This method provides access to the (typically) sole {@link ViewManager}.
+     * Returns null if a {@link ViewManager} has not been instantiated.
+     */
+    public static ViewManager getGlobalViewManager()
+    {
+        return globViewManager;
     }
 
     /**
