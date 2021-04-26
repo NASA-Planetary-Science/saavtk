@@ -28,7 +28,7 @@ import glum.gui.GuiExeUtil;
 import glum.gui.GuiUtil;
 import glum.gui.component.GComboBox;
 import glum.gui.component.GNumberField;
-import glum.gui.misc.CustomListCellRenderer;
+import glum.gui.misc.CustomLCR;
 import glum.gui.panel.GPanel;
 import glum.text.SigFigNumberFormat;
 import net.miginfocom.swing.MigLayout;
@@ -59,7 +59,7 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 	// Gui vars
 	private final ColorBarConfigPanel painterCBCP;
 	private final JLabel featureL;
-	private final CustomListCellRenderer featureLCR;
+	private final CustomLCR featureLCR;
 	private final GComboBox<FeatureType> featureBox;
 	private final GComboBox<ColorTable> colorTableBox;
 	private final JLabel colorTableL;
@@ -108,7 +108,7 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 
 		// Feature area
 		featureL = new JLabel("Property:");
-		featureLCR = new CustomListCellRenderer();
+		featureLCR = new CustomLCR();
 		featureBox = new GComboBox<>(this, featureLCR);
 		if (aIsRegular == true)
 			add(featureL, "span,split");
@@ -481,7 +481,7 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 		Color fgColorMin = Color.BLACK;
 		Color fgColorMax = Color.BLACK;
 		Color fgColorLev = Color.BLACK;
-		Color fgColorFail = minValueNF.getFailColor();
+		Color fgColorFail = minValueNF.getColorFail();
 		isSwapped = minValueNF.getValue() > maxValueNF.getValue();
 		isSwapped &= minValueNF.isValidInput() == true;
 		isSwapped &= maxValueNF.isValidInput() == true;

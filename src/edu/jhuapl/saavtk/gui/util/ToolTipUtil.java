@@ -87,6 +87,40 @@ public class ToolTipUtil
 	}
 
 	/**
+	 * Returns the tool tip that should be used for "Reset: aMsg" buttons.
+	 *
+	 * @param aMsg The value that the control would be reset to.
+	 */
+	public static String getItemResetMsg(String aMsg)
+	{
+		return "Reset: " + aMsg;
+	}
+
+	/**
+	 * Returns the tool tip that should be used for the primary fixed-light button.
+	 */
+	public static String getLightFixed()
+	{
+		return "A Fixed Light is a light fixed in space that does not move with the virtual camera. Its intensity and positon can be changed below.";
+	}
+
+	/**
+	 * Returns the tool tip that should be used for the primary headlight button.
+	 */
+	public static String getLightHeadlight()
+	{
+		return "A Headlight is a single light always positioned at the virtual camera. It's intensity can be changed below.";
+	}
+
+	/**
+	 * Returns the tool tip that should be used for the primary "light kit" button.
+	 */
+	public static String getLightKit()
+	{
+		return "A Light Kit is a set of several lights of various strengths positioned to provide suitable illumination for most situations.";
+	}
+
+	/**
 	 * Returns the tool tip that should be used for "Add Profile" buttons
 	 */
 	public static String getProfileAdd()

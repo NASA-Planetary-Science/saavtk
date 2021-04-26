@@ -3,6 +3,8 @@ package edu.jhuapl.saavtk.color.gui.bar;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.text.DecimalFormat;
 import java.util.Objects;
 
@@ -34,7 +36,7 @@ import plotkit.cadence.PlainModelCadence;
  *
  * @author lopeznr1
  */
-public class LayoutAttrPanel extends GPanel implements ActionListener
+public class LayoutAttrPanel extends GPanel implements ActionListener, ItemListener
 {
 	// Constants
 	private static final Range<Double> RangeBarLength = Range.closed(50.0, 2500.0);
@@ -93,9 +95,9 @@ public class LayoutAttrPanel extends GPanel implements ActionListener
 		add(GuiUtil.createDivider(), "growx,h 4!,span,wrap");
 
 		JLabel modeL = new JLabel("Axis Mode:");
-		cadModeRB = GuiUtil.createJRadioButton("Cadence", this);
-		logModeRB = GuiUtil.createJRadioButton("Logarithmic", this);
-		stdModeRB = GuiUtil.createJRadioButton("Standard", this);
+		cadModeRB = GuiUtil.createJRadioButton(this, "Cadence");
+		logModeRB = GuiUtil.createJRadioButton(this, "Logarithmic");
+		stdModeRB = GuiUtil.createJRadioButton(this, "Standard");
 		GuiUtil.linkRadioButtons(cadModeRB, logModeRB, stdModeRB);
 		add(modeL, "span,split");
 		add(cadModeRB, "");
@@ -229,6 +231,17 @@ public class LayoutAttrPanel extends GPanel implements ActionListener
 	@Override
 	public void actionPerformed(ActionEvent aEvent)
 	{
+		notifyListeners(this, 0);
+		updateGui();
+	}
+
+	@Override
+	public void itemStateChanged(ItemEvent aEvent)
+	{
+		// Ignore deselects
+		if (aEvent.getStateChange() == ItemEvent.DESELECTED)
+			return;
+
 		Object source = aEvent.getSource();
 		if (source == cadModeRB && cadModeRB.isSelected() == true)
 			axisModeCP.switchToCard(ShowCadencePanel);

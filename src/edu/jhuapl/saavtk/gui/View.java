@@ -34,6 +34,7 @@ import edu.jhuapl.saavtk.status.LocationStatusHandler;
 import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.Preferences;
+import edu.jhuapl.saavtk.view.light.LightUtil;
 
 /**
  * A view is a container which contains a control panel and renderer as well as
@@ -414,6 +415,7 @@ public abstract class View extends JPanel
     {
         ModelManager manager = getModelManager();
         Renderer renderer = new Renderer(manager.getPolyhedralModel());
+        renderer.setLightCfg(LightUtil.getSystemLightCfg());
         renderer.addVtkPropProvider(modelManager);
         renderer.addPropertyChangeListener(manager);
         setRenderer(renderer);
