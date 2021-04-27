@@ -1,7 +1,10 @@
 package edu.jhuapl.saavtk.gui.menu;
 
+import java.awt.Desktop;
 import java.awt.FileDialog;
 import java.awt.Frame;
+import java.awt.desktop.PreferencesHandler;
+import java.awt.desktop.QuitHandler;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.FilenameFilter;
@@ -22,7 +25,6 @@ import com.google.common.collect.Lists;
 
 import crucible.crust.metadata.api.Serializer;
 import crucible.crust.metadata.impl.gson.Serializers;
-import edu.jhuapl.saavtk.gui.OSXAdapter;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
@@ -108,12 +110,12 @@ public class FileMenu extends JMenu
 		{
 			try
 			{
-				java.awt.Desktop.getDesktop().setPreferencesHandler(new java.awt.desktop.PreferencesHandler() {
+				Desktop.getDesktop().setPreferencesHandler(new PreferencesHandler() {
                     public void handlePreferences(java.awt.desktop.PreferencesEvent e) {
                         showPreferences();
                     }
                 });
-				java.awt.Desktop.getDesktop().setQuitHandler(new java.awt.desktop.QuitHandler() {
+				Desktop.getDesktop().setQuitHandler(new QuitHandler() {
                     public void handleQuitRequestWith(java.awt.desktop.QuitEvent e, java.awt.desktop.QuitResponse r) {
                         exitTool();
                     }
