@@ -5,11 +5,11 @@ import java.awt.Color;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.structure.FontAttr;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.vtk.VtkResource;
 import edu.jhuapl.saavtk.vtk.VtkUtil;
+import edu.jhuapl.saavtk.vtk.font.FontAttr;
 import vtk.vtkCaptionActor2D;
 import vtk.vtkProp;
 
@@ -101,7 +101,7 @@ public class VtkLabelPainter<G1 extends Structure> implements VtkResource
 		Vector3D tmpCentroid = refManager.getCentroid(refItem);
 		vIsStale |= tmpCentroid.equals(cCentroid) == false;
 
-		// Bail if the not stale
+		// Bail if not stale
 		if (vIsStale == false)
 			return;
 		vIsStale = false;

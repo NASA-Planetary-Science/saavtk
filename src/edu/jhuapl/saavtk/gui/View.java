@@ -10,7 +10,6 @@ import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -26,11 +25,16 @@ import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
+import edu.jhuapl.saavtk.pick.DefaultPicker;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.popup.PopupMenu;
+import edu.jhuapl.saavtk.status.LegacyStatusHandler;
+import edu.jhuapl.saavtk.status.LocationStatusHandler;
+import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.Preferences;
+import edu.jhuapl.saavtk.view.light.LightUtil;
 
 /**
  * A view is a container which contains a control panel and renderer as well as
@@ -49,7 +53,8 @@ public abstract class View extends JPanel
     private PopupManager popupManager;
     private WindowManager infoPanelManager;
     private WindowManager spectrumPanelManager;
-    private StatusBar statusBar;
+    private final StatusNotifier refStatusNotifier;
+    private LegacyStatusHandler legacyStatusHandler;
     private final AtomicBoolean initialized = new AtomicBoolean(false);
     private ViewConfig config;
     protected String uniqueName;
@@ -98,14 +103,14 @@ public abstract class View extends JPanel
         this.spectrumPanelManager = spectrumPanelManager;
     }
 
-    public StatusBar getStatusBar()
+    public LegacyStatusHandler getLegacyStatusHandler()
     {
-        return statusBar;
+   	 return legacyStatusHandler;
     }
 
-    public void setStatusBar(StatusBar statusBar)
+    public StatusNotifier getStatusNotifier()
     {
-        this.statusBar = statusBar;
+   	 return refStatusNotifier;
     }
 
     public void setRenderer(Renderer renderer)
@@ -116,11 +121,20 @@ public abstract class View extends JPanel
     public void setModelManager(ModelManager modelManager)
     {
         this.modelManager = modelManager;
+        legacyStatusHandler = new LegacyStatusHandler(refStatusNotifier, modelManager);
     }
 
-    public void setPickManager(PickManager pickManager)
+    public void setPickManager(PickManager aPickManager)
     {
-        this.pickManager = pickManager;
+      pickManager = aPickManager;
+
+  		DefaultPicker tmpDefaultPicker = aPickManager.getDefaultPicker();
+
+  		LegacyStatusHandler tmpLegacyStatusHandler = new LegacyStatusHandler(refStatusNotifier, modelManager);
+  		tmpDefaultPicker.addListener(tmpLegacyStatusHandler);
+
+  		LocationStatusHandler tmpLocationStatusHandler = new LocationStatusHandler(refStatusNotifier, renderer);
+  		tmpDefaultPicker.addListener(tmpLocationStatusHandler);
     }
 
     protected void setConfig(ViewConfig config)
@@ -144,10 +158,10 @@ public abstract class View extends JPanel
      * reduce memory and startup time. Therefore, this function should be called
      * prior to first time the View is shown in order to cause it
      */
-    public View(StatusBar statusBar, ViewConfig config)
+    public View(StatusNotifier aStatusNotifier, ViewConfig config)
     {
         super(new BorderLayout());
-        this.statusBar = statusBar;
+        refStatusNotifier = aStatusNotifier;
         this.config = config;
         if (config != null)
         	this.uniqueName = config.getUniqueName();
@@ -318,11 +332,6 @@ public abstract class View extends JPanel
         return pickManager;
     }
 
-    protected void setModels(HashMap<ModelNames, Model> models)
-    {
-        modelManager.setModels(models);
-    }
-
     protected void registerPopup(Model model, PopupMenu menu)
     {
         popupManager.registerPopup(model, menu);
@@ -405,7 +414,9 @@ public abstract class View extends JPanel
     protected void setupRenderer()
     {
         ModelManager manager = getModelManager();
-        Renderer renderer = new Renderer(manager);
+        Renderer renderer = new Renderer(manager.getPolyhedralModel());
+        renderer.setLightCfg(LightUtil.getSystemLightCfg());
+        renderer.addVtkPropProvider(modelManager);
         renderer.addPropertyChangeListener(manager);
         setRenderer(renderer);
 

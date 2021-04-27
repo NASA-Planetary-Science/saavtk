@@ -31,7 +31,7 @@ public class Configuration
     private static Boolean headless = null;
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
 
-    private static String webURL = "http://sbmt.jhuapl.edu";
+    private static final String webURL = "https://sbmt.jhuapl.edu";
     private static URL rootURL = createUrl(webURL + "/sbmt/prod");
     private static URL dataRootURL = createUrl(rootURL + "/data");
     private static String helpURL = webURL;

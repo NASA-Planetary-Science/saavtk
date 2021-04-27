@@ -14,6 +14,11 @@ public enum ViewChangeReason
 	Camera,
 
 	/**
+	 * The scene's light configuration was changed.
+	 */
+	Light,
+
+	/**
 	 * The LOD (level-of-detail) was changed.
 	 */
 	Lod,

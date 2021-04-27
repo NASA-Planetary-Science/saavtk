@@ -18,7 +18,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Range;
 
-import edu.jhuapl.saavtk.colormap.SigFigNumberFormat;
 import edu.jhuapl.saavtk.gui.util.Colors;
 import edu.jhuapl.saavtk.view.View;
 import edu.jhuapl.saavtk.view.ViewActionListener;
@@ -27,6 +26,7 @@ import glum.gui.GuiUtil;
 import glum.gui.action.ActionComponentProvider;
 import glum.gui.component.GNumberField;
 import glum.gui.component.GNumberFieldSlider;
+import glum.text.SigFigNumberFormat;
 import net.miginfocom.swing.MigLayout;
 
 /**

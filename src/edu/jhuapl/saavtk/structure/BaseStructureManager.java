@@ -2,6 +2,7 @@ package edu.jhuapl.saavtk.structure;
 
 import java.awt.Color;
 import java.awt.event.InputEvent;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -16,50 +17,64 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
+import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
+import edu.jhuapl.saavtk.gui.render.VtkPropProvider;
+import edu.jhuapl.saavtk.model.CommonData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.SaavtkItemManager;
 import edu.jhuapl.saavtk.pick.HookUtil;
 import edu.jhuapl.saavtk.pick.PickListener;
 import edu.jhuapl.saavtk.pick.PickMode;
 import edu.jhuapl.saavtk.pick.PickTarget;
+import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.structure.gui.StructureGuiUtil;
+import edu.jhuapl.saavtk.structure.io.StructureMiscUtil;
 import edu.jhuapl.saavtk.structure.vtk.VtkCompositePainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkLabelPainter;
 import edu.jhuapl.saavtk.vtk.VtkResource;
 import edu.jhuapl.saavtk.vtk.VtkUtil;
+import edu.jhuapl.saavtk.vtk.font.FontAttr;
 import glum.item.ItemEventType;
 import glum.task.Task;
 import glum.util.ThreadUtil;
 import vtk.vtkProp;
 
 /**
- * Base implementation of the StructureManager interface.
- * <P>
+ * Base implementation of the {@link StructureManager} interface.
+ * <p>
  * This class provides the following functionality:
- * <UL>
- * <LI>Management of items
- * <LI>Logic to handle item selection
- * <LI>Configuration of various rendering properties
- * <LI>Base VTK render logic
- * </UL>
+ * <ul>
+ * <li>Management of items
+ * <li>Logic to handle item selection
+ * <li>Configuration of various rendering properties
+ * <li>Base VTK render logic
+ * </ul>
  *
  * @author lopeznr1
  */
 public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkResource> extends SaavtkItemManager<G1>
-		implements StructureManager<G1>, PickListener
+		implements StructureManager<G1>, PickListener, VtkPropProvider
 {
 	// Ref vars
-	private PolyhedralModel refSmallBody;
+	private final SceneChangeNotifier refSceneChangeNotifier;
+	private final StatusNotifier refStatusNotifier;
+	private final PolyhedralModel refSmallBody;
+
+	// State vars
+	private DecimalFormat decimalFormat;
 
 	// VTK vars
 	private final Map<G1, VtkCompositePainter<G1, G2>> vPainterM;
 
-	/**
-	 * Standard Constructor
-	 */
-	public BaseStructureManager(PolyhedralModel aSmallBody)
+	/** Standard Constructor */
+	public BaseStructureManager(SceneChangeNotifier aSceneChangeNotifier, StatusNotifier aStatusNotifier,
+			PolyhedralModel aSmallBody)
 	{
+		refSceneChangeNotifier = aSceneChangeNotifier;
+		refStatusNotifier = aStatusNotifier;
 		refSmallBody = aSmallBody;
+
+		decimalFormat = new DecimalFormat("#.#####");
 
 		vPainterM = new HashMap<>();
 	}
@@ -95,6 +110,12 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 	{
 		// Delegate
 		removeItems(getAllItems());
+	}
+
+	@Override
+	public String getClickStatusBarText(vtkProp prop, int cellId, double[] pickPosition)
+	{
+		return "";
 	}
 
 	@Override
@@ -181,6 +202,15 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 	}
 
 	@Override
+	public void notifyItemsMutated(Collection<G1> aItemC)
+	{
+		if (aItemC.isEmpty() == true)
+			return;
+
+		updateStatus(refStatusNotifier, aItemC, true);
+	}
+
+	@Override
 	public void removeItems(Collection<G1> aItemC)
 	{
 		if (aItemC.isEmpty() == true)
@@ -213,6 +243,7 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 		// Update our internal state
 		super.setSelectedItems(aItemC);
 
+		updateStatus(refStatusNotifier, aItemC, false);
 		updateVtkColorsFor(diffS, true);
 	}
 
@@ -336,34 +367,34 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 	}
 
 	@Override
+	public double getDefaultOffset()
+	{
+		return 5.0 * refSmallBody.getMinShiftAmount();
+	}
+
+	@Override
 	public void setVisible(boolean aBool)
 	{
-		boolean needToUpdate = false;
-		for (G1 aItem : getAllItems())
-		{
-			// Skip to next if nothing has changed
-			if (aItem.getVisible() == aBool)
-				continue;
+		throw new UnsupportedOperationException();
+	}
 
-			aItem.setVisible(aBool);
-			needToUpdate = true;
+	/**
+	 * Helper method that returns the draw color for the specified item.
+	 */
+	protected Color getDrawColor(G1 aItem)
+	{
+		CommonData commonData = getCommonData();
 
-			// Update the appropriate painter
-			VtkLabelPainter<?> tmpPainter = getVtkTextPainter(aItem);
-			if (tmpPainter != null)
-				tmpPainter.markStale();
-		}
+		boolean isSelected = getSelectedItems().contains(aItem) == true;
+		if (isSelected == false || commonData == null)
+			return aItem.getColor();
 
-		if (needToUpdate)
-		{
-			updatePolyData();
-			notifyListeners(this, ItemEventType.ItemsMutated);
-		}
+		return commonData.getSelectionColor();
 	}
 
 	/**
 	 * Helper method that returns the (composite) painter for the specified item.
-	 * <P>
+	 * <p>
 	 * A painter will be instantiated if necessary.
 	 */
 	protected VtkCompositePainter<G1, G2> getOrCreateVtkPainterFor(G1 aItem, PolyhedralModel aSmallBody)
@@ -410,6 +441,41 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 			return null;
 
 		return tmpPainter.getTextPainter();
+	}
+
+	/**
+	 * Helper method that notifies the system that our internal VTK state has been
+	 * changed.
+	 */
+	protected void notifyVtkStateChange()
+	{
+		refSceneChangeNotifier.notifySceneChange();
+	}
+
+	/**
+	 * Helper method that updates the {@link StatusNotifier} with the specified
+	 * items.
+	 *
+	 * @param aStatusNotifier The {@link StatusNotifier} where updates will be
+	 *                        posted.
+	 * @param aItemC          The collection of items of interest.
+	 * @param aIsUpdate       If set to true then the update is due to items being
+	 *                        mutated rather than selected.
+	 */
+	protected void updateStatus(StatusNotifier aStatusNotifier, Collection<G1> aItemC, boolean aIsUpdate)
+	{
+		String tmpMsg = null;
+		if (aItemC.size() == 1)
+			tmpMsg = StructureMiscUtil.getStatusText(aItemC.iterator().next(), decimalFormat);
+		else if (aItemC.size() > 1)
+		{
+			if (aIsUpdate == true)
+				tmpMsg = "Multiple structures mutated: " + aItemC.size();
+			else
+				tmpMsg = "Multiple structures selected: " + aItemC.size();
+		}
+
+		refStatusNotifier.setPriStatus(tmpMsg, null);
 	}
 
 }

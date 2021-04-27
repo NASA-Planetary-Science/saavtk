@@ -11,9 +11,9 @@ import javax.swing.JLabel;
 
 import com.google.common.base.Preconditions;
 
-import edu.jhuapl.saavtk.colormap.SigFigNumberFormat;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import glum.gui.component.GNumberField;
+import glum.text.SigFigNumberFormat;
 import net.miginfocom.swing.MigLayout;
 
 /**

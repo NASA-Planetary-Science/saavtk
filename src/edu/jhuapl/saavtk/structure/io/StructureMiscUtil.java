@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.structure.io;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -13,7 +14,6 @@ import edu.jhuapl.saavtk.model.PolyModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.model.structure.Line;
 import edu.jhuapl.saavtk.structure.Ellipse;
-import edu.jhuapl.saavtk.structure.FontAttr;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.Polygon;
 import edu.jhuapl.saavtk.structure.Structure;
@@ -21,6 +21,7 @@ import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.structure.gui.load.InstallMode;
 import edu.jhuapl.saavtk.structure.util.ControlPointUtil;
 import edu.jhuapl.saavtk.util.LatLon;
+import edu.jhuapl.saavtk.vtk.font.FontAttr;
 import glum.item.IdGenerator;
 import glum.item.IncrIdGenerator;
 import glum.task.Task;
@@ -28,12 +29,13 @@ import glum.task.Task;
 /**
  * Collection of utility methods for working with Structures /
  * StructureManagers.
- * <P>
+ * <p>
  * The functionality provided by this class can be categorized by:
- * <UL>
- * <LI>Determining the ID that should be used for a new structure.
- * <LI>Getting the specific structures from a list of general structures.
- * </UL>
+ * <ul>
+ * <li>Determining the ID that should be used for a new structure.
+ * <li>Getting the specific structures from a list of general structures.
+ * <li>Getting the status text for a specific structure.
+ * </ul>
  *
  * @author lopeznr1
  */
@@ -109,6 +111,47 @@ public class StructureMiscUtil
 	}
 
 	/**
+	 * Returns a short textual description of the specified structure. This
+	 * typically will be used in the status area of the application.
+	 * <p>
+	 * Throws a {@link RuntimeException} if the Structure is not a recognized type.
+	 */
+	public static String getStatusText(Structure aStructure, DecimalFormat aFormat)
+	{
+		if (aStructure instanceof Ellipse)
+		{
+			Ellipse tmpItem = (Ellipse) aStructure;
+			double tmpDiam = 2.0 * tmpItem.getRadius();
+			Mode tmpMode = tmpItem.getMode();
+
+			String retStr = tmpMode.getLabel() + ", Id: " + tmpItem.getId();
+			retStr += ", Diam: " + aFormat.format(tmpDiam) + " km";
+			return retStr;
+		}
+
+		if (aStructure instanceof Polygon)
+		{
+			Polygon tmpItem = (Polygon) aStructure;
+			String retStr = "Polygon, Id: " + tmpItem.getId();
+			retStr += ", Length: " + aFormat.format(tmpItem.getPathLength()) + " km";
+			retStr += ", Area: " + aFormat.format(tmpItem.getSurfaceArea()) + " km" + (char) 0x00B2;
+			retStr += ", # Pts: " + tmpItem.getControlPoints().size();
+			return retStr;
+		}
+
+		if (aStructure instanceof PolyLine)
+		{
+			PolyLine tmpItem = (PolyLine) aStructure;
+			String retStr = "Path, Id: " + tmpItem.getId();
+			retStr += ", Length: " + aFormat.format(tmpItem.getPathLength()) + " km";
+			retStr += ", # Pts: " + tmpItem.getControlPoints().size();
+			return retStr;
+		}
+
+		throw new RuntimeException("Unrecognized type: " + aStructure.getClass());
+	}
+
+	/**
 	 * Helper method that will install the structures into the specified.
 	 *
 	 * @param aManager: The {@link StructureManager} of interest.
@@ -172,10 +215,10 @@ public class StructureMiscUtil
 	/**
 	 * Utility method that will project the control points associated with specified
 	 * list of structures onto the provided shape model.
-	 * <P>
+	 * <p>
 	 * This method will only adjust control points for which the {@link Structure}'s
 	 * shapeModelId does not match the passed in shapeModelId.
-	 * <P>
+	 * <p>
 	 * Throws a {@link RuntimeException} if the structure type is not recognized.
 	 */
 	public static void projectControlPointsToShapeModel(PolyModel aPolyModel, String aShapeModelId,
@@ -217,11 +260,11 @@ public class StructureMiscUtil
 	 * specified id.
 	 *
 	 * This method supports the following structures:
-	 * <UL>
-	 * <LI>{@link Ellipse}.
-	 * <LI>{@link Line}.
-	 * <LI>{@link Polygon}.
-	 * <UL>
+	 * <ul>
+	 * <li>{@link Ellipse}.
+	 * <li>{@link Line}.
+	 * <li>{@link Polygon}.
+	 * <ul>
 	 *
 	 * If a structure type is not recognized an
 	 * {@link UnsupportedOperationException} will be thrown.

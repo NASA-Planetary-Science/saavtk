@@ -656,10 +656,7 @@ public class PolyDataUtil
 		if (determineIfNeedToReverseTriangleVertices(polyData, pointLocator, controlPoints))
 		{
 			// First clone the control points so we don't modify array passed into function
-			List<LatLon> clone = new ArrayList<LatLon>(controlPoints.size());
-			for (LatLon llr : controlPoints)
-				clone.add((LatLon) llr.clone());
-			controlPoints = clone;
+			controlPoints = new ArrayList<>(controlPoints);
 			Collections.reverse(controlPoints);
 		}
 
@@ -777,10 +774,7 @@ public class PolyDataUtil
 		}
 
 		List<LatLon> originalControlPoints = controlPoints;
-		List<LatLon> clone = new ArrayList<LatLon>(controlPoints.size());
-		for (LatLon llr : controlPoints)
-			clone.add((LatLon) llr.clone());
-		controlPoints = clone;
+		controlPoints = new ArrayList<>(originalControlPoints);
 
 		// Do a sort of ear-clipping algorithm to break up the polygon into triangles.
 		int numTriangles = controlPoints.size() - 2;
@@ -832,9 +826,9 @@ public class PolyDataUtil
 					ids[1] = j;
 					ids[2] = j + 1;
 				}
-				cp.set(0, (LatLon) controlPoints.get(ids[0]).clone());
-				cp.set(1, (LatLon) controlPoints.get(ids[1]).clone());
-				cp.set(2, (LatLon) controlPoints.get(ids[2]).clone());
+				cp.set(0, controlPoints.get(ids[0]));
+				cp.set(1, controlPoints.get(ids[1]));
+				cp.set(2, controlPoints.get(ids[2]));
 
 				// First check to see if it's a reflex vertex, and, if so, continue
 				// to next triplet
@@ -2895,13 +2889,13 @@ public class PolyDataUtil
 		}
 	}
 
-	public static void saveShapeModelAsPLT(vtkPolyData polydata, String filename) throws IOException
+	public static void saveShapeModelAsPLT(vtkPolyData polydata, File aFile) throws IOException
 	{
 		// This saves it out in exactly the same format as Bob Gaskell's shape
 		// models including precision and field width. That's why there's
 		// extra space padded at the end to make all lines the same length.
 
-		FileWriter fstream = new FileWriter(filename);
+		FileWriter fstream = new FileWriter(aFile);
 		BufferedWriter out = new BufferedWriter(fstream);
 
 		vtkPoints points = polydata.GetPoints();
@@ -2932,12 +2926,12 @@ public class PolyDataUtil
 		out.close();
 	}
 
-	public static void saveShapeModelAsOBJ(vtkPolyData polydata, String filename) throws IOException
+	public static void saveShapeModelAsOBJ(vtkPolyData polydata, File aFile) throws IOException
 	{
 		FileOutputStream fos = null;
 		try
 		{
-			fos = new FileOutputStream(new File(filename));
+			fos = new FileOutputStream(aFile);
 			saveShapeModelAsOBJ(polydata, fos);
 		}
 		catch (Throwable th)
@@ -2987,7 +2981,7 @@ public class PolyDataUtil
 		out.close();
 	}
 
-	public static void saveShapeModelAsVTK(vtkPolyData polydata, String filename) throws IOException
+	public static void saveShapeModelAsVTK(vtkPolyData polydata, File aFile) throws IOException
 	{
 		// First make a copy of polydata and remove all cell and point data since we don't want to save that out
 		vtkPolyData newpolydata = new vtkPolyData();
@@ -3006,12 +3000,12 @@ public class PolyDataUtil
 
 		vtkPolyDataWriter writer = new vtkPolyDataWriter();
 		writer.SetInputConnection(normalsFilter.GetOutputPort());
-		writer.SetFileName(filename);
+		writer.SetFileName(aFile.getAbsolutePath());
 		writer.SetFileTypeToBinary();
 		writer.Write();
 	}
 
-	public static void saveShapeModelAsSTL(vtkPolyData polydata, String filename) throws IOException
+	public static void saveShapeModelAsSTL(vtkPolyData polydata, File aFile) throws IOException
 	{
 		// First make a copy of polydata and remove all cell and point data since we don't want to save that out
 		vtkPolyData newpolydata = new vtkPolyData();
@@ -3021,7 +3015,7 @@ public class PolyDataUtil
 
 		vtkSTLWriter writer = new vtkSTLWriter();
 		writer.SetInputData(newpolydata);
-		writer.SetFileName(filename);
+		writer.SetFileName(aFile.getAbsolutePath());
 		writer.SetFileTypeToBinary();
 		writer.Write();
 	}

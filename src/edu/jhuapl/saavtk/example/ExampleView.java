@@ -4,9 +4,9 @@ import java.awt.AWTException;
 import java.util.HashMap;
 
 import edu.jhuapl.saavtk.config.ViewConfig;
-import edu.jhuapl.saavtk.gui.StatusBar;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.panel.PolyhedralModelControlPanel;
+import edu.jhuapl.saavtk.gui.render.ConfigurableSceneNotifier;
 import edu.jhuapl.saavtk.model.Graticule;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
@@ -21,10 +21,10 @@ import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.model.structure.PointModel;
 import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.pick.PickManager;
-import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.popup.GraticulePopupMenu;
 import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.popup.PopupMenu;
+import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.structure.gui.StructureTabbedPane;
 
 /**
@@ -36,7 +36,7 @@ import edu.jhuapl.saavtk.structure.gui.StructureTabbedPane;
 public class ExampleView extends View
 {
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1L;
 
@@ -46,9 +46,9 @@ public class ExampleView extends View
 	 * reduce memory and startup time. Therefore, this function should be called
 	 * prior to first time the View is shown in order to cause it
 	 */
-	public ExampleView(StatusBar statusBar, ViewConfig config)
+	public ExampleView(StatusNotifier aStatusNotifier, ViewConfig config)
 	{
-		super(statusBar, config);
+		super(aStatusNotifier, config);
 	}
 
 	/**
@@ -102,17 +102,20 @@ public class ExampleView extends View
 		// allModels.putAll(ModelFactory.createLidarModels(smallBodyModel));
 		// }
 
-		allModels.put(ModelNames.LINE_STRUCTURES, new LineModel<>(smallBodyModel));
-		allModels.put(ModelNames.POLYGON_STRUCTURES, new PolygonModel(smallBodyModel));
-		allModels.put(ModelNames.CIRCLE_STRUCTURES, new CircleModel(smallBodyModel));
-		allModels.put(ModelNames.ELLIPSE_STRUCTURES, new EllipseModel(smallBodyModel));
-		allModels.put(ModelNames.POINT_STRUCTURES, new PointModel(smallBodyModel));
-		allModels.put(ModelNames.CIRCLE_SELECTION, new CircleSelectionModel(smallBodyModel));
+		ConfigurableSceneNotifier tmpSceneChangeNotifier = new ConfigurableSceneNotifier();
+		StatusNotifier tmpStatusNotifier = getStatusNotifier();
+		allModels.put(ModelNames.LINE_STRUCTURES, new LineModel<>(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
+		allModels.put(ModelNames.POLYGON_STRUCTURES, new PolygonModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
+		allModels.put(ModelNames.CIRCLE_STRUCTURES, new CircleModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
+		allModels.put(ModelNames.ELLIPSE_STRUCTURES, new EllipseModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
+		allModels.put(ModelNames.POINT_STRUCTURES, new PointModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
+		allModels.put(ModelNames.CIRCLE_SELECTION, new CircleSelectionModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
 
 		// allModels.put(ModelNames.TRACKS, new
 		// LidarSearchDataCollection(smallBodyModel));
 
-		setModelManager(new ExampleModelManager(smallBodyModel, allModels));
+		setModelManager(new ModelManager(smallBodyModel, allModels));
+		tmpSceneChangeNotifier.setTarget(getModelManager());
 	}
 
 	@Override
@@ -145,7 +148,7 @@ public class ExampleView extends View
 	protected void setupTabs()
 	{
 		addTab(getConfig().getShapeModelName(),
-				PolyhedralModelControlPanel.of(getModelManager(), getConfig().getShapeModelName()));
+				PolyhedralModelControlPanel.of(getRenderer(), getModelManager(), getConfig().getShapeModelName()));
 
 		// if (getConfig().hasLidarData)
 		// {
@@ -180,7 +183,6 @@ public class ExampleView extends View
 	protected void setupPickManager()
 	{
 		PickManager tmpPickManager = new PickManager(getRenderer(), getModelManager());
-		PickUtil.installDefaultPickHandler(getPickManager(), getStatusBar(), getRenderer(), getModelManager());
 		setPickManager(tmpPickManager);
 
 		// Manually register the PopupManager with the PickManager

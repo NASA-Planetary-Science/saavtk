@@ -39,6 +39,8 @@ import edu.jhuapl.saavtk.model.structure.esri.ShapefileUtil;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.structure.io.StructureLegacyUtil;
 import edu.jhuapl.saavtk.util.Configuration;
+import edu.jhuapl.saavtk.util.PolyDataUtil;
+import vtk.vtkPolyData;
 
 public class FileMenu extends JMenu
 {
@@ -242,11 +244,13 @@ public class FileMenu extends JMenu
 		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			File file = CustomFileChooser.showSaveDialog(null, "Export Shape Model to PLT (Gaskell Format)", "model.plt");
+			if (file == null)
+				return;
 
 			try
 			{
-				if (file != null)
-					rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsPLT(file);
+				vtkPolyData vTmpPD = rootPanel.getCurrentView().getModelManager().getPolyhedralModel().getSmallBodyPolyData();
+				PolyDataUtil.saveShapeModelAsPLT(vTmpPD, file);
 			}
 			catch (Exception e1)
 			{
@@ -270,11 +274,13 @@ public class FileMenu extends JMenu
 		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			File file = CustomFileChooser.showSaveDialog(null, "Export Shape Model to OBJ", "model.obj");
+			if (file == null)
+				return;
 
 			try
 			{
-				if (file != null)
-					rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsOBJ(file);
+				vtkPolyData vTmpPD = rootPanel.getCurrentView().getModelManager().getPolyhedralModel().getSmallBodyPolyData();
+				PolyDataUtil.saveShapeModelAsOBJ(vTmpPD, file);
 			}
 			catch (Exception e1)
 			{
@@ -298,11 +304,13 @@ public class FileMenu extends JMenu
 		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			File file = CustomFileChooser.showSaveDialog(null, "Export Shape Model to STL", "model.stl");
+			if (file == null)
+				return;
 
 			try
 			{
-				if (file != null)
-					rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsSTL(file);
+				vtkPolyData vTmpPD = rootPanel.getCurrentView().getModelManager().getPolyhedralModel().getSmallBodyPolyData();
+				PolyDataUtil.saveShapeModelAsSTL(vTmpPD, file);
 			}
 			catch (Exception e1)
 			{

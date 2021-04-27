@@ -29,7 +29,7 @@ public class VtkUtil
 	 * Utility method that will release the VTK memory associated with all of the
 	 * items in aItemC
 	 */
-	public static void deleteAll(Collection<vtkObject> aItemC)
+	public static void deleteAll(Collection<? extends vtkObject> aItemC)
 	{
 		for (vtkObject aItem : aItemC)
 			aItem.Delete();

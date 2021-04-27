@@ -1,147 +1,191 @@
 package edu.jhuapl.saavtk.colormap;
 
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JSpinner;
 import javax.swing.JToggleButton;
-import javax.swing.ListCellRenderer;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
+import edu.jhuapl.saavtk.color.gui.ColorBarConfigPanel;
+import edu.jhuapl.saavtk.color.gui.ColorBarPanel;
+import edu.jhuapl.saavtk.color.gui.ColorTableListCellRenderer;
+import edu.jhuapl.saavtk.color.painter.ColorBarChangeListener;
+import edu.jhuapl.saavtk.color.painter.ColorBarChangeType;
+import edu.jhuapl.saavtk.color.painter.ColorBarPainter;
+import edu.jhuapl.saavtk.color.table.ColorMapAttr;
+import edu.jhuapl.saavtk.color.table.ColorTable;
+import edu.jhuapl.saavtk.color.table.ColorTableUtil;
+import edu.jhuapl.saavtk.gui.render.Renderer;
+import edu.jhuapl.saavtk.gui.util.IconUtil;
+import edu.jhuapl.saavtk.model.PolyhedralModel;
+import glum.gui.GuiExeUtil;
 import glum.gui.GuiUtil;
+import glum.gui.component.GComboBox;
 import glum.gui.component.GNumberField;
+import glum.gui.panel.GPanel;
+import glum.text.SigFigNumberFormat;
 import net.miginfocom.swing.MigLayout;
 
 /**
  * Class that provides UI controls and mechanism for the standard plate coloring
  * panel.
  * <P>
- * TODO: Consider making the min,max fields match the textual output of the
- * ColorBar when defaults are specified
+ * This class is very similar to {@link ColorBarPanel} and will eventually be
+ * removed.
+ *
+ * @author lopeznr1
  */
-public class StandardPlatePanel extends JPanel implements ActionListener, ChangeListener
+public class StandardPlatePanel extends GPanel implements ActionListener, ColorBarChangeListener
 {
-	// Constants
-	private static final long serialVersionUID = 1L;
-	public static final String EVT_ColormapChanged = "Event: ColormapChanged";
+	// Ref vars
+	private final Renderer refRenderer;
+	private final ColorBarPainter refColorBarPainter;
 
 	// State vars
 	private double defaultMin, defaultMax;
 
 	// Cache vars
-	private Colormap cColormap;
+	private int cColoringIdx;
+	private ColorMapAttr cColorMapAttr;
 
 	// GUI vars
-	private final JComboBox<Colormap> colormapComboBox;
-	private final JLabel minValueL, maxValueL;
+	private final ColorBarConfigPanel painterCBCP;
+	private final JLabel colorTableL;
+	private final GComboBox<ColorTable> colorTableBox;
+	private final JLabel minValueL, maxValueL, numLevelsL;
 	private final GNumberField minValueNF, maxValueNF;
-	private final GNumberField numColorLevelsNF;
-	private final JSpinner numTicksSpinner;
+	private final GNumberField numLevelsNF;
 	private final JCheckBox logScaleCB;
-	private final JButton resetButton;
-	private final JButton applyButton;
-	private final JToggleButton syncButton;
-	private final JComponent extraComp;
+	private final JButton resetB;
+	private final JButton applyB, configB;
+	private final JToggleButton syncTB;
 
-	/**
-	 * Standard Constructor
-	 * 
-	 * @param aExtraComp Extra component that should be associated with this panel.
-	 *                   May be null if nothing is to be associated. The extra panel
-	 *                   will be displayed at the bottom.
-	 */
-	public StandardPlatePanel(JComponent aExtraComp)
+	/** Standard Constructor */
+	public StandardPlatePanel(Renderer aRenderer)
 	{
-		// Set up state / cache vars
+		refRenderer = aRenderer;
+		refColorBarPainter = new ColorBarPainter(aRenderer);
+
 		defaultMin = Double.NaN;
 		defaultMax = Double.NaN;
 
-		cColormap = Colormaps.getNewInstanceOfBuiltInColormap(Colormaps.getCurrentColormapName());
+		cColoringIdx = -1;
+		cColorMapAttr = ColorMapAttr.Invalid;
 
 		// Instantiate the various GUI controls
-		colormapComboBox = new JComboBox<>();
-		ListCellRenderer<Colormap> tmpRenderer = ColormapUtil.getFancyColormapRender();
-		((Component) tmpRenderer).setEnabled(false);
-		colormapComboBox.setRenderer(tmpRenderer);
-		for (String aStr : Colormaps.getAllBuiltInColormapNames())
-		{
-			Colormap cmap = Colormaps.getNewInstanceOfBuiltInColormap(aStr);
-			colormapComboBox.addItem(cmap);
-			if (cmap.getName().equals(Colormaps.getCurrentColormapName()))
-				colormapComboBox.setSelectedItem(cmap);
-		}
-		colormapComboBox.addActionListener(this);
+		painterCBCP = new ColorBarConfigPanel(this, refColorBarPainter);
+		painterCBCP.addActionListener(this);
 
-		minValueL = new JLabel("Min Value");
-		maxValueL = new JLabel("Max Value");
-		minValueNF = new GNumberField(this, new SigFigNumberFormat(3));
-		maxValueNF = new GNumberField(this, new SigFigNumberFormat(3));
-		numColorLevelsNF = new GNumberField(this);
-		numColorLevelsNF.setValue(32);
-		numTicksSpinner = new JSpinner(new SpinnerNumberModel(5, 0, 20, 1));
-		numTicksSpinner.addChangeListener(this);
+		// Color table area
+		colorTableL = new JLabel();
+		colorTableBox = new GComboBox<>(this, ColorTableUtil.getSystemColorTableList());
+		colorTableBox.setRenderer(new ColorTableListCellRenderer(colorTableBox));
+		colorTableBox.setChosenItem(ColorTableUtil.getSystemColorTableDefault());
+
+		minValueL = new JLabel("Min:");
+		minValueNF = new GNumberField(this, new SigFigNumberFormat(5));
+
+		maxValueL = new JLabel("Max:");
+		maxValueNF = new GNumberField(this, new SigFigNumberFormat(5));
+
+		numLevelsL = new JLabel("# Levels:");
+		numLevelsNF = new GNumberField(this);
+		numLevelsNF.setValue(32);
 
 		logScaleCB = new JCheckBox("Log scale");
 		logScaleCB.addActionListener(this);
-		resetButton = new JButton("Range Reset");
-		resetButton.setActionCommand(EVT_ColormapChanged);
-		resetButton.addActionListener(this);
-		syncButton = new JToggleButton("Sync", true);
-		syncButton.addActionListener(this);
-		applyButton = new JButton("Apply");
-		applyButton.addActionListener(this);
 
-		extraComp = aExtraComp;
+		resetB = GuiUtil.formButton(this, IconUtil.getActionReset());
+		resetB.setToolTipText("Reset Min, Max");
+		syncTB = GuiUtil.formToggleButton(this, IconUtil.getItemSyncFalse(), IconUtil.getItemSyncTrue());
+		syncTB.setSelected(true);
+		syncTB.setToolTipText("Keep synchronized");
+		applyB = GuiUtil.formButton(this, "Apply");
+		configB = GuiUtil.formButton(this, IconUtil.getActionConfig());
+		configB.setToolTipText("Configure ColorBar");
 
 		// Construct the GUI
 		buildGui();
+
+		// Register for events of interest
+		GuiExeUtil.executeOnceWhenShowing(this, () -> updateColorTableArea());
+		refColorBarPainter.addListener(this);
 	}
 
 	/**
-	 * Returns the current Colormap associated with this panel.
+	 * Returns the {@link ColorMapAttr} as configured in the gui.
 	 */
-	public Colormap getColormap()
+	public ColorMapAttr getColorMapAttr()
 	{
-		return cColormap;
+		ColorTable tmpColorTable = colorTableBox.getChosenItem();
+		double minVal = minValueNF.getValue();
+		double maxVal = maxValueNF.getValue();
+		int numLevels = numLevelsNF.getValueAsInt(-1);
+		boolean isLogScale = logScaleCB.isSelected();
+
+		return new ColorMapAttr(tmpColorTable, minVal, maxVal, numLevels, isLogScale);
 	}
 
 	/**
-	 * Returns the min,max range values.
+	 * Configures the gui to reflect the specified {@link ColorMapAttr}.
 	 */
-	public double[] getCurrentMinMax()
+	public void setColorMapAttr(ColorMapAttr aColorMapAttr)
 	{
-		return new double[] { minValueNF.getValue(), maxValueNF.getValue() };
+		ColorTable tmpCT = aColorMapAttr.getColorTable();
+		if (tmpCT != null)
+			colorTableBox.setChosenItem(tmpCT);
+
+		minValueNF.setValue(aColorMapAttr.getMinVal());
+		maxValueNF.setValue(aColorMapAttr.getMaxVal());
+		numLevelsNF.setValue(aColorMapAttr.getNumLevels());
+		logScaleCB.setSelected(aColorMapAttr.getIsLogScale());
 	}
 
 	/**
-	 * Updates the GUI to reflect the new min,max range values.
-	 * <P>
-	 * This method will not trigger an event.
+	 * Switches this panel to reflect the the specified coloring index.
+	 *
+	 * @param aColoringIdx
+	 * @param aDefaultMin
+	 * @param aDefaultMax
 	 */
-	public void setCurrentMinMax(double aMin, double aMax)
+	public void switchToColoring(PolyhedralModel aSmallBody, int aColoringIdx, double aDefaultMin, double aDefaultMax)
 	{
-		minValueNF.setValue(aMin);
-		maxValueNF.setValue(aMax);
-	}
+		// Bail if coloring index has not changed
+		if (cColoringIdx == aColoringIdx)
+			return;
+		cColoringIdx = aColoringIdx;
 
-	/**
-	 * Sets in the default values for the range. This will have an effect on the
-	 * resetB UI.
-	 */
-	public void setDefaultRange(double aMin, double aMax)
-	{
-		defaultMin = aMin;
-		defaultMax = aMax;
+		// Update our defaults
+		defaultMin = aDefaultMin;
+		defaultMax = aDefaultMax;
+		minValueNF.setValue(defaultMin);
+		maxValueNF.setValue(defaultMax);
+
+		// Update the title
+		if (cColoringIdx >= 0)
+		{
+			String title = aSmallBody.getColoringName(cColoringIdx).trim();
+			String units = aSmallBody.getColoringUnits(cColoringIdx).trim();
+			if (units.isEmpty() == false)
+				title += " (" + units + ")";
+			refColorBarPainter.setTitle(title);
+		}
+
+		// Show the ColorBarPainter (if appropriate)
+		if (aSmallBody.isColoringDataAvailable() == true && cColoringIdx >= 0)
+		{
+			refColorBarPainter.setColorMapAttr(aSmallBody.getColorMapAttr());
+			refRenderer.addVtkPropProvider(refColorBarPainter);
+		}
+		else
+		{
+			refRenderer.delVtkPropProvider(refColorBarPainter);
+		}
+
+		updateControlArea();
 	}
 
 	@Override
@@ -149,59 +193,42 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 	{
 		Object source = aEvent.getSource();
 
-		// Reset the defaults
-		if (source == resetButton)
-		{
-			setCurrentMinMax(defaultMin, defaultMax);
-			updateControlArea();
+		if (source == applyB)
+			doActionApply();
 
-			if (isColorMapConfigValid() == false)
-				return;
+		else if (source == configB)
+			painterCBCP.setVisibleAsModal();
 
-			syncColorMapToGui();
-			firePropertyChange(EVT_ColormapChanged, null, null);
-			return;
-		}
+		else if (source == colorTableBox)
+			doActionColorTableBox();
 
-		// Apply the settings
-		else if (source == applyButton)
-		{
-			syncColorMapToGui();
-			firePropertyChange(EVT_ColormapChanged, null, null);
-			return;
-		}
-
-		// Sync toggle
-		else if (source == syncButton)
-		{
-			updateControlArea();
-			doAutoSync();
-		}
-
-		// LogScale UI
 		else if (source == logScaleCB)
-		{
-			syncColorMapToGui();
-			firePropertyChange(EVT_ColormapChanged, null, null);
-		}
+			doAutoSync();
 
-		// ColorMap ComboBox UI
-		else if (source == colormapComboBox)
+		if (source == resetB)
+			doActionReset();
+
+		else if (source == syncTB)
+			doAutoSync();
+
+		else if (source == minValueNF || source == maxValueNF || source == numLevelsNF)
 		{
+			if (source == numLevelsNF)
+				updateColorTableArea();
+
 			doAutoSync();
 		}
 
-		// Keep the Render View synchronized
-		if (syncButton.isSelected() == true)
-		{
-			if (source == minValueNF || source == maxValueNF || source == numColorLevelsNF)
-			{
-				doAutoSync();
-			}
-		}
+		updateControlArea();
+	}
 
-		if (source == minValueNF || source == maxValueNF || source == numColorLevelsNF)
-			updateControlArea();
+	@Override
+	public void handleColorBarChanged(Object aSource, ColorBarChangeType aType)
+	{
+		if (aType == ColorBarChangeType.ColorMap)
+			setColorMapAttr(refColorBarPainter.getColorMapAttr());
+
+		notifyListeners(this);
 	}
 
 	@Override
@@ -209,26 +236,17 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 	{
 		GuiUtil.setEnabled(this, aEnabled);
 
-		// Allow the extraComp to properly configure
-		// it's enable state
-		if (extraComp != null)
-			extraComp.setEnabled(aEnabled);
-
 		if (aEnabled == true)
-			updateControlArea();
-	}
-
-	@Override
-	public void stateChanged(ChangeEvent aEvent)
-	{
-		Object source = aEvent.getSource();
-
-		// NumTicks UI
-		if (source == numTicksSpinner)
 		{
-			cColormap.setNumberOfLabels((Integer) numTicksSpinner.getValue());
-			firePropertyChange(EVT_ColormapChanged, null, null);
+			updateControlArea();
+			updateColorTableArea();
 		}
+
+		// Show the ColorBarPainter (if appropriate)
+		if (aEnabled == true && cColoringIdx >= 0)
+			refRenderer.addVtkPropProvider(refColorBarPainter);
+		if (aEnabled == false)
+			refRenderer.delVtkPropProvider(refColorBarPainter);
 	}
 
 	/**
@@ -236,80 +254,116 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 	 */
 	private void buildGui()
 	{
-		setLayout(new MigLayout("", "[right][120::,fill]15[left]", "0[]"));
+		setLayout(new MigLayout("", "0[right][]0", "0[][]"));
 
-		// Colormap selector area
-		add(colormapComboBox, "span,wrap");
+		// ColorTable area
+		add(colorTableL, "growx,span,w 10::,wrap 3");
+		add(colorTableBox, "growx,span,w 0:0:,wrap");
 
 		// Range, # Color levels, and # Ticks area
 		add(minValueL, "");
-		add(minValueNF, "");
-		add(resetButton, "sg g1,wrap");
+		add(minValueNF, "growx,pushx,wrap");
 
 		add(maxValueL, "");
-		add(maxValueNF, "");
-		add(syncButton, "sg g1,wrap");
+		add(maxValueNF, "growx,wrap");
 
-		add(new JLabel("# Color Levels"), "");
-		add(numColorLevelsNF, "");
-		add(applyButton, "sg g1,wrap");
+		add(numLevelsL, "ax right");
+		add(numLevelsNF, "growx,split");
+		add(logScaleCB, "gapx 20,w 20::,wrap");
 
-		add(new JLabel("# Ticks"), "");
-		add(numTicksSpinner, "");
-		add(logScaleCB, "");
-
-		if (extraComp != null)
-			add(extraComp, "align left,newline,span,wrap 0");
+		add(configB, "w 24!,h 24!,span,split");
+		add(resetB, "w 24!,h 24!");
+		add(syncTB, "w 24!,h 24!");
+		add(applyB, "ax right,gapleft push,wrap 0");
 	}
 
 	/**
-	 * Helper method that synchronizes the ColorMap when the sync toggle is enabled
+	 * Helper method that handles the Apply action.
+	 */
+	private void doActionApply()
+	{
+		cColorMapAttr = getColorMapAttr();
+//		cFeatureType = getFeatureType();
+		refColorBarPainter.setColorMapAttr(cColorMapAttr);
+
+		notifyListeners(this);
+	}
+
+	/**
+	 * Helper method that handles the colorTableBox action.
+	 */
+	private void doActionColorTableBox()
+	{
+		updateColorTableArea();
+
+		doAutoSync();
+	}
+
+	/**
+	 * Helper method that handles the min reset action.
+	 */
+	private void doActionReset()
+	{
+		ColorMapAttr tmpCMA = getColorMapAttr();
+		tmpCMA = new ColorMapAttr(tmpCMA.getColorTable(), defaultMin, defaultMax, tmpCMA.getNumLevels(),
+				tmpCMA.getIsLogScale());
+		setColorMapAttr(tmpCMA);
+
+		doAutoSync();
+	}
+
+	/**
+	 * Helper method that will send out auto notification (to registered listeners)
+	 * when the sync toggle is enabled.
 	 */
 	private void doAutoSync()
 	{
-		// Bail if action GUI is not in a valid state
-		if (isColorMapConfigValid() == false)
+		// Bail if the syncTB is not selected
+		if (syncTB.isSelected() == false)
 			return;
 
-		// Synchronize our cached ColorMap
-		syncColorMapToGui();
+		// Bail if GUI is not in a valid state
+		if (isGuiValid() == false)
+			return;
 
-		// Send out notification of the changes
-		firePropertyChange(EVT_ColormapChanged, null, null);
+		// Delegate
+		doActionApply();
 	}
 
 	/**
-	 * Helper method to determine if the Colormap configuration is even valid
+	 * Helper method to determine if the configuration as specified in the UI is
+	 * valid.
 	 */
-	private boolean isColorMapConfigValid()
+	private boolean isGuiValid()
 	{
 		boolean isValid = true;
 		isValid &= minValueNF.isValidInput();
 		isValid &= maxValueNF.isValidInput();
 		isValid &= minValueNF.getValue() <= maxValueNF.getValue();
-		isValid &= numColorLevelsNF.isValidInput();
+		isValid &= numLevelsNF.isValidInput();
 
 		return isValid;
 	}
 
 	/**
-	 * Helper method that will synchronize relevant ColorMap properties to the
-	 * corresponding GUI elements.
+	 * Helper method that updates the colorTableL to reflect the selection of
+	 * colorTableBox and numLevelsNF.
 	 */
-	private void syncColorMapToGui()
+	protected void updateColorTableArea()
 	{
-		String name = ((Colormap) colormapComboBox.getSelectedItem()).getName();
+		int iconW = colorTableBox.getWidth();
+		if (iconW < 16)
+			iconW = 16;
+		int iconH = colorTableL.getHeight();
+		if (iconH < 16)
+			iconH = 16;
 
-		// Bail on invalid configuration
-		if (isColorMapConfigValid() == false)
-			return;
+		int numLevels = numLevelsNF.getValueAsInt(-1);
+		if (numLevels == -1)
+			numLevels = 0;
 
-		cColormap = Colormaps.getNewInstanceOfBuiltInColormap(name);
-		cColormap.setRangeMin(minValueNF.getValue());
-		cColormap.setRangeMax(maxValueNF.getValue());
-		cColormap.setNumberOfLevels(numColorLevelsNF.getValueAsInt(-1));
-		cColormap.setNumberOfLabels((Integer) numTicksSpinner.getValue());
-		cColormap.setLogScale(logScaleCB.isSelected());
+		ColorMapAttr tmpCMA = new ColorMapAttr(colorTableBox.getChosenItem(), 0.0, 1.0, numLevels, false);
+		colorTableL.setIcon(ColorTableUtil.createIcon(tmpCMA, iconW, iconH));
 	}
 
 	/**
@@ -330,17 +384,22 @@ public class StandardPlatePanel extends JPanel implements ActionListener, Change
 		if (isSwapped == true)
 		{
 			errMsg = "Min, Max values are swapped.";
-			fgColor = minValueNF.getFailColor();
+			fgColor = minValueNF.getColorFail();
 		}
 		minValueL.setForeground(fgColor);
 		maxValueL.setForeground(fgColor);
 		minValueL.setToolTipText(errMsg);
 		maxValueL.setToolTipText(errMsg);
 
+		isEnabled = false;
+		isEnabled |= Double.compare(defaultMin, minValueNF.getValue()) != 0;
+		isEnabled |= Double.compare(defaultMax, maxValueNF.getValue()) != 0;
+		resetB.setEnabled(isEnabled);
+
 		// Update enable state of applyB
-		isEnabled = syncButton.isSelected() != true;
-		isEnabled &= isColorMapConfigValid();
-		applyButton.setEnabled(isEnabled);
+		isEnabled = syncTB.isSelected() != true;
+		isEnabled &= isGuiValid();
+		applyB.setEnabled(isEnabled);
 	}
 
 }

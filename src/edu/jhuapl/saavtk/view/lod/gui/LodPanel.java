@@ -1,8 +1,8 @@
 package edu.jhuapl.saavtk.view.lod.gui;
 
 import java.awt.Color;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -17,7 +17,13 @@ import edu.jhuapl.saavtk.view.lod.LodUtil;
 import glum.gui.GuiUtil;
 import net.miginfocom.swing.MigLayout;
 
-public class LodPanel extends JPanel implements ActionListener, ViewActionListener
+/**
+ * Panel that allows the user to configure the {@link LodMode} for the specified
+ * {@link Renderer}.
+ *
+ * @author lopeznr1
+ */
+public class LodPanel extends JPanel implements ItemListener, ViewActionListener
 {
 	// Ref vars
 	private final Renderer refRenderer;
@@ -29,9 +35,7 @@ public class LodPanel extends JPanel implements ActionListener, ViewActionListen
 	private final JRadioButton modeMaxQualityRB;
 	private final JLabel modeAutoInfoL;
 
-	/**
-	 * Standard Constructor
-	 */
+	/** Standard Constructor */
 	public LodPanel(Renderer aRenderer, LodStatusPainter aPainter)
 	{
 		refRenderer = aRenderer;
@@ -43,33 +47,21 @@ public class LodPanel extends JPanel implements ActionListener, ViewActionListen
 		JLabel titleL = new JLabel("Level of Detail", JLabel.CENTER);
 		add(titleL, "align center,growx,span,wrap");
 
-		modeAutoRB = GuiUtil.createJRadioButton("Auto", this);
+		modeAutoRB = GuiUtil.createJRadioButton(this, "Auto");
 		modeAutoInfoL = new JLabel();
 		modeAutoInfoL.setForeground(Color.GRAY);
-		modeMaxSpeedRB = GuiUtil.createJRadioButton("Max Speed", this);
-		modeMaxQualityRB = GuiUtil.createJRadioButton("Max Quality", this);
+		modeMaxSpeedRB = GuiUtil.createJRadioButton(this, "Max Speed");
+		modeMaxQualityRB = GuiUtil.createJRadioButton(this, "Max Quality");
+		GuiUtil.linkRadioButtons(modeAutoRB, modeMaxSpeedRB, modeMaxQualityRB);
 		add(modeAutoRB, "span,split");
 		add(modeAutoInfoL, "w 150::,wrap");
 		add(modeMaxSpeedRB, "wrap");
 		add(modeMaxQualityRB, "wrap");
 
-		GuiUtil.linkRadioButtons(modeAutoRB, modeMaxSpeedRB, modeMaxQualityRB);
-		modeAutoRB.setSelected(true);
-
 		// Register for events of interest
 		refRenderer.addViewChangeListener(this);
 
 		syncGuiToModel();
-		updateGui();
-	}
-
-	@Override
-	public void actionPerformed(ActionEvent aEvent)
-	{
-		Object source = aEvent.getSource();
-		if (source == modeAutoRB || source == modeMaxSpeedRB || source == modeMaxQualityRB)
-			doChangeLodMode();
-
 		updateGui();
 	}
 
@@ -81,6 +73,20 @@ public class LodPanel extends JPanel implements ActionListener, ViewActionListen
 			return;
 
 		syncGuiToModel();
+		updateGui();
+	}
+
+	@Override
+	public void itemStateChanged(ItemEvent aEvent)
+	{
+		// Ignore deselects
+		if (aEvent.getStateChange() == ItemEvent.DESELECTED)
+			return;
+
+		Object source = aEvent.getSource();
+		if (source == modeAutoRB || source == modeMaxSpeedRB || source == modeMaxQualityRB)
+			doChangeLodMode();
+
 		updateGui();
 	}
 

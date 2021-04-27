@@ -1,8 +1,6 @@
 package edu.jhuapl.saavtk.model;
 
 import java.awt.Color;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -10,7 +8,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +19,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import crucible.crust.metadata.impl.gson.Serializers;
+import edu.jhuapl.saavtk.color.table.ColorMapAttr;
 import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.colormap.Colormaps;
 import edu.jhuapl.saavtk.config.ViewConfig;
@@ -70,13 +68,13 @@ import vtk.vtkTriangle;
 import vtk.vtkUnsignedCharArray;
 import vtk.vtksbCellLocator;
 
-public class GenericPolyhedralModel extends PolyhedralModel implements PropertyChangeListener
+public class GenericPolyhedralModel extends PolyhedralModel
 {
-	//This is a placeholder for enabling a series of diagnostic tools we hope to bring into the renderer.  Currently in place but with no UI hooks to enable it (yet) is a 
-	//block of code that can display the body cubes used during a database search that allows you to see what exactly it is you're choosing.  
+	//This is a placeholder for enabling a series of diagnostic tools we hope to bring into the renderer.  Currently in place but with no UI hooks to enable it (yet) is a
+	//block of code that can display the body cubes used during a database search that allows you to see what exactly it is you're choosing.
 	private boolean diagnosticModeEnabled = false;
 	private List<vtkProp> diagnosticCubes = new ArrayList<vtkProp>();
-	
+
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
 
     private final CustomizableColoringDataManager coloringDataManager;
@@ -142,10 +140,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     private double contourLineWidth = 1;
     private vtkPolyDataMapper linesMapper;
 	private VtkLodActor linesActor;
-	
+
 	private double cubeSize;
 	private double cubeOverlapCheck;
-    
+
     // Heuristic to avoid computationally expensive paint operations when possible.
     private Map<String, Object> paintingAttributes = null;
 
@@ -164,7 +162,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     /**
      * Convenience method for initializing a GenericPolyhedralModel with just a
      * vtkPolyData.
-     * 
+     *
      * @param polyData
      */
     public GenericPolyhedralModel(String uniqueModelId, vtkPolyData polyData)
@@ -387,33 +385,39 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         initialize(defaultModelFile);
     }
 
-    @Override
-    public void setColormap(Colormap colormap)
-    {
-        if (this.colormap != null)
-            this.colormap.removePropertyChangeListener(this);
+	@Override
+	public ColorMapAttr getColorMapAttr()
+	{
+		return colormap.getColorMapAttr();
+	}
 
-        this.colormap = colormap;
+	@Override
+	public void setColorMapAttr(ColorMapAttr aCMA)
+	{
+		// Bail if nothing has changed
+		ColorMapAttr tmpCMA = ColorMapAttr.Invalid;
+		if (colormap != null)
+			tmpCMA = colormap.getColorMapAttr();
+		if (tmpCMA.equals(aCMA) == true)
+			return;
 
-        this.colormap.addPropertyChangeListener(this);
+		// Synthesize the new colormap
+		colormap = Colormaps.getNewInstanceOfBuiltInColormap(aCMA.getColorTable().getName());
+		colormap.setLogScale(aCMA.getIsLogScale());
+		colormap.setNumberOfLevels(aCMA.getNumLevels());
+		colormap.setRangeMin(aCMA.getMinVal());
+		colormap.setRangeMax(aCMA.getMaxVal());
 
-        try
-        {
-            paintBody();
-        }
-        catch (IOException e)
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-    }
-
-    @Override
-    public Colormap getColormap()
-    {
-        return colormap;
-    }
+		try
+		{
+			paintBody();
+		}
+		catch (IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
     protected void initColormap()
     {
@@ -422,11 +426,9 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         if (!colormapInitialized && !(colormap == null) && coloringIndex > -1)
         {
             double[] range = getCurrentColoringRange(coloringIndex);
-            colormap.removePropertyChangeListener(this);
             colormap.setRangeMin(range[0]);
             colormap.setRangeMax(range[1]);
             colormapInitialized = true;
-            colormap.addPropertyChangeListener(this);
         }
     }
 
@@ -449,23 +451,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     public void setContourLineWidth(double width)
     {
         contourLineWidth = width;
-    }
-
-    @Override
-    public void propertyChange(PropertyChangeEvent evt)
-    {
-        if (evt.getSource().equals(colormap))
-        {
-            try
-            {
-                paintBody();
-            }
-            catch (IOException e)
-            {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
     }
 
     @Override
@@ -863,7 +848,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     {
         return pointLocator;
     }
-    
+
     public void calculateCubeSize(boolean useCustomBodyCubeSizeIfAvailable, double overlap)
     {
     	cubeOverlapCheck = overlap;
@@ -881,7 +866,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
             cubeSize = diagonalLength / 38.66056033363347;
         }
     }
-    
+
     public void clearCubes()
     {
     	smallBodyCubes = null;
@@ -894,8 +879,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         	if (cubeSize == 0.0) calculateCubeSize(false, 0);
             // Generate cubes based on chosen resolution
             smallBodyCubes = new SmallBodyCubes(getLowResSmallBodyPolyData(), cubeSize, 0.01 * cubeSize, true, cubeOverlapCheck);
-            
-            //TODO: This needs to be exposed through a developer only UI for diagnosis purposes.  
+
+            //TODO: This needs to be exposed through a developer only UI for diagnosis purposes.
             if (diagnosticModeEnabled == true)
             {
 //	            int index = 0;
@@ -906,7 +891,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 //	            for (BoundingBox bb : smallBodyCubes.getAllCubes())
 //	            {
 //	            	vtkCubeSource cube = new vtkCubeSource();
-//	            	cube.SetBounds(bb.getBounds()); 
+//	            	cube.SetBounds(bb.getBounds());
 //	            	vtkPolyDataMapper mapper = new vtkPolyDataMapper();
 //	            	mapper.SetInputConnection(cube.GetOutputPort());
 //	            	vtkActor actor = new vtkActor();
@@ -925,7 +910,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
         return smallBodyCubes;
     }
-    
+
     public void setCubeVisibility(TreeSet<Integer> indices)
     {
     	if (diagnosticModeEnabled == false) return;
@@ -934,7 +919,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     	for (int index : indices)
     	{
 	    	vtkCubeSource cube = new vtkCubeSource();
-	    	cube.SetBounds(smallBodyCubes.getCube(index).getBounds()); 
+	    	cube.SetBounds(smallBodyCubes.getCube(index).getBounds());
 	    	vtkPolyDataMapper mapper = new vtkPolyDataMapper();
 	    	mapper.SetInputConnection(cube.GetOutputPort());
 	    	vtkActor actor = new vtkActor();
@@ -982,6 +967,13 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
             vtkCellData normalsFilterOutputCellData = normalsFilterOutput.GetCellData();
             vtkFloatArray normals = (vtkFloatArray) normalsFilterOutputCellData.GetNormals();
 
+            // Bail if no data
+            if (normals == null)
+            {
+            	cellNormals = new vtkFloatArray();
+            	return cellNormals;
+            }
+
             cellNormals = new vtkFloatArray();
             cellNormals.DeepCopy(normals);
 
@@ -1010,7 +1002,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
             this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
         }
     }
-    
+
     public void sortPolydata(vtkCamera camera)
     {
     	vtkDepthSortPolyData depthSorter = new vtkDepthSortPolyData();
@@ -1124,7 +1116,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     /**
      * This returns the closest point to the model to pt. Note the returned point
      * need not be a vertex of the model and can lie anywhere on a plate.
-     * 
+     *
      * @param pt
      * @return
      */
@@ -1163,7 +1155,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     /**
      * This returns the index of the closest cell in the model to pt. The closest
      * point within the cell is returned in closestPoint
-     * 
+     *
      * @param pt
      * @param closestPoint the closest point within the cell is returned here
      * @return
@@ -1183,7 +1175,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
     /**
      * This returns the index of the closest cell in the model to pt.
-     * 
+     *
      * @param pt
      * @return
      */
@@ -1197,7 +1189,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
      * Compute the point on the asteroid that has the specified latitude and
      * longitude. Returns the cell id of the cell containing that point. This is
      * done by shooting a ray from the origin in the specified direction.
-     * 
+     *
      * @param lat - in radians
      * @param lon - in radians
      * @param intersectPoint
@@ -1240,7 +1232,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
      * Compute the intersection of a ray with the asteroid. Returns the cell id of
      * the cell containing that point. This is done by shooting a ray from the
      * specified origin in the specified direction.
-     * 
+     *
      * @param origin point
      * @param direction vector (must be unit vector)
      * @param intersectPoint (returned)
@@ -1274,11 +1266,6 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
             return cellId[0];
         else
             return -1;
-    }
-
-    public void reinitialize()
-    {
-        smallBodyActor = null;
     }
 
     protected void initializeActorsAndMappers()
@@ -1376,7 +1363,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
          * smallBodyPolyData.GetPoints(); int numberPoints = points.GetNumberOfPoints();
          * for (int i=0; i<numberPoints; ++i) { double[] pt = points.GetPoint(i);
          * bb.update(pt[0], pt[1], pt[2]); }
-         * 
+         *
          * return bb;
          */
     }
@@ -1390,7 +1377,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     /**
      * Get the minimum shift amount needed so shift an object away from the model so
      * it is not obscured by the model and looks like it's laying on the model
-     * 
+     *
      * @return
      */
     @Override
@@ -1528,13 +1515,13 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         maxCellArea = massProp.GetMaxCellArea();
 
         /*
-         * 
+         *
          * // The following computes the surface area directly rather than using
          * vtkMassProperties // It gives exactly the same results as vtkMassProperties
          * but is much slower.
-         * 
+         *
          * int numberOfCells = smallBodyPolyData.GetNumberOfCells();
-         * 
+         *
          * System.out.println(numberOfCells); double totalArea = 0.0; minCellArea =
          * Double.MAX_VALUE; maxCellArea = 0.0; for (int i=0; i<numberOfCells; ++i) {
          * vtkCell cell = smallBodyPolyData.GetCell(i); vtkPoints points =
@@ -1543,10 +1530,10 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
          * MathUtil.triangleArea(pt0, pt1, pt2); totalArea += area; if (area <
          * minCellArea) minCellArea = area; if (area > maxCellArea) maxCellArea = area;
          * }
-         * 
+         *
          * meanCellArea = totalArea / (double)(numberOfCells);
-         * 
-         * 
+         *
+         *
          * System.out.println("Surface area   " + massProp.GetSurfaceArea());
          * System.out.println("Surface area2  " + totalArea);
          * System.out.println("min cell area  " + massProp.GetMinCellArea());
@@ -1671,7 +1658,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
     /**
      * Load just the current plate coloring identified by coloringIndex.
-     * 
+     *
      * @throws IOException if the plate coloring fails to load
      */
     protected void loadColoringData() throws IOException
@@ -1731,7 +1718,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
     /**
      * This file loads the coloring data.
-     * 
+     *
      * @throws IOException
      */
     protected void loadAllColoringData() throws IOException
@@ -1884,7 +1871,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
     /**
      * Get value assuming pt is exactly on the asteroid and cellId is provided
-     * 
+     *
      * @param pt
      * @param pointOrCellData
      * @param cellId
@@ -2107,10 +2094,8 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         }
         if (doSet)
         {
-            colormap.removePropertyChangeListener(this);
             colormap.setRangeMin(range[0]);
             colormap.setRangeMax(range[1]);
-            colormap.addPropertyChangeListener(this);
         }
 
         paintBody();
@@ -2176,7 +2161,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
 
     /**
      * Update the false color point or cell data if
-     * 
+     *
      * @throws IOException
      */
     private void updateFalseColorArray() throws IOException
@@ -2533,35 +2518,11 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
         // if (lowResSmallBodyPolyData != null) lowResSmallBodyPolyData.Delete();
     }
 
-    @Override
-    public void saveAsPLT(File file) throws IOException
-    {
-        PolyDataUtil.saveShapeModelAsPLT(smallBodyPolyData, file.getAbsolutePath());
-    }
-
-    @Override
-    public void saveAsOBJ(File file) throws IOException
-    {
-        PolyDataUtil.saveShapeModelAsOBJ(smallBodyPolyData, file.getAbsolutePath());
-    }
-
-    @Override
-    public void saveAsVTK(File file) throws IOException
-    {
-        PolyDataUtil.saveShapeModelAsVTK(smallBodyPolyData, file.getAbsolutePath());
-    }
-
-    @Override
-    public void saveAsSTL(File file) throws IOException
-    {
-        PolyDataUtil.saveShapeModelAsSTL(smallBodyPolyData, file.getAbsolutePath());
-    }
-
     /**
      * Return if this model is an ellipsoid. If so, some operations on ellipsoids
      * are much easier than general shape models. By default return false, unless a
      * subclasses overrides it.
-     * 
+     *
      * @return
      */
     @Override
@@ -2573,7 +2534,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     /**
      * Subclass should override this if it needs it. Currently only shape models
      * with lidar data need this. Return density of shape model in g/cm^3.
-     * 
+     *
      * @return
      */
     @Override
@@ -2585,7 +2546,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
     /**
      * Subclass should override this if it needs it. Currently only shape models
      * with lidar data need this. Return rotation rate in radians/sec.
-     * 
+     *
      * @return
      */
     @Override
@@ -2600,7 +2561,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
      * reference potential is defined as SUM(P_p*A_p)/SUM(A_p), where P_p is the
      * potential at the center of plate p, A_p is the area of plate p, and the sum
      * is over all plates in the shape model.
-     * 
+     *
      * @return
      */
     @Override
@@ -2656,7 +2617,7 @@ public class GenericPolyhedralModel extends PolyhedralModel implements PropertyC
      * with lidar data need this. Return path on server to shape model in PLT
      * format. Needed because gravity program only supports PLT format, not VTK
      * format.
-     * 
+     *
      * @return
      */
     public String getServerPathToShapeModelFileInPlateFormat()

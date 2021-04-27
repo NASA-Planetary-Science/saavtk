@@ -18,7 +18,7 @@ import com.google.common.base.Preconditions;
  * Facility for wetting up user-name/password-based authentication using
  * {@link Authenticator}. It also includes support for storing/loading
  * credentials to/from a file.
- * 
+ *
  * @author James Peachey
  *
  */
@@ -48,7 +48,7 @@ public class Authorizor
     /**
      * Construct an authorizor that uses the provided path for the file used to
      * load/store credentials.
-     * 
+     *
      * @param credentialsFilePath the path to the credentials file
      */
     protected Authorizor(Path credentialsFilePath)
@@ -60,7 +60,7 @@ public class Authorizor
     /**
      * Get the user name currently in use by the authorizor utility. May be null,
      * which indicates no valid credentials have been defined.
-     * 
+     *
      * @return the user name, or null if no valid credentials have been defined
      */
     public String getUserName()
@@ -71,9 +71,30 @@ public class Authorizor
     }
 
     /**
+     * Get the password currently in use by the Authorizor utility. May be null,
+     * which indicates no valid credentials have been defined.
+     * <P>
+     * The returned char array is a copy of the current credential. You are responsible for
+     * clearing out the copy of the returned array.
+     *
+     * @return the password, or null if no valid credentials have been defined
+     */
+    public char[] getPassword()
+    {
+        SecureAuthenticator authenticator = this.authenticator.get();
+
+        if (authenticator == null)
+      	  return null;
+        if (authenticator.password == null)
+      	  return null;
+
+        return Arrays.copyOf(authenticator.password, authenticator.password.length);
+    }
+
+    /**
      * Return a flag indicating whether valid credentials (possibly the default
      * credentials) are defined for this authorizor.
-     * 
+     *
      * @return
      */
     public boolean isAuthorized()
@@ -90,7 +111,7 @@ public class Authorizor
      * would be returned by {@link #getDefaultUserName()}.
      * <p>
      * If this method returns true, so would {@link #isAuthorized()}
-     * 
+     *
      * @return true if valid credentials are defined, false otherwise
      */
     public boolean isValidCredentialsLoaded()
@@ -111,7 +132,7 @@ public class Authorizor
      * <p>
      * This method may be called any number of times. The {@link #getUserName()}
      * method will always return the latest name defined (or null).
-     * 
+     *
      * @return the result of attempting authentication using the credentials loaded
      *         from the credentials file
      */
@@ -187,7 +208,7 @@ public class Authorizor
      * method will always return the latest name defined (or null).
      * <p>
      * This method does not automatically save credentials to the credentials file.
-     * 
+     *
      * @param userName the user name to use in the attempt to define credentials
      * @param password the password to use in the attempt to define credentials
      * @return the result of attempting authentication using the credentials loaded
@@ -233,7 +254,7 @@ public class Authorizor
      * being used, the saved credentials file will exist, but it will be empty.
      * <p>
      * Parent directories will be created if necessary.
-     * 
+     *
      * @throws IOException if the file is not successfully created/updated/removed
      */
     public void saveCredentials() throws IOException
@@ -274,7 +295,7 @@ public class Authorizor
      * may be overridden in subclasses to provide one. If this method returns
      * anon-null default user name, the {@link #getDefaultPassword()} method must
      * also return a valid default password.
-     * 
+     *
      * @return the default user name, which may be null (and will be null if the
      *         base implementation is called)
      */
@@ -293,7 +314,7 @@ public class Authorizor
      * may be overridden in subclasses to provide one. If this method returns
      * anon-null default password, the {@link #getDefaultUserName()} method must
      * also return a valid default user name.
-     * 
+     *
      * @return the default password, which may be null (and will be null if the base
      *         implementation is called)
      */
@@ -362,7 +383,7 @@ public class Authorizor
     /**
      * Set to zero each element of a character array. Useful for cleaning up
      * password arrays when they are no longer needed (for security purposes).
-     * 
+     *
      * @param array the array to clear
      */
     static void clearArray(char[] array)

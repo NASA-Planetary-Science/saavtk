@@ -27,9 +27,11 @@ import edu.jhuapl.saavtk.gui.menu.HelpMenu;
 import edu.jhuapl.saavtk.gui.menu.PickToleranceAction;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.scalebar.gui.ScaleBarAction;
+import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.UnauthorizedAccessException;
+import edu.jhuapl.saavtk.view.light.gui.LightingConfigAction;
 import edu.jhuapl.saavtk.view.lod.gui.LodAction;
 import glum.misc.InitListener;
 
@@ -39,7 +41,7 @@ public abstract class ViewManager extends JPanel
     private List<View> builtInViews = new ArrayList<>();
     private List<View> customViews = new ArrayList<>();
     private View currentView;
-    protected final StatusBar statusBar;
+    protected final StatusNotifier refStatusNotifier;
     private final Frame frame;
     private String tempCustomShapeModelPath;
 
@@ -50,6 +52,9 @@ public abstract class ViewManager extends JPanel
     private volatile boolean initialViewSet;
 
     private List<InitListener> initListenerL;
+
+    /** Global that holds the {@link ViewManager} singleton. */
+    private static ViewManager globViewManager = null;
 
     /**
      * The top level frame is required so that the title can be updated when the
@@ -63,21 +68,34 @@ public abstract class ViewManager extends JPanel
      *            not saved into the custom application folder and will not be
      *            available unless explicitely imported.
      */
-    public ViewManager(StatusBar statusBar, Frame frame, String tempCustomShapeModelPath)
+    public ViewManager(StatusNotifier aStatusNotifier, Frame frame, String tempCustomShapeModelPath)
     {
         super(new CardLayout());
         setBorder(BorderFactory.createEmptyBorder());
         this.currentView = null;
-        this.statusBar = statusBar;
+        this.refStatusNotifier = aStatusNotifier;
         this.frame = frame;
         this.tempCustomShapeModelPath = tempCustomShapeModelPath;
         this.initialViewSet = false;
 
         initListenerL = new ArrayList<>();
 
+        globViewManager = this;
+
         // Subclass constructors should call this. It should not be called here because
         // it is not final.
         // setupViews();
+    }
+
+    /**
+     * Returns the (global) singleton {@link ViewManager}.
+     * <p>
+     * This method provides access to the (typically) sole {@link ViewManager}.
+     * Returns null if a {@link ViewManager} has not been instantiated.
+     */
+    public static ViewManager getGlobalViewManager()
+    {
+        return globViewManager;
     }
 
     /**
@@ -112,6 +130,7 @@ public abstract class ViewManager extends JPanel
         viewMenu.setMnemonic('V');
         viewMenu.add(new JMenuItem(new CameraRegularAction(this)));
         viewMenu.add(new JMenuItem(new CameraQuaternionAction(this)));
+        viewMenu.add(new JMenuItem(new LightingConfigAction(this)));
         viewMenu.add(new JMenuItem(new ScaleBarAction(this)));
 
         viewMenu.addSeparator();
@@ -150,7 +169,7 @@ public abstract class ViewManager extends JPanel
         builtInViews.add(view);
     }
 
-    protected void addBuiltInViews(@SuppressWarnings("unused") StatusBar statusBar)
+    protected void addBuiltInViews(@SuppressWarnings("unused") StatusNotifier aStatusNotifier)
     {
 
     }
@@ -158,7 +177,7 @@ public abstract class ViewManager extends JPanel
     protected void setupViews()
     {
         // Add in any built-in views.
-        addBuiltInViews(statusBar);
+        addBuiltInViews(refStatusNotifier);
 
         // Add built-in views to the top-level JPanel.
         for (View view : getBuiltInViews())
@@ -169,7 +188,7 @@ public abstract class ViewManager extends JPanel
         final String tempCustomShapeModel = getTempCustomShapeModelPath();
         if (tempCustomShapeModel != null)
         {
-            initialView = addCustomView(statusBar, tempCustomShapeModel);
+            initialView = addCustomView(refStatusNotifier, tempCustomShapeModel);
             if (initialView == null)
             {
                 // Not sure this is even possible, but just in case.
@@ -178,7 +197,7 @@ public abstract class ViewManager extends JPanel
         }
 
         // Load in any other custom views found in the configuration directory
-        loadCustomViews(statusBar);
+        loadCustomViews(refStatusNotifier);
 
         // Add custom views to the top-level JPanel
         for (View view : getCustomViews())
@@ -228,7 +247,7 @@ public abstract class ViewManager extends JPanel
                 String modelName = provideBasicModel();
                 if (modelName != null)
                 {
-                    initialView = createCustomView(statusBar, modelName, false);
+                    initialView = createCustomView(refStatusNotifier, modelName, false);
                     modelName = initialView.getUniqueName();
 
                     addCustomView(initialView);
@@ -351,7 +370,7 @@ public abstract class ViewManager extends JPanel
         throw new IllegalArgumentException("Could not find a model/view with name " + uniqueName);
     }
 
-    protected void loadCustomViews(StatusBar statusBar)
+    protected void loadCustomViews(StatusNotifier aStatusNotifier)
     {
         File modelsDir = new File(Configuration.getImportedShapeModelsDir());
         File[] dirs = modelsDir.listFiles();
@@ -370,7 +389,7 @@ public abstract class ViewManager extends JPanel
                     }
                     else
                     {
-                        View view = createCustomView(statusBar, dir.getName(), false);
+                        View view = createCustomView(aStatusNotifier, dir.getName(), false);
                         if (view != null)
                             addCustomView(view);
                     }
@@ -379,9 +398,9 @@ public abstract class ViewManager extends JPanel
         }
     }
 
-    protected View addCustomView(StatusBar statusBar, String shapeModelPath)
+    protected View addCustomView(StatusNotifier aStatusNotifier, String shapeModelPath)
     {
-        View customView = createCustomView(statusBar, shapeModelPath, true);
+        View customView = createCustomView(aStatusNotifier, shapeModelPath, true);
         addCustomView(customView);
         return customView;
     }
@@ -515,7 +534,7 @@ public abstract class ViewManager extends JPanel
 
     public View addCustomView(String name)
     {
-        View view = createCustomView(statusBar, name, false);
+        View view = createCustomView(refStatusNotifier, name, false);
         addCustomView(view);
         add(view, view.getUniqueName());
         return view;
@@ -543,7 +562,7 @@ public abstract class ViewManager extends JPanel
         return null;
     }
 
-    protected abstract View createCustomView(StatusBar statusBar, String name, boolean temporary);
+    protected abstract View createCustomView(StatusNotifier aStatusNotifier, String name, boolean temporary);
 
     public abstract View createCustomView(String name, boolean temporary, File metadata);
 
