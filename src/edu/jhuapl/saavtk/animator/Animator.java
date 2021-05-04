@@ -3,6 +3,7 @@ package edu.jhuapl.saavtk.animator;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -40,7 +41,12 @@ public class Animator implements ActionListener
      *
      */
     private Runnable movieBlock;
+    
+    private boolean isCancelled = false;
+    
+    private ArrayList<String> filenames = new ArrayList<String>();
 
+    private File file;
 
 	/**
 	 * @param renderer
@@ -152,6 +158,7 @@ public class Animator implements ActionListener
     {
     	if (renderer.getRenderWindowPanel().getComponent().getWidth() %2 != 0) renderer.getRenderWindowPanel().getComponent().setSize(renderer.getRenderWindowPanel().getComponent().getWidth() + 1, renderer.getRenderWindowPanel().getComponent().getHeight());
         AnimationFrame frame = animationFrameQueue.peek();
+        if (isCancelled) { cleanup(); return; }
         if (frame != null)
         {
             if (frame.staged && frame.file != null)
@@ -173,7 +180,7 @@ public class Animator implements ActionListener
         }
         else
         {
-           	movieBlock.run();
+        	new Thread(movieBlock).start();
         }
 
     }
@@ -187,15 +194,17 @@ public class Animator implements ActionListener
     public void saveAnimation(int frameNum, File file, AnimatorFrameRunnable completionBlock, Runnable movieBlock)
     {
     	animationFrameQueue = new LinkedBlockingQueue<AnimationFrame>();
-
+    	this.file = file;
         // creates the frames with the data necessary to take the images
     	String path = file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf(File.separator));
         String base = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf(File.separator));
         String ext = ".png";
+        new File(path+File.separator + ".movieCreate").mkdirs();
         for(double i = 0; i <= frameNum; i++)
         {
             String index = String.format("%03d",  (int)i);
-            File f = new File(path+base+"_Frame_"+index+ext);
+            File f = new File(path+File.separator + ".movieCreate" + File.separator + base +"_Frame_"+index+ext);
+            filenames.add(f.getAbsolutePath());
             double tf = i/(double)frameNum;
             AnimationFrame frame = createAnimationFrameWithTimeFraction(tf, f, 250);
             animationFrameQueue.add(frame);
@@ -204,5 +213,24 @@ public class Animator implements ActionListener
         this.movieBlock = movieBlock;
         this.actionPerformed(null);
     }
+    
+    public void cleanup()
+    {
+    	for (String filename : filenames)
+		{
+			new File(filename).delete();
+		}
+    	String path = file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf(File.separator));
+		new File(path+File.separator + ".movieCreate").delete();
+		this.isCancelled = false;
+    }
+
+	/**
+	 * @param isCancelled the isCancelled to set
+	 */
+	public void setCancelled(boolean isCancelled)
+	{
+		this.isCancelled = isCancelled;
+	}
 
 }
