@@ -33,6 +33,9 @@ public class IconUtil
 	
 	private static Icon cIconShow = null;
 	private static Icon cIconHide = null;
+	
+	private static Icon cIconRecord = null;
+	private static Icon cIconStop = null;
 
 	/**
 	 * Returns the icon that should be used for "Abort" action buttons
@@ -247,6 +250,23 @@ public class IconUtil
 		return cIconHide;
 	}
 	
+	//Icons made by <a href="https://www.flaticon.com/authors/google" title="Google">Google</a> from www.flaticon.com
+	public static Icon getRecord()
+	{
+		if (cIconRecord == null)
+			cIconRecord = IconUtil.loadIcon("resources/icons/record.png");
+
+		return cIconRecord;
+	}
+	
+	//Icons made by <a href="https://www.flaticon.com/authors/pixel-perfect" title="Pixel perfect">Pixel perfect</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+	public static Icon getStop()
+	{
+		if (cIconStop == null)
+			cIconStop = IconUtil.loadIcon("resources/icons/stop.png");
+
+		return cIconStop;
+	}
 	
 	/**
 	 * Utility helper method to load an icon from the specified resource.
