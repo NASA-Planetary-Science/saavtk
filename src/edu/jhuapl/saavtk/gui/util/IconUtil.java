@@ -36,6 +36,8 @@ public class IconUtil
 	
 	private static Icon cIconRecord = null;
 	private static Icon cIconStop = null;
+	
+	private static Icon cIconFont = null;
 
 	/**
 	 * Returns the icon that should be used for "Abort" action buttons
@@ -266,6 +268,15 @@ public class IconUtil
 			cIconStop = IconUtil.loadIcon("resources/icons/stop.png");
 
 		return cIconStop;
+	}
+	
+	//<div>Icons made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+	public static Icon getFont()
+	{
+		if (cIconFont == null)
+			cIconFont = IconUtil.loadIcon("resources/icons/font.png");
+
+		return cIconFont;
 	}
 	
 	/**

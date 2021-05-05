@@ -215,5 +215,13 @@ public class ToolTipUtil
 	{
 		return "Stop";
 	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Stop" buttons
+	 */
+	public static String getFont()
+	{
+		return "Font";
+	}
 
 }
