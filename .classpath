@@ -145,5 +145,6 @@
 	<classpathentry kind="lib" path="lib/crucible-core-1.0.0-b23-b505c84b.jar" sourcepath="lib/crucible-core-1.0.0-b23-b505c84b-sources.jar"/>
 	<classpathentry kind="lib" path="lib/crucible-crust-1.0.0-b23-b505c84b.jar" sourcepath="lib/crucible-crust-1.0.0-b23-b505c84b-sources.jar"/>
 	<classpathentry kind="lib" path="lib/crucible-mantle-1.0.0-b23-b505c84b.jar" sourcepath="lib/crucible-mantle-1.0.0-b23-b505c84b-sources.jar"/>
+	<classpathentry kind="lib" path="lib/jafama-2.3.1.jar" sourcepath="lib/jafama-2.3.1-src.zip"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
