@@ -76,6 +76,7 @@ public class DownloadableFileManager
     private final AtomicReference<URL> checkFileAccessScriptURL;
     private final AtomicInteger consecutiveServerSideCheckExceptionCount;
     private static final int maximumConsecutiveServerSideCheckExceptions = 2;
+    private final Profiler dropProfiler = Profiler.of("drops");
 
     protected DownloadableFileManager(UrlAccessManager urlManager, FileAccessManager fileManager)
     {
@@ -113,12 +114,27 @@ public class DownloadableFileManager
             enableMonitor = true;
 
             accessMonitor.execute(() -> {
+                Profiler checkProfiler = Profiler.of();
+
+                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                    checkProfiler.summarizeAllPerformance();
+                    checkProfiler.deleteProfileArea();
+                    dropProfiler.summarizeAllPerformance();
+                    dropProfiler.deleteProfileArea();
+                }));
+
+                dropProfiler.start();
                 while (enableMonitor)
                 {
                     boolean initiallyEnabled = isServerAccessEnabled();
 
                     ServerSettings serverSettings = ServerSettingsManager.instance().update();
                     boolean currentlyEnabled = serverSettings.isServerAccessible();
+
+                    if (currentlyEnabled)
+                    {
+                        checkProfiler.accumulate();
+                    }
 
                     setEnableServerAccess(currentlyEnabled);
 
@@ -143,6 +159,9 @@ public class DownloadableFileManager
                     {
                         enableMonitor = false;
                     }
+
+                    checkProfiler.reportElapsedTimes();
+                    dropProfiler.reportElapsedTimes();
                 }
 
             });
@@ -186,6 +205,7 @@ public class DownloadableFileManager
         }
         catch (Exception e)
         {
+            dropProfiler.accumulate();
             // Probably this indicates a problem with the internet connection. This will be
             // tested the next time the loop executes.
             e.printStackTrace(FileCacheMessageUtil.debugCache().err());
