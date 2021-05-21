@@ -4,10 +4,13 @@ import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -31,9 +34,14 @@ import crucible.core.math.Statistics;
  */
 public class Profiler
 {
-    private final AtomicReference<Long> startTime;
-    private final AtomicReference<Path> profilePath;
-    private final String timeStampFileName;
+    protected static final ExecutorService Executor = Executors.newSingleThreadExecutor();
+
+    protected final AtomicReference<Long> startTime;
+    protected final AtomicReference<Path> profilePath;
+    protected final AtomicReference<String> timeStampFileName;
+    protected final List<Long> times;
+
+    private String profilePathPrefix;
 
     /**
      * Return a new profiler that stores its results under the path given by
@@ -44,16 +52,31 @@ public class Profiler
      */
     public static Profiler of()
     {
-        return new Profiler();
+        return of("profile");
     }
 
-    protected Profiler()
+    /**
+     * Return a new profiler that stores its results under the path given by
+     * {@link Configuration#getApplicationDataDir()} in a subdirectory named by the
+     * specified path prefix.
+     * 
+     * @param profilePathPrefix the prefix for the path
+     * @return the profiler.
+     */
+    public static Profiler of(String profilePathPrefix)
+    {
+        return new Profiler(profilePathPrefix);
+    }
+
+    protected Profiler(String profilePathPrefix)
     {
         super();
 
         this.startTime = new AtomicReference<>();
         this.profilePath = new AtomicReference<>();
-        this.timeStampFileName = UUID.randomUUID().toString() + ".txt";
+        this.timeStampFileName = new AtomicReference<>(UUID.randomUUID().toString() + ".txt");
+        this.times = new ArrayList<>();
+        this.profilePathPrefix = profilePathPrefix;
     }
 
     /**
@@ -65,60 +88,65 @@ public class Profiler
     }
 
     /**
-     * Return the start time of the profiled operation in nanoseconds.
-     *
-     * @return the start time of the application in nano seconds
-     * @throws NullPointerException if {@link #start()} was not called first.
+     * Compute the time elapsed since the last call to accumulate(), or since the
+     * {@link #start()} method was first called. Store that elapsed time in the list
+     * of elapsed times.
      */
-    public long getStartNanoTime()
+    public void accumulate()
     {
-        return startTime.get();
+        long now = System.nanoTime();
+        Long startTime = this.startTime.getAndSet(now);
+        if (startTime != null)
+        {
+            synchronized (this.times)
+            {
+                times.add(now - startTime);
+            }
+        }
     }
 
     /**
-     * Return the path under which the results of the profiling are written.
-     * 
-     * @return the path
-     */
-    public Path getProfilePath()
-    {
-        profilePath.compareAndSet(null, SafeURLPaths.instance().get(Configuration.getApplicationDataDir(), getProfilePathPrefix()));
-
-        return profilePath.get();
-    }
-
-    /**
-     * Write the elapsed time at this point in program execution to a randomly named
-     * file in the profiling directory. The written time is the time since
-     * {@link #start()} was called.
+     * Write the elapsed times that have been accumulated up to this point in program
+     * execution to a randomly named file in the profiling directory. The written
+     * times are times between subsequent calls to the {@link #accumulate()} method.
      * <p>
      * For a given instance of {@link Profiler}, the same random file name is always
      * used by this method to report the time. This method overwrites the output
      * file each time this method is called. Thus the output file contains only the
      * result of the last time this method was called.
      * <p>
-     * The time passed as a paramter to this method is assumed to be in
-     * NANO-seconds, but the time written to the file will be in milli-seconds and
-     * written in floating point.
-     *
-     * @parm time the time to report in nano-seconds.
+     * The times written to the file will be floating point values giving the
+     * elapsed times in milli-seconds.
+     * <p>
+     * The I/O is performed on a dedicated thread to avoid using CPU cycles on the
+     * thread being profiled.
      */
-    public void reportElapsedTime(long time)
+    public void reportElapsedTimes()
     {
-        Path profilePath = getProfilePath();
-        profilePath.toFile().mkdirs();
-        File profileFile = profilePath.resolve(timeStampFileName).toFile();
+        ImmutableList<Long> timesToReport;
+        synchronized (this.times)
+        {
+            timesToReport = ImmutableList.copyOf(times);
+        }
 
-        try (PrintStream s = new PrintStream(profileFile))
-        {
-            // Write the elapsed time, converting to ms.
-            s.printf("%#.2f\n", 1.e-6 * (time - getStartNanoTime()));
-        }
-        catch (Exception e)
-        {
-            // TAKE THIS OUT BEFORE COMMITTING!!!
-            e.printStackTrace();
-        }
+        Executor.execute(() -> {
+            Path profilePath = getProfilePath();
+            profilePath.toFile().mkdirs();
+            File profileFile = profilePath.resolve(timeStampFileName.get()).toFile();
+
+            try (PrintStream s = new PrintStream(profileFile))
+            {
+                for (Long time : timesToReport)
+                {
+                    // Write the elapsed time, converting to ms.
+                    s.printf("%#.2f\n", 1.e-6 * time);
+                }
+            }
+            catch (Exception e)
+            {
+//            e.printStackTrace();
+            }
+        });
     }
 
     /**
@@ -137,15 +165,14 @@ public class Profiler
             {
                 try (Scanner s = new Scanner(file))
                 {
-                    if (s.hasNextDouble())
+                    while (s.hasNextDouble())
                     {
                         builder.add(s.nextDouble());
                     }
                 }
                 catch (Exception e)
                 {
-                    // TAKE THIS OUT BEFORE COMMITTING!!!
-                    e.printStackTrace();
+//                    e.printStackTrace();
                 }
             }
             ImmutableList<Double> timeList = builder.build();
@@ -192,13 +219,12 @@ public class Profiler
             }
             catch (Exception e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+//                e.printStackTrace();
             }
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+//            e.printStackTrace();
         }
     }
 
@@ -227,7 +253,7 @@ public class Profiler
      */
     protected String getProfilePathPrefix()
     {
-        return "profile";
+        return profilePathPrefix;
     };
 
     /**
@@ -247,12 +273,23 @@ public class Profiler
             }
             catch (Exception e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+//                e.printStackTrace();
             }
         }
 
         return builder.build();
+    }
+
+    /**
+     * Return the path under which the results of the profiling are written.
+     * 
+     * @return the path
+     */
+    protected Path getProfilePath()
+    {
+        profilePath.compareAndSet(null, SafeURLPaths.instance().get(Configuration.getApplicationDataDir(), getProfilePathPrefix()));
+
+        return profilePath.get();
     }
 
     /**
@@ -280,7 +317,8 @@ public class Profiler
 //                }
 //                finally
 //                {
-//                    profiler.reportElapsedTime(System.nanoTime());
+//                    profiler.accumulate();
+//                    profiler.reportElapsedTimes();
 //                    latch.countDown();
 //                }
 //
