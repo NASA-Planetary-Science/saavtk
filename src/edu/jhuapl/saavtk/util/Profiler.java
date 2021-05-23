@@ -75,7 +75,8 @@ public class Profiler
     }
 
     /**
-     * Start the profile timer if it has not already been started.
+     * Start the profile timer if it has not already been started. Calling it
+     * additional times has no effect.
      */
     public void start()
     {
@@ -110,9 +111,10 @@ public class Profiler
     }
 
     /**
-     * Write the elapsed times that have been accumulated up to this point in program
-     * execution to a randomly named file in the profiling directory. The written
-     * times are times between subsequent calls to the {@link #accumulate()} method.
+     * Write the elapsed times that have been accumulated up to this point in
+     * program execution to a randomly named file in the profiling directory. The
+     * written times are times between subsequent calls to the {@link #accumulate()}
+     * method.
      * <p>
      * For a given instance of {@link Profiler}, the same random file name is always
      * used by this method to report the time. This method overwrites the output
