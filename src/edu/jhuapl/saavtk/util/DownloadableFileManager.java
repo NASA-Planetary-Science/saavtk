@@ -89,6 +89,7 @@ public class DownloadableFileManager
     private final AtomicInteger consecutiveServerSideCheckExceptionCount;
     private static final int maximumConsecutiveServerSideCheckExceptions = 2;
     private static final AtomicReference<String> profileAreaPrefix = new AtomicReference<>(null);
+    private final AtomicReference<Profiler> checkProfiler;
     private final AtomicReference<Profiler> dropProfiler;
 
     protected DownloadableFileManager(UrlAccessManager urlManager, FileAccessManager fileManager)
@@ -103,6 +104,7 @@ public class DownloadableFileManager
         // for debugging:
         this.enableAccessChecksOnServer = new AtomicBoolean(true);
         this.consecutiveServerSideCheckExceptionCount = new AtomicInteger();
+        this.checkProfiler = new AtomicReference<>();
         this.dropProfiler = new AtomicReference<>();
     }
 
@@ -128,13 +130,14 @@ public class DownloadableFileManager
             enableMonitor = true;
 
             accessMonitor.execute(() -> {
-                Profiler checkProfiler = createProfiler("checks");
+                Profiler checkProfiler = getCheckProfiler();
                 Profiler dropProfiler = getDropProfiler();
 
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                     checkProfiler.summarizeAllPerformance();
-                    checkProfiler.deleteProfileArea();
                     dropProfiler.summarizeAllPerformance();
+
+                    checkProfiler.deleteProfileArea();
                     dropProfiler.deleteProfileArea();
                 }));
 
@@ -835,17 +838,26 @@ public class DownloadableFileManager
         return querier.getDownloadableFileState();
     }
 
-    protected Profiler createProfiler(String name) {
+    protected Profiler getCheckProfiler()
+    {
+        checkProfiler.compareAndSet(null, createProfiler("checks"));
+
+        return checkProfiler.get();
+    }
+
+    protected Profiler getDropProfiler()
+    {
+        dropProfiler.compareAndSet(null, createProfiler("drops"));
+
+        return dropProfiler.get();
+    }
+
+    protected Profiler createProfiler(String name)
+    {
         String prefix = profileAreaPrefix.get();
         prefix = prefix != null ? SafeURLPaths.instance().getString(prefix, name) : name;
 
         return Profiler.of(prefix);
-    }
-
-    protected Profiler getDropProfiler() {
-       dropProfiler.compareAndSet(null, createProfiler("drops"));
-       
-       return dropProfiler.get();
     }
 
     protected static boolean isHeadless()
