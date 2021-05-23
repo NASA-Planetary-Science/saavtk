@@ -67,6 +67,18 @@ public class DownloadableFileManager
         return UrlEncoding;
     }
 
+    /**
+     * Set the prefix under which all profiling directories will be written. Call
+     * this early, before any file-cache-related action has started. The first time
+     * is called, the prefix will be set. Subsequent calls will be ignored.
+     * 
+     * @param prefix the prefix to use.
+     */
+    public static void setProfileAreaPrefix(String prefix)
+    {
+        profileAreaPrefix.compareAndSet(null, prefix);
+    }
+
     private final UrlAccessManager urlManager;
     private final FileAccessManager fileManager;
     private final Map<String, Map<StateListener, PropertyChangeListener>> listenerMap;
@@ -76,7 +88,8 @@ public class DownloadableFileManager
     private final AtomicReference<URL> checkFileAccessScriptURL;
     private final AtomicInteger consecutiveServerSideCheckExceptionCount;
     private static final int maximumConsecutiveServerSideCheckExceptions = 2;
-    private final Profiler dropProfiler = Profiler.of("drops");
+    private static final AtomicReference<String> profileAreaPrefix = new AtomicReference<>(null);
+    private final AtomicReference<Profiler> dropProfiler;
 
     protected DownloadableFileManager(UrlAccessManager urlManager, FileAccessManager fileManager)
     {
@@ -90,6 +103,7 @@ public class DownloadableFileManager
         // for debugging:
         this.enableAccessChecksOnServer = new AtomicBoolean(true);
         this.consecutiveServerSideCheckExceptionCount = new AtomicInteger();
+        this.dropProfiler = new AtomicReference<>();
     }
 
     /**
@@ -114,7 +128,8 @@ public class DownloadableFileManager
             enableMonitor = true;
 
             accessMonitor.execute(() -> {
-                Profiler checkProfiler = Profiler.of();
+                Profiler checkProfiler = createProfiler("checks");
+                Profiler dropProfiler = getDropProfiler();
 
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                     checkProfiler.summarizeAllPerformance();
@@ -205,7 +220,7 @@ public class DownloadableFileManager
         }
         catch (Exception e)
         {
-            dropProfiler.accumulate();
+            getDropProfiler().accumulate();
             // Probably this indicates a problem with the internet connection. This will be
             // tested the next time the loop executes.
             e.printStackTrace(FileCacheMessageUtil.debugCache().err());
@@ -818,6 +833,19 @@ public class DownloadableFileManager
         querier.query();
 
         return querier.getDownloadableFileState();
+    }
+
+    protected Profiler createProfiler(String name) {
+        String prefix = profileAreaPrefix.get();
+        prefix = prefix != null ? SafeURLPaths.instance().getString(prefix, name) : name;
+
+        return Profiler.of(prefix);
+    }
+
+    protected Profiler getDropProfiler() {
+       dropProfiler.compareAndSet(null, createProfiler("drops"));
+       
+       return dropProfiler.get();
     }
 
     protected static boolean isHeadless()
