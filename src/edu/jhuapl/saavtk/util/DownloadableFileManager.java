@@ -141,9 +141,18 @@ public class DownloadableFileManager
                     dropProfiler.deleteProfileArea();
                 }));
 
-                dropProfiler.start();
                 while (enableMonitor)
                 {
+                    // Do not explicitly start checkProfiler. Want the checkProfiler to measure
+                    // time between subsequent checks.
+                    // checkProfiler.start();
+
+                    // Explicitly start the drop profiler as soon as profiling is enabled. Want the
+                    // drop checker to measure every drop, including the very first.
+                    // Note this will take effect only once: the first time this loop executes with
+                    // profiling enabled.
+                    dropProfiler.start();
+
                     boolean initiallyEnabled = isServerAccessEnabled();
 
                     ServerSettings serverSettings = ServerSettingsManager.instance().update();
@@ -836,6 +845,17 @@ public class DownloadableFileManager
         querier.query();
 
         return querier.getDownloadableFileState();
+    }
+
+    /**
+     * Clears out previous profiler runs, then starts profiler.
+     */
+    public void startProfiling()
+    {
+        getCheckProfiler().deleteProfileArea();
+        getDropProfiler().deleteProfileArea();
+ 
+        Profiler.globalEnableProfiling(true);
     }
 
     protected Profiler getCheckProfiler()
