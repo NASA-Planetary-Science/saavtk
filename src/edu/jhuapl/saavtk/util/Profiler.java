@@ -11,6 +11,7 @@ import java.util.Scanner;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -35,6 +36,7 @@ import crucible.core.math.Statistics;
 public class Profiler
 {
     protected static final ExecutorService Executor = Executors.newSingleThreadExecutor();
+    protected static final AtomicBoolean GlobalEnableProfiling = new AtomicBoolean(false);
 
     protected final AtomicReference<Long> startTime;
     protected final AtomicReference<Path> profilePath;
@@ -43,16 +45,9 @@ public class Profiler
 
     private String profilePathPrefix;
 
-    /**
-     * Return a new profiler that stores its results under the path given by
-     * {@link Configuration#getApplicationDataDir()} in a subdirectory named
-     * "profile".
-     * 
-     * @return the profiler.
-     */
-    public static Profiler of()
+    public static void globalEnableProfiling(boolean enable)
     {
-        return of("profile");
+        GlobalEnableProfiling.set(enable);
     }
 
     /**
@@ -84,6 +79,10 @@ public class Profiler
      */
     public void start()
     {
+        if (!GlobalEnableProfiling.get())
+        {
+            return;
+        }
         startTime.compareAndSet(null, System.nanoTime());
     }
 
@@ -94,6 +93,11 @@ public class Profiler
      */
     public void accumulate()
     {
+        if (!GlobalEnableProfiling.get())
+        {
+            return;
+        }
+
         long now = System.nanoTime();
         Long startTime = this.startTime.getAndSet(now);
         if (startTime != null)
@@ -123,6 +127,11 @@ public class Profiler
      */
     public void reportElapsedTimes()
     {
+        if (!GlobalEnableProfiling.get())
+        {
+            return;
+        }
+
         ImmutableList<Long> timesToReport;
         synchronized (this.times)
         {
@@ -157,6 +166,11 @@ public class Profiler
      */
     public void summarizeAllPerformance()
     {
+        if (!GlobalEnableProfiling.get())
+        {
+            return;
+        }
+
         try
         {
             List<File> files = getProfileFiles();
@@ -235,6 +249,11 @@ public class Profiler
      */
     public void deleteProfileArea()
     {
+        if (!GlobalEnableProfiling.get())
+        {
+            return;
+        }
+
         List<File> files = getProfileFiles();
         for (File file : files)
         {
