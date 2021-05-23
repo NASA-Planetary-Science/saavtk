@@ -1,6 +1,8 @@
 package edu.jhuapl.saavtk.util;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -79,8 +81,8 @@ public class ServerSettingsManager
 
     private static final int AbsoluteMinimumQueryLength = 100; // ~1 URL.
     private static final int AbsoluteMaximumQueryLength = 10000; // ~100 URLs.
-    private static final int AbsoluteMinimumSleepInterval = 5000; // 5 sec.
-    private static final int AbsoluteMaximumSleepInterval = 120000; // 2 min.
+    private static final int AbsoluteMinimumSleepInterval = 1000; // 1 sec.
+    private static final int AbsoluteMaximumSleepInterval = 60000; // 1 min.
     private static final AtomicReference<ServerSettingsManager> Instance = new AtomicReference<>(null);
 
     private final URL checkServerScriptUrl;
@@ -147,6 +149,16 @@ public class ServerSettingsManager
 
             settings = new ServerSettings(true, queryLength, sleepInterval);
             FileCacheMessageUtil.debugCache().out().println("Updated server settings: " + settings);
+        }
+        catch (FileNotFoundException e)
+        {
+            settings = new ServerSettings(true, AbsoluteMaximumQueryLength, AbsoluteMaximumSleepInterval);
+            FileCacheMessageUtil.debugCache().err().println("No script to check server access: " + e.getClass().getName() + ": " + e.getMessage());
+        }
+        catch (IOException e)
+        {
+            settings = new ServerSettings(true, AbsoluteMaximumQueryLength, AbsoluteMaximumSleepInterval);
+            FileCacheMessageUtil.debugCache().err().println("Error checking server access: " + e.getClass().getName() + ": " + e.getMessage());
         }
         catch (Exception e)
         {
