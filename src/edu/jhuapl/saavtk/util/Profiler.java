@@ -2,8 +2,10 @@ package edu.jhuapl.saavtk.util;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -117,9 +119,9 @@ public class Profiler
      * method.
      * <p>
      * For a given instance of {@link Profiler}, the same random file name is always
-     * used by this method to report the time. This method overwrites the output
-     * file each time this method is called. Thus the output file contains only the
-     * result of the last time this method was called.
+     * used by this method to report the time. This method appends to the output
+     * file each time this method is called, and discards the times after they are
+     * written.
      * <p>
      * The times written to the file will be floating point values giving the
      * elapsed times in milli-seconds.
@@ -138,19 +140,25 @@ public class Profiler
         synchronized (this.times)
         {
             timesToReport = ImmutableList.copyOf(times);
+            times.clear();
+        }
+
+        if (timesToReport.isEmpty())
+        {
+            return;
         }
 
         Executor.execute(() -> {
-            Path profilePath = getProfilePath();
-            profilePath.toFile().mkdirs();
-            File profileFile = profilePath.resolve(timeStampFileName.get()).toFile();
+            Path profileDirPath = getProfilePath();
+            profileDirPath.toFile().mkdirs();
+            Path profileFilePath = profileDirPath.resolve(timeStampFileName.get());
 
-            try (PrintStream s = new PrintStream(profileFile))
+            try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(profileFilePath, StandardOpenOption.CREATE, StandardOpenOption.APPEND)))
             {
                 for (Long time : timesToReport)
                 {
                     // Write the elapsed time, converting to ms.
-                    s.printf("%#.2f\n", 1.e-6 * time);
+                    writer.printf("%#.2f\n", 1.e-6 * time);
                 }
             }
             catch (Exception e)
@@ -248,14 +256,12 @@ public class Profiler
      * Remove all the files in the profile area associated with ALL {@link Profiler}
      * instances, and the parent directory itself. This is useful for clearing out a
      * previous profiling result automatically.
+     * <p>
+     * This method clears out the profile area even if profiling is switched off (if
+     * {@link #GlobalEnableProfiling} is false)
      */
     public void deleteProfileArea()
     {
-        if (!GlobalEnableProfiling.get())
-        {
-            return;
-        }
-
         List<File> files = getProfileFiles();
         for (File file : files)
         {
