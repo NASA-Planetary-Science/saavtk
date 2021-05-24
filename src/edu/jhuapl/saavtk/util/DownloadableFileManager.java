@@ -178,6 +178,9 @@ public class DownloadableFileManager
 
                     updateAccessAllUrls(currentlyEnabled && Configuration.getAuthorizor().isAuthorized(), false);
 
+                    checkProfiler.reportElapsedTimes();
+                    dropProfiler.reportElapsedTimes();
+
                     try
                     {
                         Thread.sleep(serverSettings.getSleepInterval());
@@ -186,9 +189,6 @@ public class DownloadableFileManager
                     {
                         enableMonitor = false;
                     }
-
-                    checkProfiler.reportElapsedTimes();
-                    dropProfiler.reportElapsedTimes();
                 }
 
             });
@@ -854,7 +854,7 @@ public class DownloadableFileManager
     {
         getCheckProfiler().deleteProfileArea();
         getDropProfiler().deleteProfileArea();
- 
+
         Profiler.globalEnableProfiling(true);
     }
 
