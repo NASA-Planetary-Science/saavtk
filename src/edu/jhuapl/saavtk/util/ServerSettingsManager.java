@@ -204,7 +204,7 @@ public class ServerSettingsManager
 
             settings = new ServerSettings(true, queryLength, sleepInterval);
             FileCacheMessageUtil.debugCache().out().println("Updated server settings: " + settings);
-       }
+        }
         catch (FileNotFoundException e)
         {
             // This could be a transient problem but more likely means that this script is
