@@ -50,8 +50,6 @@ public class ServerSettingsManager
             this.isServerAccessible = isServerAccessible;
             this.queryLength = queryLength;
             this.sleepInterval = sleepInterval;
-
-            FileCacheMessageUtil.debugCache().out().println("Updated server settings: " + this);
         }
 
         public boolean isServerAccessible()
@@ -205,21 +203,22 @@ public class ServerSettingsManager
             }
 
             settings = new ServerSettings(true, queryLength, sleepInterval);
-        }
+            FileCacheMessageUtil.debugCache().out().println("Updated server settings: " + settings);
+       }
         catch (FileNotFoundException e)
         {
             // This could be a transient problem but more likely means that this script is
             // missing. Assume the server connection itself is OK, and wait the default time
             // before checking again.
-            FileCacheMessageUtil.debugCache().err().println("No script to check server access: " + e.getClass().getName() + ": " + e.getMessage());
             settings = new ServerSettings(true, AbsoluteMaximumQueryLength, DefaultSleepInterval);
+            FileCacheMessageUtil.debugCache().err().println("No script to check server access: " + e.getClass().getName() + ": " + e.getMessage() + "\n\tUpdated server settings " + settings);
         }
         catch (IOException e)
         {
             // It is hoped this is a transient network issue, but in any case, the server is
             // probably not available now. Wait the standard post-timeout amount of time.
-            FileCacheMessageUtil.debugCache().err().println("IOException checking server access: " + e.getClass().getName() + ": " + e.getMessage());
             settings = new ServerSettings(false, AbsoluteMaximumQueryLength, AfterTimeoutSleepInterval);
+            FileCacheMessageUtil.debugCache().err().println("IOException checking server access: " + e.getClass().getName() + ": " + e.getMessage() + "\n\tUpdated server settings " + settings);
         }
         catch (Exception e)
         {
@@ -229,15 +228,15 @@ public class ServerSettingsManager
             Throwable t = e.getCause();
             if (t instanceof IOException)
             {
-                FileCacheMessageUtil.debugCache().err().println(e.getClass().getName() + ": " + e.getMessage() + "\ncaused by " + t.getClass().getName() + ": " + t.getMessage());
                 settings = new ServerSettings(false, AbsoluteMaximumQueryLength, AfterTimeoutSleepInterval);
+                FileCacheMessageUtil.debugCache().err().println(e.getClass().getName() + ": " + e.getMessage() + "\ncaused by " + t.getClass().getName() + ": " + t.getMessage() + "\n\tUpdated server settings " + settings);
             }
             else
             {
                 // Cause is not IO exception. Not sure how this could even happen, but hope for
                 // the best.
-                FileCacheMessageUtil.debugCache().err().println(e.getClass().getName() + ": " + e.getMessage());
                 settings = new ServerSettings(true, AbsoluteMaximumQueryLength, DefaultSleepInterval);
+                FileCacheMessageUtil.debugCache().err().println(e.getClass().getName() + ": " + e.getMessage() + "\n\tUpdated server settings " + settings);
             }
         }
 
