@@ -174,6 +174,10 @@ public class DownloadableFileManager
                         FileCacheMessageUtil.info().println(timeStamp + ( //
                         currentlyEnabled ? " Connected to server. Re-enabling online access." : " Failed to connect to server. Disabling online access for now." //
                         ));
+
+                        if (!currentlyEnabled) {
+                            getDropProfiler().accumulate();
+                        }
                     }
 
                     updateAccessAllUrls(currentlyEnabled && Configuration.getAuthorizor().isAuthorized(), false);
@@ -234,7 +238,6 @@ public class DownloadableFileManager
         }
         catch (Exception e)
         {
-            getDropProfiler().accumulate();
             // Probably this indicates a problem with the internet connection. This will be
             // tested the next time the loop executes.
             e.printStackTrace(FileCacheMessageUtil.debugCache().err());
