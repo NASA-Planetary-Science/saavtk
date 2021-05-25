@@ -210,7 +210,9 @@ public class DownloadableFileManager
             {
                 if (!doAccessCheckOnServer(forceUpdate))
                 {
-                    throw new NoInternetAccessException("Access check on server failed", checkFileAccessScriptURL.get());
+                    consecutiveServerSideCheckExceptionCount.incrementAndGet();
+                    FileCacheMessageUtil.debugCache().err().println("Access check on server (" + checkFileAccessScriptURL.get() + ") failed");
+                    return;
                 }
             }
             else
