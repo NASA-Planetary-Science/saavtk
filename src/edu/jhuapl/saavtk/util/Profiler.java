@@ -25,8 +25,8 @@ import crucible.core.math.Statistics;
  * Simple class to time the execution of arbitrary sections of code, possibly
  * factored into any number of classes/methods. Can work for multiple threads
  * and/or multiple runs of an application. The class itself is safe to access
- * from multiple threads, but generally it would be most useful to have a
- * distinct {@link Profiler} instances for each thread.
+ * from multiple threads, but generally it would be most useful to have distinct
+ * {@link Profiler} instances for each thread.
  * <p>
  * In addition to support for timing an individual run of profiling code, the
  * class features a means to summarize the results of an arbitrary number of
@@ -152,6 +152,8 @@ public class Profiler
             Path profileDirPath = getProfilePath();
             profileDirPath.toFile().mkdirs();
             Path profileFilePath = profileDirPath.resolve(timeStampFileName.get());
+
+            FileCacheMessageUtil.info().println("Writing performance data for " + profilePathPrefix + " to " + timeStampFileName.get());
 
             try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(profileFilePath, StandardOpenOption.CREATE, StandardOpenOption.APPEND)))
             {
