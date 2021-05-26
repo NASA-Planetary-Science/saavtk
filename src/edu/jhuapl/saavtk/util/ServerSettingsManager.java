@@ -110,11 +110,11 @@ public class ServerSettingsManager
     protected static final int AbsoluteMinimumSleepInterval = 4000;
 
     // Under no circumstance wait longer than this to check again.
-    protected static final int AbsoluteMaximumSleepInterval = 60000;
+    protected static final int AbsoluteMaximumSleepInterval = 40000;
 
     // This seems a good default for the current servers in the absence of a hint
     // from the server.
-    protected static final int DefaultSleepInterval = 8000;
+    protected static final int DefaultSleepInterval = 6000;
 
     // This seems a good amout of time to wait after a query that times out due to a
     // (hopefully) transient problem. Note this is for the benefit of the server, in
