@@ -175,7 +175,8 @@ public class DownloadableFileManager
                         currentlyEnabled ? " Connected to server. Re-enabling online access." : " Failed to connect to server. Disabling online access for now." //
                         ));
 
-                        if (!currentlyEnabled) {
+                        if (!currentlyEnabled)
+                        {
                             getDropProfiler().accumulate();
                         }
                     }
