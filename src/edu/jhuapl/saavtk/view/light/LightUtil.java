@@ -1,5 +1,7 @@
 package edu.jhuapl.saavtk.view.light;
 
+import edu.jhuapl.saavtk.gui.View;
+import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.Preferences;
@@ -29,10 +31,28 @@ public class LightUtil
 
 	/**
 	 * Utility method that sets the "system" {@link LightCfg}.
+	 * <p>
+	 * This method will have the following effects:
+	 * <ul>
+	 * <li>All top level {@link Renderer} lighting configuration being updated.
+	 * <li>Preferences being updated via the {@link Preferences} mechanism.
+	 * </ul>
 	 */
 	public static synchronized void setSystemLightCfg(LightCfg aLightCfg)
 	{
 		cLightCfg = aLightCfg;
+
+		// Update the lighting configuration for all top level Renderers
+		ViewManager tmpViewManager = ViewManager.getGlobalViewManager();
+		if (tmpViewManager != null)
+		{
+			for (View aView : tmpViewManager.getAllViews())
+			{
+				Renderer tmpRenderer = aView.getRenderer();
+				if (tmpRenderer != null)
+					tmpRenderer.setLightCfg(aLightCfg);
+			}
+		}
 
 		// Delegate serialization to Preferences object
 		Preferences.getInstance().put(Preferences.LIGHTING_TYPE, aLightCfg.getType().toString());
