@@ -145,11 +145,11 @@ public class DownloadableFileManager
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 checkProfiler.summarizeAllPerformance("Times elapsed between successful server access checks");
                 dropProfiler.summarizeAllPerformance("Times elapsed between connection status changes. First time is time of first DROPPED connection.");
-                
+
                 checkProfiler.deleteProfileArea();
                 dropProfiler.deleteProfileArea();
             }));
-            
+
             accessMonitor.execute(() -> {
 
                 while (enableMonitor)
@@ -862,7 +862,9 @@ public class DownloadableFileManager
     }
 
     /**
-     * Clears out previous profiler runs, then starts profiler.
+     * Clears out previous profiler runs, then starts profiler. Need to call this
+     * before calling {@link #startAccessMonitor()} to catch all events monitored by
+     * profiling.
      */
     public void enableProfiling()
     {
