@@ -325,6 +325,58 @@ public class Profiler
         return profilePath.get();
     }
 
+    @Override
+    public String toString()
+    {
+        StringBuilder builder = new StringBuilder("Profiler ");
+        builder.append(timeStampFileName.get());
+        builder.append(" ");
+
+        Long startTime = this.startTime.get();
+        if (startTime != null)
+        {
+            builder.append("started at ");
+            builder.append(startTime);
+        }
+        else
+        {
+            builder.append("(unstarted)");
+        }
+
+        builder.append(" has ");
+        
+        int numberTimes;
+        Long nextToLastTime = null;
+        Long lastTime = null;
+        synchronized (this.times)
+        {
+            numberTimes = times.size();
+            if (numberTimes > 1) {
+                nextToLastTime = times.get(numberTimes - 2);
+            }
+            if (numberTimes > 0) {
+                lastTime = times.get(numberTimes - 1);
+            }
+        }
+
+        builder.append(numberTimes);
+        builder.append(" times");
+        if (numberTimes > 1)
+        {
+            builder.append(", last two are ");
+            builder.append(nextToLastTime);
+            builder.append(", ");
+            builder.append(lastTime);
+        }
+        else if (numberTimes > 0)
+        {
+            builder.append(", last one is ");
+            builder.append(lastTime);            
+        }
+        
+        return builder.toString();
+    }
+
     /**
      * Test code.
      * 
