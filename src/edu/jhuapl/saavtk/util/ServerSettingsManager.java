@@ -212,6 +212,7 @@ public class ServerSettingsManager
             // before checking again.
             settings = new ServerSettings(true, AbsoluteMaximumQueryLength, DefaultSleepInterval);
             FileCacheMessageUtil.debugCache().err().println("No script to check server access: " + e.getClass().getName() + ": " + e.getMessage() + "\n\tUpdated server settings " + settings);
+            e.printStackTrace(FileCacheMessageUtil.debugCache().err());
         }
         catch (IOException e)
         {
@@ -219,6 +220,7 @@ public class ServerSettingsManager
             // probably not available now. Wait the standard post-timeout amount of time.
             settings = new ServerSettings(false, AbsoluteMaximumQueryLength, AfterTimeoutSleepInterval);
             FileCacheMessageUtil.debugCache().err().println("IOException checking server access: " + e.getClass().getName() + ": " + e.getMessage() + "\n\tUpdated server settings " + settings);
+            e.printStackTrace(FileCacheMessageUtil.debugCache().err());
         }
         catch (Exception e)
         {
@@ -238,6 +240,7 @@ public class ServerSettingsManager
                 settings = new ServerSettings(true, AbsoluteMaximumQueryLength, DefaultSleepInterval);
                 FileCacheMessageUtil.debugCache().err().println(e.getClass().getName() + ": " + e.getMessage() + "\n\tUpdated server settings " + settings);
             }
+            e.printStackTrace(FileCacheMessageUtil.debugCache().err());
         }
 
         synchronized (this.settings)
