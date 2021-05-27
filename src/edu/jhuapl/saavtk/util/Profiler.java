@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import com.github.davidmoten.guavamini.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import crucible.core.math.Statistics;
@@ -159,8 +160,8 @@ public class Profiler
             {
                 for (Long time : timesToReport)
                 {
-                    // Write the elapsed time, converting to ms.
-                    writer.printf("%#.2f\n", 1.e-6 * time);
+                    // Write the elapsed time, converting to seconds.
+                    writer.printf("%#.4f\n", 1.e-9 * time);
                 }
             }
             catch (Exception e)
@@ -176,8 +177,10 @@ public class Profiler
      * to a randomly named text file that begins with the same prefix as that
      * returned by the {@link #getProfilePathPrefix()} method.
      */
-    public void summarizeAllPerformance()
+    public void summarizeAllPerformance(String header)
     {
+        Preconditions.checkNotNull(header);
+
         if (!GlobalEnableProfiling.get())
         {
             return;
@@ -221,6 +224,7 @@ public class Profiler
             File summaryFile = SafeURLPaths.instance().get(getProfilePath().toString() + "-" + timeStampFileName).toFile();
             try (PrintStream s = new PrintStream(summaryFile))
             {
+                s.println(header);
                 if (stat != null)
                 {
                     s.printf("Number of data = %d\n", stat.getSamples());
