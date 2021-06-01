@@ -14,6 +14,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -45,8 +46,8 @@ public class Profiler
     protected final AtomicReference<Path> profilePath;
     protected final AtomicReference<String> timeStampFileName;
     protected final List<Long> times;
-
-    private String profilePathPrefix;
+    protected final AtomicInteger numberTimesReported;
+    private final String profilePathPrefix;
 
     public static void globalEnableProfiling(boolean enable)
     {
@@ -74,6 +75,7 @@ public class Profiler
         this.profilePath = new AtomicReference<>();
         this.timeStampFileName = new AtomicReference<>(UUID.randomUUID().toString() + ".txt");
         this.times = new ArrayList<>();
+        this.numberTimesReported = new AtomicInteger(0);
         this.profilePathPrefix = profilePathPrefix;
     }
 
@@ -132,6 +134,37 @@ public class Profiler
      */
     public void reportElapsedTimes()
     {
+        reportElapsedTimes(-1);
+    }
+
+    /**
+     * Write the elapsed times that have been accumulated up to this point in
+     * program execution to a randomly named file in the profiling directory. The
+     * written times are times between subsequent calls to the {@link #accumulate()}
+     * method.
+     * <p>
+     * The total number of values written with this signature of the
+     * reportElapsedTimes method is limited to the number specified by the
+     * maxNumberValues argument. This is so that the developer can ensure the same
+     * sample size is always used when comparing runtime scenarios. If
+     * maxNumberValues is negative, there will be no limit to the number of values
+     * written. If zero, no values will ever be written.
+     * <p>
+     * For a given instance of {@link Profiler}, the same random file name is always
+     * used by this method to report the time. This method appends to the output
+     * file each time this method is called, and discards the times after they are
+     * written.
+     * <p>
+     * The times written to the file will be floating point values giving the
+     * elapsed times in milli-seconds.
+     * <p>
+     * The I/O is performed on a dedicated thread to avoid using CPU cycles on the
+     * thread being profiled.
+     * 
+     * @param maxNumberValues the total number of values that will be written
+     */
+    public void reportElapsedTimes(int maxNumberValues)
+    {
         if (!GlobalEnableProfiling.get())
         {
             return;
@@ -140,7 +173,14 @@ public class Profiler
         ImmutableList<Long> timesToReport;
         synchronized (this.times)
         {
-            timesToReport = ImmutableList.copyOf(times);
+            // If the specified max number of values is non-negative, limit the total number
+            // written to that maximum. Otherwise, just write all the times.
+            int numberTimesToReport = maxNumberValues >= 0 ? Math.min(maxNumberValues - numberTimesReported.get(), times.size()) : times.size();
+
+            // Take a snapshot of the number of times, possibly limited by the maximum number above.
+            timesToReport = ImmutableList.copyOf(times.subList(0, numberTimesToReport));
+
+            numberTimesReported.addAndGet(numberTimesToReport);
             times.clear();
         }
 
@@ -344,17 +384,19 @@ public class Profiler
         }
 
         builder.append(" has ");
-        
+
         int numberTimes;
         Long nextToLastTime = null;
         Long lastTime = null;
         synchronized (this.times)
         {
             numberTimes = times.size();
-            if (numberTimes > 1) {
+            if (numberTimes > 1)
+            {
                 nextToLastTime = times.get(numberTimes - 2);
             }
-            if (numberTimes > 0) {
+            if (numberTimes > 0)
+            {
                 lastTime = times.get(numberTimes - 1);
             }
         }
@@ -371,9 +413,9 @@ public class Profiler
         else if (numberTimes > 0)
         {
             builder.append(", last one is ");
-            builder.append(lastTime);            
+            builder.append(lastTime);
         }
-        
+
         return builder.toString();
     }
 
