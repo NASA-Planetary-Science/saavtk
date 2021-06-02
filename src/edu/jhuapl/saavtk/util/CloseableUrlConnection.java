@@ -214,7 +214,7 @@ public class CloseableUrlConnection implements Closeable
         connection.setUseCaches(false);
         connection.setRequestProperty("User-Agent", "Mozilla/4.0");
         connection.setConnectTimeout(5000);
-        connection.setReadTimeout(10000);
+        connection.setReadTimeout(30000);
 
         return connection;
     }
