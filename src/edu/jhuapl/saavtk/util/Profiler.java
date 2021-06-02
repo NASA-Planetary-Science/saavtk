@@ -171,18 +171,17 @@ public class Profiler
         }
 
         ImmutableList<Long> timesToReport;
-        int numberTimesToReport;
         synchronized (this.times)
         {
             // If the specified max number of values is non-negative, limit the total number
             // written to that maximum. Otherwise, just write all the times.
-            numberTimesToReport = maxNumberValues >= 0 ? Math.min(maxNumberValues - numberTimesReported.get(), times.size()) : times.size();
+            int numberTimesToReport = maxNumberValues >= 0 ? Math.min(maxNumberValues - numberTimesReported.get(), times.size()) : times.size();
 
             // Take a snapshot of the number of times, possibly limited by the maximum
             // number above.
-            timesToReport = ImmutableList.copyOf(times.subList(0, numberTimesToReport));
+            timesToReport = numberTimesToReport > 0 ? ImmutableList.copyOf(times.subList(0, numberTimesToReport)) : ImmutableList.of();
 
-            numberTimesReported.addAndGet(numberTimesToReport);
+            numberTimesReported.addAndGet(times.size());
 
             times.clear();
         }
@@ -205,11 +204,6 @@ public class Profiler
                     writer.printf("%#.4f\n", 1.e-9 * time);
                 }
                 FileCacheMessageUtil.debugCache().out().println("Wrote performance data for " + profilePathPrefix + " to " + timeStampFileName.get());
-
-                synchronized (this.times)
-                {
-                    numberTimesReported.addAndGet(numberTimesToReport);
-                }
             }
             catch (Exception e)
             {

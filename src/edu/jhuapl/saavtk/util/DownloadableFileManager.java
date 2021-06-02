@@ -868,8 +868,8 @@ public class DownloadableFileManager
      */
     public void enableProfiling()
     {
-        getCheckProfiler().deleteProfileArea();
-        getDropProfiler().deleteProfileArea();
+//        getCheckProfiler().deleteProfileArea();
+//        getDropProfiler().deleteProfileArea();
 
         Profiler.globalEnableProfiling(true);
     }
