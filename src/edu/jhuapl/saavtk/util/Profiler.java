@@ -171,16 +171,19 @@ public class Profiler
         }
 
         ImmutableList<Long> timesToReport;
+        int numberTimesToReport;
         synchronized (this.times)
         {
             // If the specified max number of values is non-negative, limit the total number
             // written to that maximum. Otherwise, just write all the times.
-            int numberTimesToReport = maxNumberValues >= 0 ? Math.min(maxNumberValues - numberTimesReported.get(), times.size()) : times.size();
+            numberTimesToReport = maxNumberValues >= 0 ? Math.min(maxNumberValues - numberTimesReported.get(), times.size()) : times.size();
 
-            // Take a snapshot of the number of times, possibly limited by the maximum number above.
+            // Take a snapshot of the number of times, possibly limited by the maximum
+            // number above.
             timesToReport = ImmutableList.copyOf(times.subList(0, numberTimesToReport));
 
             numberTimesReported.addAndGet(numberTimesToReport);
+
             times.clear();
         }
 
@@ -194,8 +197,6 @@ public class Profiler
             profileDirPath.toFile().mkdirs();
             Path profileFilePath = profileDirPath.resolve(timeStampFileName.get());
 
-            FileCacheMessageUtil.info().println("Writing performance data for " + profilePathPrefix + " to " + timeStampFileName.get());
-
             try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(profileFilePath, StandardOpenOption.CREATE, StandardOpenOption.APPEND)))
             {
                 for (Long time : timesToReport)
@@ -203,10 +204,17 @@ public class Profiler
                     // Write the elapsed time, converting to seconds.
                     writer.printf("%#.4f\n", 1.e-9 * time);
                 }
+                FileCacheMessageUtil.debugCache().out().println("Wrote performance data for " + profilePathPrefix + " to " + timeStampFileName.get());
+
+                synchronized (this.times)
+                {
+                    numberTimesReported.addAndGet(numberTimesToReport);
+                }
             }
             catch (Exception e)
             {
-//            e.printStackTrace();
+                FileCacheMessageUtil.debugCache().err().println("Failed to write performance data for " + profilePathPrefix + " to " + timeStampFileName.get());
+                e.printStackTrace(FileCacheMessageUtil.debugCache().err());
             }
         });
     }
