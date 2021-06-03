@@ -198,6 +198,30 @@ public class DownloadableFileManager
         }
     }
 
+    /**
+     * Check access for all URLs that are managed by the cache. There are two
+     * mechanisms for performing these checks. The preferred way uses a script that
+     * checks access to multiple URLs locally on the server. This uses the script
+     * checkfilesystemaccess.php, which in turn uses the
+     * {@link edu.jhuapl.sbmt.tools.CheckUserAccess} tool.
+     * <p>
+     * Should an exception indicate the server-side script is not present several
+     * times in a row, this method falls back on less desirable legacy behavior, in
+     * which each file is checked one-at-a-time.
+     * <p>
+     * Because the cache connects each URL with a local file, both of these
+     * mechanisms also perform local file system checks. This is the reason for the
+     * odd-looking enableServerCheck parameter, which in effect disables only the
+     * URL/online portion of the update, but still checks file accessibility.
+     * <p>
+     * This method catches all exceptions.
+     * 
+     * @param enableServerCheck if true, check both URL on server and local file
+     *            system accessibility. If false, check only file system
+     * @param forceUpdate if true, all files will be updated even if they were
+     *            previously checked. If false, only "new" URLs that were added to
+     *            the cache since the last check will be checked.
+     */
     protected void updateAccessAllUrls(boolean enableServerCheck, boolean forceUpdate)
     {
         try
@@ -235,8 +259,9 @@ public class DownloadableFileManager
         }
         catch (Exception e)
         {
-            // Probably this indicates a problem with the internet connection. This will be
-            // tested the next time the loop executes.
+            // Probably this indicates a transient problem with the internet connection.
+            // Update the exception count, log the failure if debugging, but otherwise just
+            // continue; this check will be attempted again.
             e.printStackTrace(FileCacheMessageUtil.debugCache().err());
             consecutiveServerSideCheckExceptionCount.incrementAndGet();
         }
