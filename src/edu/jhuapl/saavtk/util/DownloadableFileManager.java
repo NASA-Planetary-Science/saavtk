@@ -86,8 +86,8 @@ public class DownloadableFileManager
     private volatile boolean enableMonitor;
     private final AtomicBoolean enableAccessChecksOnServer;
     private final AtomicReference<URL> checkFileAccessScriptURL;
-    private final AtomicInteger consecutiveFileNotFoundExceptionCount;
-    private static final int maximumConsecutiveFileNotFoundExceptions = 2;
+    private final AtomicInteger consecutiveServerSideCheckExceptionCount;
+    private static final int maximumConsecutiveServerSideCheckExceptions = 2;
     private static final AtomicReference<String> profileAreaPrefix = new AtomicReference<>(null);
     private final AtomicReference<Profiler> checkProfiler;
     private final AtomicReference<Profiler> dropProfiler;
@@ -103,7 +103,7 @@ public class DownloadableFileManager
         // Currently no option to change this field through a method call; this is just
         // for debugging:
         this.enableAccessChecksOnServer = new AtomicBoolean(true);
-        this.consecutiveFileNotFoundExceptionCount = new AtomicInteger();
+        this.consecutiveServerSideCheckExceptionCount = new AtomicInteger();
         this.checkProfiler = new AtomicReference<>();
         this.dropProfiler = new AtomicReference<>();
     }
@@ -176,7 +176,7 @@ public class DownloadableFileManager
                         currentlyEnabled ? " Connected to server. Re-enabling online access." : " Failed to connect to server. Disabling online access for now." //
                         ));
 
-                        dropProfiler.accumulate();
+                        getDropProfiler().accumulate();
                     }
 
                     updateAccessAllUrls(currentlyEnabled && Configuration.getAuthorizor().isAuthorized(), false);
@@ -198,35 +198,11 @@ public class DownloadableFileManager
         }
     }
 
-    /**
-     * Check access for all URLs that are managed by the cache. There are two
-     * mechanisms for performing these checks. The preferred way uses a script that
-     * checks access to multiple URLs locally on the server. This uses the script
-     * checkfilesystemaccess.php, which in turn uses the
-     * {@link edu.jhuapl.sbmt.tools.CheckUserAccess} tool.
-     * <p>
-     * Should an exception indicate the server-side script is not present several
-     * times in a row, this method falls back on less desirable legacy behavior, in
-     * which each file is checked one-at-a-time.
-     * <p>
-     * Because the cache connects each URL with a local file, both of these
-     * mechanisms also perform local file system checks. This is the reason for the
-     * odd-looking enableServerCheck parameter, which in effect disables only the
-     * URL/online portion of the update, but still checks file accessibility.
-     * <p>
-     * This method catches all exceptions.
-     * 
-     * @param enableServerCheck if true, check both URL on server and local file
-     *            system accessibility. If false, check only file system
-     * @param forceUpdate if true, all files will be updated even if they were
-     *            previously checked. If false, only "new" URLs that were added to
-     *            the cache since the last check will be checked.
-     */
     protected void updateAccessAllUrls(boolean enableServerCheck, boolean forceUpdate)
     {
         try
         {
-            if (consecutiveFileNotFoundExceptionCount.get() >= maximumConsecutiveFileNotFoundExceptions)
+            if (consecutiveServerSideCheckExceptionCount.get() >= maximumConsecutiveServerSideCheckExceptions)
             {
                 FileCacheMessageUtil.debugCache().err().println("URL status check on server failed too many times; disabling.");
                 enableAccessChecksOnServer.set(false);
@@ -235,16 +211,9 @@ public class DownloadableFileManager
             // Only call doAccessCheckOnServer if web access is currently enabled.
             if (enableAccessChecksOnServer.get() && enableServerCheck)
             {
-                try
+                if (!doAccessCheckOnServer(forceUpdate))
                 {
-                    doAccessCheckOnServer(forceUpdate);
-                }
-                catch (FileNotFoundException e)
-                {
-                    // Probably this means the script really is not there on the server.
-                    consecutiveFileNotFoundExceptionCount.incrementAndGet();
-                    FileCacheMessageUtil.debugCache().err().println("Could not find URL checking script " + checkFileAccessScriptURL.get());
-                    throw e;
+                    throw new NoInternetAccessException("Access check on server failed", checkFileAccessScriptURL.get());
                 }
             }
             else
@@ -261,16 +230,17 @@ public class DownloadableFileManager
                 queryAll(enableServerCheck, forceUpdate);
             }
 
-            consecutiveFileNotFoundExceptionCount.set(0);
+            consecutiveServerSideCheckExceptionCount.set(0);
             enableAccessChecksOnServer.set(true);
         }
         catch (Exception e)
         {
-            // Probably this indicates a transient problem with the internet connection. Log
-            // the failure if debugging, but otherwise just continue; this check will be
-            // attempted again.
+            // Probably this indicates a problem with the internet connection. This will be
+            // tested the next time the loop executes.
             e.printStackTrace(FileCacheMessageUtil.debugCache().err());
+            consecutiveServerSideCheckExceptionCount.incrementAndGet();
         }
+
     }
 
     public synchronized void stopAccessMonitor()
@@ -305,8 +275,10 @@ public class DownloadableFileManager
      * @throws IOException if a connection cannot be opened to the server-side
      *             script
      */
-    protected void doAccessCheckOnServer(boolean forceUpdate) throws IOException
+    protected boolean doAccessCheckOnServer(boolean forceUpdate) throws IOException
     {
+        boolean result = true;
+
         if (checkFileAccessScriptURL.get() == null)
         {
             checkFileAccessScriptURL.set(new URL(SafeURLPaths.instance().getString(Configuration.getQueryRootURL(), "checkfilesystemaccess.php")));
@@ -346,8 +318,14 @@ public class DownloadableFileManager
         ListIterator<String> iterator = urlList.listIterator();
         while (iterator.hasNext())
         {
-            doAccessCheckOnServer(getUserAccessPhp, iterator, forceUpdate);
+            if (!doAccessCheckOnServer(getUserAccessPhp, iterator, forceUpdate))
+            {
+                result = false;
+                break;
+            }
         }
+
+        return result;
     }
 
     /**
@@ -358,8 +336,7 @@ public class DownloadableFileManager
      * VERY IMPORTANT: this method needs to be kept in synch with the way clients
      * work to accept the queries, run them on the server and return the results. In
      * particular, this method escapes HTTP code, which must be "unescaped" by the
-     * script that checks the files on the server. See
-     * {@link edu.jhuapl.sbmt.tools.CheckUserAccess}.
+     * script that checks the files on the server.
      * 
      * @param getUserAccessPhp the URL of the server-side script for performing the
      *            check
@@ -376,12 +353,13 @@ public class DownloadableFileManager
      *             script
      * 
      */
-    protected void doAccessCheckOnServer(URL getUserAccessPhp, ListIterator<String> iterator, boolean forceUpdate) throws IOException
+    protected boolean doAccessCheckOnServer(URL getUserAccessPhp, ListIterator<String> iterator, boolean forceUpdate) throws IOException
     {
+        boolean result = false;
         String userName = Configuration.getAuthorizor().getUserName();
         if (userName == null)
         {
-            return;
+            return result;
         }
 
         try (CloseableUrlConnection closeableConn = CloseableUrlConnection.of(getUserAccessPhp, HttpRequestMethod.GET))
@@ -505,8 +483,18 @@ public class DownloadableFileManager
                 {
                     FileCacheMessageUtil.debugCache().err().println("Server-side access check returned empty list");
                 }
+
+                result = true;
+
+            }
+            catch (FileNotFoundException e)
+            {
+                FileCacheMessageUtil.debugCache().err().println("Server-side access check failed");
+                e.printStackTrace(FileCacheMessageUtil.debugCache().err());
             }
         }
+
+        return result;
     }
 
     public boolean isServerAccessEnabled()
