@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Preconditions;
@@ -86,8 +85,6 @@ public class DownloadableFileManager
     private volatile boolean enableMonitor;
     private final AtomicBoolean enableAccessChecksOnServer;
     private final AtomicReference<URL> checkFileAccessScriptURL;
-    private final AtomicInteger consecutiveServerSideCheckExceptionCount;
-    private static final int maximumConsecutiveServerSideCheckExceptions = 2;
     private static final AtomicReference<String> profileAreaPrefix = new AtomicReference<>(null);
     private final AtomicReference<Profiler> checkProfiler;
     private final AtomicReference<Profiler> dropProfiler;
@@ -103,7 +100,6 @@ public class DownloadableFileManager
         // Currently no option to change this field through a method call; this is just
         // for debugging:
         this.enableAccessChecksOnServer = new AtomicBoolean(true);
-        this.consecutiveServerSideCheckExceptionCount = new AtomicInteger();
         this.checkProfiler = new AtomicReference<>();
         this.dropProfiler = new AtomicReference<>();
     }
@@ -205,9 +201,9 @@ public class DownloadableFileManager
      * checkfilesystemaccess.php, which in turn uses the
      * {@link edu.jhuapl.sbmt.tools.CheckUserAccess} tool.
      * <p>
-     * Should an exception indicate the server-side script is not present several
-     * times in a row, this method falls back on less desirable legacy behavior, in
-     * which each file is checked one-at-a-time.
+     * Should an exception indicate the server-side script is not present, this
+     * method falls back on less desirable legacy behavior, in which each file is
+     * checked one-at-a-time.
      * <p>
      * Because the cache connects each URL with a local file, both of these
      * mechanisms also perform local file system checks. This is the reason for the
@@ -224,48 +220,44 @@ public class DownloadableFileManager
      */
     protected void updateAccessAllUrls(boolean enableServerCheck, boolean forceUpdate)
     {
-        try
-        {
-            if (consecutiveServerSideCheckExceptionCount.get() >= maximumConsecutiveServerSideCheckExceptions)
-            {
-                FileCacheMessageUtil.debugCache().err().println("URL status check on server failed too many times; disabling.");
-                enableAccessChecksOnServer.set(false);
-            }
+        boolean fallBack = false;
 
-            // Only call doAccessCheckOnServer if web access is currently enabled.
-            if (enableAccessChecksOnServer.get() && enableServerCheck)
+        synchronized (this.enableAccessChecksOnServer)
+        {
+            fallBack = !enableAccessChecksOnServer.get();
+
+            if (enableServerCheck && !fallBack)
             {
-                if (!doAccessCheckOnServer(forceUpdate))
+                try
                 {
-                    throw new NoInternetAccessException("Access check on server failed", checkFileAccessScriptURL.get());
+                    if (!doAccessCheckOnServer(forceUpdate))
+                    {
+                        // A return of false indicates serverside check is "permanently" not available,
+                        // so disable it for the remainder of this tool run.
+                        fallBack = true;
+                        enableAccessChecksOnServer.set(false);
+                        FileCacheMessageUtil.err().println("Falling back on file-by-file access check");
+//                        getDropProfiler().accumulate();
+                    }
+                }
+                catch (Exception e)
+                {
+                    // Probably this indicates a transient problem with the internet connection. Log
+                    // the failure if debugging, but otherwise just continue; this check will be
+                    // attempted again.
+                    e.printStackTrace(FileCacheMessageUtil.debugCache().err());
                 }
             }
-            else
-            {
-                if (!enableAccessChecksOnServer.get())
-                {
-                    FileCacheMessageUtil.debugCache().err().println("Falling back on file-by-file access check");
-                }
-
-                // Safe and necessary to call this, even if server access is currently disabled,
-                // because this method will skip URL checks but still perform file-system
-                // accessibility checks. Also it informs listeners of the change of
-                // accessibility status of URLs.
-                queryAll(enableServerCheck, forceUpdate);
-            }
-
-            consecutiveServerSideCheckExceptionCount.set(0);
-            enableAccessChecksOnServer.set(true);
         }
-        catch (Exception e)
+
+        if (fallBack)
         {
-            // Probably this indicates a transient problem with the internet connection.
-            // Update the exception count, log the failure if debugging, but otherwise just
-            // continue; this check will be attempted again.
-            e.printStackTrace(FileCacheMessageUtil.debugCache().err());
-            consecutiveServerSideCheckExceptionCount.incrementAndGet();
+            // Safe and necessary to call this, even if server access is currently disabled,
+            // because this method will skip URL checks but still perform file-system
+            // accessibility checks. Also it informs listeners of the change of
+            // accessibility status of URLs.
+            queryAll(enableServerCheck, forceUpdate);
         }
-
     }
 
     public synchronized void stopAccessMonitor()
@@ -514,7 +506,7 @@ public class DownloadableFileManager
             }
             catch (FileNotFoundException e)
             {
-                FileCacheMessageUtil.debugCache().err().println("Server-side access check failed");
+                FileCacheMessageUtil.debugCache().err().println("Server-side access script missing");
                 e.printStackTrace(FileCacheMessageUtil.debugCache().err());
             }
         }
