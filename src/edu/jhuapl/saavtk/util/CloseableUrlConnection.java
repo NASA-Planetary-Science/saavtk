@@ -133,11 +133,11 @@ public class CloseableUrlConnection implements Closeable
                 {
                     status = UrlStatus.ACCESSIBLE;
                 }
-                else if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN)
+                else if (code == HttpURLConnection.HTTP_UNAUTHORIZED)
                 {
                     status = UrlStatus.NOT_AUTHORIZED;
                 }
-                else if (code == HttpURLConnection.HTTP_NOT_FOUND)
+                else if (code == HttpURLConnection.HTTP_NOT_FOUND || code == HttpURLConnection.HTTP_FORBIDDEN)
                 {
                     status = UrlStatus.NOT_FOUND;
                 }
