@@ -456,9 +456,8 @@ public class DownloadableFileManager
             }
 
             // Now process the results of the query.
-            try (InputStreamReader isr = new InputStreamReader(conn.getInputStream()))
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream())))
             {
-                BufferedReader in = new BufferedReader(isr);
                 boolean someOutput = false;
                 while (in.ready())
                 {
@@ -943,9 +942,8 @@ public class DownloadableFileManager
                     wr.flush();
                 }
 
-                try (InputStreamReader isr = new InputStreamReader(conn.getInputStream()))
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream())))
                 {
-                    BufferedReader in = new BufferedReader(isr);
                     while (in.ready())
                     {
                         String line = in.readLine();
