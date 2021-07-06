@@ -19,7 +19,7 @@ public class ConvertResourceToFile
 
         try
         {
-            InputStream ris = c.getResourceAsStream(resource);
+            InputStream ris = ConvertResourceToFile.class.getResourceAsStream(resource);
             FileInputStream fis = new FileInputStream(file);
 
             equals = IOUtils.contentEquals(ris, fis);
@@ -60,7 +60,7 @@ public class ConvertResourceToFile
 
         try
         {
-            InputStream is = c.getResourceAsStream(resource);
+            InputStream is = ConvertResourceToFile.class.getResourceAsStream(resource);
 
             FileOutputStream os = new FileOutputStream(file);
 
@@ -91,7 +91,7 @@ public class ConvertResourceToFile
             temp = File.createTempFile("resource-", null);
             temp.deleteOnExit();
 
-            InputStream is = o.getClass().getResourceAsStream(resource);
+            InputStream is = ConvertResourceToFile.class.getResourceAsStream(resource);
 
             FileOutputStream os = new FileOutputStream(temp);
 
