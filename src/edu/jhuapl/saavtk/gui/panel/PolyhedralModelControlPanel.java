@@ -451,7 +451,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             {
                 // In the following we ensure that the graticule is shown
                 // only if the shape model is shown
-                Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
+                Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE).get(0);
                 if (e.getStateChange() == ItemEvent.SELECTED)
                 {
                     smallBodyModel.setShowSmallBody(true);
@@ -478,7 +478,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             }
             else if (e.getItemSelectable() == this.gridCheckBox)
             {
-                Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
+                Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE).get(0);
                 if (graticule != null)
                 {
                     if (e.getStateChange() == ItemEvent.SELECTED)
@@ -499,7 +499,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ItemListener,
             }
             else if (e.getItemSelectable() == this.gridLabelCheckBox)
             {
-                Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
+                Graticule graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE).get(0);
                 if (graticule != null)
                 {
                     if (e.getStateChange() == ItemEvent.SELECTED)

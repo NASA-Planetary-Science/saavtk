@@ -163,11 +163,11 @@ public class LoadEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 //					it.close();
 //				}
 //			}
-			if (refStructureManager == refModelManager.getModel(ModelNames.POINT_STRUCTURES))
+			if (refStructureManager == refModelManager.getModel(ModelNames.POINT_STRUCTURES).get(0))
 			{
 				if (filePath.toFile().exists())
 				{
-					PointModel model = (PointModel) refModelManager.getModel(ModelNames.POINT_STRUCTURES);
+					PointModel model = (PointModel) refModelManager.getModel(ModelNames.POINT_STRUCTURES).get(0);
 					FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.pointType);
 					FeatureIterator<Feature> it = features.features();
 					List<Feature> flist = Lists.newArrayList();
@@ -181,12 +181,12 @@ public class LoadEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 						Feature f = flist.get(m);
 						updateStatusBar(f, m, flist.size());
 						PointStructure ps = FeatureUtil.createPointStructureFrom((SimpleFeature) flist.get(m),
-								(GenericPolyhedralModel) refModelManager.getModel(ModelNames.SMALL_BODY));
+								(GenericPolyhedralModel) refModelManager.getModel(ModelNames.SMALL_BODY).get(0));
 						model.addNewStructure(ps.getCentroid());
 					}
 				}
 			}
-			else if (refStructureManager == refModelManager.getModel(ModelNames.LINE_STRUCTURES))
+			else if (refStructureManager == refModelManager.getModel(ModelNames.LINE_STRUCTURES).get(0))
 			{
 				if (filePath.toFile().exists() == false)
 					return;
@@ -203,7 +203,7 @@ public class LoadEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 
 				// Retrieve the LineManager and the current list of installed lines
 				// Note that lines are appended to the LineManager rather than replaced
-				LineModel<PolyLine> tmpManager = (LineModel) refModelManager.getModel(ModelNames.LINE_STRUCTURES);
+				LineModel<PolyLine> tmpManager = (LineModel) refModelManager.getModel(ModelNames.LINE_STRUCTURES).get(0);
 				List<PolyLine> fullL = new ArrayList<>(tmpManager.getAllItems());
 				int nextId = StructureMiscUtil.calcNextId(tmpManager);
 
@@ -214,7 +214,7 @@ public class LoadEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 					updateStatusBar(f, m, flist.size());
 					// System.out.println("reading line structure: "+f);
 					LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f,
-							(GenericPolyhedralModel) refModelManager.getModel(ModelNames.SMALL_BODY));
+							(GenericPolyhedralModel) refModelManager.getModel(ModelNames.SMALL_BODY).get(0));
 
 					// Synthesize the control points
 					List<LatLon> controlPointL = new ArrayList<>();
@@ -229,7 +229,7 @@ public class LoadEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 						LatLon latlon = MathUtil.reclat(pt);
 						// System.out.println(latlon.lat + " " + latlon.lon);
 						GenericPolyhedralModel body = (GenericPolyhedralModel) refModelManager
-								.getModel(ModelNames.SMALL_BODY);
+								.getModel(ModelNames.SMALL_BODY).get(0);
 						double[] intersectPoint = new double[3];
 						body.getPointAndCellIdFromLatLon(latlon.lat, latlon.lon, intersectPoint);
 
@@ -246,7 +246,7 @@ public class LoadEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 				// Install the lines
 				tmpManager.setAllItems(fullL);
 			}
-			else if (refStructureManager == refModelManager.getModel(ModelNames.POLYGON_STRUCTURES))
+			else if (refStructureManager == refModelManager.getModel(ModelNames.POLYGON_STRUCTURES).get(0))
 			{
 				if (filePath.toFile().exists() == false)
 					return;
@@ -264,7 +264,7 @@ public class LoadEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 
 				// Retrieve the PolygonManager and the current list of installed lines
 				// Note that polygons are appended to the LineManager rather than replaced
-				PolygonModel tmpManager = (PolygonModel) refModelManager.getModel(ModelNames.POLYGON_STRUCTURES);
+				PolygonModel tmpManager = (PolygonModel) refModelManager.getModel(ModelNames.POLYGON_STRUCTURES).get(0);
 				List<Polygon> fullL = new ArrayList<>(tmpManager.getAllItems());
 				int nextId = StructureMiscUtil.calcNextId(tmpManager);
 
@@ -275,7 +275,7 @@ public class LoadEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 					updateStatusBar(f, m, flist.size());
 					// System.out.println("reading line structure: "+f);
 					LineStructure ls = FeatureUtil.createLineStructureFrom((SimpleFeature) f,
-							(GenericPolyhedralModel) refModelManager.getModel(ModelNames.SMALL_BODY));
+							(GenericPolyhedralModel) refModelManager.getModel(ModelNames.SMALL_BODY).get(0));
 
 					// Synthesize the control points
 					List<LatLon> controlPointL = new ArrayList<>();
@@ -290,7 +290,7 @@ public class LoadEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 						LatLon latlon = MathUtil.reclat(pt);
 						// System.out.println(latlon.lat + " " + latlon.lon);
 						GenericPolyhedralModel body = (GenericPolyhedralModel) refModelManager
-								.getModel(ModelNames.SMALL_BODY);
+								.getModel(ModelNames.SMALL_BODY).get(0);
 						double[] intersectPoint = new double[3];
 						body.getPointAndCellIdFromLatLon(latlon.lat, latlon.lon, intersectPoint);
 

@@ -263,7 +263,7 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
             if (modelManager != null)
             {
                 PolyhedralModel smallBodyModel =
-                        (PolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY);
+                        (PolyhedralModel) modelManager.getModel(ModelNames.SMALL_BODY).get(0);
                 try
                 {
                     smallBodyModel.reloadShapeModel();

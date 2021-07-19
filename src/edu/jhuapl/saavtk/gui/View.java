@@ -11,6 +11,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.BorderFactory;
@@ -337,7 +338,7 @@ public abstract class View extends JPanel
         popupManager.registerPopup(model, menu);
     }
 
-    protected Model getModel(ModelNames name)
+    protected List<Model> getModel(ModelNames name)
     {
         return modelManager.getModel(name);
     }

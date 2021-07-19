@@ -37,7 +37,7 @@ public class GraticulePopupMenu extends PopupMenu
 
     public GraticulePopupMenu(ModelManager modelManager, Component invoker) throws AWTException
     {
-        this.graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE);
+        this.graticule = (Graticule) modelManager.getModel(ModelNames.GRATICULE).get(0);
         this.invoker = invoker;
 
         colorMenuItem = new JMenuItem(new ChangeColorAction());

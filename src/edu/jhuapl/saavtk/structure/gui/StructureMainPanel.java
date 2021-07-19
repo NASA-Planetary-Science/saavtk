@@ -148,12 +148,12 @@ public class StructureMainPanel extends JPanel implements ActionListener
 		PopupButton retB = new PopupButton("ESRI...");
 
 		StructureManager<?> pathStructureManager = (StructureManager<?>) refModelManager
-				.getModel(ModelNames.LINE_STRUCTURES);
+				.getModel(ModelNames.LINE_STRUCTURES).get(0);
 		retB.getPopup().add(new JMenuItem(new LoadEsriShapeFileAction<>(this, "Load Path Shapefile Datastore",
 				pathStructureManager, refModelManager, aStatusNotifier)));
 
 		StructureManager<?> polygonStructureManager = (StructureManager<?>) refModelManager
-				.getModel(ModelNames.POLYGON_STRUCTURES);
+				.getModel(ModelNames.POLYGON_STRUCTURES).get(0);
 		retB.getPopup().add(new JMenuItem(new LoadEsriShapeFileAction<>(this, "Load Polygon Shapefile Datastore",
 				polygonStructureManager, refModelManager, aStatusNotifier)));
 
@@ -168,7 +168,7 @@ public class StructureMainPanel extends JPanel implements ActionListener
 		retB.getPopup().add(ellipseMI);
 
 		StructureManager<?> pointStructureManager = (StructureManager<?>) refModelManager
-				.getModel(ModelNames.POINT_STRUCTURES);
+				.getModel(ModelNames.POINT_STRUCTURES).get(0);
 		retB.getPopup().add(new JMenuItem(new LoadEsriShapeFileAction<>(this, "Load Point Shapefile Datastore",
 				pointStructureManager, refModelManager, aStatusNotifier)));
 
@@ -186,7 +186,7 @@ public class StructureMainPanel extends JPanel implements ActionListener
 				ModelNames.ELLIPSE_STRUCTURES, ModelNames.POINT_STRUCTURES };
 		for (ModelNames aKey : keyArr)
 		{
-			StructureManager<?> tmpStructureManager = (StructureManager<?>) refModelManager.getModel(aKey);
+			StructureManager<?> tmpStructureManager = (StructureManager<?>) refModelManager.getModel(aKey).get(0);
 			retL.addAll(tmpStructureManager.getAllItems());
 		}
 

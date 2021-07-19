@@ -57,10 +57,10 @@ public class PickUtil
 	protected static Map<PickMode, Picker> formNonDefaultPickerMap(Renderer aRenderer, ModelManager aModelManager)
 	{
 		StructureManager<?> tmpCircleSelectionManager = (StructureManager<?>) aModelManager
-				.getModel(ModelNames.CIRCLE_SELECTION);
+				.getModel(ModelNames.CIRCLE_SELECTION).get(0);
 
 		Map<PickMode, Picker> retMap = new HashMap<>();
-		if (aModelManager.getModel(ModelNames.CIRCLE_STRUCTURES) != null)
+		if (aModelManager.getModel(ModelNames.CIRCLE_STRUCTURES).get(0) != null)
 			retMap.put(PickMode.CIRCLE_SELECTION,
 					new CircleSelectionPicker(aRenderer, aModelManager.getPolyhedralModel(), tmpCircleSelectionManager));
 
