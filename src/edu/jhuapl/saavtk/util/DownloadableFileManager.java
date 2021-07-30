@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Preconditions;
@@ -67,6 +66,18 @@ public class DownloadableFileManager
         return UrlEncoding;
     }
 
+    /**
+     * Set the prefix under which all profiling directories will be written. Call
+     * this early, before any file-cache-related action has started. The first time
+     * is called, the prefix will be set. Subsequent calls will be ignored.
+     * 
+     * @param prefix the prefix to use.
+     */
+    public static void setProfileAreaPrefix(String prefix)
+    {
+        profileAreaPrefix.compareAndSet(null, prefix);
+    }
+
     private final UrlAccessManager urlManager;
     private final FileAccessManager fileManager;
     private final Map<String, Map<StateListener, PropertyChangeListener>> listenerMap;
@@ -74,8 +85,9 @@ public class DownloadableFileManager
     private volatile boolean enableMonitor;
     private final AtomicBoolean enableAccessChecksOnServer;
     private final AtomicReference<URL> checkFileAccessScriptURL;
-    private final AtomicInteger consecutiveServerSideCheckExceptionCount;
-    private static final int maximumConsecutiveServerSideCheckExceptions = 2;
+    private static final AtomicReference<String> profileAreaPrefix = new AtomicReference<>(null);
+    private final AtomicReference<Profiler> checkProfiler;
+    private final AtomicReference<Profiler> dropProfiler;
 
     protected DownloadableFileManager(UrlAccessManager urlManager, FileAccessManager fileManager)
     {
@@ -88,7 +100,8 @@ public class DownloadableFileManager
         // Currently no option to change this field through a method call; this is just
         // for debugging:
         this.enableAccessChecksOnServer = new AtomicBoolean(true);
-        this.consecutiveServerSideCheckExceptionCount = new AtomicInteger();
+        this.checkProfiler = new AtomicReference<>();
+        this.dropProfiler = new AtomicReference<>();
     }
 
     /**
@@ -112,13 +125,40 @@ public class DownloadableFileManager
         {
             enableMonitor = true;
 
+            Profiler checkProfiler = getCheckProfiler();
+            Profiler dropProfiler = getDropProfiler();
+
+            // Do not explicitly start checkProfiler. Want the checkProfiler to measure
+            // time between subsequent checks.
+            // checkProfiler.start();
+
+            // Explicitly start the drop profiler as soon as profiling is enabled. Want the
+            // drop checker to measure every drop, including the very first.
+            // Note this will take effect only once: the first time this loop executes with
+            // profiling enabled.
+            dropProfiler.start();
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                checkProfiler.summarizeAllPerformance("Times elapsed between successful server access checks");
+                dropProfiler.summarizeAllPerformance("Times elapsed between connection status changes. First time is time of first DROPPED connection.");
+
+                checkProfiler.deleteProfileArea();
+                dropProfiler.deleteProfileArea();
+            }));
+
             accessMonitor.execute(() -> {
+
                 while (enableMonitor)
                 {
                     boolean initiallyEnabled = isServerAccessEnabled();
 
                     ServerSettings serverSettings = ServerSettingsManager.instance().update();
                     boolean currentlyEnabled = serverSettings.isServerAccessible();
+
+                    if (currentlyEnabled)
+                    {
+                        checkProfiler.accumulate();
+                    }
 
                     setEnableServerAccess(currentlyEnabled);
 
@@ -131,9 +171,14 @@ public class DownloadableFileManager
                         FileCacheMessageUtil.info().println(timeStamp + ( //
                         currentlyEnabled ? " Connected to server. Re-enabling online access." : " Failed to connect to server. Disabling online access for now." //
                         ));
+
+                        getDropProfiler().accumulate();
                     }
 
                     updateAccessAllUrls(currentlyEnabled && Configuration.getAuthorizor().isAuthorized(), false);
+
+                    checkProfiler.reportElapsedTimes();
+                    dropProfiler.reportElapsedTimes();
 
                     try
                     {
@@ -149,49 +194,70 @@ public class DownloadableFileManager
         }
     }
 
+    /**
+     * Check access for all URLs that are managed by the cache. There are two
+     * mechanisms for performing these checks. The preferred way uses a script that
+     * checks access to multiple URLs locally on the server. This uses the script
+     * checkfilesystemaccess.php, which in turn uses the
+     * {@link edu.jhuapl.sbmt.tools.CheckUserAccess} tool.
+     * <p>
+     * Should an exception indicate the server-side script is not present, this
+     * method falls back on less desirable legacy behavior, in which each file is
+     * checked one-at-a-time.
+     * <p>
+     * Because the cache connects each URL with a local file, both of these
+     * mechanisms also perform local file system checks. This is the reason for the
+     * odd-looking enableServerCheck parameter, which in effect disables only the
+     * URL/online portion of the update, but still checks file accessibility.
+     * <p>
+     * This method catches all exceptions.
+     * 
+     * @param enableServerCheck if true, check both URL on server and local file
+     *            system accessibility. If false, check only file system
+     * @param forceUpdate if true, all files will be updated even if they were
+     *            previously checked. If false, only "new" URLs that were added to
+     *            the cache since the last check will be checked.
+     */
     protected void updateAccessAllUrls(boolean enableServerCheck, boolean forceUpdate)
     {
-        try
-        {
-            if (consecutiveServerSideCheckExceptionCount.get() >= maximumConsecutiveServerSideCheckExceptions)
-            {
-                FileCacheMessageUtil.debugCache().err().println("URL status check on server failed too many times; disabling.");
-                enableAccessChecksOnServer.set(false);
-            }
+        boolean fallBack = false;
 
-            // Only call doAccessCheckOnServer if web access is currently enabled.
-            if (enableAccessChecksOnServer.get() && enableServerCheck)
+        synchronized (this.enableAccessChecksOnServer)
+        {
+            fallBack = !enableAccessChecksOnServer.get();
+
+            if (enableServerCheck && !fallBack)
             {
-                if (!doAccessCheckOnServer(forceUpdate))
+                try
                 {
-                    throw new NoInternetAccessException("Access check on server failed", checkFileAccessScriptURL.get());
+                    if (!doAccessCheckOnServer(forceUpdate))
+                    {
+                        // A return of false indicates serverside check is "permanently" not available,
+                        // so disable it for the remainder of this tool run.
+                        fallBack = true;
+                        enableAccessChecksOnServer.set(false);
+                        FileCacheMessageUtil.err().println("Falling back on file-by-file access check");
+//                        getDropProfiler().accumulate();
+                    }
+                }
+                catch (Exception e)
+                {
+                    // Probably this indicates a transient problem with the internet connection. Log
+                    // the failure if debugging, but otherwise just continue; this check will be
+                    // attempted again.
+                    e.printStackTrace(FileCacheMessageUtil.debugCache().err());
                 }
             }
-            else
-            {
-                if (!enableAccessChecksOnServer.get())
-                {
-                    FileCacheMessageUtil.debugCache().err().println("Falling back on file-by-file access check");
-                }
-
-                // Safe and necessary to call this, even if server access is currently disabled,
-                // because this method will skip URL checks but still perform file-system
-                // accessibility checks. Also it informs listeners of the change of
-                // accessibility status of URLs.
-                queryAll(enableServerCheck, forceUpdate);
-            }
-
-            consecutiveServerSideCheckExceptionCount.set(0);
-            enableAccessChecksOnServer.set(true);
         }
-        catch (Exception e)
+
+        if (fallBack)
         {
-            // Probably this indicates a problem with the internet connection. This will be
-            // tested the next time the loop executes.
-            e.printStackTrace(FileCacheMessageUtil.debugCache().err());
-            consecutiveServerSideCheckExceptionCount.incrementAndGet();
+            // Safe and necessary to call this, even if server access is currently disabled,
+            // because this method will skip URL checks but still perform file-system
+            // accessibility checks. Also it informs listeners of the change of
+            // accessibility status of URLs.
+            queryAll(enableServerCheck, forceUpdate);
         }
-
     }
 
     public synchronized void stopAccessMonitor()
@@ -390,9 +456,8 @@ public class DownloadableFileManager
             }
 
             // Now process the results of the query.
-            try (InputStreamReader isr = new InputStreamReader(conn.getInputStream()))
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream())))
             {
-                BufferedReader in = new BufferedReader(isr);
                 boolean someOutput = false;
                 while (in.ready())
                 {
@@ -440,7 +505,7 @@ public class DownloadableFileManager
             }
             catch (FileNotFoundException e)
             {
-                FileCacheMessageUtil.debugCache().err().println("Server-side access check failed");
+                FileCacheMessageUtil.debugCache().err().println("Server-side access script missing");
                 e.printStackTrace(FileCacheMessageUtil.debugCache().err());
             }
         }
@@ -800,6 +865,41 @@ public class DownloadableFileManager
         return querier.getDownloadableFileState();
     }
 
+    /**
+     * Clears out previous profiler runs, then starts profiler. Need to call this
+     * before calling {@link #startAccessMonitor()} to catch all events monitored by
+     * profiling.
+     */
+    public void enableProfiling()
+    {
+//        getCheckProfiler().deleteProfileArea();
+//        getDropProfiler().deleteProfileArea();
+
+        Profiler.globalEnableProfiling(true);
+    }
+
+    protected Profiler getCheckProfiler()
+    {
+        checkProfiler.compareAndSet(null, createProfiler("checks"));
+
+        return checkProfiler.get();
+    }
+
+    protected Profiler getDropProfiler()
+    {
+        dropProfiler.compareAndSet(null, createProfiler("drops"));
+
+        return dropProfiler.get();
+    }
+
+    protected Profiler createProfiler(String name)
+    {
+        String prefix = profileAreaPrefix.get();
+        prefix = prefix != null ? SafeURLPaths.instance().getString(prefix, name) : name;
+
+        return Profiler.of(prefix);
+    }
+
     protected static boolean isHeadless()
     {
         if (headless == null)
@@ -842,9 +942,8 @@ public class DownloadableFileManager
                     wr.flush();
                 }
 
-                try (InputStreamReader isr = new InputStreamReader(conn.getInputStream()))
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream())))
                 {
-                    BufferedReader in = new BufferedReader(isr);
                     while (in.ready())
                     {
                         String line = in.readLine();

@@ -133,11 +133,11 @@ public class CloseableUrlConnection implements Closeable
                 {
                     status = UrlStatus.ACCESSIBLE;
                 }
-                else if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN)
+                else if (code == HttpURLConnection.HTTP_UNAUTHORIZED)
                 {
                     status = UrlStatus.NOT_AUTHORIZED;
                 }
-                else if (code == HttpURLConnection.HTTP_NOT_FOUND)
+                else if (code == HttpURLConnection.HTTP_NOT_FOUND || code == HttpURLConnection.HTTP_FORBIDDEN)
                 {
                     status = UrlStatus.NOT_FOUND;
                 }
@@ -214,7 +214,7 @@ public class CloseableUrlConnection implements Closeable
         connection.setUseCaches(false);
         connection.setRequestProperty("User-Agent", "Mozilla/4.0");
         connection.setConnectTimeout(5000);
-        connection.setReadTimeout(10000);
+        connection.setReadTimeout(30000);
 
         return connection;
     }

@@ -55,7 +55,7 @@ public class LightingPanel extends GPanel implements ActionComponentProvider, Ac
 		statusL = new JLabel("");
 		add(statusL, "growx,span,w 0::,h 15::,wrap 0");
 
-		applyToAllViewsB = GuiUtil.createJButton("Apply To all Views", this);
+		applyToAllViewsB = GuiUtil.createJButton("Apply to All Views", this);
 
 		// Register for events of interest
 		refRenderer.addViewChangeListener(this);

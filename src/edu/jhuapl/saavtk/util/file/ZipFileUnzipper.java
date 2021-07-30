@@ -120,6 +120,14 @@ public class ZipFileUnzipper
                     try (InputStream inputStream = zipFile.getInputStream(entry))
                     {
                         String outputFileName = SAFE_URL_PATHS.getString(tempExtractToFolder.getPath(), entry.getName());
+
+                        // Ensure parent directory of output file exists.
+                        File parent = SAFE_URL_PATHS.get(outputFileName).toFile().getParentFile();
+                        if (!parent.isDirectory())
+                        {
+                            parent.mkdirs();
+                        }
+                        
                         try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFileName)))
                         {
                             StreamUnpacker unpacker = StreamUnpacker.of(inputStream, bufferSize);

@@ -182,18 +182,17 @@ public final class FileCache
         InputStream fs = new FileInputStream(file);
         if (filename.toLowerCase().endsWith(".gz"))
             fs = new GZIPInputStream(fs);
-        InputStreamReader isr = new InputStreamReader(fs);
-        BufferedReader in = new BufferedReader(isr);
 
         List<String> lines = new ArrayList<>();
-        String line;
-
-        while ((line = in.readLine()) != null)
-        {
-            lines.add(line);
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(fs)))
+        {            
+            String line;
+            
+            while ((line = in.readLine()) != null)
+            {
+                lines.add(line);
+            }
         }
-
-        in.close();
 
         return lines;
     }
