@@ -17,6 +17,7 @@ import edu.jhuapl.saavtk.color.table.ColorMapAttr;
 import edu.jhuapl.saavtk.color.table.ColorTableUtil;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.render.VtkPropProvider;
+import edu.jhuapl.saavtk.util.ScreenUtil;
 import edu.jhuapl.saavtk.view.ViewActionListener;
 import edu.jhuapl.saavtk.view.ViewChangeReason;
 import edu.jhuapl.saavtk.vtk.Location;
@@ -435,7 +436,7 @@ public class ColorBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 		// Perform initialization
 		if (cLocation == null)
 		{
-			SwingUtilities.invokeLater(() -> doInit());
+			SwingUtilities.invokeLater(() -> initPainter());
 			return ImmutableList.of();
 		}
 
@@ -498,8 +499,9 @@ public class ColorBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 		drawComponentsToNormalizedCoordinates();
 
 		// Retrieve the pixel dimension of the panel
-		int panelW = refRenderer.getRenderWindowPanel().getComponent().getWidth();
-		int panelH = refRenderer.getRenderWindowPanel().getComponent().getHeight();
+		var scale = ScreenUtil.getScreenScale(refRenderer.getRenderWindowPanel());
+		var panelW = refRenderer.getRenderWindowPanel().getComponent().getWidth() * scale;
+		var panelH = refRenderer.getRenderWindowPanel().getComponent().getHeight() * scale;
 
 		// Update the actor and widget associated with the color bar
 		double posX = cLocation.getPosX();
@@ -712,8 +714,9 @@ public class ColorBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 		Location bordLoc = calcBorderLocation(mainLoc);
 
 		// Compute the "reset" location of the color bar
-		int panelW = refRenderer.getRenderWindowPanel().getComponent().getWidth();
-		int panelH = refRenderer.getRenderWindowPanel().getComponent().getHeight();
+		var scale = ScreenUtil.getScreenScale(refRenderer.getRenderWindowPanel());
+		var panelW = refRenderer.getRenderWindowPanel().getComponent().getWidth() * scale;
+		var panelH = refRenderer.getRenderWindowPanel().getComponent().getHeight() * scale;
 
 		int barWid = mainLA.getBarWidth();
 		int barLen = mainLA.getBarLength();
@@ -769,21 +772,28 @@ public class ColorBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 	}
 
 	/**
-	 * Helper method that performs initialization.
+	 * Helper method that will complete the painter's initialization.
 	 */
-	private void doInit()
+	private void initPainter()
 	{
 		// Bail once we have a location
 		if (cLocation != null)
 			return;
 
+		// Bail if we do not have a valid scale
+		var scale = ScreenUtil.getScreenScale(refRenderer.getRenderWindowPanel());
+		if (Double.isNaN(scale) == true || scale <= 0.0)
+			return;
+
 		// Perform the initial font configuration
+		titleFA = new FontAttr("Arial", Color.WHITE, (int) (20 * scale), true, true, true);
+		labelFA = new FontAttr("Arial", Color.WHITE, (int) (16 * scale), true, false, false);
 		VtkFontUtil.setFontAttr(vTitleTA.GetTextProperty(), titleFA);
 
 		// Compute the initial bar length / width
-		int panelW = refRenderer.getRenderWindowPanel().getComponent().getWidth();
-		int panelH = refRenderer.getRenderWindowPanel().getComponent().getHeight();
-		boolean isHoriz = mainLA.getIsHorizontal();
+		var panelW = refRenderer.getRenderWindowPanel().getComponent().getWidth() * scale;
+		var panelH = refRenderer.getRenderWindowPanel().getComponent().getHeight() * scale;
+		var isHoriz = mainLA.getIsHorizontal();
 
 		int barLen, barWid;
 		if (isHoriz == true)
@@ -833,8 +843,9 @@ public class ColorBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 	 */
 	private Location retrieveBarLocation()
 	{
-		int panelW = refRenderer.getRenderWindowPanel().getComponent().getWidth();
-		int panelH = refRenderer.getRenderWindowPanel().getComponent().getHeight();
+		var scale = ScreenUtil.getScreenScale(refRenderer.getRenderWindowPanel());
+		var panelW = refRenderer.getRenderWindowPanel().getComponent().getWidth() * scale;
+		var panelH = refRenderer.getRenderWindowPanel().getComponent().getHeight() * scale;
 
 		double[] posArr = vBarSBA.GetPosition();
 		double[] dimArr = vBarSBA.GetPosition2();

@@ -4,12 +4,12 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.render.VtkPropProvider;
+import edu.jhuapl.saavtk.util.ScreenUtil;
 import edu.jhuapl.saavtk.view.ViewActionListener;
 import edu.jhuapl.saavtk.view.ViewChangeReason;
 import edu.jhuapl.saavtk.vtk.Location;
@@ -17,7 +17,6 @@ import edu.jhuapl.saavtk.vtk.VtkResource;
 import edu.jhuapl.saavtk.vtk.painter.VtkRectPainter;
 import vtk.vtkProp;
 import vtk.vtkTextActor;
-import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 /**
  * Painter used to render a scale bar onto a vtk scene.
@@ -33,6 +32,7 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 	private final Renderer refRenderer;
 
 	// State vars
+	private boolean isInit;
 	private boolean isVisible;
 	private double dimX, dimY;
 	private NumberFormat dispNF;
@@ -46,9 +46,10 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 	{
 		refRenderer = aRenderer;
 
+		isInit = false;
 		isVisible = true;
 		dimX = 150;
-		dimY = 16;
+		dimY = 20;
 		dispNF = new DecimalFormat("0.00");
 
 		vScaleBarRP = new VtkRectPainter();
@@ -149,10 +150,10 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 			return ImmutableList.of();
 
 		// Return the list of all vtkProps
-		List<vtkProp> retL = new ArrayList<>();
-		retL.addAll(vScaleBarRP.getProps());
-		retL.add(vScaleBarTA);
-		return retL;
+		var retPropL = new ArrayList<vtkProp>();
+		retPropL.addAll(vScaleBarRP.getProps());
+		retPropL.add(vScaleBarTA);
+		return retPropL;
 	}
 
 	@Override
@@ -171,11 +172,30 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 	@Override
 	public void vtkUpdateState()
 	{
+		initPainter();
 		updatePosition();
 		updateInfoMsg();
 
 		// Send out the update notification
 		refRenderer.notifySceneChange();
+	}
+
+	/**
+	 * Helper method that will complete the painter's initialization.
+	 */
+	private void initPainter()
+	{
+		// Bail if we have been initialized
+		if (isInit == true)
+			return;
+
+		// Bail if we do not have a valid scale
+		var scale = ScreenUtil.getScreenScale(refRenderer.getRenderWindowPanel());
+		if (Double.isNaN(scale) == true || scale <= 0.0)
+			return;
+
+		dimY = 20 * scale;
+		isInit = true;
 	}
 
 	/**
@@ -204,18 +224,19 @@ public class ScaleBarPainter implements ViewActionListener, VtkPropProvider, Vtk
 	private void updatePosition()
 	{
 		// Compute lower right corner
-		vtkJoglPanelComponent tmpRenWin = refRenderer.getRenderWindowPanel();
-		int compW = tmpRenWin.getComponent().getWidth();
-		int padAmt = 7;
-		double x = compW - dimX - padAmt;
-		double y = padAmt;
+		var tmpRenWin = refRenderer.getRenderWindowPanel();
+		var scale = ScreenUtil.getScreenScale(tmpRenWin);
+		var compW = tmpRenWin.getComponent().getWidth() * scale;
+		var padAmt = 7.0;
+		var x = compW - dimX - padAmt;
+		var y = padAmt;
 
 		// Update scale bar
 		vScaleBarRP.setLocation(new Location(x, y, dimX, dimY));
 
 		// Update scale bar text
-		int fontSize = (int) (dimY - 4);
-		vScaleBarTA.SetPosition(x + dimX / 2, y + 2);
+		var fontSize = (int) (dimY - 4);
+		vScaleBarTA.SetPosition(x + dimX / 2.0, y - (fontSize * 0.08));
 		vScaleBarTA.GetTextProperty().SetFontSize(fontSize);
 		vScaleBarTA.Modified();
 	}
