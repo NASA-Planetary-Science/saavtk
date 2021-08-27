@@ -384,7 +384,7 @@ public class StandardPlatePanel extends GPanel implements ActionListener, ColorB
 		if (isSwapped == true)
 		{
 			errMsg = "Min, Max values are swapped.";
-			fgColor = minValueNF.getFailColor();
+			fgColor = minValueNF.getColorFail();
 		}
 		minValueL.setForeground(fgColor);
 		maxValueL.setForeground(fgColor);

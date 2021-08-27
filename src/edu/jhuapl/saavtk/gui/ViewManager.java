@@ -32,6 +32,7 @@ import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.UnauthorizedAccessException;
+import edu.jhuapl.saavtk.view.light.gui.LightingConfigAction;
 import edu.jhuapl.saavtk.view.lod.gui.LodAction;
 import glum.misc.InitListener;
 
@@ -52,6 +53,9 @@ public abstract class ViewManager extends JPanel
     private volatile boolean initialViewSet;
 
     private List<InitListener> initListenerL;
+
+    /** Global that holds the {@link ViewManager} singleton. */
+    private static ViewManager globViewManager = null;
 
     /**
      * The top level frame is required so that the title can be updated when the
@@ -77,9 +81,22 @@ public abstract class ViewManager extends JPanel
 
         initListenerL = new ArrayList<>();
 
+        globViewManager = this;
+
         // Subclass constructors should call this. It should not be called here because
         // it is not final.
         // setupViews();
+    }
+
+    /**
+     * Returns the (global) singleton {@link ViewManager}.
+     * <p>
+     * This method provides access to the (typically) sole {@link ViewManager}.
+     * Returns null if a {@link ViewManager} has not been instantiated.
+     */
+    public static ViewManager getGlobalViewManager()
+    {
+        return globViewManager;
     }
 
     /**
@@ -115,6 +132,7 @@ public abstract class ViewManager extends JPanel
         viewMenu.add(new JMenuItem(new CameraRegularAction(this)));
         viewMenu.add(new JMenuItem(new CameraQuaternionAction(this)));
         viewMenu.add(new JMenuItem(new CameraRecorderAction(this)));
+        viewMenu.add(new JMenuItem(new LightingConfigAction(this)));
         viewMenu.add(new JMenuItem(new ScaleBarAction(this)));
 
         viewMenu.addSeparator();

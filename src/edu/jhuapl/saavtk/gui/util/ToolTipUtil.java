@@ -87,6 +87,40 @@ public class ToolTipUtil
 	}
 
 	/**
+	 * Returns the tool tip that should be used for "Reset: aMsg" buttons.
+	 *
+	 * @param aMsg The value that the control would be reset to.
+	 */
+	public static String getItemResetMsg(String aMsg)
+	{
+		return "Reset: " + aMsg;
+	}
+
+	/**
+	 * Returns the tool tip that should be used for the primary fixed-light button.
+	 */
+	public static String getLightFixed()
+	{
+		return "A Fixed Light is a light fixed in space that does not move with the virtual camera. Its intensity and positon can be changed below.";
+	}
+
+	/**
+	 * Returns the tool tip that should be used for the primary headlight button.
+	 */
+	public static String getLightHeadlight()
+	{
+		return "A Headlight is a single light always positioned at the virtual camera. It's intensity can be changed below.";
+	}
+
+	/**
+	 * Returns the tool tip that should be used for the primary "light kit" button.
+	 */
+	public static String getLightKit()
+	{
+		return "A Light Kit is a set of several lights of various strengths positioned to provide suitable illumination for most situations.";
+	}
+
+	/**
 	 * Returns the tool tip that should be used for "Add Profile" buttons
 	 */
 	public static String getProfileAdd()
@@ -135,7 +169,7 @@ public class ToolTipUtil
 	}
 	
 	/*
-	 * Returns the tool tip that should be used for "Add Items" buttons
+	 * Returns the tool tip that should be used for "Load Items" buttons
 	 */
 	public static String getItemLoad()
 	{
@@ -143,7 +177,7 @@ public class ToolTipUtil
 	}
 	
 	/*
-	 * Returns the tool tip that should be used for "Add Items" buttons
+	 * Returns the tool tip that should be used for "Save Items" buttons
 	 */
 	public static String getItemSave()
 	{
@@ -151,7 +185,7 @@ public class ToolTipUtil
 	}
 	
 	/*
-	 * Returns the tool tip that should be used for "Add Items" buttons
+	 * Returns the tool tip that should be used for "Show Items" buttons
 	 */
 	public static String getItemShow()
 	{
@@ -159,11 +193,35 @@ public class ToolTipUtil
 	}
 	
 	/*
-	 * Returns the tool tip that should be used for "Add Items" buttons
+	 * Returns the tool tip that should be used for "Hide Items" buttons
 	 */
 	public static String getItemHide()
 	{
 		return "Hide";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Record" buttons
+	 */
+	public static String getRecord()
+	{
+		return "Record";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Stop" buttons
+	 */
+	public static String getStop()
+	{
+		return "Stop";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Stop" buttons
+	 */
+	public static String getFont()
+	{
+		return "Font";
 	}
 
 }
