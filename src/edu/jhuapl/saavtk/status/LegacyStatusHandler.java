@@ -10,7 +10,6 @@ import edu.jhuapl.saavtk.pick.PickListener;
 import edu.jhuapl.saavtk.pick.PickMode;
 import edu.jhuapl.saavtk.pick.PickTarget;
 import edu.jhuapl.saavtk.util.Properties;
-import edu.jhuapl.saavtk.view.AssocActor;
 import vtk.vtkProp;
 
 /**
@@ -58,21 +57,8 @@ public class LegacyStatusHandler implements PickListener, PropertyChangeListener
 		if (aMode != PickMode.ActivePri)
 			return;
 
-		// Just update the status bar's left size with status if
-		// aPrimaryTarg is associated with a StatusProvider
-		vtkProp priActor = aPrimaryTarg.getActor();
-		if (priActor instanceof AssocActor)
-		{
-			StatusProvider tmpSP = ((AssocActor) priActor).getAssocModel(StatusProvider.class);
-			if (tmpSP != null)
-			{
-				String tmpStr = tmpSP.getDisplayInfo(aPrimaryTarg);
-				setLeftText(tmpStr, true);
-				return;
-			}
-		}
-
 		// Retrieve the relevant model (primary takes precedence over surface)
+		vtkProp priActor = aPrimaryTarg.getActor();
 		PickTarget tmpTarg = aPrimaryTarg;
 		vtkProp tmpActor = priActor;
 		Model tmpModel = refModelManager.getModel(priActor);
