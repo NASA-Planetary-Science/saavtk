@@ -26,6 +26,7 @@ import edu.jhuapl.saavtk.pick.HookUtil;
 import edu.jhuapl.saavtk.pick.PickListener;
 import edu.jhuapl.saavtk.pick.PickMode;
 import edu.jhuapl.saavtk.pick.PickTarget;
+import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.structure.gui.StructureGuiUtil;
 import edu.jhuapl.saavtk.structure.io.StructureMiscUtil;
@@ -153,6 +154,10 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 	{
 		// Bail if this is not a primary action
 		if (aMode != PickMode.ActivePri)
+			return;
+
+		// Bail if popup trigger
+		if (PickUtil.isPopupTrigger(aEvent) == true)
 			return;
 
 		// Bail if we are are not associated with the PickTarget
