@@ -133,7 +133,6 @@
 	<classpathentry kind="lib" path="lib/geotools/jts-1.13.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/rtree-0.8-RC10.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/rxjava-1.1.4.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/rxjava-extras-0.7.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/flatbuffers-java-1.3.0.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/commons-lang3-3.3.2.jar"/>
 	<classpathentry kind="lib" path="lib/commons-text-1.8.jar" sourcepath="lib/commons-text-1.8-sources.jar">
