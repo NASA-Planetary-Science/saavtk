@@ -1,11 +1,11 @@
 package edu.jhuapl.saavtk.util;
 
+import java.awt.Dimension;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.BoxLayout;
-import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -87,8 +87,11 @@ public abstract class AuthorizorSwingUtil
 
                 JPanel mainPanel = new JPanel();
                 mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-                JLabel promptLabel = new JLabel("<html>The Small Body Mapping Tool will work without a password, but data for some models is restricted.<br>If you have credentials to access restricted models, enter them here.</html>");
-                JLabel requestAccess = new JLabel("<html><br>(Email sbmt@jhuapl.edu to request access)</html>@");
+                JLabel promptLabel = new JLabel("<html>The Small Body Mapping Tool will work without a user name/password, but data for some models is restricted. If you have credentials to access restricted models, enter them here.</html>");
+                JLabel requestAccess = new JLabel("<html><br>Researchers affiliated with an SBMT data provider may email sbmt@jhuapl.edu to request credentials.</html>");
+
+                promptLabel.setPreferredSize(new Dimension(400, 60));
+                requestAccess.setPreferredSize(new Dimension(400, 60));
 
                 JPanel namePanel = new JPanel();
                 namePanel.setLayout(new BoxLayout(namePanel, BoxLayout.X_AXIS));
@@ -102,16 +105,16 @@ public abstract class AuthorizorSwingUtil
                 JPasswordField passwordField = new JPasswordField(15);
                 passwordPanel.add(passwordField);
 
-                JCheckBox rememberPasswordCheckBox = new JCheckBox("Do not prompt for a password in the future (save/clear credentials).");
-                rememberPasswordCheckBox.setSelected(true);
+//                JCheckBox rememberPasswordCheckBox = new JCheckBox("Do not prompt for a password in the future (save/clear credentials).");
+//                rememberPasswordCheckBox.setSelected(true);
 
                 mainPanel.add(promptLabel);
                 mainPanel.add(requestAccess);
                 mainPanel.add(namePanel);
                 mainPanel.add(passwordPanel);
-                mainPanel.add(rememberPasswordCheckBox);
-
-                boolean rememberPassword = false;
+//                mainPanel.add(rememberPasswordCheckBox);
+                
+                boolean rememberPassword = true;
                 String userName = null;
                 char[] password = null;
 
@@ -122,7 +125,7 @@ public abstract class AuthorizorSwingUtil
                     {
                         promptUser = false;
                         int selection = JOptionPane.showConfirmDialog(null, mainPanel, "Small Body Mapping Tool: Optional Password", JOptionPane.OK_CANCEL_OPTION);
-                        rememberPassword = rememberPasswordCheckBox.isSelected();
+//                        rememberPassword = rememberPasswordCheckBox.isSelected();
                         userName = nameField.getText().trim();
                         password = passwordField.getPassword();
                         if (selection == JOptionPane.OK_OPTION)
