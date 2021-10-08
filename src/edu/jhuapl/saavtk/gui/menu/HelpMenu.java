@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.gui.menu;
 
+import java.awt.Desktop;
 import java.awt.event.ActionEvent;
 
 import javax.swing.AbstractAction;
@@ -7,7 +8,6 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 
-import edu.jhuapl.saavtk.gui.OSXAdapter;
 import edu.jhuapl.saavtk.util.Configuration;
 
 
@@ -53,13 +53,17 @@ public class HelpMenu extends JMenu
         {
             try
             {
-                OSXAdapter.setAboutHandler(this, getClass().getDeclaredMethod("showAbout", (Class[])null));
+                Desktop.getDesktop().setAboutHandler(new java.awt.desktop.AboutHandler() {
+                    public void handleAbout(java.awt.desktop.AboutEvent e) {
+                        try {
+                            getClass().getDeclaredMethod("showAbout", (Class[])null);
+                        } catch (NoSuchMethodException ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                });
             }
             catch (SecurityException e)
-            {
-                e.printStackTrace();
-            }
-            catch (NoSuchMethodException e)
             {
                 e.printStackTrace();
             }

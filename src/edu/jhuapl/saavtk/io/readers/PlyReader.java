@@ -125,7 +125,15 @@ public abstract class PlyReader implements PolyDataReader {
 		finally
 		{
 			if (it!=null)
-				it.close();
+                try
+                {
+                    it.close();
+                }
+                catch (IOException e)
+                {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
 		}
 	}
 	
