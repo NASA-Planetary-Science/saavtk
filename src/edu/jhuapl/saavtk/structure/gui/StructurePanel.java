@@ -332,8 +332,8 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 
 		// Create the pointDiameterPanel if the StructureManager is of type PointModel
 		PointDiameterPanel pointDiameterPanel = null;
-		if (refStructureManager instanceof PointModel)
-			pointDiameterPanel = new PointDiameterPanel((PointModel) refStructureManager);
+		if (refStructureManager instanceof PointModel aPointModel)
+			pointDiameterPanel = new PointDiameterPanel(aSmallBody, aPointModel);
 
 		// Either the lineWidthNFS or the pointDiameterPanel will be visible
 		if (pointDiameterPanel != null)

@@ -2,7 +2,7 @@ package edu.jhuapl.saavtk.gui.render;
 
 import java.io.File;
 
-import javax.media.opengl.GLContext;
+import com.jogamp.opengl.GLContext;
 
 import org.apache.commons.io.FilenameUtils;
 

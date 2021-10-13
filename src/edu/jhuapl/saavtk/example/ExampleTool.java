@@ -1,15 +1,16 @@
 package edu.jhuapl.saavtk.example;
 
+import java.awt.Taskbar;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 
 import javax.swing.ImageIcon;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import com.jgoodies.looks.LookUtils;
 
-import edu.jhuapl.saavtk.gui.OSXAdapter;
 import edu.jhuapl.saavtk.util.Configuration;
 
 /**
@@ -29,7 +30,7 @@ public class ExampleTool
         {
             System.setProperty("apple.laf.useScreenMenuBar", "true");
             ImageIcon erosIcon = new ImageIcon("data/black-sphere.png");
-            OSXAdapter.setDockIconImage(erosIcon.getImage());
+            Taskbar.getTaskbar().setIconImage(erosIcon.getImage());
         }
     }
 
@@ -74,7 +75,7 @@ public class ExampleTool
 
         try
         {
-            javax.swing.SwingUtilities.invokeLater(new ExampleRunnable(args));
+            SwingUtilities.invokeLater(new ExampleRunnable(args));
         }
         catch (Exception e)
         {
