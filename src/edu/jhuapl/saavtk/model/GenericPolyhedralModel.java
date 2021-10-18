@@ -172,7 +172,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         String[] coloringNames = {};
         String[] coloringUnits = {};
         ColoringValueType coloringValueType = ColoringValueType.CELLDATA;
-
+        modelNames = new String[] {uniqueModelId};
         setSmallBodyPolyData(polyData, coloringValues, coloringNames, coloringUnits, coloringValueType);
     }
 
@@ -462,6 +462,19 @@ public class GenericPolyhedralModel extends PolyhedralModel
     public void setDefaultModelFileName(String defaultModelFileName)
     {
         defaultModelFile = new File(defaultModelFileName);
+    }
+    
+    public void setSmallBodyPolyData(vtkPolyData polydata)
+    {
+    	if (polydata != null)
+        {
+            smallBodyPolyData.DeepCopy(polydata);
+            initializeLocators();
+            initializeCellIds();
+
+            lowResSmallBodyPolyData = smallBodyPolyData;
+            lowResPointLocator = pointLocator;
+        }
     }
 
 	public void setSmallBodyPolyData(vtkPolyData polydata, vtkFloatArray[] coloringValues, String[] coloringNames,
