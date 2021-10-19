@@ -2648,6 +2648,23 @@ public class GenericPolyhedralModel extends PolyhedralModel
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
     }
 
+ 	@Override
+ 	public void setPlainColor(Color aColor)
+ 	{
+ 		try
+ 		{
+ 			setColoringIndex(-1);
+ 		}
+ 		catch (IOException aExp)
+ 		{
+ 			aExp.printStackTrace();
+ 		}
+
+ 		smallBodyActor.GetProperty().SetColor(aColor.getRed() / 255.0, aColor.getGreen() / 255.0,
+ 				aColor.getBlue() / 255.0);
+ 		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+ 	}
+
     /**
      * Saves out file with information about each plate of shape model that contains
      * these columns. Each row contains information about a single plate in the
