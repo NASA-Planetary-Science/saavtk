@@ -13,6 +13,7 @@ import java.util.Set;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.Doubles;
 
 import crucible.crust.metadata.api.Key;
 import crucible.crust.metadata.api.Metadata;
@@ -26,6 +27,7 @@ import edu.jhuapl.saavtk.structure.BaseStructureManager;
 import edu.jhuapl.saavtk.structure.Ellipse;
 import edu.jhuapl.saavtk.structure.io.StructureLegacyUtil;
 import edu.jhuapl.saavtk.structure.io.StructureMiscUtil;
+import edu.jhuapl.saavtk.structure.util.EllipseUtil;
 import edu.jhuapl.saavtk.structure.vtk.VtkCompositePainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkEllipsePainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkLabelPainter;
@@ -127,7 +129,7 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 
 		numSides = aNumSides;
 		defaultColor = new Color(0, 191, 255);
-		defaultRadius = aSmallBody.getBoundingBoxDiagonalLength() / 155.0;
+		defaultRadius = EllipseUtil.getDefRadius(refSmallBody);
 		interiorOpacity = 0.3;
 		offset = 5.0 * refSmallBody.getMinShiftAmount();
 		lineWidth = 2.0;
@@ -752,6 +754,11 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 		double lineWidth = source.get(LINE_WIDTH_KEY);
 		double offset = source.get(OFFSET_KEY);
 		List<Ellipse> restoredPolygons = source.get(ELLIPSE_POLYGON_KEY);
+
+		// Ensure the "default" radius is properly clamped
+		double minRadius = EllipseUtil.getMinRadius(refSmallBody);
+		double maxRadius = EllipseUtil.getMaxRadius(refSmallBody);
+		defaultRadius = Doubles.constrainToRange(defaultRadius, minRadius, maxRadius);
 
 		// Now we're committed. Get rid of whatever's currently in this model and then
 		// add the restored polygons.
