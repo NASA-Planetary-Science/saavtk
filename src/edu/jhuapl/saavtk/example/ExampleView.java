@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.jhuapl.saavtk.config.IBodyViewConfig;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.panel.PolyhedralModelControlPanel;
@@ -53,6 +54,12 @@ public class ExampleView extends View
 	{
 		super(aStatusNotifier, config);
 	}
+	
+	
+    public IBodyViewConfig getConfig()
+    {
+        return (IBodyViewConfig)config;
+    }
 
 	/**
 	 * Returns model as a path. e.g. "Asteroid > Near-Earth > Eros > Image Based >
@@ -61,10 +68,10 @@ public class ExampleView extends View
 	@Override
 	public String getPathRepresentation()
 	{
-		ViewConfig config = getConfig();
-		if (ShapeModelType.CUSTOM == config.author)
+		IBodyViewConfig config = getConfig();
+		if (ShapeModelType.CUSTOM == config.getAuthor())
 		{
-			return ShapeModelType.CUSTOM + " > " + config.modelLabel;
+			return ShapeModelType.CUSTOM + " > " + config.getModelLabel();
 		}
 		return "DefaultPath";
 	}
@@ -72,28 +79,28 @@ public class ExampleView extends View
 	@Override
 	public String getDisplayName()
 	{
-		if (getConfig().author == ShapeModelType.CUSTOM)
-			return getConfig().modelLabel;
+		if (getConfig().getAuthor() == ShapeModelType.CUSTOM)
+			return getConfig().getModelLabel();
 		else
 		{
 			String version = "";
-			if (getConfig().version != null)
-				version += " (" + getConfig().version + ")";
-			return getConfig().author.toString() + version;
+			if (getConfig().getVersion() != null)
+				version += " (" + getConfig().getVersion() + ")";
+			return getConfig().getAuthor().toString() + version;
 		}
 	}
 
 	@Override
 	public String getModelDisplayName()
 	{
-		ShapeModelBody body = getConfig().body;
+		ShapeModelBody body = getConfig().getBody();
 		return body != null ? body + " / " + getDisplayName() : getDisplayName();
 	}
 
 	@Override
 	protected void setupModelManager()
 	{
-		PolyhedralModel smallBodyModel = new ExamplePolyhedralModel(getConfig());
+		PolyhedralModel smallBodyModel = new ExamplePolyhedralModel((ViewConfig)getConfig());
 		Graticule graticule = new Graticule(smallBodyModel);
 
 		HashMap<ModelNames, List<Model>> allModels = new HashMap<>();
@@ -203,6 +210,12 @@ public class ExampleView extends View
 	{
 	}
 
+	@Override
+	protected void setupPositionOrientationManager()
+	{
+		
+	}
+	
 	@Override
 	protected void initializeStateManager()
 	{

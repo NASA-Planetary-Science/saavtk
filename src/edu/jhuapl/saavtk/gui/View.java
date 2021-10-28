@@ -21,8 +21,9 @@ import javax.swing.JPopupMenu;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 
-import edu.jhuapl.saavtk.config.ViewConfig;
+import edu.jhuapl.saavtk.config.IViewConfig;
 import edu.jhuapl.saavtk.gui.render.Renderer;
+import edu.jhuapl.saavtk.model.IPositionOrientationManager;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
@@ -45,19 +46,20 @@ import edu.jhuapl.saavtk.view.light.LightUtil;
  */
 public abstract class View extends JPanel
 {
-    private static final long serialVersionUID = 1L;
-    private JSplitPane splitPane;
+	private static final long serialVersionUID = 1L;
+    protected JSplitPane splitPane;
     protected Renderer renderer;
-    private JTabbedPane controlPanel;
+    protected JTabbedPane controlPanel;
     private ModelManager modelManager;
     private PickManager pickManager;
     private PopupManager popupManager;
     private WindowManager infoPanelManager;
     private WindowManager spectrumPanelManager;
+    protected IPositionOrientationManager positionOrientationManager;
     private final StatusNotifier refStatusNotifier;
     private LegacyStatusHandler legacyStatusHandler;
-    private final AtomicBoolean initialized = new AtomicBoolean(false);
-    private ViewConfig config;
+    protected final AtomicBoolean initialized = new AtomicBoolean(false);
+    protected IViewConfig config;
     protected String uniqueName;
     protected String shapeModelName;
     protected String configURL;
@@ -138,7 +140,7 @@ public abstract class View extends JPanel
   		tmpDefaultPicker.addListener(tmpLocationStatusHandler);
     }
 
-    protected void setConfig(ViewConfig config)
+    protected void setConfig(IViewConfig config)
     {
     	this.config = config;
     }
@@ -159,7 +161,7 @@ public abstract class View extends JPanel
      * reduce memory and startup time. Therefore, this function should be called
      * prior to first time the View is shown in order to cause it
      */
-    public View(StatusNotifier aStatusNotifier, ViewConfig config)
+    public View(StatusNotifier aStatusNotifier, IViewConfig config)
     {
         super(new BorderLayout());
         refStatusNotifier = aStatusNotifier;
@@ -194,6 +196,11 @@ public abstract class View extends JPanel
                 setupSpectrumPanelManager();
             });
 
+            Configuration.runAndWaitOnEDT(() -> {
+                setupPositionOrientationManager();
+            });
+
+            
             Configuration.runAndWaitOnEDT(() -> {
                 setupRenderer();
             });
@@ -298,7 +305,7 @@ public abstract class View extends JPanel
         }
     }
 
-    private void showDefaultTabSelectionPopup(MouseEvent e)
+    protected void showDefaultTabSelectionPopup(MouseEvent e)
     {
         if (e.isPopupTrigger())
         {
@@ -385,7 +392,7 @@ public abstract class View extends JPanel
      */
     public abstract String getModelDisplayName();
 
-    public ViewConfig getConfig()
+    public IViewConfig getConfig()
     {
         return config;
     }
@@ -411,6 +418,8 @@ public abstract class View extends JPanel
     protected abstract void setupInfoPanelManager();
 
     protected abstract void setupSpectrumPanelManager();
+    
+    protected abstract void setupPositionOrientationManager();
 
     protected void setupRenderer()
     {
@@ -418,6 +427,8 @@ public abstract class View extends JPanel
         Renderer renderer = new Renderer(manager.getPolyhedralModel());
         renderer.setLightCfg(LightUtil.getSystemLightCfg());
         renderer.addVtkPropProvider(modelManager);
+        int numBodies = modelManager.getModel(ModelNames.SMALL_BODY).size();
+        System.out.println("View: setupRenderer: number of bodies " + numBodies);
         renderer.addPropertyChangeListener(manager);
         setRenderer(renderer);
 

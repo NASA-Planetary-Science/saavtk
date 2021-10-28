@@ -30,6 +30,9 @@ public class IconUtil
 	private static Icon cIconSelectAll = null;
 	private static Icon cIconSelectNone = null;
 	private static Icon cIconSelectInvert = null;
+	
+	private static Icon cIconShow = null;
+	private static Icon cIconHide = null;
 
 	/**
 	 * Returns the icon that should be used for "Abort" action buttons
@@ -222,6 +225,26 @@ public class IconUtil
 			cIconSelectNone = IconUtil.loadIcon("resources/icons/ItemSelectNone.24.png");
 
 		return cIconSelectNone;
+	}
+	
+	//Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>
+	/**
+	 * Returns the icon that should be used for "Show" buttons
+	 */
+	public static Icon getItemShow()
+	{
+		if (cIconShow == null)
+			cIconShow = IconUtil.loadIcon("resources/icons/show.png");
+
+		return cIconShow;
+	}
+	
+	public static Icon getItemHide()
+	{
+		if (cIconHide == null)
+			cIconHide = IconUtil.loadIcon("resources/icons/hide.png");
+
+		return cIconHide;
 	}
 
 	/**

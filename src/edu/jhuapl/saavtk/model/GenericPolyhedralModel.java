@@ -22,6 +22,8 @@ import crucible.crust.metadata.impl.gson.Serializers;
 import edu.jhuapl.saavtk.color.table.ColorMapAttr;
 import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.colormap.Colormaps;
+import edu.jhuapl.saavtk.config.IBodyViewConfig;
+import edu.jhuapl.saavtk.config.IViewConfig;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
@@ -157,6 +159,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         smallBodyPolyData = new vtkPolyData();
         genericCell = new vtkGenericCell();
         idList = new vtkIdList();
+        modelNames = new String[] {uniqueModelId};
     }
 
     /**
@@ -172,7 +175,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         String[] coloringNames = {};
         String[] coloringUnits = {};
         ColoringValueType coloringValueType = ColoringValueType.CELLDATA;
-
+        modelNames = new String[] {uniqueModelId};
         setSmallBodyPolyData(polyData, coloringValues, coloringNames, coloringUnits, coloringValueType);
     }
 
@@ -181,7 +184,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
      * resolution levels whereas modelNames is an array of names that is specific
      * for each resolution level.
      */
-	public GenericPolyhedralModel(ViewConfig config, String[] modelNames, String[] modelFiles, String[] coloringFiles,
+    public GenericPolyhedralModel(IBodyViewConfig config, String[] modelNames, String[] modelFiles, String[] coloringFiles,
 			String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls,
 			ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource)
     {
@@ -348,6 +351,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
     {
         super(config);
         this.coloringDataManager = CustomizableColoringDataManager.of(config.getUniqueName());
+        modelNames = new String[] {config.getShapeModelName()};
     }
 
 	protected void initializeConfigParameters(String[] modelFiles, String[] coloringFiles, String[] coloringNames,
@@ -463,6 +467,19 @@ public class GenericPolyhedralModel extends PolyhedralModel
     {
         defaultModelFile = new File(defaultModelFileName);
     }
+    
+    public void setSmallBodyPolyData(vtkPolyData polydata)
+    {
+    	if (polydata != null)
+        {
+    		smallBodyPolyData.DeepCopy(polydata);
+    		initializeLocators();
+    		initializeCellIds();
+    		
+    	    lowResSmallBodyPolyData = smallBodyPolyData;
+        	lowResPointLocator = pointLocator;
+        }
+    }
 
 	public void setSmallBodyPolyData(vtkPolyData polydata, vtkFloatArray[] coloringValues, String[] coloringNames,
 			String[] coloringUnits, ColoringValueType coloringValueType)
@@ -484,7 +501,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         initializeCellIds();
 
         lowResSmallBodyPolyData = smallBodyPolyData;
-        lowResPointLocator = pointLocator;
+        lowResPointLocator = getPointLocator();
     }
 
     private void initializeCellIds()
@@ -496,10 +513,15 @@ public class GenericPolyhedralModel extends PolyhedralModel
         smallBodyPolyData.GetCellData().AddArray(cellIds);
     }
 
-    public ViewConfig getDefaultModelConfig()
+    public IBodyViewConfig getDefaultModelConfig()
     {
-        return getConfig();
+        return (IBodyViewConfig)getConfig();
     }
+    
+	public IBodyViewConfig getConfig()
+	{
+		return (IBodyViewConfig)super.getConfig();
+	}
 
     @Override
     public boolean isBuiltIn()
@@ -593,7 +615,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
     public void loadCustomColoringInfo() throws IOException
     {
-        ViewConfig config = getConfig();
+        IViewConfig config = getConfig();
         // Get the current selection so we can try to restore it at the end.
         String prevColoringName = null;
         int numberElements = config.getResolutionNumberElements().get(getModelResolution());
@@ -716,7 +738,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         // Load in custom plate data
         try
         {
-            if (!getConfig().customTemporary)
+        	if (!getConfig().isCustomTemporary())
             {
                 loadCustomColoringInfo();
                 loadCustomLidarDataSource();
@@ -840,23 +862,25 @@ public class GenericPolyhedralModel extends PolyhedralModel
     @Override
     public vtksbCellLocator getCellLocator()
     {
+    	if (cellLocator == null) initializeLocators();
         return cellLocator;
     }
 
     @Override
     public vtkPointLocator getPointLocator()
     {
+    	if (pointLocator == null) initializeLocators();
         return pointLocator;
     }
 
     public void calculateCubeSize(boolean useCustomBodyCubeSizeIfAvailable, double overlap)
     {
     	cubeOverlapCheck = overlap;
-        if (useCustomBodyCubeSizeIfAvailable && getConfig().hasCustomBodyCubeSize)
-        {
-            // Custom specified cube size
-            cubeSize = getConfig().customBodyCubeSize;
-        }
+    	if (useCustomBodyCubeSizeIfAvailable && getConfig().isHasCustomBodyCubeSize())
+    	{
+    		// Custom specified cube size
+    		cubeSize = getConfig().getCustomBodyCubeSize();
+    	}
         else
         {
             // Old way of determining cube size, most models still use this
@@ -1015,19 +1039,19 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
     public vtkPolyData computeFrustumIntersection(double[] origin, double[] ul, double[] ur, double[] lr, double[] ll)
     {
-		return PolyDataUtil.computeFrustumIntersection(smallBodyPolyData, cellLocator, pointLocator, origin, ul, ur, lr,
+		return PolyDataUtil.computeFrustumIntersection(smallBodyPolyData, getCellLocator(), getPointLocator(), origin, ul, ur, lr,
 				ll);
     }
 
     public vtkPolyData computeMultipleFrustumIntersection(List<Frustum> frustums)
     {
-        return PolyDataUtil.computeMultipleFrustumIntersection(smallBodyPolyData, cellLocator, pointLocator, frustums);
+        return PolyDataUtil.computeMultipleFrustumIntersection(smallBodyPolyData, getCellLocator(), getPointLocator(), frustums);
     }
 
     @Override
     public void drawPolygon(List<LatLon> controlPoints, vtkPolyData outputInterior, vtkPolyData outputBoundary)
     {
-		PolyDataUtil.drawPolygonOnPolyData(smallBodyPolyData, pointLocator, controlPoints, outputInterior,
+		PolyDataUtil.drawPolygonOnPolyData(smallBodyPolyData, getPointLocator(), controlPoints, outputInterior,
 				outputBoundary);
     }
 
@@ -1041,7 +1065,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
 		// Determine the VTK vars to use (ensure low res data)
 		vtkPolyData vSurfacePD = smallBodyPolyData;
-		vtkPointLocator vSurfacePL = pointLocator;
+		vtkPointLocator vSurfacePL = getPointLocator();
 
 		if (resolutionLevel != 0)
 		{
@@ -1059,20 +1083,20 @@ public class GenericPolyhedralModel extends PolyhedralModel
 	public void drawCone(double[] vertex, double[] axis, double angle, int numberOfSides, vtkPolyData outputInterior,
 			vtkPolyData outputBoundary)
     {
-		PolyDataUtil.drawConeOnPolyData(smallBodyPolyData, pointLocator, vertex, axis, angle, numberOfSides,
+		PolyDataUtil.drawConeOnPolyData(smallBodyPolyData, getPointLocator(), vertex, axis, angle, numberOfSides,
 				outputInterior, outputBoundary);
     }
 
     @Override
     public void shiftPolyLineInNormalDirection(vtkPolyData polyLine, double shiftAmount)
     {
-        PolyDataUtil.shiftPolyLineInNormalDirectionOfPolyData(polyLine, smallBodyPolyData, pointLocator, shiftAmount);
+        PolyDataUtil.shiftPolyLineInNormalDirectionOfPolyData(polyLine, smallBodyPolyData, getPointLocator(), shiftAmount);
     }
 
     @Override
     public double[] getNormalAtPoint(double[] point)
     {
-        return PolyDataUtil.getPolyDataNormalAtPoint(point, smallBodyPolyData, pointLocator);
+        return PolyDataUtil.getPolyDataNormalAtPoint(point, smallBodyPolyData, getPointLocator());
     }
 
     @Override
@@ -1128,7 +1152,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         int[] subId = new int[1];
         double[] dist2 = new double[1];
 
-        cellLocator.FindClosestPoint(pt, closestPoint, genericCell, cellId, subId, dist2);
+        getCellLocator().FindClosestPoint(pt, closestPoint, genericCell, cellId, subId, dist2);
 
         return closestPoint;
     }
@@ -1143,13 +1167,13 @@ public class GenericPolyhedralModel extends PolyhedralModel
      */
     public double[] findClosestVertex(double[] pt)
     {
-        int id = pointLocator.FindClosestPoint(pt);
+        int id = getPointLocator().FindClosestPoint(pt);
         return smallBodyPolyData.GetPoint(id).clone();
     }
 
     public long findClosestVertexId(double[] pt)
     {
-        return pointLocator.FindClosestPoint(pt);
+        return getPointLocator().FindClosestPoint(pt);
     }
 
     /**
@@ -1168,7 +1192,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
         // Use FindClosestPoint rather the FindCell since not sure what tolerance to use
         // in the latter.
-        cellLocator.FindClosestPoint(pt, closestPoint, genericCell, cellId, subId, dist2);
+        getCellLocator().FindClosestPoint(pt, closestPoint, genericCell, cellId, subId, dist2);
 
         return cellId[0];
     }
@@ -1216,7 +1240,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         int[] subId = new int[1];
         int[] cellId = new int[1];
 
-        int result = cellLocator.IntersectWithLine(origin, lookPt, tol, t, x, pcoords, subId, cellId, genericCell);
+        int result = getCellLocator().IntersectWithLine(origin, lookPt, tol, t, x, pcoords, subId, cellId, genericCell);
 
         intersectPoint[0] = x[0];
         intersectPoint[1] = x[1];
@@ -1256,7 +1280,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         int[] subId = new int[1];
         int[] cellId = new int[1];
 
-        int result = cellLocator.IntersectWithLine(origin, lookPt, tol, t, x, pcoords, subId, cellId, genericCell);
+        int result = getCellLocator().IntersectWithLine(origin, lookPt, tol, t, x, pcoords, subId, cellId, genericCell);
 
         intersectPoint[0] = x[0];
         intersectPoint[1] = x[1];
@@ -2596,7 +2620,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
                 totalArea += area;
             }
 
-            if (getConfig().useMinimumReferencePotential)
+            if (getConfig().isUseMinimumReferencePotential())
             {
                 return minRefPot;
             }
