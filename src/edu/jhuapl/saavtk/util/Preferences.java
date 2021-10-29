@@ -20,10 +20,6 @@ public class Preferences extends MapUtil
     public static final String PICK_TOLERANCE = "PickTolerance";
     public static final String MOUSE_WHEEL_MOTION_FACTOR = "MouseWheelMotionFactor";
     public static final String NIS_CUSTOM_FUNCTIONS = "NISCustomFunctions";
-    public static final String CONTROL_PANEL_WIDTH = "ControlPanelWidth";
-    public static final String CONTROL_PANEL_HEIGHT = "ControlPanelHeight";
-    public static final String RENDERER_PANEL_WIDTH = "RendererPanelWidth";
-    public static final String RENDERER_PANEL_HEIGHT = "RendererPanelHeight";
     public static final String DEFAULT_COLORMAP_NAME = "DefaultColormapName";
     public static final String BACKGROUND_COLOR = "BackgroundColor";
     public static final String SELECTION_COLOR = "SelectionColor";
