@@ -17,6 +17,7 @@ public class IconUtil
 	private static Icon cIconActionAbort = null;
 	private static Icon cIconActionCenter = null;
 	private static Icon cIconActionConfig = null;
+	private static Icon cIconActionInfo = null;
 	private static Icon cIconActionReset = null;
 
 	private static Icon cIconItemAdd = null;
@@ -62,6 +63,17 @@ public class IconUtil
 			cIconActionConfig = IconUtil.loadIcon("resources/icons/ActionConfig.24.png");
 
 		return cIconActionConfig;
+	}
+
+	/**
+	 * Returns the icon that should be used for "Information" action buttons
+	 */
+	public static Icon getActionInfo()
+	{
+		if (cIconActionInfo == null)
+			cIconActionInfo = IconUtil.loadIcon("resources/icons/ActionInfo.24.png");
+
+		return cIconActionInfo;
 	}
 
 	/**

@@ -1,5 +1,7 @@
 package edu.jhuapl.saavtk.feature;
 
+import glum.source.Source;
+
 /**
  * Immutable class that defines a single feature property.
  * <P>
@@ -11,19 +13,32 @@ public class FeatureType
 {
 	// Constants
 	/** FeatureType that defines the "invalid" physical attribute. */
-	public static final FeatureType Invalid = new FeatureType("Invalid", "---", Float.NaN);
+	public static final FeatureType Invalid = new FeatureType(null, "Invalid", "---", Float.NaN);
 
 	// Attributes
+	private final Source source;
 	private final String name;
 	private final String unit;
 	private final double scale;
 
 	/** Standard Constructor */
-	public FeatureType(String aName, String aUnit, double aScale)
+	public FeatureType(Source aSource, String aName, String aUnit, double aScale)
 	{
+		source = aSource;
 		name = aName;
 		unit = aUnit;
 		scale = aScale;
+	}
+
+	/** Simplified (legacy) Constructor */
+	public FeatureType(String aName, String aUnit, double aScale)
+	{
+		this(null, aName, aUnit, aScale);
+	}
+
+	public Source getSource()
+	{
+		return source;
 	}
 
 	public String getName()

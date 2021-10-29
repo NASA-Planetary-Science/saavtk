@@ -86,7 +86,7 @@ public class FontAttrPanel extends GPanel implements ActionListener
 	/**
 	 * Configures the GUI to reflect the specified {@link FontAttr}.
 	 */
-	public void setAttr(FontAttr aAttr)
+	public void setFontAttr(FontAttr aAttr)
 	{
 		faceBox.setChosenItem(aAttr.getFace());
 		colorCIP.setColorConfig(aAttr.getColor());
@@ -95,6 +95,8 @@ public class FontAttrPanel extends GPanel implements ActionListener
 		visibleCB.setSelected(aAttr.getIsVisible());
 		boldCB.setSelected(aAttr.getIsBold());
 		italicCB.setSelected(aAttr.getIsItalic());
+
+		updateGui();
 	}
 
 	/**

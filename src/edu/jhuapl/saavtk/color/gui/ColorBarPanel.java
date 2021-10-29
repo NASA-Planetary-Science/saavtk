@@ -36,7 +36,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * UI that allows the user to select a color bar and specify the range of values
  * associated with the color bar.
- * <P>
+ * <p>
  * Usage of this UI component requires the manual addition of various
  * {@link FeatureType}s. The {@link FeatureType#Invalid} is used to designate an
  * invalid or no choice selection. When this FeatureType is selected relevant UI
@@ -101,7 +101,7 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 		cColorMapAttr = ColorMapAttr.Invalid;
 
 		// Set up the GUI
-		setLayout(new MigLayout("", "0[][right][]0", "0[][]"));
+		setLayout(new MigLayout("hidemode 3", "0[][right][]0", "0[][]"));
 
 		painterCBCP = new ColorBarConfigPanel(this, refColorBarPainter);
 		painterCBCP.addActionListener(this);
@@ -119,7 +119,6 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 		colorTableBox = new GComboBox<>(this, ColorTableUtil.getSystemColorTableList());
 		colorTableBox.setRenderer(new ColorTableListCellRenderer(colorTableBox));
 		colorTableBox.setChosenItem(ColorTableUtil.getSystemColorTableDefault());
-
 		add(colorTableL, "growx,span,w 10::,wrap 3");
 		add(colorTableBox, "growx,span,w 0:0:,wrap");
 
@@ -227,6 +226,16 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 	}
 
 	/**
+	 * Configures the gui to hide the UI elements relating to configuration of
+	 * features.
+	 */
+	public void hideFeatureControls()
+	{
+		featureL.setVisible(false);
+		featureBox.setVisible(false);
+	}
+
+	/**
 	 * Configures the gui to reflect the specified {@link ColorMapAttr}.
 	 */
 	public void setColorMapAttr(ColorMapAttr aColorMapAttr)
@@ -239,6 +248,8 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 		maxValueNF.setValue(aColorMapAttr.getMaxVal());
 		numLevelsNF.setValue(aColorMapAttr.getNumLevels());
 		logScaleCB.setSelected(aColorMapAttr.getIsLogScale());
+
+		updateControlArea();
 	}
 
 	/**

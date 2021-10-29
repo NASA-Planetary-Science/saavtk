@@ -1,13 +1,11 @@
 package edu.jhuapl.saavtk.example;
 
-import java.awt.AWTException;
 import java.util.HashMap;
 
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.panel.PolyhedralModelControlPanel;
 import edu.jhuapl.saavtk.gui.render.ConfigurableSceneNotifier;
-import edu.jhuapl.saavtk.model.Graticule;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
@@ -21,9 +19,7 @@ import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.model.structure.PointModel;
 import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.pick.PickManager;
-import edu.jhuapl.saavtk.popup.GraticulePopupMenu;
 import edu.jhuapl.saavtk.popup.PopupManager;
-import edu.jhuapl.saavtk.popup.PopupMenu;
 import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.structure.gui.StructureTabbedPane;
 
@@ -91,11 +87,9 @@ public class ExampleView extends View
 	protected void setupModelManager()
 	{
 		PolyhedralModel smallBodyModel = new ExamplePolyhedralModel(getConfig());
-		Graticule graticule = new Graticule(smallBodyModel);
 
 		HashMap<ModelNames, Model> allModels = new HashMap<>();
 		allModels.put(ModelNames.SMALL_BODY, smallBodyModel);
-		allModels.put(ModelNames.GRATICULE, graticule);
 
 		// if (getConfig().hasLidarData)
 		// {
@@ -123,25 +117,7 @@ public class ExampleView extends View
 	{
 		ModelManager tmpModelManager = getModelManager();
 
-		try
-		{
-			PopupMenu popupMenu = new GraticulePopupMenu(tmpModelManager, getRenderer());
-			registerPopup(tmpModelManager.getModel(ModelNames.GRATICULE), popupMenu);
-		}
-		catch (AWTException e)
-		{
-			e.printStackTrace();
-		}
-
 		setPopupManager(new PopupManager(tmpModelManager));
-
-		// if (getConfig().hasLidarData)
-		// {
-		// LidarSearchDataCollection lidarSearch =
-		// (LidarSearchDataCollection)getModel(ModelNames.LIDAR_SEARCH);
-		// PopupMenu popupMenu = new LidarPopupMenu(lidarSearch, getRenderer());
-		// registerPopup(lidarSearch, popupMenu);
-		// }
 	}
 
 	@Override
