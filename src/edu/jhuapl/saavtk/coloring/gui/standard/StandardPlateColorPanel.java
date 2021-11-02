@@ -82,7 +82,7 @@ public class StandardPlateColorPanel extends GPanel implements ActionListener, E
 		plateInfoB.setToolTipText("Plate Properties");
 		var featureL = new JLabel("Property:");
 		add(featureL, "span,split");
-		add(propertyBox, "growx,span,w 0:0:");
+		add(propertyBox, "growx,pushx,span,w 0:0:");
 		add(plateInfoB, "w 24!,h 24!,wrap");
 
 		// ColorBar area
