@@ -1,8 +1,11 @@
 package edu.jhuapl.saavtk.color.gui;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.Map;
@@ -116,6 +119,7 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 
 		// ColorTable area
 		colorTableL = new JLabel();
+		colorTableL.setPreferredSize(new Dimension(0, 18));
 		colorTableBox = new GComboBox<>(this, ColorTableUtil.getSystemColorTableList());
 		colorTableBox.setRenderer(new ColorTableListCellRenderer(colorTableBox));
 		colorTableBox.setChosenItem(ColorTableUtil.getSystemColorTableDefault());
@@ -177,8 +181,17 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 		add(applyB, "ax right,gapleft push,wrap 0");
 
 		// Register for events of interest
-		GuiExeUtil.executeOnceWhenShowing(this, () -> updateColorTableArea());
+		GuiExeUtil.executeOnceWhenShowing(this, () -> updateColorTableIcon());
 		refColorBarPainter.addListener(this);
+
+		colorTableL.addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentResized(ComponentEvent aEvent)
+			{
+				updateColorTableIcon();
+			}
+		});
+
 	}
 
 	/**
@@ -309,7 +322,7 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 		else if (source == minValueNF || source == maxValueNF || source == numLevelsNF)
 		{
 			if (source == numLevelsNF)
-				updateColorTableArea();
+				updateColorTableIcon();
 
 			doAutoSync();
 		}
@@ -330,10 +343,10 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 	}
 
 	/**
-	 * Helper method that updates the colorTableL to reflect the selection of
-	 * colorTableBox and numLevelsNF.
+	 * Helper method that updates the displayed ColorTable icon (colorTableL) to
+	 * reflect the selection of colorTableBox and numLevelsNF.
 	 */
-	protected void updateColorTableArea()
+	protected void updateColorTableIcon()
 	{
 		int iconW = colorTableL.getWidth();
 		if (iconW < 16)
@@ -366,7 +379,7 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 	 */
 	private void doActionColorTableBox()
 	{
-		updateColorTableArea();
+		updateColorTableIcon();
 
 		doAutoSync();
 	}
@@ -376,7 +389,7 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 	 */
 	private void doActionFeatureBox()
 	{
-		updateColorTableArea();
+		updateColorTableIcon();
 
 		// Retrieve the default min / max values
 		double resetMin = Double.NaN;

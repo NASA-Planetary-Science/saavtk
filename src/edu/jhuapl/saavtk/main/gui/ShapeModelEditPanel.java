@@ -74,7 +74,7 @@ public class ShapeModelEditPanel extends JPanel implements ActionListener, ItemL
 		refSmallBody = aSmallBody;
 
 		workGridPainter = new LatLonGridPainter(refRenderer, aSmallBody);
-      aRenderer.addVtkPropProvider(workGridPainter);
+		aRenderer.addVtkPropProvider(workGridPainter);
 
 		setLayout(new MigLayout("", "0[][][]0", ""));
 
@@ -141,6 +141,10 @@ public class ShapeModelEditPanel extends JPanel implements ActionListener, ItemL
 		add(representationBox, "wrap");
 		add(representationPanel, "growx,span");
 
+		// Register for events of interest
+		workGridPainter.addListener(this);
+
+		// Initial update
 		syncToGuiModel();
 		updateGui();
 	}
