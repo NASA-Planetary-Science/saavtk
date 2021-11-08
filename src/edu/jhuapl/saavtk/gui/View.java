@@ -427,8 +427,6 @@ public abstract class View extends JPanel
         Renderer renderer = new Renderer(manager.getPolyhedralModel());
         renderer.setLightCfg(LightUtil.getSystemLightCfg());
         renderer.addVtkPropProvider(modelManager);
-        int numBodies = modelManager.getModel(ModelNames.SMALL_BODY).size();
-        System.out.println("View: setupRenderer: number of bodies " + numBodies);
         renderer.addPropertyChangeListener(manager);
         setRenderer(renderer);
 
