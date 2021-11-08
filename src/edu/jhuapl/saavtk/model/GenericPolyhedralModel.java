@@ -100,6 +100,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
     private List<LidarDataSource> lidarDataSourceL = new ArrayList<>();
 
     private vtkPolyData smallBodyPolyData;
+    private vtkPolyData smallBodyPolyDataAtPosition;
     private vtkPolyData lowResSmallBodyPolyData;
 	private VtkLodActor smallBodyActor;
     private vtkPolyDataMapper smallBodyMapper;
@@ -157,6 +158,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         super(null);
         coloringDataManager = CustomizableColoringDataManager.of(uniqueModelId);
         smallBodyPolyData = new vtkPolyData();
+        smallBodyPolyDataAtPosition = new vtkPolyData();
         genericCell = new vtkGenericCell();
         idList = new vtkIdList();
         modelNames = new String[] {uniqueModelId};
@@ -199,6 +201,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
         new vtkUnsignedCharArray();
         smallBodyPolyData = new vtkPolyData();
+        smallBodyPolyDataAtPosition = new vtkPolyData();
         genericCell = new vtkGenericCell();
         idList = new vtkIdList();
 
@@ -366,6 +369,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
         new vtkUnsignedCharArray();
         smallBodyPolyData = new vtkPolyData();
+        smallBodyPolyDataAtPosition = new vtkPolyData();
         genericCell = new vtkGenericCell();
         idList = new vtkIdList();
 
@@ -468,16 +472,11 @@ public class GenericPolyhedralModel extends PolyhedralModel
         defaultModelFile = new File(defaultModelFileName);
     }
     
-    public void setSmallBodyPolyData(vtkPolyData polydata)
+    public void setSmallBodyPolyDataAtPosition(vtkPolyData polydata)
     {
     	if (polydata != null)
         {
-    		smallBodyPolyData.DeepCopy(polydata);
-    		initializeLocators();
-    		initializeCellIds();
-    		
-    	    lowResSmallBodyPolyData = smallBodyPolyData;
-        	lowResPointLocator = pointLocator;
+    		smallBodyPolyDataAtPosition.DeepCopy(polydata);
         }
     }
 
@@ -487,6 +486,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         if (polydata != null)
         {
             smallBodyPolyData.DeepCopy(polydata);
+            smallBodyPolyDataAtPosition.DeepCopy(polydata);
         }
         for (int i = 0; i < coloringNames.length; ++i)
         {
@@ -500,7 +500,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         initializeLocators();
         initializeCellIds();
 
-        lowResSmallBodyPolyData = smallBodyPolyData;
+        lowResSmallBodyPolyData = smallBodyPolyDataAtPosition;
         lowResPointLocator = getPointLocator();
     }
 
@@ -508,9 +508,9 @@ public class GenericPolyhedralModel extends PolyhedralModel
     {
         cellIds = new vtkIdTypeArray();
         cellIds.SetName(cellIdsArrayName);
-        for (int i = 0; i < smallBodyPolyData.GetNumberOfCells(); i++)
+        for (int i = 0; i < smallBodyPolyDataAtPosition.GetNumberOfCells(); i++)
             cellIds.InsertNextValue(i);
-        smallBodyPolyData.GetCellData().AddArray(cellIds);
+        smallBodyPolyDataAtPosition.GetCellData().AddArray(cellIds);
     }
 
     public IBodyViewConfig getDefaultModelConfig()
@@ -745,6 +745,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
             }
 
             smallBodyPolyData.ShallowCopy(PolyDataUtil.loadShapeModel(modelFile.getAbsolutePath()));
+            smallBodyPolyDataAtPosition.ShallowCopy(PolyDataUtil.loadShapeModel(modelFile.getAbsolutePath()));
         }
         catch (Exception e)
         {
@@ -775,6 +776,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
             loadCustomColoringInfo();
 
             smallBodyPolyData.ShallowCopy(PolyDataUtil.loadShapeModel(defaultModelFile.getAbsolutePath()));
+            smallBodyPolyDataAtPosition.ShallowCopy(PolyDataUtil.loadShapeModel(defaultModelFile.getAbsolutePath()));
         }
         catch (Exception e)
         {
@@ -801,7 +803,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
         // Initialize the cell locator
         cellLocator.FreeSearchStructure();
-        cellLocator.SetDataSet(smallBodyPolyData);
+        cellLocator.SetDataSet(smallBodyPolyDataAtPosition);
         cellLocator.CacheCellBoundsOn();
         cellLocator.AutomaticOn();
         // cellLocator.SetMaxLevel(10);
@@ -810,7 +812,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         cellLocator.BuildLocator();
 
         pointLocator.FreeSearchStructure();
-        pointLocator.SetDataSet(smallBodyPolyData);
+        pointLocator.SetDataSet(smallBodyPolyDataAtPosition);
         pointLocator.SetTolerance(1e-15);
         pointLocator.BuildLocator();
     }
@@ -981,7 +983,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         if (cellNormals == null)
         {
             vtkPolyDataNormals normalsFilter = new vtkPolyDataNormals();
-            normalsFilter.SetInputData(smallBodyPolyData);
+            normalsFilter.SetInputData(smallBodyPolyDataAtPosition);
             normalsFilter.SetComputeCellNormals(1);
             normalsFilter.SetComputePointNormals(0);
             normalsFilter.SplittingOff();
@@ -1030,7 +1032,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
     public void sortPolydata(vtkCamera camera)
     {
     	vtkDepthSortPolyData depthSorter = new vtkDepthSortPolyData();
-		depthSorter.SetInputData(smallBodyPolyData);
+		depthSorter.SetInputData(smallBodyPolyDataAtPosition);
 		depthSorter.SetDirectionToBackToFront();
 		depthSorter.SetCamera(camera);
 		smallBodyMapper.SetInputConnection(depthSorter.GetOutputPort());
@@ -1039,19 +1041,19 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
     public vtkPolyData computeFrustumIntersection(double[] origin, double[] ul, double[] ur, double[] lr, double[] ll)
     {
-		return PolyDataUtil.computeFrustumIntersection(smallBodyPolyData, getCellLocator(), getPointLocator(), origin, ul, ur, lr,
+		return PolyDataUtil.computeFrustumIntersection(smallBodyPolyDataAtPosition, getCellLocator(), getPointLocator(), origin, ul, ur, lr,
 				ll);
     }
 
     public vtkPolyData computeMultipleFrustumIntersection(List<Frustum> frustums)
     {
-        return PolyDataUtil.computeMultipleFrustumIntersection(smallBodyPolyData, getCellLocator(), getPointLocator(), frustums);
+        return PolyDataUtil.computeMultipleFrustumIntersection(smallBodyPolyDataAtPosition, getCellLocator(), getPointLocator(), frustums);
     }
 
     @Override
     public void drawPolygon(List<LatLon> controlPoints, vtkPolyData outputInterior, vtkPolyData outputBoundary)
     {
-		PolyDataUtil.drawPolygonOnPolyData(smallBodyPolyData, getPointLocator(), controlPoints, outputInterior,
+		PolyDataUtil.drawPolygonOnPolyData(smallBodyPolyDataAtPosition, getPointLocator(), controlPoints, outputInterior,
 				outputBoundary);
     }
 
@@ -1064,7 +1066,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 		double angle = 0.0;
 
 		// Determine the VTK vars to use (ensure low res data)
-		vtkPolyData vSurfacePD = smallBodyPolyData;
+		vtkPolyData vSurfacePD = smallBodyPolyDataAtPosition;
 		vtkPointLocator vSurfacePL = getPointLocator();
 
 		if (resolutionLevel != 0)
@@ -1083,20 +1085,20 @@ public class GenericPolyhedralModel extends PolyhedralModel
 	public void drawCone(double[] vertex, double[] axis, double angle, int numberOfSides, vtkPolyData outputInterior,
 			vtkPolyData outputBoundary)
     {
-		PolyDataUtil.drawConeOnPolyData(smallBodyPolyData, getPointLocator(), vertex, axis, angle, numberOfSides,
+		PolyDataUtil.drawConeOnPolyData(smallBodyPolyDataAtPosition, getPointLocator(), vertex, axis, angle, numberOfSides,
 				outputInterior, outputBoundary);
     }
 
     @Override
     public void shiftPolyLineInNormalDirection(vtkPolyData polyLine, double shiftAmount)
     {
-        PolyDataUtil.shiftPolyLineInNormalDirectionOfPolyData(polyLine, smallBodyPolyData, getPointLocator(), shiftAmount);
+        PolyDataUtil.shiftPolyLineInNormalDirectionOfPolyData(polyLine, smallBodyPolyDataAtPosition, getPointLocator(), shiftAmount);
     }
 
     @Override
     public double[] getNormalAtPoint(double[] point)
     {
-        return PolyDataUtil.getPolyDataNormalAtPoint(point, smallBodyPolyData, getPointLocator());
+        return PolyDataUtil.getPolyDataNormalAtPoint(point, smallBodyPolyDataAtPosition, getPointLocator());
     }
 
     @Override
@@ -1168,7 +1170,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
     public double[] findClosestVertex(double[] pt)
     {
         int id = getPointLocator().FindClosestPoint(pt);
-        return smallBodyPolyData.GetPoint(id).clone();
+        return smallBodyPolyDataAtPosition.GetPoint(id).clone();
     }
 
     public long findClosestVertexId(double[] pt)
@@ -1297,7 +1299,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         if (smallBodyActor == null)
         {
             smallBodyMapper = new vtkPolyDataMapper();
-            smallBodyMapper.SetInputData(smallBodyPolyData);
+            smallBodyMapper.SetInputData(smallBodyPolyDataAtPosition);
             vtkLookupTable lookupTable = new vtkLookupTable();
             smallBodyMapper.SetLookupTable(lookupTable);
             smallBodyMapper.UseLookupTableScalarRangeOn();
@@ -1306,7 +1308,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 			smallBodyActor.setDefaultMapper(smallBodyMapper);
 			smallBodyActor.setLodMapper(LodMode.MaxQuality, smallBodyMapper);
 
-			vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyData);
+			vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyDataAtPosition);
 			smallBodyActor.setLodMapper(LodMode.MaxSpeed, tmpDecimatedPDM);
 			tmpDecimatedPDM.SetLookupTable(lookupTable);
 			tmpDecimatedPDM.UseLookupTableScalarRangeOn();
@@ -1376,8 +1378,8 @@ public class GenericPolyhedralModel extends PolyhedralModel
     {
         if (boundingBox == null)
         {
-            smallBodyPolyData.ComputeBounds();
-            boundingBox = new BoundingBox(smallBodyPolyData.GetBounds());
+            smallBodyPolyDataAtPosition.ComputeBounds();
+            boundingBox = new BoundingBox(smallBodyPolyDataAtPosition.GetBounds());
         }
 
         return boundingBox;
@@ -1481,13 +1483,13 @@ public class GenericPolyhedralModel extends PolyhedralModel
         double maxLength = 0.0;
         double meanLength = 0.0;
 
-        int numberOfCells = smallBodyPolyData.GetNumberOfCells();
+        int numberOfCells = smallBodyPolyDataAtPosition.GetNumberOfCells();
 
         System.out.println(numberOfCells);
 
         for (int i = 0; i < numberOfCells; ++i)
         {
-            vtkCell cell = smallBodyPolyData.GetCell(i);
+            vtkCell cell = smallBodyPolyDataAtPosition.GetCell(i);
             vtkPoints points = cell.GetPoints();
             double[] pt0 = points.GetPoint(0);
             double[] pt1 = points.GetPoint(1);
@@ -1529,12 +1531,12 @@ public class GenericPolyhedralModel extends PolyhedralModel
     protected void computeShapeModelStatistics()
     {
         vtkMassProperties massProp = new vtkMassProperties();
-        massProp.SetInputData(smallBodyPolyData);
+        massProp.SetInputData(smallBodyPolyDataAtPosition);
         massProp.Update();
 
         surfaceArea = massProp.GetSurfaceArea();
         volume = massProp.GetVolume();
-        meanCellArea = surfaceArea / smallBodyPolyData.GetNumberOfCells();
+        meanCellArea = surfaceArea / smallBodyPolyDataAtPosition.GetNumberOfCells();
         minCellArea = massProp.GetMinCellArea();
         maxCellArea = massProp.GetMaxCellArea();
 
@@ -1905,7 +1907,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
     {
         if (coloringValueType == ColoringValueType.POINT_DATA)
         {
-            return PolyDataUtil.interpolateWithinCell(smallBodyPolyData, pointOrCellData, cellId, pt, idList);
+            return PolyDataUtil.interpolateWithinCell(smallBodyPolyDataAtPosition, pointOrCellData, cellId, pt, idList);
         }
         else
         {
@@ -1918,7 +1920,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         double[] result = null;
         if (coloringValueType == ColoringValueType.POINT_DATA)
         {
-			result = PolyDataUtil.interpolateWithinCell(smallBodyPolyData, pointOrCellData, cellId, pt, idList,
+			result = PolyDataUtil.interpolateWithinCell(smallBodyPolyDataAtPosition, pointOrCellData, cellId, pt, idList,
 					numberAxes);
         }
         else
@@ -2061,7 +2063,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
         gravityVector = new vtkFloatArray();
         gravityVector.SetNumberOfComponents(3);
-        gravityVector.SetNumberOfTuples(smallBodyPolyData.GetNumberOfCells());
+        gravityVector.SetNumberOfTuples(smallBodyPolyDataAtPosition.GetNumberOfCells());
 
         FileReader ifs = new FileReader(file);
         BufferedReader in = new BufferedReader(ifs);
@@ -2302,15 +2304,15 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
                     smallBodyMapper.SetLookupTable(colormap.getLookupTable());
 
-					vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyData);
+					vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyDataAtPosition);
 					smallBodyActor.setLodMapper(LodMode.MaxSpeed, tmpDecimatedPDM);
 					tmpDecimatedPDM.SetLookupTable(colormap.getLookupTable());
 					tmpDecimatedPDM.UseLookupTableScalarRangeOn();
 
                     if (coloringValueType == ColoringValueType.POINT_DATA)
-                        this.smallBodyPolyData.GetPointData().SetScalars(rgbColorData);
+                        this.smallBodyPolyDataAtPosition.GetPointData().SetScalars(rgbColorData);
                     else
-                        this.smallBodyPolyData.GetCellData().SetScalars(rgbColorData);
+                        this.smallBodyPolyDataAtPosition.GetCellData().SetScalars(rgbColorData);
 
                     smallBodyMapper.ScalarVisibilityOn();
                 }
@@ -2321,7 +2323,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
                 doPaint |= checkAndSave("contourLineWidth", contourLineWidth, newPaintingAttributes);
                 if (doPaint)
                 {
-					vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyData);
+					vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyDataAtPosition);
 					smallBodyActor.setLodMapper(LodMode.MaxSpeed, tmpDecimatedPDM);
 					tmpDecimatedPDM.ScalarVisibilityOff();
                     smallBodyMapper.ScalarVisibilityOff();
@@ -2329,14 +2331,14 @@ public class GenericPolyhedralModel extends PolyhedralModel
                     vtkPolyData polyData;
                     if (coloringValueType == ColoringValueType.POINT_DATA)
                     {
-                        smallBodyPolyData.GetPointData().SetScalars(floatArray);
-                        polyData = smallBodyPolyData;
+                        smallBodyPolyDataAtPosition.GetPointData().SetScalars(floatArray);
+                        polyData = smallBodyPolyDataAtPosition;
                     }
                     else
                     {
-                        smallBodyPolyData.GetCellData().SetScalars(floatArray);
+                        smallBodyPolyDataAtPosition.GetCellData().SetScalars(floatArray);
                         vtkCellDataToPointData converter = new vtkCellDataToPointData();
-                        converter.SetInputData(smallBodyPolyData);
+                        converter.SetInputData(smallBodyPolyDataAtPosition);
                         converter.PassCellDataOff();
                         converter.Update();
                         polyData = converter.GetPolyDataOutput(); // contour filter requires point data with one
@@ -2389,17 +2391,17 @@ public class GenericPolyhedralModel extends PolyhedralModel
                     {
                         updateFalseColorArray();
                         if (coloringValueType == ColoringValueType.POINT_DATA)
-                            this.smallBodyPolyData.GetPointData().SetScalars(falseColorArray);
+                            this.smallBodyPolyDataAtPosition.GetPointData().SetScalars(falseColorArray);
                         else
-                            this.smallBodyPolyData.GetCellData().SetScalars(falseColorArray);
+                            this.smallBodyPolyDataAtPosition.GetCellData().SetScalars(falseColorArray);
                         smallBodyMapper.ScalarVisibilityOn();
-						vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyData);
+						vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyDataAtPosition);
 						smallBodyActor.setLodMapper(LodMode.MaxSpeed, tmpDecimatedPDM);
                     }
                 }
                 else
                 {
-					vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyData);
+					vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyDataAtPosition);
 					smallBodyActor.setLodMapper(LodMode.MaxSpeed, tmpDecimatedPDM);
 					tmpDecimatedPDM.ScalarVisibilityOff();
                     smallBodyMapper.ScalarVisibilityOff();
@@ -2411,7 +2413,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         {
             paintingAttributes = newPaintingAttributes;
 
-            this.smallBodyPolyData.Modified();
+            this.smallBodyPolyDataAtPosition.Modified();
 
             this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
         }
@@ -2519,6 +2521,8 @@ public class GenericPolyhedralModel extends PolyhedralModel
     {
         if (smallBodyPolyData != null)
             smallBodyPolyData.Delete();
+        if (smallBodyPolyDataAtPosition != null)
+            smallBodyPolyDataAtPosition.Delete();
         if (lowResSmallBodyPolyData != null)
             lowResSmallBodyPolyData.Delete();
         if (smallBodyActor != null)
@@ -2537,8 +2541,6 @@ public class GenericPolyhedralModel extends PolyhedralModel
             genericCell.Delete();
         if (scalarBarActor != null)
             scalarBarActor.Delete();
-        if (smallBodyPolyData != null)
-            smallBodyPolyData.Delete();
         // if (lowResSmallBodyPolyData != null) lowResSmallBodyPolyData.Delete();
     }
 
@@ -2606,7 +2608,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
             double potTimesAreaSum = 0.0;
             double totalArea = 0.0;
             double minRefPot = Double.MAX_VALUE;
-            int numFaces = smallBodyPolyData.GetNumberOfCells();
+            int numFaces = smallBodyPolyDataAtPosition.GetNumberOfCells();
             for (int i = 0; i < numFaces; ++i)
             {
                 double potential = floatArray.GetTuple1(i);
@@ -2614,7 +2616,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
                 {
                     minRefPot = potential;
                 }
-                double area = ((vtkTriangle) smallBodyPolyData.GetCell(i)).ComputeArea();
+                double area = ((vtkTriangle) smallBodyPolyDataAtPosition.GetCell(i)).ComputeArea();
 
                 potTimesAreaSum += potential * area;
                 totalArea += area;
@@ -2661,11 +2663,11 @@ public class GenericPolyhedralModel extends PolyhedralModel
         if (enable)
         {
             smallBodyMapper.SetInputData(null);
-            smallBodyMapper.SetInputConnection(projectTo2D(smallBodyPolyData));
+            smallBodyMapper.SetInputConnection(projectTo2D(smallBodyPolyDataAtPosition));
         }
         else
         {
-            smallBodyMapper.SetInputData(smallBodyPolyData);
+            smallBodyMapper.SetInputData(smallBodyPolyDataAtPosition);
         }
 
         smallBodyMapper.Update();
@@ -2695,7 +2697,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
             @Override
             public int size()
             {
-                return smallBodyPolyData.GetNumberOfCells();
+                return smallBodyPolyDataAtPosition.GetNumberOfCells();
             }
 
             @Override
@@ -2868,16 +2870,16 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
                 vtkTriangle triangle = new vtkTriangle();
 
-                vtkPoints points = smallBodyPolyData.GetPoints();
-                int numberCells = smallBodyPolyData.GetNumberOfCells();
-                smallBodyPolyData.BuildCells();
+                vtkPoints points = smallBodyPolyDataAtPosition.GetPoints();
+                int numberCells = smallBodyPolyDataAtPosition.GetNumberOfCells();
+                smallBodyPolyDataAtPosition.BuildCells();
                 vtkIdList idList = new vtkIdList();
 
                 for (int index = 0; index < indexable.size(); ++index)
                 {
                     int cellId = indexable.get(index);
                     FacetColoringData facetData = new FacetColoringData(cellId, allColoringData);
-                    facetData.generateDataFromPolydata(smallBodyPolyData, numberCells, triangle, points, idList);
+                    facetData.generateDataFromPolydata(smallBodyPolyDataAtPosition, numberCells, triangle, points, idList);
                     facetData.writeTo(out);
                     out.write(lineSeparator);
                 }
@@ -2895,7 +2897,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         {
             int cellId = indexable.get(index);
             FacetColoringData facetData = new FacetColoringData(cellId, allColoringData);
-            facetData.generateDataFromPolydata(smallBodyPolyData);
+            facetData.generateDataFromPolydata(smallBodyPolyDataAtPosition);
             data[index] = facetData;
         }
         return data;
