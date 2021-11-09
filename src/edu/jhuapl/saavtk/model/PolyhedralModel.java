@@ -15,6 +15,7 @@ import edu.jhuapl.saavtk.util.LatLon;
 import vtk.vtkDataArray;
 import vtk.vtkPointLocator;
 import vtk.vtkPolyData;
+import vtk.vtkTransform;
 import vtk.vtksbCellLocator;
 
 public abstract class PolyhedralModel extends AbstractModel implements PolyModel
@@ -77,6 +78,8 @@ public abstract class PolyhedralModel extends AbstractModel implements PolyModel
 	public abstract BoundingBox getBoundingBox();
 
 	public abstract vtkPolyData getSmallBodyPolyData();
+	
+	public abstract vtkPolyData getSmallBodyPolyDataAtPosition();
 
 	public abstract boolean isEllipsoid();
 
@@ -186,6 +189,8 @@ public abstract class PolyhedralModel extends AbstractModel implements PolyModel
 	{
 		return null;
 	}
+	
+	public abstract vtkTransform getCurrentTransform();
 
 	public abstract void setPointSize(double value);
 

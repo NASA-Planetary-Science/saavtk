@@ -97,11 +97,11 @@ public class ExampleView extends View
 	protected void setupModelManager()
 	{
 		PolyhedralModel smallBodyModel = new ExamplePolyhedralModel((ViewConfig)getConfig());
-		Graticule graticule = new Graticule(smallBodyModel);
+//		Graticule graticule = new Graticule(smallBodyModel);
 
 		HashMap<ModelNames, List<Model>> allModels = new HashMap<>();
 		allModels.put(ModelNames.SMALL_BODY, ImmutableList.of(smallBodyModel)); 
-		allModels.put(ModelNames.GRATICULE, ImmutableList.of(graticule));
+//		allModels.put(ModelNames.GRATICULE, ImmutableList.of(graticule));
 		
 
 		// if (getConfig().hasLidarData)
@@ -129,16 +129,6 @@ public class ExampleView extends View
 	protected void setupPopupManager()
 	{
 		ModelManager tmpModelManager = getModelManager();
-
-		try
-		{
-			PopupMenu popupMenu = new GraticulePopupMenu(tmpModelManager, getRenderer());
-			tmpModelManager.getModel(ModelNames.GRATICULE).forEach(model -> registerPopup(model, popupMenu));
-		}
-		catch (AWTException e)
-		{
-			e.printStackTrace();
-		}
 
 		setPopupManager(new PopupManager(tmpModelManager));
 	}

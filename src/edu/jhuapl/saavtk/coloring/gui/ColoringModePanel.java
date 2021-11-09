@@ -2,6 +2,7 @@ package edu.jhuapl.saavtk.coloring.gui;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
 
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -36,7 +37,7 @@ public class ColoringModePanel extends GPanel implements ActionListener
 	 * panels. This is a defective design due to the poorly designed
 	 * {@link PolyhedralModel} class.
 	 */
-	public ColoringModePanel(Renderer aRenderer, PolyhedralModel aSmallBody, JComboBox<String> aPropertyBox,
+	public ColoringModePanel(Renderer aRenderer, List<PolyhedralModel> aSmallBodies, JComboBox<String> aPropertyBox,
 			JComboBox<String> aRedBox, JComboBox<String> aGreenBox, JComboBox<String> aBlueBox)
 	{
 		setLayout(new MigLayout("", "", ""));
@@ -51,9 +52,9 @@ public class ColoringModePanel extends GPanel implements ActionListener
 		add(colorTypeBox, "pushx,wrap");
 
 		cardPanel = new CardPanel<>();
-		cardPanel.addCard(ColoringMode.Plain, new PlainColorPanel(aSmallBody));
-		cardPanel.addCard(ColoringMode.PlateColorRGB, new RgbPlateColorPanel(aSmallBody, aRedBox, aGreenBox, aBlueBox));
-		cardPanel.addCard(ColoringMode.PlateColorStandard, new StandardPlateColorPanel(aRenderer, aSmallBody, //
+		cardPanel.addCard(ColoringMode.Plain, new PlainColorPanel(aSmallBodies));
+		cardPanel.addCard(ColoringMode.PlateColorRGB, new RgbPlateColorPanel(aSmallBodies, aRedBox, aGreenBox, aBlueBox));
+		cardPanel.addCard(ColoringMode.PlateColorStandard, new StandardPlateColorPanel(aRenderer, aSmallBodies, //
 				aPropertyBox));
 		cardPanel.switchToCard(ColoringMode.Plain);
 		add(cardPanel, "growx,span,w 50::,wrap 0");

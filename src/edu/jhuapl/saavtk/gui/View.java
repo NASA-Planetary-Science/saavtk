@@ -45,6 +45,9 @@ import edu.jhuapl.saavtk.view.light.LightUtil;
  */
 public abstract class View extends JPanel
 {
+    /** Global to keep track of the most recent change in any (splitPane) divider location. */
+    private static int globLastDividerLocation = -1;
+
 	private static final long serialVersionUID = 1L;
     protected JSplitPane splitPane;
     protected Renderer renderer;

@@ -66,6 +66,7 @@ import vtk.vtkProp;
 import vtk.vtkProperty;
 import vtk.vtkScalarBarActor;
 import vtk.vtkTextProperty;
+import vtk.vtkTransform;
 import vtk.vtkTriangle;
 import vtk.vtkUnsignedCharArray;
 import vtk.vtksbCellLocator;
@@ -104,6 +105,8 @@ public class GenericPolyhedralModel extends PolyhedralModel
     private vtkPolyData lowResSmallBodyPolyData;
 	private VtkLodActor smallBodyActor;
     private vtkPolyDataMapper smallBodyMapper;
+    
+    protected vtkTransform currentTransform;
 
     private List<vtkProp> smallBodyActors = new ArrayList<>();
 
@@ -114,6 +117,8 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
     private vtksbCellLocator cellLocator;
     private vtkPointLocator pointLocator;
+    private vtksbCellLocator originalCellLocator;
+    private vtkPointLocator originalPointLocator;
     private vtkPointLocator lowResPointLocator;
     private vtkScalarBarActor scalarBarActor;
     private SmallBodyCubes smallBodyCubes;
@@ -477,6 +482,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
     	if (polydata != null)
         {
     		smallBodyPolyDataAtPosition.DeepCopy(polydata);
+    		this.pcs.firePropertyChange(Properties.MODEL_POSITION_CHANGED, null, null);
         }
     }
 
@@ -799,6 +805,8 @@ public class GenericPolyhedralModel extends PolyhedralModel
         {
             cellLocator = new vtksbCellLocator();
             pointLocator = new vtkPointLocator();
+            originalCellLocator = new vtksbCellLocator();
+            originalPointLocator = new vtkPointLocator();
         }
 
         // Initialize the cell locator
@@ -806,15 +814,25 @@ public class GenericPolyhedralModel extends PolyhedralModel
         cellLocator.SetDataSet(smallBodyPolyDataAtPosition);
         cellLocator.CacheCellBoundsOn();
         cellLocator.AutomaticOn();
-        // cellLocator.SetMaxLevel(10);
-        // cellLocator.SetNumberOfCellsPerNode(5);
         cellLocator.SetTolerance(1e-15);
         cellLocator.BuildLocator();
+        
+        originalCellLocator.FreeSearchStructure();
+        originalCellLocator.SetDataSet(smallBodyPolyData);
+        originalCellLocator.CacheCellBoundsOn();
+        originalCellLocator.AutomaticOn();
+        originalCellLocator.SetTolerance(1e-15);
+        originalCellLocator.BuildLocator();
 
         pointLocator.FreeSearchStructure();
         pointLocator.SetDataSet(smallBodyPolyDataAtPosition);
         pointLocator.SetTolerance(1e-15);
         pointLocator.BuildLocator();
+        
+        originalPointLocator.FreeSearchStructure();
+        originalPointLocator.SetDataSet(smallBodyPolyData);
+        originalPointLocator.SetTolerance(1e-15);
+        originalPointLocator.BuildLocator();
     }
 
     private void initializeLowResData()
@@ -844,6 +862,12 @@ public class GenericPolyhedralModel extends PolyhedralModel
         return smallBodyPolyData;
     }
 
+    @Override
+    public vtkPolyData getSmallBodyPolyDataAtPosition()
+    {
+        return smallBodyPolyDataAtPosition;
+    }
+    
     public vtkActor getSmallBodyActor()
     {
         return smallBodyActor;
@@ -1242,7 +1266,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         int[] subId = new int[1];
         int[] cellId = new int[1];
 
-        int result = getCellLocator().IntersectWithLine(origin, lookPt, tol, t, x, pcoords, subId, cellId, genericCell);
+        int result = originalCellLocator.IntersectWithLine(origin, lookPt, tol, t, x, pcoords, subId, cellId, genericCell);
 
         intersectPoint[0] = x[0];
         intersectPoint[1] = x[1];
@@ -2918,6 +2942,12 @@ public class GenericPolyhedralModel extends PolyhedralModel
             data[index] = facetData;
         }
         return data;
+    }
+    
+    @Override
+    public vtkTransform getCurrentTransform()
+    {
+    	return currentTransform;
     }
 
 }
