@@ -10,7 +10,7 @@ import org.apache.commons.io.IOUtils;
 
 public class ConvertResourceToFile
 {
-    private static boolean resourceEqualsFile(Object o, String resource, File file)
+    private static boolean resourceEqualsFile(Class c, String resource, File file)
     {
         if (!file.exists())
             return false;
@@ -19,7 +19,7 @@ public class ConvertResourceToFile
 
         try
         {
-            InputStream ris = o.getClass().getResourceAsStream(resource);
+            InputStream ris = ConvertResourceToFile.class.getResourceAsStream(resource);
             FileInputStream fis = new FileInputStream(file);
 
             equals = IOUtils.contentEquals(ris, fis);
@@ -43,7 +43,7 @@ public class ConvertResourceToFile
      * @param parentDir
      * @return
      */
-    public static File convertResourceToRealFile(Object o, String resource, String parentDir)
+    public static File convertResourceToRealFile(Class c, String resource, String parentDir)
     {
         // Get the name of the resource after the last slash
         File tmp = new File(resource);
@@ -55,12 +55,12 @@ public class ConvertResourceToFile
 
         File file = new File(parentDir + File.separator + name);
 
-        if (resourceEqualsFile(o, resource, file))
+        if (resourceEqualsFile(c, resource, file))
             return file;
 
         try
         {
-            InputStream is = o.getClass().getResourceAsStream(resource);
+            InputStream is = ConvertResourceToFile.class.getResourceAsStream(resource);
 
             FileOutputStream os = new FileOutputStream(file);
 
@@ -91,7 +91,7 @@ public class ConvertResourceToFile
             temp = File.createTempFile("resource-", null);
             temp.deleteOnExit();
 
-            InputStream is = o.getClass().getResourceAsStream(resource);
+            InputStream is = ConvertResourceToFile.class.getResourceAsStream(resource);
 
             FileOutputStream os = new FileOutputStream(temp);
 

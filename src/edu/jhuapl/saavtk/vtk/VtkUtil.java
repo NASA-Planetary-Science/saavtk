@@ -16,6 +16,7 @@ import vtk.vtkCellArray;
 import vtk.vtkObject;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
+import vtk.vtkProperty;
 import vtk.vtkUnsignedCharArray;
 
 /**
@@ -136,6 +137,18 @@ public class VtkUtil
 			return null;
 
 		return ((AssocActor) aActor).getAssocModel(Object.class);
+	}
+
+	/**
+	 * Utility method updates the {@link vtkProperty} to reflect the specified
+	 * color.
+	 *
+	 * @param aaProp
+	 * @param aColor
+	 */
+	public static void setColorOnProperty(vtkProperty aProperty, Color aColor)
+	{
+		aProperty.SetColor(aColor.getRed() / 255.0, aColor.getGreen() / 255.0, aColor.getBlue() / 255.0);
 	}
 
 	/**

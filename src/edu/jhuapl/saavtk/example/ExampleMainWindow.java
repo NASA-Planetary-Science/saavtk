@@ -20,7 +20,7 @@ public class ExampleMainWindow extends MainWindow
 {
     public ExampleMainWindow(String tempCustomShapeModelPath)
     {
-        super(tempCustomShapeModelPath, false);
+        super(tempCustomShapeModelPath);
    }
 
     @Override

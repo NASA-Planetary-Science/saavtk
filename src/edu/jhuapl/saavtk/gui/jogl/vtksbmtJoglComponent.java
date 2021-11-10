@@ -1,9 +1,11 @@
 package edu.jhuapl.saavtk.gui.jogl;
 
-import javax.media.opengl.GLAutoDrawable;
-import javax.media.opengl.GLContext;
-import javax.media.opengl.GLEventListener;
-import javax.media.opengl.awt.GLCanvas;
+import java.lang.reflect.Method;
+
+import com.jogamp.opengl.GLAutoDrawable;
+import com.jogamp.opengl.GLContext;
+import com.jogamp.opengl.GLEventListener;
+import com.jogamp.opengl.awt.GLCanvas;
 
 import vtk.vtkGenericOpenGLRenderWindow;
 import vtk.vtkObject;
@@ -54,7 +56,7 @@ class vtksbmtJoglComponent<T extends java.awt.Component> extends vtkAbstractComp
         vtksbmtJoglComponent.this.glRenderWindow.SetMapped(1);
         vtksbmtJoglComponent.this.glRenderWindow.SetPosition(0, 0);
 //        vtksbmtJoglComponent.this.setSize(drawable.getSurfaceWidth(), drawable.getSurfaceHeight());
-        vtksbmtJoglComponent.this.setSize(drawable.getHeight(),drawable.getWidth());
+        vtksbmtJoglComponent.this.setSize(drawable.getSurfaceHeight(),drawable.getSurfaceWidth());
         vtksbmtJoglComponent.this.glRenderWindow.OpenGLInit();
       }
 

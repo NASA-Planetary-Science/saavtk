@@ -202,7 +202,7 @@ public class MetadataDisplayPanel
 	 * @return the table
 	 */
 	@SuppressWarnings("serial")
-	private final JTable createTable(Vector<?> rowData, Vector<?> columnNames)
+	private final JTable createTable(Vector<? extends Vector> rowData, Vector<?> columnNames)
 	{
 		JTable jTable = new JTable();
 		jTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);

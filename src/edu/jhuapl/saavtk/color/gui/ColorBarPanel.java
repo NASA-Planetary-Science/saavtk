@@ -1,8 +1,11 @@
 package edu.jhuapl.saavtk.color.gui;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +39,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * UI that allows the user to select a color bar and specify the range of values
  * associated with the color bar.
- * <P>
+ * <p>
  * Usage of this UI component requires the manual addition of various
  * {@link FeatureType}s. The {@link FeatureType#Invalid} is used to designate an
  * invalid or no choice selection. When this FeatureType is selected relevant UI
@@ -101,7 +104,7 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 		cColorMapAttr = ColorMapAttr.Invalid;
 
 		// Set up the GUI
-		setLayout(new MigLayout("", "0[][right][]0", "0[][]"));
+		setLayout(new MigLayout("hidemode 3", "0[][right][]0", "0[][]"));
 
 		painterCBCP = new ColorBarConfigPanel(this, refColorBarPainter);
 		painterCBCP.addActionListener(this);
@@ -116,10 +119,10 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 
 		// ColorTable area
 		colorTableL = new JLabel();
+		colorTableL.setPreferredSize(new Dimension(0, 18));
 		colorTableBox = new GComboBox<>(this, ColorTableUtil.getSystemColorTableList());
 		colorTableBox.setRenderer(new ColorTableListCellRenderer(colorTableBox));
 		colorTableBox.setChosenItem(ColorTableUtil.getSystemColorTableDefault());
-
 		add(colorTableL, "growx,span,w 10::,wrap 3");
 		add(colorTableBox, "growx,span,w 0:0:,wrap");
 
@@ -178,8 +181,17 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 		add(applyB, "ax right,gapleft push,wrap 0");
 
 		// Register for events of interest
-		GuiExeUtil.executeOnceWhenShowing(this, () -> updateColorTableArea());
+		GuiExeUtil.executeOnceWhenShowing(this, () -> updateColorTableIcon());
 		refColorBarPainter.addListener(this);
+
+		colorTableL.addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentResized(ComponentEvent aEvent)
+			{
+				updateColorTableIcon();
+			}
+		});
+
 	}
 
 	/**
@@ -227,6 +239,16 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 	}
 
 	/**
+	 * Configures the gui to hide the UI elements relating to configuration of
+	 * features.
+	 */
+	public void hideFeatureControls()
+	{
+		featureL.setVisible(false);
+		featureBox.setVisible(false);
+	}
+
+	/**
 	 * Configures the gui to reflect the specified {@link ColorMapAttr}.
 	 */
 	public void setColorMapAttr(ColorMapAttr aColorMapAttr)
@@ -239,6 +261,8 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 		maxValueNF.setValue(aColorMapAttr.getMaxVal());
 		numLevelsNF.setValue(aColorMapAttr.getNumLevels());
 		logScaleCB.setSelected(aColorMapAttr.getIsLogScale());
+
+		updateControlArea();
 	}
 
 	/**
@@ -298,7 +322,7 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 		else if (source == minValueNF || source == maxValueNF || source == numLevelsNF)
 		{
 			if (source == numLevelsNF)
-				updateColorTableArea();
+				updateColorTableIcon();
 
 			doAutoSync();
 		}
@@ -319,10 +343,10 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 	}
 
 	/**
-	 * Helper method that updates the colorTableL to reflect the selection of
-	 * colorTableBox and numLevelsNF.
+	 * Helper method that updates the displayed ColorTable icon (colorTableL) to
+	 * reflect the selection of colorTableBox and numLevelsNF.
 	 */
-	protected void updateColorTableArea()
+	protected void updateColorTableIcon()
 	{
 		int iconW = colorTableL.getWidth();
 		if (iconW < 16)
@@ -355,7 +379,7 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 	 */
 	private void doActionColorTableBox()
 	{
-		updateColorTableArea();
+		updateColorTableIcon();
 
 		doAutoSync();
 	}
@@ -365,7 +389,7 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 	 */
 	private void doActionFeatureBox()
 	{
-		updateColorTableArea();
+		updateColorTableIcon();
 
 		// Retrieve the default min / max values
 		double resetMin = Double.NaN;

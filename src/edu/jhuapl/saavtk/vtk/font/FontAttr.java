@@ -10,7 +10,8 @@ import java.awt.Color;
 public class FontAttr
 {
 	// Constants
-	public static final FontAttr Default = new FontAttr("Plain", Color.BLACK, 16, true);
+	public static final String DefaultFace = "Arial";
+	public static final FontAttr Default = new FontAttr(DefaultFace, Color.BLACK, 16, true);
 
 	// Attributes
 	private final String face;

@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.model;
 
+import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -267,6 +268,11 @@ public abstract class PolyhedralModel extends AbstractModel implements PolyModel
 	public abstract double[] getClosestNormal(double[] point);
 
 	public abstract void drawPolygon(List<LatLon> controlPoints, vtkPolyData outputInterior, vtkPolyData outputBoundary);
+
+	/**
+	 * Update the color of the main body to reflect a plain color.
+	 */
+	public abstract void setPlainColor(Color aColor);
 
 	@Override
 	public Vector3D getAverageSurfaceNormal()

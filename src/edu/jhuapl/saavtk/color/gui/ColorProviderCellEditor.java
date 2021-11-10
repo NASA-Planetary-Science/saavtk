@@ -17,7 +17,7 @@ import edu.jhuapl.saavtk.gui.dialog.ColorChooser;
  * {@link TableCellEditor} used to edit colors for a table cell where the data
  * model is a {@link ColorProvider}. It will be activated only if one item is
  * selected.
- * <P>
+ * <p>
  * This editor, when activated will present a popup color chooser dialog.
  *
  * @author lopeznr1
@@ -33,9 +33,7 @@ public class ColorProviderCellEditor<G1> extends AbstractCellEditor implements T
 	// State vars
 	private ColorProvider currCP;
 
-	/**
-	 * Standard Constructor
-	 */
+	/** Standard Constructor */
 	public ColorProviderCellEditor()
 	{
 		dispComp = new ColorProviderCellRenderer(false);
@@ -60,11 +58,16 @@ public class ColorProviderCellEditor<G1> extends AbstractCellEditor implements T
 		if (aTable.getSelectedRows().length != 1)
 			return null;
 
+		// Select ColorProvider.Invalid if a ColorProvider was not specified
+		var tmpColorProvider = ColorProvider.Invalid;
+		if (aValue instanceof ColorProvider aColorProvider)
+			tmpColorProvider = aColorProvider;
+
 		// Prompt the user to select a color
-		Color oldColor = ((ColorProvider) aValue).getBaseColor();
+		var oldColor = tmpColorProvider.getBaseColor();
 		if (oldColor == null)
 			oldColor = Color.BLACK;
-		Color tmpColor = ColorChooser.showColorChooser(JOptionPane.getFrameForComponent(aTable), oldColor);
+		var tmpColor = ColorChooser.showColorChooser(JOptionPane.getFrameForComponent(aTable), oldColor);
 		if (tmpColor == null)
 			return null;
 
@@ -74,9 +77,7 @@ public class ColorProviderCellEditor<G1> extends AbstractCellEditor implements T
 
 		// There is no further editing since it occurs within the popup dialog
 		// Note, stopCellEditing must be called after all pending AWT events
-		SwingUtilities.invokeLater(() -> {
-			stopCellEditing();
-		});
+		SwingUtilities.invokeLater(() -> stopCellEditing());
 
 		return dispComp;
 	}

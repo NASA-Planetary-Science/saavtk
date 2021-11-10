@@ -1,33 +1,33 @@
-package edu.jhuapl.saavtk.colormap;
+package edu.jhuapl.saavtk.coloring.gui.standard;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import glum.gui.panel.GPanel;
 import net.miginfocom.swing.MigLayout;
 
-public class ContourPanel extends JPanel implements ActionListener, ChangeListener
+/**
+ * Panel that allows the user to configure how contours lines are displayed.
+ *
+ * @author lopeznr1
+ */
+public class ContourPanel extends GPanel implements ActionListener, ChangeListener
 {
-	// Constants
-	private static final long serialVersionUID = 1L;
-	public static final String EVT_ContourChanged = "Event: ContourChanged";
-
 	// GUI vars
 	private final JCheckBox showAsContourCB;
 	private final JLabel lineWidthL;
 	private final JSpinner contourLineWidthSpinner;
 
+	/** Standard Constructor */
 	public ContourPanel()
 	{
-		super();
-
 		// Instantiate the various GUI controls
 		lineWidthL = new JLabel("Line width", JLabel.RIGHT);
 		contourLineWidthSpinner = new JSpinner(new SpinnerNumberModel(2, 1, 50, 1));
@@ -59,7 +59,7 @@ public class ContourPanel extends JPanel implements ActionListener, ChangeListen
 		if (aEvent.getSource() == showAsContourCB)
 		{
 			updateLineWidthEnabled();
-			firePropertyChange(EVT_ContourChanged, null, null);
+			notifyListeners(this);
 		}
 	}
 
@@ -74,9 +74,7 @@ public class ContourPanel extends JPanel implements ActionListener, ChangeListen
 	public void stateChanged(ChangeEvent aEvent)
 	{
 		if (aEvent.getSource() == contourLineWidthSpinner)
-		{
-			firePropertyChange(EVT_ContourChanged, null, null);
-		}
+			notifyListeners(this);
 	}
 
 	/**
