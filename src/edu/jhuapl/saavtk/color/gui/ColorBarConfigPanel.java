@@ -94,8 +94,8 @@ public class ColorBarConfigPanel extends GlassPanel implements ActionListener, C
 		isShownCB.setSelected(refColorBarPainter.getIsVisible());
 		mainLAP.setLayoutAttr(refColorBarPainter.getLayoutAttr());
 		mainLAP.setWorkColorMapAttr(refColorBarPainter.getColorMapAttr());
-		labelFAP.setAttr(refColorBarPainter.getFontAttrLabel());
-		titleFAP.setAttr(refColorBarPainter.getFontAttrTitle());
+		labelFAP.setFontAttr(refColorBarPainter.getFontAttrLabel());
+		titleFAP.setFontAttr(refColorBarPainter.getFontAttrTitle());
 		mainBAP.setAttr(refColorBarPainter.getBackgroundAttr());
 	}
 

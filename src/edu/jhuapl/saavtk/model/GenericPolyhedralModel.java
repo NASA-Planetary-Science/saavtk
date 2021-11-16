@@ -210,7 +210,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         if (Configuration.useFileCache())
         {
             if (lowestResolutionModelStoredInResource)
-				defaultModelFile = ConvertResourceToFile.convertResourceToRealFile(this, modelFiles[0],
+				defaultModelFile = ConvertResourceToFile.convertResourceToRealFile(this.getClass(), modelFiles[0],
 						Configuration.getApplicationDataDir());
             else
                 defaultModelFile = FileCache.getFileFromServer(modelFiles[0]);
@@ -403,7 +403,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         if (Configuration.useFileCache())
         {
             if (lowestResolutionModelStoredInResource)
-				defaultModelFile = ConvertResourceToFile.convertResourceToRealFile(this, modelFiles[0],
+				defaultModelFile = ConvertResourceToFile.convertResourceToRealFile(this.getClass(), modelFiles[0],
 						Configuration.getApplicationDataDir());
             else
                 defaultModelFile = FileCache.getFileFromServer(modelFiles[0]);
@@ -2665,6 +2665,23 @@ public class GenericPolyhedralModel extends PolyhedralModel
         smallBodyMapper.Update();
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
     }
+
+ 	@Override
+ 	public void setPlainColor(Color aColor)
+ 	{
+ 		try
+ 		{
+ 			setColoringIndex(-1);
+ 		}
+ 		catch (IOException aExp)
+ 		{
+ 			aExp.printStackTrace();
+ 		}
+
+ 		smallBodyActor.GetProperty().SetColor(aColor.getRed() / 255.0, aColor.getGreen() / 255.0,
+ 				aColor.getBlue() / 255.0);
+ 		pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+ 	}
 
     /**
      * Saves out file with information about each plate of shape model that contains

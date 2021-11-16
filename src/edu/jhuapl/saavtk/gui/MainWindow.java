@@ -8,104 +8,141 @@ import javax.swing.JFrame;
 import javax.swing.JMenuBar;
 
 import edu.jhuapl.saavtk.gui.menu.FileMenu;
+import edu.jhuapl.saavtk.main.MainWinCfg;
+import edu.jhuapl.saavtk.main.io.MainWinConfigUtil;
 import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.status.gui.StatusBarPanel;
+import glum.gui.info.WindowCfg;
+import glum.task.ConsoleTask;
+import glum.task.SilentTask;
+import glum.util.ThreadUtil;
 
 /**
- * This class contains the "main" function called at the start of the program.
- * This class sets up the top level window and instantiates all the "managers"
- * used through out the program.
+ * This class defines the top level window. Typically only one
+ * {@link MainWindow} is allowed.
+ * <p>
+ * This object instantiates the {@link ViewManager} and as a result instantiates
+ * all the "managers" used through out the program.
  */
 public abstract class MainWindow extends JFrame
 {
-    private static MainWindow mainWindow = null;
+	/** Global that holds the {@link MainWindow} singleton. */
+	private static MainWindow globMainWindow = null;
 
-    public static MainWindow getMainWindow()
-    {
-        return mainWindow;
-    }
+	// State vars
+	private MainWinCfg workMainAppCfg;
 
-    public static void setMainWindow(MainWindow window)
-    {
-        if (mainWindow != null)
-        {
-            throw new IllegalStateException("Cannot call setMainWindow more than once");
-        }
-        mainWindow = window;
-    }
+	// Gui vars
+	private final StatusBarPanel statusBarPanel;
+	protected ViewManager rootPanel;
 
-    private static final long serialVersionUID = -1837887362465597229L;
-    private StatusBarPanel statusBar;
-    protected ViewManager rootPanel;
+	/**
+	 * Returns the (global) singleton {@link MainWindow}.
+	 * <p>
+	 * Returns null if a {@link MainWindow} has not been instantiated.
+	 */
+	public static MainWindow getMainWindow()
+	{
+		return globMainWindow;
+	}
 
-    /**
-     * @param tempCustomShapeModelPath path to shape model. May be null. If
-     *            non-null, the main window will create a temporary custom view of
-     *            the shape model which will be shown first. This temporary view is
-     *            not saved into the custom application folder and will not be
-     *            available unless explicitely imported.
-     */
-    protected MainWindow(String tempCustomShapeModelPath, boolean editableLeftStatusLabel)
-    {
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	public static void setMainWindow(MainWindow window)
+	{
+		if (globMainWindow != null)
+		{
+			throw new IllegalStateException("Cannot call setMainWindow more than once");
+		}
+		globMainWindow = window;
+	}
 
-        createStatusBar(editableLeftStatusLabel);
+	/**
+	 * @param tempCustomShapeModelPath path to shape model. May be null. If
+	 *                                 non-null, the main window will create a
+	 *                                 temporary custom view of the shape model
+	 *                                 which will be shown first. This temporary
+	 *                                 view is not saved into the custom application
+	 *                                 folder and will not be available unless
+	 *                                 explicitely imported.
+	 */
+	protected MainWindow(String tempCustomShapeModelPath)
+	{
+		// Load the MainWindow configuration
+		workMainAppCfg = MainWinCfg.formDefaultConfiguration();
+		workMainAppCfg = MainWinConfigUtil.loadConfiguration(new ConsoleTask(), workMainAppCfg);
 
-        rootPanel = createViewManager(statusBar, tempCustomShapeModelPath);
+		// Set up the gui
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        rootPanel.setPreferredSize(new Dimension(800, 600));
+		statusBarPanel = new StatusBarPanel();
+		add(statusBarPanel, BorderLayout.PAGE_END);
 
-        createMenus();
+		rootPanel = createViewManager(statusBarPanel, tempCustomShapeModelPath);
+		add(rootPanel, BorderLayout.CENTER);
 
-        this.add(rootPanel, BorderLayout.CENTER);
+		createMenus();
 
-        ImageIcon icon = createImageIcon();
+		ImageIcon icon = createImageIcon();
+		setIconImage(icon.getImage());
 
-        setIconImage(icon.getImage());
+		// Install the MainWindow configuration
+		var mainWC = workMainAppCfg.mainWC();
+		setLocation(mainWC.posX(), mainWC.posY());
+		setPreferredSize(new Dimension(mainWC.dimX(), mainWC.dimY()));
 
-        // // Center the application on the screen.
-        // Dimension prefSize = this.getPreferredSize();
-        // Dimension parentSize;
-        // java.awt.Point parentLocation = new java.awt.Point(0, 0);
-        // parentSize = Toolkit.getDefaultToolkit().getScreenSize();
-        // int x = parentLocation.x + (parentSize.width - prefSize.width) / 2;
-        // int y = parentLocation.y + (parentSize.height - prefSize.height) / 2;
-        // this.setLocation(x, y);
-        // this.setResizable(true);
-    }
+		// Register for events of interest
+		ThreadUtil.addShutdownHook(() -> shutdownPanel());
+	}
 
-    protected MainWindow(String tempCustomShapeModelPath)
-    {
-        this(tempCustomShapeModelPath, true);
-    }
+	/**
+	 * Returns the {@link MainWinCfg}.
+	 */
+	public MainWinCfg getMainAppCfg()
+	{
+		return workMainAppCfg;
+	}
 
-    public boolean isReady()
-    {
-        return rootPanel.isReady();
-    }
+	public boolean isReady()
+	{
+		return rootPanel.isReady();
+	}
 
-    protected ImageIcon createImageIcon()
-    {
-        return new ImageIcon("data/yin-yang.gif");
-    }
+	protected ImageIcon createImageIcon()
+	{
+		return new ImageIcon("data/yin-yang.gif");
+	}
 
-    protected abstract ViewManager createViewManager(StatusNotifier aStatusNotifier, String tempCustomShapeModelPath);
+	protected abstract ViewManager createViewManager(StatusNotifier aStatusNotifier, String tempCustomShapeModelPath);
 
-    protected FileMenu createFileMenu(ViewManager rootPanel)
-    {
-        return new FileMenu(rootPanel);
-    }
+	protected FileMenu createFileMenu(ViewManager rootPanel)
+	{
+		return new FileMenu(rootPanel);
+	}
 
-    private final void createMenus()
-    {
-        JMenuBar menuBar = new JMenuBar();
-        rootPanel.createMenus(menuBar);
-        setJMenuBar(menuBar);
-    }
+	private final void createMenus()
+	{
+		JMenuBar menuBar = new JMenuBar();
+		rootPanel.createMenus(menuBar);
+		setJMenuBar(menuBar);
+	}
 
-    protected void createStatusBar(boolean editableLeftLabel)
-    {
-   	 statusBar = new StatusBarPanel();
-        this.getContentPane().add(statusBar, BorderLayout.PAGE_END);
-    }
+	/**
+	 * Helper method that handles the shutdown logic.
+	 */
+	private void shutdownPanel()
+	{
+		var tmpMainWC = new WindowCfg(this);
+
+		var tmpMainSplitSize = workMainAppCfg.mainSplitSize();
+		var tmpViewManager = ViewManager.getGlobalViewManager();
+		if (tmpViewManager != null)
+		{
+			var tmpView = tmpViewManager.getCurrentView();
+			if (tmpView != null)
+				tmpMainSplitSize = tmpView.getMainSplitPane().getDividerLocation();
+		}
+
+		var tmpMainAppCfg = new MainWinCfg(tmpMainWC, tmpMainSplitSize);
+		MainWinConfigUtil.saveConfiguration(new SilentTask(), tmpMainAppCfg);
+	}
+
 }

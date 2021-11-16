@@ -148,6 +148,11 @@ public class Authorizor
                 String line;
                 while ((line = reader.readLine()) != null)
                 {
+                    // Skip any blank lines.
+                    if (line.matches("^\\s*$"))
+                    {
+                        continue;
+                    }
                     if (userName == null)
                     {
                         userName = line;
@@ -162,19 +167,20 @@ public class Authorizor
                     }
                 }
 
-                if (userName == null)
-                {
-                    userName = getDefaultUserName();
-                    char[] defaultPassword = getDefaultPassword();
-                    if (defaultPassword != null)
-                    {
-                        password = Arrays.copyOf(defaultPassword, defaultPassword.length);
-                    }
-                }
             }
             catch (Exception e)
             {
 
+            }
+
+            if (password == null)
+            {
+                userName = getDefaultUserName();
+                char[] defaultPassword = getDefaultPassword();
+                if (defaultPassword != null)
+                {
+                    password = Arrays.copyOf(defaultPassword, defaultPassword.length);
+                }
             }
 
             UrlState result;

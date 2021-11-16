@@ -17,6 +17,7 @@ import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.pick.PickManager.PickMode;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.util.Configuration;
+import edu.jhuapl.saavtk.util.ScreenUtil;
 import vtk.vtkCellPicker;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
@@ -164,11 +165,10 @@ public class PickUtil
 		// Note that on some displays, such as a retina display, the height used by
 		// OpenGL is different than the height used by Java. Therefore we need
 		// scale the mouse coordinates to get the right position for OpenGL.
-		// double openGlHeight = aRenComp.getComponent().getSurfaceHeight();
-		// double openGlHeight = aRenComp.getComponent().getHeight();
+//		 double openGlHeight = aRenComp.getComponent().getSurfaceHeight();
+//		 double openGlHeight = aRenComp.getComponent().getHeight();
 		double javaHeight = aRenComp.getComponent().getHeight();
-		// double scale = openGlHeight / javaHeight;
-		double scale = 1.0;
+		double scale = ScreenUtil.getScreenScale(aRenComp);
 		int tmpVal = aCellPicker.Pick(scale * aPosX, scale * (javaHeight - aPosY - 1), 0.0, aRenComp.getRenderer());
 
 		aRenComp.getVTKLock().unlock();
