@@ -17,6 +17,7 @@ public class IconUtil
 	private static Icon cIconActionAbort = null;
 	private static Icon cIconActionCenter = null;
 	private static Icon cIconActionConfig = null;
+	private static Icon cIconActionInfo = null;
 	private static Icon cIconActionReset = null;
 
 	private static Icon cIconItemAdd = null;
@@ -30,6 +31,14 @@ public class IconUtil
 	private static Icon cIconSelectAll = null;
 	private static Icon cIconSelectNone = null;
 	private static Icon cIconSelectInvert = null;
+	
+	private static Icon cIconShow = null;
+	private static Icon cIconHide = null;
+	
+	private static Icon cIconRecord = null;
+	private static Icon cIconStop = null;
+	
+	private static Icon cIconFont = null;
 
 	/**
 	 * Returns the icon that should be used for "Abort" action buttons
@@ -62,6 +71,17 @@ public class IconUtil
 			cIconActionConfig = IconUtil.loadIcon("resources/icons/ActionConfig.24.png");
 
 		return cIconActionConfig;
+	}
+
+	/**
+	 * Returns the icon that should be used for "Information" action buttons
+	 */
+	public static Icon getActionInfo()
+	{
+		if (cIconActionInfo == null)
+			cIconActionInfo = IconUtil.loadIcon("resources/icons/ActionInfo.24.png");
+
+		return cIconActionInfo;
 	}
 
 	/**
@@ -223,7 +243,54 @@ public class IconUtil
 
 		return cIconSelectNone;
 	}
+	
+	//Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>
+	/**
+	 * Returns the icon that should be used for "Show" buttons
+	 */
+	public static Icon getItemShow()
+	{
+		if (cIconShow == null)
+			cIconShow = IconUtil.loadIcon("resources/icons/show.png");
 
+		return cIconShow;
+	}
+	
+	public static Icon getItemHide()
+	{
+		if (cIconHide == null)
+			cIconHide = IconUtil.loadIcon("resources/icons/hide.png");
+
+		return cIconHide;
+	}
+	
+	//Icons made by <a href="https://www.flaticon.com/authors/google" title="Google">Google</a> from www.flaticon.com
+	public static Icon getRecord()
+	{
+		if (cIconRecord == null)
+			cIconRecord = IconUtil.loadIcon("resources/icons/record.png");
+
+		return cIconRecord;
+	}
+	
+	//Icons made by <a href="https://www.flaticon.com/authors/pixel-perfect" title="Pixel perfect">Pixel perfect</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+	public static Icon getStop()
+	{
+		if (cIconStop == null)
+			cIconStop = IconUtil.loadIcon("resources/icons/stop.png");
+
+		return cIconStop;
+	}
+	
+	//<div>Icons made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+	public static Icon getFont()
+	{
+		if (cIconFont == null)
+			cIconFont = IconUtil.loadIcon("resources/icons/font.png");
+
+		return cIconFont;
+	}
+	
 	/**
 	 * Utility helper method to load an icon from the specified resource.
 	 */
