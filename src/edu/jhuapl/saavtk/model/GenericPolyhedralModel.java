@@ -2780,7 +2780,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
     }
 
-    private ImmutableList<Integer> getClosestCellList(vtkPolyData polydata)
+    public ImmutableList<Integer> getClosestCellList(vtkPolyData polydata)
     {
         // Go through every cell inside the polydata and find the closest cell to it
         // in the shape model and get the plate data for that cell.
