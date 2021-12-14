@@ -13,7 +13,6 @@ public enum ModelNames
     CIRCLE_SELECTION,
     IMAGES,
     IMAGES_V2,
-    GRATICULE,
     GRAVITY_VECTOR_FIELD,
     COLOR_IMAGES,
     CUBE_IMAGES,
