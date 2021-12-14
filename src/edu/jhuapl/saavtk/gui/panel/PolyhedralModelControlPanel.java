@@ -1,7 +1,7 @@
 package edu.jhuapl.saavtk.gui.panel;
 
 import java.awt.BorderLayout;
-import java.awt.Cursor;
+import java.awt.Cursor; 
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.Frame;

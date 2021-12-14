@@ -328,7 +328,7 @@ public class CameraRecorderPanel extends JPanel implements ActionListener, ViewA
 				for (int i=0; i<=frameNum; i++)
 				{
 					String index = String.format("%03d",  (int)i);
-					filenames.add(path+base+"_Frame_"+index+ext);
+					filenames.add(path+File.separator + ".movieCreate" + File.separator + base+"_Frame_"+index+ext);
 				}
 				try
 				{
