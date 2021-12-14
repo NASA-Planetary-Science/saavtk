@@ -39,6 +39,8 @@ public class IconUtil
 	private static Icon cIconStop = null;
 	
 	private static Icon cIconFont = null;
+	private static Icon cIconColor = null;
+	private static Icon cIconLayer = null;
 
 	/**
 	 * Returns the icon that should be used for "Abort" action buttons
@@ -289,6 +291,23 @@ public class IconUtil
 			cIconFont = IconUtil.loadIcon("resources/icons/font.png");
 
 		return cIconFont;
+	}
+	
+	//<div>Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+	public static Icon getColor()
+	{
+		if (cIconColor == null)
+			cIconColor = IconUtil.loadIcon("resources/icons/color.png");
+
+		return cIconColor;
+	}
+	
+	public static Icon getLayers()
+	{
+		if (cIconLayer == null)
+			cIconLayer = IconUtil.loadIcon("resources/icons/layers.png");
+
+		return cIconLayer;
 	}
 	
 	/**

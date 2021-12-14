@@ -223,5 +223,29 @@ public class ToolTipUtil
 	{
 		return "Font";
 	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Color" buttons
+	 */
+	public static String getColorImage()
+	{
+		return "Generate a Color Image";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Layer" buttons
+	 */
+	public static String getImageCube()
+	{
+		return "Generate an Image Cube";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "New" buttons
+	 */
+	public static String getCustomImage()
+	{
+		return "Generate a Custom Image";
+	}
 
 }
