@@ -7,6 +7,7 @@ import java.awt.Font;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +45,7 @@ import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.main.gui.ShapeModelEditPanel;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.plateColoring.BasicColoringDataManager;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringDataManager;
 import edu.jhuapl.saavtk.model.plateColoring.CustomizableColoringDataManager;
@@ -192,6 +194,20 @@ public class PolyhedralModelControlPanel extends JPanel implements ChangeListene
                 }
             }
         });
+        
+        smallBodyModel.getColoringDataManager().addPropertyChangeListener(new PropertyChangeListener()
+		{
+			
+			@Override
+			public void propertyChange(PropertyChangeEvent evt)
+			{
+				if (evt.getPropertyName().equals(BasicColoringDataManager.COLORING_DATA_CHANGE))
+				{
+					updateColoringOptions();
+				}
+				
+			}
+		});
 
         statisticsLabel.setBorder(null);
         statisticsLabel.setOpaque(false);
