@@ -4,9 +4,9 @@ import java.awt.Component;
 import java.io.IOException;
 import java.util.List;
 
-import edu.jhuapl.saavtk.gui.coloringData.ColoringInfoWindow;
-import edu.jhuapl.saavtk.model.FacetColoringData;
+import edu.jhuapl.saavtk.gui.plateColoring.ColoringInfoWindow;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.plateColoring.FacetColoringData;
 import edu.jhuapl.saavtk.model.structure.PlateUtil;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;

@@ -167,9 +167,25 @@ public class ToolTipUtil
 	{
 		return "Clear Selection";
 	}
-
+	
 	/*
-	 * Returns the tool tip that should be used for "Add Items" buttons
+	 * Returns the tool tip that should be used for "Load Items" buttons
+	 */
+	public static String getItemLoad()
+	{
+		return "Load";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Save Items" buttons
+	 */
+	public static String getItemSave()
+	{
+		return "Save";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Show Items" buttons
 	 */
 	public static String getItemShow()
 	{
@@ -177,10 +193,34 @@ public class ToolTipUtil
 	}
 	
 	/*
-	 * Returns the tool tip that should be used for "Add Items" buttons
+	 * Returns the tool tip that should be used for "Hide Items" buttons
 	 */
 	public static String getItemHide()
 	{
 		return "Hide";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Record" buttons
+	 */
+	public static String getRecord()
+	{
+		return "Record";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Stop" buttons
+	 */
+	public static String getStop()
+	{
+		return "Stop";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Stop" buttons
+	 */
+	public static String getFont()
+	{
+		return "Font";
 	}
 }

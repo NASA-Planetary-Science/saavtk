@@ -110,5 +110,11 @@ public class InvalidCamera implements Camera
 	{
 		throw new UnsupportedOperationException();
 	}
+	
+	@Override
+	public Vector3D getUpUnit()
+	{
+		throw new UnsupportedOperationException();
+	}
 
 }

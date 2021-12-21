@@ -20,7 +20,7 @@ public class MetadataDisplay
 		JTabbedPane jTabbedPane = new JTabbedPane();
 		try
 		{
-			DataFileInfo fileInfo = DataFileReader.of().readFileInfo(file);
+			DataFileInfo fileInfo = DataFileReader.multiFileFormatReader().readFileInfo(file);
 			for (DataObjectInfo dataObjectInfo : fileInfo.getDataObjectInfo())
 			{
 				Description description = dataObjectInfo.getDescription();

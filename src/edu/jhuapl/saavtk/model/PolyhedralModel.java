@@ -10,6 +10,9 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.color.table.ColorMapAttr;
 import edu.jhuapl.saavtk.config.IViewConfig;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
+import edu.jhuapl.saavtk.model.plateColoring.CustomizableColoringDataManager;
+import edu.jhuapl.saavtk.model.plateColoring.FacetColoringData;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.LatLon;
 import vtk.vtkDataArray;
@@ -186,7 +189,7 @@ public abstract class PolyhedralModel extends AbstractModel implements PolyModel
 	}
 
 	public List<vtkPolyData> getSmallBodyPolyDatas()
-	{
+	{ 
 		return null;
 	}
 	

@@ -140,8 +140,9 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		toolbar = new RenderToolbar(mainCanvas, camera);
 
 		trackballCameraInteractorStyle = new vtkInteractorStyleTrackballCamera();
+		trackballCameraInteractorStyle.AutoAdjustCameraClippingRangeOn();
 		vSmallBodyCP = PickUtilEx.formSmallBodyPicker(refSmallBody);
-
+		
 		setBackgroundColor(new int[] { 0, 0, 0 });// Preferences.getInstance().getAsIntArray(Preferences.BACKGROUND_COLOR,
 																// new int[]{0, 0, 0}));
 		initVtkLights();
@@ -157,12 +158,12 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
 
 		SwingUtilities.invokeLater(() -> notifySceneChange());
-
+		
 		((GenericPolyhedralModel) refSmallBody).sortPolydata(mainCanvas.getActiveCamera());
 
 		// Register for events of interest
 		camera.addCameraChangeListener(this);
-
+				
 		mainCanvas.getComponent().addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized(ComponentEvent aEvent)
@@ -343,7 +344,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		cam.SetFocalPoint(frame.focalPoint[0], frame.focalPoint[1], frame.focalPoint[2]);
 		cam.SetPosition(frame.position[0], frame.position[1], frame.position[2]);
 		cam.SetViewUp(frame.upDirection[0], frame.upDirection[1], frame.upDirection[2]);
-
+		cam.OrthogonalizeViewUp();
 		mainCanvas.getVTKLock().unlock();
 
 		mainCanvas.resetCameraClippingRange();
@@ -352,16 +353,17 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 
 	public void setCameraOrientation(double[] position, double[] focalPoint, double[] upVector, double viewAngle)
 	{
-		// orientationWidget.EnabledOff();
+		//        orientationWidget.EnabledOff();
 		mainCanvas.getVTKLock().lock();
 		vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
 		cam.SetPosition(position);
 		cam.SetFocalPoint(focalPoint);
 		cam.SetViewUp(upVector);
 		cam.SetViewAngle(viewAngle);
+		cam.OrthogonalizeViewUp();
 		mainCanvas.getVTKLock().unlock();
 		mainCanvas.resetCameraClippingRange();
-		// orientationWidget.EnabledOn();
+		//        orientationWidget.EnabledOn();
 		mainCanvas.Render();
 	}
 
@@ -390,7 +392,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		// Delegate
 		camera.setFocalPoint(new Vector3D(aFocalPointArr));
 	}
-
+	
 	public void viewDeactivating()
 	{
 		mainCanvas.getAxesFrame().setVisible(false);
@@ -424,13 +426,13 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	public LightCfg getLightCfg()
 	{
 		return cLightCfg;
-	}
+		}
 
 	/**
 	 * Sets the Renderer's {@link LightCfg}.
 	 */
 	public void setLightCfg(LightCfg aLightCfg)
-	{
+		{
 		// Bail if configuration has not changed
 		if (cLightCfg.equals(aLightCfg) == true)
 			return;
@@ -444,7 +446,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		{
 			headlight.SetIntensity(intensity);
 			fixedLight.SetIntensity(intensity);
-		}
+	}
 
 		// Update (fixed) position
 		LatLon positionLL = aLightCfg.getPositionLL();
@@ -523,7 +525,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 
 			double tmpDistance = refSmallBody.getBoundingBoxDiagonalLength() * 2.0;
 			CameraUtil.setOrientationInDirectionOfAxis(camera, AxisType.NEGATIVE_X, tmpDistance);
-
+			
 			mainCanvas.getVTKLock().lock();
 			cam.SetViewUp(0.0, 1.0, 0.0);
 			mainCanvas.getVTKLock().unlock();
@@ -534,7 +536,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		{
 			mainCanvas.getRenderer().GetActiveCamera().ParallelProjectionOff();
 			mainCanvas.resetCamera();
-			// setInteractorStyleToDefault();
+			//     setInteractorStyleToDefault();
 		}
 
 		mainCanvas.Render();
@@ -650,11 +652,11 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 
 	@Override
 	public void setLodModeTemporal(LodMode aLodMode)
-	{
+		{
 		lodModeTemporal = aLodMode;
 
 		updateLodActors();
-	}
+		}
 
 	/**
 	 * Helper method that calculates the nominal pixel span associated with the
@@ -850,7 +852,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		{
 			mainCanvas.getVTKLock().lock();
 			for (vtkProp aProp : stalePropS)
-			{
+		{
 				// TODO: Eventually remove the legacy code below (2 lines)
 				if (aProp instanceof vtkCubeAxesActor2D)
 					continue;
@@ -870,5 +872,12 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		// Delegate label occlude computations
 		occludeLabels();
 	}
+	
+//	@Override
+//	public Object clone() throws CloneNotSupportedException
+//	{
+//		// TODO Auto-generated method stub
+//		return super.clone();
+//	}
 
 }

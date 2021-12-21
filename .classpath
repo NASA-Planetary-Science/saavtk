@@ -23,7 +23,6 @@
 	<classpathentry exported="true" kind="lib" path="lib/RelativeLayout-v1.0.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/vtk6.3/vtk-6.3.jar"/>
 	<classpathentry exported="true" kind="lib" path="jgoodies-forms-1.8.0.jar" sourcepath="jgoodies-forms-1.8.0-sources.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/gson-2.8.0.jar" sourcepath="lib/gson-2.8.0-sources.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/geotools/commons-pool-1.5.4.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/geotools/core-0.26.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/geotools/GeographicLib-Java-1.44.jar"/>
@@ -141,7 +140,10 @@
 		<attributes>
 			<attribute name="javadoc_location" value="jar:platform:/resource/saavtk/lib/commons-text-1.8-javadoc.jar!/"/>
 		</attributes>
-	</classpathentry>
+	</classpathentry> 
+	<classpathentry exported="true" kind="lib" path="lib/jcodec-0.2.3.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/jcodec-javase-0.2.3.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/jafama-2.3.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jgoodies-looks-2.4.0.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/commons-io-2.8.0.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jogl/jogl-all.jar"/>
