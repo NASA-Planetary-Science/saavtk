@@ -1,4 +1,6 @@
-package edu.jhuapl.saavtk.model;
+package edu.jhuapl.saavtk.model.plateColoring;
+
+import java.beans.PropertyChangeListener;
 
 import com.google.common.collect.ImmutableList;
 
@@ -16,6 +18,7 @@ public interface ColoringDataManager
 
 	ImmutableList<ColoringData> get(int numberElements);
 
-	ColoringDataManager copy();
-
+    void addPropertyChangeListener(PropertyChangeListener listener);
+    
+    void removePropertyChangeListener(PropertyChangeListener listener);
 }

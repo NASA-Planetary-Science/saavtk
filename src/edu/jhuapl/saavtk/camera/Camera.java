@@ -16,6 +16,8 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
  */
 public interface Camera
 {
+	public Vector3D getUpUnit();
+	
 	/**
 	 * Registers a {@link CameraListener} with this camera.
 	 */

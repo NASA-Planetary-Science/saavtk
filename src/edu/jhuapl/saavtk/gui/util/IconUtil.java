@@ -8,7 +8,7 @@ import javax.swing.ImageIcon;
  * definition, management, and retrieval of icons.
  *
  * @author lopeznr1
- */
+ */ 
 public class IconUtil
 {
 	// Cache vars

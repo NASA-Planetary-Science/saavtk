@@ -23,9 +23,16 @@ import edu.jhuapl.saavtk.color.table.ColorMapAttr;
 import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.colormap.Colormaps;
 import edu.jhuapl.saavtk.config.ViewConfig;
+import edu.jhuapl.saavtk.model.plateColoring.BasicColoringDataManager;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
+import edu.jhuapl.saavtk.model.plateColoring.CustomizableColoringDataManager;
+import edu.jhuapl.saavtk.model.plateColoring.FacetColoringData;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringDataFactory;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringDataUtils;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.ConvertResourceToFile;
+import edu.jhuapl.saavtk.util.Debug;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.Frustum;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -35,6 +42,7 @@ import edu.jhuapl.saavtk.util.PolyDataUtil;
 import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.util.SafeURLPaths;
 import edu.jhuapl.saavtk.util.SmallBodyCubes;
+import edu.jhuapl.saavtk.util.file.IndexableTuple;
 import edu.jhuapl.saavtk.view.lod.LodMode;
 import edu.jhuapl.saavtk.view.lod.LodUtil;
 import edu.jhuapl.saavtk.view.lod.VtkLodActor;
@@ -73,7 +81,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 	//This is a placeholder for enabling a series of diagnostic tools we hope to bring into the renderer.  Currently in place but with no UI hooks to enable it (yet) is a
 	//block of code that can display the body cubes used during a database search that allows you to see what exactly it is you're choosing.
 	private boolean diagnosticModeEnabled = false;
-	private List<vtkProp> diagnosticCubes = new ArrayList<vtkProp>();
+	private List<vtkProp> diagnosticCubes = new ArrayList<>();
 
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
 
@@ -219,6 +227,24 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
         initialize(defaultModelFile);
 
+        this.coloringDataManager.addPropertyChangeListener(event -> {
+            if (BasicColoringDataManager.COLORING_DATA_CHANGE.equals(event.getPropertyName()))
+            {
+                try
+                {
+                    coloringDataManager.saveCustomMetadata(getCustomDataFolder());
+                }
+                catch (Exception e)
+                {
+                    // This should not fail, but if it does it should not disrupt what the user is
+                    // doing.
+                    // Thus in this case it is appropriate to log the problem and then continue.
+                    e.printStackTrace();
+                }
+
+            }
+        });
+
     }
 
     private static final String COLORING_METADATA_ID = "Coloring Metadata";
@@ -280,42 +306,51 @@ public class GenericPolyhedralModel extends PolyhedralModel
 			// legacy behavior.
         }
 
-        boolean sbmt2style = false;
-        for (int index = 0; index < coloringFiles.length; ++index)
+        Exception firstException = null;
+
+        try
         {
-            String baseFileName = coloringFiles[index];
-            Format fileFormat = guessFormat(baseFileName);
-            for (int resolutionLevel = 0; resolutionLevel < numberElements.size(); ++resolutionLevel)
+            boolean sbmt2style = false;
+            for (int index = 0; index < coloringFiles.length; ++index)
             {
-                String fileName = getColoringFileName(baseFileName, resolutionLevel, fileFormat, sbmt2style);
-                if (fileName != null)
+                String baseFileName = coloringFiles[index];
+                Format fileFormat = guessFormat(baseFileName);
+                for (int resolutionLevel = 0; resolutionLevel < numberElements.size(); ++resolutionLevel)
                 {
-                    fileFormat = guessFormat(fileName);
-                    sbmt2style = guessSbmt2Style(fileName);
-                    String name = coloringNames[index];
-                    ImmutableList<String> elementNames = ImmutableList.of(name);
-                    String units = coloringUnits.length > index ? coloringUnits[index] : "";
-                    boolean hasNulls = coloringHasNulls.length > index ? coloringHasNulls[index] : false;
-					coloringDataManager.addBuiltIn(ColoringData.of(name, fileName, elementNames, units,
-							numberElements.get(resolutionLevel), hasNulls));
+                    try
+                    {
+                        String fileName = getColoringFileName(baseFileName, resolutionLevel, fileFormat, sbmt2style);
+                        if (fileName != null)
+                        {
+                            fileFormat = guessFormat(fileName);
+                            sbmt2style = guessSbmt2Style(fileName);
+                            String name = coloringNames[index];
+                            ImmutableList<String> elementNames = ImmutableList.of(name);
+                            String units = coloringUnits.length > index ? coloringUnits[index] : "";
+                            boolean hasNulls = coloringHasNulls.length > index ? coloringHasNulls[index] : false;
+                            coloringDataManager.addBuiltIn(ColoringDataFactory.of(name, units, numberElements.get(resolutionLevel), elementNames, hasNulls, fileName));
+                        }                        
+                    }
+                    catch (Exception e)
+                    {
+                        if (firstException == null)
+                        {
+                            firstException = e;
+                        }
+                        e.printStackTrace(Debug.of().err());
+                    }
                 }
             }
+            if (firstException != null)
+            {
+                throw new RuntimeException("One or more colorings failed to load. First exception was ", firstException);
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
         }
 
-        // metadataFileName = SafePaths.getString(Configuration.getCacheDir(),
-        // metadataFileName);
-        // try
-        // {
-        // Serializers.serialize(COLORING_METADATA_ID,
-        // coloringDataManager.getMetadataManager(false).store(), new
-        // File(metadataFileName));
-        // }
-        // catch (IOException e)
-        // {
-        // System.err.println("Exception when trying to save plate coloring metadata
-        // file");
-        // e.printStackTrace();
-        // }
     }
 
     private static Format guessFormat(String baseFileName)
@@ -488,8 +523,8 @@ public class GenericPolyhedralModel extends PolyhedralModel
         {
             int numberElements = coloringValues[i].GetNumberOfTuples();
             ImmutableList<String> elementNames = ImmutableList.of(coloringNames[i]);
-			coloringDataManager.addBuiltIn(ColoringData.of(coloringNames[i], elementNames, coloringUnits[i],
-					numberElements, false, coloringValues[i]));
+
+            coloringDataManager.addBuiltIn(ColoringDataFactory.of(coloringNames[i], coloringUnits[i], numberElements, elementNames, false, coloringValues[i]));
         }
         this.coloringValueType = coloringValueType;
 
@@ -675,8 +710,13 @@ public class GenericPolyhedralModel extends PolyhedralModel
                             resolutionLevel = 0;
                         }
                         int customNumberElements = config.getResolutionNumberElements().get(resolutionLevel);
-						coloringDataManager.addCustom(ColoringData.of(coloringName, coloringFile,
-								ImmutableList.of(coloringName), coloringUnits, customNumberElements, coloringHasNulls));
+                        coloringDataManager.addCustom(ColoringDataFactory.of( //
+                                coloringName, //
+                                coloringUnits, //
+                                customNumberElements, //
+                                ImmutableList.of(coloringName), //
+                                coloringHasNulls, coloringFile //
+                        ));
                     }
                 }
             }
@@ -1677,7 +1717,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
     protected void loadColoringData() throws IOException
     {
         ColoringData coloringData = getColoringData(coloringIndex);
-        coloringData.load();
+        coloringData.getData();
     }
 
 	private static String getColoringFileName(String baseFileName, int resolutionLevel, Format format,
@@ -1738,7 +1778,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
     {
         for (ColoringData data : getAllColoringData())
         {
-            data.load();
+            data.getData();
         }
     }
 
@@ -1804,7 +1844,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
                 smallBodyActor.GetMapper().SetLookupTable(colormap.getLookupTable());
 
-                double[] range = getColoringData(coloringIndex).getData().GetRange();
+                double[] range = getColoringData(coloringIndex).getDefaultRange();
                 setCurrentColoringRange(coloringIndex, range);
             }
 
@@ -1875,34 +1915,29 @@ public class GenericPolyhedralModel extends PolyhedralModel
         return getColoringData(i).getUnits();
     }
 
-    private double getScalarValue(double[] pt, vtkFloatArray pointOrCellData)
-    {
-        double[] closestPoint = new double[3];
-        int cellId = findClosestCell(pt, closestPoint);
-        return getScalarValue(closestPoint, pointOrCellData, cellId);
-    }
-
     /**
      * Get value assuming pt is exactly on the asteroid and cellId is provided
      *
      * @param pt
      * @param pointOrCellData
-     * @param cellId
      * @return
      */
-    private double getScalarValue(double[] pt, vtkFloatArray pointOrCellData, int cellId)
+    private double getScalarValue(double[] pt, IndexableTuple pointOrCellData)
     {
+        double[] closestPointIgnored = new double[3];
+        int cellId = findClosestCell(pt, closestPointIgnored);
+
         if (coloringValueType == ColoringValueType.POINT_DATA)
         {
-            return PolyDataUtil.interpolateWithinCell(smallBodyPolyData, pointOrCellData, cellId, pt, idList);
+            return PolyDataUtil.interpolateWithinCell(smallBodyPolyData, pointOrCellData, cellId, pt, idList, 1)[0];
         }
         else
         {
-            return pointOrCellData.GetTuple1(cellId);
+            return pointOrCellData.get(cellId).get(0);
         }
     }
 
-    private double[] getVectorValue(double[] pt, vtkFloatArray pointOrCellData, int cellId, int numberAxes)
+    private double[] getVectorValue(double[] pt, IndexableTuple pointOrCellData, int cellId, int numberAxes)
     {
         double[] result = null;
         if (coloringValueType == ColoringValueType.POINT_DATA)
@@ -1912,17 +1947,9 @@ public class GenericPolyhedralModel extends PolyhedralModel
         }
         else
         {
-            if (numberAxes == 1)
+            if (numberAxes >= 1 && numberAxes <= 3)
             {
-                result = new double[] { pointOrCellData.GetTuple1(cellId) };
-            }
-            else if (numberAxes == 2)
-            {
-                result = pointOrCellData.GetTuple2(cellId);
-            }
-            else if (numberAxes == 3)
-            {
-                result = pointOrCellData.GetTuple3(cellId);
+                result = pointOrCellData.get(cellId).get();
             }
             else
             {
@@ -1936,14 +1963,6 @@ public class GenericPolyhedralModel extends PolyhedralModel
     public double getColoringValue(int index, double[] pt)
     {
         ColoringData coloringData = getColoringData(index);
-        try
-        {
-            coloringData.load();
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
 
         return getScalarValue(pt, coloringData.getData());
     }
@@ -1968,14 +1987,14 @@ public class GenericPolyhedralModel extends PolyhedralModel
         int numColorColumns = 0;
         for (ColoringData data : coloringData)
         {
-            numColorColumns += data.getElementNames().size();
+            numColorColumns += data.getFieldNames().size();
         }
 
         double[] result = new double[numColorColumns];
         int valueIndex = 0;
         for (ColoringData data : coloringData)
         {
-            double[] coloringVector = getVectorValue(closestPoint, data.getData(), cellId, data.getElementNames().size());
+            double[] coloringVector = getVectorValue(closestPoint, data.getData(), cellId, data.getFieldNames().size());
             for (int index = 0; index < coloringVector.length; ++index, ++valueIndex)
             {
                 result[valueIndex] = coloringVector[index];
@@ -2084,7 +2103,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         if (colormap != null)
             return new double[] { colormap.getRangeMin(), colormap.getRangeMax() };
 
-        return getColoringData(coloringIndex).getCurrentRange();
+        return getDefaultColoringRange(coloringIndex);
     }
 
     @Override
@@ -2126,11 +2145,10 @@ public class GenericPolyhedralModel extends PolyhedralModel
         if (isColoringAvailable(coloringIndex))
         {
             ColoringData coloringData = getColoringData(coloringIndex);
-            coloringData.load();
             int size = coloringData.getNumberElements();
 
-            final vtkFloatArray floatArray = coloringData.getData();
-            final double[] range = floatArray.GetRange();
+            IndexableTuple tuples = coloringData.getData();
+            final double[] range = coloringData.getDefaultRange();
             final double extent = range[1] - range[0];
             if (Double.compare(extent, 0.) < 0)
             {
@@ -2149,7 +2167,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
                 @Override
                 public Double get(int index)
                 {
-                    return scale * (floatArray.GetTuple1(index) - range[0]) / extent;
+                    return scale * (tuples.get(index).get(0) - range[0]) / extent;
                 }
 
             };
@@ -2257,7 +2275,8 @@ public class GenericPolyhedralModel extends PolyhedralModel
             doPaint |= checkAndSave("title", title, newPaintingAttributes);
             scalarBarActor.SetTitle(title);
 
-            vtkFloatArray floatArray = coloringData.getData();
+            vtkFloatArray floatArray = new vtkFloatArray();
+            ColoringDataUtils.copyIndexableToVtkArray(coloringData.getData(), floatArray);
             doPaint |= checkAndSave("floatArray", floatArray, newPaintingAttributes);
 
             initColormap();
@@ -2589,8 +2608,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
             }
 			ColoringData gravColoring = coloringDataManager.get(GravPotStr,
 					coloringDataManager.getResolutions().get(resolutionLevel));
-            gravColoring.load();
-            vtkFloatArray floatArray = gravColoring.getData();
+            IndexableTuple tuples = gravColoring.getData();
 
             double potTimesAreaSum = 0.0;
             double totalArea = 0.0;
@@ -2598,7 +2616,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
             int numFaces = smallBodyPolyData.GetNumberOfCells();
             for (int i = 0; i < numFaces; ++i)
             {
-                double potential = floatArray.GetTuple1(i);
+                double potential = tuples.get(i).get(0);
                 if (potential < minRefPot)
                 {
                     minRefPot = potential;
@@ -2775,7 +2793,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
     }
 
-    private ImmutableList<Integer> getClosestCellList(vtkPolyData polydata)
+    public ImmutableList<Integer> getClosestCellList(vtkPolyData polydata)
     {
         // Go through every cell inside the polydata and find the closest cell to it
         // in the shape model and get the plate data for that cell.
@@ -2862,7 +2880,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
                 for (ColoringData data : allColoringData)
                 {
                     String units = data.getUnits();
-                    for (String name : data.getElementNames())
+                    for (String name : data.getFieldNames())
                     {
                         out.write("," + name);
                         if (units != null && !units.isEmpty())

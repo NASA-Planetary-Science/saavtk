@@ -1,11 +1,14 @@
 package edu.jhuapl.saavtk.gui.panel;
 
 import java.awt.BorderLayout;
-import java.awt.Cursor;
+import java.awt.Cursor; 
+import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,9 +43,13 @@ import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.CustomPlateDataDialog;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.main.gui.ShapeModelEditPanel;
-import edu.jhuapl.saavtk.model.ColoringDataManager;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.plateColoring.BasicColoringDataManager;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringDataManager;
+import edu.jhuapl.saavtk.model.plateColoring.CustomizableColoringDataManager;
+import edu.jhuapl.saavtk.model.plateColoring.LoadableColoringData;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.DownloadableFileManager.StateListener;
@@ -187,6 +194,20 @@ public class PolyhedralModelControlPanel extends JPanel implements ChangeListene
                 }
             }
         });
+        
+        smallBodyModel.getColoringDataManager().addPropertyChangeListener(new PropertyChangeListener()
+		{
+			
+			@Override
+			public void propertyChange(PropertyChangeEvent evt)
+			{
+				if (evt.getPropertyName().equals(BasicColoringDataManager.COLORING_DATA_CHANGE))
+				{
+					updateColoringOptions();
+				}
+				
+			}
+		});
 
         statisticsLabel.setBorder(null);
         statisticsLabel.setOpaque(false);
@@ -238,9 +259,9 @@ public class PolyhedralModelControlPanel extends JPanel implements ChangeListene
         // In the non-APL version, do not allow customization.
         if (Configuration.isAPLVersion())
         {
-            panel.add(plateColoringPanel, "growx,span,wrap");
-            panel.add(saveColoringButton, "wrap, gapleft 25");
-            panel.add(customizeColoringButton, "wrap, gapleft 25");
+        	 panel.add(plateColoringPanel, "growx,span,wrap");
+             panel.add(saveColoringButton, "wrap, gapleft 25");
+             panel.add(customizeColoringButton, "wrap, gapleft 25");
         }
 
         addCustomControls(panel);
@@ -351,13 +372,17 @@ public class PolyhedralModelControlPanel extends JPanel implements ChangeListene
                 }
                 else
                 {
-                    String urlString = coloringDataManager.get(name, numberElements).getFileName();
-                    if (urlString == null) continue;
-                    box.setEnabled(name, FileCache.instance().isAccessible(urlString));
-                    StateListener listener = e -> {
-                        box.setEnabled(name, e.isAccessible());
-                    };
-                    boxListeners.addStateChangeListener(urlString, listener);
+                    ColoringData coloringData = coloringDataManager.get(name, numberElements);
+                    if (coloringData instanceof LoadableColoringData)
+                    {
+                        String urlString = ((LoadableColoringData) coloringData).getFileId();
+
+                        box.setEnabled(name, FileCache.instance().isAccessible(urlString));
+                        StateListener listener = e -> {
+                            box.setEnabled(name, e.isAccessible());
+                        };
+                        boxListeners.addStateChangeListener(urlString, listener);                        
+                    }
                 }
             }
 

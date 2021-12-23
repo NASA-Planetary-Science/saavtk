@@ -231,7 +231,7 @@ public class ToolTipUtil
 	{
 		return "Generate a Color Image";
 	}
-	
+	 
 	/*
 	 * Returns the tool tip that should be used for "Layer" buttons
 	 */

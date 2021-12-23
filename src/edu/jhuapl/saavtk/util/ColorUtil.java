@@ -249,5 +249,20 @@ public class ColorUtil
 
 		return aVal;
 	}
+	
+	public static Color getColorFromRGBA(double[] rgba)
+	{
+		return new Color((float)rgba[0], (float)rgba[1], (float)rgba[2], (float)rgba[3]);
+	}
+	
+	public static Color getColorFromRGBA(Double[] rgba)
+	{
+		return getColorFromRGBA(new double[] { (double)rgba[0], (double)rgba[1], (double)rgba[2], (double)rgba[3] } );
+	}
+	
+	public static Color getColorFromRGBA(float[] rgba)
+	{
+		return new Color(rgba[0], rgba[1], rgba[2], rgba[3]);
+	}
 
 }

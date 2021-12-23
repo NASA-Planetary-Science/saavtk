@@ -10,7 +10,10 @@ import javax.swing.JTabbedPane;
 import edu.jhuapl.saavtk.gui.MetadataDisplay;
 import edu.jhuapl.saavtk.gui.panel.PolyhedralModelControlPanel;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.util.FileCache;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
+import edu.jhuapl.saavtk.model.plateColoring.LoadableColoringData;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
+import edu.jhuapl.saavtk.model.plateColoring.LoadableColoringData;
 
 /**
  * Collection of legacy utility methods for working with the legacy design
@@ -31,24 +34,35 @@ public class LegacyUtil
 		try
 		{
 			int index = aSmallBody.getColoringIndex();
-			File file = FileCache.getFileFromServer(aSmallBody.getAllColoringData().get(index).getFileName());
-
-			JTabbedPane jTabbedPane = MetadataDisplay.summary(file);
-			int tabCount = jTabbedPane.getTabCount();
-			if (tabCount > 0)
-			{
-				JFrame jFrame = new JFrame("Coloring File Properties");
-
-				jFrame.add(jTabbedPane);
-				jFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-				jFrame.pack();
-				jFrame.setVisible(true);
-			}
-			else
-			{
-				JOptionPane.showMessageDialog(null, "No properties available for file " + file, "Coloring File Properties",
-						JOptionPane.INFORMATION_MESSAGE);
-			}
+			
+			ColoringData coloringData = aSmallBody.getAllColoringData().get(index);
+            if (coloringData instanceof LoadableColoringData)
+            {
+                // Force data to load.
+                coloringData.getData();
+                
+                File file = ((LoadableColoringData) coloringData).getFile();
+                
+                JTabbedPane jTabbedPane = MetadataDisplay.summary(file);
+                int tabCount = jTabbedPane.getTabCount();
+                if (tabCount > 0)
+                {
+                    JFrame jFrame = new JFrame("Coloring File Properties");
+                    
+                    jFrame.add(jTabbedPane);
+                    jFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                    jFrame.pack();
+                    jFrame.setVisible(true);
+                }
+                else
+                {
+                    JOptionPane.showMessageDialog(null, "No properties available for file " + file, "Coloring File Properties", JOptionPane.INFORMATION_MESSAGE);
+                } 
+            }
+            else
+            {
+                JOptionPane.showMessageDialog(null, "No properties available for coloring " + coloringData.getName(), "Coloring Properties", JOptionPane.INFORMATION_MESSAGE);
+            }
 		}
 		catch (IOException e)
 		{
