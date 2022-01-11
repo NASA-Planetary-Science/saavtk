@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.status.gui;
 
 import java.awt.Dimension;
+import java.awt.Font;
 
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
@@ -22,7 +23,7 @@ import net.miginfocom.swing.MigLayout;
 public class StatusBarPanel extends JPanel implements StatusNotifier
 {
 	// Gui vars
-	private final JTextArea eastL, westL;
+	private final JTextArea eastTA, westTA;
 
 	/** Standard Constructor */
 	public StatusBarPanel()
@@ -30,29 +31,43 @@ public class StatusBarPanel extends JPanel implements StatusNotifier
 		// Set up the GUI
 		setLayout(new MigLayout("", "0[]0", "0[]0"));
 
-		westL = formTextArea();
-		eastL = formTextArea();
+		westTA = formTextArea();
+		eastTA = formTextArea();
 
-		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, westL, eastL);
+		var splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, westTA, eastTA);
 		splitPane.setDividerLocation(0.5);
 		splitPane.setResizeWeight(0.5);
 		splitPane.setContinuousLayout(true);
 		add(splitPane);
 		setPreferredSize(new Dimension(700, splitPane.getPreferredSize().height));
+
+		// Switch to a monospaced font
+		var tmpFont = westTA.getFont();
+		tmpFont = new Font(Font.MONOSPACED, tmpFont.getStyle(), tmpFont.getSize());
+		setFont(tmpFont, tmpFont);
+	}
+
+	/**
+	 * Sets the font to be used by the primary and secondary areas.
+	 */
+	public void setFont(Font aPriFont, Font aSecFont)
+	{
+		westTA.setFont(aPriFont);
+		eastTA.setFont(aSecFont);
 	}
 
 	@Override
 	public void setPriStatus(String aBriefMsg, String aDetailMsg)
 	{
-		westL.setText(aBriefMsg);
-		westL.setToolTipText(aDetailMsg);
+		westTA.setText(aBriefMsg);
+		westTA.setToolTipText(aDetailMsg);
 	}
 
 	@Override
 	public void setSecStatus(String aBriefMsg, String aDetailMsg)
 	{
-		eastL.setText(aBriefMsg);
-		eastL.setToolTipText(aDetailMsg);
+		eastTA.setText(aBriefMsg);
+		eastTA.setToolTipText(aDetailMsg);
 	}
 
 	/**
@@ -61,10 +76,10 @@ public class StatusBarPanel extends JPanel implements StatusNotifier
 	 */
 	private JTextArea formTextArea()
 	{
-		JTextArea retTA = new JTextArea(1, 7500);
+		var retTA = new JTextArea(1, 7500);
 		retTA.setEditable(false);
 
-		Dimension tmpDim = retTA.getPreferredSize();
+		var tmpDim = retTA.getPreferredSize();
 		retTA.setMinimumSize(new Dimension(40, tmpDim.height));
 		retTA.setMaximumSize(new Dimension(7500, 200));
 		return retTA;
