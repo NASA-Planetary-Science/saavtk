@@ -41,6 +41,11 @@ public class IconUtil
 	private static Icon cIconFont = null;
 	private static Icon cIconColor = null;
 	private static Icon cIconLayer = null;
+	private static Icon cIconBorder = null;
+	private static Icon cIconHideBorder = null;
+	private static Icon cIconGallery = null;
+	private static Icon cIconBack = null;
+	private static Icon cIconForward = null;
 
 	/**
 	 * Returns the icon that should be used for "Abort" action buttons
@@ -308,6 +313,51 @@ public class IconUtil
 			cIconLayer = IconUtil.loadIcon("resources/icons/layers.png");
 
 		return cIconLayer;
+	}
+	
+	//<a href="https://www.flaticon.com/free-icons/area" title="area icons">Area icons created by Freepik - Flaticon</a>
+	public static Icon getBorder()
+	{
+		if (cIconBorder == null)
+			cIconBorder = IconUtil.loadIcon("resources/icons/border.png");
+
+		return cIconBorder;
+	}
+	
+	//Modified with permission from license at <a href="https://www.flaticon.com/free-icons/area" title="area icons">Area icons created by Freepik - Flaticon</a>
+	public static Icon getHideBorder()
+	{
+		if (cIconHideBorder == null)
+			cIconHideBorder = IconUtil.loadIcon("resources/icons/hideBorder.png");
+
+		return cIconHideBorder;
+	}
+	
+	//<a href="https://www.flaticon.com/free-icons/gallery" title="gallery icons">Gallery icons created by Freepik - Flaticon</a>
+	public static Icon getGallery()
+	{
+		if (cIconGallery == null)
+			cIconGallery = IconUtil.loadIcon("resources/icons/gallery.png");
+
+		return cIconGallery;
+	}
+	
+	//<a href="https://www.flaticon.com/free-icons/back" title="back icons">Back icons created by Becris - Flaticon</a>
+	public static Icon getBack()
+	{
+		if (cIconBack == null)
+			cIconBack = IconUtil.loadIcon("resources/icons/back.png");
+
+		return cIconBack;
+	}
+	
+	//<a href="https://www.flaticon.com/free-icons/next" title="next icons">Next icons created by Becris - Flaticon</a>
+	public static Icon getForward()
+	{
+		if (cIconForward == null)
+			cIconForward = IconUtil.loadIcon("resources/icons/forward.png");
+
+		return cIconForward;
 	}
 	
 	/**
