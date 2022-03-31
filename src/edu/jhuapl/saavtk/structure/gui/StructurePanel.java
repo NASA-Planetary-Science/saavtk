@@ -300,7 +300,7 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		{
 			// Only add profile plots for line structures
 			ProfilePlot profilePlot = new ProfilePlot((LineModel) refStructureManager,
-					(PolyhedralModel) aModelManager.getModel(ModelNames.SMALL_BODY).get(0));
+					(PolyhedralModel) aModelManager.getModel(ModelNames.SMALL_BODY));
 
 			// Create a new frame/window with profile
 			profileWindow = new JFrame();

@@ -77,28 +77,28 @@ public class SaveEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 		if (!file.getName().endsWith(".shp"))
 			file = new File(file.getName() + ".shp");
 
-		if (refStructureManager == refModelManager.getModel(ModelNames.ELLIPSE_STRUCTURES).get(0))
+		if (refStructureManager == refModelManager.getModel(ModelNames.ELLIPSE_STRUCTURES))
 		{
 			List<EllipseStructure> ellipses = EllipseStructure.fromSbmtStructure(
-					(AbstractEllipsePolygonModel) refModelManager.getModel(ModelNames.ELLIPSE_STRUCTURES).get(0));
+					(AbstractEllipsePolygonModel) refModelManager.getModel(ModelNames.ELLIPSE_STRUCTURES));
 			DefaultFeatureCollection ellipseFeatures = new DefaultFeatureCollection();
 			for (int i = 0; i < ellipses.size(); i++)
 				ellipseFeatures.add(FeatureUtil.createFeatureFrom(ellipses.get(i)));
 			BennuStructuresEsriIO.write(file.toPath(), ellipseFeatures, FeatureUtil.ellipseType);
 		}
-		else if (refStructureManager == refModelManager.getModel(ModelNames.CIRCLE_STRUCTURES).get(0))
+		else if (refStructureManager == refModelManager.getModel(ModelNames.CIRCLE_STRUCTURES))
 		{
 			List<EllipseStructure> circles = EllipseStructure
-					.fromSbmtStructure((AbstractEllipsePolygonModel) refModelManager.getModel(ModelNames.CIRCLE_STRUCTURES).get(0));
+					.fromSbmtStructure((AbstractEllipsePolygonModel) refModelManager.getModel(ModelNames.CIRCLE_STRUCTURES));
 			DefaultFeatureCollection circleFeatures = new DefaultFeatureCollection();
 			for (int i = 0; i < circles.size(); i++)
 				circleFeatures.add(FeatureUtil.createFeatureFrom(circles.get(i)));
 			BennuStructuresEsriIO.write(file.toPath(), circleFeatures, FeatureUtil.ellipseType);
 		}
-		else if (refStructureManager == refModelManager.getModel(ModelNames.POINT_STRUCTURES).get(0))
+		else if (refStructureManager == refModelManager.getModel(ModelNames.POINT_STRUCTURES))
 		{
 			List<EllipseStructure> ellipseRepresentations = EllipseStructure
-					.fromSbmtStructure((AbstractEllipsePolygonModel) refModelManager.getModel(ModelNames.POINT_STRUCTURES).get(0));
+					.fromSbmtStructure((AbstractEllipsePolygonModel) refModelManager.getModel(ModelNames.POINT_STRUCTURES));
 			DefaultFeatureCollection pointFeatures = new DefaultFeatureCollection();
 			for (int i = 0; i < ellipseRepresentations.size(); i++)
 			{
@@ -109,10 +109,10 @@ public class SaveEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 			BennuStructuresEsriIO.write(file.toPath(), pointFeatures, FeatureUtil.pointType);
 
 		}
-		else if (refStructureManager == refModelManager.getModel(ModelNames.LINE_STRUCTURES).get(0))
+		else if (refStructureManager == refModelManager.getModel(ModelNames.LINE_STRUCTURES))
 		{
 			List<LineStructure> lines = LineStructure
-					.fromSbmtStructure((LineModel<?>) refModelManager.getModel(ModelNames.LINE_STRUCTURES).get(0));
+					.fromSbmtStructure((LineModel<?>) refModelManager.getModel(ModelNames.LINE_STRUCTURES));
 
 			DefaultFeatureCollection lineFeatures = new DefaultFeatureCollection();
 			for (int i = 0; i < lines.size(); i++)
@@ -133,10 +133,10 @@ public class SaveEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 			 */
 
 		}
-		else if (refStructureManager == refModelManager.getModel(ModelNames.POLYGON_STRUCTURES).get(0))
+		else if (refStructureManager == refModelManager.getModel(ModelNames.POLYGON_STRUCTURES))
 		{
 			List<LineStructure> lines = LineStructure
-					.fromSbmtStructure((PolygonModel) refModelManager.getModel(ModelNames.POLYGON_STRUCTURES).get(0));
+					.fromSbmtStructure((PolygonModel) refModelManager.getModel(ModelNames.POLYGON_STRUCTURES));
 
 			DefaultFeatureCollection lineFeatures = new DefaultFeatureCollection();
 			for (int i = 0; i < lines.size(); i++)

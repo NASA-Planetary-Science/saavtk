@@ -118,7 +118,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ChangeListene
 
 //        var tmpSmallBody = modelManager.getPolyhedralModel();
         shapeModelEditPanels = Lists.newArrayList();
-        var tmpSmallBodies = modelManager.getModel(ModelNames.SMALL_BODY).stream().map(body -> { return (PolyhedralModel)body; }).toList();
+        var tmpSmallBodies = modelManager.getModels(ModelNames.SMALL_BODY).stream().map(body -> { return (PolyhedralModel)body; }).toList();
         for (var body : tmpSmallBodies)
         	shapeModelEditPanels.add(new ShapeModelEditPanel(aRenderer, body, body.getModelName()));
 

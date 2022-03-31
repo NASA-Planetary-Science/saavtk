@@ -138,7 +138,13 @@ public class ModelManager extends AbstractModel
 	}
 
 	// TODO: Add method comments
-	public List<Model> getModel(ModelNames modelName)
+	public Model getModel(ModelNames modelName)
+	{
+		return allModels.get(modelName).get(0);
+	}
+	
+	// TODO: Add method comments
+	public List<Model> getModels(ModelNames modelName)
 	{
 		return allModels.get(modelName);
 	}

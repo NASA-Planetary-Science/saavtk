@@ -336,9 +336,14 @@ public abstract class View extends JPanel
         popupManager.registerPopup(model, menu);
     }
 
-    protected List<Model> getModel(ModelNames name)
+    protected Model getModel(ModelNames name)
     {
         return modelManager.getModel(name);
+    }
+    
+    protected List<Model> getModels(ModelNames name)
+    {
+        return modelManager.getModels(name);
     }
 
     /**

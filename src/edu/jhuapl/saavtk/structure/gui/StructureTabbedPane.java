@@ -63,7 +63,7 @@ public class StructureTabbedPane extends JTabbedPane
 	 */
 	private StructurePanel<?> formStructurePanel(ModelNames aModelNames)
 	{
-		StructureManager<?> tmpStructureManager = (StructureManager<?>) refModelManager.getModel(aModelNames).get(0);
+		StructureManager<?> tmpStructureManager = (StructureManager<?>) refModelManager.getModel(aModelNames);
 
 		// Manually register for events of interest
 		refPickManager.getDefaultPicker().addListener((BaseStructureManager<?, ?>) tmpStructureManager);

@@ -101,11 +101,11 @@ public class LoadPanel extends GlassPanel implements ActionListener, ItemListene
 
 		refSmallBody = aModelManager.getPolyhedralModel();
 
-		refPathStructureManager = (StructureManager<PolyLine>) aModelManager.getModel(ModelNames.LINE_STRUCTURES).get(0);
-		refPolyStructureManager = (StructureManager<Polygon>) aModelManager.getModel(ModelNames.POLYGON_STRUCTURES).get(0);
-		refCircleStructureManager = (StructureManager<Ellipse>) aModelManager.getModel(ModelNames.CIRCLE_STRUCTURES).get(0);
-		refEllipseStructureManager = (StructureManager<Ellipse>) aModelManager.getModel(ModelNames.ELLIPSE_STRUCTURES).get(0);
-		refPointStructureManager = (StructureManager<Ellipse>) aModelManager.getModel(ModelNames.POINT_STRUCTURES).get(0);
+		refPathStructureManager = (StructureManager<PolyLine>) aModelManager.getModel(ModelNames.LINE_STRUCTURES);
+		refPolyStructureManager = (StructureManager<Polygon>) aModelManager.getModel(ModelNames.POLYGON_STRUCTURES);
+		refCircleStructureManager = (StructureManager<Ellipse>) aModelManager.getModel(ModelNames.CIRCLE_STRUCTURES);
+		refEllipseStructureManager = (StructureManager<Ellipse>) aModelManager.getModel(ModelNames.ELLIPSE_STRUCTURES);
+		refPointStructureManager = (StructureManager<Ellipse>) aModelManager.getModel(ModelNames.POINT_STRUCTURES);
 
 		fullL = ImmutableList.of();
 
