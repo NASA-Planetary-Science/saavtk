@@ -17,6 +17,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
 
 public class Console
 {
@@ -247,13 +248,21 @@ public class Console
         @Override
         public void write(int b) throws IOException
         {
-            // put the string version of each character into the text area
-            textArea.append(String.valueOf((char) b)); // make sure the bottom of the data is showing in the window
-            textArea.setCaretPosition(textArea.getDocument().getLength());
-            if (outputFile != null)
-            {
-                outputFile.append((char) b);
-            }
+        	SwingUtilities.invokeLater(new Runnable()
+			{
+				
+				@Override
+				public void run()
+				{
+					// put the string version of each character into the text area
+					textArea.append(String.valueOf((char) b)); // make sure the bottom of the data is showing in the window
+		            textArea.setCaretPosition(textArea.getDocument().getLength());
+		            if (outputFile != null)
+		            {
+		                outputFile.append((char) b);
+		            }
+				}
+			});
         }
     }
 }
