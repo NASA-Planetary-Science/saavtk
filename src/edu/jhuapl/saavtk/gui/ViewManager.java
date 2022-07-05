@@ -142,7 +142,7 @@ public abstract class ViewManager extends JPanel
         menuBar.add(viewMenu);
 
         // Console menu
-        Console.addConsoleMenu(menuBar);
+        TSConsole.addConsoleMenu(menuBar);
 
         // Help menu
         helpMenu = new HelpMenu(this);

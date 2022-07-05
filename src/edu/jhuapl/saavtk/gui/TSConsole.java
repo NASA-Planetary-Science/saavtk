@@ -19,15 +19,15 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 
-public class Console
+public class TSConsole
 {
     private static Boolean headless = null;
-    private static Console CONSOLE = null;
+    private static TSConsole CONSOLE = null;
     private final PrintStream outputFile;
     private final JFrame consoleFrame;
     private final PrintStream out;
 
-    private Console(boolean enable, PrintStream outputFile)
+    private TSConsole(boolean enable, PrintStream outputFile)
     {
         this.outputFile = outputFile;
 
@@ -86,7 +86,7 @@ public class Console
     {
         if (isHeadless())
         {
-            CONSOLE = new Console(false, outputFile);
+            CONSOLE = new TSConsole(false, outputFile);
             if (enable)
             {
                 CONSOLE.out.println("Console is forced to be disabled when running headless.");
@@ -97,7 +97,7 @@ public class Console
         Runnable runnable = () -> {
             if (CONSOLE != null)
                 throw new UnsupportedOperationException("Console may only be configured once.");
-            CONSOLE = new Console(enable, outputFile);
+            CONSOLE = new TSConsole(enable, outputFile);
         };
 
         if (EventQueue.isDispatchThread())
