@@ -426,7 +426,7 @@ public class TSConsole
         if (isEnabled())
         {
             runOnEdt(false, () -> {
-                JMenu consoleMenu = new JMenu("Consoles");
+                JMenu consoleMenu = new JMenu("Console");
 
                 JMenuItem toggleConsoleItem = new JMenuItem("Toggle Console");
                 consoleMenu.add(toggleConsoleItem);
