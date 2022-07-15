@@ -187,5 +187,11 @@ public class Ellipse implements Structure
 	{
 		visible = aBool;
 	}
+	
+	@Override
+	public String toString()
+	{
+		return name;
+	}
 
 }

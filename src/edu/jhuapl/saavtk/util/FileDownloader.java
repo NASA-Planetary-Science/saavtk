@@ -10,6 +10,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Date;
 import java.util.UUID;
 
 import com.google.common.base.Preconditions;
@@ -136,7 +137,7 @@ public abstract class FileDownloader implements Runnable
                 if (isDownloadable())
                 {
                     download(closeableConnection);
-                    FileCacheMessageUtil.info().println("Downloaded file from " + url);
+                    FileCacheMessageUtil.info().println("Downloaded file from " + url + " " + new Date());
                 }
                 else
                 {

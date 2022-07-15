@@ -214,5 +214,11 @@ public class PolyLine implements Structure
 	{
 		visible = aBool;
 	}
+	
+	@Override
+	public String toString()
+	{
+		return name;
+	}
 
 }

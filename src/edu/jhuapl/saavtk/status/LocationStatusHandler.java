@@ -61,7 +61,7 @@ public class LocationStatusHandler implements PickListener
 
 			double lat = Math.toDegrees(llr.lat);
 			String latStr = decimalFormatter.format(lat) + DegreeChar;
-			latStr = Strings.padStart(latStr, 8, ' ');
+			latStr = Strings.padStart(latStr, 7, ' ');
 
 			// Longitude is displayed in East longitude: [0, 360]
 			double lon = Math.toDegrees(llr.lon);

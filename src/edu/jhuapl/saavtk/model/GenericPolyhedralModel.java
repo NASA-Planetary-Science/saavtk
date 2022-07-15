@@ -2094,7 +2094,9 @@ public class GenericPolyhedralModel extends PolyhedralModel
     @Override
     public double[] getDefaultColoringRange(int coloringIndex)
     {
-        return getColoringData(coloringIndex).getDefaultRange();
+    	double[] defaultRange = getColoringData(coloringIndex).getDefaultRange();
+    	if (defaultRange[0] == 0.0 && defaultRange[1] == 0.0) defaultRange[1] = 1.0;
+        return defaultRange;
     }
 
     @Override
