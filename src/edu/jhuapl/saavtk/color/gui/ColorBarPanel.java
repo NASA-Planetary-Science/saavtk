@@ -412,7 +412,7 @@ public class ColorBarPanel extends GPanel implements ActionListener, ColorBarCha
 	/**
 	 * Helper method that handles the min,max reset action.
 	 */
-	private void doActionResetAll()
+	protected void doActionResetAll()
 	{
 		double resetMin = Double.NaN;
 		double resetMax = Double.NaN;

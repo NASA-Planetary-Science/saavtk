@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -96,7 +97,7 @@ public class ZipFileUnzipper
     {
         checkNotCanceled("Unzip aborted");
 
-        System.out.println("Unzipping " + zipFile.getName());
+        System.out.println("Unzipping " + zipFile.getName() + " " + new Date());
 
         delete(tempExtractToFolder);
 
