@@ -142,8 +142,9 @@ public final class FileCache
 
     /**
      * Download the specified URL on a background thread, reporting via a
-     * {@link StateListener} when the operation finishes execution. The success of
-     * the download may be gauged by inspecting the {@link DownloadableFileState}
+     * {@link StateListener} when the operation finishes execution. Note that the
+     * listener is ALWAYS called, whether or not the download succeeded. The success
+     * of the download may be gauged by inspecting the {@link DownloadableFileState}
      * object that is sent to the state listener.
      * 
      * @param urlString URL to retrieve
