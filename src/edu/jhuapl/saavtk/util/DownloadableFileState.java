@@ -8,6 +8,14 @@ import com.google.common.base.Preconditions;
 import edu.jhuapl.saavtk.util.FileInfo.FileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
 
+/**
+ * Immutable class that combines a {@link UrlState} and {@link FileState} to
+ * represent the state of a resource located via a {@link URL} and downloadable
+ * to a {@link File} on the local file system.
+ * 
+ * @author James Peachey
+ *
+ */
 public class DownloadableFileState
 {
     public static DownloadableFileState of(URL url, File file)
@@ -48,12 +56,12 @@ public class DownloadableFileState
         return isLocalFileAvailable() || isUrlAccessible();
     }
 
-    protected boolean isLocalFileAvailable()
+    public boolean isLocalFileAvailable()
     {
         return fileState.getStatus() == FileStatus.ACCESSIBLE;
     }
 
-    protected boolean isUrlAccessible()
+    public boolean isUrlAccessible()
     {
         return urlState.getStatus() == UrlStatus.ACCESSIBLE;
     }
