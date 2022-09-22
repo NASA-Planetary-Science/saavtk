@@ -16,7 +16,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
+import javax.swing.SwingWorker;
+
 import com.google.common.base.Preconditions;
+
+import edu.jhuapl.saavtk.util.DownloadableFileManager.StateListener;
 
 public final class FileCache
 {
@@ -134,6 +138,54 @@ public final class FileCache
         }
 
         return file;
+    }
+
+    /**
+     * Download the specified URL on a background thread, reporting via a
+     * {@link StateListener} when the operation finishes execution. The success of
+     * the download may be gauged by inspecting the {@link DownloadableFileState}
+     * object that is sent to the state listener.
+     * 
+     * @param urlString URL to retrieve
+     * @param forceDownload if true, this forces a fresh download even if the file
+     *            already exists locally and does not otherwise need to be updated
+     * @param unzipIfNecessary if true, zipped files will be unzipped after they are
+     *            downloaded before notifying the state listener
+     * @param listener the state listener to notify
+     */
+    public static void getFileFromServerAsync(String urlString, boolean forceDownload, boolean unzipIfNecessary, StateListener listener)
+    {
+        FileDownloader downloader = instance().getDownloader(urlString, forceDownload);
+
+        SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+
+            @Override
+            protected Void doInBackground() throws Exception
+            {
+                try
+                {
+                    if (unzipIfNecessary)
+                    {
+                        downloader.downloadAndUnzip();
+                    }
+                    else
+                    {
+                        downloader.download();
+                    }
+                }
+                finally
+                {
+                    if (listener != null)
+                    {
+                        listener.respond(downloader.getState());
+                    }
+                }
+
+                return null;
+            }
+
+        };
+        worker.execute();
     }
 
     private static DownloadableFileManager createDownloadManager()
