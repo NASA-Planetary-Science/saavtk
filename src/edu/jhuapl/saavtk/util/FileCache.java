@@ -68,9 +68,10 @@ public final class FileCache
     }
 
     /**
+     * Get a file from the server synchronously.
      * 
-     * @param urlString
-     * @return
+     * @param urlString URL to retrieve
+     * @return the object associated with the cached file
      */
     public static File getFileFromServer(String urlString)
     {
@@ -138,7 +139,7 @@ public final class FileCache
     private static DownloadableFileManager createDownloadManager()
     {
         DownloadableFileManager result = DownloadableFileManager.of(Configuration.getDataRootURL(), new File(Configuration.getCacheDir()));
-        
+
         return result;
     }
 
@@ -185,9 +186,9 @@ public final class FileCache
 
         List<String> lines = new ArrayList<>();
         try (BufferedReader in = new BufferedReader(new InputStreamReader(fs)))
-        {            
+        {
             String line;
-            
+
             while ((line = in.readLine()) != null)
             {
                 lines.add(line);
