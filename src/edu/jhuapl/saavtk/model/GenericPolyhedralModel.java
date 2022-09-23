@@ -506,7 +506,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
             smallBodyPolyData.DeepCopy(polydata);
             initializeLocators();
             initializeCellIds();
-
+            getCellNormals();
             lowResSmallBodyPolyData = smallBodyPolyData;
             lowResPointLocator = pointLocator;
         }
@@ -530,7 +530,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
         initializeLocators();
         initializeCellIds();
-
+        getCellNormals();
         lowResSmallBodyPolyData = smallBodyPolyData;
         lowResPointLocator = pointLocator;
     }
@@ -784,7 +784,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
         initializeLocators();
         initializeCellIds();
-
+        getCellNormals();
         this.computeShapeModelStatistics();
 
         // this.computeLargestSmallestEdgeLength();
@@ -1070,6 +1070,8 @@ public class GenericPolyhedralModel extends PolyhedralModel
     {
 		return PolyDataUtil.computeFrustumIntersection(smallBodyPolyData, cellLocator, pointLocator, origin, ul, ur, lr,
 				ll);
+		
+//		return PolyDataUtil.computeVTKFrustumIntersection(smallBodyPolyData, origin, ul, ur, lr, ll);
     }
 
     public vtkPolyData computeMultipleFrustumIntersection(List<Frustum> frustums)

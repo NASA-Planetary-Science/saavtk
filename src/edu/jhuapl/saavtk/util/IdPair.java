@@ -31,6 +31,12 @@ public class IdPair
         id2 = id1;
         id1 -= size;
     }
+    
+    public void offset(int offset)
+    {
+    	id1 += offset;
+    	id2 += offset;
+    }
 
     @Override
     public boolean equals(Object o)

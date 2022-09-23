@@ -316,7 +316,7 @@ public class IconUtil
 	}
 	
 	//<a href="https://www.flaticon.com/free-icons/area" title="area icons">Area icons created by Freepik - Flaticon</a>
-	public static Icon getBorder()
+	public static Icon getShowBorder()
 	{
 		if (cIconBorder == null)
 			cIconBorder = IconUtil.loadIcon("resources/icons/border.png");
