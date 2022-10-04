@@ -43,11 +43,13 @@
 		    <artifactId>jfreechart</artifactId>
 		    <version>1.0.13</version>
 	</dependency>
+<!--
 	<dependency>
-	    <groupId>jgoodies</groupId>
-	    <artifactId>jgoodies-looks</artifactId>
+	    <groupId>com.jgoodies</groupId>
+	    <artifactId>looks</artifactId>
 	    <version>2.4.0</version>
 	</dependency>
+	-->
 	<dependency>
 	    <groupId>joda-time</groupId>
 	    <artifactId>joda-time</artifactId>
@@ -58,60 +60,22 @@
 	    <artifactId>miglayout</artifactId>
 	    <version>3.7.1</version>
 	</dependency>
+
+<!--
 	<dependency>
-	    <groupId>jogl</groupId>
-	    <artifactId>gluegen-rt</artifactId>
-	    <version>2.1.5</version>
-	</dependency>
-	<dependency>
-	    <groupId>jogl</groupId>
-	    <artifactId>gluegen-rt-natives-macosxuniversal</artifactId>
-	    <version>2.1.5</version>
-	</dependency>
-	<dependency>
-        <groupId>jogl-natives</groupId>
-        <artifactId>gluegen-rt</artifactId>
-        <version>2.1.5-natives-linux-amd64</version>
-    </dependency>
-	<dependency>
-	    <groupId>jogl</groupId>
-	    <artifactId>jogl-all</artifactId>
-	    <version>2.1.5</version>
-	</dependency>
-	<dependency>
-	    <groupId>jogl</groupId>
-	    <artifactId>jogl-all-natives-macosx-universal</artifactId>
-	    <version>2.1.5</version>
-	</dependency>
-	<dependency>
-        <groupId>jogl-natives</groupId>
-        <artifactId>jogl-all</artifactId>
-        <version>2.1.5-natives-linux-amd64</version>
-    </dependency>
-	<dependency>
-	    <groupId>vtk</groupId>
-	    <artifactId>vtk</artifactId>
-	    <version>6.3</version>
-	</dependency>
-	<dependency>
-	    <groupId>jgoodies</groupId>
+	    <groupId>com.jgoodies</groupId>
 	    <artifactId>jgoodies-common</artifactId>
 	    <version>1.1.1</version>
 	</dependency>
 	<dependency>
-	    <groupId>quaqua</groupId>
-	    <artifactId>quaqua</artifactId>
+	    <groupId>org.devzendo</groupId>
+	    <artifactId>Quaqua</artifactId>
 	    <version>7.3.4</version>
 	</dependency>
 	<dependency>
-	    <groupId>quaqua</groupId>
+	    <groupId>org.devzendo</groupId>
 	    <artifactId>quaqua-filechooser-only</artifactId>
 	    <version>7.3.4</version>
-	</dependency>
-	<dependency>
-	    <groupId>RelativeLayout</groupId>
-	    <artifactId>RelativeLayout</artifactId>
-	    <version>v1.0</version>
 	</dependency>
 	<dependency>
 	    <groupId>Jama</groupId>
@@ -123,6 +87,7 @@
         <artifactId>nom-tam-fits</artifactId>
         <version>1.13.1m0</version>
     </dependency>
+    -->
     <dependency>
   		<groupId>com.github.davidmoten</groupId>
   		<artifactId>rtree</artifactId>
@@ -162,23 +127,26 @@
   
       		</plugin>
 		<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
         		<artifactId>maven-antrun-plugin</artifactId>
-        		<version>1.8</version>
+        		<version>3.1.0</version>
         		<executions>
           			<execution>
+          					<?m2e execute onConfiguration?>
             				<phase>compile</phase>
             				<configuration>
-						<tasks>
-							<mkdir dir="${project.build.directory}/classes/edu/jhuapl/saavtk/data"/>
-              						<copy todir="${project.build.directory}/classes/edu/jhuapl/saavtk/data">
-								<fileset dir="src/edu/jhuapl/saavtk/data"/>
-							</copy>
-						</tasks>
+								<target>
+									<mkdir dir="${project.build.directory}/classes/edu/jhuapl/saavtk/data"/>
+		              						<copy todir="${project.build.directory}/classes/edu/jhuapl/saavtk/data">
+										<fileset dir="src/edu/jhuapl/saavtk/data"/>
+									</copy>
+								</target>
             				</configuration>
             				<goals>
               					<goal>run</goal>
             				</goals>
           			</execution>
+          			<!--
           			   <execution>
           			        <id>moveVTKFiles</id>
                             <phase>compile</phase>
@@ -193,6 +161,7 @@
                                 <goal>run</goal>
                             </goals>
                         </execution>
+                        -->
                         <execution>
                             <id>zipVTKNativeLibs</id>
                             <phase>install</phase>

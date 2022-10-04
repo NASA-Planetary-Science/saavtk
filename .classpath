@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
 		<attributes>
 			<attribute name="module" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry exported="true" kind="lib" path="lib/commons-math3-3.6.1.jar" sourcepath="lib/commons-math3-3.6.1-sources.jar"/>
@@ -139,7 +140,7 @@
 		<attributes>
 			<attribute name="javadoc_location" value="jar:platform:/resource/saavtk/lib/commons-text-1.8-javadoc.jar!/"/>
 		</attributes>
-	</classpathentry> 
+	</classpathentry>
 	<classpathentry exported="true" kind="lib" path="lib/jcodec-0.2.3.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jcodec-javase-0.2.3.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jafama-2.3.1.jar"/>
@@ -150,5 +151,17 @@
 	<classpathentry exported="true" kind="lib" path="lib/crucible-core-1.0.0-b23-b505c84b.jar" sourcepath="lib/crucible-core-1.0.0-b23-b505c84b-sources.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/crucible-crust-1.0.0-b23-b505c84b.jar" sourcepath="lib/crucible-crust-1.0.0-b23-b505c84b-sources.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/crucible-mantle-1.0.0-b23-b505c84b.jar" sourcepath="lib/crucible-mantle-1.0.0-b23-b505c84b-sources.jar"/>
-	<classpathentry kind="output" path="bin"/>
+	<classpathentry kind="src" output="target/test-classes" path="Users/steelrj1/git/saavtk">
+		<attributes>
+			<attribute name="test" value="true"/>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="output" path="target/classes"/>
 </classpath>
