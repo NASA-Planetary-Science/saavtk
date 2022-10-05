@@ -1642,6 +1642,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
             resolutionLevel = getNumberResolutionLevels() - 1;
 
         reloadShapeModel();
+        
     }
 
     @Override
@@ -1667,8 +1668,9 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
         this.initialize(smallBodyFile);
 
-        this.pcs.firePropertyChange(Properties.MODEL_RESOLUTION_CHANGED, null, null);
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+        this.pcs.firePropertyChange(Properties.MODEL_RESOLUTION_CHANGED, null, null);
+
     }
 
     @Override
