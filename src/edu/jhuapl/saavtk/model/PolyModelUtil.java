@@ -113,7 +113,7 @@ public class PolyModelUtil
 		Vector3D centerVect = calcCenterPoint(aPolyModel);
 		vtkFloatArray tmpVFA = aPolyModel.getCellNormals();
 
-		int numNorms = tmpVFA.GetNumberOfTuples();
+		int numNorms = (int)tmpVFA.GetNumberOfTuples();
 		int numNormsObtuse = 0;
 
 		// Evaluate all of the normals. If performance is an issue then consider:
@@ -170,7 +170,7 @@ public class PolyModelUtil
 
 		// Calculate the average normal vector (composed of all cells)
 		vtkFloatArray tmpVFA = aPolyModel.getCellNormals();
-		int numNorms = tmpVFA.GetNumberOfTuples();
+		int numNorms = (int)tmpVFA.GetNumberOfTuples();
 		double sumX = 0.0, sumY = 0.0, sumZ = 0.0;
 		for (int c1 = 0; c1 < numNorms; c1++)
 		{

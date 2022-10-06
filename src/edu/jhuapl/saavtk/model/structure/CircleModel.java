@@ -57,7 +57,7 @@ public class CircleModel extends AbstractEllipsePolygonModel
 		activationActor.PickableOff();
 		vtkProperty lineActivationProperty = activationActor.GetProperty();
 		lineActivationProperty.SetColor(0.0, 0.0, 1.0);
-		lineActivationProperty.SetPointSize(7.0);
+		lineActivationProperty.SetPointSize(7.0f);
 
 		activationActor.SetMapper(activationMapper);
 		activationActor.Modified();
@@ -77,7 +77,7 @@ public class CircleModel extends AbstractEllipsePolygonModel
 		vtkPoints points = activationPolyData.GetPoints();
 		vtkCellArray vert = activationPolyData.GetVerts();
 
-		int numPoints = points.GetNumberOfPoints();
+		int numPoints = (int)points.GetNumberOfPoints();
 
 		if (!getProps().contains(activationActor))
 			getProps().add(activationActor);
@@ -189,7 +189,7 @@ public class CircleModel extends AbstractEllipsePolygonModel
 
 	public int getNumberOfCircumferencePoints()
 	{
-		return activationPolyData.GetNumberOfPoints();
+		return (int)activationPolyData.GetNumberOfPoints();
 	}
 
 	@Override

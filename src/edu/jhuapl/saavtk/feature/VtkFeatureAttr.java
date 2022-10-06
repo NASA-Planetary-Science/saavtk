@@ -31,7 +31,7 @@ public class VtkFeatureAttr implements FeatureAttr
 		minVal = valueArr[0];
 		maxVal = valueArr[1];
 
-		numPts = refValueDA.GetMaxId() + 1;
+		numPts = (int)refValueDA.GetMaxId() + 1;
 	}
 
 	/**

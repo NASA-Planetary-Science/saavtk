@@ -55,7 +55,7 @@ public class EllipseModel extends AbstractEllipsePolygonModel
 		vActivationA.PickableOff();
 		vtkProperty lineActivationProperty = vActivationA.GetProperty();
 		lineActivationProperty.SetColor(0.0, 0.0, 1.0);
-		lineActivationProperty.SetPointSize(7.0);
+		lineActivationProperty.SetPointSize(7.0f);
 
 		vActivationA.SetMapper(vActivationPDM);
 		vActivationA.Modified();
@@ -75,7 +75,7 @@ public class EllipseModel extends AbstractEllipsePolygonModel
 		vtkPoints points = vActivationPD.GetPoints();
 		vtkCellArray vert = vActivationPD.GetVerts();
 
-		int numPoints = points.GetNumberOfPoints();
+		int numPoints = (int)points.GetNumberOfPoints();
 
 		if (!getProps().contains(vActivationA))
 			getProps().add(vActivationA);
@@ -169,7 +169,7 @@ public class EllipseModel extends AbstractEllipsePolygonModel
 
 	public int getNumberOfCircumferencePoints()
 	{
-		return vActivationPD.GetNumberOfPoints();
+		return (int)vActivationPD.GetNumberOfPoints();
 	}
 
 	@Override

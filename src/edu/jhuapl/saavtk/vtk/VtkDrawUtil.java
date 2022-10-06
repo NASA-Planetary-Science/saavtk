@@ -341,8 +341,8 @@ public class VtkDrawUtil
 		double[] closestPt2Arr = new double[3];
 		vtkGenericCell vGeneric1GC = new vtkGenericCell();
 		vtkGenericCell vGeneric2GC = new vtkGenericCell();
-		int[] cellId1 = new int[1];
-		int[] cellId2 = new int[1];
+		long[] cellId1 = new long[1];
+		long[] cellId2 = new long[1];
 		int[] subId = new int[1];
 		double[] dist2 = new double[1];
 
@@ -359,8 +359,8 @@ public class VtkDrawUtil
 		}
 
 		// Delegate to PolyDataUtil to finish the formation of poly path...
-		boolean isPass = PolyDataUtil.convertPartOfLinesToPolyLineWithSplitting(retLinePD, closestPt1Arr, cellId1[0],
-				closestPt2Arr, cellId2[0]);
+		boolean isPass = PolyDataUtil.convertPartOfLinesToPolyLineWithSplitting(retLinePD, closestPt1Arr, (int)cellId1[0],
+				closestPt2Arr, (int)cellId2[0]);
 		if (isPass == true)
 			return retLinePD;
 

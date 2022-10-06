@@ -521,7 +521,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         }
         for (int i = 0; i < coloringNames.length; ++i)
         {
-            int numberElements = coloringValues[i].GetNumberOfTuples();
+            int numberElements = (int)coloringValues[i].GetNumberOfTuples();
             ImmutableList<String> elementNames = ImmutableList.of(coloringNames[i]);
 
             coloringDataManager.addBuiltIn(ColoringDataFactory.of(coloringNames[i], coloringUnits[i], numberElements, elementNames, false, coloringValues[i]));
@@ -1148,7 +1148,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 		double[] x = new double[3];
 		double[] pcoords = new double[3];
 		int[] subId = new int[1];
-		int[] cellId = new int[1];
+		long[] cellId = new long[1];
 
 		Vector3D retIntersectPos = null;
 		vtkGenericCell vTmpGC = new vtkGenericCell();
@@ -1179,7 +1179,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
     public double[] findClosestPoint(double[] pt)
     {
         double[] closestPoint = new double[3];
-        int[] cellId = new int[1];
+        long[] cellId = new long[1];
         int[] subId = new int[1];
         double[] dist2 = new double[1];
 
@@ -1198,7 +1198,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
      */
     public double[] findClosestVertex(double[] pt)
     {
-        int id = pointLocator.FindClosestPoint(pt);
+        int id = (int)pointLocator.FindClosestPoint(pt);
         return smallBodyPolyData.GetPoint(id).clone();
     }
 
@@ -1217,7 +1217,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
      */
     public int findClosestCell(double[] pt, double[] closestPoint)
     {
-        int[] cellId = new int[1];
+        long[] cellId = new long[1];
         int[] subId = new int[1];
         double[] dist2 = new double[1];
 
@@ -1225,7 +1225,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         // in the latter.
         cellLocator.FindClosestPoint(pt, closestPoint, genericCell, cellId, subId, dist2);
 
-        return cellId[0];
+        return (int)cellId[0];
     }
 
     /**
@@ -1269,7 +1269,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         double[] x = new double[3];
         double[] pcoords = new double[3];
         int[] subId = new int[1];
-        int[] cellId = new int[1];
+        long[] cellId = new long[1];
 
         int result = cellLocator.IntersectWithLine(origin, lookPt, tol, t, x, pcoords, subId, cellId, genericCell);
 
@@ -1278,7 +1278,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         intersectPoint[2] = x[2];
 
         if (result > 0)
-            return cellId[0];
+            return (int)cellId[0];
         else
             return -1;
     }
@@ -1309,16 +1309,16 @@ public class GenericPolyhedralModel extends PolyhedralModel
         double[] x = new double[3];
         double[] pcoords = new double[3];
         int[] subId = new int[1];
-        int[] cellId = new int[1];
+        long[] cellId = new long[1];
 
-        int result = cellLocator.IntersectWithLine(origin, lookPt, tol, t, x, pcoords, subId, cellId, genericCell);
+        int result = (int)cellLocator.IntersectWithLine(origin, lookPt, tol, t, x, pcoords, subId, cellId, genericCell);
 
         intersectPoint[0] = x[0];
         intersectPoint[1] = x[1];
         intersectPoint[2] = x[2];
 
         if (result > 0)
-            return cellId[0];
+            return (int)cellId[0];
         else
             return -1;
     }
@@ -1512,7 +1512,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         double maxLength = 0.0;
         double meanLength = 0.0;
 
-        int numberOfCells = smallBodyPolyData.GetNumberOfCells();
+        int numberOfCells = (int)smallBodyPolyData.GetNumberOfCells();
 
         System.out.println(numberOfCells);
 
@@ -2374,7 +2374,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 					linesActor.setDefaultMapper(linesMapper);
 					linesActor.setLodMapper(LodMode.MaxQuality, linesMapper);
 					linesActor.setLodMapper(LodMode.MaxSpeed, linesMapper);
-                    linesActor.GetProperty().SetLineWidth(contourLineWidth);
+                    linesActor.GetProperty().SetLineWidth((float)contourLineWidth);
 
                     if (!smallBodyActors.contains(linesActor))
                         smallBodyActors.add(linesActor);
@@ -2504,14 +2504,14 @@ public class GenericPolyhedralModel extends PolyhedralModel
     @Override
     public void setPointSize(double value)
     {
-        smallBodyActor.GetProperty().SetPointSize(value);
+        smallBodyActor.GetProperty().SetPointSize((float)value);
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
     }
 
     @Override
     public void setLineWidth(double value)
     {
-        smallBodyActor.GetProperty().SetLineWidth(value);
+        smallBodyActor.GetProperty().SetLineWidth((float)value);
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
     }
 
@@ -2619,7 +2619,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
             double potTimesAreaSum = 0.0;
             double totalArea = 0.0;
             double minRefPot = Double.MAX_VALUE;
-            int numFaces = smallBodyPolyData.GetNumberOfCells();
+            int numFaces = (int)smallBodyPolyData.GetNumberOfCells();
             for (int i = 0; i < numFaces; ++i)
             {
                 double potential = tuples.get(i).get(0);
@@ -2725,7 +2725,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
             @Override
             public int size()
             {
-                return smallBodyPolyData.GetNumberOfCells();
+                return (int)smallBodyPolyData.GetNumberOfCells();
             }
 
             @Override
@@ -2807,7 +2807,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         // same cell twice.
         TreeSet<Integer> cellIds = new TreeSet<>();
 
-        int numCells = polydata.GetNumberOfCells();
+        int numCells = (int)polydata.GetNumberOfCells();
 
         double[] pt0 = new double[3];
         double[] pt1 = new double[3];
@@ -2899,7 +2899,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
                 vtkTriangle triangle = new vtkTriangle();
 
                 vtkPoints points = smallBodyPolyData.GetPoints();
-                int numberCells = smallBodyPolyData.GetNumberOfCells();
+                int numberCells = (int)smallBodyPolyData.GetNumberOfCells();
                 smallBodyPolyData.BuildCells();
                 vtkIdList idList = new vtkIdList();
 

@@ -37,8 +37,8 @@ public class Line {
 	public static vtkPolyData createPolyDataRepresentation(Line line) {
 		vtkPoints points = new vtkPoints();
 		vtkCellArray cells = new vtkCellArray();
-		int id0 = points.InsertNextPoint(line.getP1().toArray());
-		int id1 = points.InsertNextPoint(line.getP2().toArray());
+		int id0 = (int)points.InsertNextPoint(line.getP1().toArray());
+		int id1 = (int)points.InsertNextPoint(line.getP2().toArray());
 		vtkLine lineCell = new vtkLine();
 		lineCell.GetPointIds().SetId(0, id0);
 		lineCell.GetPointIds().SetId(1, id1);
@@ -53,8 +53,8 @@ public class Line {
 		vtkPoints points = new vtkPoints();
 		vtkCellArray cells = new vtkCellArray();
 		for (Line l : lines) {
-			int id0 = points.InsertNextPoint(l.getP1().toArray());
-			int id1 = points.InsertNextPoint(l.getP2().toArray());
+			int id0 = (int)points.InsertNextPoint(l.getP1().toArray());
+			int id1 = (int)points.InsertNextPoint(l.getP2().toArray());
 			vtkLine lineCell = new vtkLine();
 			lineCell.GetPointIds().SetId(0, id0);
 			lineCell.GetPointIds().SetId(1, id1);

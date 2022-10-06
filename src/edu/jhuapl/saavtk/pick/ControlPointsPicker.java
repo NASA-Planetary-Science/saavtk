@@ -227,7 +227,7 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 				return;
 
 			// Determine the selected item and the selected vertex
-			int tmpCellId = vActivateCP.GetCellId();
+			int tmpCellId = (int)vActivateCP.GetCellId();
 			hookControlPointIdx = refStructureManager.getControlPointIndexFromActivationCellId(tmpCellId);
 			G1 hookItem = refStructureManager.getItemFromActivationCellId(tmpCellId);
 
@@ -244,7 +244,7 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 		if (PickUtil.isPicked(vStructureCP, refRenWin, aEvent, getTolerance()) == true)
 		{
 			vtkActor pickedActor = vStructureCP.GetActor();
-			int cellId = vStructureCP.GetCellId();
+			int cellId = (int)vStructureCP.GetCellId();
 
 			// Do not allow picking of the activated structure
 			G1 tmpHookItem = refStructureManager.getItemFromCellId(cellId, pickedActor);
@@ -317,7 +317,7 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 		if (isPickedB == true && pickedActor == null && refStructureManager.hasProfileMode() == false)
 		{
 			pickedActor = vStructureCP.GetActor();
-			int cellId = vStructureCP.GetCellId();
+			int cellId = (int)vStructureCP.GetCellId();
 
 			// Do not allow picking of the activated structure
 			G1 tmpHookItem = refStructureManager.getItemFromCellId(cellId, pickedActor);

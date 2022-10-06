@@ -138,7 +138,7 @@ public abstract class AbstractModel implements Model
 
     private void fixCellsAlongSeam(vtkPolyData polydata, boolean lowerSide)
     {
-        int numberPoints = polydata.GetNumberOfPoints();
+        int numberPoints = (int)polydata.GetNumberOfPoints();
         vtkPoints points = polydata.GetPoints();
         double[] point = new double[3];
         for (int i=0; i<numberPoints; ++i)

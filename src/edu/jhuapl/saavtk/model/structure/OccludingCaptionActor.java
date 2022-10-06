@@ -23,7 +23,7 @@ public class OccludingCaptionActor extends vtkCaptionActor2D
         normal=PolyDataUtil.getPolyDataNormalAtPoint(polygonCenterPoint, smallBodyModel.getSmallBodyPolyData(), smallBodyModel.getPointLocator());
     	double[] closestPoint=new double[3];
     	vtkGenericCell cell=new vtkGenericCell();
-    	int[] cellId=new int[1];
+    	long[] cellId=new long[1];
     	int[] subId=new int[1];
     	double[] dist=new double[1];
     	smallBodyModel.getCellLocator().FindClosestPoint(polygonCenter.toArray(), closestPoint, cell, cellId, subId, dist);

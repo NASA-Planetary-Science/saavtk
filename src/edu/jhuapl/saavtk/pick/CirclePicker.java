@@ -129,7 +129,7 @@ public class CirclePicker extends Picker
 		vtkActor pickedActor = vStructureCP.GetActor();
 		if (pickedActor == refStructureManager.getBoundaryActor())
 		{
-			int cellId = vStructureCP.GetCellId();
+			int cellId = (int)vStructureCP.GetCellId();
 			int pointId = refStructureManager.getPolygonIdFromBoundaryCellId(cellId);
 			currVertexId = pointId;
 		}

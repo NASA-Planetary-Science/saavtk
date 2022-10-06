@@ -81,10 +81,10 @@ public class StereoRenderCanvas extends vtksbmtJoglCanvas
          */
         lft.Render();
         rgt.Render();
-        lft.getRenderWindow().GetRGBACharPixelData(0, 0, lft.getRenderWindow().GetSize()[0] - 1, lft.getRenderWindow().GetSize()[1] - 1, 1, lftData);
-        rgt.getRenderWindow().GetRGBACharPixelData(0, 0, rgt.getRenderWindow().GetSize()[0] - 1, rgt.getRenderWindow().GetSize()[1] - 1, 1, rgtData);
-        getRenderWindow().SetRGBACharPixelData(0, 0, w / 2 - 1, h - 1, lftData, 1, 0);
-        getRenderWindow().SetRGBACharPixelData(w / 2, 0, w - 1, h - 1, rgtData, 1, 0);
+        lft.getRenderWindow().GetRGBACharPixelData(0, 0, lft.getRenderWindow().GetSize()[0] - 1, lft.getRenderWindow().GetSize()[1] - 1, 1, lftData, 0);
+        rgt.getRenderWindow().GetRGBACharPixelData(0, 0, rgt.getRenderWindow().GetSize()[0] - 1, rgt.getRenderWindow().GetSize()[1] - 1, 1, rgtData, 0);
+        getRenderWindow().SetRGBACharPixelData(0, 0, w / 2 - 1, h - 1, lftData, 1, 0, 0);
+        getRenderWindow().SetRGBACharPixelData(w / 2, 0, w - 1, h - 1, rgtData, 1, 0, 0);
     }
 
     public static void main(String[] args)

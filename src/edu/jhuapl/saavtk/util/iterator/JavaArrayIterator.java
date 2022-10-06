@@ -14,11 +14,11 @@ public class JavaArrayIterator implements PointIterator {
 	private int size;
 	
 	public JavaArrayIterator(vtkDataArray array) {
-		this (((vtkFloatArray)array).GetJavaArray(), 0, array.GetNumberOfTuples());
+		this (((vtkFloatArray)array).GetJavaArray(), 0, (int)array.GetNumberOfTuples());
 	}
 	
 	public JavaArrayIterator(vtkPolyData polyData) {
-		this(((vtkFloatArray)polyData.GetPoints().GetData()).GetJavaArray(), 0, polyData.GetNumberOfPoints());
+		this(((vtkFloatArray)polyData.GetPoints().GetData()).GetJavaArray(), 0, (int)polyData.GetNumberOfPoints());
 	}
 	
 	public JavaArrayIterator(float[] pointData) {

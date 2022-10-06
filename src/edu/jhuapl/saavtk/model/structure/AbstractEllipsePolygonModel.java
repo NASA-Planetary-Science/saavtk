@@ -159,7 +159,7 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 		vExteriorActor = new VtkLodActor(this);
 		vtkProperty boundaryProperty = vExteriorActor.GetProperty();
 		boundaryProperty.LightingOff();
-		boundaryProperty.SetLineWidth(lineWidth);
+		boundaryProperty.SetLineWidth((float)lineWidth);
 
 		vInteriorRegPD = new vtkPolyData();
 		vInteriorDecPD = new vtkPolyData();
@@ -436,7 +436,7 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 		{
 			lineWidth = aWidth;
 			vtkProperty boundaryProperty = vExteriorActor.GetProperty();
-			boundaryProperty.SetLineWidth(lineWidth);
+			boundaryProperty.SetLineWidth((float)lineWidth);
 
 			// Send out the appropriate notifications
 			notifyListeners(this, ItemEventType.ItemsMutated);
@@ -637,22 +637,22 @@ abstract public class AbstractEllipsePolygonModel extends BaseStructureManager<E
 			int begIdx, endIdx;
 
 			begIdx = vDrawState.extBegIdxReg;
-			endIdx = begIdx + tmpPainter.getVtkExteriorPolyData().GetNumberOfCells();
+			endIdx = begIdx + (int)tmpPainter.getVtkExteriorPolyData().GetNumberOfCells();
 			for (int aIdx = begIdx; aIdx < endIdx; aIdx++)
 				VtkUtil.setColorOnUCA3(vExteriorColorsRegUCA, aIdx, tmpColor);
 
 			begIdx = vDrawState.extBegIdxDec;
-			endIdx = begIdx + tmpPainter.getVtkExteriorDecPolyData().GetNumberOfCells();
+			endIdx = begIdx + (int)tmpPainter.getVtkExteriorDecPolyData().GetNumberOfCells();
 			for (int aIdx = begIdx; aIdx < endIdx; aIdx++)
 				VtkUtil.setColorOnUCA3(vExteriorColorsDecUCA, aIdx, tmpColor);
 
 			begIdx = vDrawState.intBegIdxReg;
-			endIdx = begIdx + tmpPainter.getVtkInteriorPolyData().GetNumberOfCells();
+			endIdx = begIdx + (int)tmpPainter.getVtkInteriorPolyData().GetNumberOfCells();
 			for (int aIdx = begIdx; aIdx < endIdx; aIdx++)
 				VtkUtil.setColorOnUCA3(vInteriorColorsRegUCA, aIdx, tmpColor);
 
 			begIdx = vDrawState.intBegIdxDec;
-			endIdx = begIdx + tmpPainter.getVtkInteriorDecPolyData().GetNumberOfCells();
+			endIdx = begIdx + (int)tmpPainter.getVtkInteriorDecPolyData().GetNumberOfCells();
 			for (int aIdx = begIdx; aIdx < endIdx; aIdx++)
 				VtkUtil.setColorOnUCA3(vInteriorColorsDecUCA, aIdx, tmpColor);
 		}

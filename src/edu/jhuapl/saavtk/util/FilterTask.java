@@ -52,14 +52,14 @@ class FilterTask implements Callable<List<Integer>>
 			double[] x = new double[3];
 			double[] pcoords = new double[3];
 			int[] subId = new int[1];
-			int[] cell_id = new int[1];
+			long[] cell_id = new long[1];
 			Logger.getAnonymousLogger().log(Level.INFO, "Getting result ");
 			int result = locator.IntersectWithLine(origin, sourcePnt, tol, t, x, pcoords, subId, cell_id, cell);
 //			Logger.getAnonymousLogger().log(Level.INFO, "Got result ");
 			if (result == 1)
 			{
 //				System.out.println("FilterTask: call: source " + new Vector3D(sourcePnt));
-				int ptid = pointLocator.FindClosestPoint(sourcePnt);
+				int ptid = (int)pointLocator.FindClosestPoint(sourcePnt);
 //				System.out.println("FilterTask: call: pt id " + ptid);
 //				System.out.println("FilterTask: call: idlist " + idList);
 				tmpPolyData.GetPointCells(ptid, idList);
@@ -77,12 +77,12 @@ class FilterTask implements Callable<List<Integer>>
 				}
 
 				tmpPolyData.GetPointCells(i, idList);
-				int numPtCells = idList.GetNumberOfIds();
+				int numPtCells = (int)idList.GetNumberOfIds();
 				for (int j = 0; j < numPtCells; ++j)
 				{
 					// The following makes sure that only cells for which ALL three of its
 					// points are obscured get deleted
-					int cellId = idList.GetId(j);
+					int cellId = (int)idList.GetId(j);
 					obscuredIds.add(cellId);
 //					++numberOfObscuredPointsPerCell[cellId];
 //					if (numberOfObscuredPointsPerCell[cellId] == 3)

@@ -92,7 +92,7 @@ public class Axes
 		mapper.SetInputData(polyData);
 		actor.GetProperty().LightingOff();
 		actor.SetMapper(mapper);
-		actor.GetProperty().SetLineWidth(lineWidth);
+		actor.GetProperty().SetLineWidth((float)lineWidth);
 		labelX.SetPosition(polyData.GetPoint(1));
 		labelY.SetPosition(polyData.GetPoint(3));
 		labelZ.SetPosition(polyData.GetPoint(5));

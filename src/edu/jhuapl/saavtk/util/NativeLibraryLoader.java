@@ -1,10 +1,17 @@
 package edu.jhuapl.saavtk.util;
 
+import static ch.unibas.cs.gravis.vtkjavanativelibs.VtkNativeLibraries.MAJOR_VERSION;
+import static ch.unibas.cs.gravis.vtkjavanativelibs.VtkNativeLibraries.MINOR_VERSION;
+
 import java.awt.EventQueue;
 import java.awt.HeadlessException;
+import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import ch.unibas.cs.gravis.vtkjavanativelibs.Platform;
+import ch.unibas.cs.gravis.vtkjavanativelibs.VtkNativeLibraries;
 import vtk.vtkNativeLibrary;
+import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 /**
  * Utility class for initializing native libraries, either all the libraries or
@@ -14,6 +21,41 @@ public class NativeLibraryLoader
 {
     private static final AtomicBoolean isVtkInitialized = new AtomicBoolean(false);
 
+    private static void unpackNatives()
+    {
+    	System.out.println("vtk-native version: " + MAJOR_VERSION + "." + MINOR_VERSION);
+        System.out.println("Java version: " + System.getProperty("java.version"));
+        System.out.println("Current platform: " + Platform.getPlatform());
+        if (Platform.isUnknown()) {
+        	System.err.println("Cannot determine the platform you are running on.");
+        	System.exit(1);
+        }
+
+//        File nativeDir = new File(System.getProperty("java.io.tmpdir"));
+        File nativeDir = new File(System.getProperty("user.home") + File.separator +".nativelibs");
+
+        System.out.println("Will unpack to : " + nativeDir);
+
+        try {
+            VtkNativeLibraries.initialize(nativeDir);
+            System.out.println("Initialization done, ");
+        } catch (Throwable t) {
+            System.err.println("Initialization failed with " + t.getClass().getSimpleName() + ", stacktrace follows.");
+            t.printStackTrace(System.err);
+            System.err.println("stacktrace above.");
+            System.exit(1);
+        }
+
+        try {
+            System.out.println(new vtk.vtkVersion().GetVTKVersion());
+            new vtkJoglPanelComponent();
+        } catch (Throwable t) {
+            System.out.println("Could not invoke vtk Methode" +t.getMessage());
+            t.printStackTrace();
+        }
+    }
+    
+    
     /**
      * Load all VTK libraries for the current execution mode. In "headless" mode
      * this will load only those VTK libraries that do not interact with keyboard,
@@ -42,6 +84,7 @@ public class NativeLibraryLoader
      */
     public static void loadVtkLibraries()
     {
+    	unpackNatives();
         if (Configuration.isHeadless())
         {
             loadHeadlessVtkLibraries();
@@ -126,7 +169,7 @@ public class NativeLibraryLoader
             {
                 try
                 {
-                    if (lib.IsBuilt())
+                    if (lib.IsLoaded())
                     {
                         lib.LoadLibrary();
                     }
@@ -174,7 +217,7 @@ public class NativeLibraryLoader
             {
                 try
                 {
-                    if (lib.IsBuilt() && !lib.GetLibraryName().startsWith("vtkRendering")
+                    if (lib.IsLoaded() && !lib.GetLibraryName().startsWith("vtkRendering")
                             && !lib.GetLibraryName().startsWith("vtkViews")
                             && !lib.GetLibraryName().startsWith("vtkInteraction")
                             && !lib.GetLibraryName().startsWith("vtkCharts")

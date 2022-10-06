@@ -28,7 +28,7 @@ public class WireframeConverter {
 
 	    for (int i=0; i<rawPolyData.GetNumberOfCells(); i++) {
 	    	vtkCell cell=rawPolyData.GetCell(i);
-	    	switch (cell.GetNumberOfPoints())
+	    	switch ((int)cell.GetNumberOfPoints())
 	    	{
 	    	case 1:
                 appendFilter.AddInputData(strategy.convertPoint(new Point3D(cell.GetPoints().GetPoint(0))));
@@ -36,7 +36,7 @@ public class WireframeConverter {
 	    	default:
 	    	    for (int j=0; j<cell.GetNumberOfPoints(); j++)
 	    	    {
-	    	        int jp=(j+1) % cell.GetNumberOfPoints();
+	    	        int jp=(j+1) % (int)cell.GetNumberOfPoints();
 	    	        vtkPolyData line = strategy.convertLine(new Point3D(cell.GetPoints().GetPoint(j)), new Point3D(cell.GetPoints().GetPoint(jp)));
                     appendFilter.AddInputData(line);
 	    	    }

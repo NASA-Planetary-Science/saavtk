@@ -153,7 +153,7 @@ public class ObjUtil
 				for (int j=0; j<cell.GetNumberOfPoints(); j++)
 				{
 					vtkIdList ids=polyData.GetCell(i).GetPointIds();
-					int id=ids.GetId(j)+1;
+					int id=(int)ids.GetId(j)+1;
 					if (cell.GetNumberOfPoints()<3)
 						writer.write(id+" ");
 					else
@@ -180,7 +180,7 @@ public class ObjUtil
 	    for (int i=0; i<rawPolyData.GetNumberOfCells(); i++)
 	    {
 	    	vtkCell cell=rawPolyData.GetCell(i);
-	    	switch (cell.GetNumberOfPoints())
+	    	switch ((int)cell.GetNumberOfPoints())
 	    	{
 	    	case 1:
                 appendFilter.AddInputData(convertPointToCube(cell.GetPoints().GetPoint(0), wireSize));

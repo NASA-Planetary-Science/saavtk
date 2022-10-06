@@ -132,15 +132,15 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		vtkProperty lineProperty = vLineActor.GetProperty();
 
 		lineWidth = 2.0;
-		lineProperty.SetLineWidth(lineWidth);
+		lineProperty.SetLineWidth((float)lineWidth);
 		if (hasProfileMode() == true)
-			lineProperty.SetLineWidth(3.0);
+			lineProperty.SetLineWidth(3.0f);
 
 		activationPainter = new VtkControlPointPainter();
 		vLineActivationActor = new vtkActor();
 		vtkProperty lineActivationProperty = vLineActivationActor.GetProperty();
 		lineActivationProperty.SetColor(1.0, 0.0, 0.0);
-		lineActivationProperty.SetPointSize(7.0);
+		lineActivationProperty.SetPointSize(7.0f);
 
 		// Initialize an empty polydata for resetting
 		vEmptyPD = VtkUtil.formEmptyPolyData();
@@ -835,7 +835,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		{
 			lineWidth = aWidth;
 			vtkProperty lineProperty = vLineActor.GetProperty();
-			lineProperty.SetLineWidth(lineWidth);
+			lineProperty.SetLineWidth((float)lineWidth);
 
 			notifyListeners(this, ItemEventType.ItemsMutated);
 			notifyVtkStateChange();

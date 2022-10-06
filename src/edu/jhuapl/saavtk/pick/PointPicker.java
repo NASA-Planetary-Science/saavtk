@@ -117,7 +117,7 @@ public class PointPicker extends Picker
 
 		if (pickedActor == refStructureManager.getInteriorActor())
 		{
-			int cellId = vStructureCP.GetCellId();
+			int cellId = (int)vStructureCP.GetCellId();
 			int pointId = refStructureManager.getPolygonIdFromInteriorCellId(cellId);
 			currVertexId = pointId;
 		}

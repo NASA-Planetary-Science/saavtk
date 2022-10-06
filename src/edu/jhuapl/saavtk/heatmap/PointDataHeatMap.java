@@ -106,17 +106,17 @@ public class PointDataHeatMap implements HeatMap
 
         if (averageBoundingVertices)
         {
-            int cellDataSize = polyData.GetNumberOfCells();
+            int cellDataSize = (int)polyData.GetNumberOfCells();
             double[] cellScalars = new double[cellDataSize];
             for (int i=0; i<cellDataSize; i++)
             {
                 vtkCell cell = polyData.GetCell(i);
                 double average = 0.0;
                 vtkIdList points = cell.GetPointIds();
-                int nids = points.GetNumberOfIds();
+                int nids = (int)points.GetNumberOfIds();
                 for (int j=0; j<nids; j++)
                 {
-                    int index = points.GetId(j);
+                    int index = (int)points.GetId(j);
                     double scalar = scalars[index];
                     average += scalar;
                 }

@@ -158,7 +158,7 @@ public class FileUtil
 
         String nl = System.getProperty("line.separator");
 
-        int numTuples = array.GetNumberOfTuples();
+        int numTuples = (int)array.GetNumberOfTuples();
         int numComponents = array.GetNumberOfComponents();
         for (int i = 0; i < numTuples; ++i)
         {

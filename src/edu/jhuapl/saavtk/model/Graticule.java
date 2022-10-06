@@ -291,7 +291,7 @@ public class Graticule extends AbstractModel implements PropertyChangeListener
 
     public void setLineWidth(double value)
     {
-        actor.GetProperty().SetLineWidth(value);
+        actor.GetProperty().SetLineWidth((float)value);
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
     }
 
