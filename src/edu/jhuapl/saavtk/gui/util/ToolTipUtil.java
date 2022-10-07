@@ -217,10 +217,58 @@ public class ToolTipUtil
 	}
 	
 	/*
-	 * Returns the tool tip that should be used for "Stop" buttons
+	 * Returns the tool tip that should be used for "Font" buttons
 	 */
 	public static String getFont()
 	{
 		return "Font";
 	}
+	/*
+	 * Returns the tool tip that should be used for "Color" buttons
+	 */
+	public static String getColorImage()
+	{
+		return "Generate a Color Image";
+	}
+	 
+	/*
+	 * Returns the tool tip that should be used for "image cube" buttons
+	 */
+	public static String getImageCube()
+	{
+		return "Generate an Image Cube";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "custom image" buttons
+	 */
+	public static String getCustomImage()
+	{
+		return "Generate a Custom Image";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "show border" buttons
+	 */
+	public static String getShowBorder()
+	{
+		return "Show borders for selected images";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "hide border" buttons
+	 */
+	public static String getHideBorder()
+	{
+		return "Hide borders for selected images";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "gallery" buttons
+	 */
+	public static String getGallery()
+	{
+		return "View Images as Gallery";
+	}
+
 }

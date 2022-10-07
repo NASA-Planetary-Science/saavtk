@@ -18,7 +18,7 @@ import vtk.rendering.vtkInteractorForwarder;
  *
  * @author Sebastien Jourdain - sebastien.jourdain@kitware.com
  */
-class vtksbmtJoglComponent<T extends java.awt.Component> extends vtkAbstractComponent<T> {
+public class vtksbmtJoglComponent<T extends java.awt.Component> extends vtkAbstractComponent<T> {
 
   protected T uiComponent;
   protected boolean isWindowCreated;
