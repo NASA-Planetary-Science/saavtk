@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
+	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
 		<attributes>
 			<attribute name="module" value="true"/>
 			<attribute name="maven.pomderived" value="true"/>
@@ -20,5 +20,8 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry exported="true" kind="lib" path="lib/vtk9.2/vtk-9.2.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/jogl/gluegen-rt-v2.4.0-rc4.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/jogl/jogl-all-v2.4.0-rc4.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
