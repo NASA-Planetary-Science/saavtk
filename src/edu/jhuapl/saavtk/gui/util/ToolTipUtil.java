@@ -269,7 +269,7 @@ public class ToolTipUtil
 	 */
 	public static String getGallery()
 	{
-		return "View Images as Gallery";
+		return "View Images as Gallery. Shows selected images, or all images if none are selected.";
 	}
 
 }
