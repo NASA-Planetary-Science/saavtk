@@ -245,7 +245,23 @@ public class ToolTipUtil
 	 */
 	public static String getCustomImage()
 	{
-		return "Generate a Custom Image";
+		return "Add one or more Custom Images";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Load Items" buttons
+	 */
+	public static String getItemLoadCustomImageList()
+	{
+		return "Load a saved list of custom images";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Load Items" buttons
+	 */
+	public static String getItemSaveCustomImageList()
+	{
+		return "Save a list of custom images";
 	}
 	
 	/*
