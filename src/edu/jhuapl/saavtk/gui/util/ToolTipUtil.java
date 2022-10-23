@@ -249,7 +249,7 @@ public class ToolTipUtil
 	}
 	
 	/*
-	 * Returns the tool tip that should be used for "Load Items" buttons
+	 * Returns the tool tip that should be used for custom "Load Items" buttons
 	 */
 	public static String getItemLoadCustomImageList()
 	{
@@ -257,11 +257,27 @@ public class ToolTipUtil
 	}
 	
 	/*
-	 * Returns the tool tip that should be used for "Load Items" buttons
+	 * Returns the tool tip that should be used for custom "save Items" buttons
 	 */
 	public static String getItemSaveCustomImageList()
 	{
 		return "Save a list of custom images";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Load Image" buttons
+	 */
+	public static String getItemLoadImageList()
+	{
+		return "Load a saved list of images from a file";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "save image" buttons
+	 */
+	public static String getItemSaveImageList()
+	{
+		return "Save selected images (or all images if none selected) to a file";
 	}
 	
 	/*
