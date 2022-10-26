@@ -295,7 +295,7 @@ public class IconUtil
 		if (cIconFont == null)
 			cIconFont = IconUtil.loadIcon("resources/icons/font.png");
 
-		return cIconFont;
+		return cIconFont; 
 	}
 	
 	//<div>Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>

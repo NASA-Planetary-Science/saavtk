@@ -10,6 +10,8 @@ import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.reflect.InvocationTargetException;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.BorderFactory;
@@ -19,8 +21,9 @@ import javax.swing.JPopupMenu;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 
-import edu.jhuapl.saavtk.config.ViewConfig;
+import edu.jhuapl.saavtk.config.IViewConfig;
 import edu.jhuapl.saavtk.gui.render.Renderer;
+import edu.jhuapl.saavtk.model.IPositionOrientationManager;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
@@ -45,19 +48,20 @@ public abstract class View extends JPanel
     /** Global to keep track of the most recent change in any (splitPane) divider location. */
     private static int globLastDividerLocation = -1;
 
-    private static final long serialVersionUID = 1L;
-    private JSplitPane splitPane;
+	private static final long serialVersionUID = 1L;
+    protected JSplitPane splitPane;
     protected Renderer renderer;
-    private JTabbedPane controlPanel;
+    protected JTabbedPane controlPanel;
     private ModelManager modelManager;
     private PickManager pickManager;
     private PopupManager popupManager;
     private WindowManager infoPanelManager;
     private WindowManager spectrumPanelManager;
+    protected IPositionOrientationManager positionOrientationManager;
     private final StatusNotifier refStatusNotifier;
     private LegacyStatusHandler legacyStatusHandler;
-    private final AtomicBoolean initialized = new AtomicBoolean(false);
-    private ViewConfig config;
+    protected final AtomicBoolean initialized = new AtomicBoolean(false);
+    protected IViewConfig config;
     protected String uniqueName;
     protected String shapeModelName;
     protected String configURL;
@@ -114,7 +118,7 @@ public abstract class View extends JPanel
      */
     public JSplitPane getMainSplitPane()
     {
-        return splitPane;
+        return splitPane; 
     }
 
     public StatusNotifier getStatusNotifier()
@@ -146,7 +150,7 @@ public abstract class View extends JPanel
   		tmpDefaultPicker.addListener(tmpLocationStatusHandler);
     }
 
-    protected void setConfig(ViewConfig config)
+    protected void setConfig(IViewConfig config)
     {
     	this.config = config;
     }
@@ -167,7 +171,7 @@ public abstract class View extends JPanel
      * reduce memory and startup time. Therefore, this function should be called
      * prior to first time the View is shown in order to cause it
      */
-    public View(StatusNotifier aStatusNotifier, ViewConfig config)
+    public View(StatusNotifier aStatusNotifier, IViewConfig config)
     {
         super(new BorderLayout());
         refStatusNotifier = aStatusNotifier;
@@ -202,6 +206,11 @@ public abstract class View extends JPanel
                 setupSpectrumPanelManager();
             });
 
+            Configuration.runAndWaitOnEDT(() -> {
+                setupPositionOrientationManager();
+            });
+
+            
             Configuration.runAndWaitOnEDT(() -> {
                 setupRenderer();
             });
@@ -287,7 +296,7 @@ public abstract class View extends JPanel
         }
     }
 
-    private void showDefaultTabSelectionPopup(MouseEvent e)
+    protected void showDefaultTabSelectionPopup(MouseEvent e)
     {
         if (e.isPopupTrigger())
         {
@@ -330,6 +339,11 @@ public abstract class View extends JPanel
     protected Model getModel(ModelNames name)
     {
         return modelManager.getModel(name);
+    }
+    
+    protected List<Model> getModels(ModelNames name)
+    {
+        return modelManager.getModels(name);
     }
 
     /**
@@ -374,7 +388,7 @@ public abstract class View extends JPanel
      */
     public abstract String getModelDisplayName();
 
-    public ViewConfig getConfig()
+    public IViewConfig getConfig()
     {
         return config;
     }
@@ -400,6 +414,8 @@ public abstract class View extends JPanel
     protected abstract void setupInfoPanelManager();
 
     protected abstract void setupSpectrumPanelManager();
+    
+    protected abstract void setupPositionOrientationManager();
 
     protected void setupRenderer()
     {
