@@ -4,12 +4,12 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.config.IBodyViewConfig;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.model.ShapeModelBody;
 import edu.jhuapl.saavtk.model.ShapeModelType;
+import edu.jhuapl.saavtk.util.DownloadableFileManager.StateListener;
 
-public class ExampleViewConfig extends ViewConfig implements IBodyViewConfig
+public class ExampleViewConfig extends ViewConfig
 {
 
     static public ExampleViewConfig getExampleConfig(ShapeModelBody name, ShapeModelType author)
@@ -24,7 +24,7 @@ public class ExampleViewConfig extends ViewConfig implements IBodyViewConfig
 
     public static void initialize()
     {
-        List<IBodyViewConfig> configArray = getBuiltInConfigs();
+        List<ViewConfig> configArray = getBuiltInConfigs();
 
         ExampleViewConfig config = new ExampleViewConfig();
         config.modelLabel = "data/brain.obj";

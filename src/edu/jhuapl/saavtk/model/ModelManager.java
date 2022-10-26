@@ -26,13 +26,13 @@ public class ModelManager extends AbstractModel
 	private static final Version METADATA_VERSION = Version.of(1, 0);
 	private final CommonData commonData;
 	private final PolyhedralModel mainModel;
-	private final ImmutableMap<ModelNames, List<Model>> allModels;
+	private final ImmutableMap<ModelNames, Model> allModels;
 
 	private List<vtkProp> props = new ArrayList<>();
 	private List<vtkProp> propsExceptSmallBody = new ArrayList<>();
 	private HashMap<vtkProp, Model> propToModelMap = new HashMap<>();
 
-	public ModelManager(PolyhedralModel mainModel, Map<ModelNames, List<Model>> allModels)
+	public ModelManager(PolyhedralModel mainModel, Map<ModelNames, Model> allModels)
 	{
 		commonData = new CommonData();
 		this.mainModel = mainModel;
@@ -40,12 +40,9 @@ public class ModelManager extends AbstractModel
 
 		for (ModelNames modelName : this.allModels.keySet())
 		{
-			List<Model> models = this.allModels.get(modelName);
-			for (Model model : models)
-			{
-				model.setCommonData(commonData);
-				model.addPropertyChangeListener(this);
-			}
+			Model model = this.allModels.get(modelName);
+			model.setCommonData(commonData);
+			model.addPropertyChangeListener(this);
 		}
 
 		updateProps();
@@ -108,19 +105,16 @@ public class ModelManager extends AbstractModel
 
 		for (ModelNames modelName : allModels.keySet())
 		{
-			List<Model> models = allModels.get(modelName);
-			for (Model model : models)
+			Model model = allModels.get(modelName);
+			if (model.isVisible())
 			{
-				if (model.isVisible())
-				{
-					props.addAll(model.getProps());
-	
-					for (vtkProp prop : model.getProps())
-						propToModelMap.put(prop, model);
-	
-					if (!(model instanceof PolyhedralModel))
-						propsExceptSmallBody.addAll(model.getProps());
-				}
+				props.addAll(model.getProps());
+
+				for (vtkProp prop : model.getProps())
+					propToModelMap.put(prop, model);
+
+				if (!(model instanceof PolyhedralModel))
+					propsExceptSmallBody.addAll(model.getProps());
 			}
 		}
 	}
@@ -140,17 +134,11 @@ public class ModelManager extends AbstractModel
 	// TODO: Add method comments
 	public Model getModel(ModelNames modelName)
 	{
-		return allModels.get(modelName).get(0);
-	}
-	
-	// TODO: Add method comments
-	public List<Model> getModels(ModelNames modelName)
-	{
 		return allModels.get(modelName);
 	}
 
 	// TODO: Add method comments
-	public Map<ModelNames, List<Model>> getAllModels()
+	public Map<ModelNames, Model> getAllModels()
 	{
 		return allModels;
 	}
@@ -159,8 +147,7 @@ public class ModelManager extends AbstractModel
 	public void deleteAllModels()
 	{
 		for (ModelNames modelName : allModels.keySet())
-			for (Model model : allModels.get(modelName))
-				model.delete();	
+			allModels.get(modelName).delete();
 	}
 
 	@Override
@@ -173,15 +160,12 @@ public class ModelManager extends AbstractModel
 	public Metadata store()
 	{
 		SettableMetadata metadata = SettableMetadata.of(METADATA_VERSION);
-		for (Entry<ModelNames, List<Model>> entry : allModels.entrySet())
+		for (Entry<ModelNames, Model> entry : allModels.entrySet())
 		{
-			List<Model> models = entry.getValue();
-			for (Model model : models)
+			Model model = entry.getValue();
+			if (model instanceof MetadataManager)
 			{
-				if (model instanceof MetadataManager)
-				{
-					metadata.put(Key.of(entry.getKey().name()), ((MetadataManager) model).store());
-				}
+				metadata.put(Key.of(entry.getKey().name()), ((MetadataManager) model).store());
 			}
 		}
 
@@ -191,19 +175,15 @@ public class ModelManager extends AbstractModel
 	@Override
 	public void retrieve(Metadata source)
 	{
-		for (Entry<ModelNames, List<Model>> entry : allModels.entrySet())
+		for (Entry<ModelNames, Model> entry : allModels.entrySet())
 		{
-			List<Model> models = entry.getValue();
-			for (Model model : models)
+			Key<Metadata> key = Key.of(entry.getKey().name());
+			if (source.hasKey(key))
 			{
-				Key<Metadata> key = Key.of(entry.getKey().name());
-				if (source.hasKey(key))
+				Model model = entry.getValue();
+				if (model instanceof MetadataManager)
 				{
-//					Model model = entry.getValue();
-					if (model instanceof MetadataManager)
-					{
-						((MetadataManager) model).retrieve(source.get(key));
-					}
+					((MetadataManager) model).retrieve(source.get(key));
 				}
 			}
 		}

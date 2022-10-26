@@ -14,13 +14,18 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
+import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.util.file.IndexableTuple;
 import edu.jhuapl.saavtk.vtk.VtkDrawUtil;
@@ -333,10 +338,10 @@ public class PolyDataUtil
 		return Actor;
 	}
 	
-	public static vtkPolyData computeVTKFrustumIntersection(vtkPolyData polyData, vtksbCellLocator locator, vtkAbstractPointLocator pointLocator, double[] origin, double[] ul, double[] ur, double[] lr, double[] ll)
+	public static vtkPolyData computeVTKFrustumIntersection(vtkPolyData polyData, double[] origin, double[] ul, double[] ur, double[] lr, double[] ll)
 	{
 //		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: computing vtk frustum intersection");
-//		Logger.getAnonymousLogger().log(Level.INFO, "!!!!!!!!!!!!!!1Computing VTK Frustum Intersection");
+		Logger.getAnonymousLogger().log(Level.INFO, "!!!!!!!!!!!!!!1Computing VTK Frustum Intersection");
 
 		vtkPlanes planes = computeFrustumPlanes(/*polyData,*/ origin, ul, ur, lr, ll);
 
@@ -349,15 +354,21 @@ public class PolyDataUtil
 		extractor.SetFieldType(0);
 //		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: extractor field type " + extractor.GetFieldType());
 		extractor.Update();
-//		Logger.getAnonymousLogger().log(Level.INFO, "extractor update");
+		Logger.getAnonymousLogger().log(Level.INFO, "extractor update");
 //		vtkDataObject output = extractor.GetOutput();
 		
 		vtkUnstructuredGrid selectedGeometry = (vtkUnstructuredGrid) extractor.GetOutput();
 		vtkGeometryFilter geometryFilter = new vtkGeometryFilter();
 		geometryFilter.SetInputData(selectedGeometry);
 		geometryFilter.Update();
-//		Logger.getAnonymousLogger().log(Level.INFO, "Geofilter update");
+		Logger.getAnonymousLogger().log(Level.INFO, "Geofilter update");
 
+		
+		
+		
+		
+		
+		
 		
 		vtkPolyDataNormals normalsFilter = new vtkPolyDataNormals();
 		normalsFilter.SetInputConnection(geometryFilter.GetOutputPort());
@@ -366,7 +377,7 @@ public class PolyDataUtil
 		normalsFilter.SplittingOff();
 		normalsFilter.Update();
 		vtkPolyData normalsFilterOutput = normalsFilter.GetOutput();
-//		Logger.getAnonymousLogger().log(Level.INFO, "Got normals filter");
+		Logger.getAnonymousLogger().log(Level.INFO, "Got normals filter");
 		vtkPolyData tmpPolyData = new vtkPolyData();
 		tmpPolyData.DeepCopy(normalsFilterOutput);
 //		 Now remove from this clipped poly data all the cells that are facing away from the viewer.
@@ -378,7 +389,7 @@ public class PolyDataUtil
 		vtkIdList idList = new vtkIdList();
 		idList.SetNumberOfIds(0);
 		double[] viewDir = new double[3];
-//		Logger.getAnonymousLogger().log(Level.INFO, "For loop starting");
+		Logger.getAnonymousLogger().log(Level.INFO, "For loop starting");
 		for (int i = 0; i < numCells; ++i)
 		{
 			double[] n = cellNormals.GetTuple3(i);
@@ -397,11 +408,11 @@ public class PolyDataUtil
 			if (dot <= 0.0)
 				tmpPolyData.DeleteCell(i);
 		}
-//		Logger.getAnonymousLogger().log(Level.INFO, "For loop done");
+		Logger.getAnonymousLogger().log(Level.INFO, "For loop done");
 		tmpPolyData.RemoveDeletedCells();
 		tmpPolyData.Modified();
 		tmpPolyData.GetCellData().SetNormals(null);
-//		Logger.getAnonymousLogger().log(Level.INFO, "Cleaning after normals");
+		Logger.getAnonymousLogger().log(Level.INFO, "Cleaning after normals");
 		vtkCleanPolyData cleanPoly = new vtkCleanPolyData();
 		cleanPoly.SetInputData(tmpPolyData);
 		cleanPoly.Update();
@@ -409,70 +420,28 @@ public class PolyDataUtil
 
 		//polyData = new vtkPolyData();
 		tmpPolyData.DeepCopy(cleanPolyOutput);
-//		Logger.getAnonymousLogger().log(Level.INFO, "Cleaning done");
-		
-		vtkGenericCell cell = new vtkGenericCell();
-
-		points = tmpPolyData.GetPoints();
-		int numPoints = points.GetNumberOfPoints();
-
-		int[] numberOfObscuredPointsPerCell = new int[tmpPolyData.GetNumberOfCells()];
-		Arrays.fill(numberOfObscuredPointsPerCell, 0);
-
-		double tol = 1e-6;
-		double[] t = new double[1];
-		double[] x = new double[3];
-		double[] pcoords = new double[3];
-		int[] subId = new int[1];
-		int[] cell_id = new int[1];
-		
-		final List<Future<Void>> resultList;
-		List<Callable<Void>> taskList = new ArrayList<>();
-
-		for (int i = 0; i < numPoints; ++i)
-		{
-			Callable<Void> task = new ObscuredTask(polyData, points, locator, pointLocator, origin, numberOfObscuredPointsPerCell, i);
-			taskList.add(task);
-		}
-//		Logger.getAnonymousLogger().log(Level.INFO, "Waiting for tasks " + taskList.size());
-//		System.out.println("PolyDataUtil: computeFrustumIntersection: waiting for tasks " + taskList.size());
-		resultList = ThreadService.submitAll(taskList);
-//		System.out.println("PolyDataUtil: computeFrustumIntersection: got results");
-//		Logger.getAnonymousLogger().log(Level.INFO, "Got results");
-//		Logger.getAnonymousLogger().log(Level.INFO, "After convex shape "  + tmpPolyData.GetNumberOfCells());
-		tmpPolyData.RemoveDeletedCells();
-
-		//cleanPoly = new vtkCleanPolyData();
-		cleanPoly.SetInputData(tmpPolyData);
-		cleanPoly.Update();
-		cleanPolyOutput = cleanPoly.GetOutput();
-
-		//polyData = new vtkPolyData();
-		tmpPolyData.DeepCopy(cleanPolyOutput);
-		return tmpPolyData;
-		
-		
+		Logger.getAnonymousLogger().log(Level.INFO, "Cleaning done");
 //		vtkPolyData result = new vtkPolyData();
 //		result.DeepCopy(normalsFilter.GetOutput());
 //		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: result num cells " + result.GetNumberOfCells());
 //		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: result num points " + result.GetNumberOfPoints());
 //		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: result num polys " + result.GetNumberOfPolys());
 //		Logger.getAnonymousLogger().log(Level.INFO, "Returning poly");
-//		vtkPolyData result = new vtkPolyData();
+		vtkPolyData result = new vtkPolyData();
 //		vtkPolyDataWriter imageWriter = new vtkPolyDataWriter();
 //	        imageWriter.SetInputData(geometryFilter.GetOutput());
 //	        imageWriter.SetFileName("/Users/steelrj1/Desktop/speedtest.vtk");
 //	        imageWriter.SetFileTypeToBinary();
 //	        imageWriter.Write();
 //		result.DeepCopy(geometryFilter.GetOutput());
-//		vtkPolyDataWriter imageWriter = new vtkPolyDataWriter();
-//        imageWriter.SetInputData(tmpPolyData);
-//        imageWriter.SetFileName("/Users/steelrj1/Desktop/speedtest.vtk");
-//        imageWriter.SetFileTypeToBinary();
-//        imageWriter.Write();
-//        result.DeepCopy(tmpPolyData);
-//		Logger.getAnonymousLogger().log(Level.INFO, "Polydata made");
-//		return result;
+		vtkPolyDataWriter imageWriter = new vtkPolyDataWriter();
+        imageWriter.SetInputData(tmpPolyData);
+        imageWriter.SetFileName("/Users/steelrj1/Desktop/speedtest.vtk");
+        imageWriter.SetFileTypeToBinary();
+        imageWriter.Write();
+        result.DeepCopy(tmpPolyData);
+		Logger.getAnonymousLogger().log(Level.INFO, "Polydata made");
+		return result;
 //		return tmpPolyData;
 //		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: output " + output);
 //		vtkUnstructuredGrid grid = new vtkUnstructuredGrid();
@@ -561,9 +530,9 @@ public class PolyDataUtil
 		clipPolyData4.SetInputConnection(clipPolyData3OutputPort);
 		clipPolyData4.SetClipFunction(plane4);
 		clipPolyData4.SetInsideOut(1);
-		Logger.getAnonymousLogger().log(Level.INFO, "Clipping data");
+//		Logger.getAnonymousLogger().log(Level.INFO, "Clipping data");
 		clipPolyData4.Update();
-		Logger.getAnonymousLogger().log(Level.INFO, "Clipped Data");
+//		Logger.getAnonymousLogger().log(Level.INFO, "Clipped Data");
 		vtkAlgorithmOutput clipPolyData4OutputPort = clipPolyData4.GetOutputPort();
 		if (clipPolyData4.GetOutput().GetNumberOfCells() == 0)
 		{
@@ -714,59 +683,43 @@ public class PolyDataUtil
 //				tmpPolyData.DeleteCell(cellId);
 //			}
 //		}
-		//SERIAL WAY
-//		for (int i = 0; i < numPoints; ++i)
-//		{
-//			double[] sourcePnt = points.GetPoint(i);
-//
-////			Logger.getAnonymousLogger().log(Level.INFO, "Getting result ");
-//			int result = locator.IntersectWithLine(origin, sourcePnt, tol, t, x, pcoords, subId, cell_id, cell);
-////			Logger.getAnonymousLogger().log(Level.INFO, "Got result ");
-//			if (result == 1)
-//			{
-//				int ptid = pointLocator.FindClosestPoint(sourcePnt);
-//				polyData.GetPointCells(ptid, idList);
-//
-//				// The following check makes sure we don't delete any cells
-//				// if the intersection point happens to coincides with sourcePnt.
-//				// To do this we test to see of the intersected cell
-//				// is one of the cells which share a point with sourcePnt.
-//				// If it is we skip to the next point.
-//				if (idList.IsId(cell_id[0]) >= 0)
-//				{
-//					//System.out.println("Too close  " + i);
-//					continue;
-//				}
-//
-//				tmpPolyData.GetPointCells(i, idList);
-//				int numPtCells = idList.GetNumberOfIds();
-//				for (int j = 0; j < numPtCells; ++j)
-//				{
-//					// The following makes sure that only cells for which ALL three of its
-//					// points are obscured get deleted
-//					int cellId = idList.GetId(j);
-//					++numberOfObscuredPointsPerCell[cellId];
-//					if (numberOfObscuredPointsPerCell[cellId] == 3)
-//						tmpPolyData.DeleteCell(cellId);
-//				}
-////				Logger.getAnonymousLogger().log(Level.INFO, "After successful loop");
-//			}
-//		}
-		
-		//Parallel way
-		final List<Future<Void>> resultList;
-		List<Callable<Void>> taskList = new ArrayList<>();
-
 		for (int i = 0; i < numPoints; ++i)
 		{
-			Callable<Void> task = new ObscuredTask(polyData, points, locator, pointLocator, origin, numberOfObscuredPointsPerCell, i);
-			taskList.add(task);
+			double[] sourcePnt = points.GetPoint(i);
+
+//			Logger.getAnonymousLogger().log(Level.INFO, "Getting result ");
+			int result = locator.IntersectWithLine(origin, sourcePnt, tol, t, x, pcoords, subId, cell_id, cell);
+//			Logger.getAnonymousLogger().log(Level.INFO, "Got result ");
+			if (result == 1)
+			{
+				int ptid = pointLocator.FindClosestPoint(sourcePnt);
+				polyData.GetPointCells(ptid, idList);
+
+				// The following check makes sure we don't delete any cells
+				// if the intersection point happens to coincides with sourcePnt.
+				// To do this we test to see of the intersected cell
+				// is one of the cells which share a point with sourcePnt.
+				// If it is we skip to the next point.
+				if (idList.IsId(cell_id[0]) >= 0)
+				{
+					//System.out.println("Too close  " + i);
+					continue;
+				}
+
+				tmpPolyData.GetPointCells(i, idList);
+				int numPtCells = idList.GetNumberOfIds();
+				for (int j = 0; j < numPtCells; ++j)
+				{
+					// The following makes sure that only cells for which ALL three of its
+					// points are obscured get deleted
+					int cellId = idList.GetId(j);
+					++numberOfObscuredPointsPerCell[cellId];
+					if (numberOfObscuredPointsPerCell[cellId] == 3)
+						tmpPolyData.DeleteCell(cellId);
+				}
+//				Logger.getAnonymousLogger().log(Level.INFO, "After successful loop");
+			}
 		}
-//		Logger.getAnonymousLogger().log(Level.INFO, "Waiting for tasks " + taskList.size());
-//		System.out.println("PolyDataUtil: computeFrustumIntersection: waiting for tasks " + taskList.size());
-		resultList = ThreadService.submitAll(taskList);
-//		System.out.println("PolyDataUtil: computeFrustumIntersection: got results");
-//		Logger.getAnonymousLogger().log(Level.INFO, "Got results");
 //		Logger.getAnonymousLogger().log(Level.INFO, "After convex shape "  + tmpPolyData.GetNumberOfCells());
 		tmpPolyData.RemoveDeletedCells();
 
@@ -780,8 +733,6 @@ public class PolyDataUtil
 //		Logger.getAnonymousLogger().log(Level.INFO, "After convex shape cleaning "  + tmpPolyData.GetNumberOfCells());
 		return tmpPolyData;
 	}
-	
-	
 	
 //	private void filterObscuredFaces(vtkPolyData tmpPolyData, vtksbCellLocator locator, vtkAbstractPointLocator pointLocator, double[] origin, int i)
 //	{

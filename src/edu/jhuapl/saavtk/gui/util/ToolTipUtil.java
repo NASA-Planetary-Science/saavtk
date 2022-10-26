@@ -223,6 +223,7 @@ public class ToolTipUtil
 	{
 		return "Font";
 	}
+	
 	/*
 	 * Returns the tool tip that should be used for "Color" buttons
 	 */

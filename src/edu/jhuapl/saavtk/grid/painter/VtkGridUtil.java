@@ -2,13 +2,9 @@ package edu.jhuapl.saavtk.grid.painter;
 
 import java.util.List;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Doubles;
 
-import Jama.Matrix;
-import crucible.core.math.vectorspace.MatrixIJK;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
 import edu.jhuapl.saavtk.util.Configuration;
@@ -18,14 +14,11 @@ import edu.jhuapl.saavtk.vtk.VtkUtil;
 import vtk.vtkAppendPolyData;
 import vtk.vtkCaptionActor2D;
 import vtk.vtkCone;
-import vtk.vtkConeSource;
 import vtk.vtkCutter;
 import vtk.vtkImplicitFunction;
-import vtk.vtkMatrix4x4;
 import vtk.vtkPlane;
 import vtk.vtkPolyData;
 import vtk.vtkTransform;
-import vtk.vtkTransformFilter;
 
 /**
  * Collection of VTK based draw routines associated with the generation of
@@ -118,11 +111,10 @@ public class VtkGridUtil
 			// create caption
 			double[] intersectPoint = new double[3];
 			aSmallBody.getPointAndCellIdFromLatLon(lat, lon, intersectPoint);
-			double[] translatedPoint = aSmallBody.getCurrentTransform().TransformDoublePoint(intersectPoint);
 			String captionLabel = String.format(fmt, lon / Math.PI * 180) + deg;
 			if (i != 0 && i != numberLonCircles)
 				captionLabel += "E";
-			var caption = formCaption(aSmallBody, translatedPoint, captionLabel);
+			var caption = formCaption(aSmallBody, intersectPoint, captionLabel);
 			aVtkLabelActorL.add(caption);
 		}
 
@@ -133,9 +125,8 @@ public class VtkGridUtil
 			// create caption
 			double[] intersectPoint = new double[3];
 			aSmallBody.getPointAndCellIdFromLatLon(lat, 2 * Math.PI - lon, intersectPoint);
-			double[] translatedPoint = aSmallBody.getCurrentTransform().TransformDoublePoint(intersectPoint);
 			String captionLabel = String.format(fmt, lon / Math.PI * 180) + deg + "W";
-			var caption = formCaption(aSmallBody, translatedPoint, captionLabel);
+			var caption = formCaption(aSmallBody, intersectPoint, captionLabel);
 			aVtkLabelActorL.add(caption);
 		}
 
@@ -168,15 +159,8 @@ public class VtkGridUtil
 		}
 
 		vAppendFilter.Update();
-		
-//		aVtkPolyData.DeepCopy(vAppendFilter.GetOutput());
-		
-		vtkTransformFilter transformFilter=new vtkTransformFilter();
-		transformFilter.SetInputData(vAppendFilter.GetOutput());
-		transformFilter.SetTransform(aSmallBody.getCurrentTransform());
-		transformFilter.Update();
-		
-		aVtkPolyData.DeepCopy(transformFilter.GetPolyDataOutput());
+
+		aVtkPolyData.DeepCopy(vAppendFilter.GetOutput());
 
 		int nlon = 3;
 		for (double lon = 0; lon < 360; lon += 360. / nlon) // do meridians at nlon intervals from 0
@@ -196,9 +180,8 @@ public class VtkGridUtil
 				// create caption
 				double[] intersectPoint = new double[3];
 				aSmallBody.getPointAndCellIdFromLatLon(lat, lon / 180 * Math.PI, intersectPoint);
-				double[] translatedPoint = aSmallBody.getCurrentTransform().TransformDoublePoint(intersectPoint);
 				String captionLabel = String.format(fmt, lat / Math.PI * 180) + deg + "N";
-				var caption = formCaption(aSmallBody, translatedPoint, captionLabel);
+				var caption = formCaption(aSmallBody, intersectPoint, captionLabel);
 				aVtkLabelActorL.add(caption);
 			}
 
@@ -216,9 +199,8 @@ public class VtkGridUtil
 				// create caption
 				double[] intersectPoint = new double[3];
 				aSmallBody.getPointAndCellIdFromLatLon(-lat, lon / 180 * Math.PI, intersectPoint);
-				double[] translatedPoint = aSmallBody.getCurrentTransform().TransformDoublePoint(intersectPoint);
 				String captionLabel = String.format(fmt, lat / Math.PI * 180) + deg + "S";
-				var caption = formCaption(aSmallBody, translatedPoint, captionLabel);
+				var caption = formCaption(aSmallBody, intersectPoint, captionLabel);
 				aVtkLabelActorL.add(caption);
 
 			}

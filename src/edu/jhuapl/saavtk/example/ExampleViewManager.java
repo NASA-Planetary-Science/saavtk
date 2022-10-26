@@ -3,7 +3,6 @@ package edu.jhuapl.saavtk.example;
 import java.awt.Frame;
 import java.io.File;
 
-import edu.jhuapl.saavtk.config.IBodyViewConfig;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
@@ -23,20 +22,20 @@ public final class ExampleViewManager extends ViewManager
 	@Override
 	protected void addBuiltInViews(StatusNotifier aStatusNotifier)
 	{
-		for (IBodyViewConfig config : ExampleViewConfig.getBuiltInConfigs())
+		for (ViewConfig config : ExampleViewConfig.getBuiltInConfigs())
 		{
-			addBuiltInView(new ExampleView(aStatusNotifier, (ViewConfig)config));
+			addBuiltInView(new ExampleView(aStatusNotifier, config));
 		}
 	}
 
 	@Override
 	protected View createCustomView(StatusNotifier aStatusNotifier, String name, boolean temporary)
 	{
-		IBodyViewConfig config = new ExampleViewConfig();
-		config.setModelLabel(name);
-		config.setCustomTemporary(temporary);
-		config.setAuthor(ShapeModelType.CUSTOM);
-		return new ExampleView(aStatusNotifier, (ViewConfig)config);
+		ViewConfig config = new ExampleViewConfig();
+		config.modelLabel = name;
+		config.customTemporary = temporary;
+		config.author = ShapeModelType.CUSTOM;
+		return new ExampleView(aStatusNotifier, config);
 	}
 
 	@Override

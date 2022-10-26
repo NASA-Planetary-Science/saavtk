@@ -2,7 +2,7 @@ package edu.jhuapl.saavtk.config;
 
 import java.util.ArrayList;
 
-public class ConfigArrayList<L extends IViewConfig> extends ArrayList<L>
+public class ConfigArrayList extends ArrayList<ViewConfig>
 {
 
 	public ConfigArrayList()
@@ -11,7 +11,7 @@ public class ConfigArrayList<L extends IViewConfig> extends ArrayList<L>
 	}
 
 	@Override
-	public boolean add(L e)
+	public boolean add(ViewConfig e)
 	{
 		if (!contains(e))
 		{

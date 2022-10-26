@@ -5,7 +5,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.swing.JButton;
@@ -43,7 +42,7 @@ import net.miginfocom.swing.MigLayout;
 public class StandardPlateColorPanel extends GPanel implements ActionListener, EditColoringModeGui
 {
 	// Ref vars
-	private final List<PolyhedralModel> refSmallBodies;
+	private final PolyhedralModel refSmallBody;
 	private final Renderer refRenderer;
 
 	// State vars
@@ -61,10 +60,10 @@ public class StandardPlateColorPanel extends GPanel implements ActionListener, E
 	private final JButton plateInfoB;
 
 	/** Standard Constructor */
-	public StandardPlateColorPanel(Renderer aRenderer, List<PolyhedralModel> aPolyModels, JComboBox<String> aPropertyBox)
+	public StandardPlateColorPanel(Renderer aRenderer, PolyhedralModel aPolyModel, JComboBox<String> aPropertyBox)
 	{
 		refRenderer = aRenderer;
-		refSmallBodies = aPolyModels;
+		refSmallBody = aPolyModel;
 
 		workCBP = new ColorBarPainter(aRenderer);
 		isActive = false;
@@ -98,8 +97,7 @@ public class StandardPlateColorPanel extends GPanel implements ActionListener, E
 		add(contourPanel, "ax left,span,wrap 0");
 
 		// Update the small body to match the ColorBarPanel
-		for (PolyhedralModel refSmallBody : refSmallBodies)	
-			refSmallBody.setColorMapAttr(colorBarPanel.getColorMapAttr());
+		refSmallBody.setColorMapAttr(colorBarPanel.getColorMapAttr());
 
 		updateGui();
 	}
@@ -118,8 +116,7 @@ public class StandardPlateColorPanel extends GPanel implements ActionListener, E
 			doActionPropertyBox();
 
 		else if (source == plateInfoB)
-			for (PolyhedralModel refSmallBody : refSmallBodies)	
-				LegacyUtil.showColoringProperties(refSmallBody);
+			LegacyUtil.showColoringProperties(refSmallBody);
 	}
 
 	@Override
@@ -134,12 +131,9 @@ public class StandardPlateColorPanel extends GPanel implements ActionListener, E
 		if (coloringIdx < 0)
 			return;
 
-		for (PolyhedralModel refSmallBody : refSmallBodies)
-		{
-			refSmallBody.setColorMapAttr(colorBarPanel.getColorMapAttr());
-			refSmallBody.setContourLineWidth(contourPanel.getLineWidth());
-			refSmallBody.showScalarsAsContours(contourPanel.getContourLinesRequested());
-		}
+		refSmallBody.setColorMapAttr(colorBarPanel.getColorMapAttr());
+		refSmallBody.setContourLineWidth(contourPanel.getLineWidth());
+		refSmallBody.showScalarsAsContours(contourPanel.getContourLinesRequested());
 
 		// Add the ColorBarPainter to the renderer
 		refRenderer.addVtkPropProvider(workCBP);
@@ -171,18 +165,15 @@ public class StandardPlateColorPanel extends GPanel implements ActionListener, E
 
 		// Update the small body
 		setCursor(new Cursor(Cursor.WAIT_CURSOR));
-		for (PolyhedralModel refSmallBody : refSmallBodies)
+		refSmallBody.setColorMapAttr(tmpCMA);
+		try
 		{
-			refSmallBody.setColorMapAttr(tmpCMA);
-			try
-			{
-				double[] rangeArr = { tmpCMA.getMinVal(), tmpCMA.getMaxVal() };
-				refSmallBody.setCurrentColoringRange(refSmallBody.getColoringIndex(), rangeArr);
-			}
-			catch (IOException aExp)
-			{
-				aExp.printStackTrace();
-			}
+			double[] rangeArr = { tmpCMA.getMinVal(), tmpCMA.getMaxVal() };
+			refSmallBody.setCurrentColoringRange(refSmallBody.getColoringIndex(), rangeArr);
+		}
+		catch (IOException aExp)
+		{
+			aExp.printStackTrace();
 		}
 		setCursor(Cursor.getDefaultCursor());
 	}
@@ -193,11 +184,10 @@ public class StandardPlateColorPanel extends GPanel implements ActionListener, E
 	private void doActionContourPanel()
 	{
 		setCursor(new Cursor(Cursor.WAIT_CURSOR));
-		for (PolyhedralModel refSmallBody : refSmallBodies)
-		{
-			refSmallBody.setContourLineWidth(contourPanel.getLineWidth());
-			refSmallBody.showScalarsAsContours(contourPanel.getContourLinesRequested());
-		}
+
+		refSmallBody.setContourLineWidth(contourPanel.getLineWidth());
+		refSmallBody.showScalarsAsContours(contourPanel.getContourLinesRequested());
+
 		setCursor(Cursor.getDefaultCursor());
 	}
 
@@ -227,7 +217,7 @@ public class StandardPlateColorPanel extends GPanel implements ActionListener, E
 			var scale = 1.0;
 
 			// Retrieve the default range
-			var resetArr = refSmallBodies.get(0).getDefaultColoringRange(coloringIdx);
+			var resetArr = refSmallBody.getDefaultColoringRange(coloringIdx);
 			resetRange = Range.closed(resetArr[0], resetArr[1]);
 
 			// Retrieve the cached previous range
@@ -280,14 +270,14 @@ public class StandardPlateColorPanel extends GPanel implements ActionListener, E
 		}
 
 		// Update the title
-		String title = refSmallBodies.get(0).getColoringName(tmpColoringIdx).trim();
-		String units = refSmallBodies.get(0).getColoringUnits(tmpColoringIdx).trim();
+		String title = refSmallBody.getColoringName(tmpColoringIdx).trim();
+		String units = refSmallBody.getColoringUnits(tmpColoringIdx).trim();
 		if (units.isEmpty() == false)
 			title += " (" + units + ")";
 		workCBP.setTitle(title);
 
 		// Show the ColorBarPainter (if appropriate)
-		if (refSmallBodies.get(0).isColoringDataAvailable() == true)
+		if (refSmallBody.isColoringDataAvailable() == true)
 		{
 			workCBP.setColorMapAttr(colorBarPanel.getColorMapAttr());
 			refRenderer.addVtkPropProvider(workCBP);
@@ -316,7 +306,7 @@ public class StandardPlateColorPanel extends GPanel implements ActionListener, E
 		{
 			setCursor(new Cursor(Cursor.WAIT_CURSOR));
 
-			refSmallBodies.get(0).setColoringIndex(selectedIndex);
+			refSmallBody.setColoringIndex(selectedIndex);
 		}
 		catch (IOException aExp)
 		{

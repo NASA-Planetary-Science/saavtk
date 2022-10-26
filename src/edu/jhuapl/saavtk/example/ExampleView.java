@@ -1,11 +1,7 @@
 package edu.jhuapl.saavtk.example;
 
 import java.util.HashMap;
-import java.util.List;
 
-import com.google.common.collect.ImmutableList;
-
-import edu.jhuapl.saavtk.config.IBodyViewConfig;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.panel.PolyhedralModelControlPanel;
@@ -50,12 +46,6 @@ public class ExampleView extends View
 	{
 		super(aStatusNotifier, config);
 	}
-	
-	
-    public IBodyViewConfig getConfig()
-    {
-        return (IBodyViewConfig)config;
-    }
 
 	/**
 	 * Returns model as a path. e.g. "Asteroid > Near-Earth > Eros > Image Based >
@@ -64,10 +54,10 @@ public class ExampleView extends View
 	@Override
 	public String getPathRepresentation()
 	{
-		IBodyViewConfig config = getConfig();
-		if (ShapeModelType.CUSTOM == config.getAuthor())
+		ViewConfig config = getConfig();
+		if (ShapeModelType.CUSTOM == config.author)
 		{
-			return ShapeModelType.CUSTOM + " > " + config.getModelLabel();
+			return ShapeModelType.CUSTOM + " > " + config.modelLabel;
 		}
 		return "DefaultPath";
 	}
@@ -75,34 +65,31 @@ public class ExampleView extends View
 	@Override
 	public String getDisplayName()
 	{
-		if (getConfig().getAuthor() == ShapeModelType.CUSTOM)
-			return getConfig().getModelLabel();
+		if (getConfig().author == ShapeModelType.CUSTOM)
+			return getConfig().modelLabel;
 		else
 		{
 			String version = "";
-			if (getConfig().getVersion() != null)
-				version += " (" + getConfig().getVersion() + ")";
-			return getConfig().getAuthor().toString() + version;
+			if (getConfig().version != null)
+				version += " (" + getConfig().version + ")";
+			return getConfig().author.toString() + version;
 		}
 	}
 
 	@Override
 	public String getModelDisplayName()
 	{
-		ShapeModelBody body = getConfig().getBody();
+		ShapeModelBody body = getConfig().body;
 		return body != null ? body + " / " + getDisplayName() : getDisplayName();
 	}
 
 	@Override
 	protected void setupModelManager()
 	{
-		PolyhedralModel smallBodyModel = new ExamplePolyhedralModel((ViewConfig)getConfig());
-//		Graticule graticule = new Graticule(smallBodyModel);
+		PolyhedralModel smallBodyModel = new ExamplePolyhedralModel(getConfig());
 
-		HashMap<ModelNames, List<Model>> allModels = new HashMap<>();
-		allModels.put(ModelNames.SMALL_BODY, ImmutableList.of(smallBodyModel)); 
-//		allModels.put(ModelNames.GRATICULE, ImmutableList.of(graticule));
-		
+		HashMap<ModelNames, Model> allModels = new HashMap<>();
+		allModels.put(ModelNames.SMALL_BODY, smallBodyModel);
 
 		// if (getConfig().hasLidarData)
 		// {
@@ -111,12 +98,12 @@ public class ExampleView extends View
 
 		ConfigurableSceneNotifier tmpSceneChangeNotifier = new ConfigurableSceneNotifier();
 		StatusNotifier tmpStatusNotifier = getStatusNotifier();
-		allModels.put(ModelNames.LINE_STRUCTURES, ImmutableList.of(new LineModel<>(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel)));
-		allModels.put(ModelNames.POLYGON_STRUCTURES, ImmutableList.of(new PolygonModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel)));
-		allModels.put(ModelNames.CIRCLE_STRUCTURES, ImmutableList.of(new CircleModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel)));
-		allModels.put(ModelNames.ELLIPSE_STRUCTURES, ImmutableList.of(new EllipseModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel)));
-		allModels.put(ModelNames.POINT_STRUCTURES, ImmutableList.of(new PointModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel)));
-		allModels.put(ModelNames.CIRCLE_SELECTION, ImmutableList.of(new CircleSelectionModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel)));
+		allModels.put(ModelNames.LINE_STRUCTURES, new LineModel<>(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
+		allModels.put(ModelNames.POLYGON_STRUCTURES, new PolygonModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
+		allModels.put(ModelNames.CIRCLE_STRUCTURES, new CircleModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
+		allModels.put(ModelNames.ELLIPSE_STRUCTURES, new EllipseModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
+		allModels.put(ModelNames.POINT_STRUCTURES, new PointModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
+		allModels.put(ModelNames.CIRCLE_SELECTION, new CircleSelectionModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
 
 		// allModels.put(ModelNames.TRACKS, new
 		// LidarSearchDataCollection(smallBodyModel));
@@ -188,12 +175,6 @@ public class ExampleView extends View
 	{
 	}
 
-	@Override
-	protected void setupPositionOrientationManager()
-	{
-		
-	}
-	
 	@Override
 	protected void initializeStateManager()
 	{

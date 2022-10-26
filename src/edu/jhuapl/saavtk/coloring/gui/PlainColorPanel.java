@@ -3,7 +3,6 @@ package edu.jhuapl.saavtk.coloring.gui;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.List;
 
 import edu.jhuapl.saavtk.coloring.ColoringMode;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
@@ -20,15 +19,15 @@ import net.miginfocom.swing.MigLayout;
 public class PlainColorPanel extends GPanel implements ActionListener, EditColoringModeGui
 {
 	// Ref vars
-	private final List<PolyhedralModel> refSmallBodies;
+	private final PolyhedralModel refSmallBody;
 
 	// Gui vars
 	private final ColorInputPanel colorCIP;
 
 	/** Standard Constructor */
-	public PlainColorPanel(List<PolyhedralModel> aSmallBodies)
+	public PlainColorPanel(PolyhedralModel aSmallBody)
 	{
-		refSmallBodies = aSmallBodies;
+		refSmallBody = aSmallBody;
 
 		setLayout(new MigLayout("", "", ""));
 
@@ -48,8 +47,7 @@ public class PlainColorPanel extends GPanel implements ActionListener, EditColor
 	public void activate(Object aSource)
 	{
 		var tmpColor = colorCIP.getColorConfig();
-		for (PolyhedralModel refSmallBody : refSmallBodies)
-			refSmallBody.setPlainColor(tmpColor);
+		refSmallBody.setPlainColor(tmpColor);
 	}
 
 	@Override

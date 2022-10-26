@@ -212,7 +212,7 @@ public class LatLonGridPainter implements PropertyChangeListener, VtkPropProvide
 	public void propertyChange(PropertyChangeEvent evt)
 	{
 		// Respond only to changes in resolution
-		if (Properties.MODEL_RESOLUTION_CHANGED.equals(evt.getPropertyName()) == false && (Properties.MODEL_POSITION_CHANGED.equals(evt.getPropertyName()) == false))
+		if (Properties.MODEL_RESOLUTION_CHANGED.equals(evt.getPropertyName()) == false)
 			return;
 
 		isStale = true;

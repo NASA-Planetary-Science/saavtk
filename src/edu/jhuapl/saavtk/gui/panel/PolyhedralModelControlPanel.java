@@ -1,7 +1,8 @@
 package edu.jhuapl.saavtk.gui.panel;
 
 import java.awt.BorderLayout;
-import java.awt.Cursor;
+import java.awt.Cursor; 
+import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
@@ -36,7 +37,6 @@ import javax.swing.text.html.HTMLEditorKit;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.coloring.gui.ColoringModePanel;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
@@ -44,11 +44,11 @@ import edu.jhuapl.saavtk.gui.dialog.CustomPlateDataDialog;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.main.gui.ShapeModelEditPanel;
 import edu.jhuapl.saavtk.model.ModelManager;
-import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.plateColoring.BasicColoringDataManager;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringDataManager;
+import edu.jhuapl.saavtk.model.plateColoring.CustomizableColoringDataManager;
 import edu.jhuapl.saavtk.model.plateColoring.LoadableColoringData;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
@@ -77,7 +77,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ChangeListene
     private final ModelManager modelManager;
     private final String bodyName;
 
-    private final List<ShapeModelEditPanel> shapeModelEditPanels;
+    private final ShapeModelEditPanel shapeModelEditPanel;
     private final ColoringModePanel plateColoringPanel;
     private final JComboBoxWithItemState<String> coloringComboBox;
     private final JComboBoxWithItemState<String> customColorRedComboBox;
@@ -114,17 +114,14 @@ public class PolyhedralModelControlPanel extends JPanel implements ChangeListene
 
         scrollPane = new JScrollPane();
 
-//        var tmpSmallBody = modelManager.getPolyhedralModel();
-        shapeModelEditPanels = Lists.newArrayList();
-        var tmpSmallBodies = modelManager.getModels(ModelNames.SMALL_BODY).stream().map(body -> { return (PolyhedralModel)body; }).toList();
-        for (var body : tmpSmallBodies)
-        	shapeModelEditPanels.add(new ShapeModelEditPanel(aRenderer, body, body.getModelName()));
+        var tmpSmallBody = modelManager.getPolyhedralModel();
+        shapeModelEditPanel = new ShapeModelEditPanel(aRenderer, tmpSmallBody, bodyName);
 
         coloringComboBox = new JComboBoxWithItemState<>();
         customColorRedComboBox = new JComboBoxWithItemState<>();
         customColorGreenComboBox = new JComboBoxWithItemState<>();
         customColorBlueComboBox = new JComboBoxWithItemState<>();
-        plateColoringPanel = new ColoringModePanel(aRenderer, tmpSmallBodies, coloringComboBox, customColorRedComboBox, customColorGreenComboBox, customColorBlueComboBox);
+        plateColoringPanel = new ColoringModePanel(aRenderer, tmpSmallBody, coloringComboBox, customColorRedComboBox, customColorGreenComboBox, customColorBlueComboBox);
 
         saveColoringButton = new JButton("Save Plate Data...");
 
@@ -247,8 +244,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ChangeListene
             addAdditionalStatisticsToLabel();
         });
 
-        for (var shapeModelEditPanel : shapeModelEditPanels)
-        	panel.add(shapeModelEditPanel, "growx,span,wrap");
+        panel.add(shapeModelEditPanel, "growx,span,wrap");
         panel.add(GuiUtil.createDivider(), "growx,h 4!,span,wrap");
         if (smallBodyModel.getNumberResolutionLevels() > 1)
         {
