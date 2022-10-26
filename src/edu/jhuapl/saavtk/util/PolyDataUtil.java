@@ -651,7 +651,7 @@ public class PolyDataUtil
 //			taskList.add(task);
 //			
 //		}
-////		ThreadService.initialize(40);
+		ThreadService.initialize(40);
 //		System.out.println("PolyDataUtil: computeFrustumIntersection: getting results");
 //		resultList = ThreadService.submitAll(taskList);
 //		Logger.getAnonymousLogger().log(Level.INFO, "Got result list "  + tmpPolyData.GetNumberOfCells());
