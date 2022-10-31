@@ -116,6 +116,9 @@ public class GenericPolyhedralModel extends PolyhedralModel
     
     protected vtkTransform currentTransform = new vtkTransform();
 
+
+    protected vtkTransform currentTransform = new vtkTransform();
+
     private List<vtkProp> smallBodyActors = new ArrayList<>();
 
     public List<vtkProp> getSmallBodyActors()
