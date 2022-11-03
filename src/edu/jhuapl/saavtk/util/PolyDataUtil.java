@@ -17,8 +17,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
@@ -561,9 +559,9 @@ public class PolyDataUtil
 		clipPolyData4.SetInputConnection(clipPolyData3OutputPort);
 		clipPolyData4.SetClipFunction(plane4);
 		clipPolyData4.SetInsideOut(1);
-		Logger.getAnonymousLogger().log(Level.INFO, "Clipping data");
+//		Logger.getAnonymousLogger().log(Level.INFO, "Clipping data");
 		clipPolyData4.Update();
-		Logger.getAnonymousLogger().log(Level.INFO, "Clipped Data");
+//		Logger.getAnonymousLogger().log(Level.INFO, "Clipped Data");
 		vtkAlgorithmOutput clipPolyData4OutputPort = clipPolyData4.GetOutputPort();
 		if (clipPolyData4.GetOutput().GetNumberOfCells() == 0)
 		{
