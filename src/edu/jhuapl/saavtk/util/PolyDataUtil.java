@@ -680,7 +680,6 @@ public class PolyDataUtil
 //			taskList.add(task);
 //			
 //		}
-		ThreadService.initialize(40);
 //		System.out.println("PolyDataUtil: computeFrustumIntersection: getting results");
 //		resultList = ThreadService.submitAll(taskList);
 //		Logger.getAnonymousLogger().log(Level.INFO, "Got result list "  + tmpPolyData.GetNumberOfCells());
@@ -713,59 +712,57 @@ public class PolyDataUtil
 //			}
 //		}
 		//SERIAL WAY
-//		for (int i = 0; i < numPoints; ++i)
-//		{
-//			double[] sourcePnt = points.GetPoint(i);
-//
-////			Logger.getAnonymousLogger().log(Level.INFO, "Getting result ");
-//			int result = locator.IntersectWithLine(origin, sourcePnt, tol, t, x, pcoords, subId, cell_id, cell);
-////			Logger.getAnonymousLogger().log(Level.INFO, "Got result ");
-//			if (result == 1)
-//			{
-//				int ptid = pointLocator.FindClosestPoint(sourcePnt);
-//				polyData.GetPointCells(ptid, idList);
-//
-//				// The following check makes sure we don't delete any cells
-//				// if the intersection point happens to coincides with sourcePnt.
-//				// To do this we test to see of the intersected cell
-//				// is one of the cells which share a point with sourcePnt.
-//				// If it is we skip to the next point.
-//				if (idList.IsId(cell_id[0]) >= 0)
-//				{
-//					//System.out.println("Too close  " + i);
-//					continue;
-//				}
-//
-//				tmpPolyData.GetPointCells(i, idList);
-//				int numPtCells = idList.GetNumberOfIds();
-//				for (int j = 0; j < numPtCells; ++j)
-//				{
-//					// The following makes sure that only cells for which ALL three of its
-//					// points are obscured get deleted
-//					int cellId = idList.GetId(j);
-//					++numberOfObscuredPointsPerCell[cellId];
-//					if (numberOfObscuredPointsPerCell[cellId] == 3)
-//						tmpPolyData.DeleteCell(cellId);
-//				}
-////				Logger.getAnonymousLogger().log(Level.INFO, "After successful loop");
-//			}
-//		}
-		
-		//Parallel way
-		final List<Future<Void>> resultList;
-		List<Callable<Void>> taskList = new ArrayList<>();
-
 		for (int i = 0; i < numPoints; ++i)
 		{
-			Callable<Void> task = new ObscuredTask(polyData, points, locator, pointLocator, origin, numberOfObscuredPointsPerCell, i);
-			taskList.add(task);
+			double[] sourcePnt = points.GetPoint(i);
+
+//			Logger.getAnonymousLogger().log(Level.INFO, "Getting result ");
+			int result = locator.IntersectWithLine(origin, sourcePnt, tol, t, x, pcoords, subId, cell_id, cell);
+//			Logger.getAnonymousLogger().log(Level.INFO, "Got result ");
+			if (result == 1)
+			{
+				int ptid = pointLocator.FindClosestPoint(sourcePnt);
+				polyData.GetPointCells(ptid, idList);
+
+				// The following check makes sure we don't delete any cells
+				// if the intersection point happens to coincides with sourcePnt.
+				// To do this we test to see of the intersected cell
+				// is one of the cells which share a point with sourcePnt.
+				// If it is we skip to the next point.
+				if (idList.IsId(cell_id[0]) >= 0)
+				{
+					//System.out.println("Too close  " + i);
+					continue;
+				}
+
+				tmpPolyData.GetPointCells(i, idList);
+				int numPtCells = idList.GetNumberOfIds();
+				for (int j = 0; j < numPtCells; ++j)
+				{
+					// The following makes sure that only cells for which ALL three of its
+					// points are obscured get deleted
+					int cellId = idList.GetId(j);
+					++numberOfObscuredPointsPerCell[cellId];
+					if (numberOfObscuredPointsPerCell[cellId] == 3)
+						tmpPolyData.DeleteCell(cellId);
+				}
+//				Logger.getAnonymousLogger().log(Level.INFO, "After successful loop");
+			}
 		}
-//		Logger.getAnonymousLogger().log(Level.INFO, "Waiting for tasks " + taskList.size());
-//		System.out.println("PolyDataUtil: computeFrustumIntersection: waiting for tasks " + taskList.size());
-		resultList = ThreadService.submitAll(taskList);
-//		System.out.println("PolyDataUtil: computeFrustumIntersection: got results");
-//		Logger.getAnonymousLogger().log(Level.INFO, "Got results");
-//		Logger.getAnonymousLogger().log(Level.INFO, "After convex shape "  + tmpPolyData.GetNumberOfCells());
+		
+		//Parallel way
+//		ThreadService.initialize(40);
+//		final List<Future<Void>> resultList;
+//		List<Callable<Void>> taskList = new ArrayList<>();
+//
+//		for (int i = 0; i < numPoints; ++i)
+//		{
+//			Callable<Void> task = new ObscuredTask(polyData, points, locator, pointLocator, origin, numberOfObscuredPointsPerCell, i);
+//			taskList.add(task);
+//		}
+//		resultList = ThreadService.submitAll(taskList);
+		
+		
 		tmpPolyData.RemoveDeletedCells();
 
 		//cleanPoly = new vtkCleanPolyData();
