@@ -54,7 +54,9 @@ import edu.jhuapl.saavtk.view.light.LightCfg;
 import edu.jhuapl.saavtk.view.light.LightingType;
 import edu.jhuapl.saavtk.view.lod.LodActor;
 import edu.jhuapl.saavtk.view.lod.LodMode;
+import vtk.vtkActor;
 import vtk.vtkCamera;
+import vtk.vtkCaptionActor2D;
 import vtk.vtkCellLocator;
 import vtk.vtkCellPicker;
 import vtk.vtkCubeAxesActor2D;
@@ -66,6 +68,7 @@ import vtk.vtkLightKit;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
 import vtk.vtkRenderer;
+import vtk.vtkTextActor;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 public class Renderer extends JPanel implements ActionListener, CameraActionListener, PickListener, SceneChangeNotifier, View
@@ -271,6 +274,20 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	{
 		setLodModeTemporal(null);
 		occludeLabels();
+	}
+	
+	public List<vtkProp> getAllActors()
+	{
+		List<vtkProp> actors = Lists.newArrayList();
+		for (VtkPropProvider aPropProvider : propProviderS)
+		{
+			for (vtkProp aProp : aPropProvider.getProps())
+			{
+				if (!(aProp instanceof vtkCaptionActor2D) && !(aProp instanceof vtkTextActor))
+					actors.add(aProp);
+			}
+		}
+		return actors;
 	}
 
 	private BlockingQueue<CameraFrame> cameraFrameQueue;
