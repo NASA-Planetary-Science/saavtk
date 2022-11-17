@@ -72,6 +72,7 @@ import vtk.vtkProp;
 import vtk.vtkProperty;
 import vtk.vtkScalarBarActor;
 import vtk.vtkTextProperty;
+import vtk.vtkTransform;
 import vtk.vtkTriangle;
 import vtk.vtkUnsignedCharArray;
 import vtk.vtksbCellLocator;
@@ -109,6 +110,9 @@ public class GenericPolyhedralModel extends PolyhedralModel
     private vtkPolyData lowResSmallBodyPolyData;
 	private VtkLodActor smallBodyActor;
     private vtkPolyDataMapper smallBodyMapper;
+
+
+    protected vtkTransform currentTransform = new vtkTransform();
 
     private List<vtkProp> smallBodyActors = new ArrayList<>();
 
