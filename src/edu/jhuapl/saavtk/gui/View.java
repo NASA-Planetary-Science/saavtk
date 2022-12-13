@@ -292,7 +292,7 @@ public abstract class View extends JPanel
         if (e.isPopupTrigger())
         {
             JPopupMenu tabMenu = new JPopupMenu();
-            JMenuItem menuItem = new JMenuItem("Set instrument as default");
+            JMenuItem menuItem = new JMenuItem("Set tab as default");
             menuItem.addActionListener(new ActionListener() {
 
                 @Override
