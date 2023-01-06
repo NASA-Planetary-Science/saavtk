@@ -1744,7 +1744,6 @@ public class GenericPolyhedralModel extends PolyhedralModel
     {
         if (modelNames == null)
         {
-        	System.out.println("GenericPolyhedralModel: getModelName: model names null");
             return null;
         }
         if (resolutionLevel >= 0 && resolutionLevel < modelNames.length)
