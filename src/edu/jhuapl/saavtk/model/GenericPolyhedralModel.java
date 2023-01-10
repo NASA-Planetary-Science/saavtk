@@ -1708,7 +1708,9 @@ public class GenericPolyhedralModel extends PolyhedralModel
         if (resolutionLevel >= 0 && resolutionLevel < modelNames.length)
             return modelNames[resolutionLevel];
         else
-            return null;
+        {
+        	return modelNames[0];	//default to *SOMETHING*
+        }
     }
 
     @Override
