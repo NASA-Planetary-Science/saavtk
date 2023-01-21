@@ -33,7 +33,6 @@ import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
 import edu.jhuapl.saavtk.model.structure.LineModel;
-import edu.jhuapl.saavtk.model.structure.PointModel;
 import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
 import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
@@ -111,12 +110,14 @@ public class FileMenu extends JMenu
 			try
 			{
 				Desktop.getDesktop().setPreferencesHandler(new PreferencesHandler() {
-                    public void handlePreferences(java.awt.desktop.PreferencesEvent e) {
+                    @Override
+						public void handlePreferences(java.awt.desktop.PreferencesEvent e) {
                         showPreferences();
                     }
                 });
 				Desktop.getDesktop().setQuitHandler(new QuitHandler() {
-                    public void handleQuitRequestWith(java.awt.desktop.QuitEvent e, java.awt.desktop.QuitResponse r) {
+                    @Override
+						public void handleQuitRequestWith(java.awt.desktop.QuitEvent e, java.awt.desktop.QuitResponse r) {
                         exitTool();
                     }
                 });
@@ -517,7 +518,7 @@ public class FileMenu extends JMenu
 					try
 					{
 						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.POINT_STRUCTURES, body);
-						ShapefileUtil.writePointStructures(Lists.newArrayList(PointStructure.fromSbmtStructure((PointModel) model)), opath.resolve(oname));
+						ShapefileUtil.writePointStructures(Lists.newArrayList(PointStructure.fromSbmtStructure((AbstractEllipsePolygonModel) model)), opath.resolve(oname));
 
 					}
 					catch (IOException ex)

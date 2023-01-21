@@ -12,16 +12,15 @@ import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.ShapeModelBody;
 import edu.jhuapl.saavtk.model.ShapeModelType;
-import edu.jhuapl.saavtk.model.structure.CircleModel;
+import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.model.structure.CircleSelectionModel;
-import edu.jhuapl.saavtk.model.structure.EllipseModel;
 import edu.jhuapl.saavtk.model.structure.LineModel;
-import edu.jhuapl.saavtk.model.structure.PointModel;
 import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.structure.gui.StructureTabbedPane;
+import edu.jhuapl.saavtk.structure.io.StructureLegacyUtil;
 
 /**
  * A view is a container which contains a control panel and renderer as well as
@@ -100,9 +99,9 @@ public class ExampleView extends View
 		StatusNotifier tmpStatusNotifier = getStatusNotifier();
 		allModels.put(ModelNames.LINE_STRUCTURES, new LineModel<>(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
 		allModels.put(ModelNames.POLYGON_STRUCTURES, new PolygonModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
-		allModels.put(ModelNames.CIRCLE_STRUCTURES, new CircleModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
-		allModels.put(ModelNames.ELLIPSE_STRUCTURES, new EllipseModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
-		allModels.put(ModelNames.POINT_STRUCTURES, new PointModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
+		allModels.put(ModelNames.CIRCLE_STRUCTURES, StructureLegacyUtil.createManager(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel, Mode.CIRCLE_MODE));
+		allModels.put(ModelNames.ELLIPSE_STRUCTURES, StructureLegacyUtil.createManager(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel, Mode.ELLIPSE_MODE));
+		allModels.put(ModelNames.POINT_STRUCTURES, StructureLegacyUtil.createManager(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel, Mode.POINT_MODE));
 		allModels.put(ModelNames.CIRCLE_SELECTION, new CircleSelectionModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
 
 		// allModels.put(ModelNames.TRACKS, new

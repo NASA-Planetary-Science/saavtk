@@ -10,6 +10,7 @@ import java.util.List;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
+import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.esri.LineSegment;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
@@ -28,9 +29,9 @@ public class StructuresImporter
 
 	public static void importFromShapefile(StructureManager<?> model, Path shapeFile, GenericPolyhedralModel body) throws IOException
 	{
-		if (model instanceof PointModel)
+		if (model instanceof AbstractEllipsePolygonModel aManager && aManager.getMode() == Mode.POINT_MODE)
 		{
-			importFromShapefile((PointModel) model, shapeFile);
+			importFromShapefile(aManager, shapeFile);
 			return;
 		}
 		if (model instanceof LineModel)
@@ -45,7 +46,7 @@ public class StructuresImporter
 		}
 	}
 
-	public static void importFromShapefile(PointModel aPointManager, Path shapeFile) throws IOException
+	public static void importFromShapefile(AbstractEllipsePolygonModel aPointManager, Path shapeFile) throws IOException
 	{
 		Collection<PointStructure> sc = ShapefileUtil.readPointStructures(shapeFile);
 		for (PointStructure s : sc)

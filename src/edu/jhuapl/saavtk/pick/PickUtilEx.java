@@ -11,13 +11,13 @@ import vtk.vtkPropCollection;
 
 /**
  * Collection of (extra) utility methods associated with Pickers.
- * <P>
+ * <p>
  * The following functionality is provided:
- * <UL>
- * <LI>Creation of {@link vtkCellPicker}s (empty, single, or vtkProps located on
+ * <ul>
+ * <li>Creation of {@link vtkCellPicker}s (empty, single, or vtkProps located on
  * a {@link PolyhedralModel})
- * <LI>Updating of target {@link vtkProp}s for picking
- * </UL>
+ * <li>Updating of target {@link vtkProp}s for picking
+ * </ul>
  *
  * @author lopeznr1
  */
@@ -25,7 +25,7 @@ public class PickUtilEx
 {
 	/**
 	 * Utility method to form a {@link vtkCellPicker} suitable for picking targets.
-	 * <P>
+	 * <p>
 	 * The returned picker will not have any registered {@link vtkProp}s and thus
 	 * will (initially) not be able to pick anything.
 	 */
@@ -82,7 +82,7 @@ public class PickUtilEx
 	 * Utility method to update a {@link vtkCellPicker} with an updated list of
 	 * {@link vtkProp}s corresponding to potential targets of interest.
 	 */
-	public static void updatePickerProps(vtkCellPicker aCellPicker, List<vtkProp> aPropL)
+	public static void updatePickerProps(vtkCellPicker aCellPicker, List<? extends vtkProp> aPropL)
 	{
 		// Utilize the reverse ordering so that items drawn on top will
 		// be picked before items on bottom
