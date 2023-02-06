@@ -57,6 +57,8 @@ public class StructureSaveUtil
 			String name = aEllipse.getName();
 			if (name.length() == 0)
 				name = "default";
+			else if (name.matches(".*\\s.*") == true)
+				name = "\"" + name + "\"";
 
 			// Since tab is used as the delimiter, replace any tabs in the name with spaces.
 			name = name.replace('\t', ' ');
