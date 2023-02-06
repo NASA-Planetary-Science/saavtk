@@ -76,11 +76,11 @@ public class RoundStructurePicker extends Picker
 	private boolean changeFlatteningKeyPressed;
 
 	/** Standard Constructor */
-	public RoundStructurePicker(Renderer aRenderer, PolyhedralModel aSmallBody, EllipseManager aeManager, Mode aMode)
+	public RoundStructurePicker(Renderer aRenderer, PolyhedralModel aSmallBody, EllipseManager aManager, Mode aMode)
 	{
 		refRenderer = aRenderer;
 		refSmallBody = aSmallBody;
-		refManager = aeManager;
+		refManager = aManager;
 		refRenWin = aRenderer.getRenderWindowPanel();
 		refMode = aMode;
 
@@ -476,14 +476,24 @@ public class RoundStructurePicker extends Picker
 			var newCenter = new Vector3D(aRotMat.operate(oldCenter.toArray()));
 
 			// Adjust the center to the intercept of the small body
+			var adjCenter = (Vector3D) null;
+			var scaleFact = 1.0;
 			var boundBoxDiag = refSmallBody.getBoundingBoxDiagonalLength();
-			var begPos = newCenter.scalarMultiply(0.01);
-			var endPos = newCenter.scalarMultiply(boundBoxDiag * 2.1);
-			newCenter = refSmallBody.calcInterceptBetween(begPos, endPos);
-			if (newCenter == null)
-				throw new Error("Failed to locate intercept...");
+			while (scaleFact < 4096)
+			{
+				var begPos = newCenter.scalarMultiply(0.01);
+				var endPos = newCenter.scalarMultiply(boundBoxDiag * scaleFact);
+				adjCenter = refSmallBody.calcInterceptBetween(begPos, endPos);
+				if (adjCenter != null)
+					break;
+
+				scaleFact *= 2;
+			}
+			if (adjCenter == null)
+				throw new Error("Failed to locate intercept... scaleFact:" + scaleFact);
 
 			// Keep the priEditItem at the (selected) pick center
+			newCenter = adjCenter;
 			if (aItem == priEditItem)
 				newCenter = aPickCenter;
 
