@@ -388,19 +388,19 @@ public class NativeLibraryLoader
 		libcfitsio("libcfitsio.9"),
 
 		libhdf5_hl("libhdf5_hl.200"),
-		libhdf103("libhdf5.103"),
+//		libhdf103("libhdf5.103"),
 		libhdf200("libhdf5.200"),
 		libjpeg("libjpeg.9"),
 		libnetcdf("libnetcdf.19"),
-		libpcre("libpcre.1"),
+//		libpcre("libpcre.1"),
 		libpng16("libpng16.16"),
-		libproj("libproj.19"),
+		libproj("libproj.25"),
 		libsz("libsz.2"),
 		libtiff("libtiff.5"),
 		libtiledb("libtiledb"),
 		libwebp("libwebp.7"),
-		libzstd("libzstd.1"),
-		libgdal("libgdal.31"),
+		libzstd("libzstd.1.5.4"),
+		libgdal("libgdal.32"),
 		libgdalalljni("libgdalalljni");
 		
 		
