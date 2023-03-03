@@ -292,27 +292,32 @@ public class PolyhedralModelControlPanel extends JPanel implements ChangeListene
             throw new AssertionError();
         }
         int newResolutionLevel = resolutionLevels.get(actionCommand);
-        PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
-        if (smallBodyModel.getModelResolution() == newResolutionLevel)
+        var tmpSmallBodies = modelManager.getModels(ModelNames.SMALL_BODY).stream().map(body -> { return (PolyhedralModel)body; }).toList();
+        for (var smallBodyModel : tmpSmallBodies)
         {
-            // This probably won't happen, but just in case this gets
-            // called when there was no change, do no harm.
-            return;
-        }
-
-        // If we get this far, the model has changed, so update everything that
-        // needs to be updated in this case.
-        try
-        {
-            smallBodyModel.setModelResolution(newResolutionLevel);
-            setStatisticsLabel();
-            additionalStatisticsButton.setVisible(true);
-            updateColoringOptions(newResolutionLevel);
-        }
-        catch (IOException e)
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+	        
+//	        PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
+	        if (smallBodyModel.getModelResolution() == newResolutionLevel)
+	        {
+	            // This probably won't happen, but just in case this gets
+	            // called when there was no change, do no harm.
+	            return;
+	        }
+	
+	        // If we get this far, the model has changed, so update everything that
+	        // needs to be updated in this case.
+	        try
+	        {
+	            smallBodyModel.setModelResolution(newResolutionLevel);
+	            setStatisticsLabel();
+	            additionalStatisticsButton.setVisible(true);
+	            updateColoringOptions(newResolutionLevel);
+	        }
+	        catch (IOException e)
+	        {
+	            // TODO Auto-generated catch block
+	            e.printStackTrace();
+	        }
         }
     }
 
