@@ -4,6 +4,7 @@ import java.awt.Cursor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.util.List;
 
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -22,7 +23,7 @@ import net.miginfocom.swing.MigLayout;
 public class RgbPlateColorPanel extends GPanel implements ActionListener, EditColoringModeGui
 {
 	// Ref vars
-	private final PolyhedralModel refSmallBody;
+	private final List<PolyhedralModel> refSmallBodies;
 
 	// State vars
 	private boolean isActive;
@@ -33,10 +34,10 @@ public class RgbPlateColorPanel extends GPanel implements ActionListener, EditCo
 	private final JComboBox<String> blueBox;
 
 	/** Standard Constructor */
-	public RgbPlateColorPanel(PolyhedralModel aSmallBody, JComboBox<String> aRedBox, JComboBox<String> aGreenBox,
+	public RgbPlateColorPanel(List<PolyhedralModel> aSmallBodies, JComboBox<String> aRedBox, JComboBox<String> aGreenBox,
 			JComboBox<String> aBlueBox)
 	{
-		refSmallBody = aSmallBody;
+		refSmallBodies = aSmallBodies;
 
 		isActive = false;
 
@@ -81,25 +82,28 @@ public class RgbPlateColorPanel extends GPanel implements ActionListener, EditCo
 		int greenIndex = greenBox.getSelectedIndex() - 1;
 		int blueIndex = blueBox.getSelectedIndex() - 1;
 
-		try
+		for (PolyhedralModel refSmallBody : refSmallBodies)
 		{
-			setCursor(new Cursor(Cursor.WAIT_CURSOR));
-			if (redIndex < 0 && greenIndex < 0 && blueIndex < 0)
-				refSmallBody.setColoringIndex(-1);
-			else
-				refSmallBody.setFalseColoring(redIndex, greenIndex, blueIndex);
-		}
-		catch (IOException aExp)
-		{
-			GuiPaneUtil.showFailMessage(this, "Plate Coloring Error", "Failure while changing plate coloring...", aExp);
-			aExp.printStackTrace();
-
-			if (aSource instanceof JComboBox<?> aBox)
-				aBox.setSelectedIndex(0);
-		}
-		finally
-		{
-			setCursor(Cursor.getDefaultCursor());
+			try
+			{
+				setCursor(new Cursor(Cursor.WAIT_CURSOR));
+				if (redIndex < 0 && greenIndex < 0 && blueIndex < 0)
+					refSmallBody.setColoringIndex(-1);
+				else
+					refSmallBody.setFalseColoring(redIndex, greenIndex, blueIndex);
+			}
+			catch (IOException aExp)
+			{
+				GuiPaneUtil.showFailMessage(this, "Plate Coloring Error", "Failure while changing plate coloring...", aExp);
+				aExp.printStackTrace();
+	
+				if (aSource instanceof JComboBox<?> aBox)
+					aBox.setSelectedIndex(0);
+			}
+			finally
+			{
+				setCursor(Cursor.getDefaultCursor());
+			}
 		}
 	}
 

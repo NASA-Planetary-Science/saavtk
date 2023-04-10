@@ -26,6 +26,7 @@ import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
 import edu.jhuapl.saavtk.gui.menu.FileMenu;
 import edu.jhuapl.saavtk.gui.menu.HelpMenu;
 import edu.jhuapl.saavtk.gui.menu.PickToleranceAction;
+import edu.jhuapl.saavtk.model.DefaultModelIdentifier;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.scalebar.gui.ScaleBarAction;
 import edu.jhuapl.saavtk.status.StatusNotifier;
@@ -209,15 +210,38 @@ public abstract class ViewManager extends JPanel
         // some other body to load initially.
         if (tempCustomShapeModel == null)
         {
-            // First try the default model, which may be built-in or custom.
-            final String defaultModelName = getDefaultModelName();
-            initialView = getBuiltInView(defaultModelName);
-            if (initialView == null)
-            {
-                initialView = getCustomView(defaultModelName);
+            // Set the default model. Do not just call
+            // DefaultModelIdentifier.getCDefaultModel() -- that would probably work but it
+            // cannot guarantee the model is actually available. First see if there is a
+            // user-selected default model.
+            String defaultModelName = DefaultModelIdentifier.getUserDefaultModel();
+            if (defaultModelName != null)
+            {                
+                initialView = getBuiltInView(defaultModelName);
+                if (initialView == null)
+                {
+                    initialView = getCustomView(defaultModelName);
+                }
+                
+                if (initialView == null)
+                {
+                    System.err.println("\nUser-selected default model " + defaultModelName + " is not available.");
+                    DefaultModelIdentifier.factoryReset();
+                }
             }
 
-            // Default model is not available. Try to find the first accessible model.
+            if (initialView == null)
+            {
+                // Failed to load a user-selected default. Next try the client-defined default.
+                defaultModelName = DefaultModelIdentifier.getClientDefaultModel();
+                initialView = getBuiltInView(defaultModelName);
+                if (initialView == null)
+                {
+                    initialView = getCustomView(defaultModelName);
+                }
+            }
+
+            // No default model is not available. Try to find the first accessible model.
             if (initialView == null)
             {
                 if (defaultModelName == null)
@@ -254,11 +278,12 @@ public abstract class ViewManager extends JPanel
 
                     addCustomView(initialView);
                     add(initialView, modelName);
-                    setDefaultModelName(modelName);
 
                     System.err.println("Starting with one basic/demo model. No other models are currently available.");
                     System.err.println("Restart with a stable internet connection to see all available models");
-                }
+
+                    DefaultModelIdentifier.setDefaultModel(modelName);
+}
             }
 
             if (initialView == null)
@@ -268,52 +293,6 @@ public abstract class ViewManager extends JPanel
         }
 
         setCurrentView(initialView);
-    }
-
-    /**
-     * Return the name of the default model, if any is defined. The base
-     * implementation just returns null, meaning there is no built-in factory
-     * default model.
-     *
-     * @return the default model name
-     */
-    public String getDefaultModelName()
-    {
-        return null;
-    }
-
-    /**
-     * Set the default model to the supplied name. The base implementation is a
-     * no-op. Override this to actually set the model name, which should be returned
-     * by future calls to {@link #getDefaultModelName()}.
-     *
-     * @param modelName the model name to use for the default model
-     */
-    @SuppressWarnings("unused")
-    public void setDefaultModelName(String modelName)
-    {
-
-    }
-
-    /**
-     * Make the current default model name persistent. The base implementation is a
-     * no-op. Override this to save the current default model returned by
-     * {@link #getDefaultModelName()}.
-     */
-    public void saveDefaultModelName()
-    {
-
-    }
-
-    /**
-     * Revert the current default model name to the factory default value. The base
-     * implementation is a no-op. Implementations may override this to provide any
-     * desired behavior, such as returning a value loaded from a persistent state or
-     * set to a hardwired default value.
-     */
-    public void resetDefaultModelName()
-    {
-
     }
 
     /**
@@ -442,7 +421,7 @@ public abstract class ViewManager extends JPanel
             return;
         }
 
-        SwingWorker<Boolean, Void> initializer = new SwingWorker<Boolean, Void>() {
+        SwingWorker<Boolean, Void> initializer = new SwingWorker<>() {
 
             @Override
             protected Boolean doInBackground() throws Exception
