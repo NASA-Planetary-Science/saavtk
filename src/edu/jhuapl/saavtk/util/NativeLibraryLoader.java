@@ -89,13 +89,13 @@ public class NativeLibraryLoader
       nativeVTKLibraryDir = Util.createNativeDirectory(nativeLibraryBaseDirectory);
 
       if(debug)
-        System.out.println("Extract to " + nativeVTKLibraryDir);
+        System.out.println("Extract VTK to " + nativeVTKLibraryDir);
       
       // Create the target directory if it does not exist
       nativeGDALLibraryDir = createNativeGDALDirectory(nativeLibraryBaseDirectory);
 
       if(debug)
-        System.out.println("Extract to " + nativeGDALLibraryDir);
+        System.out.println("Extract GDAL to " + nativeGDALLibraryDir);
 
 
       // Loads mawt.so
@@ -156,7 +156,7 @@ public class NativeLibraryLoader
           String nativeName = libraryUrl.getFile();
           File file = new File(nativeVTKLibraryDir,
               nativeName.substring(nativeName.lastIndexOf('/') + 1, nativeName.length()));
-          
+//          System.out.println("file is " + file.getAbsolutePath());
           Runtime.getRuntime().load(file.getAbsolutePath());
       }
       
@@ -201,6 +201,7 @@ public class NativeLibraryLoader
      */
     public static void loadVtkLibraries()
     {
+
     	unpackNatives();
         if (Configuration.isHeadless())
         {
@@ -238,6 +239,14 @@ public class NativeLibraryLoader
      */
     public static void loadAllVtkLibraries()
     {
+    	try {
+    		File nativeDir = new File(System.getProperty("user.home") + File.separator +".nativelibs");
+			VtkNativeLibraries.initialize(nativeDir);
+		} catch (VtkJavaNativeLibraryException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	System.out.println("NativeLibraryLoader: loadAllVtkLibraries: unpacking natives");
     	unpackNatives();
         if (isVtkInitialized.compareAndSet(false, true))
         {
@@ -289,7 +298,7 @@ public class NativeLibraryLoader
                 {
                     if (!lib.IsLoaded())
                     {
-//                    	System.out.println("NativeLibraryLoader: loadAllVtkLibraries: loading " + lib.GetLibraryName());
+                    	System.out.println("NativeLibraryLoader: loadAllVtkLibraries: loading " + lib.GetLibraryName());
 //                        lib.LoadLibrary();
                     	System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".jnilib").getAbsolutePath());
                     }
@@ -419,6 +428,8 @@ public class NativeLibraryLoader
     
     public static void loadGDALLibraries()
     {
+    	System.out.println("NativeLibraryLoader: loadGDALLibraries: loading all GDAL libs");
+    	
     	  boolean caughtLinkError = false;
           for (gdalNativeLibrary lib : gdalNativeLibrary.values())
           {
@@ -426,7 +437,10 @@ public class NativeLibraryLoader
               {
 //                  if (!lib.IsLoaded())
                   {
-                  	System.load(new File(nativeGDALLibraryDir, lib.getFilename() + ".dylib").getAbsolutePath());
+                	  System.out.println("NativeLibraryLoader: loadGDALLibraries: trying to load " +new File(nativeGDALLibraryDir, lib.getFilename() + ".dylib").getAbsolutePath() );
+                  	Runtime.getRuntime().load(new File(nativeGDALLibraryDir, lib.getFilename() + ".dylib").getAbsolutePath());
+//                  	System.load(new File(nativeGDALLibraryDir, lib.getFilename() + ".dylib").getAbsolutePath());
+
                   }
               }
               catch (UnsatisfiedLinkError e)
