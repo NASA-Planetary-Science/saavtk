@@ -1,241 +1,239 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>edu.jhuapl.saavtk</groupId>
-  <artifactId>saavtk</artifactId>
-  <packaging>jar</packaging>
-  <version>1.0</version>
-  <name>saavtk</name>
-  <url>http://maven.apache.org</url>
-  <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-  </properties>
-  <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>commons-io</groupId>
-        <artifactId>commons-io</artifactId>
-        <version>2.8.0</version>
-    </dependency>
-    <dependency>
-	    <groupId>org.apache.commons</groupId>
-	    <artifactId>commons-lang3</artifactId>
-	    <version>3.12.0</version>
-	</dependency>
-	<!--
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>edu.jhuapl.saavtk</groupId>
+	<artifactId>saavtk</artifactId>
+	<packaging>jar</packaging>
+	<version>1.0</version>
+	<name>saavtk</name>
+	<url>http://maven.apache.org</url>
+	<properties>
+		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>17</maven.compiler.target>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>3.8.1</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.jcodec</groupId>
+			<artifactId>jcodec</artifactId>
+			<version>0.2.5</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jcodec</groupId>
+			<artifactId>jcodec-javase</artifactId>
+			<version>0.2.5</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.8.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.12.0</version>
+		</dependency>
+		<!--
 	<dependency>
 	    <groupId>org.apache.commons</groupId>
 	    <artifactId>commons-lang3</artifactId>
 	    <version>3.3.2</version>
 	</dependency>
 	-->
-    <dependency>
-    	<groupId>org.apache.commons</groupId>
-    	<artifactId>commons-math3</artifactId>
-    	<version>3.6.1</version>
-    </dependency>
-    <dependency>
-	    <groupId>org.apache.commons</groupId>
-	    <artifactId>commons-pool2</artifactId>
-	    <version>2.9.0</version>
-	</dependency>
-	<dependency>
-	    <groupId>org.apache.commons</groupId>
-	    <artifactId>commons-text</artifactId>
-	    <version>1.9</version>
-	</dependency>
-	
-	
-	
-	<dependency>
-		<groupId>edu.jhuapl.ses.saa</groupId>
-		<artifactId>crucible-core</artifactId>
-		<version>1.0.0-b23-b505c84b</version>
-		<type>pom</type>
-	</dependency>
 		<dependency>
-		<groupId>edu.jhuapl.ses.saa</groupId>
-		<artifactId>crucible-crust</artifactId>
-		<version>1.0.0-b23-b505c84b</version>
-	</dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+			<version>3.6.1</version>
+		</dependency>
 		<dependency>
-		<groupId>edu.jhuapl.ses.saa</groupId>
-		<artifactId>crucible-mantle</artifactId>
-		<version>1.0.0-b23-b505c84b</version>
-		<type>pom</type>
-	</dependency>
-	<dependency>
-	    <groupId>com.google.flatbuffers</groupId>
-	    <artifactId>flatbuffers-java</artifactId>
-	    <version>2.0.0</version> <!-- WAS 1.3.0.1 -->
-	</dependency>
-	<dependency>
-	    <groupId>com.google.code.gson</groupId>
-	    <artifactId>gson</artifactId>
-	    <version>2.8.6</version>
-	</dependency>
-	<dependency>
-		<groupId>com.google.guava</groupId>
-		<artifactId>guava</artifactId>
-		<version>31.1-jre</version>
-	</dependency>
-	<dependency>
-	    <groupId>net.jafama</groupId>
-	    <artifactId>jafama</artifactId>
-	    <version>2.3.2</version>
-	</dependency>
-	<dependency>
-	    <groupId>gov.nist.math</groupId>
-	    <artifactId>jama</artifactId>
-	    <version>1.0.3</version>
-	</dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-pool2</artifactId>
+			<version>2.9.0</version>
+		</dependency>
 		<dependency>
-	    <groupId>org.jfree</groupId>
-	    <artifactId>jcommon</artifactId>
-	    <version>1.0.24</version>
-	</dependency>
-	<dependency>
-	    <groupId>org.jfree</groupId>
-	    <artifactId>jfreechart</artifactId>
-	    <version>1.5.3</version>
-	</dependency>
-	<dependency>
-	    <groupId>com.jgoodies</groupId>
-	    <artifactId>jgoodies-common</artifactId>
-	    <version>1.8.1</version>
-	</dependency>
-	<dependency>
-	    <groupId>com.jgoodies</groupId>
-	    <artifactId>jgoodies-looks</artifactId>
-	    <version>2.7.0</version>
-	</dependency>
-	<dependency>
-	    <groupId>joda-time</groupId>
-	    <artifactId>joda-time</artifactId>
-	    <version>2.10.10</version>
-	</dependency>
-	<dependency>
-	    <groupId>com.google.code.findbugs</groupId>
-	    <artifactId>jsr305</artifactId>
-	    <version>3.0.2</version>
-	</dependency>
-	<dependency>
-	    <groupId>com.miglayout</groupId>
-	    <artifactId>miglayout-swing</artifactId>
-	    <version>11.0</version>
-	</dependency>
-	<dependency>
-	    <groupId>gov.nasa.gsfc.heasarc</groupId>
-	    <artifactId>nom-tam-fits</artifactId>
-	    <version>1.15.2</version>
-	</dependency>
-
-
-	<dependency>
-	    <groupId>org.devzendo</groupId>
-	    <artifactId>Quaqua</artifactId>
-	    <version>7.3.4</version>
-	</dependency>
-	<!--
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-text</artifactId>
+			<version>1.9</version>
+		</dependency>
+		<dependency>
+			<groupId>edu.jhuapl.ses.saa</groupId>
+			<artifactId>crucible-core</artifactId>
+			<version>1.0.0-b23-b505c84b</version>
+			<type>pom</type>
+		</dependency>
+		<dependency>
+			<groupId>edu.jhuapl.ses.saa</groupId>
+			<artifactId>crucible-crust</artifactId>
+			<version>1.0.0-b23-b505c84b</version>
+		</dependency>
+		<dependency>
+			<groupId>edu.jhuapl.ses.saa</groupId>
+			<artifactId>crucible-mantle</artifactId>
+			<version>1.0.0-b23-b505c84b</version>
+			<type>pom</type>
+		</dependency>
+		<dependency>
+			<groupId>com.google.flatbuffers</groupId>
+			<artifactId>flatbuffers-java</artifactId>
+			<version>2.0.0</version> <!-- WAS 1.3.0.1 -->
+		</dependency>
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>2.8.6</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>31.1-jre</version>
+		</dependency>
+		<dependency>
+			<groupId>net.jafama</groupId>
+			<artifactId>jafama</artifactId>
+			<version>2.3.2</version>
+		</dependency>
+		<dependency>
+			<groupId>gov.nist.math</groupId>
+			<artifactId>jama</artifactId>
+			<version>1.0.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jfree</groupId>
+			<artifactId>jcommon</artifactId>
+			<version>1.0.24</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jfree</groupId>
+			<artifactId>jfreechart</artifactId>
+			<version>1.5.3</version>
+		</dependency>
+		<dependency>
+			<groupId>com.jgoodies</groupId>
+			<artifactId>jgoodies-common</artifactId>
+			<version>1.8.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.jgoodies</groupId>
+			<artifactId>jgoodies-looks</artifactId>
+			<version>2.7.0</version>
+		</dependency>
+		<dependency>
+			<groupId>joda-time</groupId>
+			<artifactId>joda-time</artifactId>
+			<version>2.10.10</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.code.findbugs</groupId>
+			<artifactId>jsr305</artifactId>
+			<version>3.0.2</version>
+		</dependency>
+		<dependency>
+			<groupId>com.miglayout</groupId>
+			<artifactId>miglayout-swing</artifactId>
+			<version>11.0</version>
+		</dependency>
+		<dependency>
+			<groupId>gov.nasa.gsfc.heasarc</groupId>
+			<artifactId>nom-tam-fits</artifactId>
+			<version>1.15.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.devzendo</groupId>
+			<artifactId>Quaqua</artifactId>
+			<version>7.3.4</version>
+		</dependency>
+		<!--
 	<dependency>
 	    <groupId>org.devzendo</groupId>
 	    <artifactId>quaqua-filechooser-only</artifactId>
 	    <version>7.3.4</version>
 	</dependency>
 	-->
-   
-    <dependency>
-  		<groupId>com.github.davidmoten</groupId>
-  		<artifactId>rtree</artifactId>
-  		<version>0.8.6</version>
-	</dependency>
-	
-	<!-- Geotools -->
-	<dependency>
-	    <groupId>org.geotools</groupId>
-	    <artifactId>gt-main</artifactId>
-	    <version>15.1</version>
-	</dependency>
-	<dependency>
-	    <groupId>org.geotools</groupId>
-	    <artifactId>gt-data</artifactId>
-	    <version>15.1</version>
-	</dependency>
-	<dependency>
-	    <groupId>org.geotools</groupId>
-	    <artifactId>gt-shapefile</artifactId>
-	    <version>15.1</version>
-	</dependency>
-	
-	
-	<!-- VTK -->
-	
-	<dependency>
-    	<groupId>org.jzy3d</groupId>
-    	<artifactId>vtk-java-all</artifactId>
-    	<version>1.0.0-SNAPSHOT</version>
-	</dependency>
-	
-  </dependencies>
-  <scm>
-    <connection>scm:git:http://hardin:8080/scm/git/vtk/saavtk</connection>
-    <developerConnection>scm:git:http://hardin:8080/scm/git/vtk/saavtk</developerConnection>
-  </scm>
-  <build>
- 	<sourceDirectory>.</sourceDirectory>
- 	<testSourceDirectory>.</testSourceDirectory>
-	  <plugins>
-	  	<plugin>
-	    		<groupId>org.apache.maven.plugins</groupId>
-	    		<artifactId>maven-scm-plugin</artifactId>
-	    		<version>1.9.5</version>
-	    		<configuration>
-	      			<username>steelrj1</username>
-	      			<password>Tardis15!</password>
-	      			<connectionType>developerConnection</connectionType>
-	    		</configuration>
-	    	</plugin>
-		<plugin>
-        		<groupId>org.apache.maven.plugins</groupId>
-        		<artifactId>maven-jar-plugin</artifactId>
-        		<version>3.0.2</version>
-        		<configuration>
-          			<archive>
-            				<manifest>
-              					<addClasspath>true</addClasspath>
-              					<mainClass>edu.jhuapl.saavtk.example.ExampleTool</mainClass>
-            				</manifest>
-          			</archive>
-        		</configuration>
-  
-      		</plugin>
-		<plugin>
+		<dependency>
+			<groupId>com.github.davidmoten</groupId>
+			<artifactId>rtree</artifactId>
+			<version>0.8.6</version>
+		</dependency>
+		<!-- Geotools -->
+		<dependency>
+			<groupId>org.geotools</groupId>
+			<artifactId>gt-main</artifactId>
+			<version>15.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.geotools</groupId>
+			<artifactId>gt-data</artifactId>
+			<version>15.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.geotools</groupId>
+			<artifactId>gt-shapefile</artifactId>
+			<version>15.1</version>
+		</dependency>
+		<!-- VTK -->
+		<dependency>
+			<groupId>org.jzy3d</groupId>
+			<artifactId>vtk-java-all</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
+	</dependencies>
+	<scm>
+		<connection>scm:git:http://hardin:8080/scm/git/vtk/saavtk</connection>
+		<developerConnection>scm:git:http://hardin:8080/scm/git/vtk/saavtk</developerConnection>
+	</scm>
+	<build>
+		<sourceDirectory>.</sourceDirectory>
+		<testSourceDirectory>.</testSourceDirectory>
+		<plugins>
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-        		<artifactId>maven-antrun-plugin</artifactId>
-        		<version>3.1.0</version>
-        		<executions>
-          			<execution>
-          					<?m2e execute onConfiguration?>
-            				<phase>compile</phase>
-            				<configuration>
-								<target>
-									<mkdir dir="${project.build.directory}/classes/edu/jhuapl/saavtk/data"/>
-		              						<copy todir="${project.build.directory}/classes/edu/jhuapl/saavtk/data">
-										<fileset dir="src/edu/jhuapl/saavtk/data"/>
-									</copy>
-								</target>
-            				</configuration>
-            				<goals>
-              					<goal>run</goal>
-            				</goals>
-          			</execution>
-          			<!--
+				<artifactId>maven-scm-plugin</artifactId>
+				<version>1.9.5</version>
+				<configuration>
+					<username>steelrj1</username>
+					<password>Tardis15!</password>
+					<connectionType>developerConnection</connectionType>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.0.2</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<addClasspath>true</addClasspath>
+							<mainClass>edu.jhuapl.saavtk.example.ExampleTool</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<?m2e execute onConfiguration?>
+						<phase>compile</phase>
+						<configuration>
+							<target>
+								<mkdir dir="${project.build.directory}/classes/edu/jhuapl/saavtk/data" />
+								<copy todir="${project.build.directory}/classes/edu/jhuapl/saavtk/data">
+									<fileset dir="src/edu/jhuapl/saavtk/data" />
+								</copy>
+							</target>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+					<!--
           			   <execution>
           			        <id>moveVTKFiles</id>
                             <phase>compile</phase>
@@ -251,23 +249,22 @@
                             </goals>
                         </execution>
                         -->
-                        <execution>
-                            <id>zipVTKNativeLibs</id>
-                            <phase>install</phase>
-                            <configuration>
-                                <tasks>
-                                     <zip destfile="${project.build.directory}/vtkNativeLibs-${version}.zip"
-                                        basedir="lib/vtk6.3/"
-                                     />
-                                </tasks>
-                            </configuration>
-                            <goals>
-                                <goal>run</goal>
-                            </goals>
-                        </execution>
-        		</executions>
-      		</plugin>
-	  </plugins>
-	
-  </build>
+					<execution>
+						<id>zipVTKNativeLibs</id>
+						<phase>install</phase>
+						<configuration>
+							<tasks>
+								<zip destfile="${project.build.directory}/vtkNativeLibs-${version}.zip"
+									basedir="lib/vtk6.3/"
+								 />
+							</tasks>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>
