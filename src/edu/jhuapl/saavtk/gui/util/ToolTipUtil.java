@@ -217,11 +217,90 @@ public class ToolTipUtil
 	}
 	
 	/*
-	 * Returns the tool tip that should be used for "Stop" buttons
+	 * Returns the tool tip that should be used for "Font" buttons
 	 */
 	public static String getFont()
 	{
 		return "Font";
+	}
+	/*
+	 * Returns the tool tip that should be used for "Color" buttons
+	 */
+	public static String getColorImage()
+	{
+		return "Generate a Color Image";
+	}
+	 
+	/*
+	 * Returns the tool tip that should be used for "image cube" buttons
+	 */
+	public static String getImageCube()
+	{
+		return "Generate an Image Cube";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "custom image" buttons
+	 */
+	public static String getCustomImage()
+	{
+		return "Add one or more Custom Images";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for custom "Load Items" buttons
+	 */
+	public static String getItemLoadCustomImageList()
+	{
+		return "Load a saved list of custom images";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for custom "save Items" buttons
+	 */
+	public static String getItemSaveCustomImageList()
+	{
+		return "Save a list of custom images";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "Load Image" buttons
+	 */
+	public static String getItemLoadImageList()
+	{
+		return "Load a saved list of images from a file";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "save image" buttons
+	 */
+	public static String getItemSaveImageList()
+	{
+		return "Save selected images (or all images if none selected) to a file";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "show border" buttons
+	 */
+	public static String getShowBorder()
+	{
+		return "Show borders for selected images";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "hide border" buttons
+	 */
+	public static String getHideBorder()
+	{
+		return "Hide borders for selected images";
+	}
+	
+	/*
+	 * Returns the tool tip that should be used for "gallery" buttons
+	 */
+	public static String getGallery()
+	{
+		return "View Images as Gallery. Shows selected images, or all images if none are selected.";
 	}
 
 }

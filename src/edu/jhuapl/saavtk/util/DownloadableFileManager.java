@@ -33,6 +33,13 @@ import edu.jhuapl.saavtk.util.FileInfo.FileState;
 import edu.jhuapl.saavtk.util.FileInfo.FileStatus;
 import edu.jhuapl.saavtk.util.ServerSettingsManager.ServerSettings;
 
+/**
+ * Utility to manage downloads from a resource located by a {@link URL} that is
+ * associated with a local {@link File}.
+ * 
+ * @author James Peachey
+ *
+ */
 public class DownloadableFileManager
 {
     private static final String UrlEncoding = "UTF-8";
@@ -40,6 +47,11 @@ public class DownloadableFileManager
     private static final int SleepIntervalAfterLOC = 50000; // 50 sec., empirically good value.
     private static volatile Boolean headless = null;
 
+    /**
+     * Listener that may be informed of changes to the state of a file using an
+     * instance of {@link DownloadableFileState}.
+     */
+    @FunctionalInterface
     public interface StateListener
     {
         void respond(DownloadableFileState fileState);
@@ -237,7 +249,7 @@ public class DownloadableFileManager
                         fallBack = true;
                         enableAccessChecksOnServer.set(false);
                         FileCacheMessageUtil.err().println("Falling back on file-by-file access check");
-//                        getDropProfiler().accumulate();
+                        // getDropProfiler().accumulate();
                     }
                 }
                 catch (Exception e)
@@ -303,7 +315,7 @@ public class DownloadableFileManager
 
         URL getUserAccessPhp = checkFileAccessScriptURL.get();
 
-//        boolean enableServerCheck = urlManager.isServerAccessEnabled();
+        // boolean enableServerCheck = urlManager.isServerAccessEnabled();
         boolean enableServerCheck = true;
 
         // Only ask about URLs for which no previous successful check has been made.
@@ -872,8 +884,8 @@ public class DownloadableFileManager
      */
     public void enableProfiling()
     {
-//        getCheckProfiler().deleteProfileArea();
-//        getDropProfiler().deleteProfileArea();
+        // getCheckProfiler().deleteProfileArea();
+        // getDropProfiler().deleteProfileArea();
 
         Profiler.globalEnableProfiling(true);
     }

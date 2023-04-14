@@ -4,6 +4,13 @@ import java.net.URL;
 
 import com.google.common.base.Preconditions;
 
+/**
+ * Immutable class that encapsulates a snapshot of the state of a resource
+ * located by a {@link URL} at a particular moment.
+ * 
+ * @author James Peachey
+ *
+ */
 public class UrlState
 {
     protected static final long UNKNOWN_LENGTH = -1;
@@ -106,8 +113,8 @@ public class UrlState
     }
 
     /**
-     * Return a {@link UrlState} object with the specified properties, but
-     * otherwise identical to the object from which the method is invoked. Note that
+     * Return a {@link UrlState} object with the specified properties, but otherwise
+     * identical to the object from which the method is invoked. Note that
      * {@link UrlState} objects are immutable; this method simply returns the object
      * from which it was invoked if that object already has the specified
      * properties.

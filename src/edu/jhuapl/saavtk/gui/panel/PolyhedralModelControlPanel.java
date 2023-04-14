@@ -1,8 +1,7 @@
 package edu.jhuapl.saavtk.gui.panel;
 
 import java.awt.BorderLayout;
-import java.awt.Cursor; 
-import java.awt.EventQueue;
+import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
@@ -37,6 +36,7 @@ import javax.swing.text.html.HTMLEditorKit;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.coloring.gui.ColoringModePanel;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
@@ -44,11 +44,11 @@ import edu.jhuapl.saavtk.gui.dialog.CustomPlateDataDialog;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.main.gui.ShapeModelEditPanel;
 import edu.jhuapl.saavtk.model.ModelManager;
+import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.plateColoring.BasicColoringDataManager;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringDataManager;
-import edu.jhuapl.saavtk.model.plateColoring.CustomizableColoringDataManager;
 import edu.jhuapl.saavtk.model.plateColoring.LoadableColoringData;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
@@ -77,7 +77,7 @@ public class PolyhedralModelControlPanel extends JPanel implements ChangeListene
     private final ModelManager modelManager;
     private final String bodyName;
 
-    private final ShapeModelEditPanel shapeModelEditPanel;
+    private final List<ShapeModelEditPanel> shapeModelEditPanels;
     private final ColoringModePanel plateColoringPanel;
     private final JComboBoxWithItemState<String> coloringComboBox;
     private final JComboBoxWithItemState<String> customColorRedComboBox;
@@ -113,15 +113,17 @@ public class PolyhedralModelControlPanel extends JPanel implements ChangeListene
         this.bodyName = bodyName;
 
         scrollPane = new JScrollPane();
-
-        var tmpSmallBody = modelManager.getPolyhedralModel();
-        shapeModelEditPanel = new ShapeModelEditPanel(aRenderer, tmpSmallBody, bodyName);
+//        var tmpSmallBody = modelManager.getPolyhedralModel();
+        shapeModelEditPanels = Lists.newArrayList();
+        var tmpSmallBodies = modelManager.getModels(ModelNames.SMALL_BODY).stream().map(body -> { return (PolyhedralModel)body; }).toList();
+        for (var body : tmpSmallBodies)
+        	shapeModelEditPanels.add(new ShapeModelEditPanel(aRenderer, body, body.getConfig().getModelLabel().replaceAll(" Center", "")));
 
         coloringComboBox = new JComboBoxWithItemState<>();
         customColorRedComboBox = new JComboBoxWithItemState<>();
         customColorGreenComboBox = new JComboBoxWithItemState<>();
         customColorBlueComboBox = new JComboBoxWithItemState<>();
-        plateColoringPanel = new ColoringModePanel(aRenderer, tmpSmallBody, coloringComboBox, customColorRedComboBox, customColorGreenComboBox, customColorBlueComboBox);
+        plateColoringPanel = new ColoringModePanel(aRenderer, tmpSmallBodies, coloringComboBox, customColorRedComboBox, customColorGreenComboBox, customColorBlueComboBox);
 
         saveColoringButton = new JButton("Save Plate Data...");
 
@@ -244,7 +246,8 @@ public class PolyhedralModelControlPanel extends JPanel implements ChangeListene
             addAdditionalStatisticsToLabel();
         });
 
-        panel.add(shapeModelEditPanel, "growx,span,wrap");
+        for (var shapeModelEditPanel : shapeModelEditPanels)
+        	panel.add(shapeModelEditPanel, "growx,span,wrap");
         panel.add(GuiUtil.createDivider(), "growx,h 4!,span,wrap");
         if (smallBodyModel.getNumberResolutionLevels() > 1)
         {
@@ -289,27 +292,32 @@ public class PolyhedralModelControlPanel extends JPanel implements ChangeListene
             throw new AssertionError();
         }
         int newResolutionLevel = resolutionLevels.get(actionCommand);
-        PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
-        if (smallBodyModel.getModelResolution() == newResolutionLevel)
+        var tmpSmallBodies = modelManager.getModels(ModelNames.SMALL_BODY).stream().map(body -> { return (PolyhedralModel)body; }).toList();
+        for (var smallBodyModel : tmpSmallBodies)
         {
-            // This probably won't happen, but just in case this gets
-            // called when there was no change, do no harm.
-            return;
-        }
-
-        // If we get this far, the model has changed, so update everything that
-        // needs to be updated in this case.
-        try
-        {
-            smallBodyModel.setModelResolution(newResolutionLevel);
-            setStatisticsLabel();
-            additionalStatisticsButton.setVisible(true);
-            updateColoringOptions(newResolutionLevel);
-        }
-        catch (IOException e)
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+	        
+//	        PolyhedralModel smallBodyModel = modelManager.getPolyhedralModel();
+	        if (smallBodyModel.getModelResolution() == newResolutionLevel)
+	        {
+	            // This probably won't happen, but just in case this gets
+	            // called when there was no change, do no harm.
+	            return;
+	        }
+	
+	        // If we get this far, the model has changed, so update everything that
+	        // needs to be updated in this case.
+	        try
+	        {
+	            smallBodyModel.setModelResolution(newResolutionLevel);
+	            setStatisticsLabel();
+	            additionalStatisticsButton.setVisible(true);
+	            updateColoringOptions(newResolutionLevel);
+	        }
+	        catch (IOException e)
+	        {
+	            // TODO Auto-generated catch block
+	            e.printStackTrace();
+	        }
         }
     }
 

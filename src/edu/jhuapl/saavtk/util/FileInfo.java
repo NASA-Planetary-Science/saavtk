@@ -24,6 +24,13 @@ public class FileInfo
         ;
     }
 
+    /**
+     * Immutable class that encapsulates a snapshot of the state of a {@link File}
+     * on the local file system at a particular moment.
+     * 
+     * @author James Peachey
+     *
+     */
     public static class FileState
     {
         public static FileState of(File file)
