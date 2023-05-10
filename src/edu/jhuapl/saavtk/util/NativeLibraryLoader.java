@@ -29,7 +29,6 @@ public class NativeLibraryLoader
     private static final AtomicBoolean isVtkInitialized = new AtomicBoolean(false);
     public static boolean debug = true;
     private static File nativeVTKLibraryDir;
-    private static File nativeGDALLibraryDir;
     
     private static void unpackNatives()
     {
@@ -91,13 +90,6 @@ public class NativeLibraryLoader
       if(debug)
         System.out.println("Extract VTK to " + nativeVTKLibraryDir);
       
-      // Create the target directory if it does not exist
-      nativeGDALLibraryDir = createNativeGDALDirectory(nativeLibraryBaseDirectory);
-
-      if(debug)
-        System.out.println("Extract GDAL to " + nativeGDALLibraryDir);
-
-
       // Loads mawt.so
       Toolkit.getDefaultToolkit();
 
@@ -148,8 +140,6 @@ public class NativeLibraryLoader
         } catch (IOException e) {
           throw new VtkJavaNativeLibraryException("Error while copying library " + nativeName, e);
         }
-
-//        Runtime.getRuntime().load(file.getAbsolutePath());
       }
       
       for (URL libraryUrl : impl.getVtkLibraries()) {
@@ -160,7 +150,6 @@ public class NativeLibraryLoader
           Runtime.getRuntime().load(file.getAbsolutePath());
       }
       
-      //Need section for GDAL her eventually
 
 
       // vtkNativeLibrary.DisableOutputWindow(null);
@@ -239,13 +228,13 @@ public class NativeLibraryLoader
      */
     public static void loadAllVtkLibraries()
     {
-    	try {
-    		File nativeDir = new File(System.getProperty("user.home") + File.separator +".nativelibs");
-			VtkNativeLibraries.initialize(nativeDir);
-		} catch (VtkJavaNativeLibraryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//    	try {
+//    		File nativeDir = new File(System.getProperty("user.home") + File.separator +".nativelibs");
+//			VtkNativeLibraries.initialize(nativeDir);
+//		} catch (VtkJavaNativeLibraryException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
     	System.out.println("NativeLibraryLoader: loadAllVtkLibraries: unpacking natives");
     	unpackNatives();
         if (isVtkInitialized.compareAndSet(false, true))
@@ -378,84 +367,7 @@ public class NativeLibraryLoader
         }
     }
     
-	public static File createNativeGDALDirectory(File nativeLibraryBaseDirectory) throws VtkJavaNativeLibraryException {
-
-		File nativeLibraryDirectory  = new File(nativeLibraryBaseDirectory, "gdalnatives-" +MAJOR_VERSION + "." +MINOR_VERSION);
-		try {
-			if (!nativeLibraryDirectory.exists()) {
-				nativeLibraryDirectory.mkdirs();
-			}
-		} catch (Throwable t) {
-			throw new VtkJavaNativeLibraryException(
-					"Unable to create directory for native libs", t);
-		}
-		return nativeLibraryDirectory;
-	}
 	
-	private enum gdalNativeLibrary 
-	{
-		libcfitsio("libcfitsio.9"),
-
-		libhdf5_hl("libhdf5_hl.200"),
-//		libhdf103("libhdf5.103"),
-		libhdf200("libhdf5.200"),
-		libjpeg("libjpeg.9"),
-		libnetcdf("libnetcdf.19"),
-//		libpcre("libpcre.1"),
-		libpng16("libpng16.16"),
-		libproj("libproj.25"),
-		libsz("libsz.2"),
-		libtiff("libtiff.5"),
-		libtiledb("libtiledb"),
-		libwebp("libwebp.7"),
-		libzstd("libzstd.1.5.4"),
-		libgdal("libgdal.32"),
-		libgdalalljni("libgdalalljni");
-		
-		
-		private String filename;
-		
-		private gdalNativeLibrary(String filename)
-		{
-			this.filename = filename;
-		}
-		
-		public String getFilename()
-		{
-			return filename;
-		}
-	}
-    
-    public static void loadGDALLibraries()
-    {
-    	System.out.println("NativeLibraryLoader: loadGDALLibraries: loading all GDAL libs");
-    	
-    	  boolean caughtLinkError = false;
-          for (gdalNativeLibrary lib : gdalNativeLibrary.values())
-          {
-              try
-              {
-//                  if (!lib.IsLoaded())
-                  {
-                	  System.out.println("NativeLibraryLoader: loadGDALLibraries: trying to load " +new File(nativeGDALLibraryDir, lib.getFilename() + ".dylib").getAbsolutePath() );
-                  	Runtime.getRuntime().load(new File(nativeGDALLibraryDir, lib.getFilename() + ".dylib").getAbsolutePath());
-//                  	System.load(new File(nativeGDALLibraryDir, lib.getFilename() + ".dylib").getAbsolutePath());
-
-                  }
-              }
-              catch (UnsatisfiedLinkError e)
-              {
-                  caughtLinkError = true;
-                  e.printStackTrace();
-              }
-          }
-          
-
-          if (caughtLinkError)
-          {
-              throw new UnsatisfiedLinkError("One or more GDAL libraries failed to load");
-          }
-    }
 
     public static void loadSpiceLibraries()
     {

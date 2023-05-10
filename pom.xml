@@ -38,13 +38,6 @@
 			<artifactId>commons-lang3</artifactId>
 			<version>3.12.0</version>
 		</dependency>
-		<!--
-	<dependency>
-	    <groupId>org.apache.commons</groupId>
-	    <artifactId>commons-lang3</artifactId>
-	    <version>3.3.2</version>
-	</dependency>
-	-->
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-math3</artifactId>
@@ -186,6 +179,19 @@
 		<connection>scm:git:http://hardin:8080/scm/git/vtk/saavtk</connection>
 		<developerConnection>scm:git:http://hardin:8080/scm/git/vtk/saavtk</developerConnection>
 	</scm>
+	<!-- Issue Management - TO BE UPDATED -->
+	<issueManagement>
+		<system>Quiver</system>
+		<url>https://quiver.jhuapl.edu/saavtk/issues</url>
+	</issueManagement>
+	<!-- Used to deploy to Surfshop - TO BE UPDATED -->
+	<distributionManagement>
+		<repository>
+			<id>central</id>
+			<name>surfshop-snapshots</name>
+			<url>http://surfshop.jhuapl.edu:8081/artifactory/libs-snapshot-local</url>
+		</repository>
+	</distributionManagement>
 	<build>
 		<sourceDirectory>.</sourceDirectory>
 		<testSourceDirectory>.</testSourceDirectory>
@@ -228,36 +234,6 @@
 									<fileset dir="src/edu/jhuapl/saavtk/data" />
 								</copy>
 							</target>
-						</configuration>
-						<goals>
-							<goal>run</goal>
-						</goals>
-					</execution>
-					<!--
-          			   <execution>
-          			        <id>moveVTKFiles</id>
-                            <phase>compile</phase>
-                            <configuration>
-                                <tasks>
-                                    <copy todir="/homes/steelrj1/vtkLibs/vtk6.3">
-                                        <fileset dir="lib/vtk6.3"/>
-                                    </copy>
-                                </tasks>
-                            </configuration>
-                            <goals>
-                                <goal>run</goal>
-                            </goals>
-                        </execution>
-                        -->
-					<execution>
-						<id>zipVTKNativeLibs</id>
-						<phase>install</phase>
-						<configuration>
-							<tasks>
-								<zip destfile="${project.build.directory}/vtkNativeLibs-${version}.zip"
-									basedir="lib/vtk6.3/"
-								 />
-							</tasks>
 						</configuration>
 						<goals>
 							<goal>run</goal>
