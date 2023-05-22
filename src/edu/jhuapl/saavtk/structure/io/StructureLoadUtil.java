@@ -16,6 +16,7 @@ import edu.jhuapl.saavtk.structure.Ellipse;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.util.FileUtil;
 import edu.jhuapl.saavtk.vtk.font.FontAttr;
+import glum.io.token.TokenUtil;
 
 /**
  * Collection of utility methods to support loading of SBMT structures and
@@ -207,7 +208,7 @@ public class StructureLoadUtil
 
 			// The first 8 columns are the same in both the old and new formats.
 			int id = Integer.parseInt(words[0]);
-			String name = words[1];
+			String name = TokenUtil.getRawStr(words[1]);
 
 			double xVal = Double.parseDouble(words[2]);
 			double yVal = Double.parseDouble(words[3]);

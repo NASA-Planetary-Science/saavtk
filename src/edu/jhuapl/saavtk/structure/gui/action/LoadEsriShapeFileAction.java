@@ -21,8 +21,9 @@ import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
+import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
+import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.model.structure.LineModel;
-import edu.jhuapl.saavtk.model.structure.PointModel;
 import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.model.structure.esri.FeatureUtil;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
@@ -79,7 +80,7 @@ public class LoadEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 	public void actionPerformed(ActionEvent e)
 	{
 		String fileMenuTitle = null;
-		if (refStructureManager instanceof PointModel)
+		if (refStructureManager instanceof AbstractEllipsePolygonModel aManager && aManager.getMode() == Mode.POINT_MODE)
 			fileMenuTitle = "Points from shapefile...";
 		else if (refStructureManager instanceof LineModel)
 			fileMenuTitle = "Path from shapefile...";
@@ -167,7 +168,7 @@ public class LoadEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 			{
 				if (filePath.toFile().exists())
 				{
-					PointModel model = (PointModel) refModelManager.getModel(ModelNames.POINT_STRUCTURES);
+					var model = (AbstractEllipsePolygonModel) refModelManager.getModel(ModelNames.POINT_STRUCTURES);
 					FeatureCollection features = BennuStructuresEsriIO.read(filePath, FeatureUtil.pointType);
 					FeatureIterator<Feature> it = features.features();
 					List<Feature> flist = Lists.newArrayList();
