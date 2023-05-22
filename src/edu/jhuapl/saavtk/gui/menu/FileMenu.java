@@ -11,6 +11,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.JFrame;
@@ -18,6 +19,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
 import com.google.common.collect.ImmutableList;
@@ -33,7 +35,6 @@ import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
 import edu.jhuapl.saavtk.model.structure.LineModel;
-import edu.jhuapl.saavtk.model.structure.PointModel;
 import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
 import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
@@ -42,7 +43,11 @@ import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.structure.io.StructureLegacyUtil;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
+import vtk.vtkOBJExporter;
+import vtk.vtkOBJReader;
 import vtk.vtkPolyData;
+import vtk.vtkProp;
+import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 public class FileMenu extends JMenu
 {
@@ -79,6 +84,9 @@ public class FileMenu extends JMenu
 		saveShapeModelMenu.add(mi);
 		mi = new JMenuItem(new SaveShapeModelAsSTLAction());
 		saveShapeModelMenu.add(mi);
+		
+		mi = new JMenuItem(new SaveSceneAsOBJAction());
+		this.add(mi);
 
 		JMenu convertMenu = new JMenu("Convert...");
 		this.add(convertMenu);
@@ -111,12 +119,14 @@ public class FileMenu extends JMenu
 			try
 			{
 				Desktop.getDesktop().setPreferencesHandler(new PreferencesHandler() {
-                    public void handlePreferences(java.awt.desktop.PreferencesEvent e) {
+                    @Override
+						public void handlePreferences(java.awt.desktop.PreferencesEvent e) {
                         showPreferences();
                     }
                 });
 				Desktop.getDesktop().setQuitHandler(new QuitHandler() {
-                    public void handleQuitRequestWith(java.awt.desktop.QuitEvent e, java.awt.desktop.QuitResponse r) {
+                    @Override
+						public void handleQuitRequestWith(java.awt.desktop.QuitEvent e, java.awt.desktop.QuitResponse r) {
                         exitTool();
                     }
                 });
@@ -259,6 +269,52 @@ public class FileMenu extends JMenu
 				e1.printStackTrace();
 				JOptionPane.showMessageDialog(null, "An error occurred exporting the shape model.", "Error", JOptionPane.ERROR_MESSAGE);
 				return;
+			}
+		}
+	}
+	
+	private class SaveSceneAsOBJAction extends AbstractAction 
+	{
+		public SaveSceneAsOBJAction() 
+		{
+			super("Export Scene to OBJs");
+		}
+		
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			File file = CustomFileChooser.showSaveDialog(null, "Export Scene to OBJ", "export.obj");
+
+			if (file != null)
+			{
+
+				String fileprefix = FilenameUtils.removeExtension(file.getAbsolutePath());
+				vtkJoglPanelComponent renderPanel = new vtkJoglPanelComponent();
+				renderPanel.getRenderWindow().OffScreenRenderingOn();
+				vtkOBJExporter exporter = new vtkOBJExporter();
+				exporter.SetRenderWindow(renderPanel.getRenderWindow());
+				vtkOBJReader importer = new vtkOBJReader();
+
+				List<vtkProp> actors = rootPanel.getCurrentView().getRenderer().getAllActors();
+				for (vtkProp actor : actors)
+				{
+					if (actor.GetVisibility() == 1)
+					{
+						renderPanel.getRenderer().AddViewProp(actor);
+						renderPanel.Render();
+						exporter.SetFilePrefix(fileprefix + "_" + actors.indexOf(actor));
+						exporter.Update();
+						renderPanel.getRenderer().RemoveViewProp(actor);
+						importer.SetFileName(fileprefix + "_" + actors.indexOf(actor) + ".obj");
+						importer.Update();
+						if (importer.GetOutput().GetNumberOfPoints() == 0)
+						{
+							FileUtils.deleteQuietly(new File(fileprefix + "_" + actors.indexOf(actor) + ".obj"));
+							FileUtils.deleteQuietly(new File(fileprefix + "_" + actors.indexOf(actor) + ".mtl"));
+						}
+					}
+				}
+				renderPanel.Delete();
 			}
 		}
 	}
@@ -517,7 +573,7 @@ public class FileMenu extends JMenu
 					try
 					{
 						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.POINT_STRUCTURES, body);
-						ShapefileUtil.writePointStructures(Lists.newArrayList(PointStructure.fromSbmtStructure((PointModel) model)), opath.resolve(oname));
+						ShapefileUtil.writePointStructures(Lists.newArrayList(PointStructure.fromSbmtStructure((AbstractEllipsePolygonModel) model)), opath.resolve(oname));
 
 					}
 					catch (IOException ex)

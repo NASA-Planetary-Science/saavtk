@@ -1,7 +1,11 @@
 package edu.jhuapl.saavtk.example;
 
 import java.util.HashMap;
+import java.util.List;
 
+import com.google.common.collect.ImmutableList;
+
+import edu.jhuapl.saavtk.config.IBodyViewConfig;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.panel.PolyhedralModelControlPanel;
@@ -12,16 +16,15 @@ import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.ShapeModelBody;
 import edu.jhuapl.saavtk.model.ShapeModelType;
-import edu.jhuapl.saavtk.model.structure.CircleModel;
+import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.model.structure.CircleSelectionModel;
-import edu.jhuapl.saavtk.model.structure.EllipseModel;
 import edu.jhuapl.saavtk.model.structure.LineModel;
-import edu.jhuapl.saavtk.model.structure.PointModel;
 import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.structure.gui.StructureTabbedPane;
+import edu.jhuapl.saavtk.structure.io.StructureLegacyUtil;
 
 /**
  * A view is a container which contains a control panel and renderer as well as
@@ -46,6 +49,12 @@ public class ExampleView extends View
 	{
 		super(aStatusNotifier, config);
 	}
+	
+	
+    public IBodyViewConfig getConfig()
+    {
+        return (IBodyViewConfig)config;
+    }
 
 	/**
 	 * Returns model as a path. e.g. "Asteroid > Near-Earth > Eros > Image Based >
@@ -54,10 +63,10 @@ public class ExampleView extends View
 	@Override
 	public String getPathRepresentation()
 	{
-		ViewConfig config = getConfig();
-		if (ShapeModelType.CUSTOM == config.author)
+		IBodyViewConfig config = getConfig();
+		if (ShapeModelType.CUSTOM == config.getAuthor())
 		{
-			return ShapeModelType.CUSTOM + " > " + config.modelLabel;
+			return ShapeModelType.CUSTOM + " > " + config.getModelLabel();
 		}
 		return "DefaultPath";
 	}
@@ -65,45 +74,48 @@ public class ExampleView extends View
 	@Override
 	public String getDisplayName()
 	{
-		if (getConfig().author == ShapeModelType.CUSTOM)
-			return getConfig().modelLabel;
+		if (getConfig().getAuthor() == ShapeModelType.CUSTOM)
+			return getConfig().getModelLabel();
 		else
 		{
 			String version = "";
-			if (getConfig().version != null)
-				version += " (" + getConfig().version + ")";
-			return getConfig().author.toString() + version;
+			if (getConfig().getVersion() != null)
+				version += " (" + getConfig().getVersion() + ")";
+			return getConfig().getAuthor().toString() + version;
 		}
 	}
 
 	@Override
 	public String getModelDisplayName()
 	{
-		ShapeModelBody body = getConfig().body;
+		ShapeModelBody body = getConfig().getBody();
 		return body != null ? body + " / " + getDisplayName() : getDisplayName();
 	}
 
 	@Override
 	protected void setupModelManager()
 	{
-		PolyhedralModel smallBodyModel = new ExamplePolyhedralModel(getConfig());
+		PolyhedralModel smallBodyModel = new ExamplePolyhedralModel((ViewConfig)getConfig());
+//		Graticule graticule = new Graticule(smallBodyModel);
 
-		HashMap<ModelNames, Model> allModels = new HashMap<>();
-		allModels.put(ModelNames.SMALL_BODY, smallBodyModel);
+		HashMap<ModelNames, List<Model>> allModels = new HashMap<>();
+		allModels.put(ModelNames.SMALL_BODY, ImmutableList.of(smallBodyModel)); 
+//		allModels.put(ModelNames.GRATICULE, ImmutableList.of(graticule));
+		
 
-		// if (getConfig().hasLidarData)
+		// if (getConfig().hasLidarData) 
 		// {
 		// allModels.putAll(ModelFactory.createLidarModels(smallBodyModel));
 		// }
 
 		ConfigurableSceneNotifier tmpSceneChangeNotifier = new ConfigurableSceneNotifier();
 		StatusNotifier tmpStatusNotifier = getStatusNotifier();
-		allModels.put(ModelNames.LINE_STRUCTURES, new LineModel<>(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
-		allModels.put(ModelNames.POLYGON_STRUCTURES, new PolygonModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
-		allModels.put(ModelNames.CIRCLE_STRUCTURES, new CircleModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
-		allModels.put(ModelNames.ELLIPSE_STRUCTURES, new EllipseModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
-		allModels.put(ModelNames.POINT_STRUCTURES, new PointModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
-		allModels.put(ModelNames.CIRCLE_SELECTION, new CircleSelectionModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel));
+		allModels.put(ModelNames.LINE_STRUCTURES, ImmutableList.of(new LineModel<>(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel)));
+		allModels.put(ModelNames.POLYGON_STRUCTURES, ImmutableList.of(new PolygonModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel)));
+		allModels.put(ModelNames.CIRCLE_STRUCTURES, ImmutableList.of(StructureLegacyUtil.createManager(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel, Mode.CIRCLE_MODE)));
+		allModels.put(ModelNames.ELLIPSE_STRUCTURES,ImmutableList.of( StructureLegacyUtil.createManager(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel, Mode.ELLIPSE_MODE)));
+		allModels.put(ModelNames.POINT_STRUCTURES, ImmutableList.of(StructureLegacyUtil.createManager(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel, Mode.POINT_MODE)));
+		allModels.put(ModelNames.CIRCLE_SELECTION, ImmutableList.of(new CircleSelectionModel(tmpSceneChangeNotifier, tmpStatusNotifier, smallBodyModel)));
 
 		// allModels.put(ModelNames.TRACKS, new
 		// LidarSearchDataCollection(smallBodyModel));
@@ -175,6 +187,12 @@ public class ExampleView extends View
 	{
 	}
 
+	@Override
+	protected void setupPositionOrientationManager()
+	{
+		
+	}
+	
 	@Override
 	protected void initializeStateManager()
 	{

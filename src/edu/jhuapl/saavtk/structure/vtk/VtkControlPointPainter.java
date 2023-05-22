@@ -2,12 +2,15 @@ package edu.jhuapl.saavtk.structure.vtk;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.jhuapl.saavtk.gui.render.VtkPropProvider;
+import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.vtk.VtkResource;
 import edu.jhuapl.saavtk.vtk.VtkUtil;
 import vtk.vtkActor;
@@ -17,24 +20,25 @@ import vtk.vtkIdList;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
-import vtk.vtkProperty;
+import vtk.vtkProp;
 import vtk.vtkUnsignedCharArray;
 
 /**
  * Class which contains the logic to render a collection of control points using
  * the VTK framework.
- * <P>
+ * <p>
  * This class supports the following configurable state:
- * <UL>
- * <LI>Draw color
- * </UL>
+ * <ul>
+ * <li>Draw color
+ * </ul>
  *
  * @author lopeznr1
  */
-public class VtkControlPointPainter implements VtkResource
+public class VtkControlPointPainter implements VtkPropProvider, VtkResource
 {
 	// State vars
 	private ImmutableList<Vector3D> pointL;
+	private Color drawColor;
 
 	// VTK vars
 	private final vtkPolyData vWorkPD;
@@ -50,12 +54,13 @@ public class VtkControlPointPainter implements VtkResource
 	public VtkControlPointPainter()
 	{
 		pointL = ImmutableList.of();
+		drawColor = Color.RED;
 
 		vEmptyPD = VtkUtil.formEmptyPolyData();
 
 		vWorkActor = new vtkActor();
-		vtkProperty workProperty = vWorkActor.GetProperty();
-		workProperty.SetColor(1.0, 0.0, 0.0);
+		var workProperty = vWorkActor.GetProperty();
+		workProperty.SetColor(drawColor.getRed() / 255.0, drawColor.getGreen() / 255.0, drawColor.getBlue() / 255.0);
 		workProperty.SetPointSize(7.0f);
 
 		vWorkPD = new vtkPolyData();
@@ -69,17 +74,6 @@ public class VtkControlPointPainter implements VtkResource
 		vWorkActor.Modified();
 
 		vWorkIL = new vtkIdList();
-	}
-
-	/**
-	 * Returns the actor associated with this painter.
-	 */
-	public vtkActor getActor()
-	{
-		if (pointL.size() == 0)
-			return null;
-
-		return vWorkActor;
 	}
 
 	/**
@@ -102,6 +96,17 @@ public class VtkControlPointPainter implements VtkResource
 		tmpL.remove(aIdx);
 
 		setControlPoints(tmpL);
+	}
+
+	/**
+	 * Returns the actor associated with this painter.
+	 */
+	public vtkActor getActor()
+	{
+		if (pointL.size() == 0)
+			return null;
+
+		return vWorkActor;
 	}
 
 	/**
@@ -130,7 +135,6 @@ public class VtkControlPointPainter implements VtkResource
 		vWorkIL.SetNumberOfIds(1);
 
 		int count = 0;
-		Color tmpColor = Color.RED;
 		for (Vector3D aPoint : pointL)
 		{
 			points.InsertNextPoint(aPoint.toArray());
@@ -138,8 +142,34 @@ public class VtkControlPointPainter implements VtkResource
 			vWorkIL.SetId(0, count++);
 			vert.InsertNextCell(vWorkIL);
 
-			colors.InsertNextTuple4(tmpColor.getRed(), tmpColor.getGreen(), tmpColor.getBlue(), tmpColor.getAlpha());
+			colors.InsertNextTuple4(drawColor.getRed(), drawColor.getGreen(), drawColor.getBlue(), drawColor.getAlpha());
 		}
+	}
+
+	/**
+	 * Adjusts the (rendered) points by the specified offset.
+	 */
+	public void shiftControlPoints(PolyhedralModel aSmallBody, double aOffset)
+	{
+		aSmallBody.shiftPolyLineInNormalDirection(vWorkPD, aOffset);
+		vWorkPD.Modified();
+	}
+
+	/**
+	 * Sets the color to draw the control points.
+	 */
+	public void setDrawColor(Color aColor)
+	{
+		drawColor = aColor;
+
+		var workProperty = vWorkActor.GetProperty();
+		workProperty.SetColor(drawColor.getRed() / 255.0, drawColor.getGreen() / 255.0, drawColor.getBlue() / 255.0);
+	}
+
+	@Override
+	public Collection<vtkProp> getProps()
+	{
+		return ImmutableList.of(vWorkActor);
 	}
 
 	@Override

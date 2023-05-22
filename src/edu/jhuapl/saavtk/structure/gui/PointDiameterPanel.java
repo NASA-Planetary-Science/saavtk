@@ -10,7 +10,7 @@ import javax.swing.event.ChangeListener;
 import com.google.common.primitives.Doubles;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.structure.PointModel;
+import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
 import edu.jhuapl.saavtk.structure.util.EllipseUtil;
 import net.miginfocom.swing.MigLayout;
 
@@ -21,7 +21,7 @@ import net.miginfocom.swing.MigLayout;
 public class PointDiameterPanel extends JPanel implements ChangeListener
 {
 	// State vars
-	private final PointModel refPointModel;
+	private final AbstractEllipsePolygonModel refPointModel;
 
 	// GUI vars
 	private final JSpinner spinner;
@@ -32,7 +32,7 @@ public class PointDiameterPanel extends JPanel implements ChangeListener
 	 * @param aPointModel The PointModel that will be controlled by this UI
 	 *                    component.
 	 */
-	public PointDiameterPanel(PolyhedralModel aSmallBody, PointModel aPointModel)
+	public PointDiameterPanel(PolyhedralModel aSmallBody, AbstractEllipsePolygonModel aPointModel)
 	{
 		refPointModel = aPointModel;
 

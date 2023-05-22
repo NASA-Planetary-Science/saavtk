@@ -7,11 +7,11 @@ import javax.swing.JCheckBoxMenuItem;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
-import edu.jhuapl.saavtk.model.structure.CircleModel;
-import edu.jhuapl.saavtk.model.structure.EllipseModel;
+import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.pick.PickTarget;
+import edu.jhuapl.saavtk.structure.EllipseManager;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.structure.gui.action.CenterStructureAction;
@@ -63,8 +63,11 @@ public class StructureGuiUtil
 					"Change Latitude/Longitude...");
 
 		boolean showExportPlateDataInsidePolygon = false;
-		showExportPlateDataInsidePolygon |= aManager instanceof CircleModel;
-		showExportPlateDataInsidePolygon |= aManager instanceof EllipseModel;
+		if (aManager instanceof AbstractEllipsePolygonModel aManager2)
+		{
+			showExportPlateDataInsidePolygon |= aManager2.getMode() == Mode.CIRCLE_MODE;
+			showExportPlateDataInsidePolygon |= aManager2.getMode() == Mode.ELLIPSE_MODE;
+		}
 		showExportPlateDataInsidePolygon |= aManager instanceof PolygonModel;
 		if (showExportPlateDataInsidePolygon == true)
 		{
@@ -102,9 +105,14 @@ public class StructureGuiUtil
 		if (tmpProp instanceof AssocActor == false)
 			return false;
 
+		// EllipseManager's painting is delegated to it's painter
+		Object assocObj = aManager;
+		if (aManager instanceof EllipseManager aEllipseManager)
+			assocObj = aEllipseManager.getVtkMultiPainter();
+
 		// Bail if tmpProp is not associated with the StructureManager
 		Object tmpObj = ((AssocActor) tmpProp).getAssocModel(Object.class);
-		if (tmpObj != aManager)
+		if (tmpObj != assocObj)
 			return false;
 
 		return true;

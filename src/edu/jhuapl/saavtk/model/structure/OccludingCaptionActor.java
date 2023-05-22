@@ -20,7 +20,7 @@ public class OccludingCaptionActor extends vtkCaptionActor2D
 	{
 		super();
         Vector3D polygonCenter=new Vector3D(polygonCenterPoint);
-        normal=PolyDataUtil.getPolyDataNormalAtPoint(polygonCenterPoint, smallBodyModel.getSmallBodyPolyData(), smallBodyModel.getPointLocator());
+        normal=PolyDataUtil.getPolyDataNormalAtPoint(polygonCenterPoint, smallBodyModel.getSmallBodyPolyDataAtPosition(), smallBodyModel.getPointLocator());
     	double[] closestPoint=new double[3];
     	vtkGenericCell cell=new vtkGenericCell();
     	long[] cellId=new long[1];
@@ -36,7 +36,7 @@ public class OccludingCaptionActor extends vtkCaptionActor2D
     	{
     		e.printStackTrace();
     	}
-    	vtkTriangle tri=(vtkTriangle)smallBodyModel.getSmallBodyPolyData().GetCell(cellId[0]);
+    	vtkTriangle tri=(vtkTriangle)smallBodyModel.getSmallBodyPolyDataAtPosition().GetCell(cellId[0]);
     	double area=tri.ComputeArea();
     	double[] faceCenter=new double[3];
     	tri.TriangleCenter(tri.GetPoints().GetPoint(0), tri.GetPoints().GetPoint(1), tri.GetPoints().GetPoint(2), faceCenter);

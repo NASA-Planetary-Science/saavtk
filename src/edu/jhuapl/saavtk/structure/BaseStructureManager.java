@@ -407,19 +407,11 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 		VtkCompositePainter<G1, G2> retPainter = vPainterM.get(aItem);
 		if (retPainter == null)
 		{
-			retPainter = new VtkCompositePainter<>(aSmallBody, this, aItem, createPainter(aItem));
+			retPainter = new VtkCompositePainter<>(aSmallBody, aItem, createPainter(aItem));
 			vPainterM.put(aItem, retPainter);
 		}
 
 		return retPainter;
-	}
-
-	/**
-	 * Helper method that returns the (composite) painter for the specified item.
-	 */
-	protected VtkCompositePainter<G1, G2> getVtkCompPainter(G1 aItem)
-	{
-		return vPainterM.get(aItem);
 	}
 
 	/**

@@ -9,7 +9,7 @@ import java.util.TreeSet;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.color.table.ColorMapAttr;
-import edu.jhuapl.saavtk.config.ViewConfig;
+import edu.jhuapl.saavtk.config.IViewConfig;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
 import edu.jhuapl.saavtk.model.plateColoring.CustomizableColoringDataManager;
 import edu.jhuapl.saavtk.model.plateColoring.FacetColoringData;
@@ -18,6 +18,7 @@ import edu.jhuapl.saavtk.util.LatLon;
 import vtk.vtkDataArray;
 import vtk.vtkPointLocator;
 import vtk.vtkPolyData;
+import vtk.vtkTransform;
 import vtk.vtksbCellLocator;
 
 public abstract class PolyhedralModel extends AbstractModel implements PolyModel
@@ -66,9 +67,9 @@ public abstract class PolyhedralModel extends AbstractModel implements PolyModel
 	static public final String FlatShadingStr = "Flat";
 	static public final String SmoothShadingStr = "Smooth";
 
-	private final ViewConfig config;
+	private final IViewConfig config;
 
-	protected PolyhedralModel(ViewConfig config)
+	protected PolyhedralModel(IViewConfig config)
 	{
 		this.config = config;
 	}
@@ -80,6 +81,8 @@ public abstract class PolyhedralModel extends AbstractModel implements PolyModel
 	public abstract BoundingBox getBoundingBox();
 
 	public abstract vtkPolyData getSmallBodyPolyData();
+	
+	public abstract vtkPolyData getSmallBodyPolyDataAtPosition();
 
 	public abstract boolean isEllipsoid();
 
@@ -160,7 +163,7 @@ public abstract class PolyhedralModel extends AbstractModel implements PolyModel
 
 	public abstract void reloadShapeModel() throws IOException;
 
-	public ViewConfig getConfig()
+	public IViewConfig getConfig()
 	{
 		return config;
 	}
@@ -186,9 +189,11 @@ public abstract class PolyhedralModel extends AbstractModel implements PolyModel
 	}
 
 	public List<vtkPolyData> getSmallBodyPolyDatas()
-	{
+	{ 
 		return null;
 	}
+	
+	public abstract vtkTransform getCurrentTransform();
 
 	public abstract void setPointSize(double value);
 
