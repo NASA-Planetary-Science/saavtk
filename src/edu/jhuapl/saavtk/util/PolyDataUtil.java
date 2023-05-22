@@ -412,9 +412,9 @@ public class PolyDataUtil
 		vtkGenericCell cell = new vtkGenericCell();
 
 		points = tmpPolyData.GetPoints();
-		int numPoints = points.GetNumberOfPoints();
+		int numPoints = (int)points.GetNumberOfPoints();
 
-		int[] numberOfObscuredPointsPerCell = new int[tmpPolyData.GetNumberOfCells()];
+		int[] numberOfObscuredPointsPerCell = new int[(int)tmpPolyData.GetNumberOfCells()];
 		Arrays.fill(numberOfObscuredPointsPerCell, 0);
 
 		double tol = 1e-6;
