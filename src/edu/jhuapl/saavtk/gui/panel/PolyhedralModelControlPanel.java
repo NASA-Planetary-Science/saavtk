@@ -117,7 +117,10 @@ public class PolyhedralModelControlPanel extends JPanel implements ChangeListene
         shapeModelEditPanels = Lists.newArrayList();
         var tmpSmallBodies = modelManager.getModels(ModelNames.SMALL_BODY).stream().map(body -> { return (PolyhedralModel)body; }).toList();
         for (var body : tmpSmallBodies)
-        	shapeModelEditPanels.add(new ShapeModelEditPanel(aRenderer, body, body.getConfig().getModelLabel().replaceAll(" Center", "")));
+        {
+        	String label = body.getConfig().getModelLabel() == null ? body.getConfig().getShapeModelName() : body.getConfig().getModelLabel();
+        	shapeModelEditPanels.add(new ShapeModelEditPanel(aRenderer, body, label.replaceAll(" Center", "")));
+        }
 
         coloringComboBox = new JComboBoxWithItemState<>();
         customColorRedComboBox = new JComboBoxWithItemState<>();
