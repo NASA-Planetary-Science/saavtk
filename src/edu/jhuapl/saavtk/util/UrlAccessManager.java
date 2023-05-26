@@ -222,7 +222,7 @@ public class UrlAccessManager
             pathString = pathString.replaceFirst("^[/\\\\]+", "");
 
             // Deal with the colon in Windows paths.
-            pathString = pathString.replaceFirst("^(\\w):[/\\\\]*", "");
+            pathString = pathString.replaceFirst("^(\\w):[/\\\\]*", "$1/");
 
         }
 
