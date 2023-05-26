@@ -184,6 +184,85 @@
 		<system>Quiver</system>
 		<url>https://quiver.jhuapl.edu/saavtk/issues</url>
 	</issueManagement>
+	<!-- Repositories, so can be built on checkout without settings.xml file in place -->
+    <repositories>
+        <repository>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+          <id>central</id>
+          <name>libs-release</name>
+          <url>https://surfshop:8081/artifactory/libs-release</url>
+        </repository>
+        <repository>
+          <snapshots />
+          <id>snapshots</id>
+          <name>libs-snapshot</name>
+          <url>https://surfshop:8081/artifactory/libs-snapshot</url>
+        </repository>
+        <repository>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+          <id>OSGeo</id>
+          <name>release</name>
+          <url>https://repo.osgeo.org/repository/release/</url>
+        </repository>
+        <repository>
+           <snapshots>
+              <enabled>false</enabled>
+           </snapshots>
+           <id>central2</id>
+           <name>libs-release</name>
+           <url>https://repo1.maven.org/maven2/</url>
+        </repository>
+        <repository>
+           <snapshots />
+           <id>snapshots2</id>
+           <name>libs-snapshot</name>
+           <url>https://repo1.maven.org/maven2/</url>
+        </repository>
+        <repository>
+	   	   <id>jzy3d-snapshots</id>
+	   	   <name>Jzy3d Snapshots</name>
+	       <url>https://maven.jzy3d.org/snapshots/</url>
+        </repository>
+        <repository>
+           <id>jzy3d-releases</id>
+           <name>Jzy3d Releases</name>
+           <url>https://maven.jzy3d.org/releases/</url>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+          <id>central</id>
+          <name>libs-release</name>
+          <url>https://surfshop:8081/artifactory/libs-release</url>
+        </pluginRepository>
+        <pluginRepository>
+          <snapshots />
+          <id>snapshots</id>
+          <name>libs-snapshot</name>
+          <url>https://surfshop:8081/artifactory/libs-snapshot</url>
+        </pluginRepository>
+        <pluginRepository>
+          <snapshots>
+              <enabled>false</enabled>
+          </snapshots>
+          <id>central2</id>
+          <name>plugins-release</name>
+          <url>https://repo1.maven.org/maven2/</url>
+        </pluginRepository>
+        <pluginRepository>
+          <snapshots />
+          <id>snapshots2</id>
+          <name>plugins-snapshot</name>
+          <url>https://repo1.maven.org/maven2/</url>
+        </pluginRepository>
+    </pluginRepositories>
 	<!-- Used to deploy to Surfshop - TO BE UPDATED -->
 	<distributionManagement>
 		<repository>
@@ -196,16 +275,6 @@
 		<sourceDirectory>.</sourceDirectory>
 		<testSourceDirectory>.</testSourceDirectory>
 		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-scm-plugin</artifactId>
-				<version>1.9.5</version>
-				<configuration>
-					<username>steelrj1</username>
-					<password>Tardis15!</password>
-					<connectionType>developerConnection</connectionType>
-				</configuration>
-			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
