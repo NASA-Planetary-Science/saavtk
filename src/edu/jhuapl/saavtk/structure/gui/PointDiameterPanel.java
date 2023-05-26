@@ -3,12 +3,15 @@ package edu.jhuapl.saavtk.structure.gui;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
-import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import edu.jhuapl.saavtk.model.structure.PointModel;
+import com.google.common.primitives.Doubles;
+
+import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
+import edu.jhuapl.saavtk.structure.util.EllipseUtil;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -17,79 +20,69 @@ import net.miginfocom.swing.MigLayout;
  */
 public class PointDiameterPanel extends JPanel implements ChangeListener
 {
-	// Constants
-	private static final long serialVersionUID = 1L;
-
 	// State vars
-	private final PointModel pointModel;
+	private final AbstractEllipsePolygonModel refPointModel;
 
 	// GUI vars
-	private JSpinner spinner;
+	private final JSpinner spinner;
 
 	/**
 	 * Standard Constructor
-	 * 
+	 *
 	 * @param aPointModel The PointModel that will be controlled by this UI
 	 *                    component.
 	 */
-	public PointDiameterPanel(PointModel aPointModel)
+	public PointDiameterPanel(PolyhedralModel aSmallBody, AbstractEllipsePolygonModel aPointModel)
 	{
-		pointModel = aPointModel;
+		refPointModel = aPointModel;
+
+		// Compute point size constraints
+		var defVal = EllipseUtil.getDefRadius(aSmallBody) * 2.0;
+		var minVal = EllipseUtil.getMinRadius(aSmallBody) * 2.0;
+		var maxVal = EllipseUtil.getMaxRadius(aSmallBody) * 2.0;
+		var stepSize = computeStepSize(defVal);
+
+		// Retrieve the current value and clamp to the size constraints
+		var currVal = 2.0 * refPointModel.getDefaultRadius();
+		currVal = Doubles.constrainToRange(currVal, minVal, maxVal);
 
 		setLayout(new MigLayout("", "0[][]", "0[]0"));
 
-		JLabel radiusLabel = new JLabel("Diameter:");
-		add(radiusLabel);
-
-		double diameter = 2.0 * pointModel.getDefaultRadius();
-		double currVal = diameter;
-		double minVal = 0.00001;
-		double maxVal = 100.0 * diameter;
-		double step = computeStepSize(diameter);
-
-		// TODO: Fix this hack to resolve ticket: #2034
-		// TODO: This defect appears as early as 2019Mar19
-		// TODO: This logic should be checked to ensure no new defects are introduced
-		if (minVal > maxVal)
-		{
-			double oldMinVal = minVal;
-			minVal = maxVal;
-			maxVal = oldMinVal;
-		}
-		if (currVal < minVal)
-			minVal = currVal;
-		if (currVal > maxVal)
-			maxVal = currVal;
-
-		SpinnerModel model = new SpinnerNumberModel(currVal, minVal, maxVal, step);
-
+		var model = new SpinnerNumberModel(currVal, minVal, maxVal, stepSize);
 		spinner = new JSpinner(model);
 		spinner.setEditor(new JSpinner.NumberEditor(spinner, "0.00000"));
 		spinner.addChangeListener(this);
+		var radiusLabel = new JLabel("Diameter:");
 		radiusLabel.setLabelFor(spinner);
+		add(radiusLabel);
 		add(spinner);
 
-		JLabel kmLabel = new JLabel("km");
+		var kmLabel = new JLabel("km");
 		add(kmLabel, "wrap 0");
 	}
 
 	@Override
-	public void stateChanged(ChangeEvent e)
+	public void stateChanged(ChangeEvent aEvent)
 	{
-		Number val = (Number) spinner.getValue();
-		pointModel.setDefaultRadius(val.doubleValue() / 2.0);
-		pointModel.changeRadiusOfAllPolygons(val.doubleValue() / 2.0);
+		var tmpRadius = ((Number) spinner.getValue()).doubleValue() / 2.0;
+		refPointModel.setDefaultRadius(tmpRadius);
+
+		var tmpItemL = refPointModel.getAllItems();
+		for (var aItem : tmpItemL)
+			aItem.setRadius(tmpRadius);
+
+		refPointModel.notifyItemsMutated(tmpItemL);
 	}
 
 	/**
 	 * Helper method to determine the step size to use for the spinner.
 	 */
-	private double computeStepSize(double diameter)
+	private double computeStepSize(double aDiameter)
 	{
 		double step = 1.;
-		while (diameter < 1.)
+		while (aDiameter < 1.)
 		{
-			diameter *= 10.;
+			aDiameter *= 10.;
 			step *= .1;
 		}
 		return step;

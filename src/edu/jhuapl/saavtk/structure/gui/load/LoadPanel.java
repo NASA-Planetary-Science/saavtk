@@ -1,18 +1,21 @@
 package edu.jhuapl.saavtk.structure.gui.load;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.SwingUtilities;
+import javax.swing.border.BevelBorder;
 
 import com.google.common.collect.ImmutableList;
 
@@ -28,6 +31,7 @@ import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.structure.io.StructureMiscUtil;
 import glum.gui.GuiUtil;
+import glum.gui.panel.GlassPanel;
 import glum.task.NotifyTask;
 import glum.task.PartialTask;
 import glum.task.Task;
@@ -49,15 +53,13 @@ import net.miginfocom.swing.MigLayout;
  *
  * @author lopeznr1
  */
-public class LoadPanel extends JPanel implements ActionListener, TaskListener
+public class LoadPanel extends GlassPanel implements ActionListener, ItemListener, TaskListener
 {
 	// Constants
-	private static final long serialVersionUID = 0L;
 	private static final String ERR_MSG_NO_STRUCTURES_LOADED = "Failed to load any structures.";
 	private static final String ERR_MSG_NO_STRUCTURES_SELECTED = "Please select at least one of the available structure types.";
 
 	// Ref vars
-	private final JDialog refDialog;
 	private final PolyhedralModel refSmallBody;
 
 	private final StructureManager<PolyLine> refPathStructureManager;
@@ -93,11 +95,10 @@ public class LoadPanel extends JPanel implements ActionListener, TaskListener
 	 * Standard Constructor
 	 */
 	@SuppressWarnings("unchecked")
-	public LoadPanel(JDialog aDialog, ModelManager aModelManager)
+	public LoadPanel(Component aParent, ModelManager aModelManager)
 	{
-		refDialog = aDialog;
-		refDialog.setContentPane(this);
-		refDialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+		super(aParent);
+
 		refSmallBody = aModelManager.getPolyhedralModel();
 
 		refPathStructureManager = (StructureManager<PolyLine>) aModelManager.getModel(ModelNames.LINE_STRUCTURES);
@@ -108,13 +109,17 @@ public class LoadPanel extends JPanel implements ActionListener, TaskListener
 
 		fullL = ImmutableList.of();
 
+		// Form the GUI
 		setLayout(new MigLayout("", "", "[]"));
+		setBorder(new BevelBorder(BevelBorder.RAISED));
 
-		appendWithOrignalRB = GuiUtil.createJRadioButton("Append structures with original ids", this);
-		appendWithOrignalRB.setSelected(true);
-		appendWithUniqueRB = GuiUtil.createJRadioButton("Append structures with unique ids", this);
-		replaceAllRB = GuiUtil.createJRadioButton("Replace all structures", this);
-		replaceCollideRB = GuiUtil.createJRadioButton("Replace structures with colliding ids", this);
+		JLabel titleL = new JLabel("Load Structures", JLabel.CENTER);
+		add(titleL, "growx,span,wrap");
+
+		appendWithOrignalRB = GuiUtil.createJRadioButton(this, "Append structures with original ids");
+		appendWithUniqueRB = GuiUtil.createJRadioButton(this, "Append structures with unique ids");
+		replaceAllRB = GuiUtil.createJRadioButton(this, "Replace all structures");
+		replaceCollideRB = GuiUtil.createJRadioButton(this, "Replace structures with colliding ids");
 		projToBodyCB = GuiUtil.createJCheckBox("Project to body", this);
 		projToBodyCB.setToolTipText("Project structures to the surface of the shape model.");
 
@@ -143,7 +148,7 @@ public class LoadPanel extends JPanel implements ActionListener, TaskListener
 		add(acceptB, "");
 		add(closeB, "gap right 3");
 
-		refDialog.pack();
+		appendWithOrignalRB.setSelected(true);
 	}
 
 	/**
@@ -208,6 +213,12 @@ public class LoadPanel extends JPanel implements ActionListener, TaskListener
 	}
 
 	@Override
+	public void itemStateChanged(ItemEvent aEvent)
+	{
+		updateGui();
+	}
+
+	@Override
 	public void taskUpdate(Task aTask)
 	{
 		String tmpMsg = formProgressMsg(loadTask);
@@ -243,7 +254,7 @@ public class LoadPanel extends JPanel implements ActionListener, TaskListener
 	private void doActionCancel()
 	{
 		if (loadTask.isInit() == true)
-			refDialog.setVisible(false);
+			setVisible(false);
 
 		loadTask.abort();
 	}
@@ -253,7 +264,7 @@ public class LoadPanel extends JPanel implements ActionListener, TaskListener
 	 */
 	private void doActionClose()
 	{
-		refDialog.setVisible(false);
+		setVisible(false);
 
 		loadTask.reset();
 		loadTask.abort();
@@ -359,7 +370,7 @@ public class LoadPanel extends JPanel implements ActionListener, TaskListener
 	{
 		// Project the structures onto the surface of the shape model
 		if (projToBodyCB.isSelected() == true)
-			StructureMiscUtil.projectControlPointsToShapeModel(refSmallBody, aFullL);
+			StructureMiscUtil.projectControlPointsToShapeModel(refSmallBody, refSmallBody.getModelName(), aFullL);
 
 		// Split structures into various type
 		// TODO: Eventually this step should not be needed

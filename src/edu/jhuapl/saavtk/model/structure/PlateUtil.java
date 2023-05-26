@@ -6,7 +6,6 @@ import edu.jhuapl.saavtk.structure.Ellipse;
 import edu.jhuapl.saavtk.structure.Polygon;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
-import edu.jhuapl.saavtk.structure.vtk.VtkEllipsePainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkPolygonPainter;
 import glum.task.Task;
 import vtk.vtkAppendPolyData;
@@ -77,9 +76,7 @@ public class PlateUtil
 			aTask.setProgress(tmpIdx, aItemC.size());
 			tmpIdx++;
 
-			VtkEllipsePainter tmpPainter = aManager.getOrCreateVtkMainPainterFor(aItem);
-			tmpPainter.vtkUpdateState();
-			appendFilter.AddInputData(tmpPainter.getVtkInteriorPolyData());
+			appendFilter.AddInputData(aManager.getVtkInteriorPolyDataFor(aItem));
 		}
 		appendFilter.Update();
 

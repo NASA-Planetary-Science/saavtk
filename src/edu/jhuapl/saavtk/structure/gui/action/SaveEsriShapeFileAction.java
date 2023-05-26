@@ -13,10 +13,8 @@ import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
-import edu.jhuapl.saavtk.model.structure.CircleModel;
-import edu.jhuapl.saavtk.model.structure.EllipseModel;
+import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.model.structure.LineModel;
-import edu.jhuapl.saavtk.model.structure.PointModel;
 import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.esri.FeatureUtil;
@@ -59,16 +57,21 @@ public class SaveEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 	public void actionPerformed(ActionEvent e)
 	{
 		String fileMenuTitle = null;
-		if (refStructureManager instanceof PointModel)
-			fileMenuTitle = "Export points to ESRI shapefile...";
-		else if (refStructureManager instanceof LineModel)
+		if (refStructureManager instanceof LineModel)
 			fileMenuTitle = "Export paths as ESRI lines...";
 		else if (refStructureManager instanceof PolygonModel)
 			fileMenuTitle = "Export polygons to ESRI shapefile...";
-		else if (refStructureManager instanceof EllipseModel)
-			fileMenuTitle = "Export ellipses as ESRI polygons...";
-		else if (refStructureManager instanceof CircleModel)
-			fileMenuTitle = "Export circles as ESRI polygons...";
+		else if (refStructureManager instanceof AbstractEllipsePolygonModel aManager)
+		{
+			if (aManager.getMode() == Mode.POINT_MODE)
+				fileMenuTitle = "Export points to ESRI shapefile...";
+			else if (aManager.getMode() == Mode.ELLIPSE_MODE)
+				fileMenuTitle = "Export ellipses as ESRI polygons...";
+			else if (aManager.getMode() == Mode.CIRCLE_MODE)
+				fileMenuTitle = "Export circles as ESRI polygons...";
+			else
+				throw new Error("Unsupported mode: " + aManager.getMode());
+		}
 		else
 			fileMenuTitle = "Datastore filename";
 		File file = CustomFileChooser.showSaveDialog(refParent, fileMenuTitle, "myDataStore", "shp");

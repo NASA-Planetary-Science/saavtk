@@ -59,7 +59,6 @@ public class CameraQuaternionAction extends AbstractAction implements HierarchyL
 			tmpDialog = new CloseDialog(tmpFrame, tmpPanel);
 			tmpDialog.setTitle(Title);
 			tmpDialog.setLocationRelativeTo(tmpRenderer);
-			tmpDialog.setDefaultCloseOperation(JDialog.HIDE_ON_CLOSE);
 
 			tmpRenderer.addHierarchyListener(this);
 

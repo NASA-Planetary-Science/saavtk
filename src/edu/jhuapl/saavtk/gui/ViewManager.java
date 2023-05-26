@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.BorderFactory;
-import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -21,17 +20,22 @@ import javax.swing.JSeparator;
 import javax.swing.SwingWorker;
 
 import edu.jhuapl.saavtk.camera.gui.CameraQuaternionAction;
+import edu.jhuapl.saavtk.camera.gui.CameraRecorderAction;
 import edu.jhuapl.saavtk.camera.gui.CameraRegularAction;
-import edu.jhuapl.saavtk.gui.menu.EnableLODsAction;
 import edu.jhuapl.saavtk.gui.menu.FavoritesMenu;
 import edu.jhuapl.saavtk.gui.menu.FileMenu;
 import edu.jhuapl.saavtk.gui.menu.HelpMenu;
 import edu.jhuapl.saavtk.gui.menu.PickToleranceAction;
+import edu.jhuapl.saavtk.model.DefaultModelIdentifier;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.scalebar.gui.ScaleBarAction;
+import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.UnauthorizedAccessException;
+import edu.jhuapl.saavtk.view.light.gui.LightingConfigAction;
+import edu.jhuapl.saavtk.view.lod.gui.LodAction;
+import glum.misc.InitListener;
 
 public abstract class ViewManager extends JPanel
 {
@@ -39,7 +43,7 @@ public abstract class ViewManager extends JPanel
     private List<View> builtInViews = new ArrayList<>();
     private List<View> customViews = new ArrayList<>();
     private View currentView;
-    protected final StatusBar statusBar;
+    protected final StatusNotifier refStatusNotifier;
     private final Frame frame;
     private String tempCustomShapeModelPath;
 
@@ -48,6 +52,11 @@ public abstract class ViewManager extends JPanel
     protected HelpMenu helpMenu = null;
     protected RecentlyViewed recentsMenu = null;
     private volatile boolean initialViewSet;
+
+    private List<InitListener> initListenerL;
+
+    /** Global that holds the {@link ViewManager} singleton. */
+    private static ViewManager globViewManager = null;
 
     /**
      * The top level frame is required so that the title can be updated when the
@@ -61,19 +70,42 @@ public abstract class ViewManager extends JPanel
      *            not saved into the custom application folder and will not be
      *            available unless explicitely imported.
      */
-    public ViewManager(StatusBar statusBar, Frame frame, String tempCustomShapeModelPath)
+    public ViewManager(StatusNotifier aStatusNotifier, Frame frame, String tempCustomShapeModelPath)
     {
         super(new CardLayout());
         setBorder(BorderFactory.createEmptyBorder());
         this.currentView = null;
-        this.statusBar = statusBar;
+        this.refStatusNotifier = aStatusNotifier;
         this.frame = frame;
         this.tempCustomShapeModelPath = tempCustomShapeModelPath;
         this.initialViewSet = false;
 
+        initListenerL = new ArrayList<>();
+
+        globViewManager = this;
+
         // Subclass constructors should call this. It should not be called here because
         // it is not final.
         // setupViews();
+    }
+
+    /**
+     * Returns the (global) singleton {@link ViewManager}.
+     * <p>
+     * This method provides access to the (typically) sole {@link ViewManager}.
+     * Returns null if a {@link ViewManager} has not been instantiated.
+     */
+    public static ViewManager getGlobalViewManager()
+    {
+        return globViewManager;
+    }
+
+    /**
+     * Registers a {@link InitListener} with the ViewManager.
+     */
+    public synchronized void addInitListener(InitListener aListener)
+    {
+        initListenerL.add(aListener);
     }
 
     protected void createMenus(JMenuBar menuBar)
@@ -100,18 +132,18 @@ public abstract class ViewManager extends JPanel
         viewMenu.setMnemonic('V');
         viewMenu.add(new JMenuItem(new CameraRegularAction(this)));
         viewMenu.add(new JMenuItem(new CameraQuaternionAction(this)));
+        viewMenu.add(new JMenuItem(new CameraRecorderAction(this)));
+        viewMenu.add(new JMenuItem(new LightingConfigAction(this)));
         viewMenu.add(new JMenuItem(new ScaleBarAction(this)));
 
         viewMenu.addSeparator();
-        JCheckBoxMenuItem enableLodMI = new JCheckBoxMenuItem(new EnableLODsAction());
-        enableLodMI.setSelected(true);
-        viewMenu.add(enableLodMI);
+        viewMenu.add(new JMenuItem(new LodAction(this)));
         viewMenu.add(new PickToleranceAction(this));
 
         menuBar.add(viewMenu);
 
         // Console menu
-        Console.addConsoleMenu(menuBar);
+        TSConsole.addConsoleMenu(menuBar);
 
         // Help menu
         helpMenu = new HelpMenu(this);
@@ -140,7 +172,7 @@ public abstract class ViewManager extends JPanel
         builtInViews.add(view);
     }
 
-    protected void addBuiltInViews(@SuppressWarnings("unused") StatusBar statusBar)
+    protected void addBuiltInViews(@SuppressWarnings("unused") StatusNotifier aStatusNotifier)
     {
 
     }
@@ -148,7 +180,7 @@ public abstract class ViewManager extends JPanel
     protected void setupViews()
     {
         // Add in any built-in views.
-        addBuiltInViews(statusBar);
+        addBuiltInViews(refStatusNotifier);
 
         // Add built-in views to the top-level JPanel.
         for (View view : getBuiltInViews())
@@ -159,7 +191,7 @@ public abstract class ViewManager extends JPanel
         final String tempCustomShapeModel = getTempCustomShapeModelPath();
         if (tempCustomShapeModel != null)
         {
-            initialView = addCustomView(statusBar, tempCustomShapeModel);
+            initialView = addCustomView(refStatusNotifier, tempCustomShapeModel);
             if (initialView == null)
             {
                 // Not sure this is even possible, but just in case.
@@ -168,7 +200,7 @@ public abstract class ViewManager extends JPanel
         }
 
         // Load in any other custom views found in the configuration directory
-        loadCustomViews(statusBar);
+        loadCustomViews(refStatusNotifier);
 
         // Add custom views to the top-level JPanel
         for (View view : getCustomViews())
@@ -178,15 +210,38 @@ public abstract class ViewManager extends JPanel
         // some other body to load initially.
         if (tempCustomShapeModel == null)
         {
-            // First try the default model, which may be built-in or custom.
-            final String defaultModelName = getDefaultModelName();
-            initialView = getBuiltInView(defaultModelName);
-            if (initialView == null)
-            {
-                initialView = getCustomView(defaultModelName);
+            // Set the default model. Do not just call
+            // DefaultModelIdentifier.getCDefaultModel() -- that would probably work but it
+            // cannot guarantee the model is actually available. First see if there is a
+            // user-selected default model.
+            String defaultModelName = DefaultModelIdentifier.getUserDefaultModel();
+            if (defaultModelName != null)
+            {                
+                initialView = getBuiltInView(defaultModelName);
+                if (initialView == null)
+                {
+                    initialView = getCustomView(defaultModelName);
+                }
+                
+                if (initialView == null)
+                {
+                    System.err.println("\nUser-selected default model " + defaultModelName + " is not available.");
+                    DefaultModelIdentifier.factoryReset();
+                }
             }
 
-            // Default model is not available. Try to find the first accessible model.
+            if (initialView == null)
+            {
+                // Failed to load a user-selected default. Next try the client-defined default.
+                defaultModelName = DefaultModelIdentifier.getClientDefaultModel();
+                initialView = getBuiltInView(defaultModelName);
+                if (initialView == null)
+                {
+                    initialView = getCustomView(defaultModelName);
+                }
+            }
+
+            // No default model is not available. Try to find the first accessible model.
             if (initialView == null)
             {
                 if (defaultModelName == null)
@@ -218,16 +273,17 @@ public abstract class ViewManager extends JPanel
                 String modelName = provideBasicModel();
                 if (modelName != null)
                 {
-                    initialView = createCustomView(statusBar, modelName, false);
+                    initialView = createCustomView(refStatusNotifier, modelName, false);
                     modelName = initialView.getUniqueName();
 
                     addCustomView(initialView);
                     add(initialView, modelName);
-                    setDefaultModelName(modelName);
 
                     System.err.println("Starting with one basic/demo model. No other models are currently available.");
                     System.err.println("Restart with a stable internet connection to see all available models");
-                }
+
+                    DefaultModelIdentifier.setDefaultModel(modelName);
+}
             }
 
             if (initialView == null)
@@ -237,52 +293,6 @@ public abstract class ViewManager extends JPanel
         }
 
         setCurrentView(initialView);
-    }
-
-    /**
-     * Return the name of the default model, if any is defined. The base
-     * implementation just returns null, meaning there is no built-in factory
-     * default model.
-     *
-     * @return the default model name
-     */
-    public String getDefaultModelName()
-    {
-        return null;
-    }
-
-    /**
-     * Set the default model to the supplied name. The base implementation is a
-     * no-op. Override this to actually set the model name, which should be returned
-     * by future calls to {@link #getDefaultModelName()}.
-     *
-     * @param modelName the model name to use for the default model
-     */
-    @SuppressWarnings("unused")
-    public void setDefaultModelName(String modelName)
-    {
-
-    }
-
-    /**
-     * Make the current default model name persistent. The base implementation is a
-     * no-op. Override this to save the current default model returned by
-     * {@link #getDefaultModelName()}.
-     */
-    public void saveDefaultModelName()
-    {
-
-    }
-
-    /**
-     * Revert the current default model name to the factory default value. The base
-     * implementation is a no-op. Implementations may override this to provide any
-     * desired behavior, such as returning a value loaded from a persistent state or
-     * set to a hardwired default value.
-     */
-    public void resetDefaultModelName()
-    {
-
     }
 
     /**
@@ -341,7 +351,7 @@ public abstract class ViewManager extends JPanel
         throw new IllegalArgumentException("Could not find a model/view with name " + uniqueName);
     }
 
-    protected void loadCustomViews(StatusBar statusBar)
+    protected void loadCustomViews(StatusNotifier aStatusNotifier)
     {
         File modelsDir = new File(Configuration.getImportedShapeModelsDir());
         File[] dirs = modelsDir.listFiles();
@@ -360,7 +370,7 @@ public abstract class ViewManager extends JPanel
                     }
                     else
                     {
-                        View view = createCustomView(statusBar, dir.getName(), false);
+                        View view = createCustomView(aStatusNotifier, dir.getName(), false);
                         if (view != null)
                             addCustomView(view);
                     }
@@ -369,9 +379,9 @@ public abstract class ViewManager extends JPanel
         }
     }
 
-    protected View addCustomView(StatusBar statusBar, String shapeModelPath)
+    protected View addCustomView(StatusNotifier aStatusNotifier, String shapeModelPath)
     {
-        View customView = createCustomView(statusBar, shapeModelPath, true);
+        View customView = createCustomView(aStatusNotifier, shapeModelPath, true);
         addCustomView(customView);
         return customView;
     }
@@ -411,7 +421,7 @@ public abstract class ViewManager extends JPanel
             return;
         }
 
-        SwingWorker<Boolean, Void> initializer = new SwingWorker<Boolean, Void>() {
+        SwingWorker<Boolean, Void> initializer = new SwingWorker<>() {
 
             @Override
             protected Boolean doInBackground() throws Exception
@@ -421,6 +431,8 @@ public abstract class ViewManager extends JPanel
                     try
                     {
                         view.initialize();
+
+                        notifyInitListeners(view);
                     }
                     catch (UnauthorizedAccessException e)
                     {
@@ -503,7 +515,7 @@ public abstract class ViewManager extends JPanel
 
     public View addCustomView(String name)
     {
-        View view = createCustomView(statusBar, name, false);
+        View view = createCustomView(refStatusNotifier, name, false);
         addCustomView(view);
         add(view, view.getUniqueName());
         return view;
@@ -531,7 +543,7 @@ public abstract class ViewManager extends JPanel
         return null;
     }
 
-    protected abstract View createCustomView(StatusBar statusBar, String name, boolean temporary);
+    protected abstract View createCustomView(StatusNotifier aStatusNotifier, String name, boolean temporary);
 
     public abstract View createCustomView(String name, boolean temporary, File metadata);
 
@@ -583,6 +595,21 @@ public abstract class ViewManager extends JPanel
         allViews.addAll(builtInViews);
         allViews.addAll(customViews);
         return allViews;
+    }
+
+    /**
+     * Helper method that sends notification to our {@link InitListener}s.
+     */
+    private void notifyInitListeners(View aView)
+    {
+        List<InitListener> tmpItemL;
+        synchronized (this)
+        {
+      	  tmpItemL = new ArrayList<>(initListenerL);
+        }
+
+        for (InitListener aListener : tmpItemL)
+            aListener.handleInitAction(aView);
     }
 
     private void updateRecents()

@@ -16,13 +16,14 @@ import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.camera.Camera;
 import edu.jhuapl.saavtk.camera.CameraUtil;
-import edu.jhuapl.saavtk.camera.View;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.gui.render.VtkPropProvider;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.Properties;
+import edu.jhuapl.saavtk.view.View;
+import edu.jhuapl.saavtk.view.lod.LodMode;
 import vtk.vtkActor;
 import vtk.vtkCellPicker;
 import vtk.vtkProp;
@@ -32,12 +33,12 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 /**
  * Picker that provides the core functionality for the default {@link Picker}.
- * <P>
+ * <p>
  * This picker provide the following functionality:
- * <UL>
- * <LI>Listener mechanism to provide notification of when objects are picked
- * <LI>Keyboard support for various view transformations
- * </UL>
+ * <ul>
+ * <li>Listener mechanism to provide notification of when objects are picked
+ * <li>Keyboard support for various view transformations
+ * </ul>
  * TODO: Eventually this Picker should not be a ProperyChangeListener but rather
  * relevant objects should be responsible for registering their
  * {@link vtkProp}s.
@@ -50,7 +51,6 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 	private final View refView;
 	private final vtkJoglPanelComponent refRenWin;
 	private final PolyhedralModel refSmallBody;
-	private final ModelManager refModelManager;
 
 	// State vars
 	private ImmutableList<PickListener> pickListenerL;
@@ -63,9 +63,33 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 	private final vtkCellPicker vNonSmallBodyCP; // includes all props EXCEPT the small body
 	private final vtkCellPicker vSmallBodyCP; // only includes small body prop
 
-	/**
-	 * Standard Constructor
-	 */
+	@Deprecated
+	private final ModelManager refModelManager;
+
+	/** Standard Constructor */
+	public BaseDefaultPicker(Renderer aView, PolyhedralModel aSmallBody)
+	{
+		refView = aView;
+		refRenWin = aView.getRenderWindowPanel();
+		refSmallBody = aSmallBody;
+
+		pickListenerL = ImmutableList.of();
+		propProviderL = ImmutableList.of();
+		lastClickedTarget = null;
+		suppressModeActiveSec = false;
+		isDragged = false;
+
+		// See comment in the propertyChange function below as to why
+		// we use a custom pick list for these pickers.
+		vNonSmallBodyCP = PickUtilEx.formEmptyPicker();
+
+		vSmallBodyCP = PickUtilEx.formSmallBodyPicker(refSmallBody);
+
+		refModelManager = null;
+	}
+
+	/** Legacy Constructor */
+	@Deprecated
 	public BaseDefaultPicker(Renderer aView, ModelManager aModelManager)
 	{
 		refView = aView;
@@ -138,8 +162,17 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 	}
 
 	/**
+	 * Sends out notification that a {@link VtkPropProvider} has changed.
+	 */
+	public synchronized void notifyPropProviderChanged()
+	{
+		// Time to rebuild the vtkCellPickers
+		buildCellPickers();
+	}
+
+	/**
 	 * Configures the picker to disable secondary actions.
-	 * <P>
+	 * <p>
 	 * {@link PickEvent} with a mode of type {@link PickMode#ActiveSec} will not be
 	 * sent.
 	 */
@@ -247,9 +280,8 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		if (refRenWin.getRenderWindow().GetNeverRendered() > 0)
 			return;
 
-		// Shut off LODs (temporarily) to ensure a pick is done on the best geometry
-		boolean prevLodFlag = refView.getLodFlag();
-		refView.setLodFlag(false);
+		// Switch LOD temporarily to MaxQuality so the pick is done on the best geometry
+		refView.setLodModeTemporal(LodMode.MaxQuality);
 
 		// Synthesize the primary and surface target
 		PickTarget primaryTarg = getPickTarget(vNonSmallBodyCP, aEvent.getX(), aEvent.getY());
@@ -261,8 +293,8 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		if (isRegClick == true && surfaceTarg != PickTarget.Invalid)
 			lastClickedTarget = surfaceTarg;
 
-		// Restore LOD state
-		refView.setLodFlag(prevLodFlag);
+		// Clear out the temporal LOD state
+		refView.setLodModeTemporal(null);
 
 		// Send out notification (if appropriate)
 		PickMode tmpMode = PickMode.ActiveSec;
@@ -299,16 +331,15 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		if (refRenWin.getRenderWindow().GetNeverRendered() > 0)
 			return;
 
-		// Shut off LODs (temporarily) to ensure a pick is done on the best geometry
-		boolean prevLodFlag = refView.getLodFlag();
-		refView.setLodFlag(false);
+		// Switch LOD temporarily to MaxQuality so the pick is done on the best geometry
+		refView.setLodModeTemporal(LodMode.MaxQuality);
 
 		// Synthesize the primary and surface target
 		PickTarget primaryTarg = getPickTarget(vNonSmallBodyCP, aEvent.getX(), aEvent.getY());
 		PickTarget surfaceTarg = getPickTarget(vSmallBodyCP, aEvent.getX(), aEvent.getY());
 
-		// Restore LOD state
-		refView.setLodFlag(prevLodFlag);
+		// Clear out the temporal LOD state
+		refView.setLodModeTemporal(null);
 
 		// Mark as primary action as long as the mouse was not dragged
 		PickMode tmpMode = PickMode.ActivePri;
@@ -352,9 +383,12 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		vtkPropCollection mousePressNonSmallBodyCellPickList = vNonSmallBodyCP.GetPickList();
 		mousePressNonSmallBodyCellPickList.RemoveAllItems();
 
-		List<vtkProp> actorL = refModelManager.getPropsExceptSmallBody();
-		for (vtkProp aProp : actorL)
-			vNonSmallBodyCP.AddPickList(aProp);
+		if (refModelManager != null)
+		{
+			List<vtkProp> actorL = refModelManager.getPropsExceptSmallBody();
+			for (vtkProp aProp : actorL)
+				vNonSmallBodyCP.AddPickList(aProp);
+		}
 
 		for (VtkPropProvider aPropProvider : propProviderL)
 		{
@@ -368,7 +402,7 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 	 * Helper method that returns the {@link PickTarget} that was picked (via the
 	 * provided {@link vtkCellPicker}) corresponding to the specified 2D screen
 	 * position.
-	 * <P>
+	 * <p>
 	 * Returns {@link PickTarget#Invalid}. if the screen position does not represent
 	 * a successful pick action on aCellPicker.
 	 */

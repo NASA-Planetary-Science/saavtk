@@ -7,6 +7,7 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.util.LatLon;
+import edu.jhuapl.saavtk.vtk.font.FontAttr;
 
 /**
  * Mutable {@link Structure} that defines a polyline.
@@ -212,6 +213,12 @@ public class PolyLine implements Structure
 	public void setVisible(boolean aBool)
 	{
 		visible = aBool;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return name;
 	}
 
 }

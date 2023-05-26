@@ -15,33 +15,44 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import edu.jhuapl.saavtk.util.file.IndexableTuple;
+import edu.jhuapl.saavtk.vtk.VtkDrawUtil;
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
 import nom.tam.fits.Header;
 import nom.tam.fits.HeaderCard;
 import vtk.vtkAbstractPointLocator;
+import vtk.vtkActor;
 import vtk.vtkAlgorithmOutput;
 import vtk.vtkAppendPolyData;
+import vtk.vtkCamera;
 import vtk.vtkCell;
 import vtk.vtkCellArray;
 import vtk.vtkCleanPolyData;
 import vtk.vtkClipPolyData;
-import vtk.vtkCutter;
 import vtk.vtkDataArray;
+import vtk.vtkDataSetMapper;
 import vtk.vtkDecimatePro;
-import vtk.vtkExtractPolyDataGeometry;
+import vtk.vtkExtractSelectedFrustum;
 import vtk.vtkFeatureEdges;
 import vtk.vtkFloatArray;
+import vtk.vtkFrustumSource;
 import vtk.vtkGenericCell;
+import vtk.vtkGeometryFilter;
 import vtk.vtkIdList;
 import vtk.vtkIdTypeArray;
+import vtk.vtkNamedColors;
 import vtk.vtkOBJReader;
 import vtk.vtkObject;
 import vtk.vtkPLYReader;
 import vtk.vtkPlane;
+import vtk.vtkPlaneSource;
+import vtk.vtkPlanes;
 import vtk.vtkPointData;
 import vtk.vtkPointLocator;
 import vtk.vtkPoints;
@@ -50,12 +61,12 @@ import vtk.vtkPolyDataConnectivityFilter;
 import vtk.vtkPolyDataNormals;
 import vtk.vtkPolyDataReader;
 import vtk.vtkPolyDataWriter;
+import vtk.vtkProperty;
 import vtk.vtkRegularPolygonSource;
 import vtk.vtkSTLReader;
 import vtk.vtkSTLWriter;
-import vtk.vtkTransform;
-import vtk.vtkTransformPolyDataFilter;
 import vtk.vtkTriangle;
+import vtk.vtkUnstructuredGrid;
 import vtk.vtksbCellLocator;
 
 /**
@@ -73,7 +84,7 @@ public class PolyDataUtil
 
 	/**
 	 * Clear a polydata by deep copying a freshly created empty polydata
-	 * 
+	 *
 	 * @param polydata
 	 */
 	public static void clearPolyData(vtkPolyData polydata)
@@ -112,9 +123,368 @@ public class PolyDataUtil
 
 		return polyData;
 	}
+	
+	public static vtkPlanes computeFrustumPlanes(/*vtkPolyData polyData,*/ double[] origin, double[] ul, double[] ur, double[] lr, double[] ll)
+	{
+//		Logger.getAnonymousLogger().log(Level.INFO, "!!!!!!!!!!!!!!1Computing Frustum Planes");
 
+//		double[] top = new double[3];
+//		double[] right = new double[3];
+//		double[] bottom = new double[3];
+//		double[] left = new double[3];
+//
+//		MathUtil.vcrss(ur, ul, top);
+//		MathUtil.vcrss(lr, ur, right);
+//		MathUtil.vcrss(ll, lr, bottom);
+//		MathUtil.vcrss(ul, ll, left);
+//		double dx = MathUtil.vnorm(origin);
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: origin " + new Vector3D(origin));
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: UL2 " + new Vector3D(ul));
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: dx is " + dx);
+//		double[] UL2 = { origin[0] + ul[0] * dx, origin[1] + ul[1] * dx, origin[2] + ul[2] * dx };
+//		System.out.println("PolyDataUtil: computeFrustumPlanes: UL2 " + UL2[0] + "," + UL2[1] + "," + UL2[2]);
+//		double[] UR2 = { origin[0] + ur[0] * dx, origin[1] + ur[1] * dx, origin[2] + ur[2] * dx };
+//		System.out.println("PolyDataUtil: computeFrustumPlanes: UR2 " + UR2[0] + "," + UR2[1] + "," + UR2[2]);
+//		double[] LL2 = { origin[0] + ll[0] * dx, origin[1] + ll[1] * dx, origin[2] + ll[2] * dx };
+//		System.out.println("PolyDataUtil: computeFrustumPlanes: LL2 " + LL2[0] + "," + LL2[1] + "," + LL2[2]);
+//		double[] LR2 = { origin[0] + lr[0] * dx, origin[1] + lr[1] * dx, origin[2] + lr[2] * dx };
+//		System.out.println("PolyDataUtil: computeFrustumPlanes: LR2 " + LR2[0] + "," + LR2[1] + "," + LR2[2]);
+//		
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: top " + new Vector3D(top));
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: right " + new Vector3D(right));
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: bottom " + new Vector3D(bottom));
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: left " + new Vector3D(left));
+//		
+////		vtkPlane plane1 = new vtkPlane();
+////		plane1.SetOrigin(UL2);
+////		plane1.SetNormal(top);
+////		vtkPlane plane2 = new vtkPlane();
+////		plane2.SetOrigin(UR2);
+////		plane2.SetNormal(right);
+////		vtkPlane plane3 = new vtkPlane();
+////		plane3.SetOrigin(LR2);
+////		plane3.SetNormal(bottom);
+////		vtkPlane plane4 = new vtkPlane();
+////		plane4.SetOrigin(LL2);
+////		plane4.SetNormal(left);
+////		
+////		vtkPlane plane5 = new vtkPlane();
+////		plane5.SetOrigin(origin[0], origin[1], origin[2]);
+////		plane5.SetNormal(-origin[0], -origin[1], -origin[2]);
+////		
+////		vtkPlane plane6 = new vtkPlane();
+////		plane6.SetOrigin(0, 0, 0);
+////		plane6.SetNormal(origin[0], origin[1], origin[2]);
+//				
+//		vtkPoints planePoints = new vtkPoints();
+//		planePoints.SetNumberOfPoints(1);
+//		planePoints.InsertPoint(0, UL2);
+//		planePoints.InsertPoint(1, UR2);
+//		planePoints.InsertPoint(2, LR2);
+//		planePoints.InsertPoint(3, LL2);
+//		planePoints.InsertPoint(4, new double[] {origin[0], origin[1], origin[2]});
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: origin " + origin[0] + "," + origin[1] + "," + origin[2]);
+////
+//		planePoints.InsertPoint(5, new double[] {0, 0, 0});
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: origin 0,0,0");
+//
+//		
+//		vtkDoubleArray planeNormals = new vtkDoubleArray();
+//		planeNormals.SetNumberOfComponents(3);
+//		planeNormals.SetNumberOfTuples(1);
+//		planeNormals.InsertTuple3(0, top[0], top[1], top[2]);
+//		planeNormals.InsertTuple3(1, right[0], right[1], right[2]);
+//		planeNormals.InsertTuple3(2, bottom[0], bottom[1], bottom[2]);
+//		planeNormals.InsertTuple3(3, left[0], left[1], left[2]);
+//		planeNormals.InsertTuple3(4, origin[0], origin[1], origin[2]);
+//		planeNormals.InsertTuple3(5, -origin[0], -origin[1], -origin[2]);
+//		System.out.println("PolyDataUtil: computeFrustumPlanes: normal " + top[0] + "," + top[1] + "," + top[2]);
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: normal " + right[0] + "," + right[1] + "," + right[2]);
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: normal " + bottom[0] + "," + bottom[1] + "," + bottom[2]);
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: normal " + left[0] + "," + left[1] + "," + left[2]);
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: normal " + origin[0] + "," + origin[1] + "," + origin[2]);
+////		System.out.println("PolyDataUtil: computeFrustumPlanes: normal " + -origin[0] + "," + -origin[1] + "," + -origin[2]);
+//
+//		
+//		vtkPlanes planes = new vtkPlanes();
+//		planes.SetPoints(planePoints);
+//		planes.SetNormals(planeNormals);
+//		System.out.println("PolyDataUtil: computeFrustumPlanes: number of normals tuples " + planeNormals.GetNumberOfTuples());
+//		
+//		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: planes " + planes.GetNumberOfPlanes());
+//		return planes;
+		
+		edu.jhuapl.saavtk2.geom.euclidean.Frustum frustum = new edu.jhuapl.saavtk2.geom.euclidean.Frustum(origin, ul, ur, lr, ll);
+		
+		vtkCamera Camera = new vtkCamera();
+//	    System.out.println("PolyDataUtil: renderFrustumPlanes: origin " + new Vector3D(origin));
+	    Camera.SetPosition(origin[0], origin[1], origin[2]);
+	    
+//	    Camera.SetFocalPoint(0, 0, 0);
+//	    System.out.println("PolyDataUtil: computeFrustumPlanes: frustum boresight " + frustum.getBoresightUnit());
+	    Vector3D focalPoint = new Vector3D(origin).add(frustum.getBoresightUnit().scalarMultiply(10000));
+//	    System.out.println("PolyDataUtil: computeFrustumPlanes: focal point " + focalPoint);
+	    Camera.SetFocalPoint(focalPoint.toArray());
+	    Camera.SetViewAngle(frustum.getFovXDeg());
+	    Camera.SetViewUp(frustum.getR().toArray());
+	    Camera.SetClippingRange(0.1,new Vector3D(origin).getNorm()*2);
+	    double PlanesArray[] = new double[24];
+
+	    Camera.GetFrustumPlanes(1.0, PlanesArray);
+
+	    vtkPlanes Planes = new vtkPlanes();
+	    Planes.SetFrustumPlanes(PlanesArray);
+	    return Planes;
+	}
+	
+	public static vtkActor renderFrustumPlanes(/*vtkPolyData polyData,*/ double[] origin, double[] ul, double[] ur, double[] lr, double[] ll)
+	{		
+	    vtkNamedColors Color = new vtkNamedColors();
+	    //For Actor Color
+	    double ActorColor[] = new double[4];
+	    //Renderer Background Color
+	    double BgColor[] = new double[4];
+	    //BackFace color
+	    double BackColor[] = new double[4];
+
+	    //Change Color Name to Use your own Color for Change Actor Color
+	    Color.GetColor("GreenYellow",ActorColor);
+	    //Change Color Name to Use your own Color for Renderer Background
+	    Color.GetColor("RoyalBlue",BgColor);
+	    //Change Color Name to Use your own Color for BackFace Color
+	    Color.GetColor("PeachPuff",BackColor);
+	    
+//	    vtkCamera Camera = new vtkCamera();
+//	    System.out.println("PolyDataUtil: renderFrustumPlanes: origin " + new Vector3D(origin));
+//	    Camera.SetPosition(origin[0], origin[1], origin[2]);
+//	    Camera.SetFocalPoint(0, 0, 0);
+//	    Camera.SetViewAngle(2);
+//	    Camera.SetClippingRange(0.1,new Vector3D(origin).getNorm());
+//	    double PlanesArray[] = new double[24];
+//
+//	    Camera.GetFrustumPlanes(1.0, PlanesArray);
+//
+//	    vtkPlanes Planes = new vtkPlanes();
+//	    Planes.SetFrustumPlanes(PlanesArray);
+	    
+	    vtkPlanes Planes = computeFrustumPlanes(/*polyData,*/ origin, ul, ur, lr, ll);
+
+	    //To create a frustum defined by a set of planes.
+	    vtkFrustumSource FrustumSource = new vtkFrustumSource();
+	    FrustumSource.ShowLinesOff();
+	    FrustumSource.SetPlanes(Planes);
+
+	    //Create a Mapper and Actor
+	    vtkDataSetMapper Mapper = new vtkDataSetMapper();
+	    Mapper.SetInputConnection(FrustumSource.GetOutputPort());
+
+	    vtkProperty Back = new vtkProperty();
+	    Back.SetColor(BackColor);
+
+	    vtkActor Actor = new vtkActor();
+	    Actor.SetMapper(Mapper);
+	    Actor.GetProperty().EdgeVisibilityOn();
+	    Actor.GetProperty().SetColor(ActorColor);
+	    Actor.SetBackfaceProperty(Back);
+
+		return Actor;
+	}
+	
+	public static vtkActor renderFrustumPlane(double[] origin, double[] ul, double[] ur, double[] lr, double[] ll, int i)
+	{		
+		vtkPlanes planes = computeFrustumPlanes(origin, ul, ur, lr, ll);
+		vtkPlane plane = planes.GetPlane(i);
+//		System.out.println("PolyDataUtil: renderFrustumPlane: plane " + plane);
+	    vtkNamedColors Color = new vtkNamedColors();
+	    //For Actor Color
+	    double ActorColor[] = new double[4];
+	    //Renderer Background Color
+	    double BgColor[] = new double[4];
+	    //BackFace color
+	    double BackColor[] = new double[4];
+
+	    //Change Color Name to Use your own Color for Change Actor Color
+	    Color.GetColor("GreenYellow",ActorColor);
+	    //Change Color Name to Use your own Color for Renderer Background
+	    Color.GetColor("RoyalBlue",BgColor);
+	    //Change Color Name to Use your own Color for BackFace Color
+	    Color.GetColor("PeachPuff",BackColor);
+	    
+	    vtkPlaneSource planeSource = new vtkPlaneSource();
+	    planeSource.SetOrigin(plane.GetOrigin());
+	    planeSource.SetNormal(plane.GetNormal());
+	    planeSource.Update();
+	    
+	    //Create a Mapper and Actor
+	    vtkDataSetMapper Mapper = new vtkDataSetMapper();
+	    Mapper.SetInputConnection(planeSource.GetOutputPort());
+
+	    vtkProperty Back = new vtkProperty();
+	    Back.SetColor(BackColor);
+
+	    vtkActor Actor = new vtkActor();
+	    Actor.SetMapper(Mapper);
+	    Actor.GetProperty().EdgeVisibilityOn();
+	    Actor.GetProperty().SetColor(ActorColor);
+	    Actor.SetBackfaceProperty(Back);
+
+		return Actor;
+	}
+	
+	public static vtkPolyData computeVTKFrustumIntersection(vtkPolyData polyData, vtksbCellLocator locator, vtkAbstractPointLocator pointLocator, double[] origin, double[] ul, double[] ur, double[] lr, double[] ll)
+	{
+//		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: computing vtk frustum intersection");
+//		Logger.getAnonymousLogger().log(Level.INFO, "!!!!!!!!!!!!!!1Computing VTK Frustum Intersection");
+
+		vtkPlanes planes = computeFrustumPlanes(/*polyData,*/ origin, ul, ur, lr, ll);
+
+		vtkExtractSelectedFrustum extractor = new vtkExtractSelectedFrustum();
+		extractor.SetFrustum(planes);
+//		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: planes " + extractor.GetFrustum());
+		extractor.PreserveTopologyOff();
+		extractor.SetInputData(polyData);
+		extractor.InsideOutOff();
+		extractor.SetFieldType(0);
+//		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: extractor field type " + extractor.GetFieldType());
+		extractor.Update();
+//		Logger.getAnonymousLogger().log(Level.INFO, "extractor update");
+//		vtkDataObject output = extractor.GetOutput();
+		
+		vtkUnstructuredGrid selectedGeometry = (vtkUnstructuredGrid) extractor.GetOutput();
+		vtkGeometryFilter geometryFilter = new vtkGeometryFilter();
+		geometryFilter.SetInputData(selectedGeometry);
+		geometryFilter.Update();
+//		Logger.getAnonymousLogger().log(Level.INFO, "Geofilter update");
+
+		
+		vtkPolyDataNormals normalsFilter = new vtkPolyDataNormals();
+		normalsFilter.SetInputConnection(geometryFilter.GetOutputPort());
+		normalsFilter.SetComputeCellNormals(1);
+		normalsFilter.SetComputePointNormals(0);
+		normalsFilter.SplittingOff();
+		normalsFilter.Update();
+		vtkPolyData normalsFilterOutput = normalsFilter.GetOutput();
+//		Logger.getAnonymousLogger().log(Level.INFO, "Got normals filter");
+		vtkPolyData tmpPolyData = new vtkPolyData();
+		tmpPolyData.DeepCopy(normalsFilterOutput);
+//		 Now remove from this clipped poly data all the cells that are facing away from the viewer.
+		vtkDataArray cellNormals = tmpPolyData.GetCellData().GetNormals();
+		vtkPoints points = tmpPolyData.GetPoints();
+
+		int numCells = cellNormals.GetNumberOfTuples();
+
+		vtkIdList idList = new vtkIdList();
+		idList.SetNumberOfIds(0);
+		double[] viewDir = new double[3];
+//		Logger.getAnonymousLogger().log(Level.INFO, "For loop starting");
+		for (int i = 0; i < numCells; ++i)
+		{
+			double[] n = cellNormals.GetTuple3(i);
+			MathUtil.vhat(n, n);
+
+			// Compute the direction to the viewer from one of the point of the cell.
+			tmpPolyData.GetCellPoints(i, idList);
+//			double[] pt = points.GetPoint(idList.GetId(0));
+//			MathUtil.vsub(origin, pt, viewDir);
+//			viewDir[0] = origin[0] - pt[0];
+//			viewDir[1] = origin[1] - pt[1];
+//			viewDir[2] = origin[2] - pt[2];
+//			MathUtil.vhat(viewDir, viewDir);
+
+			double dot = MathUtil.vdot(n, origin);
+			if (dot <= 0.0)
+				tmpPolyData.DeleteCell(i);
+		}
+//		Logger.getAnonymousLogger().log(Level.INFO, "For loop done");
+		tmpPolyData.RemoveDeletedCells();
+		tmpPolyData.Modified();
+		tmpPolyData.GetCellData().SetNormals(null);
+//		Logger.getAnonymousLogger().log(Level.INFO, "Cleaning after normals");
+		vtkCleanPolyData cleanPoly = new vtkCleanPolyData();
+		cleanPoly.SetInputData(tmpPolyData);
+		cleanPoly.Update();
+		vtkPolyData cleanPolyOutput = cleanPoly.GetOutput();
+
+		//polyData = new vtkPolyData();
+		tmpPolyData.DeepCopy(cleanPolyOutput);
+//		Logger.getAnonymousLogger().log(Level.INFO, "Cleaning done");
+		
+		vtkGenericCell cell = new vtkGenericCell();
+
+		points = tmpPolyData.GetPoints();
+		int numPoints = points.GetNumberOfPoints();
+
+		int[] numberOfObscuredPointsPerCell = new int[tmpPolyData.GetNumberOfCells()];
+		Arrays.fill(numberOfObscuredPointsPerCell, 0);
+
+		double tol = 1e-6;
+		double[] t = new double[1];
+		double[] x = new double[3];
+		double[] pcoords = new double[3];
+		int[] subId = new int[1];
+		int[] cell_id = new int[1];
+		
+		final List<Future<Void>> resultList;
+		List<Callable<Void>> taskList = new ArrayList<>();
+
+		for (int i = 0; i < numPoints; ++i)
+		{
+			Callable<Void> task = new ObscuredTask(polyData, points, locator, pointLocator, origin, numberOfObscuredPointsPerCell, i);
+			taskList.add(task);
+		}
+//		Logger.getAnonymousLogger().log(Level.INFO, "Waiting for tasks " + taskList.size());
+//		System.out.println("PolyDataUtil: computeFrustumIntersection: waiting for tasks " + taskList.size());
+		resultList = ThreadService.submitAll(taskList);
+//		System.out.println("PolyDataUtil: computeFrustumIntersection: got results");
+//		Logger.getAnonymousLogger().log(Level.INFO, "Got results");
+//		Logger.getAnonymousLogger().log(Level.INFO, "After convex shape "  + tmpPolyData.GetNumberOfCells());
+		tmpPolyData.RemoveDeletedCells();
+
+		//cleanPoly = new vtkCleanPolyData();
+		cleanPoly.SetInputData(tmpPolyData);
+		cleanPoly.Update();
+		cleanPolyOutput = cleanPoly.GetOutput();
+
+		//polyData = new vtkPolyData();
+		tmpPolyData.DeepCopy(cleanPolyOutput);
+		return tmpPolyData;
+		
+		
+//		vtkPolyData result = new vtkPolyData();
+//		result.DeepCopy(normalsFilter.GetOutput());
+//		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: result num cells " + result.GetNumberOfCells());
+//		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: result num points " + result.GetNumberOfPoints());
+//		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: result num polys " + result.GetNumberOfPolys());
+//		Logger.getAnonymousLogger().log(Level.INFO, "Returning poly");
+//		vtkPolyData result = new vtkPolyData();
+//		vtkPolyDataWriter imageWriter = new vtkPolyDataWriter();
+//	        imageWriter.SetInputData(geometryFilter.GetOutput());
+//	        imageWriter.SetFileName("/Users/steelrj1/Desktop/speedtest.vtk");
+//	        imageWriter.SetFileTypeToBinary();
+//	        imageWriter.Write();
+//		result.DeepCopy(geometryFilter.GetOutput());
+//		vtkPolyDataWriter imageWriter = new vtkPolyDataWriter();
+//        imageWriter.SetInputData(tmpPolyData);
+//        imageWriter.SetFileName("/Users/steelrj1/Desktop/speedtest.vtk");
+//        imageWriter.SetFileTypeToBinary();
+//        imageWriter.Write();
+//        result.DeepCopy(tmpPolyData);
+//		Logger.getAnonymousLogger().log(Level.INFO, "Polydata made");
+//		return result;
+//		return tmpPolyData;
+//		System.out.println("PolyDataUtil: computeVTKFrustumIntersection: output " + output);
+//		vtkUnstructuredGrid grid = new vtkUnstructuredGrid();
+//		grid.ShallowCopy(output);
+//		Logger.getAnonymousLogger().log(Level.INFO, "Number of cells filtered " + grid.GetNumberOfCells());
+	}
+	
 	public static vtkPolyData computeFrustumIntersection(vtkPolyData polyData, vtksbCellLocator locator, vtkAbstractPointLocator pointLocator, double[] origin, double[] ul, double[] ur, double[] lr, double[] ll)
 	{
+//		vtkPlanes planes = computeFrustumPlanes(origin, ul, ur, lr, ll);
+//		vtkPlane plane1 = planes.GetPlane(0); 
+//		vtkPlane plane2 = planes.GetPlane(1); 
+//		vtkPlane plane3 = planes.GetPlane(2); 
+//		vtkPlane plane4 = planes.GetPlane(3); 
 		//printpt(origin, "origin");
 		//printpt(ul, "ul");
 		//printpt(ur, "ur");
@@ -131,7 +501,6 @@ public class PolyDataUtil
 		MathUtil.vcrss(lr, ur, right);
 		MathUtil.vcrss(ll, lr, bottom);
 		MathUtil.vcrss(ul, ll, left);
-
 		double dx = MathUtil.vnorm(origin);
 		double[] UL2 = { origin[0] + ul[0] * dx, origin[1] + ul[1] * dx, origin[2] + ul[2] * dx };
 		double[] UR2 = { origin[0] + ur[0] * dx, origin[1] + ur[1] * dx, origin[2] + ur[2] * dx };
@@ -150,7 +519,15 @@ public class PolyDataUtil
 		vtkPlane plane4 = new vtkPlane();
 		plane4.SetOrigin(LL2);
 		plane4.SetNormal(left);
-
+//		vtkPlane backPlane = new vtkPlane();
+//		backPlane.SetOrigin(0, 0, 0);
+//		backPlane.SetNormal(-origin[0], -origin[1], -origin[2]);
+//		vtkClipPolyData backPlaneClip = new vtkClipPolyData();
+//		backPlaneClip.SetInputData(polyData);
+//		backPlaneClip.SetClipFunction(backPlane);
+//		backPlaneClip.SetInsideOut(1);
+//		backPlaneClip.Update();
+//		System.out.println("PolyDataUtil: computeFrustumIntersection: polydata size " + polyData.GetNumberOfCells());
 		// I found that the results are MUCH better when you use a separate vtkClipPolyData
 		// for each plane of the frustum rather than trying to use a single vtkClipPolyData
 		// with an vtkImplicitBoolean or vtkPlanes that combines all the planes together.
@@ -159,30 +536,39 @@ public class PolyDataUtil
 		clipPolyData1.SetClipFunction(plane1);
 		clipPolyData1.SetInsideOut(1);
 		vtkAlgorithmOutput clipPolyData1OutputPort = clipPolyData1.GetOutputPort();
-
+//		System.out.println("PolyDataUtil: computeFrustumIntersection: plane 1 " + plane1);
+//		System.out.println("PolyDataUtil: computeFrustumIntersection: number after plane 1 " + clipPolyData1.GetOutput().GetNumberOfCells());
+		
 		vtkClipPolyData clipPolyData2 = new vtkClipPolyData();
 		clipPolyData2.SetInputConnection(clipPolyData1OutputPort);
 		clipPolyData2.SetClipFunction(plane2);
 		clipPolyData2.SetInsideOut(1);
 		vtkAlgorithmOutput clipPolyData2OutputPort = clipPolyData2.GetOutputPort();
+//		System.out.println("PolyDataUtil: computeFrustumIntersection: number after plane 2 " + clipPolyData2.GetOutput().GetNumberOfCells());
+
 
 		vtkClipPolyData clipPolyData3 = new vtkClipPolyData();
 		clipPolyData3.SetInputConnection(clipPolyData2OutputPort);
 		clipPolyData3.SetClipFunction(plane3);
 		clipPolyData3.SetInsideOut(1);
 		vtkAlgorithmOutput clipPolyData3OutputPort = clipPolyData3.GetOutputPort();
+//		System.out.println("PolyDataUtil: computeFrustumIntersection: number after plane 3 " + clipPolyData3.GetOutput().GetNumberOfCells());
+
 
 		vtkClipPolyData clipPolyData4 = new vtkClipPolyData();
 		clipPolyData4.SetInputConnection(clipPolyData3OutputPort);
 		clipPolyData4.SetClipFunction(plane4);
 		clipPolyData4.SetInsideOut(1);
+//		Logger.getAnonymousLogger().log(Level.INFO, "Clipping data");
 		clipPolyData4.Update();
+//		Logger.getAnonymousLogger().log(Level.INFO, "Clipped Data");
 		vtkAlgorithmOutput clipPolyData4OutputPort = clipPolyData4.GetOutputPort();
 		if (clipPolyData4.GetOutput().GetNumberOfCells() == 0)
 		{
+//			System.out.println("PolyDataUtil: computeFrustumIntersection: no cells after clipping");
 			return null;
 		}
-
+//		Logger.getAnonymousLogger().log(Level.INFO, "Setting up normals filter ");
 		vtkPolyDataNormals normalsFilter = new vtkPolyDataNormals();
 		normalsFilter.SetInputConnection(clipPolyData4OutputPort);
 		normalsFilter.SetComputeCellNormals(1);
@@ -190,10 +576,9 @@ public class PolyDataUtil
 		normalsFilter.SplittingOff();
 		normalsFilter.Update();
 		vtkPolyData normalsFilterOutput = normalsFilter.GetOutput();
-
+//		Logger.getAnonymousLogger().log(Level.INFO, "Normals filter output size " + normalsFilterOutput.GetNumberOfCells());
 		vtkPolyData tmpPolyData = new vtkPolyData();
 		tmpPolyData.DeepCopy(normalsFilterOutput);
-
 		// Now remove from this clipped poly data all the cells that are facing away from the viewer.
 		vtkDataArray cellNormals = tmpPolyData.GetCellData().GetNormals();
 		vtkPoints points = tmpPolyData.GetPoints();
@@ -203,28 +588,34 @@ public class PolyDataUtil
 		vtkIdList idList = new vtkIdList();
 		idList.SetNumberOfIds(0);
 		double[] viewDir = new double[3];
+//		Logger.getAnonymousLogger().log(Level.INFO, "Looping through cells " + tmpPolyData.GetNumberOfCells());
+		double[] pt;
+		double[] n;
+		double dot;
 		for (int i = 0; i < numCells; ++i)
 		{
-			double[] n = cellNormals.GetTuple3(i);
+			n = cellNormals.GetTuple3(i);
 			MathUtil.vhat(n, n);
 
 			// Compute the direction to the viewer from one of the point of the cell.
 			tmpPolyData.GetCellPoints(i, idList);
-			double[] pt = points.GetPoint(idList.GetId(0));
+			pt = points.GetPoint(idList.GetId(0));
 
-			viewDir[0] = origin[0] - pt[0];
-			viewDir[1] = origin[1] - pt[1];
-			viewDir[2] = origin[2] - pt[2];
+//			viewDir[0] = origin[0] - pt[0];
+//			viewDir[1] = origin[1] - pt[1];
+//			viewDir[2] = origin[2] - pt[2];
+			MathUtil.vsub(origin, pt, viewDir);
 			MathUtil.vhat(viewDir, viewDir);
 
-			double dot = MathUtil.vdot(n, viewDir);
+			dot = MathUtil.vdot(n, viewDir);
 			if (dot <= 0.0)
 				tmpPolyData.DeleteCell(i);
 		}
-
+//		Logger.getAnonymousLogger().log(Level.INFO, "Removing deleted cells "  + tmpPolyData.GetNumberOfCells());
 		tmpPolyData.RemoveDeletedCells();
+		tmpPolyData.Modified();
 		tmpPolyData.GetCellData().SetNormals(null);
-
+//		Logger.getAnonymousLogger().log(Level.INFO, "After normals before cleaning " + tmpPolyData.GetNumberOfCells());
 		vtkCleanPolyData cleanPoly = new vtkCleanPolyData();
 		cleanPoly.SetInputData(tmpPolyData);
 		cleanPoly.Update();
@@ -232,6 +623,7 @@ public class PolyDataUtil
 
 		//polyData = new vtkPolyData();
 		tmpPolyData.DeepCopy(cleanPolyOutput);
+//		Logger.getAnonymousLogger().log(Level.INFO, "Cleaned after normals " + tmpPolyData.GetNumberOfCells());
 		// If the body was a convex shape we would be done now.
 		// Unfortunately, since it's not, it's possible for the polydata to have multiple connected
 		// pieces in view of the camera and some of these pieces are obscured by other pieces.
@@ -278,12 +670,55 @@ public class PolyDataUtil
 		double[] pcoords = new double[3];
 		int[] subId = new int[1];
 		int[] cell_id = new int[1];
+//		Logger.getAnonymousLogger().log(Level.INFO, "Checking obscured cells "  + tmpPolyData.GetNumberOfCells());
+//		final List<Future<List<Integer>>> resultList;
+//		List<Callable<List<Integer>>> taskList = new ArrayList<>();
+//		
+//		for (int i = 0; i < numPoints; ++i)
+//		{
+//			Callable<List<Integer>> task = new FilterTask(tmpPolyData, locator, origin, i);
+//			taskList.add(task);
+//			
+//		}
+//		System.out.println("PolyDataUtil: computeFrustumIntersection: getting results");
+//		resultList = ThreadService.submitAll(taskList);
+//		Logger.getAnonymousLogger().log(Level.INFO, "Got result list "  + tmpPolyData.GetNumberOfCells());
+//		Set<Integer> allBlockedIndices = new HashSet<Integer>();
+//		for (int i = 0; i < resultList.size(); i++)
+//		{
+//			int index = i;
+//			Future<List<Integer>> future = resultList.get(i);
+//			List<Integer> indices;
+//			try
+//			{
+//				indices = future.get();
+//				allBlockedIndices.addAll(indices);
+//			}
+//			catch (InterruptedException | ExecutionException e)
+//			{
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//			
+//		}
+//		System.out.println("PolyDataUtil: computeFrustumIntersection: all blocked indices " + allBlockedIndices.size());
+//		for (Integer cellId : allBlockedIndices)
+//		{
+//			++numberOfObscuredPointsPerCell[cellId];
+//			if (numberOfObscuredPointsPerCell[cellId] == 3)
+//			{
+//				System.out.println("PolyDataUtil: computeFrustumIntersection: deleting " + cellId);
+//				tmpPolyData.DeleteCell(cellId);
+//			}
+//		}
+		//SERIAL WAY
 		for (int i = 0; i < numPoints; ++i)
 		{
 			double[] sourcePnt = points.GetPoint(i);
 
+//			Logger.getAnonymousLogger().log(Level.INFO, "Getting result ");
 			int result = locator.IntersectWithLine(origin, sourcePnt, tol, t, x, pcoords, subId, cell_id, cell);
-
+//			Logger.getAnonymousLogger().log(Level.INFO, "Got result ");
 			if (result == 1)
 			{
 				int ptid = pointLocator.FindClosestPoint(sourcePnt);
@@ -311,8 +746,23 @@ public class PolyDataUtil
 					if (numberOfObscuredPointsPerCell[cellId] == 3)
 						tmpPolyData.DeleteCell(cellId);
 				}
+//				Logger.getAnonymousLogger().log(Level.INFO, "After successful loop");
 			}
 		}
+		
+		//Parallel way
+//		ThreadService.initialize(40);
+//		final List<Future<Void>> resultList;
+//		List<Callable<Void>> taskList = new ArrayList<>();
+//
+//		for (int i = 0; i < numPoints; ++i)
+//		{
+//			Callable<Void> task = new ObscuredTask(polyData, points, locator, pointLocator, origin, numberOfObscuredPointsPerCell, i);
+//			taskList.add(task);
+//		}
+//		resultList = ThreadService.submitAll(taskList);
+		
+		
 		tmpPolyData.RemoveDeletedCells();
 
 		//cleanPoly = new vtkCleanPolyData();
@@ -322,9 +772,21 @@ public class PolyDataUtil
 
 		//polyData = new vtkPolyData();
 		tmpPolyData.DeepCopy(cleanPolyOutput);
+//		Logger.getAnonymousLogger().log(Level.INFO, "After convex shape cleaning "  + tmpPolyData.GetNumberOfCells());
 		return tmpPolyData;
 	}
-
+	
+	
+	
+//	private void filterObscuredFaces(vtkPolyData tmpPolyData, vtksbCellLocator locator, vtkAbstractPointLocator pointLocator, double[] origin, int i)
+//	{
+//		
+//		
+//		++numberOfObscuredPointsPerCell[cellId];
+//		if (numberOfObscuredPointsPerCell[cellId] == 3)
+//			tmpPolyData.DeleteCell(cellId);
+//	}
+	
 	public static double approximateOverlapFraction(vtkTriangle surfaceTriangle, Frustum frustum) // estimate how much of a triangle is inside the frustum?
 	{
 		double overlap = 0;
@@ -425,7 +887,7 @@ public class PolyDataUtil
 	 * double[] origin, double[] ul, double[] ur, double[] lr, double[] ll, double
 	 * depth, int[] resolution) { vtkPoints points=new vtkPoints(); int[][] ids=new
 	 * int[resolution[0]][resolution[1]];
-	 * 
+	 *
 	 * // set up points for plane Vector3D originVec=new Vector3D(origin); double[]
 	 * ctr=new double[3]; for (int i=0; i<3; i++)
 	 * ctr[i]=(ul[i]+ur[i]+lr[i]+ll[i])/4.; Vector3D farPlaneCenterVec=new
@@ -443,7 +905,7 @@ public class PolyDataUtil
 	 * dy=(double)j/(double)resolution[1];
 	 * ids[i][j]=points.InsertNextPoint(llCrn.add(lxVec.scalarMultiply(dx)).add(
 	 * lyVec.scalarMultiply(dy)).toArray()); }
-	 * 
+	 *
 	 * // set up triangles for plane vtkCellArray cells=new vtkCellArray(); for (int
 	 * i=0; i<resolution[0]-1; i++) for (int j=0; j<resolution[1]-1; j++) {
 	 * vtkTriangle tri1=new vtkTriangle(); tri1.GetPointIds().SetId(0, ids[i][j]);
@@ -452,515 +914,24 @@ public class PolyDataUtil
 	 * vtkTriangle(); tri2.GetPointIds().SetId(0, ids[i+1][j+1]);
 	 * tri2.GetPointIds().SetId(1, ids[i][j+1]); tri2.GetPointIds().SetId(2,
 	 * ids[i][j]); cells.InsertNextCell(tri2); }
-	 * 
+	 *
 	 * // init plane polydata vtkPolyData plane=new vtkPolyData();
 	 * plane.SetPoints(points); plane.SetPolys(cells);
-	 * 
+	 *
 	 * // subtract body polydata from plane polydata
 	 * vtkBooleanOperationPolyDataFilter booleanFilter=new
 	 * vtkBooleanOperationPolyDataFilter(); booleanFilter.SetInputData(0, polyData);
 	 * booleanFilter.SetInputData(1, plane); booleanFilter.SetTolerance(1e-12);
 	 * booleanFilter.SetOperationToDifference(); booleanFilter.Update();
-	 * 
+	 *
 	 * // return result vtkPolyData result=new vtkPolyData();
 	 * result.DeepCopy(booleanFilter.GetOutput()); return result; }
 	 */
 
 	/*
-	 * This is an older version of that uses a vtkCylinder to do the intersection
-	 * rather than a series of planes. Unfortunately, the results look crappy. Use
-	 * drawRegularPolygonOnPolyData instead.
-	 */
-	/*
-	 * 
-	 * public static vtkPolyData drawCircleOnPolyData( vtkPolyData polyData,
-	 * vtkAbstractPointLocator pointLocator, double[] center, double radius, boolean
-	 * filled) { double[] normal = getPolyDataNormalAtPoint(center, polyData,
-	 * pointLocator);
-	 * 
-	 * radius += 0.5; if (radius < 1.0) radius = 1.0;
-	 * 
-	 * vtkCylinder cylinder = new vtkCylinder(); cylinder.SetRadius(radius);
-	 * cylinder.SetCenter(center);
-	 * 
-	 * // Note the cylinder has its axis pointing to the y-axis (0,1,0). // Create a
-	 * transform that rotates this axis to normal. // To do this we need to first
-	 * find the axis of rotation // (note don't confuse this with the axis of the
-	 * cylindar. // We're using the word axis to refer to 2 different things) //
-	 * which is the cross product between the y-axis and normal. double[]
-	 * originalCylindarAxis = {0.0, 1.0, 0.0}; double[] axisOfRotation = new
-	 * double[3]; MathUtil.vcrss(normal, originalCylindarAxis, axisOfRotation);
-	 * Spice.vhat(axisOfRotation,axisOfRotation);
-	 * 
-	 * // Now compute the angle between these 2 cylinder axes. double angle =
-	 * Spice.vsep(originalCylindarAxis, normal) * 180.0 / Math.PI;
-	 * 
-	 * vtkTransform transform = new vtkTransform(); transform.Translate(center);
-	 * transform.RotateWXYZ(angle, axisOfRotation);
-	 * transform.Translate(-center[0],-center[1],-center[2]);
-	 * 
-	 * cylinder.SetTransform(transform);
-	 * 
-	 * vtkPolyDataAlgorithm filter = null;
-	 * 
-	 * if(filled) { vtkClipPolyData clipPolyData = new vtkClipPolyData();
-	 * clipPolyData.SetInput(polyData); clipPolyData.SetClipFunction(cylinder);
-	 * clipPolyData.SetInsideOut(1); clipPolyData.Update(); filter = clipPolyData; }
-	 * else { vtkCutter cutPolyData = new vtkCutter();
-	 * cutPolyData.SetInput(polyData); cutPolyData.SetCutFunction(cylinder);
-	 * cutPolyData.Update(); filter = cutPolyData; }
-	 * 
-	 * vtkPolyDataConnectivityFilter connectivityFilter = new
-	 * vtkPolyDataConnectivityFilter();
-	 * connectivityFilter.SetInputConnection(filter.GetOutputPort());
-	 * connectivityFilter.SetExtractionModeToClosestPointRegion();
-	 * connectivityFilter.SetClosestPoint(center); connectivityFilter.Update();
-	 * 
-	 * polyData = new vtkPolyData();
-	 * polyData.DeepCopy(connectivityFilter.GetOutput());
-	 * 
-	 * 
-	 * // vtkPolyDataWriter writer = new vtkPolyDataWriter(); //
-	 * writer.SetInput(polyData); // writer.SetFileName("/tmp/coneeros.vtk"); //
-	 * //writer.SetFileTypeToBinary(); // writer.Write();
-	 * 
-	 * return polyData; }
-	 */
-
-	/*
-	 * // Old version public static void drawRegularPolygonOnPolyData( vtkPolyData
-	 * polyData, vtkAbstractPointLocator pointLocator, double[] center, double
-	 * radius, int numberOfSides, vtkPolyData outputInterior, vtkPolyData
-	 * outputBoundary) { double[] normal = getPolyDataNormalAtPoint(center,
-	 * polyData, pointLocator);
-	 * 
-	 * // If the number of points are too small, then vtkExtractPolyDataGeometry //
-	 * as used here might fail, so skip this part (which is just an optimization //
-	 * not really needed when the points are few) in this case. if
-	 * (polyData.GetNumberOfPoints() >= 10000) { // Reduce the size of the polydata
-	 * we need to process by only // considering cells within twice radius of
-	 * center. vtkSphere sphere = new vtkSphere(); sphere.SetCenter(center);
-	 * sphere.SetRadius(radius >= 0.2 ? 1.2*radius : 1.2*0.2);
-	 * 
-	 * vtkExtractPolyDataGeometry extract = new vtkExtractPolyDataGeometry();
-	 * extract.SetImplicitFunction(sphere); extract.SetExtractInside(1);
-	 * extract.SetExtractBoundaryCells(1); extract.SetInput(polyData);
-	 * extract.Update(); polyData = extract.GetOutput(); }
-	 * 
-	 * vtkRegularPolygonSource polygonSource = new vtkRegularPolygonSource();
-	 * polygonSource.SetCenter(center); polygonSource.SetRadius(radius);
-	 * polygonSource.SetNormal(normal);
-	 * polygonSource.SetNumberOfSides(numberOfSides);
-	 * polygonSource.SetGeneratePolygon(0); polygonSource.SetGeneratePolyline(0);
-	 * polygonSource.Update();
-	 * 
-	 * vtkPoints points = polygonSource.GetOutput().GetPoints();
-	 * 
-	 * List<vtkPlane> clipPlanes = new ArrayList<vtkPlane>(); List<vtkClipPolyData>
-	 * clipFilters = new ArrayList<vtkClipPolyData>(); List<vtkPolyData> clipOutputs
-	 * = new ArrayList<vtkPolyData>();
-	 * 
-	 * // randomly shuffling the order of the sides we process can speed things up
-	 * List<Integer> sides = new ArrayList<Integer>(); for (int i=0;
-	 * i<numberOfSides; ++i) sides.add(i); Collections.shuffle(sides);
-	 * 
-	 * vtkPolyData nextInput = polyData; vtkClipPolyData clipPolyData = null; for
-	 * (int i=0; i<sides.size(); ++i) { int side = sides.get(i);
-	 * 
-	 * // compute normal to plane formed by this side of polygon double[]
-	 * currentPoint = points.GetPoint(side);
-	 * 
-	 * double[] nextPoint = null; if (side < numberOfSides-1) nextPoint =
-	 * points.GetPoint(side+1); else nextPoint = points.GetPoint(0);
-	 * 
-	 * double[] vec = {nextPoint[0]-currentPoint[0], nextPoint[1]-currentPoint[1],
-	 * nextPoint[2]-currentPoint[2]};
-	 * 
-	 * double[] planeNormal = new double[3]; MathUtil.vcrss(normal, vec,
-	 * planeNormal); MathUtil.vhat(planeNormal, planeNormal);
-	 * 
-	 * if (i > clipPlanes.size()-1) clipPlanes.add(new vtkPlane()); vtkPlane plane =
-	 * clipPlanes.get(i); // vtkPlane plane = new vtkPlane();
-	 * plane.SetOrigin(currentPoint); plane.SetNormal(planeNormal);
-	 * 
-	 * if (i > clipFilters.size()-1) clipFilters.add(new vtkClipPolyData());
-	 * clipPolyData = clipFilters.get(i); // clipPolyData = new vtkClipPolyData();
-	 * clipPolyData.SetInput(nextInput); clipPolyData.SetClipFunction(plane);
-	 * clipPolyData.SetInsideOut(1); //clipPolyData.Update();
-	 * 
-	 * nextInput = clipPolyData.GetOutput();
-	 * 
-	 * if (i > clipOutputs.size()-1) clipOutputs.add(nextInput); clipOutputs.set(i,
-	 * nextInput); }
-	 * 
-	 * 
-	 * vtkPolyDataConnectivityFilter connectivityFilter = new
-	 * vtkPolyDataConnectivityFilter();
-	 * connectivityFilter.SetInputConnection(clipPolyData.GetOutputPort());
-	 * connectivityFilter.SetExtractionModeToClosestPointRegion();
-	 * connectivityFilter.SetClosestPoint(center); connectivityFilter.Update();
-	 * 
-	 * // polyData = new vtkPolyData(); //if (outputPolyData == null) //
-	 * outputPolyData = new vtkPolyData();
-	 * 
-	 * if (outputInterior != null) { //
-	 * polyData.DeepCopy(connectivityFilter.GetOutput());
-	 * outputInterior.DeepCopy(connectivityFilter.GetOutput()); }
-	 * 
-	 * if (outputBoundary != null) { // Compute the bounding edges of this surface
-	 * vtkFeatureEdges edgeExtracter = new vtkFeatureEdges();
-	 * edgeExtracter.SetInput(connectivityFilter.GetOutput());
-	 * edgeExtracter.BoundaryEdgesOn(); edgeExtracter.FeatureEdgesOff();
-	 * edgeExtracter.NonManifoldEdgesOff(); edgeExtracter.ManifoldEdgesOff();
-	 * edgeExtracter.Update();
-	 * 
-	 * //polyData.DeepCopy(edgeExtracter.GetOutput());
-	 * outputBoundary.DeepCopy(edgeExtracter.GetOutput()); }
-	 * 
-	 * 
-	 * //vtkPolyDataWriter writer = new vtkPolyDataWriter();
-	 * //writer.SetInput(polygonSource.GetOutput());
-	 * //writer.SetFileName("/tmp/coneeros.vtk"); //writer.SetFileTypeToBinary();
-	 * //writer.Write();
-	 * 
-	 * //return polyData; //return outputPolyData; }
-	 */
-
-	public static void drawRegularPolygonOnPolyData(vtkPolyData polyData, vtkAbstractPointLocator pointLocator, double[] center, double radius, int numberOfSides, vtkPolyData outputInterior, vtkPolyData outputBoundary)
-	{
-		drawEllipseOnPolyData(polyData, pointLocator, center, radius, 1.0, 0.0, numberOfSides, outputInterior, outputBoundary);
-	}
-
-	public static void drawEllipseOnPolyData(vtkPolyData polyData, vtkAbstractPointLocator pointLocator, double[] center, double semiMajorAxis, double flattening, double angle, int numberOfSides, vtkPolyData outputInterior, vtkPolyData outputBoundary)
-	{
-		// List holding vtk objects to delete at end of function
-		List<vtkObject> d = new ArrayList<vtkObject>();
-
-		double[] normal = getPolyDataNormalAtPoint(center, polyData, pointLocator);
-
-		/*
-		 * vtkIdList pids=new vtkIdList(); pointLocator.FindClosestNPoints(256, center,
-		 * pids); Set<Integer> cellIds=Sets.newHashSet(); for (int i=0;
-		 * i<pids.GetNumberOfIds(); i++) { vtkIdList cids=new vtkIdList();
-		 * 
-		 * polyData.GetPointCells(i, cids); for (int j=0; j<cids.GetNumberOfIds(); j++)
-		 * cellIds.add(cids.GetId(j));
-		 * 
-		 * }
-		 */
-
-		// If the number of points are too small, then vtkExtractPolyDataGeometry
-		// as used here might fail, so skip this part (which is just an optimization
-		// not really needed when the points are few) in this case.
-		/*
-		 * if (polyData.GetNumberOfPoints() >= 20000) { // Reduce the size of the
-		 * polydata we need to process by only // considering cells within 1.2 times the
-		 * radius. We make sure, // however, that if the radius is below a threshold to
-		 * not // go below it. The threshold is chosen to be 0.2 for Eros, // which is
-		 * equal to the bounding box diagonal length divided // by about 193. For other
-		 * bodies it will be different, depending on // the diagonal length.
-		 * 
-		 * BoundingBox boundingBox = new BoundingBox(polyData.GetBounds()); double
-		 * minRadius = boundingBox.getDiagonalLength() / 193.30280166816735;
-		 * 
-		 * 
-		 * 
-		 * vtkSphere sphere = new vtkSphere(); d.add(sphere); sphere.SetCenter(center);
-		 * sphere.SetRadius(semiMajorAxis >= minRadius ? 1.2 * semiMajorAxis : 1.2 *
-		 * minRadius);
-		 * 
-		 * vtkExtractPolyDataGeometry extract = new vtkExtractPolyDataGeometry();
-		 * d.add(extract); extract.SetImplicitFunction(sphere);
-		 * extract.SetExtractInside(1); extract.SetExtractBoundaryCells(1);
-		 * extract.SetInputData(polyData); extract.Update(); polyData =
-		 * extract.GetOutput(); d.add(polyData);
-		 * 
-		 * 
-		 * System.out.println(Arrays.toString(center)+" "+polyData.GetNumberOfCells());
-		 * }
-		 */
-
-		vtkRegularPolygonSource polygonSource = new vtkRegularPolygonSource();
-		d.add(polygonSource);
-		//polygonSource.SetCenter(center);
-		polygonSource.SetRadius(semiMajorAxis);
-		//polygonSource.SetNormal(normal);
-		polygonSource.SetNumberOfSides(numberOfSides);
-		polygonSource.SetGeneratePolygon(0);
-		polygonSource.SetGeneratePolyline(0);
-
-		// Now transform the regular polygon to turn it into an ellipse
-		// Apply the following tranformations in this order
-		// 1. Scale in xy plane to specified flattening
-		// 2. Rotate around z axis by specified angle
-		// 3. Rotate so normal is normal to surface at center
-		// 4. Translate to center
-
-		// First compute cross product of normal and z axis
-		double[] zaxis = { 0.0, 0.0, 1.0 };
-		double[] cross = new double[3];
-		MathUtil.vcrss(zaxis, normal, cross);
-		// Compute angle between normal and zaxis
-		double sepAngle = MathUtil.vsep(normal, zaxis) * 180.0 / Math.PI;
-
-		vtkTransform transform = new vtkTransform();
-		d.add(transform);
-		transform.Translate(center);
-		transform.RotateWXYZ(sepAngle, cross);
-		transform.RotateZ(angle);
-		transform.Scale(1.0, flattening, 1.0);
-
-		/*
-		 * LatLon ll=MathUtil.reclat(center);
-		 * System.out.println(Math.toDegrees(ll.lat)+" "+Math.toDegrees(ll.lon));
-		 * 
-		 * double[] pt=transform.TransformDoublePoint(0,0,0); LatLon
-		 * ll2=MathUtil.reclat(pt);
-		 * System.out.println(Math.toDegrees(ll2.lat)+" "+Math.toDegrees(ll2.lon));
-		 */
-
-		// XXX: at this point in the code the specified center and the transformed origin match up 
-
-		vtkTransformPolyDataFilter transformFilter = new vtkTransformPolyDataFilter();
-		d.add(transformFilter);
-		vtkAlgorithmOutput polygonSourceOutput = polygonSource.GetOutputPort();
-		d.add(polygonSourceOutput);
-		transformFilter.SetInputConnection(polygonSourceOutput);
-		transformFilter.SetTransform(transform);
-		transformFilter.Update();
-
-		vtkPolyData transformFilterOutput = transformFilter.GetOutput();
-		d.add(transformFilterOutput);
-		vtkPoints points = transformFilterOutput.GetPoints();
-		d.add(points);
-
-		//        List<vtkPlane> clipPlanes = new ArrayList<vtkPlane>();
-		//        List<vtkClipPolyData> clipFilters = new ArrayList<vtkClipPolyData>();
-		//        List<vtkPolyData> clipOutputs = new ArrayList<vtkPolyData>();
-
-		// randomly shuffling the order of the sides we process can speed things up
-		List<Integer> sides = new ArrayList<Integer>();
-		for (int i = 0; i < numberOfSides; ++i)
-			sides.add(i);
-		Collections.shuffle(sides);
-
-		vtkAlgorithmOutput nextInput = null;
-		vtkClipPolyData clipPolyData = null;
-		for (int i = 0; i < sides.size(); ++i)
-		{
-			int side = sides.get(i);
-
-			// compute normal to plane formed by this side of polygon
-			double[] currentPoint = points.GetPoint(side);
-
-			double[] nextPoint = null;
-			if (side < numberOfSides - 1)
-				nextPoint = points.GetPoint(side + 1);
-			else
-				nextPoint = points.GetPoint(0);
-
-			double[] vec = { nextPoint[0] - currentPoint[0], nextPoint[1] - currentPoint[1], nextPoint[2] - currentPoint[2] };
-
-			double[] planeNormal = new double[3];
-			double[] midpt = new double[3];
-			MathUtil.vadd(currentPoint, nextPoint, midpt);
-			MathUtil.vscl(0.5, midpt, midpt);
-			//normal = getPolyDataNormalAtPoint(midpt, polyData, pointLocator);
-			MathUtil.vhat(midpt, normal);
-			MathUtil.vcrss(normal, vec, planeNormal);
-			MathUtil.vhat(planeNormal, planeNormal);
-
-			//if (i > clipPlanes.size()-1)
-			//    clipPlanes.add(new vtkPlane());
-			//vtkPlane plane = clipPlanes.get(i);
-			vtkPlane plane = new vtkPlane();
-			d.add(plane);
-			plane.SetOrigin(currentPoint);
-			plane.SetNormal(planeNormal);
-
-			//if (i > clipFilters.size()-1)
-			//    clipFilters.add(new vtkClipPolyData());
-			//clipPolyData = clipFilters.get(i);
-			clipPolyData = new vtkClipPolyData();
-			d.add(clipPolyData);
-			if (i == 0)
-				clipPolyData.SetInputData(polyData);
-			else
-				clipPolyData.SetInputConnection(nextInput);
-			clipPolyData.SetClipFunction(plane);
-			clipPolyData.SetInsideOut(1);
-			//clipPolyData.Update();
-
-			nextInput = clipPolyData.GetOutputPort();
-
-			//if (i > clipOutputs.size()-1)
-			//    clipOutputs.add(nextInput);
-			//clipOutputs.set(i, nextInput);
-		}
-
-		// Check if there is anything left after the clipping
-		clipPolyData.Update();
-		vtkPolyData clippedData = clipPolyData.GetOutput();
-		if (clippedData.GetNumberOfPoints() > 0)
-		{
-			// Only do rest of processing if there is at least one point
-			vtkPolyDataConnectivityFilter connectivityFilter = new vtkPolyDataConnectivityFilter();
-			d.add(connectivityFilter);
-			vtkAlgorithmOutput clipPolyDataOutput = clipPolyData.GetOutputPort();
-			d.add(clipPolyDataOutput);
-
-			connectivityFilter.SetInputConnection(clipPolyDataOutput);
-			connectivityFilter.SetExtractionModeToClosestPointRegion();
-			connectivityFilter.SetClosestPoint(center);
-			connectivityFilter.Update();
-
-			//        polyData = new vtkPolyData();
-			//if (outputPolyData == null)
-			//    outputPolyData = new vtkPolyData();
-
-			if (outputInterior != null)
-			{
-				vtkPolyData connectivityFilterOutput = connectivityFilter.GetOutput();
-				d.add(connectivityFilterOutput);
-				outputInterior.DeepCopy(connectivityFilterOutput);
-			}
-
-			if (outputBoundary != null)
-			{
-				// Compute the bounding edges of this surface
-				vtkFeatureEdges edgeExtracter = new vtkFeatureEdges();
-				d.add(edgeExtracter);
-				vtkAlgorithmOutput connectivityFilterOutput = connectivityFilter.GetOutputPort();
-				d.add(connectivityFilterOutput);
-				edgeExtracter.SetInputConnection(connectivityFilterOutput);
-				edgeExtracter.BoundaryEdgesOn();
-				edgeExtracter.FeatureEdgesOff();
-				edgeExtracter.NonManifoldEdgesOff();
-				edgeExtracter.ManifoldEdgesOff();
-				edgeExtracter.Update();
-
-				vtkPolyData edgeExtracterOutput = edgeExtracter.GetOutput();
-				d.add(edgeExtracterOutput);
-				outputBoundary.DeepCopy(edgeExtracterOutput);
-			}
-
-			//vtkPolyDataWriter writer = new vtkPolyDataWriter();
-			//writer.SetInput(polygonSource.GetOutput());
-			//writer.SetFileName("/tmp/coneeros.vtk");
-			//writer.SetFileTypeToBinary();
-			//writer.Write();
-		}
-
-		for (vtkObject o : d)
-			o.Delete();
-	}
-
-	public static vtkPolyData drawPathOnPolyData(vtkPolyData polyData, vtkAbstractPointLocator pointLocator, double[] pt1, double[] pt2)
-	{
-		double[] normal1 = getPolyDataNormalAtPoint(pt1, polyData, pointLocator);
-		double[] normal2 = getPolyDataNormalAtPoint(pt2, polyData, pointLocator);
-
-		double[] avgNormal = new double[3];
-		avgNormal[0] = (normal1[0] + normal2[0]) / 2.0;
-		avgNormal[1] = (normal1[1] + normal2[1]) / 2.0;
-		avgNormal[2] = (normal1[2] + normal2[2]) / 2.0;
-
-		double[] vec1 = { pt1[0] - pt2[0], pt1[1] - pt2[1], pt1[2] - pt2[2] };
-		//double[] vec2 = {pt2[0]-pt1[0], pt2[1]-pt1[1], pt2[2]-pt1[2]};
-
-		double[] normal = new double[3];
-		MathUtil.vcrss(vec1, avgNormal, normal);
-		MathUtil.vhat(normal, normal);
-
-		vtkPlane cutPlane = new vtkPlane();
-		cutPlane.SetOrigin(pt1);
-		cutPlane.SetNormal(normal);
-
-		vtkExtractPolyDataGeometry extract1 = new vtkExtractPolyDataGeometry();
-		extract1.SetImplicitFunction(cutPlane);
-		extract1.SetExtractInside(1);
-		extract1.SetExtractBoundaryCells(1);
-		extract1.SetInputData(polyData);
-		extract1.Update();
-
-		vtkExtractPolyDataGeometry extract2 = new vtkExtractPolyDataGeometry();
-		extract2.SetImplicitFunction(cutPlane);
-		extract2.SetExtractInside(0);
-		extract2.SetExtractBoundaryCells(1);
-		extract2.SetInputConnection(extract1.GetOutputPort());
-		extract2.Update();
-
-		vtkCutter cutPolyData = new vtkCutter();
-		cutPolyData.SetInputConnection(extract2.GetOutputPort());
-		cutPolyData.CreateDefaultLocator();
-		cutPolyData.SetCutFunction(cutPlane);
-		cutPolyData.Update();
-
-		vtkPolyData polyLine = new vtkPolyData();
-		polyLine.DeepCopy(cutPolyData.GetOutput());
-
-		// Take this line and put it into a cell locator so we can find the cells
-		// closest to the end points
-		vtksbCellLocator cellLocator = new vtksbCellLocator();
-		cellLocator.SetDataSet(polyLine);
-		cellLocator.CacheCellBoundsOn();
-		cellLocator.AutomaticOn();
-		cellLocator.BuildLocator();
-
-		// Search for the cells closest to the 2 endpoints
-		double[] closestPoint1 = new double[3];
-		double[] closestPoint2 = new double[3];
-		vtkGenericCell genericCell1 = new vtkGenericCell();
-		vtkGenericCell genericCell2 = new vtkGenericCell();
-		int[] cellId1 = new int[1];
-		int[] cellId2 = new int[1];
-		int[] subId = new int[1];
-		double[] dist2 = new double[1];
-
-		cellLocator.FindClosestPoint(pt1, closestPoint1, genericCell1, cellId1, subId, dist2);
-		cellLocator.FindClosestPoint(pt2, closestPoint2, genericCell2, cellId2, subId, dist2);
-
-		// In the rare case where both points are on the same cell, simply
-		// return a single line connecting them
-		if (cellId1[0] == cellId2[0])
-		{
-			vtkPoints points = polyLine.GetPoints();
-			points.SetNumberOfPoints(2);
-			points.SetPoint(0, closestPoint1);
-			points.SetPoint(1, closestPoint2);
-
-			vtkCellArray lines = polyLine.GetLines();
-			lines.Initialize();
-
-			vtkIdList idList = new vtkIdList();
-			idList.SetNumberOfIds(2);
-			idList.SetId(0, 0);
-			idList.SetId(1, 1);
-
-			lines.InsertNextCell(idList);
-
-			return polyLine;
-		}
-
-		boolean okay = convertPartOfLinesToPolyLineWithSplitting(polyLine, closestPoint1, cellId1[0], closestPoint2, cellId2[0]);
-
-		//System.out.println("number points: " + polyLine.GetNumberOfPoints());
-
-		//vtkPolyDataWriter writer = new vtkPolyDataWriter();
-		//writer.SetInput(polyLine);
-		//writer.SetFileName("/tmp/cuteros.vtk");
-		//writer.Write();
-
-		if (okay)
-			return polyLine;
-		else
-			return null;
-	}
-
-	/*
-	 * 
+	 *
 	 * // Old version. Doesn't work so well.
-	 * 
+	 *
 	 * private static boolean determineIfPolygonIsClockwise( vtkPolyData polyData,
 	 * vtkAbstractPointLocator pointLocator, List<LatLon> controlPoints) { // To
 	 * determine if a polygon is clockwise or counterclockwise we do the following:
@@ -969,15 +940,15 @@ public class PolyDataUtil
 	 * by summing the cross products of all adjacent // edges. // 3. If the dot
 	 * product of the normals computed in steps 1 and 2 are negative, // then the
 	 * polygon is counterclockwise, otherwise it's clockwise.
-	 * 
+	 *
 	 * int numPoints = controlPoints.size();
-	 * 
+	 *
 	 * // Step 1 double[] normal = {0.0, 0.0, 0.0}; for (LatLon llr : controlPoints)
 	 * { double[] pt = MathUtil.latrec(llr); double[] normalAtPt =
 	 * getPolyDataNormalAtPoint(pt, polyData, pointLocator); normal[0] +=
 	 * normalAtPt[0]; normal[1] += normalAtPt[1]; normal[2] += normalAtPt[2]; }
 	 * MathUtil.vhat(normal, normal);
-	 * 
+	 *
 	 * // Step 2 double[] normal2 = {0.0, 0.0, 0.0}; for (int i=0; i<numPoints; ++i)
 	 * { double[] pt1 = MathUtil.latrec(controlPoints.get(i)); double[] pt0 = null;
 	 * double[] pt2 = null; if (i == 0) { pt0 =
@@ -987,14 +958,14 @@ public class PolyDataUtil
 	 * MathUtil.latrec(controlPoints.get(0)); } else { pt0 =
 	 * MathUtil.latrec(controlPoints.get(i-1)); pt2 =
 	 * MathUtil.latrec(controlPoints.get(i+1)); }
-	 * 
+	 *
 	 * double[] edge0 = {pt0[0]-pt1[0], pt0[1]-pt1[1], pt0[2]-pt1[2]}; double[]
 	 * edge1 = {pt2[0]-pt1[0], pt2[1]-pt1[1], pt2[2]-pt1[2]}; double[] cross = new
 	 * double[3]; MathUtil.vcrss(edge0, edge1, cross);
-	 * 
+	 *
 	 * normal2[0] += cross[0]; normal2[1] += cross[1]; normal2[2] += cross[2]; }
 	 * MathUtil.vhat(normal2, normal2);
-	 * 
+	 *
 	 * // Step 3 return MathUtil.vdot(normal, normal2) > 0.0; }
 	 */
 
@@ -1150,10 +1121,7 @@ public class PolyDataUtil
 		if (determineIfNeedToReverseTriangleVertices(polyData, pointLocator, controlPoints))
 		{
 			// First clone the control points so we don't modify array passed into function
-			List<LatLon> clone = new ArrayList<LatLon>(controlPoints.size());
-			for (LatLon llr : controlPoints)
-				clone.add((LatLon) llr.clone());
-			controlPoints = clone;
+			controlPoints = new ArrayList<>(controlPoints);
 			Collections.reverse(controlPoints);
 		}
 
@@ -1271,10 +1239,7 @@ public class PolyDataUtil
 		}
 
 		List<LatLon> originalControlPoints = controlPoints;
-		List<LatLon> clone = new ArrayList<LatLon>(controlPoints.size());
-		for (LatLon llr : controlPoints)
-			clone.add((LatLon) llr.clone());
-		controlPoints = clone;
+		controlPoints = new ArrayList<>(originalControlPoints);
 
 		// Do a sort of ear-clipping algorithm to break up the polygon into triangles.
 		int numTriangles = controlPoints.size() - 2;
@@ -1326,9 +1291,9 @@ public class PolyDataUtil
 					ids[1] = j;
 					ids[2] = j + 1;
 				}
-				cp.set(0, (LatLon) controlPoints.get(ids[0]).clone());
-				cp.set(1, (LatLon) controlPoints.get(ids[1]).clone());
-				cp.set(2, (LatLon) controlPoints.get(ids[2]).clone());
+				cp.set(0, controlPoints.get(ids[0]));
+				cp.set(1, controlPoints.get(ids[1]));
+				cp.set(2, controlPoints.get(ids[2]));
 
 				// First check to see if it's a reflex vertex, and, if so, continue
 				// to next triplet
@@ -1424,7 +1389,7 @@ public class PolyDataUtil
 		 * edgeExtracter.BoundaryEdgesOn(); edgeExtracter.FeatureEdgesOff();
 		 * edgeExtracter.NonManifoldEdgesOff(); edgeExtracter.ManifoldEdgesOff();
 		 * edgeExtracter.Update();
-		 * 
+		 *
 		 * vtkPolyData edgeExtracterOutput = edgeExtracter.GetOutput();
 		 * outputBoundary.DeepCopy(edgeExtracterOutput);
 		 */
@@ -1455,7 +1420,7 @@ public class PolyDataUtil
 			else
 				pt2 = MathUtil.latrec(controlPoints.get(0));
 
-			vtkPolyData poly = drawPathOnPolyData(polyData, pointLocator, pt1, pt2);
+			vtkPolyData poly = VtkDrawUtil.drawPathPolyOn(polyData, pointLocator, new Vector3D(pt1), new Vector3D(pt2));
 
 			// Remove normals (which we don't need) as this causes an error
 			// in the Append filter.
@@ -1480,13 +1445,13 @@ public class PolyDataUtil
 	{
 		/*
 		 * double[] normal = getPolyDataNormalAtPoint(center, polyData, pointLocator);
-		 * 
-		 * 
+		 *
+		 *
 		 * // Reduce the size of the polydata we need to process by only // considering
 		 * cells within twice radius of center. //vtkSphere sphere = new vtkSphere(); if
 		 * (sphere == null) sphere = new vtkSphere(); sphere.SetCenter(center);
 		 * sphere.SetRadius(radius >= 0.2 ? 1.2*radius : 1.2*0.2);
-		 * 
+		 *
 		 * //vtkExtractPolyDataGeometry extract = new vtkExtractPolyDataGeometry(); if
 		 * (extract == null) extract = new vtkExtractPolyDataGeometry();
 		 * extract.SetImplicitFunction(sphere); extract.SetExtractInside(1);
@@ -1754,7 +1719,7 @@ public class PolyDataUtil
 	/**
 	 * Compute and return the surface area of a polydata. This function assumes the
 	 * cells of the polydata are all triangles.
-	 * 
+	 *
 	 * @param polydata
 	 * @return
 	 */
@@ -1774,7 +1739,7 @@ public class PolyDataUtil
 	/**
 	 * Compute and return the length of a polyline. This function assumes the cells
 	 * of the polydata are all lines.
-	 * 
+	 *
 	 * @param polyline
 	 * @return
 	 */
@@ -1822,7 +1787,7 @@ public class PolyDataUtil
 
 	/**
 	 * This function takes a polyline
-	 * 
+	 *
 	 * @param polyline
 	 * @param pt1
 	 * @param id1
@@ -2091,61 +2056,95 @@ public class PolyDataUtil
 		return length;
 	}
 
-	public static double[] getPolyDataNormalAtPoint(double[] pt, vtkPolyData polyData, vtkAbstractPointLocator pointLocator)
+	/**
+	 * Utility method that computes a normal of a (arbitrary) point on the specified
+	 * surface.
+	 * <P>
+	 * The normal is calculated by a (simple) averaging of the nearest N
+	 * (aNumNearPts) number of actual points on the surface.
+	 * <P>
+	 * If there are less (actual) points in the surface than requested then the
+	 * normal will be computed with the limited number of nearby points.
+	 * <P>
+	 * This method will return null if there are no nearby points.
+	 *
+	 * @param aPoint      The point for which the normal will be calculated.
+	 * @param aSurfacePD  The {@link vtkPolyData} surface.
+	 * @param aSurfacePL  The {@link vtkPointLocator} associated with the surface.
+	 * @param aNumNearPts The number of (nearest) points to use in the computation.
+	 */
+	public static Vector3D getPolyDataNormalAtPoint(Vector3D aPoint, vtkPolyData aSurfacePD,
+			vtkAbstractPointLocator aSurfacePL, int aNumNearPts)
 	{
-		vtkIdList idList = new vtkIdList();
+		vtkIdList vNearIL = new vtkIdList();
 
-		pointLocator.FindClosestNPoints(20, pt, idList);
+		aSurfacePL.FindClosestNPoints(aNumNearPts, aPoint.toArray(), vNearIL);
 
 		// Average the normals
-		double[] normal = { 0.0, 0.0, 0.0 };
+		double[] normArr = { 0.0, 0.0, 0.0 };
 
-		int N = idList.GetNumberOfIds();
+		int N = vNearIL.GetNumberOfIds();
 		if (N < 1)
 			return null;
 
-		vtkDataArray normals = polyData.GetPointData().GetNormals();
+		vtkDataArray normals = aSurfacePD.GetPointData().GetNormals();
 		for (int i = 0; i < N; ++i)
 		{
-			double[] tmp = normals.GetTuple3(idList.GetId(i));
-			normal[0] += tmp[0];
-			normal[1] += tmp[1];
-			normal[2] += tmp[2];
+			double[] tmp = normals.GetTuple3(vNearIL.GetId(i));
+			normArr[0] += tmp[0];
+			normArr[1] += tmp[1];
+			normArr[2] += tmp[2];
 		}
 
-		normal[0] /= N;
-		normal[1] /= N;
-		normal[2] /= N;
+		normArr[0] /= N;
+		normArr[1] /= N;
+		normArr[2] /= N;
 
-		idList.Delete();
+		vNearIL.Delete();
 
-		return normal;
+		return new Vector3D(normArr);
+	}
+
+	/**
+	 * Utility method that computes a normal of a (arbitrary) point on the specified
+	 * surface.
+	 * <P>
+	 * The number of (actual) points used in the computation is 20.
+	 * <P>
+	 * See
+	 * {@link #getPolyDataNormalAtPoint(Vector3D, vtkPolyData, vtkAbstractPointLocator, int)}
+	 */
+	public static double[] getPolyDataNormalAtPoint(double[] aPointArr, vtkPolyData aSurfacePD,
+			vtkAbstractPointLocator aSurfacePL)
+	{
+		// Delegate
+		return getPolyDataNormalAtPoint(new Vector3D(aPointArr), aSurfacePD, aSurfacePL, 20).toArray();
 	}
 
 	/**
 	 * Compute the mean normal vector over the entire vtkPolyData by averaging all
 	 * the normal vectors.
 	 */
-	public static double[] computePolyDataNormal(vtkPolyData polyData)
+	public static double[] computePolyDataNormal(vtkPolyData aSurfacePD)
 	{
 		// Average the normals
-		double[] normal = { 0.0, 0.0, 0.0 };
+		double[] normArr = { 0.0, 0.0, 0.0 };
 
-		int N = polyData.GetNumberOfPoints();
-		vtkDataArray normals = polyData.GetPointData().GetNormals();
+		int N = aSurfacePD.GetNumberOfPoints();
+		vtkDataArray normals = aSurfacePD.GetPointData().GetNormals();
 		for (int i = 0; i < N; ++i)
 		{
 			double[] tmp = normals.GetTuple3(i);
-			normal[0] += tmp[0];
-			normal[1] += tmp[1];
-			normal[2] += tmp[2];
+			normArr[0] += tmp[0];
+			normArr[1] += tmp[1];
+			normArr[2] += tmp[2];
 		}
 
-		normal[0] /= N;
-		normal[1] /= N;
-		normal[2] /= N;
+		normArr[0] /= N;
+		normArr[1] /= N;
+		normArr[2] /= N;
 
-		return normal;
+		return normArr;
 	}
 
 	/**
@@ -2156,15 +2155,15 @@ public class PolyDataUtil
 	 * when this function is called within a loop. public static double
 	 * getCellArea(vtkPolyData polydata, int cellId, vtkIdList idList) {
 	 * polydata.GetCellPoints(cellId, idList);
-	 * 
+	 *
 	 * int numberOfCells = idList.GetNumberOfIds(); if (numberOfCells != 3) {
 	 * System.err.println("Error: Cells must have exactly 3 vertices!"); return 0.0;
 	 * }
-	 * 
+	 *
 	 * double[] pt0 = polydata.GetPoint(idList.GetId(0)); double[] pt1 =
 	 * polydata.GetPoint(idList.GetId(1)); double[] pt2 =
 	 * polydata.GetPoint(idList.GetId(2));
-	 * 
+	 *
 	 * return MathUtil.triangleArea(pt0, pt1, pt2); }
 	 */
 
@@ -2264,11 +2263,69 @@ public class PolyDataUtil
 		throw new IllegalArgumentException("Cannot interpolate a tuple of degree " + tupleDegree);
 	}
 
-	/**
+    /**
+     *
+     * @param polydata
+     * @param pointData
+     * @param cellId
+     * @param pt
+     * @param idList this parameter is needed only to avoid repeated memory
+     *            allocation when this function is called within a loop.
+     * @param tupleDegree the degree of tuple returned (size of output array). Must
+     *            be 1, 2, or 3.
+     * @return interpolated vector value from a vtk N-tuple (N = 1, 2, or 3)
+     */
+    public static double[] interpolateWithinCell(vtkPolyData polydata, IndexableTuple pointData, int cellId, double[] pt, vtkIdList idList, int tupleDegree)
+    {
+        polydata.GetCellPoints(cellId, idList);
+
+        int numberOfCells = idList.GetNumberOfIds();
+        if (numberOfCells != 3)
+        {
+            throw new AssertionError("Error: Cells must have exactly 3 vertices!");
+        }
+
+        double[] p1 = new double[3];
+        double[] p2 = new double[3];
+        double[] p3 = new double[3];
+        polydata.GetPoint(idList.GetId(0), p1);
+        polydata.GetPoint(idList.GetId(1), p2);
+        polydata.GetPoint(idList.GetId(2), p3);
+
+        double[] v1 = pointData.get(idList.GetId(0)).get();
+        double[] v2 = pointData.get(idList.GetId(1)).get();
+        double[] v3 = pointData.get(idList.GetId(2)).get();
+
+        if (tupleDegree == 1)
+        {
+            double result0 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[0], v2[0], v3[0]);
+
+            return new double[] { result0 };
+        }
+        else if (tupleDegree == 2)
+        {
+            double result0 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[0], v2[0], v3[0]);
+            double result1 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[1], v2[1], v3[1]);
+
+            return new double[] { result0, result1 };
+        }
+        else if (tupleDegree == 3)
+        {
+            double result0 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[0], v2[0], v3[0]);
+            double result1 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[1], v2[1], v3[1]);
+            double result2 = MathUtil.interpolateWithinTriangle(pt, p1, p2, p3, v1[2], v2[2], v3[2]);
+
+            return new double[] { result0, result1, result2 };
+        }
+
+        throw new IllegalArgumentException("Cannot interpolate a tuple of degree " + tupleDegree);
+    }
+
+    /**
 	 * This function takes cell data and computes point data from it by computing an
 	 * average over all cells that share that point. Cells that are large carry more
 	 * weight than those that are smaller.
-	 * 
+	 *
 	 * @param polydata
 	 * @param cellScalars
 	 * @param pointScalars
@@ -2291,15 +2348,15 @@ public class PolyDataUtil
 			/*
 			 * // After writing the following, wasn't sure if it was mathematically correct.
 			 * double totalArea = 0.0; double[] areas = new double[numberOfCells];
-			 * 
+			 *
 			 * for (int j=0; j<numberOfCells; ++j) { areas[j] = getCellArea(polydata,
 			 * idList.GetId(j)); totalArea += areas[j]; }
-			 * 
+			 *
 			 * double pointValue = 0.0; if (totalArea > 0.0) { for (int j=0;
 			 * j<numberOfCells; ++j) pointValue += (areas[j]/totalArea) *
 			 * cellScalars.GetTuple1(idList.GetId(j)); } else { for (int j=0;
 			 * j<numberOfCells; ++j) pointValue += cellScalars.GetTuple1(idList.GetId(j));
-			 * 
+			 *
 			 * pointValue /= (double)numberOfCells; }
 			 */
 
@@ -2313,7 +2370,7 @@ public class PolyDataUtil
 			pointScalars.SetTuple1(i, pointValue);
 		}
 	}
-
+	
 	/**
 	 * Given a frustum and a polydata footprint, generate texture coordinates for
 	 * all points in the polydata assuming an image acquired with that frustum is
@@ -2324,12 +2381,21 @@ public class PolyDataUtil
 	 */
 	public static void generateTextureCoordinates(Frustum frustum, int width, int height, vtkPolyData footprint)
 	{
-		int numberOfPoints = footprint.GetNumberOfPoints();
+		generateTextureCoordinates(frustum.origin, frustum.ul, frustum.lr, frustum.ur, width, height, footprint);
+	}
 
-		double[] spacecraftPosition = frustum.origin;
-		double[] frustum1 = frustum.ul;
-		double[] frustum2 = frustum.lr;
-		double[] frustum3 = frustum.ur;
+	/**
+	 * Given a frustum and a polydata footprint, generate texture coordinates for
+	 * all points in the polydata assuming an image acquired with that frustum is
+	 * texture mapped to it.
+	 *
+	 * @param frustum
+	 * @param polyData
+	 */
+	public static void generateTextureCoordinates(double[] spacecraftPosition, double[] frustum1, double[] frustum2, double[] frustum3, 
+													int width, int height, vtkPolyData footprint)
+	{
+		int numberOfPoints = footprint.GetNumberOfPoints();
 
 		vtkPointData pointData = footprint.GetPointData();
 		vtkDataArray textureCoordinates = pointData.GetTCoords();
@@ -2408,7 +2474,7 @@ public class PolyDataUtil
 	 * Compute surface area of polydata. Unlike vtkMassProperties which can compute
 	 * surface area, this one works even for non-closed surface. It simply adds the
 	 * areas of all the triangles.
-	 * 
+	 *
 	 * @param polydata
 	 * @return
 	 */
@@ -2453,7 +2519,7 @@ public class PolyDataUtil
 
 	/**
 	 * Get the number of facets in a PolyData file.
-	 * 
+	 *
 	 * @param fileName the name of the file
 	 * @return the number of facets.
 	 */
@@ -3355,13 +3421,13 @@ public class PolyDataUtil
 		}
 	}
 
-	public static void saveShapeModelAsPLT(vtkPolyData polydata, String filename) throws IOException
+	public static void saveShapeModelAsPLT(vtkPolyData polydata, File aFile) throws IOException
 	{
 		// This saves it out in exactly the same format as Bob Gaskell's shape
 		// models including precision and field width. That's why there's
 		// extra space padded at the end to make all lines the same length.
 
-		FileWriter fstream = new FileWriter(filename);
+		FileWriter fstream = new FileWriter(aFile);
 		BufferedWriter out = new BufferedWriter(fstream);
 
 		vtkPoints points = polydata.GetPoints();
@@ -3392,12 +3458,12 @@ public class PolyDataUtil
 		out.close();
 	}
 
-	public static void saveShapeModelAsOBJ(vtkPolyData polydata, String filename) throws IOException
+	public static void saveShapeModelAsOBJ(vtkPolyData polydata, File aFile) throws IOException
 	{
 		FileOutputStream fos = null;
 		try
 		{
-			fos = new FileOutputStream(new File(filename));
+			fos = new FileOutputStream(aFile);
 			saveShapeModelAsOBJ(polydata, fos);
 		}
 		catch (Throwable th)
@@ -3447,7 +3513,7 @@ public class PolyDataUtil
 		out.close();
 	}
 
-	public static void saveShapeModelAsVTK(vtkPolyData polydata, String filename) throws IOException
+	public static void saveShapeModelAsVTK(vtkPolyData polydata, File aFile) throws IOException
 	{
 		// First make a copy of polydata and remove all cell and point data since we don't want to save that out
 		vtkPolyData newpolydata = new vtkPolyData();
@@ -3466,12 +3532,12 @@ public class PolyDataUtil
 
 		vtkPolyDataWriter writer = new vtkPolyDataWriter();
 		writer.SetInputConnection(normalsFilter.GetOutputPort());
-		writer.SetFileName(filename);
+		writer.SetFileName(aFile.getAbsolutePath());
 		writer.SetFileTypeToBinary();
 		writer.Write();
 	}
 
-	public static void saveShapeModelAsSTL(vtkPolyData polydata, String filename) throws IOException
+	public static void saveShapeModelAsSTL(vtkPolyData polydata, File aFile) throws IOException
 	{
 		// First make a copy of polydata and remove all cell and point data since we don't want to save that out
 		vtkPolyData newpolydata = new vtkPolyData();
@@ -3481,7 +3547,7 @@ public class PolyDataUtil
 
 		vtkSTLWriter writer = new vtkSTLWriter();
 		writer.SetInputData(newpolydata);
-		writer.SetFileName(filename);
+		writer.SetFileName(aFile.getAbsolutePath());
 		writer.SetFileTypeToBinary();
 		writer.Write();
 	}

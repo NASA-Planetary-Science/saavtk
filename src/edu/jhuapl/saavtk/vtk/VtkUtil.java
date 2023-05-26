@@ -9,11 +9,14 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
-import edu.jhuapl.saavtk.vtk.VtkResource;
+import edu.jhuapl.saavtk.view.AssocActor;
+import vtk.vtkActor;
 import vtk.vtkCaptionActor2D;
 import vtk.vtkCellArray;
+import vtk.vtkObject;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
+import vtk.vtkProperty;
 import vtk.vtkUnsignedCharArray;
 
 /**
@@ -23,6 +26,16 @@ import vtk.vtkUnsignedCharArray;
  */
 public class VtkUtil
 {
+	/**
+	 * Utility method that will release the VTK memory associated with all of the
+	 * items in aItemC
+	 */
+	public static void deleteAll(Collection<? extends vtkObject> aItemC)
+	{
+		for (vtkObject aItem : aItemC)
+			aItem.Delete();
+	}
+
 	/**
 	 * Utility method that removes any VtkResource that does not correspond to an
 	 * item in the provided list, aItemL. The {@link VtkResource} will be released
@@ -109,6 +122,33 @@ public class VtkUtil
 		retPD.GetCellData().SetScalars(colorUCA);
 
 		return retPD;
+	}
+
+	/**
+	 * Utility method that returns the model associated with the specified
+	 * {@link vtkActor}.
+	 * <P>
+	 * This method will return the associated model if the provided actor implements
+	 * the {@link AssocActor} interface.
+	 */
+	public static Object getAssocModel(Object aActor)
+	{
+		if (aActor instanceof AssocActor == false)
+			return null;
+
+		return ((AssocActor) aActor).getAssocModel(Object.class);
+	}
+
+	/**
+	 * Utility method updates the {@link vtkProperty} to reflect the specified
+	 * color.
+	 *
+	 * @param aaProp
+	 * @param aColor
+	 */
+	public static void setColorOnProperty(vtkProperty aProperty, Color aColor)
+	{
+		aProperty.SetColor(aColor.getRed() / 255.0, aColor.getGreen() / 255.0, aColor.getBlue() / 255.0);
 	}
 
 	/**

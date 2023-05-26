@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -96,7 +97,7 @@ public class ZipFileUnzipper
     {
         checkNotCanceled("Unzip aborted");
 
-        System.out.println("Unzipping " + zipFile.getName());
+        System.out.println("Unzipping " + zipFile.getName() + " " + new Date());
 
         delete(tempExtractToFolder);
 
@@ -120,6 +121,14 @@ public class ZipFileUnzipper
                     try (InputStream inputStream = zipFile.getInputStream(entry))
                     {
                         String outputFileName = SAFE_URL_PATHS.getString(tempExtractToFolder.getPath(), entry.getName());
+
+                        // Ensure parent directory of output file exists.
+                        File parent = SAFE_URL_PATHS.get(outputFileName).toFile().getParentFile();
+                        if (!parent.isDirectory())
+                        {
+                            parent.mkdirs();
+                        }
+                        
                         try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFileName)))
                         {
                             StreamUnpacker unpacker = StreamUnpacker.of(inputStream, bufferSize);

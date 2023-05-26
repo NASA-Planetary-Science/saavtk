@@ -11,7 +11,7 @@ import edu.jhuapl.saavtk.model.ShapeModelType;
  * specific tool. Should be subclassed for each tool application instance. This
  * class is also used when creating (to know which tabs to create).
  */
-public abstract class ViewConfig implements Cloneable
+public abstract class ViewConfig implements Cloneable, IBodyViewConfig
 {
 	public String modelLabel;
 	public boolean customTemporary = false;
@@ -127,9 +127,9 @@ public abstract class ViewConfig implements Cloneable
 		this.enabled = enabled;
 	}
 
-    private static ConfigArrayList builtInConfigs = new ConfigArrayList();
+	private static ConfigArrayList<IBodyViewConfig> builtInConfigs = new ConfigArrayList();
 
-    public static ConfigArrayList getBuiltInConfigs()
+    public static ConfigArrayList<IBodyViewConfig> getBuiltInConfigs()
 	{
 		return builtInConfigs;
 	}
@@ -144,7 +144,7 @@ public abstract class ViewConfig implements Cloneable
 	 * @param author
 	 * @return
 	 */
-    public static ViewConfig getConfig(ShapeModelBody name, ShapeModelType author)
+    public static IBodyViewConfig getConfig(ShapeModelBody name, ShapeModelType author)
 	{
 		return getConfig(name, author, null);
 	}
@@ -159,17 +159,61 @@ public abstract class ViewConfig implements Cloneable
 	 * @param version
 	 * @return
 	 */
-    public static ViewConfig getConfig(ShapeModelBody name, ShapeModelType author, String version)
-	{
-		for (ViewConfig config : getBuiltInConfigs())
-		{
-			if (config.body == name && config.author == author && ((config.version == null && version == null) || (version != null && version.equals(config.version))))
-				return config;
-		}
+    public static IBodyViewConfig getConfig(ShapeModelBody name, ShapeModelType author, String version)
+   	{
+   		for (IBodyViewConfig config : getBuiltInConfigs())
+   		{
+   			if (config.getBody() == name && config.getAuthor() == author && ((config.getVersion() == null && version == null) || (version != null && version.equals(config.getVersion()))))
+   				return config;
+   		}
 
-		System.err.println("Error: Cannot find Config with name " + name + " and author " + author + " and version " + version);
+   		System.err.println("Error: Cannot find Config with name " + name + " and author " + author + " and version " + version);
 
-		return null;
+   		return null;
+   	}
+    
+    public String getModelLabel() {
+		return modelLabel;
+	}
+
+	public void setModelLabel(String modelLabel) {
+		this.modelLabel = modelLabel;
+	}
+
+	public ShapeModelType getAuthor() {
+		return author;
+	}
+
+	public void setAuthor(ShapeModelType author) {
+		this.author = author;
+	}
+
+	public String getVersion() {
+		return version;
+	}
+
+	public ShapeModelBody getBody() {
+		return body;
+	}
+
+	public boolean isCustomTemporary() {
+		return customTemporary;
+	}
+
+	public void setCustomTemporary(boolean customTemporary) {
+		this.customTemporary = customTemporary;
+	}
+
+	public boolean isHasCustomBodyCubeSize() {
+		return hasCustomBodyCubeSize;
+	}
+
+	public double getCustomBodyCubeSize() {
+		return customBodyCubeSize;
+	}
+
+	public boolean isUseMinimumReferencePotential() {
+		return useMinimumReferencePotential;
 	}
 
 	@Override

@@ -1,13 +1,17 @@
 package edu.jhuapl.saavtk.gui.menu;
 
+import java.awt.Desktop;
 import java.awt.FileDialog;
 import java.awt.Frame;
+import java.awt.desktop.PreferencesHandler;
+import java.awt.desktop.QuitHandler;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.JFrame;
@@ -15,6 +19,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
 import com.google.common.collect.ImmutableList;
@@ -22,15 +27,14 @@ import com.google.common.collect.Lists;
 
 import crucible.crust.metadata.api.Serializer;
 import crucible.crust.metadata.impl.gson.Serializers;
-import edu.jhuapl.saavtk.gui.OSXAdapter;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
+import edu.jhuapl.saavtk.gui.render.RenderIoUtil;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
 import edu.jhuapl.saavtk.model.structure.LineModel;
-import edu.jhuapl.saavtk.model.structure.PointModel;
 import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
 import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
@@ -38,6 +42,12 @@ import edu.jhuapl.saavtk.model.structure.esri.ShapefileUtil;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.structure.io.StructureLegacyUtil;
 import edu.jhuapl.saavtk.util.Configuration;
+import edu.jhuapl.saavtk.util.PolyDataUtil;
+import vtk.vtkOBJExporter;
+import vtk.vtkOBJReader;
+import vtk.vtkPolyData;
+import vtk.vtkProp;
+import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 public class FileMenu extends JMenu
 {
@@ -74,6 +84,9 @@ public class FileMenu extends JMenu
 		saveShapeModelMenu.add(mi);
 		mi = new JMenuItem(new SaveShapeModelAsSTLAction());
 		saveShapeModelMenu.add(mi);
+		
+		mi = new JMenuItem(new SaveSceneAsOBJAction());
+		this.add(mi);
 
 		JMenu convertMenu = new JMenu("Convert...");
 		this.add(convertMenu);
@@ -105,14 +118,20 @@ public class FileMenu extends JMenu
 		{
 			try
 			{
-				OSXAdapter.setPreferencesHandler(this, getClass().getDeclaredMethod("showPreferences", (Class[]) null));
-				OSXAdapter.setQuitHandler(this, getClass().getDeclaredMethod("exitTool", (Class[]) null));
+				Desktop.getDesktop().setPreferencesHandler(new PreferencesHandler() {
+                    @Override
+						public void handlePreferences(java.awt.desktop.PreferencesEvent e) {
+                        showPreferences();
+                    }
+                });
+				Desktop.getDesktop().setQuitHandler(new QuitHandler() {
+                    @Override
+						public void handleQuitRequestWith(java.awt.desktop.QuitEvent e, java.awt.desktop.QuitResponse r) {
+                        exitTool();
+                    }
+                });
 			}
 			catch (SecurityException e)
-			{
-				e.printStackTrace();
-			}
-			catch (NoSuchMethodException e)
 			{
 				e.printStackTrace();
 			}
@@ -204,7 +223,7 @@ public class FileMenu extends JMenu
 		@Override
 		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
-			rootPanel.getCurrentView().getRenderer().saveToFile();
+			RenderIoUtil.saveToFile(rootPanel.getCurrentView().getRenderer());
 		}
 	}
 
@@ -237,17 +256,65 @@ public class FileMenu extends JMenu
 		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			File file = CustomFileChooser.showSaveDialog(null, "Export Shape Model to PLT (Gaskell Format)", "model.plt");
+			if (file == null)
+				return;
 
 			try
 			{
-				if (file != null)
-					rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsPLT(file);
+				vtkPolyData vTmpPD = rootPanel.getCurrentView().getModelManager().getPolyhedralModel().getSmallBodyPolyData();
+				PolyDataUtil.saveShapeModelAsPLT(vTmpPD, file);
 			}
 			catch (Exception e1)
 			{
 				e1.printStackTrace();
 				JOptionPane.showMessageDialog(null, "An error occurred exporting the shape model.", "Error", JOptionPane.ERROR_MESSAGE);
 				return;
+			}
+		}
+	}
+	
+	private class SaveSceneAsOBJAction extends AbstractAction 
+	{
+		public SaveSceneAsOBJAction() 
+		{
+			super("Export Scene to OBJs");
+		}
+		
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			File file = CustomFileChooser.showSaveDialog(null, "Export Scene to OBJ", "export.obj");
+
+			if (file != null)
+			{
+
+				String fileprefix = FilenameUtils.removeExtension(file.getAbsolutePath());
+				vtkJoglPanelComponent renderPanel = new vtkJoglPanelComponent();
+				renderPanel.getRenderWindow().OffScreenRenderingOn();
+				vtkOBJExporter exporter = new vtkOBJExporter();
+				exporter.SetRenderWindow(renderPanel.getRenderWindow());
+				vtkOBJReader importer = new vtkOBJReader();
+
+				List<vtkProp> actors = rootPanel.getCurrentView().getRenderer().getAllActors();
+				for (vtkProp actor : actors)
+				{
+					if (actor.GetVisibility() == 1)
+					{
+						renderPanel.getRenderer().AddViewProp(actor);
+						renderPanel.Render();
+						exporter.SetFilePrefix(fileprefix + "_" + actors.indexOf(actor));
+						exporter.Update();
+						renderPanel.getRenderer().RemoveViewProp(actor);
+						importer.SetFileName(fileprefix + "_" + actors.indexOf(actor) + ".obj");
+						importer.Update();
+						if (importer.GetOutput().GetNumberOfPoints() == 0)
+						{
+							FileUtils.deleteQuietly(new File(fileprefix + "_" + actors.indexOf(actor) + ".obj"));
+							FileUtils.deleteQuietly(new File(fileprefix + "_" + actors.indexOf(actor) + ".mtl"));
+						}
+					}
+				}
+				renderPanel.Delete();
 			}
 		}
 	}
@@ -265,11 +332,13 @@ public class FileMenu extends JMenu
 		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			File file = CustomFileChooser.showSaveDialog(null, "Export Shape Model to OBJ", "model.obj");
+			if (file == null)
+				return;
 
 			try
 			{
-				if (file != null)
-					rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsOBJ(file);
+				vtkPolyData vTmpPD = rootPanel.getCurrentView().getModelManager().getPolyhedralModel().getSmallBodyPolyData();
+				PolyDataUtil.saveShapeModelAsOBJ(vTmpPD, file);
 			}
 			catch (Exception e1)
 			{
@@ -293,11 +362,13 @@ public class FileMenu extends JMenu
 		public void actionPerformed(@SuppressWarnings("unused") ActionEvent actionEvent)
 		{
 			File file = CustomFileChooser.showSaveDialog(null, "Export Shape Model to STL", "model.stl");
+			if (file == null)
+				return;
 
 			try
 			{
-				if (file != null)
-					rootPanel.getCurrentView().getModelManager().getPolyhedralModel().saveAsSTL(file);
+				vtkPolyData vTmpPD = rootPanel.getCurrentView().getModelManager().getPolyhedralModel().getSmallBodyPolyData();
+				PolyDataUtil.saveShapeModelAsSTL(vTmpPD, file);
 			}
 			catch (Exception e1)
 			{
@@ -502,7 +573,7 @@ public class FileMenu extends JMenu
 					try
 					{
 						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.POINT_STRUCTURES, body);
-						ShapefileUtil.writePointStructures(Lists.newArrayList(PointStructure.fromSbmtStructure((PointModel) model)), opath.resolve(oname));
+						ShapefileUtil.writePointStructures(Lists.newArrayList(PointStructure.fromSbmtStructure((AbstractEllipsePolygonModel) model)), opath.resolve(oname));
 
 					}
 					catch (IOException ex)

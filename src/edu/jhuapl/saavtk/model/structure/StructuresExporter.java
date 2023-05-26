@@ -15,6 +15,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.esri.LineSegment;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
@@ -33,24 +34,22 @@ public class StructuresExporter
 
 	public static void exportToShapefile(StructureManager<?> model, Path shapeFile) throws IOException
 	{
-		if (model instanceof PointModel)
-		{
-			exportToShapefile((PointModel) model, shapeFile);
-			return;
-		}
 		if (model instanceof LineModel || model instanceof PolygonModel)
 		{
 			exportToShapefile((LineModel) model, shapeFile);
 			return;
 		}
-		if (model instanceof AbstractEllipsePolygonModel)
+		if (model instanceof AbstractEllipsePolygonModel aModel)
 		{
-			exportToShapefile((AbstractEllipsePolygonModel) model, shapeFile);
+			if (aModel.getMode() == Mode.POINT_MODE)
+				exportPointsToShapefile(aModel, shapeFile);
+			else
+				exportToShapefile(aModel, shapeFile);
 			return;
 		}
 	}
 
-	public static void exportToShapefile(PointModel aPointManager, Path aShapeFile) throws IOException
+	public static void exportPointsToShapefile(AbstractEllipsePolygonModel aPointManager, Path aShapeFile) throws IOException
 	{
 		List<PointStructure> structuresToWrite = new ArrayList<>();
 
@@ -128,7 +127,7 @@ public class StructuresExporter
     	return body.getModelName().replaceAll(" ", "_").replaceAll("/", "-")+"."+modelName+".shp";
     }
 
-    public static void exportToVtkFile(PointModel aPointManager, Path vtkFile, boolean multipleFiles)
+    public static void exportToVtkFile(AbstractEllipsePolygonModel aPointManager, Path vtkFile, boolean multipleFiles)
     {
  		// Determine the structures to be exported
  		Collection<Ellipse> tmpC = aPointManager.getSelectedItems();

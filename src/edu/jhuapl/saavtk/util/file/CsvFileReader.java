@@ -12,6 +12,7 @@ import java.util.zip.GZIPInputStream;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.Doubles;
 
 import edu.jhuapl.saavtk.util.file.DataFileInfo.FileFormat;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo.Description;
@@ -129,7 +130,7 @@ public class CsvFileReader extends DataFileReader
 
 		if (numberColumns == 0)
 		{
-			return EMPTY_INDEXABLE;
+			return emptyIndexable();
 		}
 		Preconditions.checkNotNull(file);
 		Preconditions.checkArgument(file.exists());
@@ -224,9 +225,8 @@ public class CsvFileReader extends DataFileReader
 		}
 	}
 
-	protected IndexableTuple readTuples(File file, BufferedReader in, int numberColumns, Iterable<Integer> columnNumbers) throws FieldNotFoundException, IOException
+	protected IndexableTuple readTuples(File file, BufferedReader in, int numberFields, Iterable<Integer> columnNumbers) throws FieldNotFoundException, IOException
 	{
-		final int numberCells = numberColumns;
 		ImmutableList.Builder<ImmutableList<Double>> builder = ImmutableList.builder();
 
 		// Parse the first line, which is interpreted as the column titles.
@@ -282,19 +282,19 @@ public class CsvFileReader extends DataFileReader
 		return new IndexableTuple() {
 
 			@Override
-			public int getNumberCells()
+			public int getNumberFields()
 			{
-				return numberCells;
+				return numberFields;
 			}
 
 			@Override
-			public String getName(int cellIndex)
+			public String getName(int fieldIndex)
 			{
-				return names.get(cellIndex);
+				return names.get(fieldIndex);
 			}
 
 			@Override
-			public String getUnits(@SuppressWarnings("unused") int cellIndex)
+			public String getUnits(@SuppressWarnings("unused") int fieldIndex)
 			{
 				return "";
 			}
@@ -306,26 +306,26 @@ public class CsvFileReader extends DataFileReader
 			}
 
 			@Override
-			public Tuple get(int index)
+			public Tuple get(int tupleIndex)
 			{
 				return new Tuple() {
 
 					@Override
 					public int size()
 					{
-						return numberCells;
+						return numberFields;
+					}
+					
+					@Override
+					public double[] get()
+					{
+					    return Doubles.toArray(valuesList.get(tupleIndex));
 					}
 
 					@Override
-					public String getAsString(int cellIndex)
+					public double get(int fieldIndex)
 					{
-						return Double.toString(get(cellIndex));
-					}
-
-					@Override
-					public double get(int cellIndex)
-					{
-						return valuesList.get(index).get(cellIndex);
+						return valuesList.get(tupleIndex).get(fieldIndex);
 					}
 				};
 			}
@@ -353,9 +353,9 @@ public class CsvFileReader extends DataFileReader
 	private ImmutableList<Double> getRowAsDoubles(ImmutableList<String> line) throws NumberFormatException
 	{
 		ImmutableList.Builder<Double> builder = ImmutableList.builder();
-		for (String cell : line)
+		for (String field : line)
 		{
-			builder.add(Double.parseDouble(cell));
+			builder.add(Double.parseDouble(field));
 		}
 		return builder.build();
 	}

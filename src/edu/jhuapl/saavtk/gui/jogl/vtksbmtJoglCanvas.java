@@ -1,8 +1,8 @@
 package edu.jhuapl.saavtk.gui.jogl;
 
-import javax.media.opengl.GLCapabilities;
-import javax.media.opengl.GLProfile;
-import javax.media.opengl.awt.GLCanvas;
+import com.jogamp.opengl.GLCapabilities;
+import com.jogamp.opengl.GLProfile;
+import com.jogamp.opengl.awt.GLCanvas;
 
 import vtk.vtkGenericOpenGLRenderWindow;
 

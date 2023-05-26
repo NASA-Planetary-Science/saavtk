@@ -5,8 +5,10 @@ import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.model.ColoringData;
+import com.google.common.collect.ImmutableList;
+
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.structure.Ellipse;
@@ -19,26 +21,42 @@ import vtk.vtkTransform;
 /**
  * Collection of miscellaneous utility methods for working with
  * {@link Ellipse}s.
- * <P>
- * A number of methods originated from the file (~2019Oct07):<BR>
- * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java<BR>
- * edu.jhuapl.saavtk.model.structure.AbstractEllipse.java<BR>
+ * <p>
+ * A number of methods originated from the file (~2019Oct07):<br>
+ * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java<br>
+ * edu.jhuapl.saavtk.model.structure.AbstractEllipse.java<br>
  *
  * @author lopeznr1
  */
 public class EllipseUtil
 {
 	/**
+	 * Updates the specified {@link Ellipse} so that the radius will be defined as
+	 * the distance between the ellipse's center and the (new) edge point.
+	 * <p>
+	 * An assumption is made that the specified edge point lies on the surface of
+	 * the provided body.
+	 */
+	public static void changeRadius(AbstractEllipsePolygonModel aManager, Ellipse aItem, PolyhedralModel aSmallBody,
+			Vector3D aPointOnEdge)
+	{
+		double tmpRadius = computeRadius(aSmallBody, aItem.getCenter(), aPointOnEdge);
+		aItem.setRadius(tmpRadius);
+
+		// Send out notification of the mutation
+		List<Ellipse> tmpItemL = ImmutableList.of(aItem);
+		aManager.notifyItemsMutated(tmpItemL);
+	}
+
+	/**
 	 * TODO: Add documentation
-	 * <P>
+	 * <p>
 	 * Source (~2019Oct07):
 	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
 	 */
-	public static double computeAngleOfPolygon(PolyhedralModel aSmallBody, Vector3D aCenter,
-			Vector3D aNewPointOnPerimeter)
+	public static double computeAngle(PolyhedralModel aSmallBody, Vector3D aCenter, Vector3D aPointOnEdge)
 	{
 		double[] centerArr = aCenter.toArray();
-		double[] newPointOnPerimeterArr = aNewPointOnPerimeter.toArray();
 
 		// The following math does this: we need to find the direction of
 		// the semimajor axis of the ellipse. Then once we have that
@@ -67,7 +85,7 @@ public class EllipseUtil
 		// Project newPoint onto the plane perpendicular to the
 		// normal of the shape model.
 		double[] projPoint = new double[3];
-		MathUtil.vprjp(newPointOnPerimeterArr, normal, centerArr, projPoint);
+		MathUtil.vprjp(aPointOnEdge.toArray(), normal, centerArr, projPoint);
 		double[] projDir = new double[3];
 		MathUtil.vsub(projPoint, centerArr, projDir);
 		MathUtil.vhat(projDir, projDir);
@@ -86,20 +104,23 @@ public class EllipseUtil
 
 		transform.Delete();
 
+		// Ensure the new angle is in range from [0, 180]
+		if (newAngle < 0)
+			newAngle += 180;
+
 		return newAngle;
 	}
 
 	/**
 	 * TODO: Add documentation
-	 * <P>
+	 * <p>
 	 * Source (~2019Oct07):
 	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
 	 */
-	public static double computeFlatteningOfPolygon(PolyhedralModel aSmallBody, Vector3D aCenter, double aRadius,
-			double aAngle, Vector3D aNewPointOnPerimeter)
+	public static double computeFlattening(PolyhedralModel aSmallBody, Vector3D aCenter, double aRadius, double aAngle,
+			Vector3D aPointOnEdge)
 	{
 		double[] centerArr = aCenter.toArray();
-		double[] newPointOnPerimeterArr = aNewPointOnPerimeter.toArray();
 
 		// The following math does this: we need to find the direction of
 		// the semimajor axis of the ellipse. Then once we have that
@@ -129,7 +150,7 @@ public class EllipseUtil
 		// Project newPoint onto the plane perpendicular to the
 		// normal of the shape model.
 		double[] projPoint = new double[3];
-		MathUtil.vprjp(newPointOnPerimeterArr, normal, centerArr, projPoint);
+		MathUtil.vprjp(aPointOnEdge.toArray(), normal, centerArr, projPoint);
 		double[] projDir = new double[3];
 		MathUtil.vsub(projPoint, centerArr, projDir);
 
@@ -154,10 +175,77 @@ public class EllipseUtil
 	}
 
 	/**
+	 * Computes the radius between the specified center and a point on the edge.
+	 * <p>
+	 * This currently uses a simple distance computation. In the future the surface
+	 * of the provided {@link PolyhedralModel} may be taken into account.
+	 * <p>
+	 * The returned radius will be no more than a maximum as specified by
+	 * {@link #getMaxRadius}.
+	 */
+	public static double computeRadius(PolyhedralModel aSmallBody, Vector3D aCenter, Vector3D aPointOnEdge)
+	{
+		double maxRadius = getMaxRadius(aSmallBody);
+
+		double retRadius = aPointOnEdge.distance(aCenter);
+		if (retRadius > maxRadius)
+			retRadius = maxRadius;
+
+		return retRadius;
+	}
+
+	/**
+	 * Returns the default (point) radius that should be utilized for the specified
+	 * {@link PolyhedralModel}.
+	 * <p>
+	 * The default radius is defined as 1/155 of the shape model's bounding box.
+	 */
+	public static double getDefRadius(PolyhedralModel aSmallBody)
+	{
+		return aSmallBody.getBoundingBoxDiagonalLength() / 155.0;
+	}
+
+	/**
+	 * Returns the minimum radius that should be utilized for the specified
+	 * {@link PolyhedralModel}.
+	 * <p>
+	 * The minimum radius will be a value close to zero. It is guaranteed to be
+	 * smaller than the max radius and no larger than the default radius.
+	 */
+	public static double getMinRadius(PolyhedralModel aSmallBody)
+	{
+		var defVal = getDefRadius(aSmallBody);
+		var maxVal = getMaxRadius(aSmallBody);
+
+		// Computation logic is:
+		// [1] Assume the minValue == 0.00001
+		// [2] If greater than maxVal then 1/100 of maxVal
+		// [3] If greater than defVal then defVal
+		var minVal = 0.00001;
+		if (minVal >= maxVal)
+			minVal = maxVal / 100.0;
+		if (minVal > defVal)
+			minVal = defVal;
+
+		return minVal;
+	}
+
+	/**
+	 * Returns the maximum radius that should be utilized for the specified
+	 * {@link PolyhedralModel}.
+	 * <p>
+	 * The maximum radius is defined as 1/8th of the shape model's bounding box.
+	 */
+	public static double getMaxRadius(PolyhedralModel aSmallBody)
+	{
+		return aSmallBody.getBoundingBoxDiagonalLength() / 8.0;
+	}
+
+	/**
 	 * Returns an array containing the 4 standard coloring units. The returned array
 	 * will have the standard coloring units defined in the following (index) order:
 	 * (Slope, Elevation, GravAccel, GravPotential)
-	 * <P>
+	 * <p>
 	 * If a unit is not available then null will be stored at the relevant index.
 	 */
 	public static String[] getStandardColoringUnits(PolyhedralModel aSmallBody)
@@ -189,10 +277,10 @@ public class EllipseUtil
 	 * Returns an array containing the 4 standard coloring values. The returned
 	 * array will have the standard coloring units defined in the following (index)
 	 * order: (Slope, Elevation, GravAccel, GravPotential)
-	 * <P>
+	 * <p>
 	 * If a value is not available then NaN will be stored at the relevant index.
-	 * <P>
-	 * Source Basis (~2019Oct07):<BR>
+	 * <p>
+	 * Source Basis (~2019Oct07):<br>
 	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
 	 */
 	public static double[] getStandardColoringValues(AbstractEllipsePolygonModel aManager, Ellipse aEllipse,
@@ -316,7 +404,7 @@ public class EllipseUtil
 
 	/**
 	 * TODO: Add documentation
-	 * <P>
+	 * <p>
 	 * Source (~2019Oct07):
 	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
 	 */

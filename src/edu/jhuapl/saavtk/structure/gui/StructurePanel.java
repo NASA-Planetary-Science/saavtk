@@ -47,9 +47,8 @@ import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
-import edu.jhuapl.saavtk.model.structure.CircleModel;
+import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.model.structure.LineModel;
-import edu.jhuapl.saavtk.model.structure.PointModel;
 import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.pick.ControlPointsPicker;
 import edu.jhuapl.saavtk.pick.PickListener;
@@ -85,13 +84,13 @@ import net.miginfocom.swing.MigLayout;
 
 /**
  * Panel used to display a list of structures.
- * <P>
+ * <p>
  * The following functionality is supported:
- * <UL>
- * <LI>Display a list of structures in a table.
- * <LI>Allow user to show, hide, add, edit, or delete structures
- * <LI>Allow user to load or save structures.
- * <UL>
+ * <ul>
+ * <li>Display a list of structures in a table.
+ * <li>Allow user to show, hide, add, edit, or delete structures
+ * <li>Allow user to load or save structures.
+ * <ul>
  *
  * @author lopeznr1
  */
@@ -181,14 +180,14 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		tmpComposer.addAttribute(LookUp.Type, String.class, "Type", "Polygon");
 		tmpComposer.addAttribute(LookUp.Name, String.class, "Name", null);
 		tmpComposer.addAttribute(LookUp.Label, String.class, "Label", null);
-		if (aStructureManager instanceof AbstractEllipsePolygonModel)
+		if (aStructureManager instanceof AbstractEllipsePolygonModel aStructureManager2)
 		{
 			String maxStr = "Diam.: km"; // "9,876.987"
 			tmpComposer.addAttribute(LookUp.Diameter, Double.class, "Diam: km", maxStr);
 			tmpComposer.setRenderer(LookUp.Diameter, new NumberRenderer("#.####", "---"));
 			tmpComposer.getItem(LookUp.Diameter).maxSize *= 2;
-			boolean isPointManager = aStructureManager instanceof PointModel;
-			if (isPointManager == false && aStructureManager instanceof CircleModel == false)
+			boolean isPointManager = aStructureManager2.getMode() == Mode.POINT_MODE;
+			if (isPointManager == false && aStructureManager2.getMode() != Mode.CIRCLE_MODE)
 			{
 				tmpComposer.addAttribute(LookUp.Angle, Double.class, "Angle", maxStr);
 				tmpComposer.setRenderer(LookUp.Angle, new NumberRenderer("#.###", "---"));
@@ -200,16 +199,16 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		else
 		{
 			String maxStr = "Len.: km"; // "9,876.987"
-			tmpComposer.addAttribute(LookUp.Length, Double.class, "Len: km", maxStr);
-			tmpComposer.setRenderer(LookUp.Length, new NumberRenderer("#.###", "---"));
+			tmpComposer.addAttribute(LookUp.Length, Double.class, "Length: km", maxStr);
+			tmpComposer.setRenderer(LookUp.Length, new NumberRenderer("#.#####", "----"));
 			tmpComposer.getItem(LookUp.Length).maxSize *= 2;
-			tmpComposer.addAttribute(LookUp.VertexCount, Integer.class, "# pts", "999");
+			tmpComposer.addAttribute(LookUp.VertexCount, Integer.class, "# Pts", "999");
 			tmpComposer.getItem(LookUp.VertexCount).maxSize *= 2;
 			if (aStructureManager instanceof PolygonModel)
 			{
 				String tmpStr = "Area: km" + (char) 0x00B2;
 				tmpComposer.addAttribute(LookUp.Area, Double.class, tmpStr, maxStr);
-				tmpComposer.setRenderer(LookUp.Area, new NumberRenderer("#.###", "---"));
+				tmpComposer.setRenderer(LookUp.Area, new NumberRenderer("#.#####", "----"));
 				tmpComposer.getItem(LookUp.Area).maxSize *= 2;
 			}
 		}
@@ -332,8 +331,8 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 
 		// Create the pointDiameterPanel if the StructureManager is of type PointModel
 		PointDiameterPanel pointDiameterPanel = null;
-		if (refStructureManager instanceof PointModel)
-			pointDiameterPanel = new PointDiameterPanel((PointModel) refStructureManager);
+		if (refStructureManager instanceof AbstractEllipsePolygonModel aPointModel && aPointModel.getMode() == Mode.POINT_MODE)
+			pointDiameterPanel = new PointDiameterPanel(aSmallBody, aPointModel);
 
 		// Either the lineWidthNFS or the pointDiameterPanel will be visible
 		if (pointDiameterPanel != null)
@@ -578,7 +577,7 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 
 	/**
 	 * Helper method that updates the manager to reflect the activated item.
-	 * <P>
+	 * <p>
 	 * Note: Currently not all {@link StructureManager}s support activation.
 	 */
 	@SuppressWarnings("unchecked")

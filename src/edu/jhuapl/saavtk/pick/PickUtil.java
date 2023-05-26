@@ -11,26 +11,26 @@ import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
-import edu.jhuapl.saavtk.gui.StatusBar;
-import edu.jhuapl.saavtk.gui.StatusBarDefaultPickHandler;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.pick.PickManager.PickMode;
+import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.util.Configuration;
+import edu.jhuapl.saavtk.util.ScreenUtil;
 import vtk.vtkCellPicker;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 /**
  * Utility class for configuration of Picker related code.
- * <P>
+ * <p>
  * Please note the following:
- * <UL>
- * <LI>The method {@link #formNonDefaultPickerMap(Renderer, ModelManager)} is
+ * <ul>
+ * <li>The method {@link #formNonDefaultPickerMap(Renderer, ModelManager)} is
  * marked for removal.
- * <LI>The method {@link #setPickingEnabled(boolean)} should be investigated
+ * <li>The method {@link #setPickingEnabled(boolean)} should be investigated
  * further and eventually removed if possible.
- * <UL>
+ * <ul>
  *
  * @author lopeznr1
  */
@@ -57,41 +57,29 @@ public class PickUtil
 	@Deprecated
 	protected static Map<PickMode, Picker> formNonDefaultPickerMap(Renderer aRenderer, ModelManager aModelManager)
 	{
+		StructureManager<?> tmpCircleSelectionManager = (StructureManager<?>) aModelManager
+				.getModel(ModelNames.CIRCLE_SELECTION);
+
 		Map<PickMode, Picker> retMap = new HashMap<>();
 		if (aModelManager.getModel(ModelNames.CIRCLE_STRUCTURES) != null)
-			retMap.put(PickMode.CIRCLE_SELECTION, new CircleSelectionPicker(aRenderer, aModelManager));
+			retMap.put(PickMode.CIRCLE_SELECTION,
+					new CircleSelectionPicker(aRenderer, aModelManager.getPolyhedralModel(), tmpCircleSelectionManager));
 
 		return retMap;
 	}
 
 	/**
-	 * Registers a {@link StatusBarDefaultPickHandler} with the
-	 * {@link PickManager}'s {@link DefaultPicker}.
-	 * <P>
-	 * The installed {@link StatusBarDefaultPickHandler} will handle updates
-	 * relevant to the status bar.
-	 */
-	public static void installDefaultPickHandler(PickManager aPickManager, StatusBar aStatusBar, Renderer aRenderer,
-			ModelManager aModelManager)
-	{
-		DefaultPicker tmpDefaultPicker = aPickManager.getDefaultPicker();
-		StatusBarDefaultPickHandler tmpStatusBarHandler = new StatusBarDefaultPickHandler(aStatusBar, aRenderer,
-				aModelManager);
-		tmpDefaultPicker.addListener(tmpStatusBarHandler);
-	}
-
-	/**
 	 * Determines if the specified {@link InputEvent} is a valid popup trigger.
-	 * <P>
+	 * <p>
 	 * To be considered a valid popup trigger, the following must be true:
-	 * <UL>
-	 * <LI>InputEvent must be of type {@link MouseEvent}
-	 * <LI>On Linux / Windows systems, the event must be associated with the
+	 * <ul>
+	 * <li>InputEvent must be of type {@link MouseEvent}
+	 * <li>On Linux / Windows systems, the event must be associated with the
 	 * right-mouse-button.
-	 * <LI>On Mac systems the event must be either associated with the
+	 * <li>On Mac systems the event must be either associated with the
 	 * {@link MouseEvent#BUTTON3} or <CTRL> key is pressed while
 	 * {@link MouseEvent#BUTTON1} is pressed.
-	 * </UL>
+	 * </ul>
 	 */
 	public static boolean isPopupTrigger(InputEvent aEvent)
 	{
@@ -177,11 +165,10 @@ public class PickUtil
 		// Note that on some displays, such as a retina display, the height used by
 		// OpenGL is different than the height used by Java. Therefore we need
 		// scale the mouse coordinates to get the right position for OpenGL.
-		// double openGlHeight = aRenComp.getComponent().getSurfaceHeight();
-		// double openGlHeight = aRenComp.getComponent().getHeight();
+//		 double openGlHeight = aRenComp.getComponent().getSurfaceHeight();
+//		 double openGlHeight = aRenComp.getComponent().getHeight();
 		double javaHeight = aRenComp.getComponent().getHeight();
-		// double scale = openGlHeight / javaHeight;
-		double scale = 1.0;
+		double scale = ScreenUtil.getScreenScale(aRenComp);
 		int tmpVal = aCellPicker.Pick(scale * aPosX, scale * (javaHeight - aPosY - 1), 0.0, aRenComp.getRenderer());
 
 		aRenComp.getVTKLock().unlock();

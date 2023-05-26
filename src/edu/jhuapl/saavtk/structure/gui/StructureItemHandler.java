@@ -111,14 +111,7 @@ public class StructureItemHandler<G1 extends Structure> extends BasicItemHandler
 
 		Ellipse tmpItem = (Ellipse) aItem;
 		Mode tmpMode = tmpItem.getMode();
-		if (tmpMode == Mode.CIRCLE_MODE)
-			return "circle";
-		else if (tmpMode == Mode.ELLIPSE_MODE)
-			return "ellipse";
-		else if (tmpMode == Mode.POINT_MODE)
-			return "point";
-
-		return "unknown";
+		return tmpMode.getLabel().toLowerCase();
 	}
 
 }

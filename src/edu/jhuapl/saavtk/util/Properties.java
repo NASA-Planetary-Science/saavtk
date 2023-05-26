@@ -13,6 +13,8 @@ public interface Properties
 
     final String MSI_IMAGE_BACKPLANE_GENERATION_UPDATE = "msi-image-backplane-generation-update";
     final String MODEL_RESOLUTION_CHANGED = "model-resolution-changed";
+    
+    final String MODEL_POSITION_CHANGED = "model-position-changed";
 
     final String SPECTRUM_REGION_CHANGED = "spectrum-region-changed";
 

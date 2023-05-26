@@ -9,8 +9,8 @@ import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.model.ColoringData;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.structure.Ellipse;
@@ -22,10 +22,10 @@ import edu.jhuapl.saavtk.util.MathUtil;
 /**
  * Collection of utility methods for serializing structures (or aspects of a
  * structure).
- * <P>
+ * <p>
  * A number of methods originated from the package (~2019Oct07):
  * edu.jhuapl.saavtk.model.structure.*
- * <P>
+ * <p>
  * These methods have been factored out so that serialization logic is separate
  * from classes of type {@link StructureManager}.
  *
@@ -35,7 +35,7 @@ public class StructureSaveUtil
 {
 	/**
 	 * Utility method for saving the content of a list of {@link Ellipse}s.
-	 * <P>
+	 * <p>
 	 * This method originated from (~2019Oct07):
 	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
 	 */
@@ -57,6 +57,8 @@ public class StructureSaveUtil
 			String name = aEllipse.getName();
 			if (name.length() == 0)
 				name = "default";
+			else if (name.matches(".*\\s.*") == true)
+				name = "\"" + name + "\"";
 
 			// Since tab is used as the delimiter, replace any tabs in the name with spaces.
 			name = name.replace('\t', ' ');
@@ -115,13 +117,13 @@ public class StructureSaveUtil
 	 * Save out a file which contains the value of the various coloring data as a
 	 * function of distance along the profile. A profile is path with only 2 control
 	 * points.
-	 * <P>
+	 * <p>
 	 * Before this method was refactored out, it was required that the provided 3D
 	 * points originated from a line with only 2 control points. It is left to the
 	 * caller to ensure that this requirement is met or that consumers of the output
 	 * file are robust to handle 3D points output that does not originate from 2
 	 * control points.
-	 * <P>
+	 * <p>
 	 * This method originated from (~2019Oct07):
 	 * edu.jhuapl.saavtk.model.structure.LineModel.java
 	 *
@@ -153,7 +155,7 @@ public class StructureSaveUtil
 		for (ColoringData coloring : colorings)
 		{
 			String units = coloring.getUnits();
-			for (String element : coloring.getElementNames())
+			for (String element : coloring.getFieldNames())
 			{
 				out.write("," + element);
 				if (!units.isEmpty())
@@ -244,8 +246,6 @@ public class StructureSaveUtil
 		String coloringUnitStr = String.format("slope (%s), elevation (%s), acceleration (%s), potential (%s)",
 				unitStrArr[0], unitStrArr[1], unitStrArr[2], unitStrArr[3]);
 
-		String columnDefStr = "<id> <name> <centerXYZ[3]> <centerLLR[3]> <coloringValue[4]> <diameter> <flattening> <regularAngle> <colorRGB> <gravityAngle> <label>";
-
 		String dataTypeStr = "ellipse";
 		if (aMode == Mode.CIRCLE_MODE)
 			dataTypeStr = "circle";
@@ -255,6 +255,10 @@ public class StructureSaveUtil
 		boolean alwaysTrue = true;
 		boolean isEllipseF = aMode != Mode.ELLIPSE_MODE;
 		boolean isEllipseT = aMode == Mode.ELLIPSE_MODE;
+
+		String columnDefStr = "<id> <name> <centerXYZ[3]> <centerLLR[3]> <coloringValue[4]> <diameter> <flattening> <regularAngle> <colorRGB> <gravityAngle> <label>";
+		if (isEllipseF == true)
+			columnDefStr = "<id> <name> <centerXYZ[3]> <centerLLR[3]> <coloringValue[4]> <diameter> <flattening> <regularAngle> <colorRGB> <label>";
 
 		writeLine(aBW, alwaysTrue, "# SBMT Structure File");
 		writeLine(aBW, alwaysTrue, "# type," + dataTypeStr);
@@ -271,13 +275,13 @@ public class StructureSaveUtil
 		writeLine(aBW, alwaysTrue, "#     centerLLR[3]: 3 columns that define the structure center in lat,lon,radius");
 		writeLine(aBW, alwaysTrue, "# coloringValue[4]: 4 columns that define the ellipse “standard” colorings. The");
 		writeLine(aBW, alwaysTrue, "#                   colorings are: " + coloringUnitStr);
-		writeLine(aBW, alwaysTrue, "#         diameter: Diameter of (semimajor) axis of ellipse");
+		writeLine(aBW, alwaysTrue, "#         diameter: Diameter of major axis of ellipse");
 		writeLine(aBW, alwaysTrue, "#       flattening: Flattening factor of ellipse. Range: [0.0, 1.0]");
-		writeLine(aBW, alwaysTrue, "#     regularAngle: Angle between the semimajor axis and the semiminor axis as");
-		writeLine(aBW, alwaysTrue, "#                   projected onto the surface");
+		writeLine(aBW, alwaysTrue, "#     regularAngle: Angle between the major axis and the line of longitude");
+		writeLine(aBW, alwaysTrue, "#                   as projected onto the surface");
 		writeLine(aBW, alwaysTrue, "#         colorRGB: 1 column (of RGB values [0, 255] separated by commas with no");
 		writeLine(aBW, alwaysTrue, "#                   spaces). This column appears as a single textual column.");
-		writeLine(aBW, isEllipseT, "#     gravityAngle: Angle between the semimajor axis of the ellipse and the gravity");
+		writeLine(aBW, isEllipseT, "#     gravityAngle: Angle between the major axis of the ellipse and the gravity");
 		writeLine(aBW, isEllipseT, "#                   acceleration vector... (Description continues in user manual)");
 		writeLine(aBW, alwaysTrue, "#            label: Label of the structure");
 		writeLine(aBW, alwaysTrue, "#");

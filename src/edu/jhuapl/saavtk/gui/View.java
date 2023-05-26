@@ -10,8 +10,8 @@ import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.BorderFactory;
@@ -21,17 +21,21 @@ import javax.swing.JPopupMenu;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 
-import edu.jhuapl.saavtk.config.ViewConfig;
+import edu.jhuapl.saavtk.config.IViewConfig;
 import edu.jhuapl.saavtk.gui.render.Renderer;
+import edu.jhuapl.saavtk.model.IPositionOrientationManager;
 import edu.jhuapl.saavtk.model.Model;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
+import edu.jhuapl.saavtk.pick.DefaultPicker;
 import edu.jhuapl.saavtk.pick.PickManager;
 import edu.jhuapl.saavtk.popup.PopupManager;
 import edu.jhuapl.saavtk.popup.PopupMenu;
-import edu.jhuapl.saavtk.scalebar.ScaleBarPainter;
+import edu.jhuapl.saavtk.status.LegacyStatusHandler;
+import edu.jhuapl.saavtk.status.LocationStatusHandler;
+import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.util.Configuration;
-import edu.jhuapl.saavtk.util.Preferences;
+import edu.jhuapl.saavtk.view.light.LightUtil;
 
 /**
  * A view is a container which contains a control panel and renderer as well as
@@ -41,19 +45,23 @@ import edu.jhuapl.saavtk.util.Preferences;
  */
 public abstract class View extends JPanel
 {
-    private static final long serialVersionUID = 1L;
-    private JSplitPane splitPane;
+    /** Global to keep track of the most recent change in any (splitPane) divider location. */
+    private static int globLastDividerLocation = -1;
+
+	private static final long serialVersionUID = 1L;
+    protected JSplitPane splitPane;
     protected Renderer renderer;
-    private JTabbedPane controlPanel;
+    protected JTabbedPane controlPanel;
     private ModelManager modelManager;
     private PickManager pickManager;
     private PopupManager popupManager;
-    private ScaleBarPainter scaleBarPainter;
     private WindowManager infoPanelManager;
     private WindowManager spectrumPanelManager;
-    private StatusBar statusBar;
-    private final AtomicBoolean initialized = new AtomicBoolean(false);
-    private ViewConfig config;
+    protected IPositionOrientationManager positionOrientationManager;
+    private final StatusNotifier refStatusNotifier;
+    private LegacyStatusHandler legacyStatusHandler;
+    protected final AtomicBoolean initialized = new AtomicBoolean(false);
+    protected IViewConfig config;
     protected String uniqueName;
     protected String shapeModelName;
     protected String configURL;
@@ -100,14 +108,22 @@ public abstract class View extends JPanel
         this.spectrumPanelManager = spectrumPanelManager;
     }
 
-    public StatusBar getStatusBar()
+    public LegacyStatusHandler getLegacyStatusHandler()
     {
-        return statusBar;
+   	 return legacyStatusHandler;
     }
 
-    public void setStatusBar(StatusBar statusBar)
+    /**
+     * Returns the main {@link JSplitPane}.
+     */
+    public JSplitPane getMainSplitPane()
     {
-        this.statusBar = statusBar;
+        return splitPane; 
+    }
+
+    public StatusNotifier getStatusNotifier()
+    {
+   	 return refStatusNotifier;
     }
 
     public void setRenderer(Renderer renderer)
@@ -118,14 +134,23 @@ public abstract class View extends JPanel
     public void setModelManager(ModelManager modelManager)
     {
         this.modelManager = modelManager;
+        legacyStatusHandler = new LegacyStatusHandler(refStatusNotifier, modelManager);
     }
 
-    public void setPickManager(PickManager pickManager)
+    public void setPickManager(PickManager aPickManager)
     {
-        this.pickManager = pickManager;
+      pickManager = aPickManager;
+
+  		DefaultPicker tmpDefaultPicker = aPickManager.getDefaultPicker();
+
+  		LegacyStatusHandler tmpLegacyStatusHandler = new LegacyStatusHandler(refStatusNotifier, modelManager);
+  		tmpDefaultPicker.addListener(tmpLegacyStatusHandler);
+
+  		LocationStatusHandler tmpLocationStatusHandler = new LocationStatusHandler(refStatusNotifier, renderer);
+  		tmpDefaultPicker.addListener(tmpLocationStatusHandler);
     }
 
-    protected void setConfig(ViewConfig config)
+    protected void setConfig(IViewConfig config)
     {
     	this.config = config;
     }
@@ -146,10 +171,10 @@ public abstract class View extends JPanel
      * reduce memory and startup time. Therefore, this function should be called
      * prior to first time the View is shown in order to cause it
      */
-    public View(StatusBar statusBar, ViewConfig config)
+    public View(StatusNotifier aStatusNotifier, IViewConfig config)
     {
         super(new BorderLayout());
-        this.statusBar = statusBar;
+        refStatusNotifier = aStatusNotifier;
         this.config = config;
         if (config != null)
         	this.uniqueName = config.getUniqueName();
@@ -182,6 +207,11 @@ public abstract class View extends JPanel
             });
 
             Configuration.runAndWaitOnEDT(() -> {
+                setupPositionOrientationManager();
+            });
+
+            
+            Configuration.runAndWaitOnEDT(() -> {
                 setupRenderer();
             });
 
@@ -191,7 +221,6 @@ public abstract class View extends JPanel
 
             Configuration.runAndWaitOnEDT(() -> {
                 setupPickManager();
-                setupScaleBarPainter();
             });
 
             Configuration.runAndWaitOnEDT(() -> {
@@ -231,43 +260,24 @@ public abstract class View extends JPanel
 
                 splitPane.setOneTouchExpandable(true);
 
-                int splitLocation = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
-                splitPane.setDividerLocation(splitLocation);
-
                 splitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, new PropertyChangeListener() {
                     @Override
                     public void propertyChange(@SuppressWarnings("unused") PropertyChangeEvent pce)
                     {
-                        LinkedHashMap<String, String> map = new LinkedHashMap<>();
-                        map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
-                        map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
-                        Preferences.getInstance().put(map);
+                  	  globLastDividerLocation = splitPane.getDividerLocation();
                     }
                 });
-                int rendererWidth = splitPane.getWidth() - splitLocation;
 
-                int height = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_HEIGHT, 800L);
                 renderer.setMinimumSize(new Dimension(100, 100));
                 controlPanel.setMinimumSize(new Dimension(320, 100));
 
-                renderer.setPreferredSize(new Dimension(rendererWidth, height));
-                controlPanel.setPreferredSize(new Dimension(splitLocation, height));
-
-                Runtime.getRuntime().addShutdownHook(new Thread() {
-                    private LinkedHashMap<String, String> map = new LinkedHashMap<>();
-
-                    @Override
-                    public void run()
-                    {
-                        map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
-                        map.put(Preferences.RENDERER_PANEL_HEIGHT, new Long(renderer.getHeight()).toString());
-                        map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
-                        map.put(Preferences.CONTROL_PANEL_HEIGHT, new Long(controlPanel.getHeight()).toString());
-                        Preferences.getInstance().put(map);
-                    }
-                });
-
                 this.add(splitPane, BorderLayout.CENTER);
+
+                // Configure the splitPane to match the most recent settings
+                var dividerLocation = globLastDividerLocation;
+                if (globLastDividerLocation <= 0)
+                    dividerLocation = MainWindow.getMainWindow().getMainAppCfg().mainSplitSize();
+                splitPane.setDividerLocation(dividerLocation);
 
                 renderer.getRenderWindowPanel().resetCamera();
 
@@ -286,12 +296,12 @@ public abstract class View extends JPanel
         }
     }
 
-    private void showDefaultTabSelectionPopup(MouseEvent e)
+    protected void showDefaultTabSelectionPopup(MouseEvent e)
     {
         if (e.isPopupTrigger())
         {
             JPopupMenu tabMenu = new JPopupMenu();
-            JMenuItem menuItem = new JMenuItem("Set instrument as default");
+            JMenuItem menuItem = new JMenuItem("Set tab as default");
             menuItem.addActionListener(new ActionListener() {
 
                 @Override
@@ -321,16 +331,6 @@ public abstract class View extends JPanel
         return pickManager;
     }
 
-    public ScaleBarPainter getScaleBarPainter()
-    {
-   	 return scaleBarPainter;
-    }
-
-    protected void setModels(HashMap<ModelNames, Model> models)
-    {
-        modelManager.setModels(models);
-    }
-
     protected void registerPopup(Model model, PopupMenu menu)
     {
         popupManager.registerPopup(model, menu);
@@ -339,6 +339,11 @@ public abstract class View extends JPanel
     protected Model getModel(ModelNames name)
     {
         return modelManager.getModel(name);
+    }
+    
+    protected List<Model> getModels(ModelNames name)
+    {
+        return modelManager.getModels(name);
     }
 
     /**
@@ -383,7 +388,7 @@ public abstract class View extends JPanel
      */
     public abstract String getModelDisplayName();
 
-    public ViewConfig getConfig()
+    public IViewConfig getConfig()
     {
         return config;
     }
@@ -409,24 +414,20 @@ public abstract class View extends JPanel
     protected abstract void setupInfoPanelManager();
 
     protected abstract void setupSpectrumPanelManager();
+    
+    protected abstract void setupPositionOrientationManager();
 
     protected void setupRenderer()
     {
         ModelManager manager = getModelManager();
-        Renderer renderer = new Renderer(manager);
+        Renderer renderer = new Renderer(manager.getPolyhedralModel());
+        renderer.setLightCfg(LightUtil.getSystemLightCfg());
+        renderer.addVtkPropProvider(modelManager);
         renderer.addPropertyChangeListener(manager);
         setRenderer(renderer);
 
         // Force the renderer's camera to the "reset" default view
         renderer.getCamera().reset();
-    }
-
-    protected void setupScaleBarPainter()
-    {
-       ModelManager tmpModelManager = getModelManager();
-       scaleBarPainter = new ScaleBarPainter(renderer, tmpModelManager);
-
-       renderer.addVtkPropProvider(scaleBarPainter);
     }
 
     protected abstract void setupPickManager();

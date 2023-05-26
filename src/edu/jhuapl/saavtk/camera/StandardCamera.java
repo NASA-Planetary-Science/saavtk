@@ -245,5 +245,12 @@ public class StandardCamera implements Camera
 	{
 		return refPanel.getActiveCamera();
 	}
+	
+	@Override
+	public Vector3D getUpUnit()
+	{
+		vtkCamera vCamera = getVtkCamera();
+		return new Vector3D(vCamera.GetViewUp()).normalize();
+	}
 
 }

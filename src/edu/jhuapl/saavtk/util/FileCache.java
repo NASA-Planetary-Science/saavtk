@@ -16,7 +16,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
+import javax.swing.SwingWorker;
+
 import com.google.common.base.Preconditions;
+
+import edu.jhuapl.saavtk.util.DownloadableFileManager.StateListener;
 
 public final class FileCache
 {
@@ -68,9 +72,10 @@ public final class FileCache
     }
 
     /**
+     * Get a file from the server synchronously.
      * 
-     * @param urlString
-     * @return
+     * @param urlString URL to retrieve
+     * @return the object associated with the cached file
      */
     public static File getFileFromServer(String urlString)
     {
@@ -117,7 +122,11 @@ public final class FileCache
                 }
                 else if (!fileState.getUrlState().wasCheckedOnline())
                 {
-                    exception = new NoInternetAccessException("Cannot get file: unable to connect to server", url);
+                    exception = new NoInternetAccessException("Cannot get file: unable to connect to server for file " + url, url);
+                }
+                else if (fileState.isURLNotFound())
+                {
+                    exception = new NonexistentRemoteFile("Remote file was not found: " + url, url);
                 }
                 else
                 {
@@ -131,10 +140,59 @@ public final class FileCache
         return file;
     }
 
+    /**
+     * Download the specified URL on a background thread, reporting via a
+     * {@link StateListener} when the operation finishes execution. Note that the
+     * listener is ALWAYS called, whether or not the download succeeded. The success
+     * of the download may be gauged by inspecting the {@link DownloadableFileState}
+     * object that is sent to the state listener.
+     * 
+     * @param urlString URL to retrieve
+     * @param forceDownload if true, this forces a fresh download even if the file
+     *            already exists locally and does not otherwise need to be updated
+     * @param unzipIfNecessary if true, zipped files will be unzipped after they are
+     *            downloaded before notifying the state listener
+     * @param listener the state listener to notify
+     */
+    public static void getFileFromServerAsync(String urlString, boolean forceDownload, boolean unzipIfNecessary, StateListener listener)
+    {
+        FileDownloader downloader = instance().getDownloader(urlString, forceDownload);
+
+        SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+
+            @Override
+            protected Void doInBackground() throws Exception
+            {
+                try
+                {
+                    if (unzipIfNecessary)
+                    {
+                        downloader.downloadAndUnzip();
+                    }
+                    else
+                    {
+                        downloader.download();
+                    }
+                }
+                finally
+                {
+                    if (listener != null)
+                    {
+                        listener.respond(downloader.getState());
+                    }
+                }
+
+                return null;
+            }
+
+        };
+        worker.execute();
+    }
+
     private static DownloadableFileManager createDownloadManager()
     {
         DownloadableFileManager result = DownloadableFileManager.of(Configuration.getDataRootURL(), new File(Configuration.getCacheDir()));
-        
+
         return result;
     }
 
@@ -178,18 +236,17 @@ public final class FileCache
         InputStream fs = new FileInputStream(file);
         if (filename.toLowerCase().endsWith(".gz"))
             fs = new GZIPInputStream(fs);
-        InputStreamReader isr = new InputStreamReader(fs);
-        BufferedReader in = new BufferedReader(isr);
 
         List<String> lines = new ArrayList<>();
-        String line;
-
-        while ((line = in.readLine()) != null)
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(fs)))
         {
-            lines.add(line);
-        }
+            String line;
 
-        in.close();
+            while ((line = in.readLine()) != null)
+            {
+                lines.add(line);
+            }
+        }
 
         return lines;
     }

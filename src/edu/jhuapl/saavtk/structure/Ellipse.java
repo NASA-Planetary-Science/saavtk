@@ -5,6 +5,7 @@ import java.awt.Color;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
+import edu.jhuapl.saavtk.vtk.font.FontAttr;
 
 /**
  * Mutable {@link Structure} that defines an ellipse.
@@ -185,6 +186,12 @@ public class Ellipse implements Structure
 	public void setVisible(boolean aBool)
 	{
 		visible = aBool;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return name;
 	}
 
 }

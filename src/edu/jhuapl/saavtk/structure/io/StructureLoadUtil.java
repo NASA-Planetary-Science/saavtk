@@ -13,9 +13,10 @@ import org.w3c.dom.Element;
 
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.structure.Ellipse;
-import edu.jhuapl.saavtk.structure.FontAttr;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.util.FileUtil;
+import edu.jhuapl.saavtk.vtk.font.FontAttr;
+import glum.io.token.TokenUtil;
 
 /**
  * Collection of utility methods to support loading of SBMT structures and
@@ -100,13 +101,14 @@ public class StructureLoadUtil
 	private static List<Structure> loadRoundEdgeStructures(File aFile) throws IOException
 	{
 		List<Structure> retL;
-		Mode tmpMode = null;
+
+		Mode tmpModeHint = null;
 
 		// Load the Ellipse file
 		List<Ellipse> tmpL = null;
 		try
 		{
-			tmpL = StructureLoadUtil.loadEllipses(aFile, Mode.ELLIPSE_MODE);
+			tmpL = StructureLoadUtil.loadEllipses(aFile, false);
 
 			double initRadius = Double.NaN;
 			if (tmpL.size() > 0)
@@ -125,24 +127,25 @@ public class StructureLoadUtil
 			}
 
 			// Perform heuristics
-			tmpMode = Mode.ELLIPSE_MODE;
-			if (isAllCircles == true && (isAllRadiusConst == false || tmpL.size() == 1))
-				tmpMode = Mode.CIRCLE_MODE;
-			else if (isAllCircles == true && isAllRadiusConst == true)
-				tmpMode = Mode.POINT_MODE;
+			if (isAllCircles == false)
+				tmpModeHint = Mode.ELLIPSE_MODE;
+			else if (isAllRadiusConst == false && tmpL.size() >= 2)
+				tmpModeHint = Mode.CIRCLE_MODE;
 		}
 		catch (Exception aExp)
 		{
 			// Must be points or unsupported
-			tmpL = StructureLoadUtil.loadEllipses(aFile, Mode.POINT_MODE);
-
-			tmpMode = Mode.POINT_MODE;
+			tmpL = StructureLoadUtil.loadEllipses(aFile, true);
 		}
 
-		// Transform to the proper formats
+		// Update to reflect it's source
 		retL = new ArrayList<>();
 		for (Ellipse aItem : tmpL)
 		{
+			Mode tmpMode = aItem.getMode();
+			if (tmpMode == null)
+				tmpMode = tmpModeHint;
+
 			Ellipse tmpItem = new Ellipse(aItem.getId(), aFile, tmpMode, aItem.getCenter(), aItem.getRadius(),
 					aItem.getAngle(), aItem.getFlattening(), aItem.getColor(), aItem.getLabel());
 			tmpItem.setName(aItem.getName());
@@ -163,16 +166,31 @@ public class StructureLoadUtil
 	 * This method originated from (~2019Oct07):
 	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
 	 */
-	private static List<Ellipse> loadEllipses(File aFile, Mode aMode) throws IOException
+	private static List<Ellipse> loadEllipses(File aFile, boolean aIsForcePointMode) throws IOException
 	{
 		Pattern workPattern = Pattern.compile("([^\"]\\S*|\".*?\")\\s*");
 
-		List<String> lineL = FileUtil.getFileLinesAsStringList(aFile.getAbsolutePath());
+		Mode tmpMode = null;
+		if (aIsForcePointMode == true)
+			tmpMode = Mode.POINT_MODE;
+
 		List<Ellipse> retL = new ArrayList<>();
+
+		List<String> lineL = FileUtil.getFileLinesAsStringList(aFile.getAbsolutePath());
 		for (String aLine : lineL)
 		{
 			// Skip over empty lines / line comments
 			String tmpStr = aLine.trim();
+
+			// Check for comment that signals the type of structures to follow
+			tmpStr = tmpStr.replaceAll("\\s+", "").toLowerCase();
+			if (tmpStr.equals("#type,circle") == true)
+				tmpMode = Mode.CIRCLE_MODE;
+			else if (tmpStr.equals("#type,ellipse") == true)
+				tmpMode = Mode.ELLIPSE_MODE;
+			else if (tmpStr.equals("#type,point") == true)
+				tmpMode = Mode.POINT_MODE;
+
 			if (tmpStr.isEmpty() == true || tmpStr.startsWith("#") == true)
 				continue;
 
@@ -190,7 +208,7 @@ public class StructureLoadUtil
 
 			// The first 8 columns are the same in both the old and new formats.
 			int id = Integer.parseInt(words[0]);
-			String name = words[1];
+			String name = TokenUtil.getRawStr(words[1]);
 
 			double xVal = Double.parseDouble(words[2]);
 			double yVal = Double.parseDouble(words[3]);
@@ -216,7 +234,7 @@ public class StructureLoadUtil
 			if (words.length == 18)
 			{
 				radius = Double.parseDouble(words[12]) / 2.0; // read in diameter not radius
-				if (aMode == Mode.ELLIPSE_MODE)
+				if (tmpMode != Mode.POINT_MODE)
 				{
 					flattening = Double.parseDouble(words[13]);
 					angle = Double.parseDouble(words[14]);
@@ -242,7 +260,7 @@ public class StructureLoadUtil
 				{
 					// OLD VERSION of file
 					radius = Double.NaN;
-					if (aMode == Mode.CIRCLE_MODE || aMode == Mode.ELLIPSE_MODE)
+					if (tmpMode != Mode.POINT_MODE)
 						radius = Double.parseDouble(words[8]) / 2.0; // read in diameter not radius
 				}
 				else
@@ -251,15 +269,12 @@ public class StructureLoadUtil
 					radius = Double.parseDouble(words[12]) / 2.0; // read in diameter not radius
 				}
 
-				if (aMode == Mode.ELLIPSE_MODE && words.length >= 16)
+				flattening = 1.0;
+				angle = 0.0;
+				if (tmpMode != Mode.POINT_MODE && words.length >= 16)
 				{
 					flattening = Double.parseDouble(words[13]);
 					angle = Double.parseDouble(words[14]);
-				}
-				else
-				{
-					flattening = 1.0;
-					angle = 0.0;
 				}
 
 				// If there are 9 or more columns in the file, the last column is the color in
@@ -302,7 +317,7 @@ public class StructureLoadUtil
 			}
 
 			// Synthesize the Ellipse
-			Ellipse tmpItem = new Ellipse(id, aFile, aMode, center, radius, angle, flattening, color, label);
+			Ellipse tmpItem = new Ellipse(id, aFile, tmpMode, center, radius, angle, flattening, color, label);
 			tmpItem.setName(name);
 			tmpItem.setLabel(label);
 			FontAttr tmpFA = tmpItem.getLabelFontAttr();

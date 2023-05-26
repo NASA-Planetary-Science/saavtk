@@ -13,18 +13,18 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import javax.media.opengl.GLContext;
 import javax.swing.BorderFactory;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
@@ -35,15 +35,9 @@ import edu.jhuapl.saavtk.camera.CameraFrame;
 import edu.jhuapl.saavtk.camera.CameraUtil;
 import edu.jhuapl.saavtk.camera.CoordinateSystem;
 import edu.jhuapl.saavtk.camera.StandardCamera;
-import edu.jhuapl.saavtk.camera.View;
-import edu.jhuapl.saavtk.camera.ViewActionListener;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
-import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
-import edu.jhuapl.saavtk.model.Model;
-import edu.jhuapl.saavtk.model.ModelManager;
-import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
 import edu.jhuapl.saavtk.pick.PickListener;
@@ -53,40 +47,32 @@ import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.pick.PickUtilEx;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
-import edu.jhuapl.saavtk.util.Preferences;
-import edu.jhuapl.saavtk.util.SaavtkLODActor;
-import vtk.vtkBMPWriter;
+import edu.jhuapl.saavtk.view.View;
+import edu.jhuapl.saavtk.view.ViewActionListener;
+import edu.jhuapl.saavtk.view.ViewChangeReason;
+import edu.jhuapl.saavtk.view.light.LightCfg;
+import edu.jhuapl.saavtk.view.light.LightingType;
+import edu.jhuapl.saavtk.view.lod.LodActor;
+import edu.jhuapl.saavtk.view.lod.LodMode;
+import vtk.vtkActor;
 import vtk.vtkCamera;
+import vtk.vtkCaptionActor2D;
 import vtk.vtkCellLocator;
 import vtk.vtkCellPicker;
 import vtk.vtkCubeAxesActor2D;
 import vtk.vtkIdList;
 import vtk.vtkInteractorStyleImage;
 import vtk.vtkInteractorStyleTrackballCamera;
-import vtk.vtkJPEGWriter;
 import vtk.vtkLight;
 import vtk.vtkLightKit;
-import vtk.vtkPNGWriter;
-import vtk.vtkPNMWriter;
-import vtk.vtkPostScriptWriter;
 import vtk.vtkProp;
 import vtk.vtkPropCollection;
 import vtk.vtkRenderer;
-import vtk.vtkScalarBarActor;
-import vtk.vtkTIFFWriter;
-import vtk.vtkWindowToImageFilter;
+import vtk.vtkTextActor;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
-public class Renderer extends JPanel implements ActionListener, CameraActionListener, PickListener, View
+public class Renderer extends JPanel implements ActionListener, CameraActionListener, PickListener, SceneChangeNotifier, View
 {
-	public enum LightingType
-	{
-		NONE,
-		HEADLIGHT,
-		LIGHT_KIT,
-		FIXEDLIGHT
-	}
-
 	public enum AxisType
 	{
 		NONE,
@@ -98,20 +84,25 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		NEGATIVE_Z
 	}
 
-	/* Global variable that configures the LOD capability for all Renderers. */
-	public static boolean enableLODs = true;
-
 	// Constants
 	private static final long serialVersionUID = 1L;
 
 	// Ref vars
-	private final ModelManager refModelManager;
+	private final PolyhedralModel refSmallBody;
 
 	// State vars
-	private final List<VtkPropProvider> propProviderL;
+	private final Set<VtkPropProvider> propProviderS;
 	private final List<ViewActionListener> viewActionListenerL;
 	private final Camera camera;
+
+	private LodMode lodModeRegular;
+	private LodMode lodModeTemporal;
 	private double nominalPixelSpan;
+	private boolean isMode2D;
+
+	// Cache vars
+	private LightCfg cLightCfg;
+	private LodMode cLodModeInstant;
 
 	// GUI vars
 	private RenderPanel mainCanvas;
@@ -123,31 +114,41 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	private vtkLightKit lightKit;
 	private vtkLight headlight;
 	private vtkLight fixedLight;
-	private LightingType currentLighting = LightingType.NONE;
 
 	/**
-	 * Constructor
+	 * Standard Constructor
+	 *
+	 * @param aSmallBody The primary {@link PolyhedralModel} associated with this
+	 *                   Renderer.
 	 */
-	public Renderer(ModelManager aModelManager)
+	public Renderer(PolyhedralModel aSmallBody)
 	{
-		refModelManager = aModelManager;
-		PolyhedralModel tmpPolyModel = aModelManager.getPolyhedralModel();
+		refSmallBody = aSmallBody;
 
-		propProviderL = new ArrayList<>();
+		propProviderS = new LinkedHashSet<>();
 		viewActionListenerL = new ArrayList<>();
+
+		lodModeRegular = LodMode.Auto;
+		lodModeTemporal = LodMode.MaxQuality;
 		nominalPixelSpan = Double.NaN;
+		isMode2D = false;
+
+		cLightCfg = LightCfg.Invalid;
+		cLodModeInstant = null;
 
 		mainCanvas = new RenderPanel();
 		mainCanvas.getRenderWindowInteractor().AddObserver("KeyPressEvent", this, "localKeypressHandler");
-		camera = formCamera(tmpPolyModel, mainCanvas);
+
+		camera = formCamera(refSmallBody, mainCanvas);
 		toolbar = new RenderToolbar(mainCanvas, camera);
 
 		trackballCameraInteractorStyle = new vtkInteractorStyleTrackballCamera();
-		vSmallBodyCP = PickUtilEx.formSmallBodyPicker(tmpPolyModel);
-
+		trackballCameraInteractorStyle.AutoAdjustCameraClippingRangeOn();
+		vSmallBodyCP = PickUtilEx.formSmallBodyPicker(refSmallBody);
+		
 		setBackgroundColor(new int[] { 0, 0, 0 });// Preferences.getInstance().getAsIntArray(Preferences.BACKGROUND_COLOR,
 																// new int[]{0, 0, 0}));
-		initLights();
+		initVtkLights();
 		setLayout(new BorderLayout());
 
 		add(toolbar, BorderLayout.NORTH);
@@ -159,19 +160,19 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		mainCanvas.getRenderWindowInteractor().AddObserver("InteractionEvent", this, "duringInteraction");
 		mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
 
-		SwingUtilities.invokeLater(() -> setProps(aModelManager.getProps()));
-
-		((GenericPolyhedralModel) tmpPolyModel).sortPolydata(mainCanvas.getActiveCamera());
+		SwingUtilities.invokeLater(() -> notifySceneChange());
+		
+		((GenericPolyhedralModel) refSmallBody).sortPolydata(mainCanvas.getActiveCamera());
 
 		// Register for events of interest
 		camera.addCameraChangeListener(this);
-
+				
 		mainCanvas.getComponent().addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized(ComponentEvent aEvent)
 			{
 				// Delegate
-				doViewChange();
+				doViewChange(ViewChangeReason.Camera);
 			}
 		});
 	}
@@ -181,7 +182,19 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	 */
 	public void addVtkPropProvider(VtkPropProvider aPropProvider)
 	{
-		propProviderL.add(aPropProvider);
+		boolean tmpBool = propProviderS.add(aPropProvider);
+		if (tmpBool == false)
+			return;
+
+		notifySceneChange();
+	}
+
+	/**
+	 * Returns true if the {@link VtkPropProvider} is registered with this Renderer.
+	 */
+	public boolean hasVtkPropProvider(VtkPropProvider aPropProvider)
+	{
+		return propProviderS.contains(aPropProvider);
 	}
 
 	/**
@@ -189,7 +202,11 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	 */
 	public void delVtkPropProvider(VtkPropProvider aPropProvider)
 	{
-		propProviderL.remove(aPropProvider);
+		boolean tmpBool = propProviderS.remove(aPropProvider);
+		if (tmpBool == false)
+			return;
+
+		notifySceneChange();
 	}
 
 	/**
@@ -213,32 +230,6 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	public double getNominalPixelSpan()
 	{
 		return nominalPixelSpan;
-	}
-
-	void initLights()
-	{
-		headlight = mainCanvas.getRenderer().MakeLight();
-		headlight.SetLightTypeToHeadlight();
-		headlight.SetConeAngle(180.0);
-
-		fixedLight = mainCanvas.getRenderer().MakeLight();
-		fixedLight.SetLightTypeToSceneLight();
-		fixedLight.PositionalOn();
-		fixedLight.SetConeAngle(180.0);
-		LatLon defaultPosition = new LatLon(Preferences.getInstance().getAsDouble(Preferences.FIXEDLIGHT_LATITUDE, 90.0),
-				Preferences.getInstance().getAsDouble(Preferences.FIXEDLIGHT_LONGITUDE, 0.0),
-				Preferences.getInstance().getAsDouble(Preferences.FIXEDLIGHT_DISTANCE, 1.0e8));
-		setFixedLightPosition(defaultPosition);
-		setLightIntensity(Preferences.getInstance().getAsDouble(Preferences.LIGHT_INTENSITY, 1.0));
-
-		mainCanvas.getRenderer().AutomaticLightCreationOff();
-		lightKit = new vtkLightKit();
-		lightKit.SetKeyToFillRatio(1.0);
-		lightKit.SetKeyToHeadRatio(20.0);
-
-		LightingType lightingType = LightingType
-				.valueOf(Preferences.getInstance().get(Preferences.LIGHTING_TYPE, LightingType.LIGHT_KIT.toString()));
-		setLighting(lightingType);
 	}
 
 	List<KeyListener> listeners = Lists.newArrayList();
@@ -268,163 +259,38 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 
 	}
 
-	public void setProps(List<vtkProp> props)
-	{
-		// Form the full list of vtkProps to render
-		List<vtkProp> fullPropL = new ArrayList<>();
-
-		// Add the vtkProps from the provided list of props
-		fullPropL.addAll(props);
-
-		// Add the vtkProps from the registered VtkPropProviders
-		for (VtkPropProvider aPropProvider : propProviderL)
-			fullPropL.addAll(aPropProvider.getProps());
-
-		setProps(fullPropL, mainCanvas, mainCanvas.getRenderer());
-	}
-
-	private void setProps(List<vtkProp> props, vtkJoglPanelComponent renderWindow, vtkRenderer whichRenderer)
-	{
-		// Go through the props and if an prop is already in the renderer,
-		// do nothing. If not, add it. If an prop not listed is
-		// in the renderer, remove it from the renderer.
-
-		// First remove the props not in the specified list that are currently rendered.
-		vtkPropCollection propCollection = renderWindow.getRenderer().GetViewProps();
-		int size = propCollection.GetNumberOfItems();
-		HashSet<vtkProp> renderedProps = new HashSet<vtkProp>();
-		for (int i = 0; i < size; ++i)
-			renderedProps.add((vtkProp) propCollection.GetItemAsObject(i));
-
-		renderedProps.removeAll(props);
-
-		if (!renderedProps.isEmpty())
-		{
-			renderWindow.getVTKLock().lock();
-			for (vtkProp prop : renderedProps)
-			{
-				if (!(prop instanceof vtkCubeAxesActor2D) && !(prop instanceof vtkScalarBarActor))
-					whichRenderer.RemoveViewProp(prop);
-			}
-			renderWindow.getVTKLock().unlock();
-		}
-
-		// Next add the new props.
-		for (vtkProp prop : props)
-		{
-			if (whichRenderer.HasViewProp(prop) == 0)
-				whichRenderer.AddViewProp(prop);
-		}
-
-		// If we are in 2D mode, then remove all props of models that
-		// do not support 2D mode.
-		if (refModelManager.is2DMode())
-		{
-			propCollection = whichRenderer.GetViewProps();
-			size = propCollection.GetNumberOfItems();
-			for (int i = size - 1; i >= 0; --i)
-			{
-				vtkProp prop = (vtkProp) propCollection.GetItemAsObject(i);
-				Model model = refModelManager.getModel(prop);
-				if (model != null && !model.supports2DMode())
-				{
-					whichRenderer.RemoveViewProp(prop);
-				}
-			}
-		}
-		//
-		occludeLabels();
-
-		if (renderWindow.getRenderWindow().GetNeverRendered() > 0)
-			return;
-		renderWindow.Render();
-	}
-
 	public void onStartInteraction()
 	{
-		setLodFlag(true);
 		occludeLabels();
 	}
 
 	public void duringInteraction()
 	{
+		setLodModeTemporal(LodMode.MaxSpeed);
 		occludeLabels();
 	}
 
 	public void onEndInteraction()
 	{
-		setLodFlag(false);
+		setLodModeTemporal(null);
 		occludeLabels();
-
-		// See Redmine #1135. This method was added in an attempt to address rendering
-		// problems that were caused by clipping range limitations, but it interacted
-		// badly with other features, specifically center-in-window, but who knows what
-		// else would have been affected. Leaving the code here, but commented out, in
-		// case we need to revisit this capability.
-//		updateImageOffsets();
 	}
-
-	public void occludeLabels()
+	
+	public List<vtkProp> getAllActors()
 	{
-		Vector3D lookat = new Vector3D(getRenderWindowPanel().getActiveCamera().GetFocalPoint());
-		Vector3D campos = new Vector3D(getRenderWindowPanel().getActiveCamera().GetPosition());
-		Vector3D lookdir = lookat.subtract(campos);
-		GenericPolyhedralModel model = (GenericPolyhedralModel) refModelManager.getModel(ModelNames.SMALL_BODY);
-		vtkCellLocator locator = model.getCellLocator();
-		for (vtkProp prop : refModelManager.getProps())
-			if (prop instanceof OccludingCaptionActor)
+		List<vtkProp> actors = Lists.newArrayList();
+		for (VtkPropProvider aPropProvider : propProviderS)
+		{
+			for (vtkProp aProp : aPropProvider.getProps())
 			{
-				OccludingCaptionActor caption = (OccludingCaptionActor) prop;
-				Vector3D normal = new Vector3D(caption.getNormal());
-				if (!caption.isEnabled() || normal.dotProduct(lookdir) > 0)
-					prop.VisibilityOff();
-				else
-				{
-					double tolerance = 1e-15;
-					vtkIdList ids = new vtkIdList();
-					double[] rayStartPoint = caption.getRayStartPoint();
-					locator.FindCellsAlongLine(rayStartPoint, campos.toArray(), tolerance, ids);
-					if (ids.GetNumberOfIds() > 0)
-						prop.VisibilityOff();
-					else
-						prop.VisibilityOn();
-				}
-
+				if (!(aProp instanceof vtkCaptionActor2D) && !(aProp instanceof vtkTextActor))
+					actors.add(aProp);
 			}
-	}
-
-	// See Redmine #1135. This method was added in an attempt to address rendering
-	// problems that were caused by clipping range limitations, but it interacted
-	// badly with other features, specifically center-in-window, but who knows what
-	// else would have been affected. Leaving the code here, but commented out, in
-	// case we need to revisit this capability.
-//	public void updateImageOffsets()
-//	{
-//		double oldDistance = this.cameraDistance;
-//		double newDistance = getCameraDistance();
-//		this.cameraDistance = newDistance;
-//		if (newDistance != oldDistance)
-//		{
-//			firePropertyChange(CameraProperties.CAMERA_DISTANCE, oldDistance, newDistance);
-//		}
-//	}
-
-	public static File createAxesFile(File rawOutputFile)
-	{
-		String extension = FilenameUtils.getExtension(rawOutputFile.getName());
-		return new File(rawOutputFile.getAbsolutePath().replaceAll("." + extension, ".axes." + extension));
-	}
-
-	public void saveToFile()
-	{
-		getRenderWindowPanel().Render();
-		File file = CustomFileChooser.showSaveDialog(this, "Export to PNG Image", "image.png", "png");
-		saveToFile(file, mainCanvas, mainCanvas.getAxesPanel());
+		}
+		return actors;
 	}
 
 	private BlockingQueue<CameraFrame> cameraFrameQueue;
-
-	private File[] sixFiles = new File[6];
 
 	public void save6ViewsToFile()
 	{
@@ -435,6 +301,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		String base = path.substring(0, path.lastIndexOf('.'));
 		String ext = path.substring(path.lastIndexOf('.'));
 
+		File[] sixFiles = new File[6];
 		sixFiles[0] = new File(base + "+x" + ext);
 		sixFiles[1] = new File(base + "-x" + ext);
 		sixFiles[2] = new File(base + "+y" + ext);
@@ -474,83 +341,12 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		{
 			File f = sixFiles[i];
 			AxisType at = sixAxes[i];
-			CameraFrame frame = createCameraFrameInDirectionOfAxis(at, true, f, 1);
+			CameraFrame frame = RenderIoUtil.createCameraFrameInDirectionOfAxis(refSmallBody, mainCanvas, at, true, f, 1);
 			cameraFrameQueue.add(frame);
 		}
 
 		// start off the timer
 		this.actionPerformed(null);
-
-	}
-
-	public CameraFrame createCameraFrameInDirectionOfAxis(AxisType axisType, boolean preserveCurrentDistance, File file,
-			int delayMilliseconds)
-	{
-		CameraFrame result = new CameraFrame();
-		result.file = file;
-		result.delay = delayMilliseconds;
-
-		double[] bounds = refModelManager.getPolyhedralModel().getBoundingBox().getBounds();
-		double xSize = Math.abs(bounds[1] - bounds[0]);
-		double ySize = Math.abs(bounds[3] - bounds[2]);
-		double zSize = Math.abs(bounds[5] - bounds[4]);
-		double maxSize = Math.max(Math.max(xSize, ySize), zSize);
-
-		vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
-		double[] posArr = cam.GetPosition();
-		double cameraDistance = MathUtil.vnorm(posArr);
-
-		result.focalPoint = new double[] { 0.0, 0.0, 0.0 };
-
-		if (axisType == AxisType.NEGATIVE_X)
-		{
-			double xpos = xSize / Math.tan(Math.PI / 6.0) + 2.0 * maxSize;
-			result.position = new double[] { xpos, 0.0, 0.0 };
-			result.upDirection = new double[] { 0.0, 0.0, 1.0 };
-		}
-		else if (axisType == AxisType.POSITIVE_X)
-		{
-			double xpos = -xSize / Math.tan(Math.PI / 6.0) - 2.0 * maxSize;
-			result.position = new double[] { xpos, 0.0, 0.0 };
-			result.upDirection = new double[] { 0.0, 0.0, 1.0 };
-		}
-		else if (axisType == AxisType.NEGATIVE_Y)
-		{
-			double ypos = ySize / Math.tan(Math.PI / 6.0) + 2.0 * maxSize;
-			result.position = new double[] { 0.0, ypos, 0.0 };
-			result.upDirection = new double[] { 0.0, 0.0, 1.0 };
-		}
-		else if (axisType == AxisType.POSITIVE_Y)
-		{
-			double ypos = -ySize / Math.tan(Math.PI / 6.0) - 2.0 * maxSize;
-			result.position = new double[] { 0.0, ypos, 0.0 };
-			result.upDirection = new double[] { 0.0, 0.0, 1.0 };
-		}
-		else if (axisType == AxisType.NEGATIVE_Z)
-		{
-			double zpos = zSize / Math.tan(Math.PI / 6.0) + 2.0 * maxSize;
-			result.position = new double[] { 0.0, 0.0, zpos };
-			result.upDirection = new double[] { 0.0, 1.0, 0.0 };
-		}
-		else if (axisType == AxisType.POSITIVE_Z)
-		{
-			double zpos = -zSize / Math.tan(Math.PI / 6.0) - 2.0 * maxSize;
-			result.position = new double[] { 0.0, 0.0, zpos };
-			result.upDirection = new double[] { 0.0, 1.0, 0.0 };
-		}
-
-		if (preserveCurrentDistance)
-		{
-			double[] poshat = new double[3];
-
-			MathUtil.unorm(result.position, poshat);
-
-			result.position[0] = poshat[0] * cameraDistance;
-			result.position[1] = poshat[1] * cameraDistance;
-			result.position[2] = poshat[2] * cameraDistance;
-		}
-
-		return result;
 	}
 
 	public void setCameraFrame(CameraFrame frame)
@@ -565,7 +361,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		cam.SetFocalPoint(frame.focalPoint[0], frame.focalPoint[1], frame.focalPoint[2]);
 		cam.SetPosition(frame.position[0], frame.position[1], frame.position[2]);
 		cam.SetViewUp(frame.upDirection[0], frame.upDirection[1], frame.upDirection[2]);
-
+		cam.OrthogonalizeViewUp();
 		mainCanvas.getVTKLock().unlock();
 
 		mainCanvas.resetCameraClippingRange();
@@ -574,16 +370,17 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 
 	public void setCameraOrientation(double[] position, double[] focalPoint, double[] upVector, double viewAngle)
 	{
-		// orientationWidget.EnabledOff();
+		//        orientationWidget.EnabledOff();
 		mainCanvas.getVTKLock().lock();
 		vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
 		cam.SetPosition(position);
 		cam.SetFocalPoint(focalPoint);
 		cam.SetViewUp(upVector);
 		cam.SetViewAngle(viewAngle);
+		cam.OrthogonalizeViewUp();
 		mainCanvas.getVTKLock().unlock();
 		mainCanvas.resetCameraClippingRange();
-		// orientationWidget.EnabledOn();
+		//        orientationWidget.EnabledOn();
 		mainCanvas.Render();
 	}
 
@@ -612,7 +409,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		// Delegate
 		camera.setFocalPoint(new Vector3D(aFocalPointArr));
 	}
-
+	
 	public void viewDeactivating()
 	{
 		mainCanvas.getAxesFrame().setVisible(false);
@@ -623,7 +420,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		mainCanvas.getAxesFrame().setVisible(toolbar.getOrientationAxesToggleState());
 	}
 
-	public vtkJoglPanelComponent getRenderWindowPanel()
+	public RenderPanel getRenderWindowPanel()
 	{
 		return mainCanvas;
 	}
@@ -640,91 +437,85 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		mainCanvas.setInteractorEnableState(aBool);
 	}
 
-	public void setLighting(LightingType type)
+	/**
+	 * Gets the Renderer's {@link LightCfg}.
+	 */
+	public LightCfg getLightCfg()
 	{
+		return cLightCfg;
+		}
+
+	/**
+	 * Sets the Renderer's {@link LightCfg}.
+	 */
+	public void setLightCfg(LightCfg aLightCfg)
+		{
+		// Bail if configuration has not changed
+		if (cLightCfg.equals(aLightCfg) == true)
+			return;
+
+		// Update the intensity
+		double intensity = aLightCfg.getIntensity();
+		boolean isValidIntensity = true;
+		isValidIntensity &= Double.isNaN(intensity) == false;
+		isValidIntensity &= intensity >= 0.0 && intensity <= 1.0;
+		if (isValidIntensity == true)
+		{
+			headlight.SetIntensity(intensity);
+			fixedLight.SetIntensity(intensity);
+	}
+
+		// Update (fixed) position
+		LatLon positionLL = aLightCfg.getPositionLL();
+		boolean isValidPosition = true;
+		isValidPosition &= aLightCfg.getType() == LightingType.FIXEDLIGHT;
+		isValidPosition &= Double.isNaN(positionLL.lat) == false && Double.isNaN(positionLL.lon) == false;
+		isValidPosition &= Double.isNaN(positionLL.rad) == false;
+		if (isValidPosition == true)
+			fixedLight.SetPosition(MathUtil.latrec(positionLL));
+
+		// Update the light source
+		LightingType tmpType = aLightCfg.getType();
 		mainCanvas.getRenderer().RemoveAllLights();
-		if (type == LightingType.LIGHT_KIT)
-		{
-			lightKit.AddLightsToRenderer(mainCanvas.getRenderer());
-		}
-		else if (type == LightingType.HEADLIGHT)
-		{
-			mainCanvas.getRenderer().AddLight(headlight);
-		}
-		else
-		{
+		if (tmpType == LightingType.FIXEDLIGHT && isValidIntensity == true && isValidPosition == true)
 			mainCanvas.getRenderer().AddLight(fixedLight);
-		}
-		currentLighting = type;
+		else if (tmpType == LightingType.HEADLIGHT && isValidIntensity == true)
+			mainCanvas.getRenderer().AddLight(headlight);
+		else if (tmpType != LightingType.NONE)
+			lightKit.AddLightsToRenderer(mainCanvas.getRenderer());
+
+		// Update our cache copy
+		cLightCfg = aLightCfg;
+
+		// Render the scene
 		if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
 			mainCanvas.Render();
-	}
 
-	public LightingType getLighting()
-	{
-		return currentLighting;
-	}
-
-	public void setLightIntensity(double percentage)
-	{
-		if (percentage != getLightIntensity())
-		{
-			headlight.SetIntensity(percentage);
-			fixedLight.SetIntensity(percentage);
-			if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-				mainCanvas.Render();
-		}
+		// Sends out notification to the ViewChangeListeners
+		for (ViewActionListener aListener : viewActionListenerL)
+			aListener.handleViewAction(this, ViewChangeReason.Light);
 	}
 
 	/**
-	 * Get the absolute position of the light in lat/lon/rad where lat and lon are
-	 * in degress.
-	 *
-	 * @return
+	 * Method to switch to the fixed light and set the direction of the light source
+	 * in the body frame.
+	 * <p>
+	 * For the distance we utilize a large multiple of the shape model bounding box
+	 * diagonal.
 	 */
-	public LatLon getFixedLightPosition()
+	public void setLightCfgToFixedLightAtDirection(Vector3D aDirection)
 	{
-		double[] position = fixedLight.GetPosition();
-		return MathUtil.reclat(position).toDegrees();
-	}
-
-	/**
-	 * Set the absolute position of the light in lat/lon/rad. Lat and lon must be in
-	 * degrees.
-	 *
-	 * @param latLon
-	 */
-	public void setFixedLightPosition(LatLon latLon)
-	{
-		fixedLight.SetPosition(MathUtil.latrec(latLon.toRadians()));
-		if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-			mainCanvas.Render();
-	}
-
-	/**
-	 * Rather than setting the absolute position of the light as in the previous
-	 * function, set the direction of the light source in the body frame. We still
-	 * need a distance for the light, so simply use a large multiple of the shape
-	 * model bounding box diagonal.
-	 *
-	 * @param dir
-	 */
-	public void setFixedLightDirection(double[] dir)
-	{
-		dir = dir.clone();
+		double[] dir = aDirection.toArray();
 		MathUtil.vhat(dir, dir);
-		double bbd = refModelManager.getPolyhedralModel().getBoundingBoxDiagonalLength();
+		double bbd = refSmallBody.getBoundingBoxDiagonalLength();
 		dir[0] *= (1.0e5 * bbd);
 		dir[1] *= (1.0e5 * bbd);
 		dir[2] *= (1.0e5 * bbd);
-		fixedLight.SetPosition(dir);
-		if (mainCanvas.getRenderWindow().GetNeverRendered() == 0)
-			mainCanvas.Render();
-	}
 
-	public double getLightIntensity()
-	{
-		return headlight.GetIntensity();
+		// Delegate updating the light configuration
+		LatLon positionLL = MathUtil.reclat(dir);
+		LightCfg tmpLightCfg = new LightCfg(LightingType.FIXEDLIGHT, positionLL, cLightCfg.getIntensity());
+		setLightCfg(tmpLightCfg);
 	}
 
 	public int[] getBackgroundColor()
@@ -740,18 +531,18 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 			mainCanvas.Render();
 	}
 
-	public void set2DMode(boolean enable)
+	public void set2DMode(boolean aBool)
 	{
-		refModelManager.set2DMode(enable);
+		isMode2D = aBool;
 
-		if (enable)
+		if (isMode2D == true)
 		{
 			vtkCamera cam = mainCanvas.getRenderer().GetActiveCamera();
 			cam.ParallelProjectionOn();
 
-			double tmpDistance = refModelManager.getPolyhedralModel().getBoundingBoxDiagonalLength() * 2.0;
+			double tmpDistance = refSmallBody.getBoundingBoxDiagonalLength() * 2.0;
 			CameraUtil.setOrientationInDirectionOfAxis(camera, AxisType.NEGATIVE_X, tmpDistance);
-
+			
 			mainCanvas.getVTKLock().lock();
 			cam.SetViewUp(0.0, 1.0, 0.0);
 			mainCanvas.getVTKLock().unlock();
@@ -762,7 +553,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		{
 			mainCanvas.getRenderer().GetActiveCamera().ParallelProjectionOff();
 			mainCanvas.resetCamera();
-			// setInteractorStyleToDefault();
+			//     setInteractorStyleToDefault();
 		}
 
 		mainCanvas.Render();
@@ -776,106 +567,6 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	public int getPanelHeight()
 	{
 		return mainCanvas.getComponent().getHeight();
-	}
-
-	public static void saveToFile(File file, vtkJoglPanelComponent renWin, AxesPanel axesWin)
-	{
-		saveToFile(file, renWin);
-		if (axesWin != null && ((RenderPanel) renWin).isAxesPanelVisible())
-		{
-			// axesWin.printModeOn();
-			// axesWin.setSize(200, 200);
-			RenderPanel renderPanel = (RenderPanel) renWin;
-			// boolean visible=renderPanel.axesFrame.isVisible();
-			// if (!visible)
-			// renderPanel.axesFrame.setVisible(true);
-			saveToFile(createAxesFile(file), axesWin);
-			axesWin.Render();
-			// if (!visible)
-			// renderPanel.axesFrame.setVisible(false);
-			// axesWin.printModeOff();
-		}
-	}
-
-	protected static void saveToFile(File file, vtkJoglPanelComponent renWin)
-	{
-		if (file != null)
-		{
-			GLContext glContext = null;
-			try
-			{
-				glContext = renWin.getComponent().getContext();
-				if (glContext != null)
-				{
-					// The following line is needed due to some weird threading
-					// issue with JOGL when saving out the pixel buffer. Note release
-					// needs to be called at the end.
-					glContext.makeCurrent();
-				}
-
-				renWin.getVTKLock().lock();
-				vtkWindowToImageFilter windowToImage = new vtkWindowToImageFilter();
-				windowToImage.SetInput(renWin.getRenderWindow());
-				windowToImage.ShouldRerenderOn();
-
-				String filename = file.getAbsolutePath();
-				if (filename.toLowerCase().endsWith("bmp"))
-				{
-					vtkBMPWriter writer = new vtkBMPWriter();
-					writer.SetFileName(filename);
-					writer.SetInputConnection(windowToImage.GetOutputPort());
-					writer.Write();
-				}
-				else if (filename.toLowerCase().endsWith("jpg") || filename.toLowerCase().endsWith("jpeg"))
-				{
-					vtkJPEGWriter writer = new vtkJPEGWriter();
-					writer.SetFileName(filename);
-					writer.SetInputConnection(windowToImage.GetOutputPort());
-					writer.Write();
-				}
-				else if (filename.toLowerCase().endsWith("png"))
-				{
-					vtkPNGWriter writer = new vtkPNGWriter();
-					writer.SetFileName(filename);
-					writer.SetInputConnection(windowToImage.GetOutputPort());
-					writer.Write();
-				}
-				else if (filename.toLowerCase().endsWith("pnm"))
-				{
-					vtkPNMWriter writer = new vtkPNMWriter();
-					writer.SetFileName(filename);
-					writer.SetInputConnection(windowToImage.GetOutputPort());
-					writer.Write();
-				}
-				else if (filename.toLowerCase().endsWith("ps"))
-				{
-					vtkPostScriptWriter writer = new vtkPostScriptWriter();
-					writer.SetFileName(filename);
-					writer.SetInputConnection(windowToImage.GetOutputPort());
-					writer.Write();
-				}
-				else if (filename.toLowerCase().endsWith("tif") || filename.toLowerCase().endsWith("tiff"))
-				{
-					vtkTIFFWriter writer = new vtkTIFFWriter();
-					writer.SetFileName(filename);
-					writer.SetInputConnection(windowToImage.GetOutputPort());
-					writer.SetCompressionToNoCompression();
-					writer.Write();
-				}
-				renWin.getVTKLock().unlock();
-			}
-			catch (Exception e)
-			{
-				System.out.println(e);
-			}
-			finally
-			{
-				if (glContext != null)
-				{
-					glContext.release();
-				}
-			}
-		}
 	}
 
 	public void setMouseEnabled(boolean enabled)
@@ -894,7 +585,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		{
 			if (frame.staged && frame.file != null)
 			{
-				saveToFile(frame.file, mainCanvas, mainCanvas.getAxesPanel());
+				RenderIoUtil.saveToFile(frame.file, mainCanvas, mainCanvas.getAxesPanel());
 				cameraFrameQueue.remove();
 			}
 			else
@@ -929,25 +620,9 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	}
 
 	@Override
-	public boolean getLodFlag()
+	public LodMode getLodMode()
 	{
-		// Bail if LOD is disabled
-		if (enableLODs == false)
-			return false;
-
-		// Return true if **any** SaavtkLODActors have LOD flagged on
-		List<vtkProp> propL = refModelManager.getProps();
-		for (vtkProp aProp : propL)
-		{
-			// Skip to next
-			if (aProp instanceof SaavtkLODActor == false)
-				continue;
-
-			if (((SaavtkLODActor) aProp).getLodFlag() == true)
-				return true;
-		}
-
-		return false;
+		return lodModeRegular;
 	}
 
 	@Override
@@ -956,7 +631,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		// Cause the RenderPanel to be rendered whenever the camera changes
 		mainCanvas.Render();
 
-		doViewChange();
+		doViewChange(ViewChangeReason.Camera);
 	}
 
 	@Override
@@ -971,24 +646,34 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		}
 
 		// Delegate the processing (after all other awt events)
-		SwingUtilities.invokeLater(() -> doViewChange());
+		SwingUtilities.invokeLater(() -> doViewChange(ViewChangeReason.Other));
 	}
 
 	@Override
-	public void setLodFlag(boolean aFlag)
+	public void notifySceneChange()
 	{
-		// Bail if LOD is disabled
-		if (enableLODs == false)
-			return;
+		updateUtilizedVtkProps();
 
-		// Update the LOD flag of all SaavtkLODActors
-		List<vtkProp> propL = refModelManager.getProps();
-		for (vtkProp aProp : propL)
-		{
-			if (aProp instanceof SaavtkLODActor)
-				((SaavtkLODActor) aProp).setLodFlag(aFlag);
-		}
+		if (mainCanvas.getRenderWindow().GetNeverRendered() > 0)
+			return;
+		mainCanvas.Render();
 	}
+
+	@Override
+	public void setLodMode(LodMode aLodMode)
+	{
+		lodModeRegular = aLodMode;
+
+		updateLodActors();
+	}
+
+	@Override
+	public void setLodModeTemporal(LodMode aLodMode)
+		{
+		lodModeTemporal = aLodMode;
+
+		updateLodActors();
+		}
 
 	/**
 	 * Helper method that calculates the nominal pixel span associated with the
@@ -1035,14 +720,14 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	/**
 	 * Helper method that will process a view changed
 	 */
-	private void doViewChange()
+	private void doViewChange(ViewChangeReason aReason)
 	{
 		// Update the nominalPixelSpan
 		nominalPixelSpan = computeNominalPixelSpan(vSmallBodyCP);
 
 		// Sends out notification to the ViewChangeListeners
 		for (ViewActionListener aListener : viewActionListenerL)
-			aListener.handleViewAction(this);
+			aListener.handleViewAction(this, aReason);
 	}
 
 	/**
@@ -1060,5 +745,156 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 
 		return new StandardCamera(aMainCanvas, tmpCoordinateSystem, tmpDistance);
 	}
+
+	/**
+	 * Helper method to initialize the various light sources available to this
+	 * {@link Renderer}.
+	 */
+	private void initVtkLights()
+	{
+		fixedLight = mainCanvas.getRenderer().MakeLight();
+		fixedLight.SetLightTypeToSceneLight();
+		fixedLight.PositionalOn();
+		fixedLight.SetConeAngle(180.0);
+
+		headlight = mainCanvas.getRenderer().MakeLight();
+		headlight.SetLightTypeToHeadlight();
+		headlight.SetConeAngle(180.0);
+
+		mainCanvas.getRenderer().AutomaticLightCreationOff();
+		lightKit = new vtkLightKit();
+		lightKit.SetKeyToFillRatio(1.0);
+		lightKit.SetKeyToHeadRatio(20.0);
+	}
+
+	/**
+	 * Helper method that updates the visibility of {@link vtkProp}s of type
+	 * {@link OccludingCaptionActor} to reflect their "line of sight" state.
+	 */
+	private void occludeLabels()
+	{
+		Vector3D lookat = new Vector3D(getRenderWindowPanel().getActiveCamera().GetFocalPoint());
+		Vector3D campos = new Vector3D(getRenderWindowPanel().getActiveCamera().GetPosition());
+		Vector3D lookdir = lookat.subtract(campos);
+
+		vtkCellLocator tmpLocator = refSmallBody.getCellLocator();
+		for (VtkPropProvider aPropProvider : propProviderS)
+		{
+			for (vtkProp aProp : aPropProvider.getProps())
+			{
+				if (aProp instanceof OccludingCaptionActor)
+				{
+					OccludingCaptionActor caption = (OccludingCaptionActor) aProp;
+					Vector3D normal = new Vector3D(caption.getNormal());
+					if (!caption.isEnabled() || normal.dotProduct(lookdir) > 0)
+						aProp.VisibilityOff();
+					else
+					{
+						double tolerance = 1e-15;
+						vtkIdList ids = new vtkIdList();
+						double[] rayStartPoint = caption.getRayStartPoint();
+						tmpLocator.FindCellsAlongLine(rayStartPoint, campos.toArray(), tolerance, ids);
+						if (ids.GetNumberOfIds() > 0)
+							aProp.VisibilityOff();
+						else
+							aProp.VisibilityOn();
+					}
+
+				}
+			}
+		}
+	}
+
+	/**
+	 * Helper method to update all {@link LodActor}s to reflect the proper
+	 * {@link LodMode}.
+	 */
+	private void updateLodActors()
+	{
+		// Determine the LodMode to utilize. The temporal LodMode is utilized if:
+		// - The regular LodMode is set to Auto
+		// - If the temporal LodMode is null then default to highest quality
+		LodMode tmpLodModeInstant = lodModeRegular;
+		if (lodModeRegular == LodMode.Auto)
+		{
+			tmpLodModeInstant = lodModeTemporal;
+			if (tmpLodModeInstant == null)
+				tmpLodModeInstant = LodMode.MaxQuality;
+		}
+
+		// Bail if the instantaneous LodMode has not changed
+		if (tmpLodModeInstant == cLodModeInstant)
+			return;
+		cLodModeInstant = tmpLodModeInstant;
+
+		// Update the LodMode for all LodActors
+		for (VtkPropProvider aPropProvider : propProviderS)
+		{
+			for (vtkProp aProp : aPropProvider.getProps())
+			{
+				if (aProp instanceof LodActor)
+					((LodActor) aProp).setLodMode(tmpLodModeInstant);
+			}
+		}
+
+		// Update the scene
+		notifySceneChange();
+
+		// Send out notification of the change
+		doViewChange(ViewChangeReason.Lod);
+	}
+
+	/**
+	 * Helper method that updates the VTK state to reflect the available vtkProps.
+	 */
+	private void updateUtilizedVtkProps()
+	{
+		// Generate the full list of vtkProps that should be installed
+		List<vtkProp> fullPropL = new ArrayList<>();
+		for (VtkPropProvider aPropProvider : propProviderS)
+			fullPropL.addAll(aPropProvider.getProps());
+
+		// Form the set of stale vtkProps that are installed but should be removed
+		vtkRenderer tmpRenderer = mainCanvas.getRenderer();
+		vtkPropCollection propCollection = tmpRenderer.GetViewProps();
+		int size = propCollection.GetNumberOfItems();
+		HashSet<vtkProp> stalePropS = new HashSet<>();
+		for (int i = 0; i < size; ++i)
+			stalePropS.add((vtkProp) propCollection.GetItemAsObject(i));
+
+		stalePropS.removeAll(fullPropL);
+
+		// Remove the stalePropS
+		if (stalePropS.isEmpty() == false)
+		{
+			mainCanvas.getVTKLock().lock();
+			for (vtkProp aProp : stalePropS)
+		{
+				// TODO: Eventually remove the legacy code below (2 lines)
+				if (aProp instanceof vtkCubeAxesActor2D)
+					continue;
+
+				tmpRenderer.RemoveViewProp(aProp);
+			}
+			mainCanvas.getVTKLock().unlock();
+		}
+
+		// Install the available vtkProps (that are not already installed)
+		for (vtkProp prop : fullPropL)
+		{
+			if (tmpRenderer.HasViewProp(prop) == 0)
+				tmpRenderer.AddViewProp(prop);
+		}
+
+		// Delegate label occlude computations
+		occludeLabels();
+	}
+	
+//	@Override
+//	public Object clone() throws CloneNotSupportedException
+//	{
+//		// TODO Auto-generated method stub
+//		return super.clone();
+//	}
 
 }
