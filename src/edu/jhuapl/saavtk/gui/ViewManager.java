@@ -3,6 +3,7 @@ package edu.jhuapl.saavtk.gui;
 import java.awt.CardLayout;
 import java.awt.EventQueue;
 import java.awt.Frame;
+import java.awt.IllegalComponentStateException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -456,8 +457,16 @@ public abstract class ViewManager extends JPanel
             {
                 if (!isCancelled())
                 {
-                    if (currentView != null)
-                        currentView.getRenderer().viewDeactivating();
+                	try 
+                	{
+	                    if (currentView != null)
+	                        currentView.getRenderer().viewDeactivating();
+                	} catch (IllegalComponentStateException e) {
+						// Pop-up error message - previous model no longer exists
+						EventQueue.invokeLater(() -> JOptionPane.showMessageDialog(null,
+								"Warning: Deactivating view of model that no longer exists.", "Problem deactivating model",
+								JOptionPane.ERROR_MESSAGE));
+					}
 
                     if (view != null)
                     {
