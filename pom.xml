@@ -172,7 +172,7 @@
 		<dependency>
 			<groupId>org.jzy3d</groupId>
 			<artifactId>vtk-java-all</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>1.0.0.4</version>
 		</dependency>
 	</dependencies>
 	<scm>
@@ -186,6 +186,15 @@
 	</issueManagement>
 	<!-- Repositories, so can be built on checkout without settings.xml file in place -->
     <repositories>
+        <repository>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+          <id>thirdparty</id>
+          <name>libs-3rdparty-local</name>
+          <url>http://surfshop.jhuapl.edu:8081/artifactory/libs-3rdparty-local</url>
+        </repository>
+    
         <repository>
           <snapshots>
             <enabled>false</enabled>
@@ -221,16 +230,6 @@
            <id>snapshots2</id>
            <name>libs-snapshot</name>
            <url>https://repo1.maven.org/maven2/</url>
-        </repository>
-        <repository>
-	   	   <id>jzy3d-snapshots</id>
-	   	   <name>Jzy3d Snapshots</name>
-	       <url>https://maven.jzy3d.org/snapshots/</url>
-        </repository>
-        <repository>
-           <id>jzy3d-releases</id>
-           <name>Jzy3d Releases</name>
-           <url>https://maven.jzy3d.org/releases/</url>
         </repository>
     </repositories>
     <pluginRepositories>
