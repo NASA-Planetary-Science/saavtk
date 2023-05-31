@@ -289,7 +289,14 @@ public class NativeLibraryLoader
                     {
                     	System.out.println("NativeLibraryLoader: loadAllVtkLibraries: loading " + lib.GetLibraryName());
 //                        lib.LoadLibrary();
-                    	System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".jnilib").getAbsolutePath());
+                    	
+                    	if (System.getProperty("os.name").contains("mac"))
+                    			System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".jnilib").getAbsolutePath());
+                    	else if (System.getProperty("os.name").contains("Win"))
+                			System.load(new File(nativeVTKLibraryDir, lib.GetLibraryName() + ".dll").getAbsolutePath());
+                    	else
+                			System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".so").getAbsolutePath());
+
                     }
                 }
                 catch (UnsatisfiedLinkError e)
