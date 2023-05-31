@@ -290,7 +290,7 @@ public class NativeLibraryLoader
                     	System.out.println("NativeLibraryLoader: loadAllVtkLibraries: loading " + lib.GetLibraryName());
 //                        lib.LoadLibrary();
                     	
-                    	if (System.getProperty("os.name").contains("mac"))
+                    	if (System.getProperty("os.name").contains("Mac"))
                     			System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".jnilib").getAbsolutePath());
                     	else if (System.getProperty("os.name").contains("Win"))
                 			System.load(new File(nativeVTKLibraryDir, lib.GetLibraryName() + ".dll").getAbsolutePath());
@@ -378,7 +378,7 @@ public class NativeLibraryLoader
 
     public static void loadSpiceLibraries()
     {
-    	if (System.getProperty("os.name").contains("mac"))
+    	if (System.getProperty("os.name").contains("Mac"))
     		System.load(new File(nativeVTKLibraryDir, "libJNISpice.jnilib").getAbsolutePath());
     	else if (System.getProperty("os.name").contains("Win"))
     		System.load(new File(nativeVTKLibraryDir, "JNISpice.dll").getAbsolutePath());
