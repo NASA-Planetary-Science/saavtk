@@ -378,7 +378,12 @@ public class NativeLibraryLoader
 
     public static void loadSpiceLibraries()
     {
-    	System.load(new File(nativeVTKLibraryDir, "libJNISpice.jnilib").getAbsolutePath());
+    	if (System.getProperty("os.name").contains("mac"))
+    		System.load(new File(nativeVTKLibraryDir, "libJNISpice.jnilib").getAbsolutePath());
+    	else if (System.getProperty("os.name").contains("Win"))
+    		System.load(new File(nativeVTKLibraryDir, "JNISpice.dll").getAbsolutePath());
+    	else
+    		System.load(new File(nativeVTKLibraryDir, "libJNISpice.so").getAbsolutePath());
 //        System.loadLibrary("JNISpice");
     }
 
