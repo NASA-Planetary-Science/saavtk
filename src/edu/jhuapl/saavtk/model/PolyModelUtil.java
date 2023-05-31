@@ -1,5 +1,9 @@
 package edu.jhuapl.saavtk.model;
 
+import java.awt.EventQueue;
+
+import javax.swing.JOptionPane;
+
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import vtk.vtkFloatArray;
@@ -10,8 +14,7 @@ import vtk.vtkFloatArray;
  *
  * @author lopeznr1
  */
-public class PolyModelUtil
-{
+public class PolyModelUtil {
 	/**
 	 * Utility method that returns the altitude for the specified {@link PolyModel}
 	 * and a given (target) position.
@@ -22,8 +25,7 @@ public class PolyModelUtil
 	 * The returned value will be negative if the (target) position is within the
 	 * {@link PolyModel}.
 	 */
-	public static double calcAltitudeFor(PolyModel aPolyModel, Vector3D aTargetPos)
-	{
+	public static double calcAltitudeFor(PolyModel aPolyModel, Vector3D aTargetPos) {
 		Vector3D tmpInterceptPos = calcInterceptPosition(aPolyModel, aTargetPos);
 		double retAltDist = aTargetPos.distance(tmpInterceptPos);
 
@@ -44,14 +46,26 @@ public class PolyModelUtil
 	 * The center point is defined as a point that lies on the surface closest to
 	 * the geometric center.
 	 */
-	public static Vector3D calcCenterPoint(GenericPolyhedralModel aPolyModel)
-	{
+	public static Vector3D calcCenterPoint(GenericPolyhedralModel aPolyModel) {
 		// Retrieve the geometric center from the PolyModel
 		double[] tmpCenterArr = aPolyModel.getSmallBodyPolyData().GetCenter();
 		Vector3D tmpCenterPt = new Vector3D(tmpCenterArr);
+		Vector3D retCenterPt = tmpCenterPt;
 
-		// Locate a point on the surface closest to the geometric center
-		Vector3D retCenterPt = aPolyModel.findClosestPoint(tmpCenterPt);
+		boolean isAllZero = true;
+		for (int i = 0; i < tmpCenterArr.length; i++) {
+			if (tmpCenterArr[i] != 0.0) {
+				isAllZero = false;
+				break;
+			}
+		}
+		if (isAllZero) {
+			return retCenterPt;
+		} else {
+			// Locate a point on the surface closest to the geometric center
+			retCenterPt = aPolyModel.findClosestPoint(tmpCenterPt);
+		}
+
 		return retCenterPt;
 	}
 
@@ -65,8 +79,7 @@ public class PolyModelUtil
 	 * <P>
 	 * If a intercept could not be calculated then {@link Vector3D#NaN} is returned.
 	 */
-	public static Vector3D calcInterceptPosition(PolyModel aPolyModel, Vector3D aTargetPos)
-	{
+	public static Vector3D calcInterceptPosition(PolyModel aPolyModel, Vector3D aTargetPos) {
 		// Retrieve the geometric center
 		Vector3D geoCenterPos = aPolyModel.getGeometricCenterPoint();
 
@@ -105,8 +118,7 @@ public class PolyModelUtil
 	 * Utility method to determine if the specified {@link PolyModel} is a true
 	 * polyhedron or just a polygonal surface.
 	 */
-	public static boolean calcIsPolyhedron(GenericPolyhedralModel aPolyModel)
-	{
+	public static boolean calcIsPolyhedron(GenericPolyhedralModel aPolyModel) {
 		// Determine if we have a model that is a polyhedral model or a polygonal
 		// surface. We do this by evaluating the angle between the (individual)
 		// normals and the "center" normal.
@@ -119,8 +131,7 @@ public class PolyModelUtil
 		// Evaluate all of the normals. If performance is an issue then consider:
 		// - Randomly evaluating only 10% or less of the normals
 		// - Randomly evaluating only the first ~5K of normals
-		for (int c1 = 0; c1 < numNorms; c1++)
-		{
+		for (int c1 = 0; c1 < numNorms; c1++) {
 			double[] tmp = tmpVFA.GetTuple3(c1);
 			Vector3D evalVect = new Vector3D(tmp[0], tmp[1], tmp[2]);
 
@@ -155,8 +166,7 @@ public class PolyModelUtil
 	 * <P>
 	 * The returned surface normal will be normalized.
 	 */
-	public static Vector3D calcSurfaceNormal(GenericPolyhedralModel aPolyModel)
-	{
+	public static Vector3D calcSurfaceNormal(GenericPolyhedralModel aPolyModel) {
 //		// Overly simplistic computation of normal
 //		// Locate the normal at the located centerPt
 //		Vector3D centerPt = calcCenterPoint(aPolyModel);
@@ -172,8 +182,7 @@ public class PolyModelUtil
 		vtkFloatArray tmpVFA = aPolyModel.getCellNormals();
 		int numNorms = tmpVFA.GetNumberOfTuples();
 		double sumX = 0.0, sumY = 0.0, sumZ = 0.0;
-		for (int c1 = 0; c1 < numNorms; c1++)
-		{
+		for (int c1 = 0; c1 < numNorms; c1++) {
 			double[] tmp = tmpVFA.GetTuple3(c1);
 			sumX += tmp[0];
 			sumY += tmp[1];
@@ -198,8 +207,7 @@ public class PolyModelUtil
 	 * Utility method that returns true if the angle between the 2 specified vectors
 	 * is less than 90 degrees.
 	 */
-	public static boolean isAcuteAngle(Vector3D aVectA, Vector3D aVectB)
-	{
+	public static boolean isAcuteAngle(Vector3D aVectA, Vector3D aVectB) {
 		// The equation of the angle between 2 vectors is given by:
 		// cos(theta) = (vectA dot vectB) / (||vectA|| * ||vectB||)
 		//
@@ -216,8 +224,7 @@ public class PolyModelUtil
 	/**
 	 * Helper method used for debugging
 	 */
-	private static boolean isDebug()
-	{
+	private static boolean isDebug() {
 		return false;
 	}
 
