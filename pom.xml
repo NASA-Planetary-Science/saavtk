@@ -173,7 +173,7 @@
 			<groupId>org.jzy3d</groupId>
 			<artifactId>vtk-java-all</artifactId>
 			<version>1.0.0.5</version>
-		</dependency>
+		</dependency> 
 	</dependencies>
 	<scm>
 		<connection>scm:git:http://hardin:8080/scm/git/vtk/saavtk</connection>
