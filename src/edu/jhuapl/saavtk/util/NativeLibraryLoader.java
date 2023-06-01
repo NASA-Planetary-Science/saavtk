@@ -235,7 +235,7 @@ public class NativeLibraryLoader
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //		}
-    	System.out.println("NativeLibraryLoader: loadAllVtkLibraries: unpacking natives");
+//    	System.out.println("NativeLibraryLoader: loadAllVtkLibraries: unpacking natives");
     	unpackNatives();
         if (isVtkInitialized.compareAndSet(false, true))
         {
@@ -287,7 +287,7 @@ public class NativeLibraryLoader
                 {
                     if (!lib.IsLoaded())
                     {
-                    	System.out.println("NativeLibraryLoader: loadAllVtkLibraries: loading " + lib.GetLibraryName());
+//                    	System.out.println("NativeLibraryLoader: loadAllVtkLibraries: loading " + lib.GetLibraryName());
 //                        lib.LoadLibrary();
                     	
                     	if (System.getProperty("os.name").contains("Mac"))
