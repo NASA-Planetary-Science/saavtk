@@ -27,14 +27,17 @@ import vtk.vtkNativeLibrary;
 public class NativeLibraryLoader
 {
     private static final AtomicBoolean isVtkInitialized = new AtomicBoolean(false);
-    public static boolean debug = true;
+    public static boolean debug = false;
     private static File nativeVTKLibraryDir;
     
     private static void unpackNatives()
     {
-    	System.out.println("vtk-native version: " + MAJOR_VERSION + "." + MINOR_VERSION);
-        System.out.println("Java version: " + System.getProperty("java.version"));
-        System.out.println("Current platform: " + Platform.getPlatform());
+    	if(debug)
+    	{
+    		System.out.println("vtk-native version: " + MAJOR_VERSION + "." + MINOR_VERSION);
+    		System.out.println("Java version: " + System.getProperty("java.version"));
+    		System.out.println("Current platform: " + Platform.getPlatform());
+    	}
         if (Platform.isUnknown()) {
         	System.err.println("Cannot determine the platform you are running on.");
         	System.exit(1);
@@ -43,11 +46,12 @@ public class NativeLibraryLoader
 //        File nativeDir = new File(System.getProperty("java.io.tmpdir"));
         File nativeDir = new File(System.getProperty("user.home") + File.separator +".nativelibs");
 
-        System.out.println("Will unpack to : " + nativeDir);
+        if(debug)
+        	System.out.println("Will unpack to : " + nativeDir);
 
         try {
             NativeLibraryLoader.initialize(nativeDir);
-            System.out.println("Initialization done, ");
+            System.out.println("VTK: Initialization done, ");
         } catch (Throwable t) {
             System.err.println("Initialization failed with " + t.getClass().getSimpleName() + ", stacktrace follows.");
             t.printStackTrace(System.err);
