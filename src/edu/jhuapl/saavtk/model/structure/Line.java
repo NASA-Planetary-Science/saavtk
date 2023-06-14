@@ -8,18 +8,10 @@ import com.google.common.collect.ImmutableList;
 
 import crucible.crust.metadata.api.Key;
 import crucible.crust.metadata.api.Metadata;
+import crucible.crust.metadata.api.Version;
+import crucible.crust.metadata.impl.FixedMetadata;
 import crucible.crust.metadata.impl.InstanceGetter;
-import crucible.crust.settings.api.Configurable;
-import crucible.crust.settings.api.ControlKey;
-import crucible.crust.settings.api.SettableStored;
-import crucible.crust.settings.api.Stored;
-import crucible.crust.settings.api.Versionable;
-import crucible.crust.settings.impl.ConfigurableFactory;
-import crucible.crust.settings.impl.KeyedFactory;
-import crucible.crust.settings.impl.SettableStoredFactory;
-import crucible.crust.settings.impl.StoredFactory;
-import crucible.crust.settings.impl.Version;
-import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
+import crucible.crust.metadata.impl.SettableMetadata;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.io.StructureLegacyUtil;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -27,44 +19,43 @@ import edu.jhuapl.saavtk.vtk.font.FontAttr;
 
 public class Line
 {
-    public static final ControlKey<SettableStored<Integer>> ID = SettableStoredFactory.key("id");
-    public static final ControlKey<SettableStored<String>> NAME = SettableStoredFactory.key("name");
-    public static final ControlKey<Stored<List<LatLon>>> VERTICES = StoredFactory.key("vertices");
-    public static final ControlKey<SettableStored<int[]>> COLOR = SettableStoredFactory.key("color");
-    public static final ControlKey<SettableStored<String>> LABEL = SettableStoredFactory.key("label");
-    public static final ControlKey<SettableStored<int[]>> LABEL_COLOR = SettableStoredFactory.key("labelColor");
-    public static final ControlKey<SettableStored<Integer>> LABEL_FONT_SIZE = SettableStoredFactory.key("labelFontSize");
-    public static final ControlKey<SettableStored<Boolean>> HIDDEN = SettableStoredFactory.key("hidden");
-    public static final ControlKey<SettableStored<Boolean>> LABEL_HIDDEN = SettableStoredFactory.key("labelHidden");
+    public static final Key<Integer> ID = Key.of("id");
+    public static final Key<String> NAME = Key.of("name");
+    public static final Key<List<LatLon>> VERTICES = Key.of("vertices");
+    public static final Key<int[]> COLOR = Key.of("color");
+    public static final Key<String> LABEL = Key.of("label");
+    public static final Key<int[]> LABEL_COLOR = Key.of("labelColor");
+    public static final Key<Integer> LABEL_FONT_SIZE = Key.of("labelFontSize");
+    public static final Key<Boolean> HIDDEN = Key.of("hidden");
+    public static final Key<Boolean> LABEL_HIDDEN = Key.of("labelHidden");
 
-    private static final Versionable CONFIGURATION_VERSION = Version.of(1, 0);
-    private static final SettableStoredFactory settableValues = SettableStoredFactory.instance();
+    private static final Version METADATA_VERSION = Version.of(1, 0);
 
-    protected static Configurable formConfigurationFor(PolyLine aLine)
+    protected static SettableMetadata formMetadataFor(PolyLine aLine)
     {
         int[] intArr;
 
-        KeyedFactory.Builder<Object> builder = KeyedFactory.instance().builder();
+        SettableMetadata metadata = SettableMetadata.of(METADATA_VERSION);
 
-        builder.put(ID, settableValues.of(aLine.getId()));
-        builder.put(NAME, settableValues.of(aLine.getName()));
+        metadata.put(ID, aLine.getId());
+        metadata.put(NAME, aLine.getName());
         // Note: it is correct to use settableValues to instantiate the setting for
         // VERTICES. This is because the list of controlPoints is final but mutable. If
         // one used just "Values", the set of vertices would not be saved in the file
         // because it would not be considered "stateful".
-        builder.put(VERTICES, settableValues.of(aLine.getControlPoints()));
+        metadata.put(VERTICES, aLine.getControlPoints());
         intArr = StructureLegacyUtil.convertColorToRgba(aLine.getColor());
-        builder.put(COLOR, settableValues.of(intArr));
-        builder.put(LABEL, settableValues.of(aLine.getLabel()));
+        metadata.put(COLOR, intArr);
+        metadata.put(LABEL, aLine.getLabel());
 
         FontAttr tmpFA = aLine.getLabelFontAttr();
         intArr = StructureLegacyUtil.convertColorToRgba(tmpFA.getColor());
-        builder.put(LABEL_COLOR, settableValues.of(intArr));
-        builder.put(LABEL_FONT_SIZE, settableValues.of(tmpFA.getSize()));
-        builder.put(HIDDEN, settableValues.of(!aLine.getVisible()));
-        builder.put(LABEL_HIDDEN, settableValues.of(!tmpFA.getIsVisible()));
+        metadata.put(LABEL_COLOR, intArr);
+        metadata.put(LABEL_FONT_SIZE, tmpFA.getSize());
+        metadata.put(HIDDEN, !aLine.getVisible());
+        metadata.put(LABEL_HIDDEN, !tmpFA.getIsVisible());
 
-        return ConfigurableFactory.instance().of(CONFIGURATION_VERSION, builder.build());
+        return metadata;
     }
 
     private static final Key<PolyLine> LINE_STRUCTURE_PROXY_KEY = Key.of("Line (structure)");
@@ -83,8 +74,9 @@ public class Line
 
                 return result;
             }, PolyLine.class, line -> {
-                Configurable configuration = formConfigurationFor(line);
-                return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration).store();
+                Metadata metadata = formMetadataFor(line);
+
+                return FixedMetadata.of(metadata);
             });
 
             proxyInitialized = true;

@@ -4,34 +4,21 @@ import java.util.ArrayList;
 
 import crucible.crust.metadata.api.Key;
 import crucible.crust.metadata.api.Metadata;
+import crucible.crust.metadata.impl.FixedMetadata;
 import crucible.crust.metadata.impl.InstanceGetter;
-import crucible.crust.settings.api.Configurable;
-import crucible.crust.settings.api.ControlKey;
-import crucible.crust.settings.api.SettableStored;
-import crucible.crust.settings.api.Viewable;
-import crucible.crust.settings.impl.ConfigurableFactory;
-import crucible.crust.settings.impl.KeyedFactory;
-import crucible.crust.settings.impl.SettableStoredFactory;
-import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
+import crucible.crust.metadata.impl.SettableMetadata;
 import edu.jhuapl.saavtk.util.LatLon;
 
 public class Polygon
 {
-    private static Configurable formConfigurationFor(edu.jhuapl.saavtk.structure.Polygon aPolygon)
+    private static SettableMetadata formMetadataFor(edu.jhuapl.saavtk.structure.Polygon aPolygon)
     {
-        Configurable lineConfiguration = Line.formConfigurationFor(aPolygon);
+        SettableMetadata metadata = Line.formMetadataFor(aPolygon);
 
-        KeyedFactory.Builder<Object> builder = KeyedFactory.instance().builder();
-        for (ControlKey<?> key : lineConfiguration.getKeys())
-        {
-            @SuppressWarnings("unchecked")
-            ControlKey<Viewable> contentKey = (ControlKey<Viewable>) key;
-            builder.put(contentKey, lineConfiguration.getItem(contentKey));
-        }
-        builder.put(AREA_KEY, SettableStoredFactory.instance().of(aPolygon.getSurfaceArea()));
-        builder.put(SHOW_INTERIOR_KEY, SettableStoredFactory.instance().of(aPolygon.getShowInterior()));
+        metadata.put(AREA_KEY, aPolygon.getSurfaceArea());
+        metadata.put(SHOW_INTERIOR_KEY, aPolygon.getShowInterior());
 
-        return ConfigurableFactory.instance().of(lineConfiguration.getVersion(), builder.build());
+        return metadata;
     }
 
     private static final Key<edu.jhuapl.saavtk.structure.Polygon> POLYGON_STRUCTURE_PROXY_KEY = Key.of("Polygon");
@@ -44,33 +31,32 @@ public class Polygon
             LatLon.initializeSerializationProxy();
 
             InstanceGetter.defaultInstanceGetter().register(POLYGON_STRUCTURE_PROXY_KEY, source -> {
-                int id = source.get(Key.of(Line.ID.getId()));
+                int id = source.get(Line.ID);
                 edu.jhuapl.saavtk.structure.Polygon result = new edu.jhuapl.saavtk.structure.Polygon(id, null, new ArrayList<>());
                 unpackMetadata(source, result);
 
                 return result;
             }, edu.jhuapl.saavtk.structure.Polygon.class, polygon -> {
-                Configurable configuration = formConfigurationFor(polygon);
-                return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration).store();
+                SettableMetadata metadata = formMetadataFor(polygon);
+
+                return FixedMetadata.of(metadata);
             });
 
             proxyInitialized = true;
         }
     }
 
-    public static final ControlKey<SettableStored<Double>> AREA_KEY = SettableStoredFactory.key("area");
-    public static final ControlKey<SettableStored<Boolean>> SHOW_INTERIOR_KEY = SettableStoredFactory.key("showInterior");
+    public static final Key<Double> AREA_KEY = Key.of("area");
+    public static final Key<Boolean> SHOW_INTERIOR_KEY = Key.of("showInterior");
 
     protected static void unpackMetadata(Metadata source, edu.jhuapl.saavtk.structure.Polygon polygon)
     {
         Line.unpackMetadata(source, polygon);
 
-        Key<Double> areaKey = Key.of(AREA_KEY.getId());
-        if (source.hasKey(areaKey))
-            polygon.setSurfaceArea(source.get(areaKey));
+        if (source.hasKey(AREA_KEY))
+            polygon.setSurfaceArea(source.get(AREA_KEY));
 
-        Key<Boolean> showInteriorKey = Key.of(SHOW_INTERIOR_KEY.getId());
-        if (source.hasKey(showInteriorKey))
-            polygon.setShowInterior(source.get(showInteriorKey));
+        if (source.hasKey(SHOW_INTERIOR_KEY))
+            polygon.setShowInterior(source.get(SHOW_INTERIOR_KEY));
     }
 }

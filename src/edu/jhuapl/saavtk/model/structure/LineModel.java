@@ -16,17 +16,9 @@ import com.google.common.collect.ImmutableList;
 import crucible.crust.metadata.api.Key;
 import crucible.crust.metadata.api.Metadata;
 import crucible.crust.metadata.api.MetadataManager;
-import crucible.crust.settings.api.Configurable;
-import crucible.crust.settings.api.ControlKey;
-import crucible.crust.settings.api.SettableStored;
-import crucible.crust.settings.api.Stored;
-import crucible.crust.settings.api.Versionable;
-import crucible.crust.settings.impl.ConfigurableFactory;
-import crucible.crust.settings.impl.KeyedFactory;
-import crucible.crust.settings.impl.SettableStoredFactory;
-import crucible.crust.settings.impl.StoredFactory;
-import crucible.crust.settings.impl.Version;
-import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
+import crucible.crust.metadata.api.Version;
+import crucible.crust.metadata.impl.FixedMetadata;
+import crucible.crust.metadata.impl.SettableMetadata;
 import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.status.StatusNotifier;
@@ -885,54 +877,51 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		throw new UnsupportedOperationException("Not implemented");
 	}
 
-	private static final Versionable CONFIGURATION_VERSION = Version.of(1, 0);
-	private static final ControlKey<SettableStored<Double>> OFFSET_KEY = SettableStoredFactory.key("offset");
-	private static final ControlKey<SettableStored<Double>> LINE_WIDTH_KEY = SettableStoredFactory.key("lineWidth");
-	private final ControlKey<Stored<List<G1>>> LINES_KEY = StoredFactory.key("lineStructures");
+    private static final Version METADATA_VERSION = Version.of(1, 0);
+    private static final Key<Double> OFFSET_KEY = Key.of("offset");
+    private static final Key<Double> LINE_WIDTH_KEY = Key.of("lineWidth");
+    private final Key<List<G1>> LINES_KEY = Key.of("lineStructures");
 
-	@Override
-	public Metadata store()
-	{
-		KeyedFactory.Builder<Object> builder = KeyedFactory.instance().builder();
+    @Override
+    public Metadata store()
+    {
+        SettableMetadata metadata = SettableMetadata.of(METADATA_VERSION);
 
-		builder.put(LINE_WIDTH_KEY, SettableStoredFactory.instance().of(lineWidth));
-		builder.put(OFFSET_KEY, SettableStoredFactory.instance().of(offset));
-		builder.put(LINES_KEY, SettableStoredFactory.instance().of(getAllItems()));
+        metadata.put(LINE_WIDTH_KEY, lineWidth);
+        metadata.put(OFFSET_KEY, offset);
+        metadata.put(LINES_KEY, getAllItems());
 
-		Configurable configuration = ConfigurableFactory.instance().of(CONFIGURATION_VERSION, builder.build());
+        return FixedMetadata.of(metadata);
+    }
 
-		return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration).store();
-	}
+    @Override
+    public void retrieve(Metadata source)
+    {
+        double lineWidth = source.get(LINE_WIDTH_KEY);
+        double offset = source.get(OFFSET_KEY);
 
-	@Override
-	public void retrieve(Metadata source)
-	{
-		double lineWidth = source.get(Key.of(LINE_WIDTH_KEY.getId()));
-		double offset = source.get(Key.of(OFFSET_KEY.getId()));
+        List<G1> sourceLines = source.get(LINES_KEY);
 
-		List<G1> sourceLines = source.get(Key.of(LINES_KEY.getId()));
+        removeAllStructures();
 
-		removeAllStructures();
+        for (G1 aItem : sourceLines)
+        {
+            if (aItem instanceof Polygon)
+            {
+                Polygon polygon = (Polygon) aItem;
+                if (source.hasKey(edu.jhuapl.saavtk.model.structure.Polygon.SHOW_INTERIOR_KEY))
+                {
+                    boolean isShown = source.get(edu.jhuapl.saavtk.model.structure.Polygon.SHOW_INTERIOR_KEY);
+                    polygon.setShowInterior(isShown);
+                }
+            }
+        }
 
-		for (G1 aItem : sourceLines)
-		{
-			if (aItem instanceof Polygon)
-			{
-				Polygon polygon = (Polygon) aItem;
-				if (source.hasKey(Key.of(edu.jhuapl.saavtk.model.structure.Polygon.SHOW_INTERIOR_KEY.getId())) == true)
-				{
-					boolean isShown = source
-							.get(Key.of(edu.jhuapl.saavtk.model.structure.Polygon.SHOW_INTERIOR_KEY.getId()));
-					polygon.setShowInterior(isShown);
-				}
-			}
-		}
+        setAllItems(sourceLines);
 
-		setAllItems(sourceLines);
-
-		setLineWidth(lineWidth);
-		setOffset(offset);
-	}
+        setLineWidth(lineWidth);
+        setOffset(offset);
+    }
 
 	@Override
 	protected VtkPolyLinePainter<G1> createPainter(G1 aItem)
