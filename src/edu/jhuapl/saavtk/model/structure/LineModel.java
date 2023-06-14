@@ -13,12 +13,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.ImmutableList;
 
-import crucible.crust.metadata.api.Key;
-import crucible.crust.metadata.api.Metadata;
-import crucible.crust.metadata.api.MetadataManager;
-import crucible.crust.metadata.api.Version;
-import crucible.crust.metadata.impl.FixedMetadata;
-import crucible.crust.metadata.impl.SettableMetadata;
 import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.status.StatusNotifier;
@@ -26,7 +20,6 @@ import edu.jhuapl.saavtk.structure.BaseStructureManager;
 import edu.jhuapl.saavtk.structure.ControlPointsHandler;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.PolyLineMode;
-import edu.jhuapl.saavtk.structure.Polygon;
 import edu.jhuapl.saavtk.structure.util.ControlPointUtil;
 import edu.jhuapl.saavtk.structure.vtk.VtkCompositePainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkControlPointPainter;
@@ -54,7 +47,7 @@ import vtk.vtkUnsignedCharArray;
  * Model of line structures drawn on a body.
  */
 public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, VtkPolyLinePainter<G1>>
-		implements ControlPointsHandler<G1>, PropertyChangeListener, MetadataManager
+		implements ControlPointsHandler<G1>, PropertyChangeListener
 {
 	// Constants
 	private static final String LINES = "lines";
@@ -876,52 +869,6 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	{
 		throw new UnsupportedOperationException("Not implemented");
 	}
-
-    private static final Version METADATA_VERSION = Version.of(1, 0);
-    private static final Key<Double> OFFSET_KEY = Key.of("offset");
-    private static final Key<Double> LINE_WIDTH_KEY = Key.of("lineWidth");
-    private final Key<List<G1>> LINES_KEY = Key.of("lineStructures");
-
-    @Override
-    public Metadata store()
-    {
-        SettableMetadata metadata = SettableMetadata.of(METADATA_VERSION);
-
-        metadata.put(LINE_WIDTH_KEY, lineWidth);
-        metadata.put(OFFSET_KEY, offset);
-        metadata.put(LINES_KEY, getAllItems());
-
-        return FixedMetadata.of(metadata);
-    }
-
-    @Override
-    public void retrieve(Metadata source)
-    {
-        double lineWidth = source.get(LINE_WIDTH_KEY);
-        double offset = source.get(OFFSET_KEY);
-
-        List<G1> sourceLines = source.get(LINES_KEY);
-
-        removeAllStructures();
-
-        for (G1 aItem : sourceLines)
-        {
-            if (aItem instanceof Polygon)
-            {
-                Polygon polygon = (Polygon) aItem;
-                if (source.hasKey(edu.jhuapl.saavtk.model.structure.Polygon.SHOW_INTERIOR_KEY))
-                {
-                    boolean isShown = source.get(edu.jhuapl.saavtk.model.structure.Polygon.SHOW_INTERIOR_KEY);
-                    polygon.setShowInterior(isShown);
-                }
-            }
-        }
-
-        setAllItems(sourceLines);
-
-        setLineWidth(lineWidth);
-        setOffset(offset);
-    }
 
 	@Override
 	protected VtkPolyLinePainter<G1> createPainter(G1 aItem)
