@@ -43,7 +43,7 @@ import glum.item.ItemEventType;
  * methods:
  * <UL>
  * <LI>{@link #getChartPanel()}
- * <LI>{@link #getPlotPoints(Line, List, List)}
+ * <LI>{@link #getPlotPoints(PolyLine, List, List)}
  * </UL>
  *
  * @author lopeznr1
