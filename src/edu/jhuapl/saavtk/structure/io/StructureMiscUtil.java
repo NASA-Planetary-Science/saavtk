@@ -12,7 +12,6 @@ import com.google.common.collect.Multimap;
 
 import edu.jhuapl.saavtk.model.PolyModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
-import edu.jhuapl.saavtk.model.structure.Line;
 import edu.jhuapl.saavtk.structure.Ellipse;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.Polygon;
