@@ -8,7 +8,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,10 +27,10 @@ import edu.jhuapl.saavtk.config.IViewConfig;
 import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.model.plateColoring.BasicColoringDataManager;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
-import edu.jhuapl.saavtk.model.plateColoring.CustomizableColoringDataManager;
-import edu.jhuapl.saavtk.model.plateColoring.FacetColoringData;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringDataFactory;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringDataUtils;
+import edu.jhuapl.saavtk.model.plateColoring.CustomizableColoringDataManager;
+import edu.jhuapl.saavtk.model.plateColoring.FacetColoringData;
 import edu.jhuapl.saavtk.util.BoundingBox;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.ConvertResourceToFile;
@@ -114,6 +113,16 @@ public class GenericPolyhedralModel extends PolyhedralModel
     private vtkPolyData lowResSmallBodyPolyData;
 	private VtkLodActor smallBodyActor;
     private vtkPolyDataMapper smallBodyMapper;
+    
+    private HashMap<Integer, vtkPolyData> loadedShapePolydatas = new HashMap<Integer, vtkPolyData>();
+    private HashMap<Integer, vtkFloatArray> loadedCellNormals = new HashMap<Integer, vtkFloatArray>();
+    private HashMap<Integer, vtkIdTypeArray> loadedCellIds = new HashMap<Integer, vtkIdTypeArray>();
+    private HashMap<Integer, vtksbCellLocator> loadedCellLocators = new HashMap<Integer, vtksbCellLocator>();
+    private HashMap<Integer, vtksbCellLocator> loadedOriginalCellLocators = new HashMap<Integer, vtksbCellLocator>();
+    private HashMap<Integer, vtkPointLocator> loadedPointLocators = new HashMap<Integer, vtkPointLocator>();
+    private HashMap<Integer, vtkPointLocator> loadedOriginalPointLocators = new HashMap<Integer, vtkPointLocator>();
+    private HashMap<Integer, VtkLodActor> loadedSmallBodyActors = new HashMap<Integer, VtkLodActor>();
+    private HashMap<Integer, vtkPolyDataMapper> loadedSmallBodyMappers = new HashMap<Integer, vtkPolyDataMapper>();
     
     protected vtkTransform currentTransform = new vtkTransform();
 
@@ -553,10 +562,18 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
     private void initializeCellIds()
     {
-        cellIds = new vtkIdTypeArray();
-        cellIds.SetName(cellIdsArrayName);
-        for (int i = 0; i < smallBodyPolyDataAtPosition.GetNumberOfCells(); i++)
-            cellIds.InsertNextValue(i);
+    	if (loadedCellIds.get(resolutionLevel) == null)
+    	{
+	        cellIds = new vtkIdTypeArray();
+	        cellIds.SetName(cellIdsArrayName);
+	        for (int i = 0; i < smallBodyPolyDataAtPosition.GetNumberOfCells(); i++)
+	            cellIds.InsertNextValue(i);
+	        loadedCellIds.put(resolutionLevel, cellIds);
+    	}
+    	else
+    	{
+    		cellIds = loadedCellIds.get(resolutionLevel);
+    	}
         smallBodyPolyDataAtPosition.GetCellData().AddArray(cellIds);
     }
 
@@ -796,8 +813,14 @@ public class GenericPolyhedralModel extends PolyhedralModel
                 loadCustomLidarDataSource();
             }
 
-            smallBodyPolyData.ShallowCopy(PolyDataUtil.loadShapeModel(modelFile.getAbsolutePath()));
-            smallBodyPolyDataAtPosition.ShallowCopy(PolyDataUtil.loadShapeModel(modelFile.getAbsolutePath()));
+        	vtkPolyData polydata = loadedShapePolydatas.get(resolutionLevel);
+        	if (loadedShapePolydatas.get(resolutionLevel) == null)
+        	{
+        		polydata = PolyDataUtil.loadShapeModel(modelFile.getAbsolutePath());
+        		loadedShapePolydatas.put(resolutionLevel, polydata);
+        	}
+            smallBodyPolyData.ShallowCopy(polydata);
+            smallBodyPolyDataAtPosition.ShallowCopy(polydata);
         }
         catch (Exception e)
         {
@@ -827,8 +850,9 @@ public class GenericPolyhedralModel extends PolyhedralModel
         {
             loadCustomColoringInfo();
 
-            smallBodyPolyData.ShallowCopy(PolyDataUtil.loadShapeModel(defaultModelFile.getAbsolutePath()));
-            smallBodyPolyDataAtPosition.ShallowCopy(PolyDataUtil.loadShapeModel(defaultModelFile.getAbsolutePath()));
+            vtkPolyData polydata = PolyDataUtil.loadShapeModel(defaultModelFile.getAbsolutePath());
+            smallBodyPolyData.ShallowCopy(polydata);
+            smallBodyPolyDataAtPosition.ShallowCopy(polydata);
         }
         catch (Exception e)
         {
@@ -847,38 +871,54 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
     protected void initializeLocators()
     {
-        if (cellLocator == null)
-        {
-            cellLocator = new vtksbCellLocator();
-            pointLocator = new vtkPointLocator();
-            originalCellLocator = new vtksbCellLocator();
-            originalPointLocator = new vtkPointLocator();
-        }
-
-        // Initialize the cell locator
-        cellLocator.FreeSearchStructure();
-        cellLocator.SetDataSet(smallBodyPolyDataAtPosition);
-        cellLocator.CacheCellBoundsOn();
-        cellLocator.AutomaticOn();
-        cellLocator.SetTolerance(1e-15);
-        cellLocator.BuildLocator();
-        
-        originalCellLocator.FreeSearchStructure();
-        originalCellLocator.SetDataSet(smallBodyPolyData);
-        originalCellLocator.CacheCellBoundsOn();
-        originalCellLocator.AutomaticOn();
-        originalCellLocator.SetTolerance(1e-15);
-        originalCellLocator.BuildLocator();
-
-        pointLocator.FreeSearchStructure();
-        pointLocator.SetDataSet(smallBodyPolyDataAtPosition);
-        pointLocator.SetTolerance(1e-15);
-        pointLocator.BuildLocator();
-        
-        originalPointLocator.FreeSearchStructure();
-        originalPointLocator.SetDataSet(smallBodyPolyData);
-        originalPointLocator.SetTolerance(1e-15);
-        originalPointLocator.BuildLocator();
+    	if (loadedCellLocators.get(resolutionLevel) == null)
+    	{
+	        if (cellLocator == null)
+	        {
+	        	
+	            cellLocator = new vtksbCellLocator();
+	            pointLocator = new vtkPointLocator();
+	            originalCellLocator = new vtksbCellLocator();
+	            originalPointLocator = new vtkPointLocator();
+	        }
+	
+	        // Initialize the cell locator
+	        cellLocator.FreeSearchStructure();
+	        cellLocator.SetDataSet(smallBodyPolyDataAtPosition);
+	        cellLocator.CacheCellBoundsOn();
+	        cellLocator.AutomaticOn();
+	        cellLocator.SetTolerance(1e-15);
+	        cellLocator.BuildLocator();
+	        
+	        originalCellLocator.FreeSearchStructure();
+	        originalCellLocator.SetDataSet(smallBodyPolyData);
+	        originalCellLocator.CacheCellBoundsOn();
+	        originalCellLocator.AutomaticOn();
+	        originalCellLocator.SetTolerance(1e-15);
+	        originalCellLocator.BuildLocator();
+	
+	        pointLocator.FreeSearchStructure();
+	        pointLocator.SetDataSet(smallBodyPolyDataAtPosition);
+	        pointLocator.SetTolerance(1e-15);
+	        pointLocator.BuildLocator();
+	        
+	        originalPointLocator.FreeSearchStructure();
+	        originalPointLocator.SetDataSet(smallBodyPolyData);
+	        originalPointLocator.SetTolerance(1e-15);
+	        originalPointLocator.BuildLocator();
+	        
+	        loadedCellLocators.put(resolutionLevel, cellLocator);
+	        loadedOriginalCellLocators.put(resolutionLevel, originalCellLocator);
+	        loadedPointLocators.put(resolutionLevel, pointLocator);
+	        loadedOriginalPointLocators.put(resolutionLevel, originalPointLocator);
+    	}
+    	else
+    	{
+    		cellLocator = loadedCellLocators.get(resolutionLevel);
+    		originalCellLocator = loadedOriginalCellLocators.get(resolutionLevel);
+    		pointLocator = loadedPointLocators.get(resolutionLevel);
+    		originalPointLocator = loadedOriginalPointLocators.get(resolutionLevel);
+    	}
     }
 
     private void initializeLowResData()
@@ -1052,31 +1092,39 @@ public class GenericPolyhedralModel extends PolyhedralModel
         // TODO consider adding normals to cell data without creating problems
         if (cellNormals == null)
         {
-            vtkPolyDataNormals normalsFilter = new vtkPolyDataNormals();
-            normalsFilter.SetInputData(smallBodyPolyDataAtPosition);
-            normalsFilter.SetComputeCellNormals(1);
-            normalsFilter.SetComputePointNormals(0);
-            normalsFilter.SplittingOff();
-            normalsFilter.Update();
-
-            vtkPolyData normalsFilterOutput = normalsFilter.GetOutput();
-            vtkCellData normalsFilterOutputCellData = normalsFilterOutput.GetCellData();
-            vtkFloatArray normals = (vtkFloatArray) normalsFilterOutputCellData.GetNormals();
-
-            // Bail if no data
-            if (normals == null)
-            {
-            	cellNormals = new vtkFloatArray();
-            	return cellNormals;
-            }
-
-            cellNormals = new vtkFloatArray();
-            cellNormals.DeepCopy(normals);
-
-            normals.Delete();
-            normalsFilterOutputCellData.Delete();
-            normalsFilterOutput.Delete();
-            normalsFilter.Delete();
+        	if (loadedCellNormals.get(resolutionLevel) == null)
+        	{
+	            vtkPolyDataNormals normalsFilter = new vtkPolyDataNormals();
+	            normalsFilter.SetInputData(smallBodyPolyDataAtPosition);
+	            normalsFilter.SetComputeCellNormals(1);
+	            normalsFilter.SetComputePointNormals(0);
+	            normalsFilter.SplittingOff();
+	            normalsFilter.Update();
+	
+	            vtkPolyData normalsFilterOutput = normalsFilter.GetOutput();
+	            vtkCellData normalsFilterOutputCellData = normalsFilterOutput.GetCellData();
+	            vtkFloatArray normals = (vtkFloatArray) normalsFilterOutputCellData.GetNormals();
+	
+	            // Bail if no data
+	            if (normals == null)
+	            {
+	            	cellNormals = new vtkFloatArray();
+	            	return cellNormals;
+	            }
+	
+	            cellNormals = new vtkFloatArray();
+	            cellNormals.DeepCopy(normals);
+	
+	            normals.Delete();
+	            normalsFilterOutputCellData.Delete();
+	            normalsFilterOutput.Delete();
+	            normalsFilter.Delete();
+	            loadedCellNormals.put(resolutionLevel, cellNormals);
+        	}
+        	else
+        	{
+        		cellNormals = loadedCellNormals.get(resolutionLevel);
+        	}
         }
 
         return cellNormals;
@@ -1370,26 +1418,37 @@ public class GenericPolyhedralModel extends PolyhedralModel
     {
         if (smallBodyActor == null)
         {
-            smallBodyMapper = new vtkPolyDataMapper();
-            smallBodyMapper.SetInputData(smallBodyPolyDataAtPosition);
-            vtkLookupTable lookupTable = new vtkLookupTable();
-            smallBodyMapper.SetLookupTable(lookupTable);
-            smallBodyMapper.UseLookupTableScalarRangeOn();
-
-			smallBodyActor = new VtkLodActor(this);
-			smallBodyActor.setDefaultMapper(smallBodyMapper);
-			smallBodyActor.setLodMapper(LodMode.MaxQuality, smallBodyMapper);
-
-			vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyDataAtPosition);
-			smallBodyActor.setLodMapper(LodMode.MaxSpeed, tmpDecimatedPDM);
-			tmpDecimatedPDM.SetLookupTable(lookupTable);
-			tmpDecimatedPDM.UseLookupTableScalarRangeOn();
-            vtkProperty smallBodyProperty = smallBodyActor.GetProperty();
-            smallBodyProperty.SetInterpolationToGouraud();
-            // smallBodyProperty.SetSpecular(.1);
-            // smallBodyProperty.SetSpecularPower(100);
-
-            smallBodyActors.add(smallBodyActor);
+        	if (loadedSmallBodyActors.get(resolutionLevel) == null)
+        	{
+	            smallBodyMapper = new vtkPolyDataMapper();
+	            smallBodyMapper.SetInputData(smallBodyPolyDataAtPosition);
+	            vtkLookupTable lookupTable = new vtkLookupTable();
+	            smallBodyMapper.SetLookupTable(lookupTable);
+	            smallBodyMapper.UseLookupTableScalarRangeOn();
+	
+				smallBodyActor = new VtkLodActor(this);
+				smallBodyActor.setDefaultMapper(smallBodyMapper);
+				smallBodyActor.setLodMapper(LodMode.MaxQuality, smallBodyMapper);
+	
+				vtkPolyDataMapper tmpDecimatedPDM = LodUtil.createQuadricDecimatedMapper(smallBodyPolyDataAtPosition);
+				smallBodyActor.setLodMapper(LodMode.MaxSpeed, tmpDecimatedPDM);
+				tmpDecimatedPDM.SetLookupTable(lookupTable);
+				tmpDecimatedPDM.UseLookupTableScalarRangeOn();
+	            vtkProperty smallBodyProperty = smallBodyActor.GetProperty();
+	            smallBodyProperty.SetInterpolationToGouraud();
+	            // smallBodyProperty.SetSpecular(.1);
+	            // smallBodyProperty.SetSpecularPower(100);
+	
+	            smallBodyActors.add(smallBodyActor);
+	            
+	            loadedSmallBodyMappers.put(resolutionLevel, smallBodyMapper);
+	            loadedSmallBodyActors.put(resolutionLevel, smallBodyActor);
+        	}
+        	else
+        	{
+        		smallBodyMapper = loadedSmallBodyMappers.get(resolutionLevel);
+        		smallBodyActor = loadedSmallBodyActors.get(resolutionLevel);
+        	}
 
             scalarBarActor = new vtkScalarBarActor();
             vtkCoordinate coordinate = scalarBarActor.GetPositionCoordinate();
@@ -1707,13 +1766,10 @@ public class GenericPolyhedralModel extends PolyhedralModel
         {
             throw new IOException("Unable to load shape model " + smallBodyFile.getName());
         }
-        this.initializeDefaultModel();
-
+//        this.initializeDefaultModel();
         this.initialize(smallBodyFile);
-
-        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
-        this.pcs.firePropertyChange(Properties.MODEL_RESOLUTION_CHANGED, null, null);
-
+//        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+//        this.pcs.firePropertyChange(Properties.MODEL_RESOLUTION_CHANGED, null, null);
     }
 
     @Override

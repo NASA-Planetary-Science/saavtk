@@ -162,7 +162,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 
 		SwingUtilities.invokeLater(() -> notifySceneChange());
 		
-		((GenericPolyhedralModel) refSmallBody).sortPolydata(mainCanvas.getActiveCamera());
+//		((GenericPolyhedralModel) refSmallBody).sortPolydata(mainCanvas.getActiveCamera());
 
 		// Register for events of interest
 		camera.addCameraChangeListener(this);
