@@ -9,11 +9,13 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.text.DecimalFormat;
 
+import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.KeyStroke;
 
 import com.google.common.collect.Range;
 
@@ -39,7 +41,7 @@ import net.miginfocom.swing.MigLayout;
  *
  * @author lopeznr1
  */
-public class ShapeModelEditPanel extends JPanel implements ActionListener, ItemListener, KeyListener, GridChangeListener
+public class ShapeModelEditPanel extends JPanel implements ActionListener, ItemListener, GridChangeListener
 {
 	// Constants
 	private static final Range<Double> OpacityRange = Range.closed(0.0, 1.0);
@@ -135,7 +137,20 @@ public class ShapeModelEditPanel extends JPanel implements ActionListener, ItemL
 		// Representation area
 		representationL = new JLabel("Representation:");
 		representationBox = new GComboBox<>(this, Representation.values());
-		representationBox.addKeyListener(this);
+		representationBox.getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("S"), "switchToSurface");
+		representationBox.getActionMap().put("switchToSurface", new AbstractAction() {
+			public void actionPerformed(ActionEvent e) {
+		    	representationBox.setSelectedItem(Representation.Surface);
+		    	updateGui();
+		    }
+		});
+		representationBox.getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("W"), "switchToWireframe");
+		representationBox.getActionMap().put("switchToWireframe", new AbstractAction() {
+			public void actionPerformed(ActionEvent e) {
+		    	representationBox.setSelectedItem(Representation.Wireframe);
+		    	updateGui();
+		    }
+		});
 		representationPanel = new CardPanel<>();
 		representationPanel.addCard(Representation.Points, pointSizePanel);
 		representationPanel.addCard(Representation.Wireframe, lineWidthPanel);
@@ -402,35 +417,6 @@ public class ShapeModelEditPanel extends JPanel implements ActionListener, ItemL
 		isEnabled = isShown == true;
 		isEnabled &= pointSizeNFS.getValue() != 1.0;
 		pointSizeResetB.setEnabled(isEnabled);
-	}
-	
-	@Override
-	public void keyPressed(KeyEvent aEvent)
-	{
-		int keyCode = aEvent.getKeyCode();
-		if (keyCode == KeyEvent.VK_S)
-		{
-			representationBox.setChosenItem(Representation.Surface);
-		}
-		else if (keyCode == KeyEvent.VK_W)
-		{
-			representationBox.setChosenItem(Representation.Wireframe);
-		}
-		else
-		{
-			return;
-		}
-		updateGui();
-	}
-	
-	@Override
-	public void keyReleased(KeyEvent e) {
-		// TODO Auto-generated method stub
-	}
-	
-	@Override
-	public void keyTyped(KeyEvent e) {
-		// TODO Auto-generated method stub
 	}
 
 }
