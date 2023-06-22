@@ -3,6 +3,7 @@ package edu.jhuapl.saavtk.gui;
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.spi.LocaleServiceProvider;
 
 import org.apache.commons.io.FileUtils;
 
@@ -118,7 +119,22 @@ public class ShapeModelImporter
         {
             configMap.put(ShapeModel.TYPE, ShapeModel.CUSTOM);
             configMap.put(ShapeModel.CUSTOM_SHAPE_MODEL_PATH, modelPath);
-
+            
+            // Set format based on file extension from modelPath
+            if (modelPath.endsWith(".pds"))
+            	format = FormatType.PDS;
+            else if (modelPath.endsWith(".obj"))
+            	format = FormatType.OBJ;
+            else if (modelPath.endsWith(".vtk"))
+            	format = FormatType.VTK;
+            else if (modelPath.endsWith(".fits") || modelPath.endsWith(".fit") || modelPath.endsWith(".fts"))
+            	format = FormatType.FITS;
+            else if (modelPath.endsWith(".stl"))
+            	format = FormatType.STL;
+            else
+            	format = null;
+            	
+            
             if (format == FormatType.PDS)
             {
                 try
@@ -187,6 +203,11 @@ public class ShapeModelImporter
             	reader.Update();
             	shapePoly = reader.GetOutput();
             }
+            else
+            {
+            	errorMessage[0] = "There was an error loading " + modelPath + ".\nFile extension indicates invalid type.";
+            	return false;
+            }
         }
 
         // Now save the shape model to the users home folder within the
@@ -225,7 +246,7 @@ public class ShapeModelImporter
 				} catch (IOException e) {
 	                errorMessage[0] = "There was an error copying " + modelPath + " to " + copyMap.get(key);
 	                return false;
-				}            
+				}
 	        }
         }
         
