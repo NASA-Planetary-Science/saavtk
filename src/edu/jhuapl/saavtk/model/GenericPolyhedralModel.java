@@ -2524,6 +2524,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         smallBodyActor.GetProperty().SetRepresentationToSurface();
         smallBodyActor.GetProperty().EdgeVisibilityOff();
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+        this.pcs.firePropertyChange(Properties.MODEL_REPRESENTATION_CHANGED, null, smallBodyActor.GetProperty().GetRepresentation());
     }
 
     @Override
@@ -2531,6 +2532,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
     {
         smallBodyActor.GetProperty().SetRepresentationToWireframe();
         this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
+        this.pcs.firePropertyChange(Properties.MODEL_REPRESENTATION_CHANGED, null, smallBodyActor.GetProperty().GetRepresentation());
     }
 
     @Override

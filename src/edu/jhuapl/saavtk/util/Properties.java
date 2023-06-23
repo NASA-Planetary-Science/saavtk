@@ -8,6 +8,7 @@ package edu.jhuapl.saavtk.util;
 public interface Properties
 {
     final String MODEL_CHANGED = "model-changed";
+    final String MODEL_REPRESENTATION_CHANGED = "model-representation-changed";
     final String MODEL_PICKED = "model-picked";
     final String MODEL_REMOVED = "model-removed";
 
