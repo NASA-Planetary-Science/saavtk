@@ -5,13 +5,20 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.text.DecimalFormat;
 
+import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
 
 import com.google.common.collect.Range;
 
@@ -24,6 +31,7 @@ import edu.jhuapl.saavtk.gui.util.IconUtil;
 import edu.jhuapl.saavtk.gui.util.ToolTipUtil;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.pick.PickUtil;
+import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.saavtk.vtk.font.FontAttr;
 import glum.gui.GuiUtil;
 import glum.gui.component.GComboBox;
@@ -133,6 +141,7 @@ public class ShapeModelEditPanel extends JPanel implements ActionListener, ItemL
 		// Representation area
 		representationL = new JLabel("Representation:");
 		representationBox = new GComboBox<>(this, Representation.values());
+
 		representationPanel = new CardPanel<>();
 		representationPanel.addCard(Representation.Points, pointSizePanel);
 		representationPanel.addCard(Representation.Wireframe, lineWidthPanel);
@@ -143,6 +152,32 @@ public class ShapeModelEditPanel extends JPanel implements ActionListener, ItemL
 
 		// Register for events of interest
 		workGridPainter.addListener(this);
+		
+		
+		refSmallBody.addPropertyChangeListener(new PropertyChangeListener()
+		{
+			
+			@Override
+			public void propertyChange(PropertyChangeEvent evt)
+			{
+				if (evt.getPropertyName() == Properties.MODEL_REPRESENTATION_CHANGED)
+				{
+					int representation = (int)evt.getNewValue() - 1;
+					if (representation == 1)
+					{
+						representationBox.setChosenItem(Representation.Surface);
+						updateGui();
+					}
+					else if (representation == 0)
+					{
+						representationBox.setChosenItem(Representation.Wireframe);
+						updateGui();
+					}
+					
+				}
+				
+			}
+		});
 
 		// Initial update
 		syncToGuiModel();
