@@ -10,6 +10,8 @@
  */
 package edu.jhuapl.saavtk.gui.dialog;
 
+import java.awt.EventQueue;
+import java.awt.IllegalComponentStateException;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
@@ -202,13 +204,23 @@ public class ShapeModelImporterManagerDialog extends javax.swing.JDialog
         int idx = modelList.getSelectedIndex();
         if (idx >= 0)
         {
-            String dirname = (String) ((DefaultListModel) modelList.getModel()).remove(idx);
-
-            // Remove all the files also
-            String dirpath = Configuration.getImportedShapeModelsDir() + File.separator + dirname;
-            FileUtils.deleteQuietly(new File(dirpath));
-
-            this.firePropertyChange(Properties.CUSTOM_MODEL_DELETED, "", dirname);
+            DefaultListModel model = (DefaultListModel) modelList.getModel();
+        	String dirname = (String) model.elementAt(idx);
+        	
+        	try
+        	{
+        		this.firePropertyChange(Properties.CUSTOM_MODEL_DELETED, "", dirname);
+        		dirname = (String) model.remove(idx);
+                String dirpath = Configuration.getImportedShapeModelsDir() + File.separator + dirname;
+                FileUtils.deleteQuietly(new File(dirpath));
+        	}
+        	catch (IllegalComponentStateException e)
+        	{
+        		// If firePropertyChange throws error, means that model is currently being viewed
+            	EventQueue.invokeLater(() -> JOptionPane.showMessageDialog(null,
+    					"Warning: Cannot remove model that is being viewed.", "Problem deactivating model",
+    					JOptionPane.ERROR_MESSAGE));
+            }
         }
     }// GEN-LAST:event_removeButtonActionPerformed
 

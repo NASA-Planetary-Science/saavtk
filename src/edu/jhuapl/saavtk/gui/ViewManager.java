@@ -457,16 +457,8 @@ public abstract class ViewManager extends JPanel
             {
                 if (!isCancelled())
                 {
-                	try 
-                	{
-	                    if (currentView != null)
-	                        currentView.getRenderer().viewDeactivating();
-                	} catch (IllegalComponentStateException e) {
-						// Pop-up error message - previous model no longer exists
-						EventQueue.invokeLater(() -> JOptionPane.showMessageDialog(null,
-								"Warning: Deactivating view of model that no longer exists.", "Problem deactivating model",
-								JOptionPane.ERROR_MESSAGE));
-					}
+					if (currentView != null)
+						currentView.getRenderer().viewDeactivating();
 
                     if (view != null)
                     {

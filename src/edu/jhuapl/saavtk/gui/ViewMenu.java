@@ -1,6 +1,8 @@
 package edu.jhuapl.saavtk.gui;
 
 import java.awt.Component;
+import java.awt.EventQueue;
+import java.awt.IllegalComponentStateException;
 import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -14,6 +16,7 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JRadioButtonMenuItem;
 
 import edu.jhuapl.saavtk.gui.dialog.ShapeModelImporterManagerDialog;
@@ -248,8 +251,14 @@ public class ViewMenu extends JMenu implements PropertyChangeListener
         else if (Properties.CUSTOM_MODEL_DELETED.equals(evt.getPropertyName()))
         {
             String name = (String) evt.getNewValue();
-            View view = getRootPanel().removeCustomView(name);
-            removeCustomMenuItem(view);
+            ViewManager panel = getRootPanel();
+            
+			if (panel.getCurrentView().shapeModelName.equals(name)) {
+				throw new IllegalComponentStateException("cannot delete current view");
+			} else {
+				View view = panel.removeCustomView(name);
+				removeCustomMenuItem(view);
+			}
         }
         else if (Properties.CUSTOM_MODEL_EDITED.equals(evt.getPropertyName()))
         {
