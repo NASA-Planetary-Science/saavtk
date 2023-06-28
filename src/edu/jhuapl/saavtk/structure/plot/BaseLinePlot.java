@@ -19,7 +19,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
-import edu.jhuapl.saavtk.model.structure.Line;
 import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.util.LatLon;
@@ -43,7 +42,7 @@ import glum.item.ItemEventType;
  * methods:
  * <UL>
  * <LI>{@link #getChartPanel()}
- * <LI>{@link #getPlotPoints(Line, List, List)}
+ * <LI>{@link #getPlotPoints(PolyLine, List, List)}
  * </UL>
  *
  * @author lopeznr1

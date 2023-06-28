@@ -12,7 +12,6 @@ import com.google.common.collect.Multimap;
 
 import edu.jhuapl.saavtk.model.PolyModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
-import edu.jhuapl.saavtk.model.structure.Line;
 import edu.jhuapl.saavtk.structure.Ellipse;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.Polygon;
@@ -79,7 +78,7 @@ public class StructureMiscUtil
 	}
 
 	/**
-	 * Returns the list of {@link Line} structures that are not {@link Polygon}s.
+	 * Returns the list of {@link PolyLine} structures that are not {@link Polygon}s.
 	 */
 	public static List<PolyLine> getPathsFrom(List<Structure> aItemL)
 	{
@@ -262,7 +261,7 @@ public class StructureMiscUtil
 	 * This method supports the following structures:
 	 * <ul>
 	 * <li>{@link Ellipse}.
-	 * <li>{@link Line}.
+	 * <li>{@link PolyLine}.
 	 * <li>{@link Polygon}.
 	 * <ul>
 	 *

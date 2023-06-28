@@ -460,7 +460,7 @@ public class ShapeModelImporterDialog extends javax.swing.JDialog
 
         if (!success)
         {
-            JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(this),
+            JOptionPane.showMessageDialog(this.getContentPane(),
                     errorMessage,
                     "Error",
                     JOptionPane.ERROR_MESSAGE);

@@ -13,20 +13,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.ImmutableList;
 
-import crucible.crust.metadata.api.Key;
-import crucible.crust.metadata.api.Metadata;
-import crucible.crust.metadata.api.MetadataManager;
-import crucible.crust.settings.api.Configurable;
-import crucible.crust.settings.api.ControlKey;
-import crucible.crust.settings.api.SettableStored;
-import crucible.crust.settings.api.Stored;
-import crucible.crust.settings.api.Versionable;
-import crucible.crust.settings.impl.ConfigurableFactory;
-import crucible.crust.settings.impl.KeyedFactory;
-import crucible.crust.settings.impl.SettableStoredFactory;
-import crucible.crust.settings.impl.StoredFactory;
-import crucible.crust.settings.impl.Version;
-import crucible.crust.settings.impl.metadata.KeyValueCollectionMetadataManager;
 import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.status.StatusNotifier;
@@ -34,7 +20,6 @@ import edu.jhuapl.saavtk.structure.BaseStructureManager;
 import edu.jhuapl.saavtk.structure.ControlPointsHandler;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.PolyLineMode;
-import edu.jhuapl.saavtk.structure.Polygon;
 import edu.jhuapl.saavtk.structure.util.ControlPointUtil;
 import edu.jhuapl.saavtk.structure.vtk.VtkCompositePainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkControlPointPainter;
@@ -62,7 +47,7 @@ import vtk.vtkUnsignedCharArray;
  * Model of line structures drawn on a body.
  */
 public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, VtkPolyLinePainter<G1>>
-		implements ControlPointsHandler<G1>, PropertyChangeListener, MetadataManager
+		implements ControlPointsHandler<G1>, PropertyChangeListener
 {
 	// Constants
 	private static final String LINES = "lines";
@@ -883,55 +868,6 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	public void setCenter(G1 aItem, Vector3D aCenter)
 	{
 		throw new UnsupportedOperationException("Not implemented");
-	}
-
-	private static final Versionable CONFIGURATION_VERSION = Version.of(1, 0);
-	private static final ControlKey<SettableStored<Double>> OFFSET_KEY = SettableStoredFactory.key("offset");
-	private static final ControlKey<SettableStored<Double>> LINE_WIDTH_KEY = SettableStoredFactory.key("lineWidth");
-	private final ControlKey<Stored<List<G1>>> LINES_KEY = StoredFactory.key("lineStructures");
-
-	@Override
-	public Metadata store()
-	{
-		KeyedFactory.Builder<Object> builder = KeyedFactory.instance().builder();
-
-		builder.put(LINE_WIDTH_KEY, SettableStoredFactory.instance().of(lineWidth));
-		builder.put(OFFSET_KEY, SettableStoredFactory.instance().of(offset));
-		builder.put(LINES_KEY, SettableStoredFactory.instance().of(getAllItems()));
-
-		Configurable configuration = ConfigurableFactory.instance().of(CONFIGURATION_VERSION, builder.build());
-
-		return KeyValueCollectionMetadataManager.of(configuration.getVersion(), configuration).store();
-	}
-
-	@Override
-	public void retrieve(Metadata source)
-	{
-		double lineWidth = source.get(Key.of(LINE_WIDTH_KEY.getId()));
-		double offset = source.get(Key.of(OFFSET_KEY.getId()));
-
-		List<G1> sourceLines = source.get(Key.of(LINES_KEY.getId()));
-
-		removeAllStructures();
-
-		for (G1 aItem : sourceLines)
-		{
-			if (aItem instanceof Polygon)
-			{
-				Polygon polygon = (Polygon) aItem;
-				if (source.hasKey(Key.of(edu.jhuapl.saavtk.model.structure.Polygon.SHOW_INTERIOR_KEY.getId())) == true)
-				{
-					boolean isShown = source
-							.get(Key.of(edu.jhuapl.saavtk.model.structure.Polygon.SHOW_INTERIOR_KEY.getId()));
-					polygon.setShowInterior(isShown);
-				}
-			}
-		}
-
-		setAllItems(sourceLines);
-
-		setLineWidth(lineWidth);
-		setOffset(offset);
 	}
 
 	@Override
