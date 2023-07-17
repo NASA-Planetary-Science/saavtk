@@ -43,8 +43,8 @@ public final class VtkFileUtil {
 
 			for (int i = 0; i < ls.getNumberOfSegments(); i++) {
 				LineSegment s = ls.getSegment(i);
-				int id1 = points.InsertNextPoint(s.getStart().toArray());
-				int id2 = points.InsertNextPoint(s.getEnd().toArray());
+				int id1 = (int)points.InsertNextPoint(s.getStart().toArray());
+				int id2 = (int)points.InsertNextPoint(s.getEnd().toArray());
 				vtkLine line = new vtkLine();
 				line.GetPointIds().SetId(0, id1);
 				line.GetPointIds().SetId(1, id2);
@@ -85,7 +85,7 @@ public final class VtkFileUtil {
 			polyData.SetVerts(verts);
 
 			for (int i = 0; i < ls.getNumberOfControlPoints(); i++) {
-				int id = points.InsertNextPoint(ls.getControlPoint(i).toArray());
+				int id = (int)points.InsertNextPoint(ls.getControlPoint(i).toArray());
 				vtkVertex vert = new vtkVertex();
 				vert.GetPointIds().SetId(0, id);
 				verts.InsertNextCell(vert);
@@ -127,7 +127,7 @@ public final class VtkFileUtil {
 			PointStructure ls = lss.get(m);
 			int structureId = m;
 			float[] c = ColorUtil.getRGBColorComponents(ls.getPointStyle().getColor());
-			int id = points.InsertNextPoint(lss.get(m).getCentroid().toArray());
+			int id = (int)points.InsertNextPoint(lss.get(m).getCentroid().toArray());
 			vtkVertex vert = new vtkVertex();
 			vert.GetPointIds().SetId(0, id);
 			verts.InsertNextCell(vert);

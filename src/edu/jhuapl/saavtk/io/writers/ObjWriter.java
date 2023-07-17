@@ -47,9 +47,9 @@ public class ObjWriter implements PolyDataWriter {
 			
 			for (int i=0; i<data.GetNumberOfCells(); i++) {
 			    vtkIdList ids=data.GetCell(i).GetPointIds();
-                int id0=ids.GetId(0)+1;
-                int id1=ids.GetId(1)+1;
-                int id2=ids.GetId(2)+1;
+                int id0=(int)ids.GetId(0)+1;
+                int id1=(int)ids.GetId(1)+1;
+                int id2=(int)ids.GetId(2)+1;
                 writer.write("f "+id0+" "+id1+" "+id2+"\n");
 			}
 		} catch (IOException e) {

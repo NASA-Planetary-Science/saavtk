@@ -423,7 +423,7 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 			aPointL.remove(id1 + 1);
 
 		// Set the new points
-		int numNewPoints = vTmpP.GetNumberOfPoints();
+		int numNewPoints = (int)vTmpP.GetNumberOfPoints();
 		for (int i = 1; i < numNewPoints - 1; ++i)
 			aPointL.add(id1 + i, new Vector3D(vTmpP.GetPoint(i)));
 

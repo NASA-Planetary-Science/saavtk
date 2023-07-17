@@ -114,7 +114,7 @@ public class FacetColoringData
 		vtkTriangle triangle = new vtkTriangle();
 
 		vtkPoints points = smallBodyPolyData.GetPoints();
-		int numberCells = smallBodyPolyData.GetNumberOfCells();
+		int numberCells = (int)smallBodyPolyData.GetNumberOfCells();
 		smallBodyPolyData.BuildCells();
 		vtkIdList idList = new vtkIdList();
 
@@ -136,9 +136,9 @@ public class FacetColoringData
 			throw new IllegalArgumentException();
 		}
 		smallBodyPolyData.GetCellPoints(cellId, idList);
-		int id0 = idList.GetId(0);
-		int id1 = idList.GetId(1);
-		int id2 = idList.GetId(2);
+		int id0 = (int)idList.GetId(0);
+		int id1 = (int)idList.GetId(1);
+		int id2 = (int)idList.GetId(2);
 		points.GetPoint(id0, pt0);
 		points.GetPoint(id1, pt1);
 		points.GetPoint(id2, pt2);

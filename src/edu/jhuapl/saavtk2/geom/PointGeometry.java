@@ -26,7 +26,7 @@ public class PointGeometry extends BasicGeometry
 	{
 		vtkPoints points=new vtkPoints();
 		vtkCellArray cells=new vtkCellArray();
-		int id=points.InsertNextPoint(pt.toArray());
+		int id=(int)points.InsertNextPoint(pt.toArray());
 		vtkVertex vert=new vtkVertex();
 		vert.GetPointIds().SetId(0, id);
 		cells.InsertNextCell(vert);
@@ -42,7 +42,7 @@ public class PointGeometry extends BasicGeometry
 		vtkCellArray cells=new vtkCellArray();
 		for (Vector3D v : pts)
 		{
-			int id0=points.InsertNextPoint(v.toArray());
+			int id0=(int)points.InsertNextPoint(v.toArray());
 			vtkVertex vert=new vtkVertex();
 			vert.GetPointIds().SetId(0, id0);
 			cells.InsertNextCell(vert);

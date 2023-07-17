@@ -1,9 +1,23 @@
 package edu.jhuapl.saavtk.util;
 
+import static ch.unibas.cs.gravis.vtkjavanativelibs.VtkNativeLibraries.MAJOR_VERSION;
+import static ch.unibas.cs.gravis.vtkjavanativelibs.VtkNativeLibraries.MINOR_VERSION;
+
 import java.awt.EventQueue;
 import java.awt.HeadlessException;
+import java.awt.Toolkit;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.jogamp.common.jvm.JNILibLoaderBase;
+
+import ch.unibas.cs.gravis.vtkjavanativelibs.Platform;
+import ch.unibas.cs.gravis.vtkjavanativelibs.Util;
+import ch.unibas.cs.gravis.vtkjavanativelibs.VtkJavaNativeLibraryException;
+import ch.unibas.cs.gravis.vtkjavanativelibs.VtkNativeLibraries;
+import ch.unibas.cs.gravis.vtkjavanativelibs.VtkNativeLibrariesImpl;
 import vtk.vtkNativeLibrary;
 
 /**
@@ -13,7 +27,145 @@ import vtk.vtkNativeLibrary;
 public class NativeLibraryLoader
 {
     private static final AtomicBoolean isVtkInitialized = new AtomicBoolean(false);
+    public static boolean debug = false;
+    private static File nativeVTKLibraryDir;
+    
+    private static void unpackNatives()
+    {
+    	if(debug)
+    	{
+    		System.out.println("vtk-native version: " + MAJOR_VERSION + "." + MINOR_VERSION);
+    		System.out.println("Java version: " + System.getProperty("java.version"));
+    		System.out.println("Current platform: " + Platform.getPlatform());
+    	}
+        if (Platform.isUnknown()) {
+        	System.err.println("Cannot determine the platform you are running on.");
+        	System.exit(1);
+        }
 
+//        File nativeDir = new File(System.getProperty("java.io.tmpdir"));
+        File nativeDir = new File(System.getProperty("user.home") + File.separator +".nativelibs");
+
+        if(debug)
+        	System.out.println("Will unpack to : " + nativeDir);
+
+        try {
+            NativeLibraryLoader.initialize(nativeDir);
+            System.out.println("VTK: Initialization done, ");
+        } catch (Throwable t) {
+            System.err.println("Initialization failed with " + t.getClass().getSimpleName() + ", stacktrace follows.");
+            t.printStackTrace(System.err);
+            System.err.println("stacktrace above.");
+            System.exit(1);
+        }
+
+        try {
+            System.out.println(new vtk.vtkVersion().GetVTKVersion());
+//            new vtkJoglPanelComponent();
+        } catch (Throwable t) {
+            System.out.println("Could not invoke vtk Methode" +t.getMessage());
+            t.printStackTrace();
+        }
+    }
+    
+    public static void initialize(File nativeLibraryBaseDirectory)
+    	      throws VtkJavaNativeLibraryException {
+
+
+	    VtkNativeLibrariesImpl impl = VtkNativeLibraries.detectPlatform();
+	    
+	    initialize(nativeLibraryBaseDirectory, impl);
+	  }
+    
+    /**
+     * Initialize a given native library bundle by extracting it in a given directory.
+     *
+     * @throws VtkJavaNativeLibraryException if anything goes wrong.
+     */
+    public static void initialize(File nativeLibraryBaseDirectory, VtkNativeLibrariesImpl impl)
+        throws VtkJavaNativeLibraryException {
+      
+      if(debug)
+        System.out.println("Using natives provided by " + impl.getClass().getSimpleName());
+      
+      // Create the target directory if it does not exist
+      nativeVTKLibraryDir = Util.createNativeDirectory(nativeLibraryBaseDirectory);
+
+      if(debug)
+        System.out.println("Extract VTK to " + nativeVTKLibraryDir);
+      
+      // Loads mawt.so
+      Toolkit.getDefaultToolkit();
+
+      // Loads jawt.so - this seems to be required on some systems
+      try {
+        System.loadLibrary("jawt");
+      } catch (UnsatisfiedLinkError ignored) {
+      }
+
+      // ---------------------------------
+      // Copy and load JOGL libraries one by one
+
+      for (URL libraryUrl : impl.getJoglLibraries()) {
+        String nativeName = libraryUrl.getFile();
+//        System.out.println("NativeLibraryLoader: initialize: loading JOGL " + nativeName);
+        File file = new File(nativeVTKLibraryDir,
+            nativeName.substring(nativeName.lastIndexOf('/') + 1, nativeName.length()));
+
+        try {
+          Util.copyUrlToFile(libraryUrl, file);
+        } catch (IOException e) {
+          throw new VtkJavaNativeLibraryException("Error while copying library " + nativeName, e);
+        }
+
+        Runtime.getRuntime().load(file.getAbsolutePath());
+
+        // we register the library as loaded in jogl, as otherwise it will try to load it again.
+        String joglName = getBasename(file);
+        if (joglName.startsWith("lib")) {
+          joglName = joglName.replace("lib", "");
+        }
+        JNILibLoaderBase.addLoaded(joglName);
+
+        Runtime.getRuntime().load(file.getAbsolutePath());
+      }
+
+      // ---------------------------------
+      // Copy and load VTK libraries one by one
+
+      for (URL libraryUrl : impl.getVtkLibraries()) {
+        String nativeName = libraryUrl.getFile();
+
+        File file = new File(nativeVTKLibraryDir,
+            nativeName.substring(nativeName.lastIndexOf('/') + 1, nativeName.length()));
+
+        try {
+          Util.copyUrlToFile(libraryUrl, file);
+        } catch (IOException e) {
+          throw new VtkJavaNativeLibraryException("Error while copying library " + nativeName, e);
+        }
+      }
+      
+      for (URL libraryUrl : impl.getVtkLibraries()) {
+          String nativeName = libraryUrl.getFile();
+          File file = new File(nativeVTKLibraryDir,
+              nativeName.substring(nativeName.lastIndexOf('/') + 1, nativeName.length()));
+//          System.out.println("file is " + file.getAbsolutePath());
+          Runtime.getRuntime().load(file.getAbsolutePath());
+      }
+      
+
+
+      // vtkNativeLibrary.DisableOutputWindow(null);
+    }
+    
+    private static String getBasename(File file) {
+        String filename = file.getName().toString();
+        String[] tokens = filename.split("\\.(?=[^\\.]+$)");
+        return tokens[0];
+      }
+    
+    
     /**
      * Load all VTK libraries for the current execution mode. In "headless" mode
      * this will load only those VTK libraries that do not interact with keyboard,
@@ -42,6 +194,8 @@ public class NativeLibraryLoader
      */
     public static void loadVtkLibraries()
     {
+
+    	unpackNatives();
         if (Configuration.isHeadless())
         {
             loadHeadlessVtkLibraries();
@@ -78,6 +232,15 @@ public class NativeLibraryLoader
      */
     public static void loadAllVtkLibraries()
     {
+//    	try {
+//    		File nativeDir = new File(System.getProperty("user.home") + File.separator +".nativelibs");
+//			VtkNativeLibraries.initialize(nativeDir);
+//		} catch (VtkJavaNativeLibraryException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//    	System.out.println("NativeLibraryLoader: loadAllVtkLibraries: unpacking natives");
+    	unpackNatives();
         if (isVtkInitialized.compareAndSet(false, true))
         {
             if (Configuration.isHeadless())
@@ -126,9 +289,18 @@ public class NativeLibraryLoader
             {
                 try
                 {
-                    if (lib.IsBuilt())
+                    if (!lib.IsLoaded())
                     {
-                        lib.LoadLibrary();
+//                    	System.out.println("NativeLibraryLoader: loadAllVtkLibraries: loading " + lib.GetLibraryName());
+//                        lib.LoadLibrary();
+                    	
+                    	if (System.getProperty("os.name").contains("Mac"))
+                    			System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".jnilib").getAbsolutePath());
+                    	else if (System.getProperty("os.name").contains("Win"))
+                			System.load(new File(nativeVTKLibraryDir, lib.GetLibraryName() + ".dll").getAbsolutePath());
+                    	else
+                			System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".so").getAbsolutePath());
+
                     }
                 }
                 catch (UnsatisfiedLinkError e)
@@ -137,6 +309,8 @@ public class NativeLibraryLoader
                     e.printStackTrace();
                 }
             }
+            
+            
 
             if (caughtLinkError)
             {
@@ -174,7 +348,7 @@ public class NativeLibraryLoader
             {
                 try
                 {
-                    if (lib.IsBuilt() && !lib.GetLibraryName().startsWith("vtkRendering")
+                    if (!lib.IsLoaded() && !lib.GetLibraryName().startsWith("vtkRendering")
                             && !lib.GetLibraryName().startsWith("vtkViews")
                             && !lib.GetLibraryName().startsWith("vtkInteraction")
                             && !lib.GetLibraryName().startsWith("vtkCharts")
@@ -187,7 +361,8 @@ public class NativeLibraryLoader
                             && !lib.GetLibraryName().startsWith("vtkFiltersParallel")
                             && !lib.GetLibraryName().startsWith("vtkGeovis"))
                     {
-                        lib.LoadLibrary();
+                    	System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".jnilib").getAbsolutePath());
+//                        lib.LoadLibrary();
                     }
                 }
                 catch (UnsatisfiedLinkError e)
@@ -202,10 +377,18 @@ public class NativeLibraryLoader
             }
         }
     }
+    
+	
 
     public static void loadSpiceLibraries()
     {
-        System.loadLibrary("JNISpice");
+    	if (System.getProperty("os.name").contains("Mac"))
+    		System.load(new File(nativeVTKLibraryDir, "libJNISpice.jnilib").getAbsolutePath());
+    	else if (System.getProperty("os.name").contains("Win"))
+    		System.load(new File(nativeVTKLibraryDir, "JNISpice.dll").getAbsolutePath());
+    	else
+    		System.load(new File(nativeVTKLibraryDir, "libJNISpice.so").getAbsolutePath());
+//        System.loadLibrary("JNISpice");
     }
 
 }

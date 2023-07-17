@@ -86,7 +86,7 @@ public class BasicGeometry implements Geometry {
 		cellLocator.IntersectWithLine(line.getP1().toArray(), line.getP2().toArray(), points, ids);
 		List<CellIntersection> hits = Lists.newArrayList();
 		for (int i = 0; i < points.GetNumberOfPoints(); i++)
-			hits.add(new CellIntersection(ids.GetId(i), new Vector3D(points.GetPoint(i))));
+			hits.add(new CellIntersection((int)ids.GetId(i), new Vector3D(points.GetPoint(i))));
 		return hits;
 	}
 
@@ -109,9 +109,9 @@ public class BasicGeometry implements Geometry {
 		double[] baryCoords=new double[3];
 		tri.BarycentricCoords(pts[0], pts[1], pts[2], hit.getHitPosition().toArray(), baryCoords);
 		int[] ids=new int[3];
-		ids[0]=tri.GetPointId(0);
-		ids[1]=tri.GetPointId(1);
-		ids[2]=tri.GetPointId(2);
+		ids[0]=(int)tri.GetPointId(0);
+		ids[1]=(int)tri.GetPointId(1);
+		ids[2]=(int)tri.GetPointId(2);
 		double[] value=new double[pointArray.GetNumberOfComponents()];
 		for (int i=0; i<pointArray.GetNumberOfComponents(); i++)
 		{

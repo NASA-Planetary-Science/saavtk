@@ -132,7 +132,7 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 		vExteriorActor = new VtkLodActor(this);
 		var exteriorProperty = vExteriorActor.GetProperty();
 		exteriorProperty.LightingOff();
-		exteriorProperty.SetLineWidth(lineWidth);
+		exteriorProperty.SetLineWidth((float)lineWidth);
 
 		vInteriorRegPD = new vtkPolyData();
 		vInteriorDecPD = new vtkPolyData();
@@ -216,7 +216,7 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 		lineWidth = aWidth;
 
 		var boundaryProperty = vExteriorActor.GetProperty();
-		boundaryProperty.SetLineWidth(lineWidth);
+		boundaryProperty.SetLineWidth((float)lineWidth);
 		notifyVtkStateChange();
 	}
 
@@ -504,22 +504,22 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 			int begIdx, endIdx;
 
 			begIdx = vDrawState.extBegIdxReg;
-			endIdx = begIdx + tmpPainter.getVtkExteriorPolyData().GetNumberOfCells();
+			endIdx = begIdx + (int)tmpPainter.getVtkExteriorPolyData().GetNumberOfCells();
 			for (int aIdx = begIdx; aIdx < endIdx; aIdx++)
 				VtkUtil.setColorOnUCA4(vExteriorColorsRegUCA, aIdx, tmpColor);
 
 			begIdx = vDrawState.extBegIdxDec;
-			endIdx = begIdx + tmpPainter.getVtkExteriorDecPolyData().GetNumberOfCells();
+			endIdx = begIdx + (int)tmpPainter.getVtkExteriorDecPolyData().GetNumberOfCells();
 			for (int aIdx = begIdx; aIdx < endIdx; aIdx++)
 				VtkUtil.setColorOnUCA4(vExteriorColorsDecUCA, aIdx, tmpColor);
 
 			begIdx = vDrawState.intBegIdxReg;
-			endIdx = begIdx + tmpPainter.getVtkInteriorPolyData().GetNumberOfCells();
+			endIdx = begIdx + (int)tmpPainter.getVtkInteriorPolyData().GetNumberOfCells();
 			for (int aIdx = begIdx; aIdx < endIdx; aIdx++)
 				VtkUtil.setColorOnUCA4(vInteriorColorsRegUCA, aIdx, tmpColor);
 
 			begIdx = vDrawState.intBegIdxDec;
-			endIdx = begIdx + tmpPainter.getVtkInteriorDecPolyData().GetNumberOfCells();
+			endIdx = begIdx + (int)tmpPainter.getVtkInteriorDecPolyData().GetNumberOfCells();
 			for (int aIdx = begIdx; aIdx < endIdx; aIdx++)
 				VtkUtil.setColorOnUCA4(vInteriorColorsDecUCA, aIdx, tmpColor);
 		}

@@ -343,7 +343,7 @@ public class EllipseUtil
 					vtkPoints points = aManager.getVtkExteriorPolyDataFor(aEllipse).GetPoints();
 
 					vtkIdTypeArray idArray = lines.GetData();
-					int size = idArray.GetNumberOfTuples();
+					int size = (int)idArray.GetNumberOfTuples();
 
 					double totalLength = 0.0;
 					double[] midpoint = new double[3];

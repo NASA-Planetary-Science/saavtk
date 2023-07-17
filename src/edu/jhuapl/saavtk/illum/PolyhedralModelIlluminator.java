@@ -76,7 +76,7 @@ public class PolyhedralModelIlluminator
 			boolean hit=false;
 			for (int i=0; i<ids.GetNumberOfIds() && !hit; i++)
 			{
-				int id=ids.GetId(i);
+				int id=(int)ids.GetId(i);
 				if (id==c)
 					continue;	// ignore self-intersections
 				else

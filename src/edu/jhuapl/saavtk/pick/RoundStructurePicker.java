@@ -236,7 +236,7 @@ public class RoundStructurePicker extends Picker
 		refRenderer.addVtkPropProvider(vEditPainter);
 
 		// Determine the (primary) item that was picked
-		int cellId = vStructureCP.GetCellId();
+		int cellId = (int)vStructureCP.GetCellId();
 		var pickedActor = vStructureCP.GetActor();
 		priEditItem = vMainPainter.getItemFromCellId(pickedActor, cellId);
 		if (priEditItem == null)

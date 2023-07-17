@@ -239,7 +239,7 @@ public class LatLonGridPainter implements PropertyChangeListener, VtkPropProvide
 			return;
 
 		// Apply the line width
-		vActor.GetProperty().SetLineWidth(mainGA.lineWidth());
+		vActor.GetProperty().SetLineWidth((float)mainGA.lineWidth());
 		VtkUtil.setColorOnProperty(vActor.GetProperty(), mainGA.mainColor());
 
 		// Generate the grid only if we are stale

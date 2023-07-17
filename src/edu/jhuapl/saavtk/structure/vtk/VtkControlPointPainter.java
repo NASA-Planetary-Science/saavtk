@@ -61,7 +61,7 @@ public class VtkControlPointPainter implements VtkPropProvider, VtkResource
 		vWorkActor = new vtkActor();
 		var workProperty = vWorkActor.GetProperty();
 		workProperty.SetColor(drawColor.getRed() / 255.0, drawColor.getGreen() / 255.0, drawColor.getBlue() / 255.0);
-		workProperty.SetPointSize(7.0);
+		workProperty.SetPointSize(7.0f);
 
 		vWorkPD = new vtkPolyData();
 		vWorkPD.DeepCopy(vEmptyPD);

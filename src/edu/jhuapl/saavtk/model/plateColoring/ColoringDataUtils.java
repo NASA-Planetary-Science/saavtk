@@ -394,7 +394,7 @@ public class ColoringDataUtils
         @Override
         public int size()
         {
-            return getVtkArray().GetNumberOfTuples();
+            return (int)getVtkArray().GetNumberOfTuples();
         }
 
         protected void checkTupleIndex(int tupleIndex)

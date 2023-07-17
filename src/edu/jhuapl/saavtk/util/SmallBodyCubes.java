@@ -124,7 +124,7 @@ public class SmallBodyCubes
         // with the bounding box of any of the polygons of the polydata
 
         BoundingBox polydataBB = new BoundingBox(polydata.GetBounds());
-        int numberPolygons = polydata.GetNumberOfCells();
+        int numberPolygons = (int)polydata.GetNumberOfCells();
 
         // Store all the bounding boxes of all the individual polygons in an array first
         // since the call to GetCellBounds is very slow.

@@ -21,7 +21,7 @@ public class CellDataHeatMap implements HeatMap
     {
         this.polyData.DeepCopy(polyData);
 //        this.lut = new vtkLookupTable();
-        this.tableSize = polyData.GetNumberOfCells();
+        this.tableSize = (int)polyData.GetNumberOfCells();
 //        this.tableSize = polyData.GetNumberOfPoints();
     }
 

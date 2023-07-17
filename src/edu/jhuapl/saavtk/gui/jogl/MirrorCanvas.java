@@ -137,11 +137,11 @@ public class MirrorCanvas extends vtkJoglPanelComponent
     public void setAxesLineWidth(double width)
     {
         vtkProperty property = axes.GetXAxisShaftProperty();
-        property.SetLineWidth(width);
+        property.SetLineWidth((float)width);
         property = axes.GetYAxisShaftProperty();
-        property.SetLineWidth(width);
+        property.SetLineWidth((float)width);
         property = axes.GetZAxisShaftProperty();
-        property.SetLineWidth(width);
+        property.SetLineWidth((float)width);
         if (this.getRenderWindow().GetNeverRendered() == 0)
             this.Render();
     }

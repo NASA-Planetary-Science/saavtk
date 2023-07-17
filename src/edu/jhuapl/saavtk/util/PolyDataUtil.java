@@ -371,7 +371,7 @@ public class PolyDataUtil
 		vtkDataArray cellNormals = tmpPolyData.GetCellData().GetNormals();
 		vtkPoints points = tmpPolyData.GetPoints();
 
-		int numCells = cellNormals.GetNumberOfTuples();
+		int numCells = (int)cellNormals.GetNumberOfTuples();
 
 		vtkIdList idList = new vtkIdList();
 		idList.SetNumberOfIds(0);
@@ -412,9 +412,9 @@ public class PolyDataUtil
 		vtkGenericCell cell = new vtkGenericCell();
 
 		points = tmpPolyData.GetPoints();
-		int numPoints = points.GetNumberOfPoints();
+		int numPoints = (int)points.GetNumberOfPoints();
 
-		int[] numberOfObscuredPointsPerCell = new int[tmpPolyData.GetNumberOfCells()];
+		int[] numberOfObscuredPointsPerCell = new int[(int)tmpPolyData.GetNumberOfCells()];
 		Arrays.fill(numberOfObscuredPointsPerCell, 0);
 
 		double tol = 1e-6;
@@ -583,7 +583,7 @@ public class PolyDataUtil
 		vtkDataArray cellNormals = tmpPolyData.GetCellData().GetNormals();
 		vtkPoints points = tmpPolyData.GetPoints();
 
-		int numCells = cellNormals.GetNumberOfTuples();
+		int numCells = (int)cellNormals.GetNumberOfTuples();
 
 		vtkIdList idList = new vtkIdList();
 		idList.SetNumberOfIds(0);
@@ -659,9 +659,9 @@ public class PolyDataUtil
 		vtkGenericCell cell = new vtkGenericCell();
 
 		points = tmpPolyData.GetPoints();
-		int numPoints = points.GetNumberOfPoints();
+		int numPoints = (int)points.GetNumberOfPoints();
 
-		int[] numberOfObscuredPointsPerCell = new int[tmpPolyData.GetNumberOfCells()];
+		int[] numberOfObscuredPointsPerCell = new int[(int)tmpPolyData.GetNumberOfCells()];
 		Arrays.fill(numberOfObscuredPointsPerCell, 0);
 
 		double tol = 1e-6;
@@ -669,7 +669,7 @@ public class PolyDataUtil
 		double[] x = new double[3];
 		double[] pcoords = new double[3];
 		int[] subId = new int[1];
-		int[] cell_id = new int[1];
+		long[] cell_id = new long[1];
 //		Logger.getAnonymousLogger().log(Level.INFO, "Checking obscured cells "  + tmpPolyData.GetNumberOfCells());
 //		final List<Future<List<Integer>>> resultList;
 //		List<Callable<List<Integer>>> taskList = new ArrayList<>();
@@ -721,7 +721,7 @@ public class PolyDataUtil
 //			Logger.getAnonymousLogger().log(Level.INFO, "Got result ");
 			if (result == 1)
 			{
-				int ptid = pointLocator.FindClosestPoint(sourcePnt);
+				int ptid = (int)pointLocator.FindClosestPoint(sourcePnt);
 				polyData.GetPointCells(ptid, idList);
 
 				// The following check makes sure we don't delete any cells
@@ -736,12 +736,12 @@ public class PolyDataUtil
 				}
 
 				tmpPolyData.GetPointCells(i, idList);
-				int numPtCells = idList.GetNumberOfIds();
+				int numPtCells = (int)idList.GetNumberOfIds();
 				for (int j = 0; j < numPtCells; ++j)
 				{
 					// The following makes sure that only cells for which ALL three of its
 					// points are obscured get deleted
-					int cellId = idList.GetId(j);
+					int cellId = (int)idList.GetId(j);
 					++numberOfObscuredPointsPerCell[cellId];
 					if (numberOfObscuredPointsPerCell[cellId] == 3)
 						tmpPolyData.DeleteCell(cellId);
@@ -853,7 +853,7 @@ public class PolyDataUtil
 			{
 				double dx = i / ((double) resolution[0] - 1);
 				double dy = j / ((double) resolution[1] - 1);
-				ids[i][j] = points.InsertNextPoint(llCrn.add(lxVec.scalarMultiply(dx)).add(lyVec.scalarMultiply(dy)).toArray());
+				ids[i][j] = (int)points.InsertNextPoint(llCrn.add(lxVec.scalarMultiply(dx)).add(lyVec.scalarMultiply(dy)).toArray());
 			}
 
 		// set up triangles for plane
@@ -1324,7 +1324,7 @@ public class PolyDataUtil
 						double[] x = new double[3];
 						double[] pcoords = new double[3];
 						int[] subId = new int[1];
-						int[] cellId = new int[1];
+						long[] cellId = new long[1];
 						double[] lookPt = MathUtil.latrec(controlPoints.get(k));
 						// Scale the control point
 						MathUtil.vscl(2.0, lookPt, lookPt);
@@ -1586,7 +1586,7 @@ public class PolyDataUtil
 		vtkDataArray pointNormals = normalsFilter.GetOutput().GetPointData().GetNormals();
 		vtkPoints points = polyData.GetPoints();
 
-		int numPoints = points.GetNumberOfPoints();
+		int numPoints = (int)points.GetNumberOfPoints();
 
 		for (int i = 0; i < numPoints; ++i)
 		{
@@ -1643,12 +1643,12 @@ public class PolyDataUtil
 		vtkDataArray pointNormals = pointData.GetNormals();
 		vtkPoints points = polyLine.GetPoints();
 
-		int numPoints = points.GetNumberOfPoints();
+		int numPoints = (int)points.GetNumberOfPoints();
 
 		for (int i = 0; i < numPoints; ++i)
 		{
 			double[] point = points.GetPoint(i);
-			int idx = pointLocator.FindClosestPoint(point);
+			int idx = (int)pointLocator.FindClosestPoint(point);
 
 			if (idx < 0)
 				continue;
@@ -1684,10 +1684,10 @@ public class PolyDataUtil
 	public static void shiftPolyLineInNormalDirectionOfPolyData(vtkPolyData polyLine, vtkPolyData polyData, vtkFloatArray polyDataCellNormals, vtksbCellLocator cellLocator, double shiftAmount)
 	{
 		vtkPoints points = polyLine.GetPoints();
-		int numPoints = points.GetNumberOfPoints();
+		int numPoints = (int)points.GetNumberOfPoints();
 
 		double[] closestPoint = new double[3];
-		int[] cellId = new int[1];
+		long[] cellId = new long[1];
 		int[] subId = new int[1];
 		double[] dist2 = new double[1];
 		vtkGenericCell genericCell = new vtkGenericCell();
@@ -1725,7 +1725,7 @@ public class PolyDataUtil
 	 */
 	public static double computeSurfaceArea(vtkPolyData polydata)
 	{
-		int numberOfCells = polydata.GetNumberOfCells();
+		int numberOfCells = (int)polydata.GetNumberOfCells();
 
 		double totalArea = 0.0;
 		for (int i = 0; i < numberOfCells; ++i)
@@ -1749,12 +1749,12 @@ public class PolyDataUtil
 		vtkCellArray lines = polyline.GetLines();
 		vtkIdTypeArray idArray = lines.GetData();
 
-		int size = idArray.GetNumberOfTuples();
+		int size = (int)idArray.GetNumberOfTuples();
 		double totalLength = 0.0;
 		int index = 0;
 		while (index < size)
 		{
-			int numPointsPerLine = idArray.GetValue(index++);
+			int numPointsPerLine = (int)idArray.GetValue(index++);
 			for (int i = 0; i < numPointsPerLine - 1; ++i)
 			{
 				double[] pt0 = points.GetPoint(idArray.GetValue(index));
@@ -1801,7 +1801,7 @@ public class PolyDataUtil
 		vtkPoints points_orig = polyline.GetPoints();
 
 		vtkIdTypeArray idArray = lines_orig.GetData();
-		int size = idArray.GetNumberOfTuples();
+		int size = (int)idArray.GetNumberOfTuples();
 		//System.out.println(size);
 		//System.out.println(idArray.GetNumberOfComponents());
 
@@ -1823,14 +1823,14 @@ public class PolyDataUtil
 				System.out.println("Big problem: polydata corrupted");
 				return false;
 			}
-			lines.add(new IdPair(idArray.GetValue(i + 1), idArray.GetValue(i + 2)));
+			lines.add(new IdPair((int)idArray.GetValue(i + 1), (int)idArray.GetValue(i + 2)));
 		}
 
 		int newPointId1 = -1;
 		int newPointId2 = -1;
 
 		{
-			newPointId1 = points_orig.InsertNextPoint(pt1);
+			newPointId1 = (int)points_orig.InsertNextPoint(pt1);
 			IdPair line1 = lines.get(id1);
 			int tmp = line1.id2;
 			line1.id2 = newPointId1;
@@ -1839,7 +1839,7 @@ public class PolyDataUtil
 		}
 
 		{
-			newPointId2 = points_orig.InsertNextPoint(pt2);
+			newPointId2 = (int)points_orig.InsertNextPoint(pt2);
 			IdPair line2 = lines.get(id2);
 			int tmp = line2.id2;
 			line2.id2 = newPointId2;
@@ -1848,7 +1848,7 @@ public class PolyDataUtil
 		}
 
 		int startIdx = newPointId1;
-		int numPoints = points_orig.GetNumberOfPoints();
+		int numPoints = (int)points_orig.GetNumberOfPoints();
 
 		// Find which line segment contains the startIdx, and move this line segment first.
 		// Also make sure startIdx is the first id of the pair
@@ -2083,7 +2083,7 @@ public class PolyDataUtil
 		// Average the normals
 		double[] normArr = { 0.0, 0.0, 0.0 };
 
-		int N = vNearIL.GetNumberOfIds();
+		int N = (int)vNearIL.GetNumberOfIds();
 		if (N < 1)
 			return null;
 
@@ -2130,7 +2130,7 @@ public class PolyDataUtil
 		// Average the normals
 		double[] normArr = { 0.0, 0.0, 0.0 };
 
-		int N = aSurfacePD.GetNumberOfPoints();
+		int N = (int)aSurfacePD.GetNumberOfPoints();
 		vtkDataArray normals = aSurfacePD.GetPointData().GetNormals();
 		for (int i = 0; i < N; ++i)
 		{
@@ -2213,7 +2213,7 @@ public class PolyDataUtil
 	{
 		polydata.GetCellPoints(cellId, idList);
 
-		int numberOfCells = idList.GetNumberOfIds();
+		int numberOfCells = (int)idList.GetNumberOfIds();
 		if (numberOfCells != 3)
 		{
 			throw new AssertionError("Error: Cells must have exactly 3 vertices!");
@@ -2279,7 +2279,7 @@ public class PolyDataUtil
     {
         polydata.GetCellPoints(cellId, idList);
 
-        int numberOfCells = idList.GetNumberOfIds();
+        int numberOfCells = (int)idList.GetNumberOfIds();
         if (numberOfCells != 3)
         {
             throw new AssertionError("Error: Cells must have exactly 3 vertices!");
@@ -2292,9 +2292,9 @@ public class PolyDataUtil
         polydata.GetPoint(idList.GetId(1), p2);
         polydata.GetPoint(idList.GetId(2), p3);
 
-        double[] v1 = pointData.get(idList.GetId(0)).get();
-        double[] v2 = pointData.get(idList.GetId(1)).get();
-        double[] v3 = pointData.get(idList.GetId(2)).get();
+        double[] v1 = pointData.get((int)idList.GetId(0)).get();
+        double[] v2 = pointData.get((int)idList.GetId(1)).get();
+        double[] v3 = pointData.get((int)idList.GetId(2)).get();
 
         if (tupleDegree == 1)
         {
@@ -2333,7 +2333,7 @@ public class PolyDataUtil
 	public static void generatePointScalarsFromCellScalars(vtkPolyData polydata, vtkFloatArray cellScalars, vtkFloatArray pointScalars)
 	{
 		polydata.BuildLinks(0);
-		int numberOfPoints = polydata.GetNumberOfPoints();
+		int numberOfPoints = (int)polydata.GetNumberOfPoints();
 
 		vtkIdList idList = new vtkIdList();
 
@@ -2343,7 +2343,7 @@ public class PolyDataUtil
 		for (int i = 0; i < numberOfPoints; ++i)
 		{
 			polydata.GetPointCells(i, idList);
-			int numberOfCells = idList.GetNumberOfIds();
+			int numberOfCells = (int)idList.GetNumberOfIds();
 
 			/*
 			 * // After writing the following, wasn't sure if it was mathematically correct.
@@ -2395,7 +2395,7 @@ public class PolyDataUtil
 	public static void generateTextureCoordinates(double[] spacecraftPosition, double[] frustum1, double[] frustum2, double[] frustum3, 
 													int width, int height, vtkPolyData footprint)
 	{
-		int numberOfPoints = footprint.GetNumberOfPoints();
+		int numberOfPoints = (int)footprint.GetNumberOfPoints();
 
 		vtkPointData pointData = footprint.GetPointData();
 		vtkDataArray textureCoordinates = pointData.GetTCoords();
@@ -2482,7 +2482,7 @@ public class PolyDataUtil
 	{
 		double area = 0.0;
 
-		int numberOfCells = polydata.GetNumberOfCells();
+		int numberOfCells = (int)polydata.GetNumberOfCells();
 
 		for (int i = 0; i < numberOfCells; ++i)
 		{
@@ -2532,7 +2532,7 @@ public class PolyDataUtil
 			smallBodyReader.SetFileName(fileName);
 			smallBodyReader.Update();
 			vtkPolyData output = smallBodyReader.GetOutput();
-			return output.GetNumberOfPolys();
+			return (int)output.GetNumberOfPolys();
 		}
 		finally
 		{
@@ -3432,8 +3432,8 @@ public class PolyDataUtil
 
 		vtkPoints points = polydata.GetPoints();
 
-		int numberPoints = polydata.GetNumberOfPoints();
-		int numberCells = polydata.GetNumberOfCells();
+		int numberPoints = (int)polydata.GetNumberOfPoints();
+		int numberCells = (int)polydata.GetNumberOfCells();
 		out.write(String.format("%12d %12d                              \r\n", numberPoints, numberCells));
 
 		double[] p = new double[3];
@@ -3448,9 +3448,9 @@ public class PolyDataUtil
 		for (int i = 0; i < numberCells; ++i)
 		{
 			polydata.GetCellPoints(i, idList);
-			int id0 = idList.GetId(0);
-			int id1 = idList.GetId(1);
-			int id2 = idList.GetId(2);
+			int id0 = (int)idList.GetId(0);
+			int id1 = (int)idList.GetId(1);
+			int id2 = (int)idList.GetId(2);
 			out.write(String.format("%10d%10d%10d%10d               \r\n", (i + 1), (id0 + 1), (id1 + 1), (id2 + 1)));
 		}
 
@@ -3488,8 +3488,8 @@ public class PolyDataUtil
 
 		vtkPoints points = polydata.GetPoints();
 
-		int numberPoints = polydata.GetNumberOfPoints();
-		int numberCells = polydata.GetNumberOfCells();
+		int numberPoints = (int)polydata.GetNumberOfPoints();
+		int numberCells = (int)polydata.GetNumberOfCells();
 
 		double[] p = new double[3];
 		for (int i = 0; i < numberPoints; ++i)
@@ -3503,9 +3503,9 @@ public class PolyDataUtil
 		for (int i = 0; i < numberCells; ++i)
 		{
 			polydata.GetCellPoints(i, idList);
-			int id0 = idList.GetId(0);
-			int id1 = idList.GetId(1);
-			int id2 = idList.GetId(2);
+			int id0 = (int)idList.GetId(0);
+			int id1 = (int)idList.GetId(1);
+			int id2 = (int)idList.GetId(2);
 			out.write("f " + (id0 + 1) + " " + (id1 + 1) + " " + (id2 + 1) + "\r\n");
 		}
 

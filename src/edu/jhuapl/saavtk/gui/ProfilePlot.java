@@ -57,8 +57,8 @@ public class ProfilePlot extends BaseLinePlot implements ChartMouseListener, Pro
 		if (r instanceof XYLineAndShapeRenderer)
 		{
 			XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) r;
-			renderer.setBaseShapesVisible(false);
-			renderer.setBaseShapesFilled(true);
+			renderer.setDefaultShapesVisible(false);
+			renderer.setDefaultShapesFilled(true);
 		}
 
 		// Set the coloring index last

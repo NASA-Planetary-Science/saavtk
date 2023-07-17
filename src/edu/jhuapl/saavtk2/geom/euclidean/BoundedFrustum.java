@@ -34,11 +34,11 @@ public class BoundedFrustum extends Frustum {
 	public static vtkPolyData createPolyDataRepresentation(BoundedFrustum frustum)
 	{
 		vtkPoints points = new vtkPoints();
-		int oid = points.InsertNextPoint(frustum.getOrigin().toArray());
-		int ulid = points.InsertNextPoint(frustum.getOrigin().add(frustum.getUpperLeftUnit().scalarMultiply(frustum.getDepth())).toArray());
-		int urid = points.InsertNextPoint(frustum.getOrigin().add(frustum.getUpperRightUnit().scalarMultiply(frustum.getDepth())).toArray());
-		int llid = points.InsertNextPoint(frustum.getOrigin().add(frustum.getLowerLeftUnit().scalarMultiply(frustum.getDepth())).toArray());
-		int lrid = points.InsertNextPoint(frustum.getOrigin().add(frustum.getLowerRightUnit().scalarMultiply(frustum.getDepth())).toArray());
+		int oid = (int)points.InsertNextPoint(frustum.getOrigin().toArray());
+		int ulid = (int)points.InsertNextPoint(frustum.getOrigin().add(frustum.getUpperLeftUnit().scalarMultiply(frustum.getDepth())).toArray());
+		int urid = (int)points.InsertNextPoint(frustum.getOrigin().add(frustum.getUpperRightUnit().scalarMultiply(frustum.getDepth())).toArray());
+		int llid = (int)points.InsertNextPoint(frustum.getOrigin().add(frustum.getLowerLeftUnit().scalarMultiply(frustum.getDepth())).toArray());
+		int lrid = (int)points.InsertNextPoint(frustum.getOrigin().add(frustum.getLowerRightUnit().scalarMultiply(frustum.getDepth())).toArray());
 		//
 		vtkLine ulline = new vtkLine();
 		ulline.GetPointIds().SetId(0, oid);

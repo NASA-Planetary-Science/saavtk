@@ -416,7 +416,7 @@ public class BaseDefaultPicker extends Picker implements PropertyChangeListener
 		vtkActor pickedActor = aCellPicker.GetActor();
 		Vector3D targetNorm = new Vector3D(aCellPicker.GetPickNormal());
 		Vector3D targetPos = new Vector3D(aCellPicker.GetPickPosition());
-		int cellId = aCellPicker.GetCellId();
+		int cellId = (int)aCellPicker.GetCellId();
 
 		PickTarget retTarget = new PickTarget(pickedActor, targetNorm, targetPos, cellId);
 		return retTarget;

@@ -41,7 +41,7 @@ class ObscuredTask implements Callable<Void>
 			double[] x = new double[3];
 			double[] pcoords = new double[3];
 			int[] subId = new int[1];
-			int[] cell_id = new int[1];
+			long[] cell_id = new long[1];
 			double[] sourcePnt = points.GetPoint(i);
 			vtkGenericCell cell = new vtkGenericCell();
 			vtkIdList idList = new vtkIdList();
@@ -56,7 +56,7 @@ class ObscuredTask implements Callable<Void>
 //					if (i==10) Logger.getAnonymousLogger().log(Level.INFO, "Getting point ");
 					synchronized (ObscuredTask.class)
 					{
-						int ptid = pointLocator.FindClosestPoint(sourcePnt);
+						int ptid = (int)pointLocator.FindClosestPoint(sourcePnt);
 						polyData.GetPointCells(ptid, idList);
 
 					}
@@ -74,12 +74,12 @@ class ObscuredTask implements Callable<Void>
 					}
 
 					polyData.GetPointCells(i, idList);
-					int numPtCells = idList.GetNumberOfIds();
+					int numPtCells = (int)idList.GetNumberOfIds();
 					for (int j = 0; j < numPtCells; ++j)
 					{
 						// The following makes sure that only cells for which ALL three of its
 						// points are obscured get deleted
-						int cellId = idList.GetId(j);
+						int cellId = (int)idList.GetId(j);
 						++numberOfObscuredPointsPerCell[cellId];
 						if (numberOfObscuredPointsPerCell[cellId] == 3)
 							polyData.DeleteCell(cellId);
