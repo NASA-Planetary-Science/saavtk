@@ -7,13 +7,15 @@ public interface IBodyViewConfig extends IViewConfig
 {
 	ShapeModelType getAuthor();
 	
-	void setAuthor(ShapeModelType author);
+	public void setAuthor(ShapeModelType author);
 	
 	String getVersion();
 	
-	ShapeModelBody getBody();
+	public ShapeModelBody getBody();
 	
-	void setCustomTemporary(boolean customTemp);
+	public void setModelLabel(String modelLabel);
+	
+	public void setCustomTemporary(boolean customTemp);
 	
 	public boolean isCustomTemporary();
 	
@@ -24,4 +26,14 @@ public interface IBodyViewConfig extends IViewConfig
 	public boolean isUseMinimumReferencePotential();
 	
 	public default boolean hasSystemBodies() { return false; };
+	
+	public String getRootDirOnServer();
+	
+	public boolean hasColoringData();
+	
+	public double getDensity();
+	
+	public double getRotationRate();
+	
+	public String serverPath(String fileName);
 }

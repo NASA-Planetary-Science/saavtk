@@ -400,7 +400,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
     // Note this change has been merged back into sbmt1dev, but not
     // all SBMT2 changes were initially.
     // SBMT 2 constructor
-    public GenericPolyhedralModel(ViewConfig config)
+    public GenericPolyhedralModel(IBodyViewConfig config)
     {
         super(config);
         this.coloringDataManager = CustomizableColoringDataManager.of(config.getUniqueName());

@@ -64,4 +64,39 @@ public class ExampleViewConfig extends ViewConfig implements IBodyViewConfig
         return new String[] { modelLabel };
     }
 
+	@Override
+	public String getRootDirOnServer()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean hasColoringData()
+	{
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public double getDensity()
+	{
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public double getRotationRate()
+	{
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public String serverPath(String fileName)
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

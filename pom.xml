@@ -1,15 +1,33 @@
 <project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>edu.jhuapl.saavtk</groupId>
+	<groupId>edu.jhuapl.ses.srn.saavtk</groupId>
 	<artifactId>saavtk</artifactId>
 	<packaging>jar</packaging>
 	<version>1.0</version>
 	<name>saavtk</name>
 	<url>http://maven.apache.org</url>
-	<properties>
-		<maven.compiler.source>16</maven.compiler.source>
-		<maven.compiler.target>16</maven.compiler.target>
+    <organization>
+	  <name>Johns Hopkins University Applied Physics Lab</name>
+	  <url>https://www.jhuapl.edu</url>
+    </organization>
+    <distributionManagement>
+  	  <repository>
+		<id>central</id>
+		<name>surfshop-releases</name>
+		<url>http://surfshop.jhuapl.edu:8081/artifactory/libs-release-local</url>
+	  </repository>
+	  <snapshotRepository>
+		<id>central</id>
+		<name>surfshop-snapshots</name>
+		<url>http://surfshop.jhuapl.edu:8081/artifactory/libs-snapshot-local</url>
+	  </snapshotRepository>
+    </distributionManagement>
+    <properties>
+	  <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	  <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+	  <maven.compiler.source>16</maven.compiler.source>
+	  <maven.compiler.target>16</maven.compiler.target>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -140,13 +158,6 @@
 			<artifactId>Quaqua</artifactId>
 			<version>7.3.4</version>
 		</dependency>
-		<!--
-	<dependency>
-	    <groupId>org.devzendo</groupId>
-	    <artifactId>quaqua-filechooser-only</artifactId>
-	    <version>7.3.4</version>
-	</dependency>
-	-->
 		<dependency>
 			<groupId>com.github.davidmoten</groupId>
 			<artifactId>rtree</artifactId>
@@ -262,18 +273,31 @@
           <url>https://repo1.maven.org/maven2/</url>
         </pluginRepository>
     </pluginRepositories>
-	<!-- Used to deploy to Surfshop - TO BE UPDATED -->
-	<distributionManagement>
-		<repository>
-			<id>central</id>
-			<name>surfshop-snapshots</name>
-			<url>http://surfshop.jhuapl.edu:8081/artifactory/libs-snapshot-local</url>
-		</repository>
-	</distributionManagement>
+
 	<build>
 		<sourceDirectory>.</sourceDirectory>
 		<testSourceDirectory>.</testSourceDirectory>
 		<plugins>
+		  <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.8.1</version>
+            <configuration>
+  		      <release>16</release>
+		    </configuration>
+	      </plugin>
+	      <plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-source-plugin</artifactId>
+			<version>3.2.1</version>
+			<executions>
+				<execution>
+					<id>attach-sources</id>
+					<goals>
+						<goal>jar</goal>
+					</goals>
+				</execution>
+			</executions>
+		  </plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
