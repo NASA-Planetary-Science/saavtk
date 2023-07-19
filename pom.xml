@@ -192,13 +192,13 @@
 		    <version>2020.10.01</version>
 		    <scope>system</scope>
 		    <systemPath>${project.basedir}/lib/plotkit-2020.10.01.jar</systemPath>
+		</dependency>
 		<dependency>
     		<groupId>RelativeLayout</groupId>
 		    <artifactId>RelativeLayout</artifactId>
 		    <version>v1.0</version>
 		    <scope>system</scope>
 		    <systemPath>${project.basedir}/lib/RelativeLayout-v1.0.jar</systemPath>
-		</dependency>
 		</dependency>
 		<!-- VTK -->
 		<dependency>
