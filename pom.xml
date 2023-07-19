@@ -220,6 +220,43 @@
           <name>libs-3rdparty-local</name>
           <url>http://surfshop.jhuapl.edu:8081/artifactory/libs-3rdparty-local</url>
         </repository>
+    
+        <repository>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+          <id>central</id>
+          <name>libs-release</name>
+          <url>https://surfshop:8081/artifactory/libs-release</url>
+        </repository>
+        <repository>
+          <snapshots />
+          <id>snapshots</id>
+          <name>libs-snapshot</name>
+          <url>https://surfshop:8081/artifactory/libs-snapshot</url>
+        </repository>
+        <repository>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+          <id>OSGeo</id>
+          <name>release</name>
+          <url>https://repo.osgeo.org/repository/release/</url>
+        </repository>
+        <repository>
+           <snapshots>
+              <enabled>false</enabled>
+           </snapshots>
+           <id>central2</id>
+           <name>libs-release</name>
+           <url>https://repo1.maven.org/maven2/</url>
+        </repository>
+        <repository>
+           <snapshots />
+           <id>snapshots2</id>
+           <name>libs-snapshot</name>
+           <url>https://repo1.maven.org/maven2/</url>
+        </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>
