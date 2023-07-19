@@ -4,7 +4,7 @@
 	<groupId>edu.jhuapl.ses.srn.saavtk</groupId>
 	<artifactId>saavtk</artifactId>
 	<packaging>jar</packaging>
-	<version>1.0</version>
+	<version>1.0.0-SNAPSHOT</version>
 	<name>saavtk</name>
 	<url>http://maven.apache.org</url>
     <organization>
@@ -178,6 +178,27 @@
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-shapefile</artifactId>
 			<version>15.1</version>
+		</dependency>
+		<dependency>
+    		<groupId>glum</groupId>
+		    <artifactId>glum</artifactId>
+		    <version>1.4.0</version>
+		    <scope>system</scope>
+		    <systemPath>${project.basedir}/lib/glum-1.4.0.jar</systemPath>
+		</dependency>
+		<dependency>
+    		<groupId>plotkit</groupId>
+		    <artifactId>plotkit</artifactId>
+		    <version>2020.10.01</version>
+		    <scope>system</scope>
+		    <systemPath>${project.basedir}/lib/plotkit-2020.10.01.jar</systemPath>
+		<dependency>
+    		<groupId>RelativeLayout</groupId>
+		    <artifactId>RelativeLayout</artifactId>
+		    <version>v1.0</version>
+		    <scope>system</scope>
+		    <systemPath>${project.basedir}/lib/RelativeLayout-v1.0.jar</systemPath>
+		</dependency>
 		</dependency>
 		<!-- VTK -->
 		<dependency>
