@@ -211,12 +211,6 @@
 		<url>https://quiver.jhuapl.edu/saavtk/issues</url>
 	</issueManagement>
 	<!-- Repositories, so can be built on checkout without settings.xml file in place -->
-    <repositories>
-      <repository>
-        <id>localrepository</id>
-        <url>file://${project.basedir}/lib</url>
-      </repository>
-    </repositories>
     <pluginRepositories>
         <pluginRepository>
           <snapshots>
