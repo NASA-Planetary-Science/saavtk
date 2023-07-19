@@ -180,7 +180,7 @@
 			<version>15.1</version>
 		</dependency>
 		<dependency>
-    		<groupId>glum</groupId>
+    		<groupId>edu.jhuapl.ses</groupId>
 		    <artifactId>glum</artifactId>
 		    <version>1.4.0</version>
 		</dependency>
@@ -211,6 +211,16 @@
 		<url>https://quiver.jhuapl.edu/saavtk/issues</url>
 	</issueManagement>
 	<!-- Repositories, so can be built on checkout without settings.xml file in place -->
+	<repositories>
+        <repository>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+          <id>thirdparty</id>
+          <name>libs-3rdparty-local</name>
+          <url>http://surfshop.jhuapl.edu:8081/artifactory/libs-3rdparty-local</url>
+        </repository>
+    </repositories>
     <pluginRepositories>
         <pluginRepository>
           <snapshots>
