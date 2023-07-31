@@ -1076,10 +1076,13 @@ public class PreferencesDialog extends javax.swing.JDialog
 //        preferencesMap.put(Preferences.SHOW_AXES, ((Boolean)showAxesCheckBox.isSelected()).toString());
 //        preferencesMap.put(Preferences.INTERACTIVE_AXES, ((Boolean)interactiveCheckBox.isSelected()).toString());
         preferencesMap.put(Preferences.PICK_TOLERANCE, Double.valueOf(getToleranceFromSliderValue(pickToleranceSlider.getValue())).toString());
+        pickTolStore.updateProperties(preferencesMap);
 //        preferencesMap.put(Preferences.MOUSE_WHEEL_MOTION_FACTOR, ((Double)mouseWheelMotionFactorSpinner.getValue()).toString());
         preferencesMap.put(Preferences.DEFAULT_COLORMAP_NAME, (String) colormapSelection);
+        defColorMapStore.updateProperties(preferencesMap);
         preferencesMap.put(Preferences.SELECTION_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(selectionColorLabel))));
         preferencesMap.put(Preferences.BACKGROUND_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(backgroundColorLabel))));
+        selectandBGColorStore.updateProperties(preferencesMap);
 //        preferencesMap.put(Preferences.AXES_XAXIS_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(xAxisColorLabel))));
 //        preferencesMap.put(Preferences.AXES_YAXIS_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(yAxisColorLabel))));
 //        preferencesMap.put(Preferences.AXES_ZAXIS_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(zAxisColorLabel))));
@@ -1089,7 +1092,11 @@ public class PreferencesDialog extends javax.swing.JDialog
 //        preferencesMap.put(Preferences.AXES_FONT_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(fontColorLabel))));
 //        preferencesMap.put(Preferences.AXES_LINE_WIDTH, ((Integer)axesLineWidthSpinner.getValue()).toString());
 //        preferencesMap.put(Preferences.AXES_SIZE, ((Integer)axesSizeSpinner.getValue()).toString());
-        Preferences.getInstance().put(preferencesMap);
+        if (displayedSection.equals("Configure Proxy") && proxyEnableCheckBox.isSelected()) {
+        	preferencesMap.put(Preferences.PROXY_HOST, (String) proxyHostTextField.getText());
+            preferencesMap.put(Preferences.PROXY_PORT, (String) proxyPortTextField.getText());
+            proxyStore.updateProperties(preferencesMap);
+        }
     }// GEN-LAST:event_applyToAllButtonActionPerformed
 
     private void closeButtonActionPerformed(java.awt.event.ActionEvent evt)
