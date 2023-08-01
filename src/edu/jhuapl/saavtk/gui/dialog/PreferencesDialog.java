@@ -12,6 +12,7 @@ package edu.jhuapl.saavtk.gui.dialog;
 
 import java.awt.Color;
 import java.awt.GridBagConstraints;
+import java.text.NumberFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -29,6 +30,8 @@ import javax.swing.JSeparator;
 import javax.swing.JSlider;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
+import javax.swing.SpinnerModel;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
@@ -36,6 +39,7 @@ import com.google.common.base.Joiner;
 import com.google.common.primitives.Ints;
 
 import edu.jhuapl.saavtk.colormap.Colormaps;
+import edu.jhuapl.saavtk.gui.MainWindow;
 import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.render.RenderPanel;
@@ -107,6 +111,13 @@ public class PreferencesDialog extends javax.swing.JDialog
             proxyHostTextField.setText(proxyStore.getProperties().get(Preferences.PROXY_HOST));
             proxyPortTextField.setText(proxyStore.getProperties().get(Preferences.PROXY_PORT));
             proxyEnableCheckBox.setSelected(Boolean.parseBoolean(proxyStore.getProperties().get(Preferences.PROXY_ENABLED)));
+            
+            panelWidthTextField.setValue(renderPanel.getComponent().getSize().width);
+            panelHeightTextField.setValue(renderPanel.getComponent().getSize().height);
+            
+            MainWindow window = MainWindow.getMainWindow();
+            windowWidthTextField.setValue(window.getSize().width);
+            windowHeightTextField.setValue(window.getSize().height);
 
             /*
              * updateColorLabel(axesPanel.getxColor(), xAxisColorLabel);
@@ -157,6 +168,10 @@ public class PreferencesDialog extends javax.swing.JDialog
             AxesPanel axesPanel = renderPanel.getAxesPanel();
             axesPanel.getRenderer().SetBackground(rgbArr[0] / 255.0, rgbArr[1] / 255.0, rgbArr[2] / 255.0);
             axesPanel.Render();
+            
+            MainWindow window = MainWindow.getMainWindow();
+			window.setSize((int) panelWidthTextField.getValue() + v.getMainSplitPane().getDividerLocation() + 27,
+					(int) (panelHeightTextField.getValue()) + 128);
 
             /*
              * axesPanel.setxColor(getColorInstanceFromLabel(xAxisColorLabel));
@@ -323,10 +338,33 @@ public class PreferencesDialog extends javax.swing.JDialog
         proxyHostTextField = new JTextField(30);
         proxyPortTextField = new JTextField(30);
         proxyEnableCheckBox = new JCheckBox();
+        panelDimsPanel = new JPanel();
+        panelDimsTitlePanel = new JPanel();
+        jLabel26 = new JLabel();
+        jSeparator11 = new JSeparator();
+        jLabel27 = new JLabel();
+        jLabel28 = new JLabel();
+        SpinnerModel panelWidthModel = new SpinnerNumberModel(1200, 800, 3000, 10);
+        SpinnerModel panelHeightModel = new SpinnerNumberModel(900, 600, 2500, 10);
+        panelWidthTextField = new JSpinner(panelWidthModel);
+        panelHeightTextField = new JSpinner(panelHeightModel);
+        windowDimsPanel = new JPanel();
+        windowDimsTitlePanel = new JPanel();
+        jLabel29 = new JLabel();
+        jSeparator12 = new JSeparator();
+        jLabel30 = new JLabel();
+        jLabel31 = new JLabel();
+        SpinnerModel windowWidthModel = new SpinnerNumberModel(1200, 800, 3000, 10);
+        SpinnerModel windowHeightModel = new SpinnerNumberModel(900, 600, 2500, 10);
+        windowWidthTextField  = new JSpinner(windowWidthModel);
+        windowHeightTextField  = new JSpinner(windowHeightModel);
         sectionList = new JList<String>(prefSectionNames);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         getContentPane().setLayout(new java.awt.GridLayout());
+        
+        NumberFormat dimsFormat = NumberFormat.getIntegerInstance();
+        dimsFormat.setGroupingUsed(false);
 
         mainPanel.setLayout(new java.awt.GridBagLayout());
 
@@ -412,6 +450,22 @@ public class PreferencesDialog extends javax.swing.JDialog
 					applyToAllButton.setVisible(false);
 					applyToCurrentButton.setVisible(false);
 				}
+				
+				if (!displayedSection.equals("Panel Dimensions")) {
+					panelDimsTitlePanel.setVisible(false);
+					panelDimsPanel.setVisible(false);
+					windowDimsTitlePanel.setVisible(false);
+					windowDimsPanel.setVisible(false);
+					applyToCurrentButton.setText("Apply to Current View");
+					applyToAllButton.setText("Apply to All Views");
+				} else {
+					panelDimsTitlePanel.setVisible(true);
+					panelDimsPanel.setVisible(true);
+					windowDimsTitlePanel.setVisible(true);
+					windowDimsPanel.setVisible(true);
+					applyToCurrentButton.setText("Apply Rendering Panel Size");
+					applyToAllButton.setText("Apply Window Size");
+				}
 			}
 		});
         sideListPanel.add(sectionList, gridBagConstraints);
@@ -441,7 +495,12 @@ public class PreferencesDialog extends javax.swing.JDialog
             @Override
             public void actionPerformed(java.awt.event.ActionEvent evt)
             {
-                applyToAllButtonActionPerformed(evt);
+            	if (displayedSection.equals("Panel Dimensions")) {
+            		MainWindow window = MainWindow.getMainWindow();
+            		window.setSize((int) windowWidthTextField.getValue(), (int) windowHeightTextField.getValue());
+				} else {
+					applyToAllButtonActionPerformed(evt);
+				}
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -483,7 +542,7 @@ public class PreferencesDialog extends javax.swing.JDialog
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 39;
+        gridBagConstraints.gridy = 43;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.weighty = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(15, 0, 0, 0);
@@ -844,6 +903,140 @@ public class PreferencesDialog extends javax.swing.JDialog
         gridBagConstraints.weightx = 1.0;
         sectionPanel.add(proxyPortPanel, gridBagConstraints);
         // End of configure proxy
+        
+     // Start of panel dimensions
+        panelDimsTitlePanel.setLayout(new java.awt.GridBagLayout());
+        
+        jLabel26.setText("Rendering Panel Dimensions");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        panelDimsTitlePanel.add(jLabel26, gridBagConstraints);
+        
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 4);
+        panelDimsTitlePanel.add(jSeparator11, gridBagConstraints);
+        
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 39;
+        gridBagConstraints.gridwidth = 4;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(15, 0, 5, 0);
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.weightx = 1.0;
+        sectionPanel.add(panelDimsTitlePanel, gridBagConstraints);
+        
+        panelDimsPanel.setLayout(new java.awt.GridBagLayout());
+        
+        jLabel27.setText("Width (Pixels)");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 4);
+        panelDimsPanel.add(jLabel27, gridBagConstraints);
+        
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
+        panelDimsPanel.add(panelWidthTextField, gridBagConstraints);
+        
+        jLabel28.setText("Height (Pixels)");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 4);
+        panelDimsPanel.add(jLabel28, gridBagConstraints);
+        
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.weightx = 1.0;
+        panelDimsPanel.add(panelHeightTextField, gridBagConstraints);
+        
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 40;
+        gridBagConstraints.gridwidth = 4;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 0);
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.weightx = 1.0;
+        sectionPanel.add(panelDimsPanel, gridBagConstraints);
+        // End of panel dimensions
+        
+        // Start of window dimensions
+		windowDimsTitlePanel.setLayout(new java.awt.GridBagLayout());
+
+		jLabel29.setText("Screen Dimensions");
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 0;
+		windowDimsTitlePanel.add(jLabel29, gridBagConstraints);
+
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 1;
+		gridBagConstraints.gridy = 0;
+		gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+		gridBagConstraints.weightx = 1.0;
+		gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 4);
+		windowDimsTitlePanel.add(jSeparator12, gridBagConstraints);
+
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 41;
+		gridBagConstraints.gridwidth = 4;
+		gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+		gridBagConstraints.insets = new java.awt.Insets(15, 0, 5, 0);
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+		gridBagConstraints.weightx = 1.0;
+		sectionPanel.add(windowDimsTitlePanel, gridBagConstraints);
+        
+		windowDimsPanel.setLayout(new java.awt.GridBagLayout());
+
+		jLabel30.setText("Width (Pixels)");
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 0;
+		gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 4);
+		windowDimsPanel.add(jLabel30, gridBagConstraints);
+
+		gridBagConstraints.gridx = 1;
+		gridBagConstraints.gridy = 0;
+		gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+		gridBagConstraints.weightx = 1.0;
+		windowDimsPanel.add(windowWidthTextField, gridBagConstraints);
+
+		jLabel31.setText("Height (Pixels)");
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 2;
+		gridBagConstraints.gridy = 0;
+		gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 4);
+		windowDimsPanel.add(jLabel31, gridBagConstraints);
+
+		gridBagConstraints.gridx = 3;
+		gridBagConstraints.gridy = 0;
+		gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+		gridBagConstraints.weightx = 1.0;
+		windowDimsPanel.add(windowHeightTextField, gridBagConstraints);
+
+		gridBagConstraints = new java.awt.GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 42;
+		gridBagConstraints.gridwidth = 4;
+		gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+		gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 0);
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+		gridBagConstraints.weightx = 1.0;
+		sectionPanel.add(windowDimsPanel, gridBagConstraints);
+		// End of window dimensions
 
         /*
          * jLabel20.setText("X Axis Color"); gridBagConstraints = new
@@ -1036,6 +1229,12 @@ public class PreferencesDialog extends javax.swing.JDialog
 			proxyPortPanel.setVisible(false);
 			proxyEnableCheckBox.setVisible(false);
 		}
+		if (!displayedSection.equals("Panel Dimensions")) {
+			panelDimsTitlePanel.setVisible(false);
+			panelDimsPanel.setVisible(false);
+			windowDimsTitlePanel.setVisible(false);
+			windowDimsPanel.setVisible(false);
+		}
     }// </editor-fold>//GEN-END:initComponents
 
     private void applyToCurrentButtonActionPerformed(java.awt.event.ActionEvent evt)
@@ -1076,10 +1275,13 @@ public class PreferencesDialog extends javax.swing.JDialog
 //        preferencesMap.put(Preferences.SHOW_AXES, ((Boolean)showAxesCheckBox.isSelected()).toString());
 //        preferencesMap.put(Preferences.INTERACTIVE_AXES, ((Boolean)interactiveCheckBox.isSelected()).toString());
         preferencesMap.put(Preferences.PICK_TOLERANCE, Double.valueOf(getToleranceFromSliderValue(pickToleranceSlider.getValue())).toString());
+        pickTolStore.updateProperties(preferencesMap);
 //        preferencesMap.put(Preferences.MOUSE_WHEEL_MOTION_FACTOR, ((Double)mouseWheelMotionFactorSpinner.getValue()).toString());
         preferencesMap.put(Preferences.DEFAULT_COLORMAP_NAME, (String) colormapSelection);
+        defColorMapStore.updateProperties(preferencesMap);
         preferencesMap.put(Preferences.SELECTION_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(selectionColorLabel))));
         preferencesMap.put(Preferences.BACKGROUND_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(backgroundColorLabel))));
+        selectandBGColorStore.updateProperties(preferencesMap);
 //        preferencesMap.put(Preferences.AXES_XAXIS_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(xAxisColorLabel))));
 //        preferencesMap.put(Preferences.AXES_YAXIS_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(yAxisColorLabel))));
 //        preferencesMap.put(Preferences.AXES_ZAXIS_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(zAxisColorLabel))));
@@ -1089,7 +1291,11 @@ public class PreferencesDialog extends javax.swing.JDialog
 //        preferencesMap.put(Preferences.AXES_FONT_COLOR, Joiner.on(",").join(Ints.asList(getColorFromLabel(fontColorLabel))));
 //        preferencesMap.put(Preferences.AXES_LINE_WIDTH, ((Integer)axesLineWidthSpinner.getValue()).toString());
 //        preferencesMap.put(Preferences.AXES_SIZE, ((Integer)axesSizeSpinner.getValue()).toString());
-        Preferences.getInstance().put(preferencesMap);
+        if (displayedSection.equals("Configure Proxy") && proxyEnableCheckBox.isSelected()) {
+        	preferencesMap.put(Preferences.PROXY_HOST, (String) proxyHostTextField.getText());
+            preferencesMap.put(Preferences.PROXY_PORT, (String) proxyPortTextField.getText());
+            proxyStore.updateProperties(preferencesMap);
+        }
     }// GEN-LAST:event_applyToAllButtonActionPerformed
 
     private void closeButtonActionPerformed(java.awt.event.ActionEvent evt)
@@ -1154,6 +1360,12 @@ public class PreferencesDialog extends javax.swing.JDialog
     private JLabel jLabel23;
     private JLabel jLabel24;
     private JLabel jLabel25;
+    private JLabel jLabel26;
+    private JLabel jLabel27;
+    private JLabel jLabel28;
+    private JLabel jLabel29;
+    private JLabel jLabel30;
+    private JLabel jLabel31;
     private JLabel jLabel3;
     private JLabel jLabel4;
     private JLabel jLabel5;
@@ -1182,6 +1394,8 @@ public class PreferencesDialog extends javax.swing.JDialog
     private JSeparator jSeparator7;
     private JSeparator jSeparator9;
     private JSeparator jSeparator10;
+	private JSeparator jSeparator11;
+	private JSeparator jSeparator12;
     private JRadioButton joystickRadioButton;
 //    private JSpinner mouseWheelMotionFactorSpinner;
     private JSlider pickToleranceSlider;
@@ -1203,8 +1417,16 @@ public class PreferencesDialog extends javax.swing.JDialog
     private JTextField proxyHostTextField;
     private JTextField proxyPortTextField;
     private JCheckBox proxyEnableCheckBox;
+    private JPanel panelDimsPanel;
+	private JPanel panelDimsTitlePanel;
+	private JSpinner panelWidthTextField;
+	private JSpinner panelHeightTextField;
+	private JPanel windowDimsPanel;
+	private JPanel windowDimsTitlePanel;
+	private JSpinner windowWidthTextField;
+	private JSpinner windowHeightTextField;
 	private String[] prefSectionNames = { "Pick Tolerance", "Default Color Map", "Selection and Background Colors",
-			"Configure Proxy" };
+			"Configure Proxy", "Panel Dimensions" };
 	private JList<String> sectionList;
     // End of variables declaration//GEN-END:variables
 }
