@@ -6,6 +6,7 @@ public enum FileExtensionsAndDescriptions
 	SOURCE_FILE(".txt", "Liger projectile source file"), // 
 	PDF(".pdf", "PDF Document"), //
 	LIGER(".liger", "Liger File"), //
+	SBMT(".sbmt", "SBMT File"), //
 	SHAPE(".shp", "Shape File")//
 	;
 
