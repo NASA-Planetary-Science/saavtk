@@ -117,4 +117,10 @@ public class InvalidCamera implements Camera
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
+	public void zoom(double factor)
+	{
+		throw new UnsupportedOperationException();
+	}
+
 }

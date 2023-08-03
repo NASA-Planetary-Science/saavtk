@@ -48,7 +48,7 @@ public abstract class View extends JPanel
     /** Global to keep track of the most recent change in any (splitPane) divider location. */
     private static int globLastDividerLocation = -1;
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
     protected JSplitPane splitPane;
     protected Renderer renderer;
     protected JTabbedPane controlPanel;
@@ -260,24 +260,51 @@ public abstract class View extends JPanel
 
                 splitPane.setOneTouchExpandable(true);
 
+//                int splitLocation = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
+//                splitPane.setDividerLocation(splitLocation);
+
                 splitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, new PropertyChangeListener() {
                     @Override
                     public void propertyChange(@SuppressWarnings("unused") PropertyChangeEvent pce)
                     {
-                  	  globLastDividerLocation = splitPane.getDividerLocation();
+                    	globLastDividerLocation = splitPane.getDividerLocation();
+//                        LinkedHashMap<String, String> map = new LinkedHashMap<>();
+//                        map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
+//                        map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
+//                        Preferences.getInstance().put(map);
                     }
                 });
-
+//                int rendererWidth = splitPane.getWidth() - splitLocation;
+//
+//                int height = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_HEIGHT, 800L);
                 renderer.setMinimumSize(new Dimension(100, 100));
                 controlPanel.setMinimumSize(new Dimension(320, 100));
 
+//                renderer.setPreferredSize(new Dimension(rendererWidth, height));
+//                controlPanel.setPreferredSize(new Dimension(splitLocation, height));
+//
+//                Runtime.getRuntime().addShutdownHook(new Thread() {
+//                    private LinkedHashMap<String, String> map = new LinkedHashMap<>();
+//
+//                    @Override
+//                    public void run()
+//                    {
+//                        map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
+//                        map.put(Preferences.RENDERER_PANEL_HEIGHT, new Long(renderer.getHeight()).toString());
+//                        map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
+//                        map.put(Preferences.CONTROL_PANEL_HEIGHT, new Long(controlPanel.getHeight()).toString());
+//                        Preferences.getInstance().put(map);
+//                    }
+//                });
+
                 this.add(splitPane, BorderLayout.CENTER);
 
-                // Configure the splitPane to match the most recent settings
+ 				// Configure the splitPane to match the most recent settings
                 var dividerLocation = globLastDividerLocation;
                 if (globLastDividerLocation <= 0)
                     dividerLocation = MainWindow.getMainWindow().getMainAppCfg().mainSplitSize();
                 splitPane.setDividerLocation(dividerLocation);
+
 
                 renderer.getRenderWindowPanel().resetCamera();
 
@@ -340,7 +367,7 @@ public abstract class View extends JPanel
     {
         return modelManager.getModel(name);
     }
-    
+
     protected List<Model> getModels(ModelNames name)
     {
         return modelManager.getModels(name);
@@ -414,7 +441,7 @@ public abstract class View extends JPanel
     protected abstract void setupInfoPanelManager();
 
     protected abstract void setupSpectrumPanelManager();
-    
+
     protected abstract void setupPositionOrientationManager();
 
     protected void setupRenderer()

@@ -50,7 +50,7 @@ public class NativeLibraryLoader
         	System.out.println("Will unpack to : " + nativeDir);
 
         try {
-            NativeLibraryLoader.initialize(nativeDir);
+			NativeLibraryLoader.initialize(nativeDir);
             System.out.println("VTK: Initialization done, ");
         } catch (Throwable t) {
             System.err.println("Initialization failed with " + t.getClass().getSimpleName() + ", stacktrace follows.");

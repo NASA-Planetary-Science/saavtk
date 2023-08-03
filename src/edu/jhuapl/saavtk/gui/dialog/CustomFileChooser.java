@@ -1,10 +1,7 @@
 package edu.jhuapl.saavtk.gui.dialog;
 
-import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.FileDialog;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.LinkedList;
@@ -12,14 +9,56 @@ import java.util.List;
 
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import edu.jhuapl.saavtk.gui.FileChooserBase;
+import edu.jhuapl.saavtk.gui.util.FileExtensionsAndDescriptions;
 
 public class CustomFileChooser extends FileChooserBase
 {
+	private static class OpenFileFilter extends FileFilter
+	{
+
+		String description = "";
+		String fileExt = "";
+
+		public OpenFileFilter(Object extension, boolean includeExt)
+		{
+			if (extension instanceof String)
+			{
+				fileExt = (String) extension;
+			}
+			else if (extension instanceof FileExtensionsAndDescriptions)
+			{
+				FileExtensionsAndDescriptions temp = (FileExtensionsAndDescriptions) extension;
+				fileExt = temp.getExtension();
+				description = temp.getDescription(includeExt);
+			}
+			else
+			{
+				throw new IllegalArgumentException("File extension filter must be a string or FileExtensionsAndDescriptions");
+			}
+
+		}
+
+		@Override
+		public boolean accept(File f)
+		{
+			if (f.isDirectory())
+				return true;
+			return (f.getName().toLowerCase().endsWith(fileExt));
+		}
+
+		@Override
+		public String getDescription()
+		{
+			return description;
+		}
+
+	}
+
 	private static class CustomExtensionFilter implements FilenameFilter
 	{
 		private List<String> extensions;
@@ -96,12 +135,12 @@ public class CustomFileChooser extends FileChooserBase
 		return showOpenDialog(parent, title, null, defaultFileName);
 	}
 
-	public static File showOpenDialog(Component parent, String title, List<String> extensions)
+	public static File showOpenDialog(Component parent, String title, List<?> extensions)
 	{
 		return showOpenDialog(parent, title, extensions, null);
 	}
 
-	public static File showOpenDialog(Component parent, String title, List<String> extensions, String defaultFileName)
+	public static File showOpenDialog(Component parent, String title, List<?> extensions, String defaultFileName)
 	{
 		File[] files = showOpenDialog(parent, title, extensions, false, defaultFileName);
 		if (files == null || files.length < 1)
@@ -110,42 +149,56 @@ public class CustomFileChooser extends FileChooserBase
 			return files[0];
 	}
 
-	public static File[] showOpenDialog(Component parent, String title, List<String> extensions, boolean multiSelectionEnabled)
+	public static File[] showOpenDialog(Component parent, String title, List<?> extensions, boolean multiSelectionEnabled)
 	{
 		return showOpenDialog(parent, title, extensions, multiSelectionEnabled, null);
 	}
 
-	public static File[] showOpenDialog(Component parent, String title, List<String> extensions, boolean multiSelectionEnabled, String defaultFileName)
+	
+
+	public static File[] showOpenDialog(Component parent, String title, List<?> extensions, boolean multiSelectionEnabled, String defaultFileName)
 	{
-		FileDialog fc = new FileDialog(JOptionPane.getFrameForComponent(parent), title, FileDialog.LOAD);
-		// fc.setAcceptAllFileFilterUsed(true);
-		fc.setMultipleMode(multiSelectionEnabled);
+		JFileChooser jfc = new JFileChooser();
+
+		jfc.setDialogTitle(title);
+		jfc.setMultiSelectionEnabled(multiSelectionEnabled);
+
 		if (extensions != null)
-			fc.setFilenameFilter(new CustomExtensionFilter(extensions));
+		{
+			for (Object extension : extensions)
+			{
+				jfc.addChoosableFileFilter(new OpenFileFilter(extension, true));
+			}
+			jfc.setAcceptAllFileFilterUsed(true);
+		}
+
 		if (getLastDirectory() != null)
-			fc.setDirectory(getLastDirectory().getAbsolutePath());
+		{
+			jfc.setCurrentDirectory(getLastDirectory().getAbsoluteFile());
+		}
 		if (defaultFileName != null)
 		{
 			File defaultFile = new File(defaultFileName);
 			File defaultDirectory = defaultFile.getParentFile();
 			if (defaultDirectory.isDirectory())
 			{
-				fc.setDirectory(defaultDirectory.getAbsolutePath());
+				jfc.setCurrentDirectory(defaultDirectory.getAbsoluteFile());
 			}
-			fc.setFile(defaultFile.getName());
+			jfc.setSelectedFile(defaultFile);
 		}
-		fc.setVisible(true);
-		String returnedFile = fc.getFile();
+		jfc.showOpenDialog(parent);
+		jfc.setVisible(true);
+
+		File returnedFile = jfc.getSelectedFile();
 		if (returnedFile != null)
 		{
-			setLastDirectory(new File(fc.getDirectory()));
+			setLastDirectory(jfc.getCurrentDirectory());
 			if (multiSelectionEnabled)
 			{
-				return fc.getFiles();
+				return jfc.getSelectedFiles();
 			} else
 			{
-				File file = new File(fc.getDirectory(), fc.getFile());
-				return new File[] { file };
+				return new File[] { returnedFile };
 			}
 		} else
 		{
