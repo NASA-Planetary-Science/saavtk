@@ -294,8 +294,6 @@
     </pluginRepositories>
 
 	<build>
-		<sourceDirectory>.</sourceDirectory>
-		<testSourceDirectory>.</testSourceDirectory>
 		<plugins>
 		  <plugin>
             <artifactId>maven-compiler-plugin</artifactId>
