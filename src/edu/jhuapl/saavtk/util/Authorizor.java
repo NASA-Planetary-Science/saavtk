@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.util;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -44,6 +45,7 @@ public class Authorizor
 
     private final Path credentialsFilePath;
     private final AtomicReference<SecureAuthenticator> authenticator;
+    private DownloadableFileManager downloadableManager = null;
 
     /**
      * Construct an authorizor that uses the provided path for the file used to
@@ -55,6 +57,9 @@ public class Authorizor
     {
         this.credentialsFilePath = credentialsFilePath;
         this.authenticator = new AtomicReference<>(null);
+        if (this.downloadableManager == null) {
+        	this.downloadableManager = DownloadableFileManager.of(Configuration.getDataRootURL(), new File(Configuration.getCacheDir()));
+        }
     }
 
     /**
@@ -122,13 +127,12 @@ public class Authorizor
     }
 
     /**
-     * Load credentials from the credentials file path and attempt authentication,
-     * using the {@link FileCache} facility to determine the result. The result of
-     * the authentication attempt is indicated by the returned {@line UrlState}
-     * object. If the results were successful, the user name will be retained and
-     * may be obtained by future calls to the {@link #getUserName()} method. If
-     * authentication did not succeed, future calls to {@link #getUserName()} will
-     * return null.
+     * Load credentials from the credentials file path and attempt authentication.
+     * The result of the authentication attempt is indicated by the returned
+     * {@line UrlState} object. If the results were successful, the user name will
+     * be retained and may be obtained by future calls to the {@link #getUserName()}
+     * method. If authentication did not succeed, future calls to {@link #getUserName()}
+     * will return null.
      * <p>
      * This method may be called any number of times. The {@link #getUserName()}
      * method will always return the latest name defined (or null).
@@ -190,7 +194,7 @@ public class Authorizor
             }
             else
             {
-                result = FileCache.instance().queryRootState();
+                result = this.downloadableManager.queryRootState();
             }
 
             return result;
@@ -202,8 +206,7 @@ public class Authorizor
     }
 
     /**
-     * Attempt authentication using the provided credentials, using the
-     * {@link FileCache} facility to determine the result. The result of the
+     * Attempt authentication using the provided credentials. The result of the
      * authentication attempt is indicated by the returned {@line UrlState} object.
      * If the results were successful, the user name will be retained and may be
      * obtained by future calls to the {@link #getUserName()} method. If
@@ -231,7 +234,7 @@ public class Authorizor
         Authenticator.setDefault(null);
         Authenticator.setDefault(authenticator);
 
-        UrlState rootState = FileCache.instance().queryRootState();
+        UrlState rootState = this.downloadableManager.queryRootState();
 
         if (rootState.getStatus() == UrlStatus.ACCESSIBLE)
         {
