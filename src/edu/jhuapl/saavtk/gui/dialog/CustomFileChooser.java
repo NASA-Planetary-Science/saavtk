@@ -29,6 +29,7 @@ public class CustomFileChooser extends FileChooserBase
 			if (extension instanceof String)
 			{
 				fileExt = (String) extension;
+				description = (String) extension;
 			}
 			else if (extension instanceof FileExtensionsAndDescriptions)
 			{

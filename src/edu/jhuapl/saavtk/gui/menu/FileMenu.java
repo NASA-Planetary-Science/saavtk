@@ -53,7 +53,7 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
 public class FileMenu extends JMenu
 {
 	private static final long serialVersionUID = 1L;
-	private final ImmutableList<FileExtensionsAndDescriptions> fileExtensions;
+	private final ImmutableList<?> fileExtensions;
 	private final ViewManager rootPanel;
 	private PreferencesDialog preferencesDialog;
 	public JFrame frame;
@@ -63,7 +63,7 @@ public class FileMenu extends JMenu
 		this(rootPanel, ImmutableList.of());
 	}
 
-	public FileMenu(ViewManager rootPanel, Iterable<FileExtensionsAndDescriptions> fileExtensions)
+	public FileMenu(ViewManager rootPanel, Iterable<?> fileExtensions)
 	{
 		super("File");
 		this.fileExtensions = ImmutableList.copyOf(fileExtensions);
