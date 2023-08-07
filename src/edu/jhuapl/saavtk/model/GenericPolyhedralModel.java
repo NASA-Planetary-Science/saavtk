@@ -1675,7 +1675,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
     protected void computeShapeModelStatistics()
     {
     	//For some reason, the skin OBJ is made with quads and not triangles, which causes the vtkMassProperties class to freak out and throw a bunch of warnings.  All other items are fine.  
-    	if (modelFiles[0].equals("/Users/steelrj1/git_liger/liger/data/poses/2021Geometry-IPose/aplpb/organ/organ-skin.obj")) return;
+    	if (modelFiles[0].contains("organ-skin.obj")) return;
         vtkMassProperties massProp = new vtkMassProperties();
         massProp.SetInputData(smallBodyPolyDataAtPosition);
         massProp.Update();

@@ -260,42 +260,16 @@ public abstract class View extends JPanel
 
                 splitPane.setOneTouchExpandable(true);
 
-//                int splitLocation = (int) Preferences.getInstance().getAsLong(Preferences.CONTROL_PANEL_WIDTH, 320L);
-//                splitPane.setDividerLocation(splitLocation);
-
                 splitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, new PropertyChangeListener() {
                     @Override
                     public void propertyChange(@SuppressWarnings("unused") PropertyChangeEvent pce)
                     {
                     	globLastDividerLocation = splitPane.getDividerLocation();
-//                        LinkedHashMap<String, String> map = new LinkedHashMap<>();
-//                        map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
-//                        map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
-//                        Preferences.getInstance().put(map);
                     }
                 });
-//                int rendererWidth = splitPane.getWidth() - splitLocation;
-//
-//                int height = (int) Preferences.getInstance().getAsLong(Preferences.RENDERER_PANEL_HEIGHT, 800L);
+
                 renderer.setMinimumSize(new Dimension(100, 100));
                 controlPanel.setMinimumSize(new Dimension(320, 100));
-
-//                renderer.setPreferredSize(new Dimension(rendererWidth, height));
-//                controlPanel.setPreferredSize(new Dimension(splitLocation, height));
-//
-//                Runtime.getRuntime().addShutdownHook(new Thread() {
-//                    private LinkedHashMap<String, String> map = new LinkedHashMap<>();
-//
-//                    @Override
-//                    public void run()
-//                    {
-//                        map.put(Preferences.RENDERER_PANEL_WIDTH, new Long(splitPane.getWidth() - splitPane.getDividerLocation()).toString());
-//                        map.put(Preferences.RENDERER_PANEL_HEIGHT, new Long(renderer.getHeight()).toString());
-//                        map.put(Preferences.CONTROL_PANEL_WIDTH, new Long(splitPane.getDividerLocation()).toString());
-//                        map.put(Preferences.CONTROL_PANEL_HEIGHT, new Long(controlPanel.getHeight()).toString());
-//                        Preferences.getInstance().put(map);
-//                    }
-//                });
 
                 this.add(splitPane, BorderLayout.CENTER);
 

@@ -14,6 +14,8 @@ workflow:
     # If user is not the runner, branch is the default branch, and the pipeline source is a push
     - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
       when: always
+    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+      when: always
     # if the first statement fails, never succeed
     - when: never
 
@@ -28,6 +30,10 @@ maven build:
   script: 
     # --- Checks if code compiles
     - mvn $MAVEN_CLI_OPTS clean compile
+  rules:
+    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+      when: manual
+    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
 
 maven verify:
   stage: verify
