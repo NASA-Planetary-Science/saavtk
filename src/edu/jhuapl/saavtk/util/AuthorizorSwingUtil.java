@@ -13,12 +13,12 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
 public abstract class AuthorizorSwingUtil
-{
-    public static AuthorizorSwingUtil of(Path passwordFilePath)
+{	
+    public static AuthorizorSwingUtil of(Path passwordFilePath, Authorizor.UrlChecker urlChecker)
     {
         return new AuthorizorSwingUtil() {
 
-            private final Authorizor authorizor = new Authorizor(passwordFilePath) {
+            private final Authorizor authorizor = new Authorizor(passwordFilePath, urlChecker) {
                 @Override
                 public String getDefaultUserName()
                 {

@@ -356,7 +356,7 @@ public abstract class FileDownloader implements Runnable
             System.out.println("Trying to download file from " + args[0] + " to local file " + args[1]);
             System.out.println("This transfer may fail if the file contains text indicating the request was rejected.");
 
-            Authorizor authorizor = new Authorizor(passwordFilePath);
+            Authorizor authorizor = new Authorizor(passwordFilePath, () -> { return FileCache.instance().queryRootState(); });
             authorizor.loadCredentials();
 
             Debug.setEnabled(true);
