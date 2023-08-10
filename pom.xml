@@ -89,6 +89,36 @@
 				</dependency>
 		    </dependencies>
 		  </profile>
+		   <profile>
+		    <id>macm1</id>
+		    <activation>
+		      <os>
+		        <family>mac</family>
+		        <arch>aarch64</arch>
+		      </os>
+		    </activation>
+		    <dependencies>
+		    	<dependency>
+					<groupId>org.jzy3d</groupId>
+					<artifactId>vtk-java-all</artifactId>
+					<version>1.0.0.18</version>
+					<exclusions>
+		                <exclusion>
+		                    <groupId>org.jzy3d</groupId>
+		                    <artifactId>vtk-java-linux-x86-64</artifactId>
+		                </exclusion>
+		                <exclusion>
+		                    <groupId>org.jzy3d</groupId>
+		                    <artifactId>vtk-java-windows-x86-64</artifactId>
+		                </exclusion>
+		                <exclusion>
+		                    <groupId>org.jzy3d</groupId>
+		                    <artifactId>vtk-java-macos-x86-64</artifactId>
+		                </exclusion>
+	            </exclusions>
+				</dependency>
+		    </dependencies>
+		  </profile>
 		  <profile>
 		    <id>linux</id>
 		    <activation>
