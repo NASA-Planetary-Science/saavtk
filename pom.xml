@@ -29,6 +29,94 @@
 	  <maven.compiler.source>16</maven.compiler.source>
 	  <maven.compiler.target>16</maven.compiler.target>
 	</properties>
+	  <profiles>
+	  <profile>
+	    <activation>
+	      <os>
+	        <family>Windows</family>
+	      </os>
+	    </activation>
+	    <dependencies>
+		    <dependency>
+				<groupId>org.jzy3d</groupId>
+				<artifactId>vtk-java-all</artifactId>
+				<version>1.0.0.18</version>
+				<exclusions>
+	                <exclusion>
+	                    <groupId>org.jzy3d</groupId>
+	                    <artifactId>vtk-java-linux-x86-64</artifactId>
+	                </exclusion>
+	                <exclusion>
+	                    <groupId>org.jzy3d</groupId>
+	                    <artifactId>vtk-java-macos-x86-64</artifactId>
+	                </exclusion>
+	                <exclusion>
+	                    <groupId>org.jzy3d</groupId>
+	                    <artifactId>vtk-java-macos-m1</artifactId>
+	                </exclusion>
+            </exclusions>
+			</dependency>
+	    </dependencies>
+	  </profile>
+	  <profile>
+	    <activation>
+	      <os>
+	        <family>mac</family>
+	        <arch>x86_64</arch>
+	      </os>
+	    </activation>
+	    <dependencies>
+	    	<dependency>
+				<groupId>org.jzy3d</groupId>
+				<artifactId>vtk-java-all</artifactId>
+				<version>1.0.0.18</version>
+				<exclusions>
+	                <exclusion>
+	                    <groupId>org.jzy3d</groupId>
+	                    <artifactId>vtk-java-linux-x86-64</artifactId>
+	                </exclusion>
+	                <exclusion>
+	                    <groupId>org.jzy3d</groupId>
+	                    <artifactId>vtk-java-windows-x86-64</artifactId>
+	                </exclusion>
+	                <exclusion>
+	                    <groupId>org.jzy3d</groupId>
+	                    <artifactId>vtk-java-macos-m1</artifactId>
+	                </exclusion>
+            </exclusions>
+			</dependency>
+	    </dependencies>
+	  </profile>
+	  <profile>
+	    <activation>
+	      <os>
+	        <family>linux</family>
+	        <arch>x86_64</arch>
+	      </os>
+	    </activation>
+	    <dependencies>
+	    	<dependency>
+				<groupId>org.jzy3d</groupId>
+				<artifactId>vtk-java-all</artifactId>
+				<version>1.0.0.18</version>
+				<exclusions>
+	                <exclusion>
+	                    <groupId>org.jzy3d</groupId>
+	                    <artifactId>vtk-java-macos-x86-64</artifactId>
+	                </exclusion>
+	                <exclusion>
+	                    <groupId>org.jzy3d</groupId>
+	                    <artifactId>vtk-java-windows-x86-64</artifactId>
+	                </exclusion>
+	                <exclusion>
+	                    <groupId>org.jzy3d</groupId>
+	                    <artifactId>vtk-java-macos-m1</artifactId>
+	                </exclusion>
+            </exclusions>
+			</dependency>
+	    </dependencies>
+	  </profile>
+  </profiles>
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
@@ -111,11 +199,6 @@
 		    <artifactId>RelativeLayout</artifactId>
 		    <version>v1.0</version>
 		</dependency>
-		<dependency>
-			<groupId>org.jzy3d</groupId>
-			<artifactId>vtk-java-all</artifactId>
-			<version>1.0.0.18</version>
-		</dependency> 
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-pool2</artifactId>
