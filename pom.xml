@@ -6,7 +6,7 @@
 	<packaging>jar</packaging>
 	<version>1.0.0-SNAPSHOT</version>
 	<name>saavtk</name>
-	<url>http://maven.apache.org</url>
+	<description>VTK Support library</description>
     <organization>
 	  <name>Johns Hopkins University Applied Physics Lab</name>
 	  <url>https://www.jhuapl.edu</url>
@@ -114,7 +114,7 @@
 		<dependency>
 			<groupId>org.jzy3d</groupId>
 			<artifactId>vtk-java-all</artifactId>
-			<version>1.0.0.17</version>
+			<version>1.0.0.18</version>
 		</dependency> 
 		<dependency>
 			<groupId>org.apache.commons</groupId>
@@ -300,8 +300,7 @@
     </pluginRepositories>
 
 	<build>
-		<sourceDirectory>.</sourceDirectory>
-		<testSourceDirectory>.</testSourceDirectory>
+		<sourceDirectory>src</sourceDirectory>
 		<plugins>
 		  <plugin>
             <artifactId>maven-compiler-plugin</artifactId>
@@ -349,6 +348,40 @@
 								<mkdir dir="${project.build.directory}/classes/edu/jhuapl/saavtk/data" />
 								<copy todir="${project.build.directory}/classes/edu/jhuapl/saavtk/data">
 									<fileset dir="src/edu/jhuapl/saavtk/data" />
+								</copy>
+							</target>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>toolbar_icons</id>
+						<?m2e execute onConfiguration?>
+						<phase>compile</phase>
+						<configuration>
+							<target>
+								<mkdir dir="${project.build.directory}/classes/edu/jhuapl/saavtk/gui/render/toolbar" />
+								<copy todir="${project.build.directory}/classes/edu/jhuapl/saavtk/gui/render/toolbar">
+									<fileset dir="src/edu/jhuapl/saavtk/gui/render/toolbar/">
+										<include name="*.png"/>
+									</fileset>
+								</copy>
+							</target>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>icons</id>
+						<?m2e execute onConfiguration?>
+						<phase>compile</phase>
+						<configuration>
+							<target>
+								<mkdir dir="${project.build.directory}/classes/resources" />
+								<copy todir="${project.build.directory}/classes/resources">
+									<fileset dir="src/resources"/>
 								</copy>
 							</target>
 						</configuration>
