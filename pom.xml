@@ -197,6 +197,12 @@
 			<groupId>edu.jhuapl.ses.saa</groupId>
 			<artifactId>crucible-mantle</artifactId>
 			<version>1.0.0-b23-b505c84b</version>
+			<exclusions>
+                <exclusion>
+                    <groupId>com.jidesoft</groupId>
+                    <artifactId>jide-oss</artifactId>
+                </exclusion>
+            </exclusions>
 			<type>pom</type>
 		</dependency>
 		<dependency>
