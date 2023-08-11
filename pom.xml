@@ -55,7 +55,7 @@
 		                    <groupId>org.jzy3d</groupId>
 		                    <artifactId>vtk-java-macos-m1</artifactId>
 		                </exclusion>
-	            </exclusions>
+	            	</exclusions>
 				</dependency>
 		    </dependencies>
 		  </profile>
@@ -115,7 +115,7 @@
 		                    <groupId>org.jzy3d</groupId>
 		                    <artifactId>vtk-java-macos-x86-64</artifactId>
 		                </exclusion>
-	            </exclusions>
+	            	</exclusions>
 				</dependency>
 		    </dependencies>
 		  </profile>
@@ -144,7 +144,7 @@
 		                    <groupId>org.jzy3d</groupId>
 		                    <artifactId>vtk-java-macos-m1</artifactId>
 		                </exclusion>
-	            </exclusions>
+	            	</exclusions>
 				</dependency>
 		    </dependencies>
 		  </profile>
