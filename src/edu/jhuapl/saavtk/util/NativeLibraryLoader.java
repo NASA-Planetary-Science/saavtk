@@ -361,7 +361,14 @@ public class NativeLibraryLoader
                             && !lib.GetLibraryName().startsWith("vtkFiltersParallel")
                             && !lib.GetLibraryName().startsWith("vtkGeovis"))
                     {
-                    	System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".jnilib").getAbsolutePath());
+                    	if (System.getProperty("os.name").contains("Mac"))
+                			System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".jnilib").getAbsolutePath());
+	                	else if (System.getProperty("os.name").contains("Win"))
+	            			System.load(new File(nativeVTKLibraryDir, lib.GetLibraryName() + ".dll").getAbsolutePath());
+	                	else
+	            			System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".so").getAbsolutePath());
+                    	
+//                    	System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".jnilib").getAbsolutePath());
 //                        lib.LoadLibrary();
                     }
                 }
