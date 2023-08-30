@@ -480,16 +480,6 @@
 								<copy todir="${project.build.directory}/classes/edu/jhuapl/saavtk/data">
 									<fileset dir="src/edu/jhuapl/saavtk/data"/>
 								</copy>
-								
-	              				<copy todir="${project.build.directory}/classes/edu/jhuapl/saavtk/gui/render/toolbar">
-	 	  							<fileset dir="src/edu/jhuapl/saavtk/gui/render/toolbar/">
-	 									<include name="**/*.png"/>
-	 	  							</fileset>
-	 							</copy>
-	 							<copy todir="${project.build.directory}/classes/resources">
-	 	  							<fileset dir="src/resources/"/>
-	 							</copy>
-	              				
 							</target>
            				</configuration>
            				<goals>
