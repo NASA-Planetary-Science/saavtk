@@ -21,7 +21,7 @@ public class LayeredPaneDemo extends JPanel
 
     static
     {
-        NativeLibraryLoader.loadAllVtkLibraries();
+        NativeLibraryLoader.loadVtkLibraries();
     }
 
     static vtkJoglPanelComponent renderObject = new vtkJoglPanelComponent();

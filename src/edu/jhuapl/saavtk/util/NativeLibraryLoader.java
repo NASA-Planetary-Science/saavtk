@@ -232,15 +232,6 @@ public class NativeLibraryLoader
      */
     public static void loadAllVtkLibraries()
     {
-//    	try {
-//    		File nativeDir = new File(System.getProperty("user.home") + File.separator +".nativelibs");
-//			VtkNativeLibraries.initialize(nativeDir);
-//		} catch (VtkJavaNativeLibraryException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//    	System.out.println("NativeLibraryLoader: loadAllVtkLibraries: unpacking natives");
-    	unpackNatives();
         if (isVtkInitialized.compareAndSet(false, true))
         {
             if (Configuration.isHeadless())
@@ -290,10 +281,7 @@ public class NativeLibraryLoader
                 try
                 {
                     if (!lib.IsLoaded())
-                    {
-//                    	System.out.println("NativeLibraryLoader: loadAllVtkLibraries: loading " + lib.GetLibraryName());
-//                        lib.LoadLibrary();
-                    	
+                    {                    	
                     	if (System.getProperty("os.name").contains("Mac"))
                     			System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".jnilib").getAbsolutePath());
                     	else if (System.getProperty("os.name").contains("Win"))
