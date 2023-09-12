@@ -6,7 +6,7 @@ stages:
 variables: 
   JAVA_HOME: "/opt/openjdk17" # Sets Java version to run (see /opt for details)
   # Sets the artifact cache to a local directory within build area
-  MAVEN_CLI_OPTS: "-Dmaven.repo.local=.m2/repository --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN"
+  MAVEN_CLI_OPTS: "-Dmaven.repo.local=../.m2/repository --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN"
 
 #Workflow rules that filters across the entire pipeline. Cleaner than -o ci.skip since there won't be a "skipped" pipeline. 
 workflow: 
@@ -14,20 +14,26 @@ workflow:
     # If user is not the runner, branch is the default branch, and the pipeline source is a push
     - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
       when: always
+    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+      when: always
     # if the first statement fails, never succeed
     - when: never
 
 
 # Cache the artifact repository (not the target directory, as that causes old classes that are deleted to persist, and be deployed when they shouldn't be).
-cache:
-  paths:
-    - .m2/repository/ 
+#cache:
+#  paths:
+#    - .m2/repository/ 
         
 maven build:
   stage: build
   script: 
     # --- Checks if code compiles
     - mvn $MAVEN_CLI_OPTS clean compile
+  rules:
+    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+      when: manual
+    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
 
 maven verify:
   stage: verify

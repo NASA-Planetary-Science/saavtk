@@ -2,9 +2,9 @@ package edu.jhuapl.saavtk.gui.render;
 
 import java.io.File;
 
-import com.jogamp.opengl.GLContext;
-
 import org.apache.commons.io.FilenameUtils;
+
+import com.jogamp.opengl.GLContext;
 
 import edu.jhuapl.saavtk.camera.CameraFrame;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
@@ -37,9 +37,15 @@ public class RenderIoUtil
 		String extension = FilenameUtils.getExtension(aFile.getName());
 		return new File(aFile.getAbsolutePath().replaceAll("." + extension, ".axes." + extension));
 	}
-
+	
 	public static CameraFrame createCameraFrameInDirectionOfAxis(PolyhedralModel aSmallBody, RenderPanel aRenderPanel,
 			AxisType aAxisType, boolean preserveCurrentDistance, File aFile, int aDelayMS)
+	{
+		return createCameraFrameInDirectionOfAxis(aSmallBody, aRenderPanel, aAxisType, preserveCurrentDistance, aFile, aDelayMS, 0.0, 0.0, 0.0);
+	}
+
+	public static CameraFrame createCameraFrameInDirectionOfAxis(PolyhedralModel aSmallBody, RenderPanel aRenderPanel,
+			AxisType aAxisType, boolean preserveCurrentDistance, File aFile, int aDelayMS, double xOffset, double yOffset, double zOffset)
 	{
 		CameraFrame result = new CameraFrame();
 		result.file = aFile;
@@ -60,37 +66,37 @@ public class RenderIoUtil
 		if (aAxisType == AxisType.NEGATIVE_X)
 		{
 			double xpos = xSize / Math.tan(Math.PI / 6.0) + 2.0 * maxSize;
-			result.position = new double[] { xpos, 0.0, 0.0 };
+			result.position = new double[] { xpos + xOffset, 0.0 + yOffset, 0.0 + zOffset };
 			result.upDirection = new double[] { 0.0, 0.0, 1.0 };
 		}
 		else if (aAxisType == AxisType.POSITIVE_X)
 		{
 			double xpos = -xSize / Math.tan(Math.PI / 6.0) - 2.0 * maxSize;
-			result.position = new double[] { xpos, 0.0, 0.0 };
+			result.position = new double[] { xpos + xOffset, 0.0 + yOffset, 0.0 + zOffset };
 			result.upDirection = new double[] { 0.0, 0.0, 1.0 };
 		}
 		else if (aAxisType == AxisType.NEGATIVE_Y)
 		{
 			double ypos = ySize / Math.tan(Math.PI / 6.0) + 2.0 * maxSize;
-			result.position = new double[] { 0.0, ypos, 0.0 };
+			result.position = new double[] { 0.0 + xOffset, ypos + yOffset, 0.0 + zOffset };
 			result.upDirection = new double[] { 0.0, 0.0, 1.0 };
 		}
 		else if (aAxisType == AxisType.POSITIVE_Y)
 		{
 			double ypos = -ySize / Math.tan(Math.PI / 6.0) - 2.0 * maxSize;
-			result.position = new double[] { 0.0, ypos, 0.0 };
+			result.position = new double[] { 0.0 + xOffset, ypos + yOffset, 0.0 + zOffset };
 			result.upDirection = new double[] { 0.0, 0.0, 1.0 };
 		}
 		else if (aAxisType == AxisType.NEGATIVE_Z)
 		{
 			double zpos = zSize / Math.tan(Math.PI / 6.0) + 2.0 * maxSize;
-			result.position = new double[] { 0.0, 0.0, zpos };
+			result.position = new double[] { 0.0 + xOffset, 0.0 + yOffset, zpos + zOffset };
 			result.upDirection = new double[] { 0.0, 1.0, 0.0 };
 		}
 		else if (aAxisType == AxisType.POSITIVE_Z)
 		{
 			double zpos = -zSize / Math.tan(Math.PI / 6.0) - 2.0 * maxSize;
-			result.position = new double[] { 0.0, 0.0, zpos };
+			result.position = new double[] { 0.0 + xOffset, 0.0 + yOffset, zpos + zOffset };
 			result.upDirection = new double[] { 0.0, 1.0, 0.0 };
 		}
 

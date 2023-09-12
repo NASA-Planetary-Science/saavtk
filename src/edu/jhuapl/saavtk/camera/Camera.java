@@ -106,4 +106,5 @@ public interface Camera
 	 */
 	public void setViewAngle(double aAngle);
 
+	public void zoom(double factor);
 }

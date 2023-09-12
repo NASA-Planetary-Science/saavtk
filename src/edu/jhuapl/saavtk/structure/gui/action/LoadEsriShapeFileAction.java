@@ -18,6 +18,7 @@ import org.opengis.feature.simple.SimpleFeature;
 import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
+import edu.jhuapl.saavtk.gui.util.FileExtensionsAndDescriptions;
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.ModelNames;
@@ -88,7 +89,7 @@ public class LoadEsriShapeFileAction<G1 extends Structure> extends AbstractActio
 			fileMenuTitle = "Polygon from shapefile...";
 		else
 			fileMenuTitle = "Datastore filename";
-		File[] files = CustomFileChooser.showOpenDialog(refParent, fileMenuTitle, Lists.newArrayList("shp"), true);
+		File[] files = CustomFileChooser.showOpenDialog(refParent, fileMenuTitle, Lists.newArrayList(FileExtensionsAndDescriptions.SHAPE), true);
 		if (files == null)
 			return;
 
