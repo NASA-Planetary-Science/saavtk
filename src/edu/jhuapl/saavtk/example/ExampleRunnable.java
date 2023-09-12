@@ -21,7 +21,7 @@ public class ExampleRunnable implements Runnable
     @Override
     public void run()
     {
-        NativeLibraryLoader.loadAllVtkLibraries();
+        NativeLibraryLoader.loadVtkLibraries();
 
         ExampleViewConfig.initialize();
 

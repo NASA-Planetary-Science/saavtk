@@ -3,7 +3,6 @@ package edu.jhuapl.saavtk.gui;
 import java.awt.CardLayout;
 import java.awt.EventQueue;
 import java.awt.Frame;
-import java.awt.IllegalComponentStateException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -48,7 +47,7 @@ public abstract class ViewManager extends JPanel
     private final Frame frame;
     private String tempCustomShapeModelPath;
 
-    protected FileMenu fileMenu = null;
+    protected JMenu fileMenu = null;
     protected ViewMenu bodyMenu = null;
     protected HelpMenu helpMenu = null;
     protected RecentlyViewed recentsMenu = null;
