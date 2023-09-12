@@ -16,7 +16,7 @@ public class RenderInternalPaneTest
 
     static
     {
-        NativeLibraryLoader.loadAllVtkLibraries();
+        NativeLibraryLoader.loadVtkLibraries();
     }
 
     static vtkJoglPanelComponent renderObject = new vtkJoglPanelComponent();

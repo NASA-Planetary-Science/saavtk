@@ -8,7 +8,7 @@ import javax.swing.ImageIcon;
  * definition, management, and retrieval of icons.
  *
  * @author lopeznr1
- */ 
+ */
 public class IconUtil
 {
 	// Cache vars
@@ -35,9 +35,12 @@ public class IconUtil
 	private static Icon cIconShow = null;
 	private static Icon cIconHide = null;
 	
+	private static Icon cIconZoomIn = null; 
+	private static Icon cIconZoomOut = null; 
+	
 	private static Icon cIconRecord = null;
 	private static Icon cIconStop = null;
-	
+
 	private static Icon cIconFont = null;
 	private static Icon cIconColor = null;
 	private static Icon cIconLayer = null;
@@ -358,6 +361,26 @@ public class IconUtil
 			cIconForward = IconUtil.loadIcon("resources/icons/forward.png");
 
 		return cIconForward;
+	}
+	
+	public static Icon getZoomIn()
+	{
+		if (cIconZoomIn == null)
+		{
+			cIconZoomIn = IconUtil.loadIcon("resources/icons/zoom-in-32x32.png");
+		}
+
+		return cIconZoomIn;
+	}
+
+	public static Icon getZoomOut()
+	{
+		if (cIconZoomOut == null)
+		{
+			cIconZoomOut = IconUtil.loadIcon("resources/icons/zoom-out-32x32.png");
+		}
+		
+		return cIconZoomOut; 
 	}
 	
 	/**

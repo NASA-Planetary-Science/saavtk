@@ -233,7 +233,7 @@ public class RenderPanel extends vtkJoglPanelComponent implements ComponentListe
 
 	public static void main(String[] args) throws InterruptedException
 	{
-        NativeLibraryLoader.loadAllVtkLibraries();
+        NativeLibraryLoader.loadVtkLibraries();
 		RenderView renderView = new RenderView();
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override

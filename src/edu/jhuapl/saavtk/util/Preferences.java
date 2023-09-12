@@ -1,6 +1,9 @@
 package edu.jhuapl.saavtk.util;
 
 import java.io.File;
+import java.util.List;
+
+import com.google.common.collect.Lists;
 
 /**
  * Singleton preferences class for managing all preferences
@@ -20,6 +23,10 @@ public class Preferences extends MapUtil
     public static final String PICK_TOLERANCE = "PickTolerance";
     public static final String MOUSE_WHEEL_MOTION_FACTOR = "MouseWheelMotionFactor";
     public static final String NIS_CUSTOM_FUNCTIONS = "NISCustomFunctions";
+    public static final String CONTROL_PANEL_WIDTH = "ControlPanelWidth";
+    public static final String CONTROL_PANEL_HEIGHT = "ControlPanelHeight";
+    public static final String RENDERER_PANEL_WIDTH = "RendererPanelWidth";
+    public static final String RENDERER_PANEL_HEIGHT = "RendererPanelHeight";
     public static final String DEFAULT_COLORMAP_NAME = "DefaultColormapName";
     public static final String BACKGROUND_COLOR = "BackgroundColor";
     public static final String SELECTION_COLOR = "SelectionColor";
@@ -39,6 +46,8 @@ public class Preferences extends MapUtil
     private static final String preferencesPath = Configuration.getApplicationDataDir() + File.separator + "preferences.txt";
 
     private static Preferences ref = null;
+    
+    List<PreferencesChangedListener> listeners = Lists.newArrayList();
 
     public static Preferences getInstance()
     {
@@ -50,5 +59,18 @@ public class Preferences extends MapUtil
     private Preferences()
     {
         super(preferencesPath);
+    }
+    
+    public void addPreferenceChangedListener(PreferencesChangedListener listener)
+    {
+    	listeners.add(listener);
+    }
+    
+    public void broadCast(String changedPreference)
+    {
+    	for (PreferencesChangedListener listener : listeners)
+    	{
+    		listener.preferenceChanged(changedPreference);
+    	}
     }
 }

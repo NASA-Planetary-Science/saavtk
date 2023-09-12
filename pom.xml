@@ -6,7 +6,7 @@
 	<packaging>jar</packaging>
 	<version>1.0.0-SNAPSHOT</version>
 	<name>saavtk</name>
-	<url>http://maven.apache.org</url>
+	<description>VTK Support library</description>
     <organization>
 	  <name>Johns Hopkins University Applied Physics Lab</name>
 	  <url>https://www.jhuapl.edu</url>
@@ -29,6 +29,126 @@
 	  <maven.compiler.source>16</maven.compiler.source>
 	  <maven.compiler.target>16</maven.compiler.target>
 	</properties>
+	  <profiles>
+		  <profile>
+		    <id>windows</id>
+		    <activation>
+		      <os>
+		        <family>Windows</family>
+		      </os>
+		    </activation>
+		    <dependencies>
+			    <dependency>
+					<groupId>org.jzy3d</groupId>
+					<artifactId>vtk-java-all</artifactId>
+					<version>1.0.0.18</version>
+					<exclusions>
+		                <exclusion>
+		                    <groupId>org.jzy3d</groupId>
+		                    <artifactId>vtk-java-linux-x86-64</artifactId>
+		                </exclusion>
+		                <exclusion>
+		                    <groupId>org.jzy3d</groupId>
+		                    <artifactId>vtk-java-macos-x86-64</artifactId>
+		                </exclusion>
+		                <exclusion>
+		                    <groupId>org.jzy3d</groupId>
+		                    <artifactId>vtk-java-macos-m1</artifactId>
+		                </exclusion>
+	            	</exclusions>
+				</dependency>
+		    </dependencies>
+		  </profile>
+		  <profile>
+		    <id>mac</id>
+		    <activation>
+		      <os>
+		        <family>mac</family>
+		        <arch>x86_64</arch>
+		      </os>
+		    </activation>
+		    <dependencies>
+		    	<dependency>
+					<groupId>org.jzy3d</groupId>
+					<artifactId>vtk-java-all</artifactId>
+					<version>1.0.0.18</version>
+					<exclusions>
+		                <exclusion>
+		                    <groupId>org.jzy3d</groupId>
+		                    <artifactId>vtk-java-linux-x86-64</artifactId>
+		                </exclusion>
+		                <exclusion>
+		                    <groupId>org.jzy3d</groupId>
+		                    <artifactId>vtk-java-windows-x86-64</artifactId>
+		                </exclusion>
+		                <exclusion>
+		                    <groupId>org.jzy3d</groupId>
+		                    <artifactId>vtk-java-macos-m1</artifactId>
+		                </exclusion>
+	            </exclusions>
+				</dependency>
+		    </dependencies>
+		  </profile>
+		   <profile>
+		    <id>macm1</id>
+		    <activation>
+		      <os>
+		        <family>mac</family>
+		        <arch>aarch64</arch>
+		      </os>
+		    </activation>
+		    <dependencies>
+		    	<dependency>
+					<groupId>org.jzy3d</groupId>
+					<artifactId>vtk-java-all</artifactId>
+					<version>1.0.0.18</version>
+					<exclusions>
+		                <exclusion>
+		                    <groupId>org.jzy3d</groupId>
+		                    <artifactId>vtk-java-linux-x86-64</artifactId>
+		                </exclusion>
+		                <exclusion>
+		                    <groupId>org.jzy3d</groupId>
+		                    <artifactId>vtk-java-windows-x86-64</artifactId>
+		                </exclusion>
+		                <exclusion>
+		                    <groupId>org.jzy3d</groupId>
+		                    <artifactId>vtk-java-macos-x86-64</artifactId>
+		                </exclusion>
+	            	</exclusions>
+				</dependency>
+		    </dependencies>
+		  </profile>
+		  <profile>
+		    <id>linux</id>
+		    <activation>
+		      <os>
+		        <family>linux</family>
+		      </os>
+		    </activation>
+		    <dependencies>
+		    	<dependency>
+					<groupId>org.jzy3d</groupId>
+					<artifactId>vtk-java-all</artifactId>
+					<version>1.0.0.18</version>
+					<exclusions>
+		                <exclusion>
+		                    <groupId>org.jzy3d</groupId>
+		                    <artifactId>vtk-java-macos-x86-64</artifactId>
+		                </exclusion>
+		                <exclusion>
+		                    <groupId>org.jzy3d</groupId>
+		                    <artifactId>vtk-java-windows-x86-64</artifactId>
+		                </exclusion>
+		                <exclusion>
+		                    <groupId>org.jzy3d</groupId>
+		                    <artifactId>vtk-java-macos-m1</artifactId>
+		                </exclusion>
+	            	</exclusions>
+				</dependency>
+		    </dependencies>
+		  </profile>
+	  </profiles>
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
@@ -112,11 +232,6 @@
 		    <version>v1.0</version>
 		</dependency>
 		<dependency>
-			<groupId>org.jzy3d</groupId>
-			<artifactId>vtk-java-all</artifactId>
-			<version>1.0.0.18</version>
-		</dependency> 
-		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-pool2</artifactId>
 			<version>2.9.0</version>
@@ -192,17 +307,39 @@
 			<groupId>edu.jhuapl.ses.saa</groupId>
 			<artifactId>crucible-crust</artifactId>
 			<version>1.0.0-b23-b505c84b</version>
+			<exclusions>
+                <exclusion>
+                    <groupId>com.jidesoft</groupId>
+                    <artifactId>jide-oss</artifactId>
+                </exclusion>
+            </exclusions>
 		</dependency>
 		<dependency>
 			<groupId>edu.jhuapl.ses.saa</groupId>
 			<artifactId>crucible-mantle</artifactId>
 			<version>1.0.0-b23-b505c84b</version>
+			<exclusions>
+                <exclusion>
+                    <groupId>com.jidesoft</groupId>
+                    <artifactId>jide-oss</artifactId>
+                </exclusion>
+            </exclusions>
 			<type>pom</type>
 		</dependency>
 		<dependency>
 			<groupId>com.google.code.findbugs</groupId>
 			<artifactId>jsr305</artifactId>
 			<version>3.0.2</version>
+		</dependency>
+		<dependency>
+		    <groupId>com.jgoodies</groupId>
+		    <artifactId>jgoodies-common</artifactId>
+		    <version>1.8.1</version>
+		</dependency>
+		<dependency>
+		    <groupId>com.jgoodies</groupId>
+		    <artifactId>jgoodies-forms</artifactId>
+		    <version>1.9.0</version>
 		</dependency>		
 	</dependencies>
 	<scm>
@@ -294,8 +431,7 @@
     </pluginRepositories>
 
 	<build>
-		<sourceDirectory>.</sourceDirectory>
-		<testSourceDirectory>.</testSourceDirectory>
+		<sourceDirectory>src</sourceDirectory>
 		<plugins>
 		  <plugin>
             <artifactId>maven-compiler-plugin</artifactId>
@@ -338,11 +474,45 @@
 					<execution>
 						<?m2e execute onConfiguration?>
 						<phase>compile</phase>
+           				<configuration>
+							<target>
+								<mkdir dir="${project.build.directory}/classes/edu/jhuapl/saavtk/data"/>
+								<copy todir="${project.build.directory}/classes/edu/jhuapl/saavtk/data">
+									<fileset dir="src/edu/jhuapl/saavtk/data"/>
+								</copy>
+							</target>
+           				</configuration>
+           				<goals>
+             					<goal>run</goal>
+           				</goals>
+					</execution>
+					<execution>
+						<id>toolbar_icons</id>
+						<?m2e execute onConfiguration?>
+						<phase>compile</phase>
 						<configuration>
 							<target>
-								<mkdir dir="${project.build.directory}/classes/edu/jhuapl/saavtk/data" />
-								<copy todir="${project.build.directory}/classes/edu/jhuapl/saavtk/data">
-									<fileset dir="src/edu/jhuapl/saavtk/data" />
+								<mkdir dir="${project.build.directory}/classes/edu/jhuapl/saavtk/gui/render/toolbar" />
+								<copy todir="${project.build.directory}/classes/edu/jhuapl/saavtk/gui/render/toolbar">
+									<fileset dir="src/edu/jhuapl/saavtk/gui/render/toolbar/">
+										<include name="*.png"/>
+									</fileset>
+								</copy>
+							</target>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>icons</id>
+						<?m2e execute onConfiguration?>
+						<phase>compile</phase>
+						<configuration>
+							<target>
+								<mkdir dir="${project.build.directory}/classes/resources" />
+								<copy todir="${project.build.directory}/classes/resources">
+									<fileset dir="src/resources"/>
 								</copy>
 							</target>
 						</configuration>

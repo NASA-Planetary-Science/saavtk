@@ -24,7 +24,6 @@ import edu.jhuapl.saavtk.colormap.Colormap;
 import edu.jhuapl.saavtk.colormap.Colormaps;
 import edu.jhuapl.saavtk.config.IBodyViewConfig;
 import edu.jhuapl.saavtk.config.IViewConfig;
-import edu.jhuapl.saavtk.config.ViewConfig;
 import edu.jhuapl.saavtk.model.plateColoring.BasicColoringDataManager;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringDataFactory;
@@ -170,6 +169,9 @@ public class GenericPolyhedralModel extends PolyhedralModel
 	private double cubeSize;
 	private double cubeOverlapCheck;
 
+	protected int bodyIndex;
+	protected boolean isInitialized = false;
+
     // Heuristic to avoid computationally expensive paint operations when possible.
     private Map<String, Object> paintingAttributes = null;
 
@@ -203,6 +205,14 @@ public class GenericPolyhedralModel extends PolyhedralModel
         modelNames = new String[] {uniqueModelId};
         setSmallBodyPolyData(polyData, coloringValues, coloringNames, coloringUnits, coloringValueType);
     }
+    
+    public GenericPolyhedralModel(IBodyViewConfig config, String[] modelNames, String[] modelFiles, String[] coloringFiles,
+			String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls,
+			ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource)
+    {
+    	this(config, modelNames, modelFiles, coloringFiles, coloringNames, coloringUnits, coloringHasNulls, coloringValueType, lowestResolutionModelStoredInResource, 0);
+
+    }
 
     /**
      * Note that name is used to name this small body model as a whole including all
@@ -211,9 +221,10 @@ public class GenericPolyhedralModel extends PolyhedralModel
      */
     public GenericPolyhedralModel(IBodyViewConfig config, String[] modelNames, String[] modelFiles, String[] coloringFiles,
 			String[] coloringNames, String[] coloringUnits, boolean[] coloringHasNulls,
-			ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource)
+			ColoringValueType coloringValueType, boolean lowestResolutionModelStoredInResource, int bodyIndex)
     {
         super(config);
+        this.bodyIndex = bodyIndex;
         this.coloringDataManager = CustomizableColoringDataManager.of(config.getUniqueName());
 		initializeColoringDataManager(coloringDataManager, config.getResolutionNumberElements(), coloringFiles,
 				coloringNames, coloringUnits, coloringHasNulls);
@@ -804,6 +815,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
     private void initialize(File modelFile)
     {
+    	if (isInitialized) return;
         // Load in custom plate data
         try
         {
@@ -831,7 +843,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
         initializeCellIds();
         getCellNormals();
         this.computeShapeModelStatistics();
-
+        isInitialized = true;
         // this.computeLargestSmallestEdgeLength();
         // this.computeSurfaceArea();
     }
@@ -840,6 +852,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
     public void initializeDefaultModel()
     {
+    	if (isInitialized) return;
         if (defaultModelInitialized)
         {
             return;
@@ -865,7 +878,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
         // this.computeLargestSmallestEdgeLength();
         // this.computeSurfaceArea();
-
+        isInitialized = true;
         defaultModelInitialized = true;
     }
 
@@ -1661,6 +1674,8 @@ public class GenericPolyhedralModel extends PolyhedralModel
 
     protected void computeShapeModelStatistics()
     {
+    	//For some reason, the skin OBJ is made with quads and not triangles, which causes the vtkMassProperties class to freak out and throw a bunch of warnings.  All other items are fine.  
+    	if (modelFiles[0].contains("organ-skin.obj")) return;
         vtkMassProperties massProp = new vtkMassProperties();
         massProp.SetInputData(smallBodyPolyDataAtPosition);
         massProp.Update();
@@ -1744,6 +1759,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
             resolutionLevel = getNumberResolutionLevels() - 1;
 
         reloadShapeModel();
+        this.pcs.firePropertyChange(Properties.MODEL_RESOLUTION_CHANGED, null, null);
         
     }
 
