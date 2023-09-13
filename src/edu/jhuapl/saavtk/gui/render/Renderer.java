@@ -12,6 +12,7 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -35,6 +36,7 @@ import edu.jhuapl.saavtk.camera.CameraFrame;
 import edu.jhuapl.saavtk.camera.CameraUtil;
 import edu.jhuapl.saavtk.camera.CoordinateSystem;
 import edu.jhuapl.saavtk.camera.StandardCamera;
+import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.render.toolbar.RenderToolbar;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
@@ -46,6 +48,7 @@ import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.pick.PickUtilEx;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
+import edu.jhuapl.saavtk.util.Preferences;
 import edu.jhuapl.saavtk.view.View;
 import edu.jhuapl.saavtk.view.ViewActionListener;
 import edu.jhuapl.saavtk.view.ViewChangeReason;
@@ -153,8 +156,9 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		trackballCameraInteractorStyle.AutoAdjustCameraClippingRangeOn();
 		vSmallBodyCP = PickUtilEx.formSmallBodyPicker(refSmallBody);
 
-		setBackgroundColor(new int[] { 0, 0, 0 });// Preferences.getInstance().getAsIntArray(Preferences.BACKGROUND_COLOR,
-																// new int[]{0, 0, 0}));
+		setBackgroundColor(Preferences.getInstance().getAsIntArray(Preferences.BACKGROUND_COLOR, new int[] {0,0,0}));
+		
+
 		initVtkLights();
 		setLayout(new BorderLayout());
 		add(toolbar, BorderLayout.NORTH);

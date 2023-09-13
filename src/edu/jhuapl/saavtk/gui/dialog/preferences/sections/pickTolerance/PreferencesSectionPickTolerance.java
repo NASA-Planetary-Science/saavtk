@@ -1,7 +1,9 @@
-package edu.jhuapl.saavtk.gui.dialog;
+package edu.jhuapl.saavtk.gui.dialog.preferences.sections.pickTolerance;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
 
+import edu.jhuapl.saavtk.gui.dialog.preferences.IPreferencesSection;
 import edu.jhuapl.saavtk.util.Preferences;
 
 public class PreferencesSectionPickTolerance implements IPreferencesSection {
@@ -27,7 +29,8 @@ public class PreferencesSectionPickTolerance implements IPreferencesSection {
 	}
 
 	@Override
-	public boolean updateProperties(LinkedHashMap<String, String> newPropertiesList) {
+	public boolean updateProperties(Map<String, String> newPropertiesList)
+	{
 		pickTolerance = newPropertiesList.get(Preferences.PICK_TOLERANCE);
 		prefs.put(Preferences.PICK_TOLERANCE, pickTolerance);
 		prefsInstance.put(prefs);

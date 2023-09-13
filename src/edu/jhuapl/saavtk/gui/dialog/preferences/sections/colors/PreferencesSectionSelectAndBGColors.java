@@ -1,10 +1,9 @@
-package edu.jhuapl.saavtk.gui.dialog;
+package edu.jhuapl.saavtk.gui.dialog.preferences.sections.colors;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
 
-import com.google.common.base.Joiner;
-import com.google.common.primitives.Ints;
-
+import edu.jhuapl.saavtk.gui.dialog.preferences.IPreferencesSection;
 import edu.jhuapl.saavtk.util.Preferences;
 
 public class PreferencesSectionSelectAndBGColors implements IPreferencesSection {
@@ -23,7 +22,8 @@ public class PreferencesSectionSelectAndBGColors implements IPreferencesSection 
         return ref;
     }
 	
-	private PreferencesSectionSelectAndBGColors() {
+	private PreferencesSectionSelectAndBGColors() 
+	{
 		super();
 		prefs = new LinkedHashMap<String, String>();
 		prefsInstance = Preferences.getInstance();
@@ -32,7 +32,8 @@ public class PreferencesSectionSelectAndBGColors implements IPreferencesSection 
 	}
 
 	@Override
-	public boolean updateProperties(LinkedHashMap<String, String> newPropertiesList) {
+	public boolean updateProperties(Map<String, String> newPropertiesList) 
+	{
 		selectionColor = newPropertiesList.get(Preferences.SELECTION_COLOR);
 		backgroundColor = newPropertiesList.get(Preferences.BACKGROUND_COLOR);
 		prefs.put(Preferences.SELECTION_COLOR, selectionColor);

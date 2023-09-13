@@ -29,6 +29,11 @@ public class MapUtil
             map = new LinkedHashMap<String, String>();
         }
     }
+    
+    public Map<String, String> getMap()
+    {
+    	return map;
+    }
 
     public boolean containsKey(String key)
     {
