@@ -4,7 +4,7 @@ stages:
   - deploy
 
 variables: 
-  JAVA_HOME: "/Users/gitlab-runner/Java_Versions/current/jdk-17.0.2.jdk/Contents/Home" # Sets Java version to run (see /opt for details)
+  JAVA_HOME: "/opt/openjdk17" # Sets Java version to run (see /opt for details)
   # Sets the artifact cache to a local directory within build area
   MAVEN_CLI_OPTS: "-Dmaven.repo.local=../.m2/repository --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN"
 
