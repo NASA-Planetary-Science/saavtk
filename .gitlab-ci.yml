@@ -32,14 +32,20 @@ maven build:
     - mvn $MAVEN_CLI_OPTS clean compile
   rules:
     - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
-      when: manual
+      when: always
     - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+      when: always
 
 maven verify:
   stage: verify
   script:
     # -fn indicates that it should never fail, this allows artifacts to be built even when unit tests fail to execute successfully
     - mvn $MAVEN_CLI_OPTS clean verify
+  rules:
+    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+      when: always
+    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+      when: always
   # instruct gitlab to capture the test reports
   # test reporting to be handled in gitlab requires:
   #   sudo gitlab-rails console
@@ -60,5 +66,11 @@ maven deploy:
     # -DskipTests will not execute unit tests, this should allow the artifact to be deployed if unit tests fail in the previous stage
     # -Dmaven.test.skip=true will also stop the unit tests from being compiled--which potentially would speed this up
     - mvn $MAVEN_CLI_OPTS -DskipTests clean deploy
-  when: manual
+  rules:
+  - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+    when: manual
+  - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+    when: manual
+
+  #when: manual
 
