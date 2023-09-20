@@ -18,12 +18,6 @@ workflow:
       when: always
     # if the first statement fails, never succeed
     - when: never
-
-
-# Cache the artifact repository (not the target directory, as that causes old classes that are deleted to persist, and be deployed when they shouldn't be).
-#cache:
-#  paths:
-#    - .m2/repository/ 
         
 maven build:
   stage: build
@@ -67,9 +61,7 @@ maven deploy:
     # -Dmaven.test.skip=true will also stop the unit tests from being compiled--which potentially would speed this up
     - mvn $MAVEN_CLI_OPTS -DskipTests clean deploy
   rules:
-    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
-      when: manual
-    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
-      when: manual
-  when: manual
-
+  - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+    when: manual
+  - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+    when: manual
