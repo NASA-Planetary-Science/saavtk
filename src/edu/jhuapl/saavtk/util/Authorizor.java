@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.util;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -11,8 +12,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 
 /**
  * Facility for wetting up user-name/password-based authentication using
@@ -41,9 +44,15 @@ public class Authorizor
             return new PasswordAuthentication(userName, password);
         }
     }
+    
+    @FunctionalInterface
+	public interface UrlChecker {
+		UrlState checkAccess();
+	}
 
     private final Path credentialsFilePath;
     private final AtomicReference<SecureAuthenticator> authenticator;
+    private final UrlChecker urlChecker;
 
     /**
      * Construct an authorizor that uses the provided path for the file used to
@@ -51,11 +60,11 @@ public class Authorizor
      *
      * @param credentialsFilePath the path to the credentials file
      */
-    protected Authorizor(Path credentialsFilePath)
-    {
-        this.credentialsFilePath = credentialsFilePath;
-        this.authenticator = new AtomicReference<>(null);
-    }
+	protected Authorizor(Path credentialsFilePath, UrlChecker urlChecker) {
+		this.credentialsFilePath = credentialsFilePath;
+		this.authenticator = new AtomicReference<>(null);
+		this.urlChecker = urlChecker;
+	}
 
     /**
      * Get the user name currently in use by the authorizor utility. May be null,
@@ -122,13 +131,12 @@ public class Authorizor
     }
 
     /**
-     * Load credentials from the credentials file path and attempt authentication,
-     * using the {@link FileCache} facility to determine the result. The result of
-     * the authentication attempt is indicated by the returned {@line UrlState}
-     * object. If the results were successful, the user name will be retained and
-     * may be obtained by future calls to the {@link #getUserName()} method. If
-     * authentication did not succeed, future calls to {@link #getUserName()} will
-     * return null.
+     * Load credentials from the credentials file path and attempt authentication.
+     * The result of the authentication attempt is indicated by the returned
+     * {@line UrlState} object. If the results were successful, the user name will
+     * be retained and may be obtained by future calls to the {@link #getUserName()}
+     * method. If authentication did not succeed, future calls to {@link #getUserName()}
+     * will return null.
      * <p>
      * This method may be called any number of times. The {@link #getUserName()}
      * method will always return the latest name defined (or null).
@@ -190,7 +198,7 @@ public class Authorizor
             }
             else
             {
-                result = FileCache.instance().queryRootState();
+                result = urlChecker.checkAccess();
             }
 
             return result;
@@ -202,8 +210,7 @@ public class Authorizor
     }
 
     /**
-     * Attempt authentication using the provided credentials, using the
-     * {@link FileCache} facility to determine the result. The result of the
+     * Attempt authentication using the provided credentials. The result of the
      * authentication attempt is indicated by the returned {@line UrlState} object.
      * If the results were successful, the user name will be retained and may be
      * obtained by future calls to the {@link #getUserName()} method. If
@@ -231,7 +238,7 @@ public class Authorizor
         Authenticator.setDefault(null);
         Authenticator.setDefault(authenticator);
 
-        UrlState rootState = FileCache.instance().queryRootState();
+        UrlState rootState = urlChecker.checkAccess();
 
         if (rootState.getStatus() == UrlStatus.ACCESSIBLE)
         {
@@ -334,7 +341,7 @@ public class Authorizor
         URL dataRootUrl = Configuration.getDataRootURL();
         System.out.println("Testing authorizations against " + dataRootUrl);
 
-        Authorizor auth = new Authorizor(SafeURLPaths.instance().get(System.getProperty("user.home"), "authorizer-password.txt"));
+        Authorizor auth = new Authorizor(SafeURLPaths.instance().get(System.getProperty("user.home"), "authorizer-password.txt"), () -> { return FileCache.instance().queryRootState(); });
 
         String userName = "joe";
         char[] password = null;

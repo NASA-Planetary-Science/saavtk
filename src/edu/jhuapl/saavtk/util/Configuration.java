@@ -73,7 +73,7 @@ public class Configuration
 
     public static AuthorizorSwingUtil getSwingAuthorizor()
     {
-        SwingAuthorizor.compareAndSet(null, AuthorizorSwingUtil.of(SAFE_URL_PATHS.get(getApplicationDataDir(), "password.txt")));
+        SwingAuthorizor.compareAndSet(null, AuthorizorSwingUtil.of(SAFE_URL_PATHS.get(getApplicationDataDir(), "password.txt"), () -> { return FileCache.instance().queryRootState(); }));
 
         return SwingAuthorizor.get();
     }
