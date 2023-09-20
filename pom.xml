@@ -472,7 +472,7 @@
 				<version>3.1.0</version>
 				<executions>
 					<execution>
-						<?m2e execute onConfiguration?>
+						<?m2e execute onConfiguration,onIncremental?>
 						<phase>compile</phase>
            				<configuration>
 							<target>
@@ -488,7 +488,7 @@
 					</execution>
 					<execution>
 						<id>toolbar_icons</id>
-						<?m2e execute onConfiguration?>
+						<?m2e execute onConfiguration,onIncremental?>
 						<phase>compile</phase>
 						<configuration>
 							<target>
@@ -506,7 +506,7 @@
 					</execution>
 					<execution>
 						<id>icons</id>
-						<?m2e execute onConfiguration?>
+						<?m2e execute onConfiguration,onIncremental?>
 						<phase>compile</phase>
 						<configuration>
 							<target>
