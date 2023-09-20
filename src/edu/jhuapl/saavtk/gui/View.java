@@ -48,7 +48,7 @@ public abstract class View extends JPanel
     /** Global to keep track of the most recent change in any (splitPane) divider location. */
     private static int globLastDividerLocation = -1;
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
     protected JSplitPane splitPane;
     protected Renderer renderer;
     protected JTabbedPane controlPanel;
@@ -264,7 +264,7 @@ public abstract class View extends JPanel
                     @Override
                     public void propertyChange(@SuppressWarnings("unused") PropertyChangeEvent pce)
                     {
-                  	  globLastDividerLocation = splitPane.getDividerLocation();
+                    	globLastDividerLocation = splitPane.getDividerLocation();
                     }
                 });
 
@@ -273,11 +273,12 @@ public abstract class View extends JPanel
 
                 this.add(splitPane, BorderLayout.CENTER);
 
-                // Configure the splitPane to match the most recent settings
+ 				// Configure the splitPane to match the most recent settings
                 var dividerLocation = globLastDividerLocation;
                 if (globLastDividerLocation <= 0)
                     dividerLocation = MainWindow.getMainWindow().getMainAppCfg().mainSplitSize();
                 splitPane.setDividerLocation(dividerLocation);
+
 
                 renderer.getRenderWindowPanel().resetCamera();
 
@@ -340,7 +341,7 @@ public abstract class View extends JPanel
     {
         return modelManager.getModel(name);
     }
-    
+
     protected List<Model> getModels(ModelNames name)
     {
         return modelManager.getModels(name);
@@ -414,7 +415,7 @@ public abstract class View extends JPanel
     protected abstract void setupInfoPanelManager();
 
     protected abstract void setupSpectrumPanelManager();
-    
+
     protected abstract void setupPositionOrientationManager();
 
     protected void setupRenderer()

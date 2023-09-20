@@ -50,7 +50,7 @@ public class NativeLibraryLoader
         	System.out.println("Will unpack to : " + nativeDir);
 
         try {
-            NativeLibraryLoader.initialize(nativeDir);
+			NativeLibraryLoader.initialize(nativeDir);
             System.out.println("VTK: Initialization done, ");
         } catch (Throwable t) {
             System.err.println("Initialization failed with " + t.getClass().getSimpleName() + ", stacktrace follows.");
@@ -232,15 +232,6 @@ public class NativeLibraryLoader
      */
     public static void loadAllVtkLibraries()
     {
-//    	try {
-//    		File nativeDir = new File(System.getProperty("user.home") + File.separator +".nativelibs");
-//			VtkNativeLibraries.initialize(nativeDir);
-//		} catch (VtkJavaNativeLibraryException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//    	System.out.println("NativeLibraryLoader: loadAllVtkLibraries: unpacking natives");
-    	unpackNatives();
         if (isVtkInitialized.compareAndSet(false, true))
         {
             if (Configuration.isHeadless())
@@ -290,10 +281,7 @@ public class NativeLibraryLoader
                 try
                 {
                     if (!lib.IsLoaded())
-                    {
-//                    	System.out.println("NativeLibraryLoader: loadAllVtkLibraries: loading " + lib.GetLibraryName());
-//                        lib.LoadLibrary();
-                    	
+                    {                    	
                     	if (System.getProperty("os.name").contains("Mac"))
                     			System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".jnilib").getAbsolutePath());
                     	else if (System.getProperty("os.name").contains("Win"))
@@ -361,7 +349,14 @@ public class NativeLibraryLoader
                             && !lib.GetLibraryName().startsWith("vtkFiltersParallel")
                             && !lib.GetLibraryName().startsWith("vtkGeovis"))
                     {
-                    	System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".jnilib").getAbsolutePath());
+                    	if (System.getProperty("os.name").contains("Mac"))
+                			System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".jnilib").getAbsolutePath());
+	                	else if (System.getProperty("os.name").contains("Win"))
+	            			System.load(new File(nativeVTKLibraryDir, lib.GetLibraryName() + ".dll").getAbsolutePath());
+	                	else
+	            			System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".so").getAbsolutePath());
+                    	
+//                    	System.load(new File(nativeVTKLibraryDir, "lib" + lib.GetLibraryName() + ".jnilib").getAbsolutePath());
 //                        lib.LoadLibrary();
                     }
                 }

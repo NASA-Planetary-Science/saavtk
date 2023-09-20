@@ -31,6 +31,7 @@ import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
 import edu.jhuapl.saavtk.gui.render.RenderIoUtil;
+import edu.jhuapl.saavtk.gui.util.FileExtensionsAndDescriptions;
 import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
@@ -52,7 +53,7 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
 public class FileMenu extends JMenu
 {
 	private static final long serialVersionUID = 1L;
-	private final ImmutableList<String> fileExtensions;
+	private final ImmutableList<?> fileExtensions;
 	private final ViewManager rootPanel;
 	private PreferencesDialog preferencesDialog;
 	public JFrame frame;
@@ -62,7 +63,7 @@ public class FileMenu extends JMenu
 		this(rootPanel, ImmutableList.of());
 	}
 
-	public FileMenu(ViewManager rootPanel, Iterable<String> fileExtensions)
+	public FileMenu(ViewManager rootPanel, Iterable<?> fileExtensions)
 	{
 		super("File");
 		this.fileExtensions = ImmutableList.copyOf(fileExtensions);
@@ -84,7 +85,7 @@ public class FileMenu extends JMenu
 		saveShapeModelMenu.add(mi);
 		mi = new JMenuItem(new SaveShapeModelAsSTLAction());
 		saveShapeModelMenu.add(mi);
-		
+
 		mi = new JMenuItem(new SaveSceneAsOBJAction());
 		this.add(mi);
 
@@ -114,13 +115,13 @@ public class FileMenu extends JMenu
 			mi = new JMenuItem(new ExitAction());
 			this.add(mi);
 		}
-		else
-		{
-			try
+        else
+        {
+        	try
 			{
 				Desktop.getDesktop().setPreferencesHandler(new PreferencesHandler() {
                     @Override
-						public void handlePreferences(java.awt.desktop.PreferencesEvent e) {
+                    public void handlePreferences(java.awt.desktop.PreferencesEvent e) {
                         showPreferences();
                     }
                 });
@@ -135,7 +136,7 @@ public class FileMenu extends JMenu
 			{
 				e.printStackTrace();
 			}
-		}
+        }
 	}
 
 	public void showPreferences()
@@ -272,7 +273,7 @@ public class FileMenu extends JMenu
 			}
 		}
 	}
-	
+
 	private class SaveSceneAsOBJAction extends AbstractAction 
 	{
 		public SaveSceneAsOBJAction() 
@@ -347,7 +348,7 @@ public class FileMenu extends JMenu
 				return;
 			}
 		}
-	}
+    }
 
 	private class SaveShapeModelAsSTLAction extends AbstractAction
 	{
