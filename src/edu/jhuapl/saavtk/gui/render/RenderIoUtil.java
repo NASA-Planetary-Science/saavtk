@@ -163,15 +163,10 @@ public class RenderIoUtil
 			aRenWin.getVTKLock().lock();
 			vtkResizingWindowToImageFilter windowToImage = new vtkResizingWindowToImageFilter();
 			
-			double javaHeight = aRenWin.getComponent().getHeight();
-			double scale = ScreenUtil.getScreenScale(aRenWin);
-			int divider = 1;
-			if (scale != 1)
-				divider = 2;
+			int divider = ScreenUtil.getScreenScale(aRenWin) != 1 ? 2 : 1;
 				
 			windowToImage.SetSize(aRenWin.getRenderWindow().GetSize()[0]/divider, aRenWin.getRenderWindow().GetSize()[1]/divider);
 			windowToImage.SetInput(aRenWin.getRenderWindow());
-//			windowToImage.ShouldRerenderOn();
 
 			String filename = aFile.getAbsolutePath();
 			if (filename.toLowerCase().endsWith("bmp"))
