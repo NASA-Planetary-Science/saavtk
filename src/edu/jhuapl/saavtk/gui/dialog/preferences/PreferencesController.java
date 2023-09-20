@@ -31,11 +31,12 @@ public class PreferencesController
 		this.controllers = Lists.newArrayList();
 		this.renderPanel = viewManager.getCurrentView().getRenderer().getRenderWindowPanel();
 				
-		controllers.add(new PreferencesSectionProxyController());
-		controllers.add(new PreferencesSectionColorMapController());
 		controllers.add(new PreferencesSectionColorsController());
+		controllers.add(new PreferencesSectionColorMapController());
 		controllers.add(new PreferencesSectionPickToleranceController());
 		controllers.add(new PreferencesSectionWindowSizeController(renderPanel.getComponent().getSize().width));
+		controllers.add(new PreferencesSectionProxyController());
+
 		
 		dialog.setPreferenceSections(controllers);
 		

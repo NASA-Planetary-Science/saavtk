@@ -26,7 +26,8 @@ public class PreferencesSectionWindowSizeController implements IPreferencesContr
          windowSizeUI.getWindowWidthTextField().setValue(window.getSize().width);
          windowSizeUI.getWindowHeightTextField().setValue(window.getSize().height);
 
-         windowSizeUI.getPanelWidthTextField().setValue(window.getSize().width - ViewManager.getGlobalViewManager().getCurrentView().getMainSplitPane().getDividerLocation());
+         windowSizeUI.getPanelHeightTextField().setText("" + (window.getSize().height-100));
+         windowSizeUI.getPanelWidthTextField().setValue(window.getSize().width - ViewManager.getGlobalViewManager().getCurrentView().getMainSplitPane().getDividerLocation()-11);
 	}
 
 	@Override
@@ -46,6 +47,7 @@ public class PreferencesSectionWindowSizeController implements IPreferencesContr
 		window.setSize((int) windowSizeUI.getPanelWidthTextField().getValue() + view.getMainSplitPane().getDividerLocation() + 27,
 				(int) (windowSizeUI.getWindowHeightTextField().getValue()) + 128);
 
+		windowSizeUI.getPanelHeightTextField().setText("" + ((int) (windowSizeUI.getWindowHeightTextField().getValue()) - 100));
 		return windowModel.updateProperties(newPropertiesList);
 	}
 

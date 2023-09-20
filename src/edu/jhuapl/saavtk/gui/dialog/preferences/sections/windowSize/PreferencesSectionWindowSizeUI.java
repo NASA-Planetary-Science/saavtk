@@ -16,12 +16,14 @@ public class PreferencesSectionWindowSizeUI extends JPanel
 	private JPanel panelDimsPanel;
 	private JPanel panelDimsTitlePanel;
 	private JSpinner panelWidthTextField;
+	private JLabel panelHeightTextField;
 	private JPanel windowDimsPanel;
 	private JPanel windowDimsTitlePanel;
 	private JSpinner windowWidthTextField;
 	private JSpinner windowHeightTextField;
 	private JLabel jLabel26;
     private JLabel jLabel27;
+    private JLabel jLabel28;
     private JLabel jLabel29;
     private JLabel jLabel30;
     private JLabel jLabel31;
@@ -41,8 +43,10 @@ public class PreferencesSectionWindowSizeUI extends JPanel
 		jLabel26 = new JLabel();
 		jSeparator11 = new JSeparator();
 		jLabel27 = new JLabel();
+		jLabel28 = new JLabel();
 		SpinnerModel panelWidthModel = new SpinnerNumberModel(1200, 800, 3000, 10);
 		panelWidthTextField = new JSpinner(panelWidthModel);
+		panelHeightTextField = new JLabel();
 		windowDimsPanel = new JPanel();
 		windowDimsTitlePanel = new JPanel();
 		jLabel29 = new JLabel();
@@ -98,6 +102,20 @@ public class PreferencesSectionWindowSizeUI extends JPanel
         gridBagConstraints.weightx = 1.0;
         panelDimsPanel.add(panelWidthTextField, gridBagConstraints);
         
+        jLabel28.setText("Height (Pixels): ");
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new Insets(0, 4, 0, 4);
+        panelDimsPanel.add(jLabel28, gridBagConstraints);
+        
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = GridBagConstraints.LINE_START;
+        gridBagConstraints.weightx = 1.0;
+        panelDimsPanel.add(panelHeightTextField, gridBagConstraints);
+        
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 40;
@@ -112,7 +130,7 @@ public class PreferencesSectionWindowSizeUI extends JPanel
         // Start of window dimensions
 		windowDimsTitlePanel.setLayout(new GridBagLayout());
 
-		jLabel29.setText("Screen Dimensions");
+		jLabel29.setText("App Window Dimensions");
 		gridBagConstraints = new GridBagConstraints();
 		gridBagConstraints.gridx = 0;
 		gridBagConstraints.gridy = 0;
@@ -193,4 +211,8 @@ public class PreferencesSectionWindowSizeUI extends JPanel
 		return panelWidthTextField;
 	}
 
+	public JLabel getPanelHeightTextField()
+	{
+		return panelHeightTextField;
+	}
 }

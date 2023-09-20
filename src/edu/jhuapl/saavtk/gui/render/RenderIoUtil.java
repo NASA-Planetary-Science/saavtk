@@ -12,14 +12,15 @@ import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.MathUtil;
+import edu.jhuapl.saavtk.util.ScreenUtil;
 import vtk.vtkBMPWriter;
 import vtk.vtkCamera;
 import vtk.vtkJPEGWriter;
 import vtk.vtkPNGWriter;
 import vtk.vtkPNMWriter;
 import vtk.vtkPostScriptWriter;
+import vtk.vtkResizingWindowToImageFilter;
 import vtk.vtkTIFFWriter;
-import vtk.vtkWindowToImageFilter;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 /**
@@ -160,9 +161,17 @@ public class RenderIoUtil
 			}
 
 			aRenWin.getVTKLock().lock();
-			vtkWindowToImageFilter windowToImage = new vtkWindowToImageFilter();
+			vtkResizingWindowToImageFilter windowToImage = new vtkResizingWindowToImageFilter();
+			
+			double javaHeight = aRenWin.getComponent().getHeight();
+			double scale = ScreenUtil.getScreenScale(aRenWin);
+			int divider = 1;
+			if (scale != 1)
+				divider = 2;
+				
+			windowToImage.SetSize(aRenWin.getRenderWindow().GetSize()[0]/divider, aRenWin.getRenderWindow().GetSize()[1]/divider);
 			windowToImage.SetInput(aRenWin.getRenderWindow());
-			windowToImage.ShouldRerenderOn();
+//			windowToImage.ShouldRerenderOn();
 
 			String filename = aFile.getAbsolutePath();
 			if (filename.toLowerCase().endsWith("bmp"))

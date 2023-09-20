@@ -54,7 +54,7 @@ public class PreferencesDialog extends JDialog
     {
         super(parent, modal);
         initComponents();
-        setTitle("Preferences");
+        setTitle("Settings");
     }
     
     public void setPreferenceSections(List<IPreferencesController> controllers)
