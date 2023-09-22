@@ -146,12 +146,12 @@ public class PreferencesSectionColorsUI extends JPanel
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.insets = new Insets(0, 0, 0, 5);
-        buttonsPanel.add(applyToCurrentButton, gridBagConstraints);
+//        buttonsPanel.add(applyToCurrentButton, gridBagConstraints);
 
-        applyToAllButton.setText("Apply to All Views");
+        applyToAllButton.setText("Apply to Main Renderer");
 
         gridBagConstraints = new GridBagConstraints();
-        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridx = 4;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.insets = new Insets(0, 0, 0, 5);
         buttonsPanel.add(applyToAllButton, gridBagConstraints);

@@ -1,5 +1,6 @@
 package edu.jhuapl.saavtk.gui.dialog.preferences.sections.windowSize;
 
+import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -30,6 +31,8 @@ public class PreferencesSectionWindowSizeUI extends JPanel
 
 	private JSeparator jSeparator11;
 	private JSeparator jSeparator12;
+	
+	private JLabel errorLabel;
 
 	public PreferencesSectionWindowSizeUI()
 	{
@@ -38,6 +41,8 @@ public class PreferencesSectionWindowSizeUI extends JPanel
 	
 	private void initGUI()
 	{
+		errorLabel = new JLabel("");
+		errorLabel.setForeground(Color.red);
 		panelDimsPanel = new JPanel();
 		panelDimsTitlePanel = new JPanel();
 		jLabel26 = new JLabel();
@@ -194,6 +199,17 @@ public class PreferencesSectionWindowSizeUI extends JPanel
 		gridBagConstraints.weighty = 1.0;
 		add(windowDimsPanel, gridBagConstraints);
 		// End of window dimensions
+		
+		gridBagConstraints = new GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 43;
+		gridBagConstraints.gridwidth = 4;
+		gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+		gridBagConstraints.insets = new Insets(5, 0, 5, 0);
+		gridBagConstraints.anchor = GridBagConstraints.LINE_START;
+		gridBagConstraints.weightx = 1.0;
+		gridBagConstraints.weighty = 1.0;
+		add(errorLabel, gridBagConstraints);
 	}
 
 	public JSpinner getWindowWidthTextField()
@@ -214,5 +230,10 @@ public class PreferencesSectionWindowSizeUI extends JPanel
 	public JLabel getPanelHeightTextField()
 	{
 		return panelHeightTextField;
+	}
+	
+	public JLabel getErrorLabel()
+	{
+		return errorLabel;
 	}
 }

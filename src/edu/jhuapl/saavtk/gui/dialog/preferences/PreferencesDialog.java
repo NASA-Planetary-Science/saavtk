@@ -143,7 +143,7 @@ public class PreferencesDialog extends JDialog
         // Beginning of buttons section at bottom of preference changes section panel
         buttonsPanel.setLayout(new GridBagLayout());
 
-        applyButton.setText("Apply");
+        applyButton.setText("Apply & Save Settings");
        
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
