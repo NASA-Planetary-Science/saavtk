@@ -65,6 +65,7 @@ public class RenderToolbar extends JToolBar implements ActionListener
 		priImage = ImageUtil.replaceAlpha(priImage, Color.WHITE, 0);
 		secImage = ImageUtil.colorize(priImage, dyeColor);
 		showOrientationAxesTB = GuiUtil.formToggleButton(this, priImage, secImage, "Show Orientation Axes");
+		showOrientationAxesTB.setSelected(true);
 
 		priImage = loadImage("pqPickCenter.png", iconSize, iconSize);
 //		priImage = ImageUtil.replaceAlpha(secImage, Color.WHITE, 0);
@@ -124,15 +125,11 @@ public class RenderToolbar extends JToolBar implements ActionListener
 		add(xAxisLockTB);
 		add(yAxisLockTB);
 		add(zAxisLockTB);
-
-		// Register for events of interest
-		aRenderPanel.getAxesFrame().addComponentListener(new ComponentAdapter() {
-			@Override
-			public void componentHidden(ComponentEvent aEvent)
-			{
-				showOrientationAxesTB.setSelected(false);
-			}
-		});
+	}
+	
+	public JToggleButton getAxesButton()
+	{
+		return showOrientationAxesTB;
 	}
 
 	/**
@@ -148,9 +145,7 @@ public class RenderToolbar extends JToolBar implements ActionListener
 	{
 		Object source = aEvent.getSource();
 
-		if (source == showOrientationAxesTB)
-			refRenderPanel.setAxesFrameVisible(showOrientationAxesTB.isSelected());
-		else if (source == pickRotationCenterTB)
+		if (source == pickRotationCenterTB)
 			;
 //			fire(new RenderToolbarEvent.PickRotationCenterEvent(this, pickRotationCenterTB.isSelected()));
 //			firePropertyChange(pickRotationCenterProperty, null, null);

@@ -80,7 +80,7 @@ public class PreferencesDialog extends javax.swing.JDialog
             updateColorLabel(rgbArr, backgroundColorLabel);
 
             RenderPanel renderPanel = viewManager.getCurrentView().getRenderer().getRenderWindowPanel();
-            AxesPanel axesPanel = renderPanel.getAxesPanel();
+//            AxesPanel axesPanel = renderPanel.getAxesPanel();
 
             defaultColorMapSelection.setSelectedItem(Colormaps.getCurrentColormapName());
 
@@ -130,9 +130,9 @@ public class PreferencesDialog extends javax.swing.JDialog
             renderer.setBackgroundColor(rgbArr);
 
             RenderPanel renderPanel = v.getRenderer().getRenderWindowPanel();
-            AxesPanel axesPanel = renderPanel.getAxesPanel();
-            axesPanel.getRenderer().SetBackground(rgbArr[0] / 255.0, rgbArr[1] / 255.0, rgbArr[2] / 255.0);
-            axesPanel.Render();
+//            AxesPanel axesPanel = renderPanel.getAxesPanel();
+//            axesPanel.getRenderer().SetBackground(rgbArr[0] / 255.0, rgbArr[1] / 255.0, rgbArr[2] / 255.0);
+//            axesPanel.Render();
 
             /*
              * axesPanel.setxColor(getColorInstanceFromLabel(xAxisColorLabel));
