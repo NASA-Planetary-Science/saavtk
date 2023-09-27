@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.gui.dialog.preferences.sections.windowSize;
 
 import java.awt.Dimension;
+import java.awt.GraphicsEnvironment;
 import java.awt.Toolkit;
 import java.util.Map;
 
@@ -23,13 +24,13 @@ public class PreferencesSectionWindowSizeController implements IPreferencesContr
 		this.windowSizeUI = new PreferencesSectionWindowSizeUI();
 		this.windowModel = PreferencesSectionWindowSize.getInstance();
 		this.renderPanelWidth = renderPanelWidth;
-		
-		 MainWindow window = MainWindow.getMainWindow();
-         windowSizeUI.getWindowWidthTextField().setValue(window.getSize().width);
-         windowSizeUI.getWindowHeightTextField().setValue(window.getSize().height);
+		windowSizeUI.getErrorLabel().setText("");
+		MainWindow window = MainWindow.getMainWindow();
+        windowSizeUI.getWindowWidthTextField().setValue(window.getSize().width);
+        windowSizeUI.getWindowHeightTextField().setValue(window.getSize().height);
 
-         windowSizeUI.getPanelHeightTextField().setText("" + (window.getSize().height-100));
-         windowSizeUI.getPanelWidthTextField().setValue(window.getSize().width - ViewManager.getGlobalViewManager().getCurrentView().getMainSplitPane().getDividerLocation()-11);
+        windowSizeUI.getPanelHeightTextField().setText("" + (window.getSize().height-100));
+        windowSizeUI.getPanelWidthTextField().setValue(window.getSize().width - ViewManager.getGlobalViewManager().getCurrentView().getMainSplitPane().getDividerLocation()-11);
 	}
 
 	@Override
@@ -63,7 +64,7 @@ public class PreferencesSectionWindowSizeController implements IPreferencesContr
 	
 	private String checkForErrors()
 	{
-		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+		Dimension screenSize = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds().getSize();
 		String errorMessage = "";
 		if ((int)windowSizeUI.getWindowHeightTextField().getValue() > screenSize.getHeight())
 			errorMessage = "App Window height cannot exceed screen height (" + screenSize.getHeight() + ")";
