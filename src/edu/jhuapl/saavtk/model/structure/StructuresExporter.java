@@ -127,35 +127,12 @@ public class StructuresExporter
     	return body.getModelName().replaceAll(" ", "_").replaceAll("/", "-")+"."+modelName+".shp";
     }
 
-    public static void exportToVtkFile(AbstractEllipsePolygonModel aPointManager, Path vtkFile, boolean multipleFiles)
+    public static <G1 extends PolyLine> void exportToVtkFile(LineModel<G1> aLineManager, Collection<G1> aItemC, Path vtkFile, boolean multipleFiles)
     {
- 		// Determine the structures to be exported
- 		Collection<Ellipse> tmpC = aPointManager.getSelectedItems();
- 		if (tmpC.isEmpty() == true)
- 			tmpC = aPointManager.getAllItems();
-
-    	Map<Integer, PointStructure> structuresToWrite = new HashMap<>();
-
-    	// Export the structures
- 		for (Ellipse aItem : tmpC)
-		{
-			Vector3D center=aPointManager.getCenter(aItem);
-			Color color=aPointManager.getColor(aItem);
-			// TODO: finish this
-		}
-    }
-
-    public static void exportToVtkFile(LineModel<PolyLine> aLineManager, Path vtkFile, boolean multipleFiles)
-    {
- 		// Determine the structures to be exported
- 		Collection<PolyLine> tmpC = aLineManager.getSelectedItems();
- 		if (tmpC.isEmpty() == true)
- 			tmpC = aLineManager.getAllItems();
-
 		Map<Integer, LineStructure> structuresToWrite = new HashMap<>();
 
  		// Export the structures
- 		for (PolyLine aItem : tmpC)
+ 		for (var aItem : aItemC)
  		{
  			List<Vector3D> xyzPointL = aLineManager.getXyzPointsFor(aItem);
 
