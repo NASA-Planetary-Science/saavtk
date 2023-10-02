@@ -39,6 +39,9 @@ public class Preferences extends MapUtil
     public static final String AXES_FONT_COLOR = "AxesFontColor";
     public static final String AXES_CONE_LENGTH = "AxesConeLength";
     public static final String AXES_CONE_RADIUS = "AxesConeRadius";
+    public static final String PROXY_HOST = "ProxyHost";
+    public static final String PROXY_PORT = "ProxyPort";
+    public static final String PROXY_ENABLED = "ProxyEnabled";
 
     private static final String preferencesPath = Configuration.getApplicationDataDir() + File.separator + "preferences.txt";
 

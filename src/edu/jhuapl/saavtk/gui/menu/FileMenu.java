@@ -29,7 +29,8 @@ import crucible.crust.metadata.api.Serializer;
 import crucible.crust.metadata.impl.gson.Serializers;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
-import edu.jhuapl.saavtk.gui.dialog.PreferencesDialog;
+import edu.jhuapl.saavtk.gui.dialog.preferences.PreferencesController;
+import edu.jhuapl.saavtk.gui.dialog.preferences.PreferencesDialog;
 import edu.jhuapl.saavtk.gui.render.RenderIoUtil;
 import edu.jhuapl.saavtk.gui.util.FileExtensionsAndDescriptions;
 import edu.jhuapl.saavtk.model.ModelNames;
@@ -143,8 +144,9 @@ public class FileMenu extends JMenu
 	{
 		if (preferencesDialog == null)
 		{
-			preferencesDialog = new PreferencesDialog(null, false);
-			preferencesDialog.setViewManager(rootPanel);
+			PreferencesController controller = new PreferencesController(null, false, rootPanel);
+			preferencesDialog = controller.getDialog();
+//			preferencesDialog.setViewManager(rootPanel);
 		}
 
 		preferencesDialog.setLocationRelativeTo(rootPanel);
