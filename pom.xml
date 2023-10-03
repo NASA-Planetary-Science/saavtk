@@ -19,11 +19,11 @@
 		<url>http://surfshop.jhuapl.edu:8081/artifactory/libs-release-local</url>
 	  </repository>
 -->
-	  <snapshotRepository>
+	  <repository>
 		<id>central</id>
 		<name>surfshop-snapshots</name>
 		<url>http://surfshop.jhuapl.edu:8081/artifactory/libs-snapshot-local</url>
-	  </snapshotRepository>
+	  </repository>
     </distributionManagement>
     <properties>
 	  <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
