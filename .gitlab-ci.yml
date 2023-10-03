@@ -65,7 +65,7 @@ pom to next version:
     - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
       when: never
     - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
-      when: always
+      when: never
 
 maven build:
   stage: build
