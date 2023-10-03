@@ -151,6 +151,10 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 
 		camera = formCamera(refSmallBody, mainCanvas);
 		toolbar = new RenderToolbar(mainCanvas, camera);
+		toolbar.getAxesButton().addActionListener(e -> {
+			axesWidget.GetOrientationMarker().SetVisibility(toolbar.getAxesButton().isSelected() ? 1 : 0);
+			notifySceneChange();
+		});
 
 		trackballCameraInteractorStyle = new vtkInteractorStyleTrackballCamera();
 		trackballCameraInteractorStyle.AutoAdjustCameraClippingRangeOn();
@@ -171,8 +175,6 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		mainCanvas.getRenderWindowInteractor().AddObserver("EndInteractionEvent", this, "onEndInteraction");
 
 		SwingUtilities.invokeLater(() -> notifySceneChange());
-
-//		((GenericPolyhedralModel) refSmallBody).sortPolydata(mainCanvas.getActiveCamera());
 
 		// Register for events of interest
 		camera.addCameraChangeListener(this);
@@ -237,8 +239,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 	 */
 	public void dispose()
 	{
-		// Ensure the AxesFrame is hidden
-		mainCanvas.setAxesFrameVisible(false);
+
 	}
 
 	/**
@@ -435,12 +436,12 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 
 	public void viewDeactivating()
 	{
-		mainCanvas.getAxesFrame().setVisible(false);
+
 	}
 
 	public void viewActivating()
 	{
-		mainCanvas.getAxesFrame().setVisible(toolbar.getOrientationAxesToggleState());
+
 	}
 
 	public RenderPanel getRenderWindowPanel()
@@ -608,7 +609,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		{
 			if (frame.staged && frame.file != null)
 			{
-				RenderIoUtil.saveToFile(frame.file, mainCanvas, mainCanvas.getAxesPanel());
+				RenderIoUtil.saveToFile(frame.file, mainCanvas /*, mainCanvas.getAxesPanel()*/);
 				cameraFrameQueue.remove();
 			}
 			else

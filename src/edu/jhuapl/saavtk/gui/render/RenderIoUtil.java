@@ -121,27 +121,27 @@ public class RenderIoUtil
 
 		tmpPanel.Render();
 		File file = CustomFileChooser.showSaveDialog(aRenderer, "Export to PNG Image", "image.png", "png");
-		saveToFile(file, tmpPanel, tmpPanel.getAxesPanel());
+		saveToFile(file, tmpPanel /*, tmpPanel.getAxesPanel()*/);
 	}
 
-	public static void saveToFile(File aFile, vtkJoglPanelComponent aRenWin, AxesPanel aAxesWin)
-	{
-		saveToFile(aFile, aRenWin);
-		if (aAxesWin != null && ((RenderPanel) aRenWin).isAxesPanelVisible())
-		{
-			// axesWin.printModeOn();
-			// axesWin.setSize(200, 200);
-			RenderPanel renderPanel = (RenderPanel) aRenWin;
-			// boolean visible=renderPanel.axesFrame.isVisible();
-			// if (!visible)
-			// renderPanel.axesFrame.setVisible(true);
-			saveToFile(createAxesFile(aFile), aAxesWin);
-			aAxesWin.Render();
-			// if (!visible)
-			// renderPanel.axesFrame.setVisible(false);
-			// axesWin.printModeOff();
-		}
-	}
+//	public static void saveToFile(File aFile, vtkJoglPanelComponent aRenWin, AxesPanel aAxesWin)
+//	{
+//		saveToFile(aFile, aRenWin);
+//		if (aAxesWin != null && ((RenderPanel) aRenWin).isAxesPanelVisible())
+//		{
+//			// axesWin.printModeOn();
+//			// axesWin.setSize(200, 200);
+//			RenderPanel renderPanel = (RenderPanel) aRenWin;
+//			// boolean visible=renderPanel.axesFrame.isVisible();
+//			// if (!visible)
+//			// renderPanel.axesFrame.setVisible(true);
+//			saveToFile(createAxesFile(aFile), aAxesWin);
+//			aAxesWin.Render();
+//			// if (!visible)
+//			// renderPanel.axesFrame.setVisible(false);
+//			// axesWin.printModeOff();
+//		}
+//	}
 
 	protected static void saveToFile(File aFile, vtkJoglPanelComponent aRenWin)
 	{
