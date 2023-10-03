@@ -17,7 +17,7 @@ workflow:
     # If user is not the runner, branch is the default branch, and the pipeline source is a push
     - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
       when: always
-    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
       when: always
     # if the first statement fails, never succeed
     - when: never
@@ -62,7 +62,7 @@ pom to next version:
     - 'curl --header "PRIVATE-TOKEN: ${RUNNER_USER_TOKEN}" --request PUT "${URL_TO_MRACCEPT}" > /dev/null 2>&1'
     - rm merge_request_created # remove the file used to capture stderr from git push
   rules:
-    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
       when: never
     - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
       when: always
@@ -73,7 +73,7 @@ maven build:
     # --- Checks if code compiles
     - mvn $MAVEN_CLI_OPTS clean compile
   rules:
-    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
       when: always
     - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
       when: always
@@ -84,7 +84,7 @@ maven verify:
     # -fn indicates that it should never fail, this allows artifacts to be built even when unit tests fail to execute successfully
     - mvn $MAVEN_CLI_OPTS clean verify
   rules:
-    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+    - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH  != $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
       when: always
     - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
       when: always
@@ -119,10 +119,11 @@ maven deploy:
     # -Dmaven.test.skip=true will also stop the unit tests from being compiled--which potentially would speed this up
     - mvn $MAVEN_CLI_OPTS -DskipTests clean deploy
   rules:
-  - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
-    when: never
   - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
     when: manual
+  - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+    when: never
+
     
 maven deployBranch:
   stage: deploy
@@ -133,7 +134,7 @@ maven deployBranch:
     # -Dmaven.test.skip=true will also stop the unit tests from being compiled--which potentially would speed this up
     - mvn $MAVEN_CLI_OPTS -DskipTests clean deploy
   rules:
-  - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+  - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH&& $CI_PIPELINE_SOURCE == "push"'
     when: manual
   - if: '$GITLAB_USER_LOGIN != $RUNNER_USER_LOGIN && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
     when: never
