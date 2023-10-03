@@ -107,7 +107,7 @@ maven deploy:
     - OLD_VERSION=$(mvn $MAVEN_CLI_OPTS -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
 
     # --- Update version to include hash
-    - UPDATED_VERSION=$OLD_VERSION-$CI_COMMIT_SHORT_SHA
+    - UPDATED_VERSION=$OLD_VERSION-$CI_COMMIT_SHORT_SHA-SNAPSHOT
     - echo updated deployment version to $UPDATED_VERSION
   
     # --- Set the update version in the pom file(s)
