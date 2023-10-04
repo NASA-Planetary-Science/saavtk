@@ -126,22 +126,22 @@ public class CustomFileChooser extends FileChooserBase
 		}
 	}
 
-	public static File showOpenDialog(Component parent, String title)
+	public static File showUserFilterableOpenDialog(Component parent, String title)
 	{
 		return showOpenDialog(parent, title, null, null);
 	}
 
-	public static File showOpenDialog(Component parent, String title, String defaultFileName)
+	public static File showUserFilterableOpenDialog(Component parent, String title, String defaultFileName)
 	{
 		return showOpenDialog(parent, title, null, defaultFileName);
 	}
 
-	public static File showOpenDialog(Component parent, String title, List<?> extensions)
+	public static File showUserFilterableOpenDialog(Component parent, String title, List<?> extensions)
 	{
 		return showOpenDialog(parent, title, extensions, null);
 	}
 
-	public static File showOpenDialog(Component parent, String title, List<?> extensions, String defaultFileName)
+	public static File showUserFilterableOpenDialog(Component parent, String title, List<?> extensions, String defaultFileName)
 	{
 		File[] files = showOpenDialog(parent, title, extensions, false, defaultFileName);
 		if (files == null || files.length < 1)
@@ -150,14 +150,12 @@ public class CustomFileChooser extends FileChooserBase
 			return files[0];
 	}
 
-	public static File[] showOpenDialog(Component parent, String title, List<?> extensions, boolean multiSelectionEnabled)
+	public static File[] showUserFilterableOpenDialog(Component parent, String title, List<?> extensions, boolean multiSelectionEnabled)
 	{
 		return showOpenDialog(parent, title, extensions, multiSelectionEnabled, null);
 	}
 
-	
-
-	public static File[] showOpenDialog(Component parent, String title, List<?> extensions, boolean multiSelectionEnabled, String defaultFileName)
+	public static File[] showUserFilterableOpenDialog(Component parent, String title, List<?> extensions, boolean multiSelectionEnabled, String defaultFileName)
 	{
 		JFileChooser jfc = new JFileChooser();
 
@@ -200,6 +198,76 @@ public class CustomFileChooser extends FileChooserBase
 			} else
 			{
 				return new File[] { returnedFile };
+			}
+		} else
+		{
+			return null;
+		}
+	}
+	
+	public static File showOpenDialog(Component parent, String title)
+	{
+		return showOpenDialog(parent, title, null, null);
+	}
+
+	public static File showOpenDialog(Component parent, String title, String defaultFileName)
+	{
+		return showOpenDialog(parent, title, null, defaultFileName);
+	}
+
+	public static File showOpenDialog(Component parent, String title, List<?> extensions)
+	{
+		return showOpenDialog(parent, title, extensions, null);
+	}
+
+	public static File showOpenDialog(Component parent, String title, List<?> extensions, String defaultFileName)
+	{
+		File[] files = showOpenDialog(parent, title, extensions, false, defaultFileName);
+		if (files == null || files.length < 1)
+			return null;
+		else
+			return files[0];
+	}
+	
+	public static File[] showOpenDialog(Component parent, String title, List<?> extensions, boolean multiSelectionEnabled)
+	{
+		return showOpenDialog(parent, title, extensions, multiSelectionEnabled, null);
+	}
+	
+	public static File[] showOpenDialog(Component parent, String title, List<?> extensions, boolean multiSelectionEnabled, String defaultFileName)
+	{
+		FileDialog fc = new FileDialog(JOptionPane.getFrameForComponent(parent), title, FileDialog.LOAD);
+		// fc.setAcceptAllFileFilterUsed(true);
+		fc.setMultipleMode(multiSelectionEnabled);
+		if (extensions != null)
+		{
+			List<String> extAsString = extensions.stream().map(item -> item.toString()).toList();
+			fc.setFilenameFilter(new CustomExtensionFilter(extAsString));
+		}
+		if (getLastDirectory() != null)
+			fc.setDirectory(getLastDirectory().getAbsolutePath());
+		if (defaultFileName != null)
+		{
+			File defaultFile = new File(defaultFileName);
+			File defaultDirectory = defaultFile.getParentFile();
+			if (defaultDirectory.isDirectory())
+			{
+				fc.setDirectory(defaultDirectory.getAbsolutePath());
+			}
+			fc.setFile(defaultFile.getName());
+		}
+		fc.setVisible(true);
+		String returnedFile = fc.getFile();
+		if (returnedFile != null)
+		{
+			setLastDirectory(new File(fc.getDirectory()));
+			if (multiSelectionEnabled)
+			{
+				return fc.getFiles();
+			} else
+			{
+				File file = new File(fc.getDirectory(), fc.getFile());
+				return new File[] { file };
 			}
 		} else
 		{
