@@ -124,9 +124,9 @@ public class RenderIoUtil
 		saveToFile(file, tmpPanel /*, tmpPanel.getAxesPanel()*/);
 	}
 
-//	public static void saveToFile(File aFile, vtkJoglPanelComponent aRenWin, AxesPanel aAxesWin)
-//	{
-//		saveToFile(aFile, aRenWin);
+	public static void saveToFile(File aFile, vtkJoglPanelComponent aRenWin, AxesPanel aAxesWin)
+	{
+		saveToFile(aFile, aRenWin);
 //		if (aAxesWin != null && ((RenderPanel) aRenWin).isAxesPanelVisible())
 //		{
 //			// axesWin.printModeOn();
@@ -141,7 +141,7 @@ public class RenderIoUtil
 //			// renderPanel.axesFrame.setVisible(false);
 //			// axesWin.printModeOff();
 //		}
-//	}
+	}
 
 	protected static void saveToFile(File aFile, vtkJoglPanelComponent aRenWin)
 	{
