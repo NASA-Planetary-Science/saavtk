@@ -1783,6 +1783,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
             throw new IOException("Unable to load shape model " + smallBodyFile.getName());
         }
 //        this.initializeDefaultModel();
+        isInitialized = false;
         this.initialize(smallBodyFile);
 //        this.pcs.firePropertyChange(Properties.MODEL_CHANGED, null, null);
 //        this.pcs.firePropertyChange(Properties.MODEL_RESOLUTION_CHANGED, null, null);

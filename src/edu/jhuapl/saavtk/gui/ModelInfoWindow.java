@@ -15,7 +15,7 @@ public abstract class ModelInfoWindow extends JFrame implements PropertyChangeLi
 {
     public ModelInfoWindow()
     {
-        ImageIcon erosIcon = new ImageIcon(getClass().getResource("/edu/jhuapl/sbmt/data/eros.png"));
+        ImageIcon erosIcon = new ImageIcon(getClass().getResource("/edu/jhuapl/saavtk/data/black-sphere.png"));
         setIconImage(erosIcon.getImage());
     }
 

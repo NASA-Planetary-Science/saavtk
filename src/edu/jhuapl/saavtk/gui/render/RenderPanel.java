@@ -35,42 +35,10 @@ import vtk.rendering.jogl.vtkJoglPanelComponent;
 public class RenderPanel extends vtkJoglPanelComponent implements ComponentListener
 {
 	// GUI vars
-	private JFrame axesFrame;
-	private AxesPanel axesPanel;
 	private CustomInteractorStyle interactorStyle;
 
-	// State vars
-	private boolean showAxesPanelOnRestore = false;
-	private boolean axesPanelShownBefore = false;
-
 	// VTK vars
-	// vtkRenderer axesRenderer=new vtkRenderer();
 	vtkRenderer propRenderer;
-
-	// Axes axes=new Axes();
-
-	/**
-	 * Returns the JFrame associated with the Axes window.
-	 */
-	public JFrame getAxesFrame()
-	{
-		return axesFrame;
-	}
-
-	public AxesPanel getAxesPanel()
-	{
-		return axesPanel;
-	}
-
-	public boolean isAxesPanelVisible()
-	{
-		return axesFrame.isVisible();
-	}
-
-	public void setAxesFrameVisible(boolean aBool)
-	{
-		axesFrame.setVisible(aBool);
-	}
 
 	public RenderPanel()
 	{
@@ -80,76 +48,6 @@ public class RenderPanel extends vtkJoglPanelComponent implements ComponentListe
 		windowInteractor.SetInteractorStyle(interactorStyle);
 
 		propRenderer = getRenderer();
-
-		axesPanel = new AxesPanel(this);
-
-		// Set up the axesFrame
-		axesFrame = new JFrame() {
-			@Override
-			public void setVisible(boolean b)
-			{
-				super.setVisible(b);
-				if (!axesPanelShownBefore && MainWindow.getMainWindow() != null && isWindowCreated)
-				{
-					setUpMainWindowListeners();
-					Point point = RenderPanel.this.getComponent().getLocationOnScreen();
-					Dimension dim = RenderPanel.this.getComponent().getSize();
-					int size = (int) Math.max(dim.width / 5., dim.height / 5);
-					axesPanel.setSize(size, size);
-					axesFrame.setLocation(point.x, point.y + dim.height - size); // lower
-					axesPanelShownBefore = true;
-				}
-
-			}
-		};
-
-		// axesFrame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
-		axesFrame.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-		axesFrame.add(axesPanel.getComponent());
-		axesFrame.setVisible(false);
-		axesFrame.setAlwaysOnTop(true);
-
-		// frame.setUndecorated(true);
-
-		axesFrame.getRootPane().setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY, 2));
-
-		/*
-		 * axesPanel.getComponent().addMouseListener(new MouseAdapter() {
-		 * 
-		 * @Override public void mouseEntered(MouseEvent e) {
-		 * axesFrame.getRootPane().setBorder(BorderFactory.createLineBorder(
-		 * Color.DARK_GRAY,2)); }
-		 * 
-		 * @Override public void mouseExited(MouseEvent e) {
-		 * axesFrame.getRootPane().setBorder(null); } });
-		 */
-
-        axesFrame.addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(WindowEvent aEvent)
-			{
-				axesFrame.setVisible(false);
-			}
-		});
-
-        axesFrame.addComponentListener(new ComponentAdapter() {
-			@Override
-			public void componentResized(ComponentEvent e)
-			{
-				Point loc = e.getComponent().getLocation();
-				int w = e.getComponent().getWidth();
-				e.getComponent().setSize(w, w);
-				e.getComponent().setLocation(loc);
-				axesPanel.getComponent().setSize(e.getComponent().getSize());
-				// axesPanel.getRenderer().ResetCamera();
-			}
-
-			@Override
-			public void componentShown(ComponentEvent e)
-			{
-				axesPanel.Render();
-			}
-		});
 
 		getComponent().addComponentListener(this);
 	}
@@ -270,38 +168,31 @@ public class RenderPanel extends vtkJoglPanelComponent implements ComponentListe
 			@Override
 			public void windowDeiconified(@SuppressWarnings("unused") WindowEvent e)
 			{
-				axesFrame.setVisible(showAxesPanelOnRestore);
 			}
 
 			@Override
 			public void windowIconified(@SuppressWarnings("unused") WindowEvent e)
 			{
-				showAxesPanelOnRestore = axesFrame.isVisible();
-				axesFrame.setVisible(false);
 			}
 
 			@Override
 			public void windowActivated(@SuppressWarnings("unused") WindowEvent e)
 			{
-				axesFrame.setAlwaysOnTop(true);
 			}
 
 			@Override
 			public void windowDeactivated(@SuppressWarnings("unused") WindowEvent e)
 			{
-				axesFrame.setAlwaysOnTop(false);
 			}
 
 			@Override
 			public void windowGainedFocus(@SuppressWarnings("unused") WindowEvent e)
 			{
-				axesFrame.setAlwaysOnTop(true);
 			}
 
 			@Override
 			public void windowLostFocus(@SuppressWarnings("unused") WindowEvent e)
 			{
-				axesFrame.setAlwaysOnTop(false);
 			}
 
 			@Override

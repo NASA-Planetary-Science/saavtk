@@ -12,14 +12,15 @@ import edu.jhuapl.saavtk.gui.render.Renderer.AxisType;
 import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.MathUtil;
+import edu.jhuapl.saavtk.util.ScreenUtil;
 import vtk.vtkBMPWriter;
 import vtk.vtkCamera;
 import vtk.vtkJPEGWriter;
 import vtk.vtkPNGWriter;
 import vtk.vtkPNMWriter;
 import vtk.vtkPostScriptWriter;
+import vtk.vtkResizingWindowToImageFilter;
 import vtk.vtkTIFFWriter;
-import vtk.vtkWindowToImageFilter;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 /**
@@ -120,26 +121,26 @@ public class RenderIoUtil
 
 		tmpPanel.Render();
 		File file = CustomFileChooser.showSaveDialog(aRenderer, "Export to PNG Image", "image.png", "png");
-		saveToFile(file, tmpPanel, tmpPanel.getAxesPanel());
+		saveToFile(file, tmpPanel /*, tmpPanel.getAxesPanel()*/);
 	}
 
 	public static void saveToFile(File aFile, vtkJoglPanelComponent aRenWin, AxesPanel aAxesWin)
 	{
 		saveToFile(aFile, aRenWin);
-		if (aAxesWin != null && ((RenderPanel) aRenWin).isAxesPanelVisible())
-		{
-			// axesWin.printModeOn();
-			// axesWin.setSize(200, 200);
-			RenderPanel renderPanel = (RenderPanel) aRenWin;
-			// boolean visible=renderPanel.axesFrame.isVisible();
-			// if (!visible)
-			// renderPanel.axesFrame.setVisible(true);
-			saveToFile(createAxesFile(aFile), aAxesWin);
-			aAxesWin.Render();
-			// if (!visible)
-			// renderPanel.axesFrame.setVisible(false);
-			// axesWin.printModeOff();
-		}
+//		if (aAxesWin != null && ((RenderPanel) aRenWin).isAxesPanelVisible())
+//		{
+//			// axesWin.printModeOn();
+//			// axesWin.setSize(200, 200);
+//			RenderPanel renderPanel = (RenderPanel) aRenWin;
+//			// boolean visible=renderPanel.axesFrame.isVisible();
+//			// if (!visible)
+//			// renderPanel.axesFrame.setVisible(true);
+//			saveToFile(createAxesFile(aFile), aAxesWin);
+//			aAxesWin.Render();
+//			// if (!visible)
+//			// renderPanel.axesFrame.setVisible(false);
+//			// axesWin.printModeOff();
+//		}
 	}
 
 	protected static void saveToFile(File aFile, vtkJoglPanelComponent aRenWin)
@@ -160,9 +161,12 @@ public class RenderIoUtil
 			}
 
 			aRenWin.getVTKLock().lock();
-			vtkWindowToImageFilter windowToImage = new vtkWindowToImageFilter();
+			vtkResizingWindowToImageFilter windowToImage = new vtkResizingWindowToImageFilter();
+			
+			int divider = ScreenUtil.getScreenScale(aRenWin) != 1 ? 2 : 1;
+				
+			windowToImage.SetSize(aRenWin.getRenderWindow().GetSize()[0]/divider, aRenWin.getRenderWindow().GetSize()[1]/divider);
 			windowToImage.SetInput(aRenWin.getRenderWindow());
-			windowToImage.ShouldRerenderOn();
 
 			String filename = aFile.getAbsolutePath();
 			if (filename.toLowerCase().endsWith("bmp"))
