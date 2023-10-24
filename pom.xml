@@ -41,7 +41,7 @@
 			    <dependency>
 					<groupId>org.jzy3d</groupId>
 					<artifactId>vtk-java-all</artifactId>
-					<version>1.0.0.22</version>
+					<version>1.0.0.23</version>
 					<exclusions>
 		                <exclusion>
 		                    <groupId>org.jzy3d</groupId>
@@ -71,7 +71,7 @@
 		    	<dependency>
 					<groupId>org.jzy3d</groupId>
 					<artifactId>vtk-java-all</artifactId>
-					<version>1.0.0.22</version>
+					<version>1.0.0.23</version>
 					<exclusions>
 		                <exclusion>
 		                    <groupId>org.jzy3d</groupId>
@@ -101,7 +101,7 @@
 		    	<dependency>
 					<groupId>org.jzy3d</groupId>
 					<artifactId>vtk-java-all</artifactId>
-					<version>1.0.0.22</version>
+					<version>1.0.0.23</version>
 					<exclusions>
 		                <exclusion>
 		                    <groupId>org.jzy3d</groupId>
@@ -130,7 +130,7 @@
 		    	<dependency>
 					<groupId>org.jzy3d</groupId>
 					<artifactId>vtk-java-all</artifactId>
-					<version>1.0.0.22</version>
+					<version>1.0.0.23</version>
 					<exclusions>
 		                <exclusion>
 		                    <groupId>org.jzy3d</groupId>
