@@ -8,6 +8,9 @@ package edu.jhuapl.saavtk.util;
 public interface Properties
 {
     final String MODEL_CHANGED = "model-changed";
+    final String MODEL_VISIBILITY_CHANGED = "model-visibility-changed";
+    final String MODEL_COLOR_CHANGED = "model-color-changed";
+    final String MODEL_OPACITY_CHANGED = "model-opacity-changed";
     final String MODEL_REPRESENTATION_CHANGED = "model-representation-changed";
     final String MODEL_PICKED = "model-picked";
     final String MODEL_REMOVED = "model-removed";
