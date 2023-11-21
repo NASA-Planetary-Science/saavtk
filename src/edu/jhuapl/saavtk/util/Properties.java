@@ -25,4 +25,6 @@ public interface Properties
     final String CUSTOM_MODEL_ADDED = "custom-model-added";
     final String CUSTOM_MODEL_DELETED = "custom-model-deleted";
     final String CUSTOM_MODEL_EDITED = "custom-model-edited";
+    
+    final String DIMENSION_CHANGED = "dimension-changed";
 }
