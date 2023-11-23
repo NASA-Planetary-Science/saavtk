@@ -11,13 +11,14 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.structure.Ellipse;
+import edu.jhuapl.saavtk.structure.EllipseManager;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.structure.util.EllipseUtil;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
+import glum.task.Task;
 
 /**
  * Collection of utility methods for serializing structures (or aspects of a
@@ -39,7 +40,7 @@ public class StructureSaveUtil
 	 * This method originated from (~2019Oct07):
 	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
 	 */
-	public static void saveModel(File aFile, AbstractEllipsePolygonModel aManager, List<Ellipse> aStructureL,
+	public static void saveModel(Task aTask, File aFile, EllipseManager aManager, List<Ellipse> aStructureL,
 			PolyhedralModel aSmallBody) throws IOException
 	{
 		FileWriter fstream = new FileWriter(aFile);
@@ -48,7 +49,7 @@ public class StructureSaveUtil
 		String[] standardColoringUnitArr = EllipseUtil.getStandardColoringUnits(aSmallBody);
 
 		// Write the header comments
-		Mode tmpMode = aManager.getMode();
+		Mode tmpMode = aStructureL.get(0).getMode();
 		writeHeaderComments(out, tmpMode, standardColoringUnitArr);
 
 		// Write the data content
@@ -75,7 +76,7 @@ public class StructureSaveUtil
 
 			str += "\t";
 
-			double[] values = EllipseUtil.getStandardColoringValues(aManager, aEllipse, aSmallBody);
+			double[] values = EllipseUtil.getStandardColoringValues(aTask, aManager, aEllipse, aSmallBody);
 			for (int i = 0; i < values.length; ++i)
 			{
 				str += Double.isNaN(values[i]) ? "NA" : values[i];

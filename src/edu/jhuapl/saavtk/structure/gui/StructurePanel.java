@@ -21,7 +21,6 @@ import javax.swing.JButton;
 import javax.swing.JColorChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -35,7 +34,6 @@ import com.google.common.collect.Range;
 
 import edu.jhuapl.saavtk.gui.ProfilePlot;
 import edu.jhuapl.saavtk.gui.dialog.NormalOffsetChangerDialog;
-import edu.jhuapl.saavtk.gui.funk.PopupButton;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.gui.table.ColorCellEditor;
 import edu.jhuapl.saavtk.gui.table.ColorCellRenderer;
@@ -61,9 +59,6 @@ import edu.jhuapl.saavtk.pick.Picker;
 import edu.jhuapl.saavtk.structure.ControlPointsHandler;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
-import edu.jhuapl.saavtk.structure.gui.action.SaveEsriShapeFileAction;
-import edu.jhuapl.saavtk.structure.gui.action.SaveSbmtStructuresFileAction;
-import edu.jhuapl.saavtk.structure.gui.action.SaveVtkFileAction;
 import edu.jhuapl.saavtk.util.ColorIcon;
 import glum.gui.GuiUtil;
 import glum.gui.action.PopupMenu;
@@ -128,11 +123,7 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 	private GNumberFieldSlider fontSizeNFS;
 	private GNumberFieldSlider lineWidthNFS;
 
-	private PopupButton saveB;
-
-	/**
-	 * Standard Constructor
-	 */
+	/** Standard Constructor */
 	public StructurePanel(StructureManager<G1> aStructureManager, PickManager aPickManager, Picker aPicker,
 			Renderer aRenderer, PolyhedralModel aSmallBody, ModelManager aModelManager)
 	{
@@ -145,13 +136,6 @@ public class StructurePanel<G1 extends Structure> extends JPanel
 		changeOffsetDialog = null;
 
 		setLayout(new MigLayout("", "", "[]"));
-
-		// Legacy save UI
-		saveB = new PopupButton("Save...");
-		saveB.getPopup().add(new JMenuItem(new SaveSbmtStructuresFileAction<>(this, refStructureManager, aSmallBody)));
-		saveB.getPopup().add(new JMenuItem(new SaveEsriShapeFileAction<>(this, refStructureManager, aModelManager)));
-		saveB.getPopup().add(new JMenuItem(new SaveVtkFileAction<>(refStructureManager)));
-		add(saveB, "align right,span,split,wrap");
 
 		// Popup menu
 		popupMenu = StructureGuiUtil.formPopupMenu(refStructureManager, aRenderer, aSmallBody, this);
