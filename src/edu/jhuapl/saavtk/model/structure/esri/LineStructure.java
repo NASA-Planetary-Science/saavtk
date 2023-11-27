@@ -1,7 +1,6 @@
 package edu.jhuapl.saavtk.model.structure.esri;
 
 import java.awt.Color;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
@@ -97,41 +96,37 @@ public class LineStructure implements Structure
 
 	public static <G1 extends PolyLine> List<LineStructure> fromSbmtStructure(LineModel<G1> model)
 	{
-		var structures = new ArrayList<LineStructure>();
-		for (var aPolyLine : model.getAllItems())
-			structures.add(fromSbmtStructure(model, aPolyLine));
-
-		return structures;
-	}
-
-	/**
-	 * Utility method that takes a {@link PolyLine} (and it's manager) and returns the corresponding
-	 * {@link LineStructure}.
-	 */
-	public static <G1 extends PolyLine> LineStructure fromSbmtStructure(LineModel<G1> model, G1 poly)
-	{
-		List<Vector3D> xyzPointL = model.getXyzPointsFor(poly);
-
-		List<LineSegment> segments = Lists.newArrayList();
-		for (int j = 0; j < xyzPointL.size() - 1; j++)
+		List<LineStructure> structures = Lists.newArrayList();
+		for (int i = 0; i < model.getNumItems(); i++)
 		{
-			Vector3D begPt = xyzPointL.get(j);
-			Vector3D endPt = xyzPointL.get(j + 1);
-			segments.add(new LineSegment(begPt, endPt));
+			G1 poly = model.getItem(i);
+			List<Vector3D> xyzPointL = model.getXyzPointsFor(poly);
+
+			List<LineSegment> segments = Lists.newArrayList();
+			for (int j = 0; j < xyzPointL.size() - 1; j++)
+			{
+				Vector3D begPt = xyzPointL.get(j);
+				Vector3D endPt = xyzPointL.get(j + 1);
+				segments.add(new LineSegment(begPt, endPt));
+			}
+
+			List<Vector3D> controlPoints = Lists.newArrayList();
+			for (int m = 0; m < controlPoints.size(); m++)
+				controlPoints.add(new Vector3D(MathUtil.latrec(poly.getControlPoints().get(m))));
+
+			LineStructure ls = new LineStructure(segments, controlPoints);
+			Color c = poly.getColor();
+			double w = model.getLineWidth();
+			LineStyle style = new LineStyle(c, w);
+			String label = poly.getLabel();
+			ls.setLineStyle(style);
+			ls.setLabel(label);
+
+			structures.add(ls);
+
 		}
+		return structures;
 
-		List<Vector3D> controlPoints = Lists.newArrayList();
-		for (int m = 0; m < controlPoints.size(); m++)
-			controlPoints.add(new Vector3D(MathUtil.latrec(poly.getControlPoints().get(m))));
-
-		LineStructure ls = new LineStructure(segments, controlPoints);
-		Color c = poly.getColor();
-		double w = model.getLineWidth();
-		LineStyle style = new LineStyle(c, w);
-		String label = poly.getLabel();
-		ls.setLineStyle(style);
-		ls.setLabel(label);
-		return ls;
 	}
 
 }

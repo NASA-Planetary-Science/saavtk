@@ -2,7 +2,6 @@ package edu.jhuapl.saavtk.structure.io;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -59,54 +58,55 @@ public class StructureMiscUtil
 	}
 
 	/**
-	 * Returns the list of {@link Ellipse}s that match the specified mode.
-	 * <p>
-	 * If a aMode is null then all {@link Ellipse}s will be returned.
+	 * Returns the list of round structures that match the specified mode.
 	 */
-	public static List<Ellipse> getEllipsesFrom(Collection<Structure> aItemC, Mode aMode)
+	public static List<Ellipse> getEllipsesFrom(List<Structure> aItemL, Mode aMode)
 	{
-		var retItemL = new ArrayList<Ellipse>();
-		for (var aItem : aItemC)
+		List<Ellipse> retL = new ArrayList<>();
+
+		for (Structure aItem : aItemL)
 		{
 			if (aItem instanceof Ellipse == false)
 				continue;
 
-			var tmpItem = (Ellipse) aItem;
-			if (tmpItem.getMode() == aMode || aMode == null)
-				retItemL.add(tmpItem);
+			Ellipse tmpItem = (Ellipse) aItem;
+			if (tmpItem.getMode() == aMode)
+				retL.add(tmpItem);
 		}
 
-		return retItemL;
+		return retL;
 	}
 
 	/**
 	 * Returns the list of {@link PolyLine} structures that are not {@link Polygon}s.
 	 */
-	public static List<PolyLine> getPathsFrom(Collection<Structure> aItemC)
+	public static List<PolyLine> getPathsFrom(List<Structure> aItemL)
 	{
-		var retItemL = new ArrayList<PolyLine>();
-		for (var aItem : aItemC)
+		List<PolyLine> retL = new ArrayList<>();
+
+		for (Structure aItem : aItemL)
 		{
 			if (aItem instanceof PolyLine && aItem instanceof Polygon == false)
-				retItemL.add((PolyLine) aItem);
+				retL.add((PolyLine) aItem);
 		}
 
-		return retItemL;
+		return retL;
 	}
 
 	/**
 	 * Returns the list of {@link Polygon} structures.
 	 */
-	public static List<Polygon> getPolygonsFrom(Collection<Structure> aItemC)
+	public static List<Polygon> getPolygonsFrom(List<Structure> aItemL)
 	{
-		var retItemL = new ArrayList<Polygon>();
-		for (var aItem : aItemC)
+		List<Polygon> retL = new ArrayList<>();
+
+		for (Structure aItem : aItemL)
 		{
-			if (aItem instanceof Polygon aPolygon)
-				retItemL.add(aPolygon);
+			if (aItem instanceof Polygon)
+				retL.add((Polygon) aItem);
 		}
 
-		return retItemL;
+		return retL;
 	}
 
 	/**
