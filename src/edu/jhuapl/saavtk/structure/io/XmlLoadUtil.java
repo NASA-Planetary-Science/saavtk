@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -175,7 +174,7 @@ public class XmlLoadUtil
 	 * <P>
 	 * The output format of the file will be XML.
 	 */
-	public static <G1 extends PolyLine> void saveManager(File aFile, LineModel<G1> aManager, Collection<G1> aItemC, PolyhedralModel aSmallBody)
+	public static <G1 extends PolyLine> void saveManager(File aFile, LineModel<G1> aManager, PolyhedralModel aSmallBody)
 			throws Exception
 	{
 		// get an instance of factory
@@ -191,7 +190,7 @@ public class XmlLoadUtil
 		if (aSmallBody.getModelName() != null)
 			rootElement.setAttribute(XML_ATTR_SHAPE_MODEL_NAME, aSmallBody.getModelName());
 
-		savePolyLinesToElement(rootElement, aItemC);
+		savePolyLinesToElement(rootElement, aManager.getAllItems());
 		dom.appendChild(rootElement);
 
 		try
@@ -218,10 +217,10 @@ public class XmlLoadUtil
 	 * Utility helper method that will save a list of lines / polygons to the
 	 * specified {@link Element}.
 	 */
-	public static <G1 extends PolyLine> void savePolyLinesToElement(Element aElement, Collection<G1> aItemC)
+	public static <G1 extends PolyLine> void savePolyLinesToElement(Element aElement, List<G1> aItemL)
 	{
 		Document tmpDoc = aElement.getOwnerDocument();
-		for (G1 aItem : aItemC)
+		for (G1 aItem : aItemL)
 			aElement.appendChild(formElementForPolyLine(tmpDoc, aItem));
 	}
 

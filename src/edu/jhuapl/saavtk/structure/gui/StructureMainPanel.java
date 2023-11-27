@@ -34,7 +34,6 @@ import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.structure.gui.action.LoadEsriShapeFileAction;
 import edu.jhuapl.saavtk.structure.gui.load.AmbiguousRoundStructurePanel;
 import edu.jhuapl.saavtk.structure.gui.load.LoadPanel;
-import edu.jhuapl.saavtk.structure.gui.load.SavePanel;
 import edu.jhuapl.saavtk.structure.io.StructureLoadUtil;
 import glum.gui.GuiUtil;
 import net.miginfocom.swing.MigLayout;
@@ -46,7 +45,6 @@ public class StructureMainPanel extends JPanel implements ActionListener
 
 	// GUI vars
 	private LoadPanel loadPanel;
-	private SavePanel savePanel;
 	private JLabel structuresFileL;
 	private JButton loadB;
 	private JButton saveB;
@@ -68,9 +66,9 @@ public class StructureMainPanel extends JPanel implements ActionListener
 		structuresFileL = new JLabel("<no file loaded>");
 		add(fileNameL, "span,split");
 		add(structuresFileL, "growx,pushx,w 100:100:");
-		add(loadEsriB, "");
 		add(loadB, "sg g0");
-		add(saveB, "sg g0,wrap");
+//		add(saveB, "sg g0");
+		add(loadEsriB, "wrap");
 
 		StructureTabbedPane structureTP = new StructureTabbedPane(aPickManager, aRenderer, aModelManager);
 		add(structureTP, "growx,growy,pushy,span");
@@ -139,24 +137,7 @@ public class StructureMainPanel extends JPanel implements ActionListener
 	 */
 	private void doSaveAction()
 	{
-		// Lazy init
-		if (savePanel == null)
-			savePanel = new SavePanel(this, refModelManager);
-
-		var fullItemL = new ArrayList<Structure>();
-		var pickItemL = new ArrayList<Structure>();
-
-		ModelNames[] modelNamesArr = { ModelNames.LINE_STRUCTURES, ModelNames.POLYGON_STRUCTURES,
-				ModelNames.CIRCLE_STRUCTURES, ModelNames.ELLIPSE_STRUCTURES, ModelNames.POINT_STRUCTURES };
-		for (var aModelName : modelNamesArr)
-		{
-			var tmpStructureManager = (StructureManager<?>) refModelManager.getModel(aModelName);
-			fullItemL.addAll(tmpStructureManager.getAllItems());
-			pickItemL.addAll(tmpStructureManager.getSelectedItems());
- 		}
-
-		savePanel.setStructuresToSave(fullItemL, pickItemL);
-		savePanel.setVisibleAsModal();
+		// TODO Auto-generated method stub
 	}
 
 	/**

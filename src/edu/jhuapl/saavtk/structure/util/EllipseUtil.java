@@ -9,11 +9,10 @@ import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
+import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
 import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.structure.Ellipse;
-import edu.jhuapl.saavtk.structure.EllipseManager;
 import edu.jhuapl.saavtk.util.MathUtil;
-import glum.task.Task;
 import vtk.vtkCellArray;
 import vtk.vtkIdTypeArray;
 import vtk.vtkPoints;
@@ -38,7 +37,7 @@ public class EllipseUtil
 	 * An assumption is made that the specified edge point lies on the surface of
 	 * the provided body.
 	 */
-	public static void changeRadius(EllipseManager aManager, Ellipse aItem, PolyhedralModel aSmallBody,
+	public static void changeRadius(AbstractEllipsePolygonModel aManager, Ellipse aItem, PolyhedralModel aSmallBody,
 			Vector3D aPointOnEdge)
 	{
 		double tmpRadius = computeRadius(aSmallBody, aItem.getCenter(), aPointOnEdge);
@@ -284,7 +283,7 @@ public class EllipseUtil
 	 * Source Basis (~2019Oct07):<br>
 	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
 	 */
-	public static double[] getStandardColoringValues(Task aTask, EllipseManager aManager, Ellipse aEllipse,
+	public static double[] getStandardColoringValues(AbstractEllipsePolygonModel aManager, Ellipse aEllipse,
 			PolyhedralModel aSmallBody) throws IOException
 	{
 		// Output array of 4 standard colorings (Slope, Elevation, GravAccel,
@@ -328,7 +327,7 @@ public class EllipseUtil
 		try
 		{
 			allValueArr = aSmallBody.getAllColoringValues(aEllipse.getCenter().toArray());
-			Mode tmpMode = aEllipse.getMode();
+			Mode tmpMode = aManager.getMode();
 			if (tmpMode != Mode.POINT_MODE)
 			{
 				// Replace slope and/or elevation central values with the average over the rim
@@ -344,7 +343,7 @@ public class EllipseUtil
 					vtkPoints points = aManager.getVtkExteriorPolyDataFor(aEllipse).GetPoints();
 
 					vtkIdTypeArray idArray = lines.GetData();
-					int size = (int) idArray.GetNumberOfTuples();
+					int size = (int)idArray.GetNumberOfTuples();
 
 					double totalLength = 0.0;
 					double[] midpoint = new double[3];
@@ -352,7 +351,7 @@ public class EllipseUtil
 					{
 						if (idArray.GetValue(i) != 2)
 						{
-							aTask.logRegln("Big problem: polydata corrupted");
+							System.out.println("Big problem: polydata corrupted");
 							return retValueArr;
 						}
 
@@ -382,8 +381,8 @@ public class EllipseUtil
 		}
 		catch (Exception aExp)
 		{
-			aTask.logRegln("Plate coloring values are not available.");
-			aTask.logRegln("Exception: " + aExp.getMessage());
+			System.err.println("Warning: plate coloring values were not available; omitting them from structures file.");
+			System.err.println("Exception thrown was " + aExp.getMessage());
 
 			allValueArr = new double[coloringDataL.size()];
 			for (int aIndex = 0; aIndex < allValueArr.length; ++aIndex)
@@ -406,7 +405,7 @@ public class EllipseUtil
 	/**
 	 * TODO: Add documentation
 	 * <p>
-	 * Source (~2019Oct07):</br>
+	 * Source (~2019Oct07):
 	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
 	 */
 	public static Double getEllipseAngleRelativeToGravityVector(Ellipse aEllipse, PolyhedralModel aSmallBody)
