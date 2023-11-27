@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.vtk;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -11,6 +12,7 @@ import edu.jhuapl.saavtk.util.PolyDataUtil;
 import vtk.vtkAbstractPointLocator;
 import vtk.vtkAlgorithmOutput;
 import vtk.vtkCellArray;
+import vtk.vtkCleanPolyData;
 import vtk.vtkClipPolyData;
 import vtk.vtkCutter;
 import vtk.vtkExtractPolyDataGeometry;
@@ -23,7 +25,9 @@ import vtk.vtkPointLocator;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataConnectivityFilter;
+import vtk.vtkQuadricClustering;
 import vtk.vtkRegularPolygonSource;
+import vtk.vtkSelectPolyData;
 import vtk.vtkSphere;
 import vtk.vtkTransform;
 import vtk.vtkTransformPolyDataFilter;
@@ -38,26 +42,29 @@ public class VtkDrawUtil
 {
 	/**
 	 * Utility method for drawing an ellipse onto a {@link vtkPolyData} surface.
-	 * <P>
-	 * The results of the rendered ellipse will be returned via the last two
-	 * arguments (aRetInteriourPD, aRetExteriorPD).
-	 * <P>
-	 * The basis of this method originated from (prior to 2018Jan)
-	 * edu.jhuapl.saavtk.util.PolyDataUtil.
+	 * <p>
+	 * The results of the rendered ellipse will be returned via the last two arguments (aRetInteriourPD, aRetExteriorPD).
+	 * <p>
+	 * The basis of this method originated from (prior to 2018Jan) edu.jhuapl.saavtk.util.PolyDataUtil.
 	 *
-	 * @param aSurfacePD     The {@link vtkPolyData} corresponding to the surface.
-	 * @param aSurfacePL     The {@link vtkPointLocator} associated with the
-	 *                       surface.
-	 * @param aCenter        The ellipse's center.
-	 * @param aMajorRadius   The ellipse's (semi-major axis) radius.
-	 * @param aFlattening    The ellipse's flattening factor.
-	 * @param aAngle         The angle between the semi-major axis and the line of
-	 *                       longitude.
-	 * @param aNumSides      The number of sides of the ellipse.
-	 * @param aRetInteriorPD {@link vtkPolyData} that is used to store the computed
-	 *                       interior. May be null.
-	 * @param aRetExteriorPD {@link vtkPolyData} that is used to store the computed
-	 *                       exterior. May be null.
+	 * @param aSurfacePD
+	 *    The {@link vtkPolyData} corresponding to the surface.
+	 * @param aSurfacePL
+	 *    The {@link vtkPointLocator} associated with the surface.
+	 * @param aCenter
+	 *    The ellipse's center.
+	 * @param aMajorRadius
+	 *    The ellipse's (semi-major axis) radius.
+	 * @param aFlattening
+	 *    The ellipse's flattening factor.
+	 * @param aAngle
+	 *    The angle between the semi-major axis and the line of longitude.
+	 * @param aNumSides
+	 *    The number of sides of the ellipse.
+	 * @param aRetInteriorPD
+	 *    {@link vtkPolyData} that is used to store the computed interior. May be null.
+	 * @param aRetExteriorPD
+	 *    {@link vtkPolyData} that is used to store the computed exterior. May be null.
 	 */
 	public static void drawEllipseOn(vtkPolyData aSurfacePD, vtkAbstractPointLocator aSurfacePL, Vector3D aCenter,
 			double aMajorRadius, double aFlattening, double aAngle, int aNumSides, vtkPolyData aRetInteriorPD,
@@ -267,20 +274,21 @@ public class VtkDrawUtil
 	}
 
 	/**
-	 * Utility method for drawing a (multi-point) poly path on a {@link vtkPolyData}
-	 * surface.
-	 * <P>
+	 * Utility method for drawing a (multi-point) poly path on a {@link vtkPolyData} surface.
+	 * <p>
 	 * The results of the rendered poly path will be returned.
-	 * <P>
-	 * The basis of this method originated from (prior to 2018Jan)
-	 * edu.jhuapl.saavtk.util.PolyDataUtil.
+	 * <p>
+	 * The basis of this method originated from (prior to 2018Jan) edu.jhuapl.saavtk.util.PolyDataUtil.
 	 *
-	 * @param aSurfacePD The {@link vtkPolyData} corresponding to the surface.
-	 * @param aSurfacePL The {@link vtkPointLocator} associated with the surface.
-	 * @param aPointBeg  The starting end point.
-	 * @param aPointEnd  The ending end point.
-	 * @return Returns a {@link vtkPolyData} that contains the contents of the
-	 *         computed line.
+	 * @param aSurfacePD
+	 *    The {@link vtkPolyData} corresponding to the surface.
+	 * @param aSurfacePL
+	 *    The {@link vtkPointLocator} associated with the surface.
+	 * @param aPointBeg
+	 *    The starting end point.
+	 * @param aPointEnd
+	 *    The ending end point.
+	 * @return Returns a {@link vtkPolyData} that contains the contents of the computed line.
 	 */
 	public static vtkPolyData drawPathPolyOn(vtkPolyData aSurfacePD, vtkAbstractPointLocator aSurfacePL,
 			Vector3D aPointBeg, Vector3D aPointEnd)
@@ -359,8 +367,8 @@ public class VtkDrawUtil
 		}
 
 		// Delegate to PolyDataUtil to finish the formation of poly path...
-		boolean isPass = PolyDataUtil.convertPartOfLinesToPolyLineWithSplitting(retLinePD, closestPt1Arr, (int)cellId1[0],
-				closestPt2Arr, (int)cellId2[0]);
+		boolean isPass = PolyDataUtil.convertPartOfLinesToPolyLineWithSplitting(retLinePD, closestPt1Arr,
+				(int) cellId1[0], closestPt2Arr, (int) cellId2[0]);
 		if (isPass == true)
 			return retLinePD;
 
@@ -369,14 +377,15 @@ public class VtkDrawUtil
 
 	/**
 	 * Utility method that for drawing a simple path onto a {@link vtkPolyData}.
-	 * <P>
-	 * The results for the rendered path will be returned via the last argument
-	 * (aRetPath).
+	 * <p>
+	 * The results for the rendered path will be returned via the last argument (aRetPath).
 	 *
-	 * @param aPointBeg  The starting end point.
-	 * @param aPointEnd  The ending end point.
-	 * @param aRetPathPD {@link vtkPolyData} that is used to store the computed
-	 *                   path.
+	 * @param aPointBeg
+	 *    The starting end point.
+	 * @param aPointEnd
+	 *    The ending end point.
+	 * @param aRetPathPD
+	 *    {@link vtkPolyData} that is used to store the computed path.
 	 */
 	public static void drawPathSimpleOn(Vector3D aPointBeg, Vector3D aPointEnd, vtkPolyData aRetPathPD)
 	{
@@ -394,6 +403,87 @@ public class VtkDrawUtil
 		vTmpIL.SetId(1, 1);
 
 		vLineCA.InsertNextCell(vTmpIL);
+	}
+
+	/**
+	 * Utility method for drawing a polygon onto a {@link vtkPolyData} surface.
+	 * <p>
+	 * The results of the rendered polygon will be returned via the last two arguments (aRetInteriourPD, aRetExteriorPD).
+	 *
+	 * @param aSurfacePD
+	 *    The {@link vtkPolyData} corresponding to the surface.
+	 * @param aSurfacePL
+	 *    The {@link vtkPointLocator} associated with the surface.
+	 * @param aPointC
+	 *    List of points (in 3D space) outlining the polygon.
+	 * @param aRetInteriorPD
+	 *    {@link vtkPolyData} that is used to store the computed interior. May be null.
+	 * @param aRetExteriorPD
+	 *    {@link vtkPolyData} that is used to store the computed exterior. May be null.
+	 */
+	public static void drawPolygonOn(vtkPolyData aSurfacePD, vtkAbstractPointLocator aSurfacePL,
+			Collection<Vector3D> aPointC, vtkPolyData aRetInteriorPD, vtkPolyData aRetExteriorPD)
+	{
+		// Set up the points
+		var vPointP = new vtkPoints();
+		for (var aPt : aPointC)
+			vPointP.InsertNextPoint(aPt.getX(), aPt.getY(), aPt.getZ());
+
+		// Set up the line segments
+		var numPts = aPointC.size();
+		var vLineCA = new vtkCellArray();
+		vLineCA.InsertNextCell(numPts);
+		for (var aIdx = 0; aIdx < numPts; aIdx++)
+			vLineCA.InsertCellPoint(aIdx);
+
+		// Render the exterior
+		if (aRetExteriorPD != null)
+		{
+			aRetExteriorPD.SetPoints(vPointP);
+			aRetExteriorPD.SetLines(vLineCA);
+		}
+
+		// Bail if there is no interior
+		if (aRetInteriorPD == null)
+			return;
+
+		// Render the interior
+		vPointP = new vtkPoints();
+		for (var aPoint : aPointC)
+			vPointP.InsertNextPoint(aPoint.toArray());
+
+		// Clean the poly data here before selecting the interior facets.
+		var vCleanCPD = new vtkCleanPolyData();
+		vCleanCPD.SetInputData(aSurfacePD);
+		vCleanCPD.Update();
+		var vCleanPD = vCleanCPD.GetOutput();
+
+		var vLoopSPD = new vtkSelectPolyData();
+		vLoopSPD.SetInputData(vCleanPD);
+		vLoopSPD.SetLoop(vPointP);
+		vLoopSPD.GenerateSelectionScalarsOn();
+		vLoopSPD.SetSelectionModeToSmallestRegion();
+		vLoopSPD.Update();
+		var vClipperCPD = new vtkClipPolyData();
+		vClipperCPD.SetInputData(vLoopSPD.GetOutput());
+		vClipperCPD.InsideOutOn();
+		vClipperCPD.GenerateClipScalarsOff();
+		vClipperCPD.Update();
+
+		var vTmpInteriorRegPD = vClipperCPD.GetOutput();
+		if (aRetInteriorPD != null)
+			aRetInteriorPD.DeepCopy(vTmpInteriorRegPD);
+		vTmpInteriorRegPD.Delete();
+
+		// Run an empty decimator to correct the interior coloring
+		// TODO: Do not understand why the below resolves the Polygon filled coloring issue
+		var decimator = new vtkQuadricClustering();
+		decimator.SetInputData(aRetInteriorPD);
+		decimator.AutoAdjustNumberOfDivisionsOff();
+		decimator.CopyCellDataOn();
+		decimator.Update();
+		aRetInteriorPD.DeepCopy(decimator.GetOutput());
+		decimator.Delete();
 	}
 
 }

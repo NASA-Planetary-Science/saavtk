@@ -18,22 +18,23 @@ import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.structure.LineModel;
+import edu.jhuapl.saavtk.structure.AnyStructureManager;
 import edu.jhuapl.saavtk.structure.PolyLine;
-import edu.jhuapl.saavtk.structure.plot.BaseLinePlot;
+import edu.jhuapl.saavtk.structure.plot.BaseLinePlotNew;
+import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.util.Properties;
 
-public class ProfilePlot extends BaseLinePlot implements ChartMouseListener, PropertyChangeListener
+public class ProfilePlot extends BaseLinePlotNew implements ChartMouseListener, PropertyChangeListener
 {
 	// Ref vars
-	private final LineModel<PolyLine> refManager;
+	private final AnyStructureManager refManager;
 	private final PolyhedralModel refSmallBody;
 
 	// State vars
 	private ChartPanel chartPanel;
 	private int coloringIndex;
 
-	public ProfilePlot(LineModel<PolyLine> aManager, PolyhedralModel aSmallBody)
+	public ProfilePlot(AnyStructureManager aManager, PolyhedralModel aSmallBody)
 	{
 		super(aManager);
 
@@ -87,12 +88,13 @@ public class ProfilePlot extends BaseLinePlot implements ChartMouseListener, Pro
 		if (coloringIndex >= 0 && coloringIndex < refSmallBody.getNumberOfColors())
 			tmpIdx = coloringIndex;
 
-		List<Vector3D> xyzPointL = refManager.getXyzPointsFor(aItem);
+		var xyzPointL = refManager.getXyzPointsFor(aItem);
 		if (xyzPointL.size() == 0)
 			return;
+
 		try
 		{
-			refManager.generateProfile(xyzPointL, yValueL, xValueL, tmpIdx);
+			generateProfile(refSmallBody, xyzPointL, yValueL, xValueL, tmpIdx);
 		}
 		catch (Exception aExp)
 		{
@@ -167,6 +169,72 @@ public class ProfilePlot extends BaseLinePlot implements ChartMouseListener, Pro
 		{
 			if (refSmallBody.getColoringIndex() != coloringIndex)
 				setColoringIndex(refSmallBody.getColoringIndex());
+		}
+	}
+
+	/**
+	 * Utility method to generate profile line plot.
+	 * </p>
+	 * Source from:</br>
+	 * edu.jhuapl.saavtk.model.structure.LineModel
+	 */
+	private static void generateProfile(PolyhedralModel aSmallBody, List<Vector3D> aXyzPointL,
+			List<Double> aProfileValueL, List<Double> aProfileDistanceL, int coloringIndex) throws Exception
+	{
+		aProfileValueL.clear();
+		aProfileDistanceL.clear();
+
+		// For each point in xyzPointList, find the cell containing that
+		// point and then, using barycentric coordinates find the value
+		// of the height at that point
+		//
+		// To compute the distance, assume we have a straight line connecting the first
+		// and last points of xyzPointList. For each point, p, in xyzPointList, find the
+		// point on the line closest to p. The distance from p to the start of the line
+		// is what is placed in heights. Use SPICE's nplnpt function for this.
+
+		double[] first = aXyzPointL.get(0).toArray();
+		double[] last = aXyzPointL.get(aXyzPointL.size() - 1).toArray();
+		double[] lindir = new double[3];
+		lindir[0] = last[0] - first[0];
+		lindir[1] = last[1] - first[1];
+		lindir[2] = last[2] - first[2];
+
+		// The following can be true if the user clicks on the same point twice
+		boolean zeroLineDir = MathUtil.vzero(lindir);
+
+		double[] pnear = new double[3];
+		double[] notused = new double[1];
+
+		double distance = 0.0;
+		double val = 0.0;
+
+		for (Vector3D aPt : aXyzPointL)
+		{
+			double[] xyzArr = aPt.toArray();
+
+			distance = 0.0;
+			if (!zeroLineDir)
+			{
+				MathUtil.nplnpt(first, lindir, xyzArr, pnear, notused);
+				distance = 1000.0 * MathUtil.distanceBetween(first, pnear);
+			}
+
+			// Save out the distance
+			aProfileDistanceL.add(distance);
+
+			// Save out the profile value
+			if (coloringIndex >= 0)
+			{
+				// Base the value off the plate coloring
+				val = 1000.0 * aSmallBody.getColoringValue(coloringIndex, xyzArr);
+			}
+			else
+			{
+				// Base the value off the radius (m)
+				val = 1000.0 * 1000.0 * MathUtil.reclat(xyzArr).rad;
+			}
+			aProfileValueL.add(val);
 		}
 	}
 

@@ -22,9 +22,12 @@ public class IconUtil
 	private static Icon cIconActionReset = null;
 
 	private static Icon cIconItemAdd = null;
+	private static Icon cIconItemAddTrue = null;
 	private static Icon cIconItemDel = null;
 	private static Icon cIconItemEdit = null;
 	private static Icon cIconItemEditTrue = null;
+	private static Icon cIconItemView = null;
+	private static Icon cIconItemViewTrue = null;
 	private static Icon cIconItemSpawn = null;
 	private static Icon cIconItemSync = null;
 	private static Icon cIconItemSyncTrue = null;
@@ -150,6 +153,26 @@ public class IconUtil
 	}
 
 	/**
+	 * Returns the icon that should be used for "Add Items" toggle == false button.
+	 */
+	public static Icon getItemAddFalse()
+	{
+		// Delegate
+		return getItemAdd();
+	}
+
+	/**
+	 * Returns the icon that should be used for "Add Items" toggle == true button.
+	 */
+	public static Icon getItemAddTrue()
+	{
+		if (cIconItemAddTrue == null)
+			cIconItemAddTrue = IconUtil.loadIcon("resources/icons/ItemAdd.True.24.png");
+
+		return cIconItemAddTrue;
+	}
+
+	/**
 	 * Returns the icon that should be used for "Delete Items" buttons
 	 */
 	public static Icon getItemDel()
@@ -200,6 +223,37 @@ public class IconUtil
 			cIconItemSpawn = IconUtil.loadIcon("resources/icons/ItemSpawn.24.png");
 
 		return cIconItemSpawn;
+	}
+
+	/**
+	 * Returns the icon that should be used for "Edit Items" buttons
+	 */
+	public static Icon getItemView()
+	{
+		if (cIconItemView == null)
+			cIconItemView = IconUtil.loadIcon("resources/icons/ItemView.False.24.png");
+
+		return cIconItemView;
+	}
+
+	/**
+	 * Returns the icon that should be used for "Edit Items" toggle == false button.
+	 */
+	public static Icon getItemViewFalse()
+	{
+		// Delegate
+		return getItemView();
+	}
+
+	/**
+	 * Returns the icon that should be used for "Edit Items" toggle == true button.
+	 */
+	public static Icon getItemViewTrue()
+	{
+		if (cIconItemViewTrue == null)
+			cIconItemViewTrue = IconUtil.loadIcon("resources/icons/ItemView.True.24.png");
+
+		return cIconItemViewTrue;
 	}
 
 	/**

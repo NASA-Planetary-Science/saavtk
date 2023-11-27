@@ -12,6 +12,7 @@ import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.PolyModel;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
+import edu.jhuapl.saavtk.structure.StructureType;
 import edu.jhuapl.saavtk.util.MathUtil;
 import glum.gui.action.PopAction;
 
@@ -28,17 +29,17 @@ public class CenterStructureAction<G1 extends Structure> extends PopAction<G1>
 	private final PolyModel refPolyModel;
 
 	// Attributes
-	private final boolean preserveCurrentDistance;
+	private final boolean preserveDistance;
 
 	/** Standard Constructor */
 	public CenterStructureAction(StructureManager<G1> aManager, Renderer aRenderer, PolyModel aPolyModel,
-			boolean aPreserveCurrentDistance)
+			boolean aPreserveDistance)
 	{
 		refManager = aManager;
 		refRenderer = aRenderer;
 		refPolyModel = aPolyModel;
 
-		preserveCurrentDistance = aPreserveCurrentDistance;
+		preserveDistance = aPreserveDistance;
 	}
 
 	@Override
@@ -53,8 +54,9 @@ public class CenterStructureAction<G1 extends Structure> extends PopAction<G1>
 		double[] focalPoint = refManager.getCenter(tmpItem).toArray();
 		double[] normal = refManager.getNormal(tmpItem).toArray();
 
-		double distanceToStructure = 0.0;
-		if (preserveCurrentDistance)
+		var size = refManager.getDiameter(tmpItem);
+		var distanceToStructure = 0.0;
+		if (preserveDistance == true || size <= 0 || Double.isFinite(size) == false)
 		{
 			Camera tmpCamera = refRenderer.getCamera();
 
@@ -64,7 +66,6 @@ public class CenterStructureAction<G1 extends Structure> extends PopAction<G1>
 		}
 		else
 		{
-			double size = refManager.getDiameter(tmpItem);
 			distanceToStructure = size / Math.tan(Math.toRadians(viewAngle) / 2.0);
 		}
 
@@ -91,8 +92,11 @@ public class CenterStructureAction<G1 extends Structure> extends PopAction<G1>
 	{
 		super.setChosenItems(aItemC, aAssocMI);
 
-		// Enable the item if the number of selected items == 1
-		boolean isEnabled = aItemC.size() == 1;
+		// Enable the item if the number of selected items == 1. If the type is a Point and
+		// preserveDistance == false, then do not enable. Points do not have a size.
+		var isEnabled = aItemC.size() == 1;
+		if (isEnabled == true && preserveDistance == false && aItemC.iterator().next().getType() == StructureType.Point)
+			isEnabled = false;
 		aAssocMI.setEnabled(isEnabled);
 	}
 

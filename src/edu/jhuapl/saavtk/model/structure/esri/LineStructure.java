@@ -8,7 +8,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
 
-import edu.jhuapl.saavtk.model.structure.LineModel;
+import edu.jhuapl.saavtk.structure.AnyStructureManager;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.util.MathUtil;
 
@@ -95,11 +95,11 @@ public class LineStructure implements Structure
 		return controlPoints.get(i);
 	}
 
-	public static <G1 extends PolyLine> List<LineStructure> fromSbmtStructure(LineModel<G1> model)
+	public static <G1 extends PolyLine> List<LineStructure> fromSbmtStructure(AnyStructureManager model)
 	{
 		var structures = new ArrayList<LineStructure>();
 		for (var aPolyLine : model.getAllItems())
-			structures.add(fromSbmtStructure(model, aPolyLine));
+			structures.add(fromSbmtStructure(model, (PolyLine)aPolyLine));
 
 		return structures;
 	}
@@ -108,7 +108,7 @@ public class LineStructure implements Structure
 	 * Utility method that takes a {@link PolyLine} (and it's manager) and returns the corresponding
 	 * {@link LineStructure}.
 	 */
-	public static <G1 extends PolyLine> LineStructure fromSbmtStructure(LineModel<G1> model, G1 poly)
+	public static <G1 extends PolyLine> LineStructure fromSbmtStructure(AnyStructureManager model, G1 poly)
 	{
 		List<Vector3D> xyzPointL = model.getXyzPointsFor(poly);
 
@@ -126,7 +126,7 @@ public class LineStructure implements Structure
 
 		LineStructure ls = new LineStructure(segments, controlPoints);
 		Color c = poly.getColor();
-		double w = model.getLineWidth();
+		double w = model.getRenderAttr().lineWidth();
 		LineStyle style = new LineStyle(c, w);
 		String label = poly.getLabel();
 		ls.setLineStyle(style);

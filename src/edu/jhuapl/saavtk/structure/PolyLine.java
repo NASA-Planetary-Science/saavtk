@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.jhuapl.saavtk.structure.vtk.RenderState;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.vtk.font.FontAttr;
 
@@ -30,12 +31,12 @@ public class PolyLine implements Structure
 	private FontAttr labelFA;
 	private boolean visible;
 
-	private double pathLength;
 	private String shapeModelId;
 
-	/**
-	 * Standard Constructor
-	 */
+	// Render vars
+	private RenderState renderState;
+
+	/** Standard Constructor */
 	public PolyLine(int aId, Object aSource, List<LatLon> aControlPointL)
 	{
 		id = aId;
@@ -50,8 +51,9 @@ public class PolyLine implements Structure
 		labelFA = FontAttr.Default;
 		visible = true;
 
-		pathLength = 0;
 		shapeModelId = null;
+
+		renderState = RenderState.Invalid;
 	}
 
 	/**
@@ -63,17 +65,6 @@ public class PolyLine implements Structure
 	}
 
 	/**
-	 * Returns the length of the line as projected onto the surface.
-	 * <P>
-	 * Note this is not the distance between all of the control points but rather
-	 * the distance of the line as projected on the relevant surface.
-	 */
-	public double getPathLength()
-	{
-		return pathLength;
-	}
-
-	/**
 	 * Returns true if this PolyLine should be closed).
 	 */
 	public boolean isClosed()
@@ -82,12 +73,11 @@ public class PolyLine implements Structure
 	}
 
 	/**
-	 * Adds a control point at the specified index. All controls at that index or
-	 * later will be shifted to the right.
+	 * Adds a control point at the specified index. All controls at that index or later will be shifted to the right.
 	 */
 	public void addControlPoint(int aIdx, LatLon aControlPoint)
 	{
-		List<LatLon> tmpL = new ArrayList<>(controlPointL);
+		var tmpL = new ArrayList<LatLon>(controlPointL);
 		tmpL.add(aIdx, aControlPoint);
 
 		controlPointL = ImmutableList.copyOf(tmpL);
@@ -98,7 +88,7 @@ public class PolyLine implements Structure
 	 */
 	public void delControlPoint(int aIdx)
 	{
-		List<LatLon> tmpL = new ArrayList<>(controlPointL);
+		var tmpL = new ArrayList<LatLon>(controlPointL);
 		tmpL.remove(aIdx);
 
 		controlPointL = ImmutableList.copyOf(tmpL);
@@ -109,7 +99,7 @@ public class PolyLine implements Structure
 	 */
 	public void setControlPoint(int aIdx, LatLon aControlPoint)
 	{
-		List<LatLon> tmpL = new ArrayList<>(controlPointL);
+		var tmpL = new ArrayList<LatLon>(controlPointL);
 		tmpL.set(aIdx, aControlPoint);
 
 		controlPointL = ImmutableList.copyOf(tmpL);
@@ -121,14 +111,6 @@ public class PolyLine implements Structure
 	public void setControlPoints(List<LatLon> aControlPointL)
 	{
 		controlPointL = ImmutableList.copyOf(aControlPointL);
-	}
-
-	/**
-	 * Sets in the path length assoicated with this Line.
-	 */
-	public void setPathLength(double aPathLength)
-	{
-		pathLength = aPathLength;
 	}
 
 	@Override
@@ -162,6 +144,12 @@ public class PolyLine implements Structure
 	}
 
 	@Override
+	public RenderState getRenderState()
+	{
+		return renderState;
+	}
+
+	@Override
 	public String getShapeModelId()
 	{
 		return shapeModelId;
@@ -171,6 +159,12 @@ public class PolyLine implements Structure
 	public Object getSource()
 	{
 		return source;
+	}
+
+	@Override
+	public StructureType getType()
+	{
+		return StructureType.Path;
 	}
 
 	@Override
@@ -204,6 +198,12 @@ public class PolyLine implements Structure
 	}
 
 	@Override
+	public void setRenderState(RenderState aRenderState)
+	{
+		renderState = aRenderState;
+	}
+
+	@Override
 	public void setShapeModelId(String aShapeModelId)
 	{
 		shapeModelId = aShapeModelId;
@@ -214,7 +214,7 @@ public class PolyLine implements Structure
 	{
 		visible = aBool;
 	}
-	
+
 	@Override
 	public String toString()
 	{

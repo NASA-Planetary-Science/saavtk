@@ -45,6 +45,14 @@ public class ToolTipUtil
 	}
 
 	/**
+	 * Returns the tool tip that should be used for "View Items" buttons
+	 */
+	public static String getItemView()
+	{
+		return "View Items";
+	}
+
+	/**
 	 * Returns the tool tip that should be used for "Edit Items" buttons
 	 */
 	public static String getItemReset()
@@ -167,7 +175,7 @@ public class ToolTipUtil
 	{
 		return "Clear Selection";
 	}
-	
+
 	/*
 	 * Returns the tool tip that should be used for "Load Items" buttons
 	 */
@@ -175,7 +183,7 @@ public class ToolTipUtil
 	{
 		return "Load";
 	}
-	
+
 	/*
 	 * Returns the tool tip that should be used for "Save Items" buttons
 	 */
@@ -183,7 +191,7 @@ public class ToolTipUtil
 	{
 		return "Save";
 	}
-	
+
 	/*
 	 * Returns the tool tip that should be used for "Show Items" buttons
 	 */
@@ -191,7 +199,7 @@ public class ToolTipUtil
 	{
 		return "Show";
 	}
-	
+
 	/*
 	 * Returns the tool tip that should be used for "Hide Items" buttons
 	 */
@@ -199,7 +207,7 @@ public class ToolTipUtil
 	{
 		return "Hide";
 	}
-	
+
 	/*
 	 * Returns the tool tip that should be used for "Record" buttons
 	 */
@@ -207,7 +215,7 @@ public class ToolTipUtil
 	{
 		return "Record";
 	}
-	
+
 	/*
 	 * Returns the tool tip that should be used for "Stop" buttons
 	 */
@@ -215,7 +223,7 @@ public class ToolTipUtil
 	{
 		return "Stop";
 	}
-	
+
 	/*
 	 * Returns the tool tip that should be used for "Font" buttons
 	 */
@@ -230,7 +238,7 @@ public class ToolTipUtil
 	{
 		return "Generate a Color Image";
 	}
-	 
+
 	/*
 	 * Returns the tool tip that should be used for "image cube" buttons
 	 */
@@ -238,7 +246,7 @@ public class ToolTipUtil
 	{
 		return "Generate an Image Cube";
 	}
-	
+
 	/*
 	 * Returns the tool tip that should be used for "custom image" buttons
 	 */
@@ -246,7 +254,7 @@ public class ToolTipUtil
 	{
 		return "Add one or more Custom Images";
 	}
-	
+
 	/*
 	 * Returns the tool tip that should be used for custom "Load Items" buttons
 	 */
@@ -254,7 +262,7 @@ public class ToolTipUtil
 	{
 		return "Load a saved list of custom images";
 	}
-	
+
 	/*
 	 * Returns the tool tip that should be used for custom "save Items" buttons
 	 */
@@ -262,7 +270,7 @@ public class ToolTipUtil
 	{
 		return "Save a list of custom images";
 	}
-	
+
 	/*
 	 * Returns the tool tip that should be used for "Load Image" buttons
 	 */
@@ -270,7 +278,7 @@ public class ToolTipUtil
 	{
 		return "Load a saved list of images from a file";
 	}
-	
+
 	/*
 	 * Returns the tool tip that should be used for "save image" buttons
 	 */
@@ -278,7 +286,7 @@ public class ToolTipUtil
 	{
 		return "Save selected images (or all images if none selected) to a file";
 	}
-	
+
 	/*
 	 * Returns the tool tip that should be used for "show border" buttons
 	 */
@@ -286,7 +294,7 @@ public class ToolTipUtil
 	{
 		return "Show borders for selected images";
 	}
-	
+
 	/*
 	 * Returns the tool tip that should be used for "hide border" buttons
 	 */
@@ -294,7 +302,7 @@ public class ToolTipUtil
 	{
 		return "Hide borders for selected images";
 	}
-	
+
 	/*
 	 * Returns the tool tip that should be used for "gallery" buttons
 	 */

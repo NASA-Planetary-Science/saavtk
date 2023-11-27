@@ -41,7 +41,7 @@ public class VtkUtil
 	 * item in the provided list, aItemL. The {@link VtkResource} will be released
 	 * via {@link VtkResource#vtkDispose()} before it is removed from the map,
 	 * aResourceM.
-	 * <P>
+	 * <p>
 	 * Note the updated map will not have any new entries - rather stale entries
 	 * will just be removed.
 	 *
@@ -50,7 +50,7 @@ public class VtkUtil
 	 *                   disposed.
 	 * @param aResourceM A mapping of items to corresponding {@link VtkResource}.
 	 */
-	public static <G1, G2 extends VtkResource> void flushResourceMap(Map<G1, G2> aResourceM, Collection<G1> aValidC)
+	public static <G1, G2 extends VtkResource> void flushResourceMap(Map<G1, G2> aResourceM, Collection<? extends G1> aValidC)
 	{
 		// Copy the map to allow us to use it as a working map
 		Map<G1, G2> oldM = new HashMap<>(aResourceM);
@@ -127,7 +127,7 @@ public class VtkUtil
 	/**
 	 * Utility method that returns the model associated with the specified
 	 * {@link vtkActor}.
-	 * <P>
+	 * <p>
 	 * This method will return the associated model if the provided actor implements
 	 * the {@link AssocActor} interface.
 	 */
@@ -154,7 +154,7 @@ public class VtkUtil
 	/**
 	 * Utility method that takes the color and sets them into the specified
 	 * {@link vtkUnsignedCharArray} at the specified index, aIdx.
-	 * <P>
+	 * <p>
 	 * Note only 3 values (r,g,b) are set at the specified index.
 	 *
 	 * @param aUCA
@@ -169,7 +169,7 @@ public class VtkUtil
 	/**
 	 * Utility method that takes the color and sets them into the specified
 	 * {@link vtkUnsignedCharArray} at the specified index, aIdx.
-	 * <P>
+	 * <p>
 	 * Note 4 values (r,g,b,a) are set at the specified index.
 	 *
 	 * @param aUCA

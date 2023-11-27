@@ -1,101 +1,71 @@
 package edu.jhuapl.saavtk.structure.vtk;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.structure.Ellipse;
+import edu.jhuapl.saavtk.structure.RenderAttr;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
 import edu.jhuapl.saavtk.vtk.VtkDrawUtil;
-import edu.jhuapl.saavtk.vtk.VtkResource;
-import vtk.vtkPointLocator;
 import vtk.vtkPolyData;
 import vtk.vtkQuadricClustering;
 
 /**
- * Class which contains the logic to render a single {@link Ellipse} using the
- * VTK framework.
- * <P>
+ * Class which contains the logic to render a single {@link Ellipse} using the VTK framework.
+ * <p>
  * This class supports the following:
- * <UL>
- * <LI>Update / Refresh mechanism
- * <LI>VTK state management
- * <LI>Exterior rendering
- * <LI>Interior rendering
- * </UL>
+ * <ul>
+ * <li>Update / Refresh mechanism
+ * <li>VTK state management
+ * <li>Exterior rendering
+ * <li>Interior rendering
+ * </ul>
+ * Note this class will update the reference structure's {@link RenderState} during a VTK state update.
  *
  * @author lopeznr1
  */
-public class VtkEllipsePainter implements VtkResource
+public class VtkEllipsePainter implements VtkStructurePainter
 {
 	// Reference vars
 	private final PolyhedralModel refSmallBody;
 	private final Ellipse refItem;
 
-	// Attributes
-	private final int numSides;
+	// State vars
+	private RenderAttr renderAttr;
 
 	// VTK vars
 	private final vtkPolyData vExteriorDecPD;
 	private final vtkPolyData vExteriorRegPD;
 	private final vtkPolyData vInteriorDecPD;
 	private final vtkPolyData vInteriorRegPD;
+	private final vtkPolyData vEmptyPD;
 	private boolean vIsStale;
 
-	/**
-	 * Standard Constructor
-	 */
-	public VtkEllipsePainter(PolyhedralModel aSmallBody, Ellipse aItem, int aNumSides)
+	/** Standard Constructor */
+	public VtkEllipsePainter(PolyhedralModel aSmallBody, Ellipse aItem, RenderAttr aRenderAttr)
 	{
 		refSmallBody = aSmallBody;
 		refItem = aItem;
 
-		numSides = aNumSides;
+		renderAttr = aRenderAttr;
 
 		vExteriorDecPD = new vtkPolyData();
 		vExteriorRegPD = new vtkPolyData();
 		vInteriorDecPD = new vtkPolyData();
 		vInteriorRegPD = new vtkPolyData();
+		vEmptyPD = new vtkPolyData();
 		vIsStale = true;
 	}
 
 	/**
-	 * Returns the exterior (decimated) vtkPolyData.
+	 * Sets in the painter's {@link RenderAttr}.
 	 */
-	public vtkPolyData getVtkExteriorDecPolyData()
+	public void setRenderAttr(RenderAttr aRenderAttr)
 	{
-		return vExteriorDecPD;
-	}
+		var isChanged = false;
+		isChanged |= renderAttr.numRoundSides() != aRenderAttr.numRoundSides();
+		if (isChanged == true)
+			vtkMarkStale();
 
-	/**
-	 * Returns the exterior (regular) vtkPolyData.
-	 */
-	public vtkPolyData getVtkExteriorPolyData()
-	{
-		return vExteriorRegPD;
-	}
-
-	/**
-	 * Returns the interior (decimated) vtkPolyData.
-	 */
-	public vtkPolyData getVtkInteriorDecPolyData()
-	{
-		return vInteriorDecPD;
-	}
-
-	/**
-	 * Returns the interior (regular) vtkPolyData.
-	 */
-	public vtkPolyData getVtkInteriorPolyData()
-	{
-		return vInteriorRegPD;
-	}
-
-	/**
-	 * Notification that the VTK state is stale.
-	 */
-	public void markStale()
-	{
-		vIsStale = true;
+		renderAttr = aRenderAttr;
 	}
 
 	@Override
@@ -111,6 +81,43 @@ public class VtkEllipsePainter implements VtkResource
 		vExteriorRegPD.Delete();
 		vInteriorDecPD.Delete();
 		vInteriorRegPD.Delete();
+		vEmptyPD.Delete();
+	}
+
+	@Override
+	public vtkPolyData vtkGetExteriorDecPD()
+	{
+		return vExteriorDecPD;
+	}
+
+	@Override
+	public vtkPolyData vtkGetExteriorRegPD()
+	{
+		return vExteriorRegPD;
+	}
+
+	@Override
+	public vtkPolyData vtkGetInteriorDecPD()
+	{
+		if (refItem.getShowInterior() == false)
+			return vEmptyPD;
+
+		return vInteriorDecPD;
+	}
+
+	@Override
+	public vtkPolyData vtkGetInteriorRegPD()
+	{
+		if (refItem.getShowInterior() == false)
+			return vEmptyPD;
+
+		return vInteriorRegPD;
+	}
+
+	@Override
+	public void vtkMarkStale()
+	{
+		vIsStale = true;
 	}
 
 	@Override
@@ -122,17 +129,32 @@ public class VtkEllipsePainter implements VtkResource
 		vIsStale = false;
 
 		// Draw the (high quality) ellipse
-		vtkPolyData vTmpPD = refSmallBody.getSmallBodyPolyData();
-		vtkPointLocator vTmpPL = refSmallBody.getPointLocator();
-		Vector3D center = refItem.getCenter();
-		double radius = refItem.getRadius();
-		double flattening = refItem.getFlattening();
-		double angle = refItem.getAngle();
-		VtkDrawUtil.drawEllipseOn(vTmpPD, vTmpPL, center, radius, flattening, angle, numSides, vInteriorRegPD,
+		var vTmpInteriorRegPD = vInteriorRegPD;
+		if (refItem.getShowInterior() == false)
+			vTmpInteriorRegPD = null;
+
+		var vTmpPD = refSmallBody.getSmallBodyPolyData();
+		var vTmpPL = refSmallBody.getPointLocator();
+		var center = refItem.getCenter();
+		var radius = refItem.getRadius();
+		var flattening = refItem.getFlattening();
+		var angle = refItem.getAngle();
+		var numSides = renderAttr.numRoundSides();
+		VtkDrawUtil.drawEllipseOn(vTmpPD, vTmpPL, center, radius, flattening, angle, numSides, vTmpInteriorRegPD,
 				vExteriorRegPD);
 
+		// Update the Ellipse's RenderState
+		var pathLength = Double.NaN;
+
+		var surfaceArea = Double.NaN;
+		if (refItem.getShowInterior() == true)
+			surfaceArea = PolyDataUtil.computeSurfaceArea(vInteriorRegPD);
+
+		var renderState = new RenderState(refItem.getCenter(), pathLength, surfaceArea);
+		refItem.setRenderState(renderState);
+
 		// Setup decimator
-		vtkQuadricClustering decimator = new vtkQuadricClustering();
+		var decimator = new vtkQuadricClustering();
 
 		// Decimate interior
 		decimator.SetInputData(vInteriorRegPD);
@@ -141,7 +163,7 @@ public class VtkEllipsePainter implements VtkResource
 		decimator.Update();
 		vInteriorDecPD.DeepCopy(decimator.GetOutput());
 
-		// Decimate boundary
+		// Decimate exterior
 		decimator.SetInputData(vExteriorRegPD);
 		decimator.SetNumberOfXDivisions(2);
 		decimator.SetNumberOfYDivisions(2);

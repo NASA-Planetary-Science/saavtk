@@ -11,7 +11,6 @@ import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.reflect.InvocationTargetException;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -35,6 +34,7 @@ import edu.jhuapl.saavtk.popup.PopupMenu;
 import edu.jhuapl.saavtk.status.LegacyStatusHandler;
 import edu.jhuapl.saavtk.status.LocationStatusHandler;
 import edu.jhuapl.saavtk.status.StatusNotifier;
+import edu.jhuapl.saavtk.structure.AnyStructureManager;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.Preferences;
 import edu.jhuapl.saavtk.view.light.LightUtil;
@@ -57,6 +57,7 @@ public abstract class View extends JPanel
     private ModelManager modelManager;
     private PickManager pickManager;
     private PopupManager popupManager;
+    protected AnyStructureManager structureManager;
     private WindowManager infoPanelManager;
     private WindowManager spectrumPanelManager;
     protected IPositionOrientationManager positionOrientationManager;
@@ -120,7 +121,7 @@ public abstract class View extends JPanel
      */
     public JSplitPane getMainSplitPane()
     {
-        return splitPane; 
+        return splitPane;
     }
 
     public StatusNotifier getStatusNotifier()
@@ -212,7 +213,7 @@ public abstract class View extends JPanel
                 setupPositionOrientationManager();
             });
 
-            
+
             Configuration.runAndWaitOnEDT(() -> {
                 setupRenderer();
             });
@@ -287,7 +288,7 @@ public abstract class View extends JPanel
                 initializeStateManager();
 
                 initialized.set(true);
-                
+
                 int[] selectionColorArray = Preferences.getInstance().getAsIntArray(Preferences.SELECTION_COLOR, new int[] {0,0,255});
         		Color selectionColor = new Color(selectionColorArray[0], selectionColorArray[1], selectionColorArray[2]);
         		getModelManager().getCommonData().setSelectionColor(selectionColor);

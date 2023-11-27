@@ -8,8 +8,8 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
 
+import edu.jhuapl.saavtk.structure.AnyStructureManager;
 import edu.jhuapl.saavtk.structure.Ellipse;
-import edu.jhuapl.saavtk.structure.EllipseManager;
 import vtk.vtkCellArray;
 import vtk.vtkPoints;
 
@@ -41,12 +41,15 @@ public class EllipseStructure extends LineStructure
 		this.params = params;
 	}
 
-	public static List<EllipseStructure> fromSbmtStructure(EllipseManager aEllipseManager)
+	public static List<EllipseStructure> fromSbmtStructure(AnyStructureManager aEllipseManager)
 	{
 		var structures = new ArrayList<EllipseStructure>();
 
-		for (var aEllipse : aEllipseManager.getAllItems())
-			structures.add(fromSbmtStructure(aEllipseManager, aEllipse));
+		for (var aItem : aEllipseManager.getAllItems())
+		{
+			if (aItem instanceof Ellipse aEllipse)
+				structures.add(fromSbmtStructure(aEllipseManager, aEllipse));
+		}
 
 		return structures;
 	}
@@ -55,15 +58,15 @@ public class EllipseStructure extends LineStructure
 	 * Utility method that takes an {@link Ellipse} (and it's manager) and returns the corresponding
 	 * {@link EllipseStructure}.
 	 */
-	public static EllipseStructure fromSbmtStructure(EllipseManager aEllipseManager, Ellipse aEllipse)
+	public static EllipseStructure fromSbmtStructure(AnyStructureManager aManager, Ellipse aEllipse)
 	{
 		Color c = aEllipse.getColor();
-		double w = aEllipseManager.getLineWidth();
+		double w = aManager.getRenderAttr().lineWidth();
 		LineStyle style = new LineStyle(c, w);
 		String label = aEllipse.getLabel();
 		//
 
-		var tmpPolyData = aEllipseManager.getVtkExteriorPolyDataFor(aEllipse);
+		var tmpPolyData = aManager.getVtkExteriorPolyDataFor(aEllipse);
 		vtkCellArray cells = tmpPolyData.GetLines();
 		List<LineSegment> segments = Lists.newArrayList();
 		for (int j = 0; j < cells.GetNumberOfCells(); j++)

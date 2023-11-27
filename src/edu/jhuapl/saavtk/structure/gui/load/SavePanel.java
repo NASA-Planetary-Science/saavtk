@@ -30,23 +30,19 @@ import com.google.common.collect.Multimap;
 
 import edu.jhuapl.saavtk.gui.util.Colors;
 import edu.jhuapl.saavtk.gui.util.IconUtil;
-import edu.jhuapl.saavtk.model.ModelManager;
-import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
-import edu.jhuapl.saavtk.model.structure.LineModel;
-import edu.jhuapl.saavtk.model.structure.PolygonModel;
 import edu.jhuapl.saavtk.model.structure.StructuresExporter;
 import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.esri.FeatureUtil;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
 import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
+import edu.jhuapl.saavtk.structure.AnyStructureManager;
 import edu.jhuapl.saavtk.structure.Ellipse;
-import edu.jhuapl.saavtk.structure.EllipseManager;
+import edu.jhuapl.saavtk.structure.Point;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.Polygon;
 import edu.jhuapl.saavtk.structure.Structure;
-import edu.jhuapl.saavtk.structure.StructureManager;
+import edu.jhuapl.saavtk.structure.StructureType;
 import edu.jhuapl.saavtk.structure.io.BennuStructuresEsriIO;
 import edu.jhuapl.saavtk.structure.io.StructureMiscUtil;
 import edu.jhuapl.saavtk.structure.io.StructureSaveUtil;
@@ -67,7 +63,6 @@ import glum.unit.NumberUnit;
 import glum.unit.TimeCountUnit;
 import glum.util.ThreadUtil;
 import net.miginfocom.swing.MigLayout;
-import plotkit.misc.LogicError;
 
 /**
  * Panel that allows the user to save a collection of {@link Structure}.
@@ -89,11 +84,7 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 
 	// Ref vars
 	private final PolyhedralModel refSmallBody;
-	private final StructureManager<PolyLine> refPathStructureManager;
-	private final StructureManager<Polygon> refPolyStructureManager;
-	private final StructureManager<Ellipse> refCircleStructureManager;
-	private final StructureManager<Ellipse> refEllipseStructureManager;
-	private final StructureManager<Ellipse> refPointStructureManager;
+	private final AnyStructureManager refStructureManager;
 
 	// State vars
 	private ImmutableList<Structure> fullItemL;
@@ -124,18 +115,12 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 	private final JButton acceptB, cancelB, closeB;
 
 	/** Standard Constructor */
-	@SuppressWarnings("unchecked")
-	public SavePanel(Component aParent, ModelManager aModelManager)
+	public SavePanel(Component aParent, PolyhedralModel aSmallBody, AnyStructureManager aStructureManager)
 	{
 		super(aParent);
 
-		refSmallBody = aModelManager.getPolyhedralModel();
-
-		refPathStructureManager = (StructureManager<PolyLine>) aModelManager.getModel(ModelNames.LINE_STRUCTURES);
-		refPolyStructureManager = (StructureManager<Polygon>) aModelManager.getModel(ModelNames.POLYGON_STRUCTURES);
-		refCircleStructureManager = (StructureManager<Ellipse>) aModelManager.getModel(ModelNames.CIRCLE_STRUCTURES);
-		refEllipseStructureManager = (StructureManager<Ellipse>) aModelManager.getModel(ModelNames.ELLIPSE_STRUCTURES);
-		refPointStructureManager = (StructureManager<Ellipse>) aModelManager.getModel(ModelNames.POINT_STRUCTURES);
+		refSmallBody = aSmallBody;
+		refStructureManager = aStructureManager;
 
 		fullItemL = ImmutableList.of();
 		pickItemL = ImmutableList.of();
@@ -206,7 +191,7 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 		pickItemL = ImmutableList.copyOf(aPickItemC);
 		fileResultM = new ConcurrentHashMap<>();
 
-		formatBox.setChosenItem(FormatType.Sbmt);
+		formatBox.setChosenItem(FormatType.SBMT);
 		targetItemsAllRB.setSelected(true);
 		allowOverwriteCB.setSelected(false);
 		workTask.reset();
@@ -322,9 +307,9 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 		retPanel.add(formatBox, "wrap");
 
 		var locationL = new JLabel("Location:");
-		retPanel.add(locationB, "split 2,w 24!,h 24!");
-		retPanel.add(locationL, "");
-		retPanel.add(locationTF, "growx,pushx,w 100::,wrap");
+		retPanel.add(locationL, "ax right");
+		retPanel.add(locationTF, "split 2,growx,pushx,w 100::");
+		retPanel.add(locationB, "w 24!,h 24!,wrap");
 
 		var nameL = new JLabel("Base Name:");
 		retPanel.add(nameL, "ax right");
@@ -424,29 +409,29 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 				specExt = ".polygons";
 			else if (aItem instanceof PolyLine)
 				specExt = ".paths";
+			else if (aItem instanceof Point)
+				specExt = ".points";
 			else if (aItem instanceof Ellipse aEllipse)
 			{
-				if (aEllipse.getMode() == Mode.ELLIPSE_MODE)
+				if (aEllipse.getType() == StructureType.Ellipse)
 					specExt = ".ellipses";
-				else if (aEllipse.getMode() == Mode.CIRCLE_MODE)
+				else if (aEllipse.getType() == StructureType.Circle)
 					specExt = ".circles";
-				else if (aEllipse.getMode() == Mode.POINT_MODE)
-					specExt = ".points";
 				else
-					throw new LogicError("Unsupported mode: " + aEllipse.getMode());
+					throw new Error("Unsupported mode: " + aEllipse.getType());
 			}
 			else
-				throw new LogicError("Unsupported type: " + aItem);
+				throw new Error("Unsupported Structure: " + aItem.getClass() + " -> type: " + aItem.getType());
 
 			var tmpFile = (File) null;
-			if (formatType == FormatType.Sbmt)
+			if (formatType == FormatType.SBMT)
 			{
-				if (aItem instanceof Ellipse)
+				if (aItem instanceof Ellipse || aItem instanceof Point)
 					tmpFile = new File(destPath, baseName + specExt + ".txt");
-				else if (aItem instanceof PolyLine)
+				else if (aItem instanceof PolyLine || aItem instanceof Polygon)
 					tmpFile = new File(destPath, baseName + specExt + ".xml");
 				else
-					throw new LogicError("Unsupported type: " + aItem);
+					throw new Error("Unsupported Structure: " + aItem.getClass() + " -> type: " + aItem.getType());
 			}
 			else if (formatType == FormatType.ESRI)
 			{
@@ -555,7 +540,7 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 		// Warn the user if the top-level-folder folder needs to be created
 		var destPath = getDestPath();
 		if (destPath != null && destPath.exists() == false)
-			retIssueL.add("The target folder does not exist and will be created.");
+			retIssueL.add("The location (folder) does not exist and will be created.");
 
 		// Warn the user of the experimental SBMT ESRI format
 		var formatType = formatBox.getChosenItem();
@@ -604,15 +589,15 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 
 		var retItemL = new ArrayList<Structure>();
 		if (pathCountCB.isSelected() == true)
-			retItemL.addAll(StructureMiscUtil.getPathsFrom(tmpItemL));
+			retItemL.addAll(StructureMiscUtil.getItemsOfType(tmpItemL, StructureType.Path));
 		if (polygonCountCB.isSelected() == true)
-			retItemL.addAll(StructureMiscUtil.getPolygonsFrom(tmpItemL));
+			retItemL.addAll(StructureMiscUtil.getItemsOfType(tmpItemL, StructureType.Polygon));
 		if (circleCountCB.isSelected() == true)
-			retItemL.addAll(StructureMiscUtil.getEllipsesFrom(tmpItemL, Mode.CIRCLE_MODE));
+			retItemL.addAll(StructureMiscUtil.getItemsOfType(tmpItemL, StructureType.Circle));
 		if (ellipseCountCB.isSelected() == true)
-			retItemL.addAll(StructureMiscUtil.getEllipsesFrom(tmpItemL, Mode.ELLIPSE_MODE));
+			retItemL.addAll(StructureMiscUtil.getItemsOfType(tmpItemL, StructureType.Ellipse));
 		if (pointCountCB.isSelected() == true)
-			retItemL.addAll(StructureMiscUtil.getEllipsesFrom(tmpItemL, Mode.POINT_MODE));
+			retItemL.addAll(StructureMiscUtil.getItemsOfType(tmpItemL, StructureType.Point));
 
 		return retItemL;
 	}
@@ -634,9 +619,9 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 		var destPath = new File(locationTF.getText());
 		destPath.mkdirs();
 		if (destPath.exists() == false)
-			throw new LogicError("Failed to create the locataion: " + destPath);
+			throw new Error("Failed to create the locataion: " + destPath);
 		if (destPath.isDirectory() == false)
-			throw new LogicError("The specified destPath, " + destPath + ", is not a folder.");
+			throw new Error("The specified destPath, " + destPath + ", is not a folder.");
 
 		// Format is dictated by the file extension
 		var name = aFile.getName();
@@ -644,18 +629,8 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 		// Format: Classic SBMT: Circles, Ellipses, Points
 		if (name.endsWith(".txt") == true)
 		{
-			var ellipseL = StructureMiscUtil.getEllipsesFrom(tmpItemL, null);
-
-			var tmpMode = ellipseL.get(0).getMode();
-			var tmpManager = (EllipseManager) switch (tmpMode)
-			{
-				case CIRCLE_MODE -> refCircleStructureManager;
-				case ELLIPSE_MODE -> refEllipseStructureManager;
-				case POINT_MODE -> refPointStructureManager;
-				default -> throw new LogicError("Unsupported mode: " + ellipseL.get(0).getMode());
-			};
-
-			StructureSaveUtil.saveModel(aTask, aFile, tmpManager, ellipseL, refSmallBody);
+			var structureL = StructureMiscUtil.getItemsOfType(tmpItemL, null);
+			StructureSaveUtil.saveModel(aTask, aFile, refStructureManager, structureL, refSmallBody);
 		}
 
 		// Format: Classic SBMT: PolyLines or Polygons
@@ -663,18 +638,16 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 		{
 			if (name.endsWith(".paths.xml") == true)
 			{
-				var tmpManager = (LineModel<PolyLine>) refPathStructureManager;
 				var polylineL = StructureMiscUtil.getPathsFrom(tmpItemL);
-				XmlLoadUtil.saveManager(aFile, tmpManager, polylineL, refSmallBody);
+				XmlLoadUtil.saveManager(aFile, polylineL, refSmallBody);
 			}
 			else if (name.endsWith(".polygons.xml") == true)
 			{
-				var tmpManager = (PolygonModel) refPolyStructureManager;
 				var polygonL = StructureMiscUtil.getPolygonsFrom(tmpItemL);
-				XmlLoadUtil.saveManager(aFile, tmpManager, polygonL, refSmallBody);
+				XmlLoadUtil.saveManager(aFile, polygonL, refSmallBody);
 			}
 			else
-				throw new LogicError("Invalid file name extension: " + name);
+				throw new Error("Invalid file name extension: " + name);
 		}
 
 		// Format: ESRI
@@ -688,38 +661,28 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 			{
 				if (aItem instanceof Ellipse aEllipse)
 				{
-					var tmpManager = (EllipseManager) switch (aEllipse.getMode())
+					if (aEllipse.getType() == StructureType.Ellipse || aEllipse.getType() == StructureType.Circle)
 					{
-						case CIRCLE_MODE -> refCircleStructureManager;
-						case ELLIPSE_MODE -> refEllipseStructureManager;
-						case POINT_MODE -> refPointStructureManager;
-						default -> throw new LogicError("Unsupported mode: " + aEllipse.getMode());
-					};
-
-					if (aEllipse.getMode() == Mode.ELLIPSE_MODE || aEllipse.getMode() == Mode.CIRCLE_MODE)
-					{
-						var tmpEsriStruct = EllipseStructure.fromSbmtStructure(tmpManager, aEllipse);
+						var tmpEsriStruct = EllipseStructure.fromSbmtStructure(refStructureManager, aEllipse);
 						ellipseDFC.add(FeatureUtil.createFeatureFrom(tmpEsriStruct));
 					}
-					else if (aEllipse.getMode() == Mode.POINT_MODE)
+					else if (aEllipse.getType() == StructureType.Point)
 						pointDFC.add(FeatureUtil.createFeatureFrom(new PointStructure(aEllipse.getCenter())));
 					else
-						throw new LogicError("Unsupported mode: " + aEllipse.getMode());
+						throw new Error("Unsupported mode: " + aEllipse.getType());
 				}
 				else if (aItem instanceof Polygon aPolygon)
 				{
-					var tmpManager = (PolygonModel) refPolyStructureManager;
-					var tmpEsriStruct = LineStructure.fromSbmtStructure(tmpManager, aPolygon);
+					var tmpEsriStruct = LineStructure.fromSbmtStructure(refStructureManager, aPolygon);
 					lineDFC.add(FeatureUtil.createFeatureFrom(tmpEsriStruct));
 				}
 				else if (aItem instanceof PolyLine aPolyLine)
 				{
-					var tmpManager = (LineModel<PolyLine>) refPathStructureManager;
-					var tmpEsriStruct = LineStructure.fromSbmtStructure(tmpManager, aPolyLine);
+					var tmpEsriStruct = LineStructure.fromSbmtStructure(refStructureManager, aPolyLine);
 					lineDFC.add(FeatureUtil.createFeatureFrom(tmpEsriStruct));
 				}
 				else
-					throw new LogicError("Unsupported mode: " + aItem);
+					throw new Error("Unsupported mode: " + aItem);
 			}
 
 			if (ellipseDFC.getCount() > 0)
@@ -734,20 +697,18 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 		else if (name.endsWith(".paths.vtk") == true)
 		{
 			var saveAsMultipleFiles = false;
-			var tmpManager = (LineModel<PolyLine>) refPathStructureManager;
-			var polylineL = StructureMiscUtil.getPathsFrom(tmpItemL);
-			StructuresExporter.exportToVtkFile(tmpManager, polylineL, aFile.toPath(), saveAsMultipleFiles);
+			var polylineL = StructureMiscUtil.getItemsOfType(tmpItemL, StructureType.Path);
+			StructuresExporter.exportToVtkFile(refStructureManager, polylineL, aFile.toPath(), saveAsMultipleFiles);
 		}
 		else if (name.endsWith(".polygons.vtk") == true)
 		{
 			var saveAsMultipleFiles = false;
-			var tmpManager = (PolygonModel) refPolyStructureManager;
-			var polygonL = StructureMiscUtil.getPolygonsFrom(tmpItemL);
-			StructuresExporter.exportToVtkFile(tmpManager, polygonL, aFile.toPath(), saveAsMultipleFiles);
+			var polygonL = StructureMiscUtil.getItemsOfType(tmpItemL, StructureType.Polygon);
+			StructuresExporter.exportToVtkFile(refStructureManager, polygonL, aFile.toPath(), saveAsMultipleFiles);
 		}
 
 		else
-			throw new LogicError("Invalid file name extension: " + name);
+			throw new Error("Invalid file name extension: " + name);
 	}
 
 	/**
@@ -837,7 +798,7 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 	 */
 	private void updateGuiWhenDone()
 	{
-		var infoMsg = initMsg;
+		var infoMsg = initMsg + "\n";
 		for (var aFile : fileResultM.keySet())
 		{
 			var tmpResult = fileResultM.get(aFile);
@@ -875,6 +836,7 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 		var issueWarnL = getIssueWarnList();
 		var existFileS = new HashSet<File>();
 
+		// Update state var: initMsg
 		initMsg = "";
 		if (issueFailL.size() > 0)
 		{
@@ -918,6 +880,7 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 			}
 			initMsg += "\n";
 		}
+		initMsg = initMsg.strip() + "\n";
 
 		// Update the info area
 		if (initMsg.equals(infoTA.getText()) == false)
@@ -948,35 +911,35 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 			tmpItemL = pickItemL;
 
 		// Update GUI state of various tasks
-		int cntPath = StructureMiscUtil.getPathsFrom(tmpItemL).size();
+		int cntPath = StructureMiscUtil.getItemsOfType(tmpItemL, StructureType.Path).size();
 		var isEnabled = cntPath > 0;
 		pathCountCB.setEnabled(isEnabled);
 		if (aIsReset == true)
 			pathCountCB.setSelected(isEnabled);
 		pathCountCB.setText("Paths: " + cntPath);
 
-		int cntPolygon = StructureMiscUtil.getPolygonsFrom(tmpItemL).size();
+		int cntPolygon = StructureMiscUtil.getItemsOfType(tmpItemL, StructureType.Polygon).size();
 		isEnabled = cntPolygon > 0;
 		polygonCountCB.setEnabled(isEnabled);
 		if (aIsReset == true)
 			polygonCountCB.setSelected(isEnabled);
 		polygonCountCB.setText("Polygons: " + cntPolygon);
 
-		int cntCircle = StructureMiscUtil.getEllipsesFrom(tmpItemL, Mode.CIRCLE_MODE).size();
+		int cntCircle = StructureMiscUtil.getItemsOfType(tmpItemL, StructureType.Circle).size();
 		isEnabled = cntCircle > 0;
 		circleCountCB.setEnabled(isEnabled);
 		if (aIsReset == true)
 			circleCountCB.setSelected(isEnabled);
 		circleCountCB.setText("Circles: " + cntCircle);
 
-		int cntEllipse = StructureMiscUtil.getEllipsesFrom(tmpItemL, Mode.ELLIPSE_MODE).size();
+		int cntEllipse = StructureMiscUtil.getItemsOfType(tmpItemL, StructureType.Ellipse).size();
 		isEnabled = cntEllipse > 0;
 		ellipseCountCB.setEnabled(isEnabled);
 		if (aIsReset == true)
 			ellipseCountCB.setSelected(isEnabled);
 		ellipseCountCB.setText("Ellipses: " + cntEllipse);
 
-		int cntPoint = StructureMiscUtil.getEllipsesFrom(tmpItemL, Mode.POINT_MODE).size();
+		int cntPoint = StructureMiscUtil.getItemsOfType(tmpItemL, StructureType.Point).size();
 		isEnabled = cntPoint > 0;
 		pointCountCB.setEnabled(isEnabled);
 		if (aIsReset == true)
@@ -993,7 +956,7 @@ public class SavePanel extends GlassPanel implements ActionListener, ItemListene
 	 */
 	enum FormatType
 	{
-		Sbmt,
+		SBMT,
 
 		ESRI,
 

@@ -20,15 +20,10 @@ import javax.swing.border.BevelBorder;
 import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.gui.util.Colors;
-import edu.jhuapl.saavtk.model.ModelManager;
-import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
-import edu.jhuapl.saavtk.structure.Ellipse;
-import edu.jhuapl.saavtk.structure.PolyLine;
-import edu.jhuapl.saavtk.structure.Polygon;
+import edu.jhuapl.saavtk.structure.AnyStructureManager;
 import edu.jhuapl.saavtk.structure.Structure;
-import edu.jhuapl.saavtk.structure.StructureManager;
+import edu.jhuapl.saavtk.structure.StructureType;
 import edu.jhuapl.saavtk.structure.io.StructureMiscUtil;
 import glum.gui.GuiUtil;
 import glum.gui.panel.GlassPanel;
@@ -42,14 +37,13 @@ import net.miginfocom.swing.MigLayout;
 
 /**
  * Load panel that provides a custom UI for loading up structues.
- * <P>
+ * <p>
  * This panel provides the following features:
- * <UL>
- * <LI>Ability to specify the structure types to be loaded
- * <LI>Responsive status feedback associated with user input
- * <LI>Support for defining how structures are loaded and merged into the
- * system.
- * </UL>
+ * <ul>
+ * <li>Ability to specify the structure types to be loaded
+ * <li>Responsive status feedback associated with user input
+ * <li>Support for defining how structures are loaded and merged into the system.
+ * </ul>
  *
  * @author lopeznr1
  */
@@ -61,12 +55,7 @@ public class LoadPanel extends GlassPanel implements ActionListener, ItemListene
 
 	// Ref vars
 	private final PolyhedralModel refSmallBody;
-
-	private final StructureManager<PolyLine> refPathStructureManager;
-	private final StructureManager<Polygon> refPolyStructureManager;
-	private final StructureManager<Ellipse> refCircleStructureManager;
-	private final StructureManager<Ellipse> refEllipseStructureManager;
-	private final StructureManager<Ellipse> refPointStructureManager;
+	private final AnyStructureManager refStructureManager;
 
 	// State vars
 	private ImmutableList<Structure> fullL;
@@ -91,21 +80,13 @@ public class LoadPanel extends GlassPanel implements ActionListener, ItemListene
 	private JButton cancelB;
 	private JButton closeB;
 
-	/**
-	 * Standard Constructor
-	 */
-	@SuppressWarnings("unchecked")
-	public LoadPanel(Component aParent, ModelManager aModelManager)
+	/** Standard Constructor */
+	public LoadPanel(Component aParent, PolyhedralModel aSmallBody, AnyStructureManager aStructureManager)
 	{
 		super(aParent);
 
-		refSmallBody = aModelManager.getPolyhedralModel();
-
-		refPathStructureManager = (StructureManager<PolyLine>) aModelManager.getModel(ModelNames.LINE_STRUCTURES);
-		refPolyStructureManager = (StructureManager<Polygon>) aModelManager.getModel(ModelNames.POLYGON_STRUCTURES);
-		refCircleStructureManager = (StructureManager<Ellipse>) aModelManager.getModel(ModelNames.CIRCLE_STRUCTURES);
-		refEllipseStructureManager = (StructureManager<Ellipse>) aModelManager.getModel(ModelNames.ELLIPSE_STRUCTURES);
-		refPointStructureManager = (StructureManager<Ellipse>) aModelManager.getModel(ModelNames.POINT_STRUCTURES);
+		refSmallBody = aSmallBody;
+		refStructureManager = aStructureManager;
 
 		fullL = ImmutableList.of();
 
@@ -162,31 +143,31 @@ public class LoadPanel extends GlassPanel implements ActionListener, ItemListene
 		loadTask.reset();
 
 		// Update GUI state of various tasks
-		int cntPath = StructureMiscUtil.getPathsFrom(fullL).size();
+		int cntPath = StructureMiscUtil.getItemsOfType(fullL, StructureType.Path).size();
 		isEnabled = cntPath > 0;
 		pathCountCB.setEnabled(isEnabled);
 		pathCountCB.setSelected(isEnabled);
 		pathCountCB.setText("Paths: " + cntPath);
 
-		int cntPolygon = StructureMiscUtil.getPolygonsFrom(fullL).size();
+		int cntPolygon = StructureMiscUtil.getItemsOfType(fullL, StructureType.Polygon).size();
 		isEnabled = cntPolygon > 0;
 		polygonCountCB.setEnabled(isEnabled);
 		polygonCountCB.setSelected(isEnabled);
 		polygonCountCB.setText("Polygons: " + cntPolygon);
 
-		int cntCircle = StructureMiscUtil.getEllipsesFrom(fullL, Mode.CIRCLE_MODE).size();
+		int cntCircle = StructureMiscUtil.getItemsOfType(fullL, StructureType.Circle).size();
 		isEnabled = cntCircle > 0;
 		circleCountCB.setEnabled(isEnabled);
 		circleCountCB.setSelected(isEnabled);
 		circleCountCB.setText("Circles: " + cntCircle);
 
-		int cntEllipse = StructureMiscUtil.getEllipsesFrom(fullL, Mode.ELLIPSE_MODE).size();
+		int cntEllipse = StructureMiscUtil.getItemsOfType(fullL, StructureType.Ellipse).size();
 		isEnabled = cntEllipse > 0;
 		ellipseCountCB.setEnabled(isEnabled);
 		ellipseCountCB.setSelected(isEnabled);
 		ellipseCountCB.setText("Ellipses: " + cntEllipse);
 
-		int cntPoint = StructureMiscUtil.getEllipsesFrom(fullL, Mode.POINT_MODE).size();
+		int cntPoint = StructureMiscUtil.getItemsOfType(fullL, StructureType.Point).size();
 		isEnabled = cntPoint > 0;
 		pointCountCB.setEnabled(isEnabled);
 		pointCountCB.setSelected(isEnabled);
@@ -330,20 +311,20 @@ public class LoadPanel extends GlassPanel implements ActionListener, ItemListene
 	 */
 	private List<Structure> getLoadItems()
 	{
-		List<Structure> retL = new ArrayList<>();
+		var retItemL = new ArrayList<Structure>();
 
 		if (pathCountCB.isSelected() == true)
-			retL.addAll(StructureMiscUtil.getPathsFrom(fullL));
+			retItemL.addAll(StructureMiscUtil.getItemsOfType(fullL, StructureType.Path));
 		if (polygonCountCB.isSelected() == true)
-			retL.addAll(StructureMiscUtil.getPolygonsFrom(fullL));
+			retItemL.addAll(StructureMiscUtil.getItemsOfType(fullL, StructureType.Polygon));
 		if (circleCountCB.isSelected() == true)
-			retL.addAll(StructureMiscUtil.getEllipsesFrom(fullL, Mode.CIRCLE_MODE));
+			retItemL.addAll(StructureMiscUtil.getItemsOfType(fullL, StructureType.Circle));
 		if (ellipseCountCB.isSelected() == true)
-			retL.addAll(StructureMiscUtil.getEllipsesFrom(fullL, Mode.ELLIPSE_MODE));
+			retItemL.addAll(StructureMiscUtil.getItemsOfType(fullL, StructureType.Ellipse));
 		if (pointCountCB.isSelected() == true)
-			retL.addAll(StructureMiscUtil.getEllipsesFrom(fullL, Mode.POINT_MODE));
+			retItemL.addAll(StructureMiscUtil.getItemsOfType(fullL, StructureType.Point));
 
-		return retL;
+		return retItemL;
 	}
 
 	/**
@@ -351,7 +332,7 @@ public class LoadPanel extends GlassPanel implements ActionListener, ItemListene
 	 */
 	private InstallMode getLoadMode()
 	{
-		InstallMode retMode = InstallMode.AppendWithUniqueId;
+		var retMode = InstallMode.AppendWithUniqueId;
 		if (replaceAllRB.isSelected() == true)
 			retMode = InstallMode.ReplaceAll;
 		else if (replaceCollideRB.isSelected() == true)
@@ -363,8 +344,8 @@ public class LoadPanel extends GlassPanel implements ActionListener, ItemListene
 	}
 
 	/**
-	 * Helper method that take the provided structures (of various types) and
-	 * install the structures into the appropriate managers.
+	 * Helper method that take the provided structures (of various types) and install the structures into the appropriate
+	 * managers.
 	 */
 	private void installStructures(List<Structure> aFullL, Task aTask, InstallMode aMode)
 	{
@@ -372,53 +353,12 @@ public class LoadPanel extends GlassPanel implements ActionListener, ItemListene
 		if (projToBodyCB.isSelected() == true)
 			StructureMiscUtil.projectControlPointsToShapeModel(refSmallBody, refSmallBody.getModelName(), aFullL);
 
-		// Split structures into various type
-		// TODO: Eventually this step should not be needed
-		List<PolyLine> tmpPathL = StructureMiscUtil.getPathsFrom(aFullL);
-		List<Polygon> tmpPolyL = StructureMiscUtil.getPolygonsFrom(aFullL);
-		List<Ellipse> tmpCircleL = StructureMiscUtil.getEllipsesFrom(aFullL, Mode.CIRCLE_MODE);
-		List<Ellipse> tmpEllipseL = StructureMiscUtil.getEllipsesFrom(aFullL, Mode.ELLIPSE_MODE);
-		List<Ellipse> tmpPointL = StructureMiscUtil.getEllipsesFrom(aFullL, Mode.POINT_MODE);
-
-		double fullCnt = aFullL.size();
-
-		double progOff = 0;
-		double progTot = tmpPathL.size() / fullCnt;
-		Task tmpTask = new PartialTask(aTask, progOff, progTot);
-		StructureMiscUtil.installStructures(tmpTask, refPathStructureManager, tmpPathL, aMode);
+		Task tmpTask = new PartialTask(aTask, 0.0, 1.0);
+		StructureMiscUtil.installStructures(tmpTask, refStructureManager, aFullL, aMode);
 		if (aTask.isActive() == false)
 			return;
 
-		progOff += progTot;
-		progTot = tmpPolyL.size() / fullCnt;
-		tmpTask = new PartialTask(aTask, progOff, progTot);
-		StructureMiscUtil.installStructures(tmpTask, refPolyStructureManager, tmpPolyL, aMode);
-		if (aTask.isActive() == false)
-			return;
-
-		progOff += progTot;
-		progTot = tmpCircleL.size() / fullCnt;
-		tmpTask = new PartialTask(aTask, progOff, progTot);
-		StructureMiscUtil.installStructures(tmpTask, refCircleStructureManager, tmpCircleL, aMode);
-		if (aTask.isActive() == false)
-			return;
-
-		progOff += progTot;
-		progTot = tmpEllipseL.size() / fullCnt;
-		tmpTask = new PartialTask(aTask, progOff, progTot);
-		StructureMiscUtil.installStructures(tmpTask, refEllipseStructureManager, tmpEllipseL, aMode);
-		if (aTask.isActive() == false)
-			return;
-
-		progOff += progTot;
-		progTot = tmpPointL.size() / fullCnt;
-		tmpTask = new PartialTask(aTask, progOff, progTot);
-		StructureMiscUtil.installStructures(tmpTask, refPointStructureManager, tmpPointL, aMode);
-		if (aTask.isActive() == false)
-			return;
-
-		progOff += progTot;
-		aTask.setProgress(progOff);
+		aTask.setProgress(1.0);
 		aTask.abort();
 		SwingUtilities.invokeLater(() -> updateGui());
 	}

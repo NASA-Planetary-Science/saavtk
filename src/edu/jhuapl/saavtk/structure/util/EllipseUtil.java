@@ -5,13 +5,13 @@ import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
+import edu.jhuapl.saavtk.structure.AnyStructureManager;
 import edu.jhuapl.saavtk.structure.Ellipse;
-import edu.jhuapl.saavtk.structure.EllipseManager;
+import edu.jhuapl.saavtk.structure.Point;
+import edu.jhuapl.saavtk.structure.Structure;
+import edu.jhuapl.saavtk.structure.StructureType;
 import edu.jhuapl.saavtk.util.MathUtil;
 import glum.task.Task;
 import vtk.vtkCellArray;
@@ -20,8 +20,7 @@ import vtk.vtkPoints;
 import vtk.vtkTransform;
 
 /**
- * Collection of miscellaneous utility methods for working with
- * {@link Ellipse}s.
+ * Collection of miscellaneous utility methods for working with {@link Ellipse}s.
  * <p>
  * A number of methods originated from the file (~2019Oct07):<br>
  * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java<br>
@@ -32,27 +31,9 @@ import vtk.vtkTransform;
 public class EllipseUtil
 {
 	/**
-	 * Updates the specified {@link Ellipse} so that the radius will be defined as
-	 * the distance between the ellipse's center and the (new) edge point.
-	 * <p>
-	 * An assumption is made that the specified edge point lies on the surface of
-	 * the provided body.
-	 */
-	public static void changeRadius(EllipseManager aManager, Ellipse aItem, PolyhedralModel aSmallBody,
-			Vector3D aPointOnEdge)
-	{
-		double tmpRadius = computeRadius(aSmallBody, aItem.getCenter(), aPointOnEdge);
-		aItem.setRadius(tmpRadius);
-
-		// Send out notification of the mutation
-		List<Ellipse> tmpItemL = ImmutableList.of(aItem);
-		aManager.notifyItemsMutated(tmpItemL);
-	}
-
-	/**
 	 * TODO: Add documentation
 	 * <p>
-	 * Source (~2019Oct07):
+	 * Source (~2019Oct07):</br>
 	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
 	 */
 	public static double computeAngle(PolyhedralModel aSmallBody, Vector3D aCenter, Vector3D aPointOnEdge)
@@ -115,7 +96,7 @@ public class EllipseUtil
 	/**
 	 * TODO: Add documentation
 	 * <p>
-	 * Source (~2019Oct07):
+	 * Source (~2019Oct07):</br>
 	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
 	 */
 	public static double computeFlattening(PolyhedralModel aSmallBody, Vector3D aCenter, double aRadius, double aAngle,
@@ -178,15 +159,14 @@ public class EllipseUtil
 	/**
 	 * Computes the radius between the specified center and a point on the edge.
 	 * <p>
-	 * This currently uses a simple distance computation. In the future the surface
-	 * of the provided {@link PolyhedralModel} may be taken into account.
+	 * This currently uses a simple distance computation. In the future the surface of the provided
+	 * {@link PolyhedralModel} may be taken into account.
 	 * <p>
-	 * The returned radius will be no more than a maximum as specified by
-	 * {@link #getMaxRadius}.
+	 * The returned radius will be no more than a maximum as specified by {@link #getMaxRadius}.
 	 */
 	public static double computeRadius(PolyhedralModel aSmallBody, Vector3D aCenter, Vector3D aPointOnEdge)
 	{
-		double maxRadius = getMaxRadius(aSmallBody);
+		double maxRadius = getRadiusMax(aSmallBody);
 
 		double retRadius = aPointOnEdge.distance(aCenter);
 		if (retRadius > maxRadius)
@@ -196,56 +176,34 @@ public class EllipseUtil
 	}
 
 	/**
-	 * Returns the default (point) radius that should be utilized for the specified
-	 * {@link PolyhedralModel}.
-	 * <p>
-	 * The default radius is defined as 1/155 of the shape model's bounding box.
+	 * Returns the default size for rendering of points on the specified {@link PolyhedralModel}.
 	 */
-	public static double getDefRadius(PolyhedralModel aSmallBody)
+	public static double getPointSizeDef(PolyhedralModel aSmallBody)
 	{
-		return aSmallBody.getBoundingBoxDiagonalLength() / 155.0;
+		return aSmallBody.getBoundingBoxDiagonalLength() / 255.0;
 	}
 
 	/**
-	 * Returns the minimum radius that should be utilized for the specified
-	 * {@link PolyhedralModel}.
-	 * <p>
-	 * The minimum radius will be a value close to zero. It is guaranteed to be
-	 * smaller than the max radius and no larger than the default radius.
+	 * Returns the default radial offset that should be utilized for the specified {@link PolyhedralModel}.
 	 */
-	public static double getMinRadius(PolyhedralModel aSmallBody)
+	public static double getRadialOffsetDef(PolyhedralModel aSmallBody)
 	{
-		var defVal = getDefRadius(aSmallBody);
-		var maxVal = getMaxRadius(aSmallBody);
-
-		// Computation logic is:
-		// [1] Assume the minValue == 0.00001
-		// [2] If greater than maxVal then 1/100 of maxVal
-		// [3] If greater than defVal then defVal
-		var minVal = 0.00001;
-		if (minVal >= maxVal)
-			minVal = maxVal / 100.0;
-		if (minVal > defVal)
-			minVal = defVal;
-
-		return minVal;
+		return 5.0 * aSmallBody.getMinShiftAmount();
 	}
 
 	/**
-	 * Returns the maximum radius that should be utilized for the specified
-	 * {@link PolyhedralModel}.
+	 * Returns the maximum radius that should be utilized for the specified {@link PolyhedralModel}.
 	 * <p>
 	 * The maximum radius is defined as 1/8th of the shape model's bounding box.
 	 */
-	public static double getMaxRadius(PolyhedralModel aSmallBody)
+	public static double getRadiusMax(PolyhedralModel aSmallBody)
 	{
 		return aSmallBody.getBoundingBoxDiagonalLength() / 8.0;
 	}
 
 	/**
-	 * Returns an array containing the 4 standard coloring units. The returned array
-	 * will have the standard coloring units defined in the following (index) order:
-	 * (Slope, Elevation, GravAccel, GravPotential)
+	 * Returns an array containing the 4 standard coloring units. The returned array will have the standard coloring
+	 * units defined in the following (index) order: (Slope, Elevation, GravAccel, GravPotential)
 	 * <p>
 	 * If a unit is not available then null will be stored at the relevant index.
 	 */
@@ -275,16 +233,15 @@ public class EllipseUtil
 	}
 
 	/**
-	 * Returns an array containing the 4 standard coloring values. The returned
-	 * array will have the standard coloring units defined in the following (index)
-	 * order: (Slope, Elevation, GravAccel, GravPotential)
+	 * Returns an array containing the 4 standard coloring values. The returned array will have the standard coloring
+	 * units defined in the following (index) order: (Slope, Elevation, GravAccel, GravPotential)
 	 * <p>
 	 * If a value is not available then NaN will be stored at the relevant index.
 	 * <p>
 	 * Source Basis (~2019Oct07):<br>
 	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
 	 */
-	public static double[] getStandardColoringValues(Task aTask, EllipseManager aManager, Ellipse aEllipse,
+	public static double[] getStandardColoringValues(Task aTask, AnyStructureManager aManager, Structure aItem,
 			PolyhedralModel aSmallBody) throws IOException
 	{
 		// Output array of 4 standard colorings (Slope, Elevation, GravAccel,
@@ -327,9 +284,17 @@ public class EllipseUtil
 
 		try
 		{
-			allValueArr = aSmallBody.getAllColoringValues(aEllipse.getCenter().toArray());
-			Mode tmpMode = aEllipse.getMode();
-			if (tmpMode != Mode.POINT_MODE)
+			var center = (Vector3D) null;
+			if (aItem instanceof Point aPoint)
+				center = aPoint.getCenter();
+			else if (aItem instanceof Ellipse aEllipse)
+				center = aEllipse.getCenter();
+			else
+				throw new Error("Unsupported type: " + aItem.getClass());
+
+			allValueArr = aSmallBody.getAllColoringValues(center.toArray());
+			var tmpType = aItem.getType();
+			if (tmpType != StructureType.Point)
 			{
 				// Replace slope and/or elevation central values with the average over the rim
 				// of the circle.
@@ -340,8 +305,8 @@ public class EllipseUtil
 					if (elevationIdx != -1)
 						allValueArr[elevationIdx] = 0.; // Accumulate weighted sum in situ.
 
-					vtkCellArray lines = aManager.getVtkExteriorPolyDataFor(aEllipse).GetLines();
-					vtkPoints points = aManager.getVtkExteriorPolyDataFor(aEllipse).GetPoints();
+					vtkCellArray lines = aManager.getVtkExteriorPolyDataFor(aItem).GetLines();
+					vtkPoints points = aManager.getVtkExteriorPolyDataFor(aItem).GetPoints();
 
 					vtkIdTypeArray idArray = lines.GetData();
 					int size = (int) idArray.GetNumberOfTuples();

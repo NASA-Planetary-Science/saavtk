@@ -2,11 +2,12 @@ package edu.jhuapl.saavtk.structure;
 
 import java.awt.Color;
 
+import edu.jhuapl.saavtk.structure.vtk.RenderState;
 import edu.jhuapl.saavtk.vtk.font.FontAttr;
 
 /**
  * Interface that defines a structure.
- * <P>
+ * <p>
  * A structure should provide minimal functionality relating to it's attributes.
  *
  * @author lopeznr1
@@ -15,7 +16,7 @@ public interface Structure
 {
 	/**
 	 * Returns the structures id.
-	 * <P>
+	 * <p>
 	 * This value may NOT be unique.
 	 */
 	public int getId();
@@ -27,9 +28,8 @@ public interface Structure
 
 	/**
 	 * Returns the structure's label.
-	 * <P>
-	 * The label may optionally be displayed next to visual representations of this
-	 * structure.
+	 * <p>
+	 * The label may optionally be displayed next to visual representations of this structure.
 	 */
 	public String getLabel();
 
@@ -44,9 +44,19 @@ public interface Structure
 	public String getName();
 
 	/**
+	 * Returns the {@link RenderState} associated with the structure.
+	 */
+	public RenderState getRenderState();
+
+	/**
 	 * Returns a unique identifier of the associated shape model.
 	 */
 	public String getShapeModelId();
+
+	/**
+	 * Returns the type of structure.
+	 */
+	public StructureType getType();
 
 	/**
 	 * Returns the source of the structure. May be null.
@@ -65,9 +75,8 @@ public interface Structure
 
 	/**
 	 * Sets the structure's label.
-	 * <P>
-	 * The label may optionally be displayed next to visual representations of this
-	 * structure.
+	 * <p>
+	 * The label may optionally be displayed next to visual representations of this structure.
 	 */
 	public void setLabel(String aLabel);
 
@@ -80,6 +89,11 @@ public interface Structure
 	 * Sets the "official" name of the structure. May be null.
 	 */
 	public void setName(String aName);
+
+	/**
+	 * Sets the {@link RenderState} associated with this structure.
+	 */
+	public void setRenderState(RenderState aRenderState);
 
 	/**
 	 * Sets in the unique identifier of the associated shape model.

@@ -58,6 +58,13 @@ public class VtkCompositePainter<G2 extends Structure, G1 extends VtkResource> i
 	}
 
 	@Override
+	public void vtkMarkStale()
+	{
+		mainPainter.vtkMarkStale();
+		textPainter.vtkMarkStale();
+	}
+
+	@Override
 	public void vtkUpdateState()
 	{
 		// Delegate

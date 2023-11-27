@@ -11,22 +11,20 @@ import java.util.regex.Pattern;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.w3c.dom.Element;
 
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.structure.Ellipse;
+import edu.jhuapl.saavtk.structure.Point;
 import edu.jhuapl.saavtk.structure.Structure;
+import edu.jhuapl.saavtk.structure.StructureType;
 import edu.jhuapl.saavtk.util.FileUtil;
 import edu.jhuapl.saavtk.vtk.font.FontAttr;
 import glum.io.token.TokenUtil;
 
 /**
- * Collection of utility methods to support loading of SBMT structures and
- * related objects.
- * <P>
- * Most (if not all) SBMT structure file formats should be loaded via the method
- * {@link #loadStructures(File)}.
- * <P>
- * Internally, heuristics are used to determine the appropriate deserializer for
- * a specific file.
+ * Collection of utility methods to support loading of SBMT structures and related objects.
+ * <p>
+ * Most (if not all) SBMT structure file formats should be loaded via the method {@link #loadStructures(File)}.
+ * <p>
+ * Internally, heuristics are used to determine the appropriate deserializer for a specific file.
  *
  * @author lopeznr1
  */
@@ -34,16 +32,15 @@ public class StructureLoadUtil
 {
 	/**
 	 * Utility method that will load the structures from the specified file.
-	 * <P>
-	 * Returns the list of loaded structures. Note that the returned list may not
-	 * consist of various structure types.
-	 * <P>
+	 * <p>
+	 * Returns the list of loaded structures. Note that the returned list may not consist of various structure types.
+	 * <p>
 	 * This method supports the loading the following structure file types:
-	 * <UL>
-	 * <LI>SBMT CSV Structures
-	 * <LI>SBMT XML Structures
-	 * <LI>TODO: Add support for: ESRI Structures
-	 * </UL>
+	 * <ul>
+	 * <li>SBMT CSV Structures
+	 * <li>SBMT XML Structures
+	 * <li>TODO: Add support for: ESRI Structures
+	 * </ul>
 	 */
 	public static List<Structure> loadStructures(File aFile) throws IOException
 	{
@@ -72,7 +69,7 @@ public class StructureLoadUtil
 
 	/**
 	 * Helper method for loading structures from an XML file.
-	 * <P>
+	 * <p>
 	 * Currently only hard-edge structures are stored in an XML file.
 	 */
 	private static List<Structure> loadHardEdgeStructures(File aFile) throws IOException
@@ -82,99 +79,128 @@ public class StructureLoadUtil
 		if (rootElement == null)
 			throw new IOException("No root element in XML doc!");
 
-		List<Structure> retL = XmlLoadUtil.loadPolyLinesFromElement(aFile, rootElement);
+		var retItemL = XmlLoadUtil.loadPolyLinesFromElement(aFile, rootElement);
 
 		// Install the associated shape model name
 		String shapeModelName = XmlLoadUtil.getShapeModelNameFrom(rootElement);
-		for (Structure aItem : retL)
+		for (var aItem : retItemL)
 			aItem.setShapeModelId(shapeModelName);
 
-		return retL;
+		return retItemL;
 	}
 
 	/**
 	 * Helper method for loading structures from a SBMT text file.
-	 * <P>
-	 * Currently only round-edge structures are stored in plain SBMT structure text
-	 * files.
+	 * <p>
+	 * Currently only round-edge structures are stored in plain SBMT structure text files.
 	 */
 	private static List<Structure> loadRoundEdgeStructures(File aFile) throws IOException
 	{
-		List<Structure> retL;
-
-		Mode tmpModeHint = null;
+		StructureType tmpTypeHint = null;
 
 		// Load the Ellipse file
-		List<Ellipse> tmpL = null;
+		List<Structure> tmpItemL = null;
 		try
 		{
-			tmpL = StructureLoadUtil.loadEllipses(aFile, false);
+			tmpItemL = StructureLoadUtil.loadEllipses(aFile, false);
 
 			double initRadius = Double.NaN;
-			if (tmpL.size() > 0)
-				initRadius = tmpL.get(0).getRadius();
+			if (tmpItemL.size() > 0)
+			{
+				initRadius = 0.0;
+				if (tmpItemL.get(0) instanceof Ellipse aEllipse)
+					initRadius = aEllipse.getRadius();
+			}
 
 			// Determine if we loaded ellipses, circles, or points
 			// This is possible since all items in the same file must be the same type
 			boolean isAllRadiusConst = true;
 			boolean isAllCircles = true;
-			for (Ellipse aItem : tmpL)
+			for (var aItem : tmpItemL)
 			{
-				isAllCircles &= aItem.getAngle() == 0.0;
-				isAllCircles &= aItem.getFlattening() == 1.0;
+				var evalAngle = 0.0;
+				var evalFlattening = 1.0;
+				var evalRadius = initRadius;
+				if (aItem instanceof Ellipse aEllipse)
+				{
+					evalAngle = aEllipse.getAngle();
+					evalFlattening = aEllipse.getFlattening();
+					evalRadius = aEllipse.getRadius();
+				}
 
-				isAllRadiusConst &= aItem.getRadius() == initRadius;
+				isAllCircles &= evalAngle == 0.0;
+				isAllCircles &= evalFlattening == 1.0;
+
+				isAllRadiusConst &= evalRadius == initRadius;
 			}
 
 			// Perform heuristics
 			if (isAllCircles == false)
-				tmpModeHint = Mode.ELLIPSE_MODE;
-			else if (isAllRadiusConst == false && tmpL.size() >= 2)
-				tmpModeHint = Mode.CIRCLE_MODE;
+				tmpTypeHint = StructureType.Ellipse;
+			else if (isAllRadiusConst == false && tmpItemL.size() >= 2)
+				tmpTypeHint = StructureType.Circle;
 		}
 		catch (Exception aExp)
 		{
 			// Must be points or unsupported
-			tmpL = StructureLoadUtil.loadEllipses(aFile, true);
+			tmpItemL = StructureLoadUtil.loadEllipses(aFile, true);
 		}
 
 		// Update to reflect it's source
-		retL = new ArrayList<>();
-		for (Ellipse aItem : tmpL)
+		var retItemL = new ArrayList<Structure>();
+		for (var aItem : tmpItemL)
 		{
-			Mode tmpMode = aItem.getMode();
-			if (tmpMode == null)
-				tmpMode = tmpModeHint;
+			var center = (Vector3D) null;
+			var radius = Double.NaN;
+			var angle = Double.NaN;
+			var flattening = Double.NaN;
+			if (aItem instanceof Point aPoint)
+				center = aPoint.getCenter();
+			else if (aItem instanceof Ellipse aEllipse)
+			{
+				center = aEllipse.getCenter();
+				angle = aEllipse.getAngle();
+				flattening = aEllipse.getFlattening();
+				radius = aEllipse.getRadius();
+			}
+			else
+				throw new Error("Unexpected type: " + aItem.getClass());
 
-			Ellipse tmpItem = new Ellipse(aItem.getId(), aFile, tmpMode, aItem.getCenter(), aItem.getRadius(),
-					aItem.getAngle(), aItem.getFlattening(), aItem.getColor(), aItem.getLabel());
+			var tmpType = aItem.getType();
+			if (tmpType == null)
+				tmpType = tmpTypeHint;
+
+			var tmpItem = (Structure) null;
+			if (tmpType == StructureType.Point)
+				tmpItem = new Point(aItem.getId(), aFile, center, aItem.getColor());
+			else
+				tmpItem = new Ellipse(aItem.getId(), aFile, tmpType, center, radius, angle, flattening, aItem.getColor());
+			tmpItem.setLabel(aItem.getLabel());
 			tmpItem.setName(aItem.getName());
-			retL.add(tmpItem);
+			retItemL.add(tmpItem);
 		}
 
-		return retL;
+		return retItemL;
 	}
 
 	/**
-	 * Utility method to load in a list of {@link Ellipse}s from the specified input
-	 * file.
-	 * <P>
-	 * Note the returned list of {@link Ellipse}s will not have any initialized VTK
-	 * state data. Each returned {@link Ellipse} will need to have it's VTK state
-	 * data initialized via updatePolygon().
-	 * <P>
-	 * This method originated from (~2019Oct07):
+	 * Utility method to load in a list of {@link Ellipse}s from the specified input file.
+	 * <p>
+	 * Note the returned list of {@link Ellipse}s will not have any initialized VTK state data. Each returned
+	 * {@link Ellipse} will need to have it's VTK state data initialized via updatePolygon().
+	 * <p>
+	 * This method originated from (~2019Oct07):<br/>
 	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
 	 */
-	private static List<Ellipse> loadEllipses(File aFile, boolean aIsForcePointMode) throws IOException
+	private static List<Structure> loadEllipses(File aFile, boolean aIsForcePointMode) throws IOException
 	{
-		Pattern workPattern = Pattern.compile("([^\"]\\S*|\".*?\")\\s*");
+		var workPattern = Pattern.compile("([^\"]\\S*|\".*?\")\\s*");
 
-		Mode tmpMode = null;
+		StructureType tmpType = null;
 		if (aIsForcePointMode == true)
-			tmpMode = Mode.POINT_MODE;
+			tmpType = StructureType.Point;
 
-		List<Ellipse> retL = new ArrayList<>();
+		var retItemL = new ArrayList<Structure>();
 
 		List<String> lineL = FileUtil.getFileLinesAsStringList(aFile.getAbsolutePath());
 		for (String aLine : lineL)
@@ -185,11 +211,11 @@ public class StructureLoadUtil
 			// Check for comment that signals the type of structures to follow
 			tmpStr = tmpStr.replaceAll("\\s+", "").toLowerCase();
 			if (tmpStr.equals("#type,circle") == true)
-				tmpMode = Mode.CIRCLE_MODE;
+				tmpType = StructureType.Circle;
 			else if (tmpStr.equals("#type,ellipse") == true)
-				tmpMode = Mode.ELLIPSE_MODE;
+				tmpType = StructureType.Ellipse;
 			else if (tmpStr.equals("#type,point") == true)
-				tmpMode = Mode.POINT_MODE;
+				tmpType = StructureType.Point;
 
 			if (tmpStr.isEmpty() == true || tmpStr.startsWith("#") == true)
 				continue;
@@ -234,7 +260,7 @@ public class StructureLoadUtil
 			if (words.length == 18)
 			{
 				radius = Double.parseDouble(words[12]) / 2.0; // read in diameter not radius
-				if (tmpMode != Mode.POINT_MODE)
+				if (tmpType != StructureType.Point)
 				{
 					flattening = Double.parseDouble(words[13]);
 					angle = Double.parseDouble(words[14]);
@@ -260,7 +286,7 @@ public class StructureLoadUtil
 				{
 					// OLD VERSION of file
 					radius = Double.NaN;
-					if (tmpMode != Mode.POINT_MODE)
+					if (tmpType != StructureType.Point)
 						radius = Double.parseDouble(words[8]) / 2.0; // read in diameter not radius
 				}
 				else
@@ -271,7 +297,7 @@ public class StructureLoadUtil
 
 				flattening = 1.0;
 				angle = 0.0;
-				if (tmpMode != Mode.POINT_MODE && words.length >= 16)
+				if (tmpType != StructureType.Point && words.length >= 16)
 				{
 					flattening = Double.parseDouble(words[13]);
 					angle = Double.parseDouble(words[14]);
@@ -316,29 +342,31 @@ public class StructureLoadUtil
 				// }
 			}
 
-			// Synthesize the Ellipse
-			Ellipse tmpItem = new Ellipse(id, aFile, tmpMode, center, radius, angle, flattening, color, label);
+			// Synthesize the Structure
+			var tmpItem = (Structure) null;
+			if (tmpType == StructureType.Point)
+				tmpItem = new Point(id, aFile, center, color);
+			else
+				tmpItem = new Ellipse(id, aFile, tmpType, center, radius, angle, flattening, color);
 			tmpItem.setName(name);
 			tmpItem.setLabel(label);
-			FontAttr tmpFA = tmpItem.getLabelFontAttr();
+			var tmpFA = tmpItem.getLabelFontAttr();
 			tmpFA = new FontAttr(tmpFA.getFace(), tmpFA.getColor(), tmpFA.getSize(), false);
 			tmpItem.setLabelFontAttr(tmpFA);
 
-			retL.add(tmpItem);
+			retItemL.add(tmpItem);
 		}
 
-		return retL;
+		return retItemL;
 	}
 
 	/**
-	 * Utility method that converts the specified string into a color (3 element int
-	 * array).
-	 * <P>
-	 * The string should be composed of 3 values (integers in range of [0-255]
-	 * separated by commas with no whitespace).
-	 * <P>
-	 * If the string is improperly formatted then null will be returned. On failure
-	 * to parse the integers a NumberFormatException will be thrown.
+	 * Utility method that converts the specified string into a color (3 element int array).
+	 * <p>
+	 * The string should be composed of 3 values (integers in range of [0-255] separated by commas with no whitespace).
+	 * <p>
+	 * If the string is improperly formatted then null will be returned. On failure to parse the integers a
+	 * NumberFormatException will be thrown.
 	 */
 	private static Color transformStringToColorArr(String aStr)
 	{

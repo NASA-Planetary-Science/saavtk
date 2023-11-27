@@ -129,7 +129,7 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 		{
 			if (isNewMode == true)
 			{
-				int tmpIdx = refStructureManager.getControlPointPainter().getControlPoints().size() - 1;
+				int tmpIdx = refStructureManager.getControlPointPainter().getPoints().size() - 1;
 				if (tmpIdx == -1)
 					return;
 
@@ -175,13 +175,14 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 		if (isNewMode == true)
 		{
 			VtkControlPointPainter tmpPainter = refStructureManager.getControlPointPainter();
-			tmpPainter.addPoint(tmpPos);
+			var tmpIdx = tmpPainter.getPoints().size() - 1;
+			tmpPainter.addPoint(tmpIdx, tmpPos);
 			refStructureManager.notifyModelChanged();
-			if (refStructureManager.getNumPointsNeededForNewItem() == tmpPainter.getControlPoints().size())
+			if (refStructureManager.getNumPointsNeededForNewItem() == tmpPainter.getPoints().size())
 			{
 				// Create the item
 				int tmpId = StructureMiscUtil.calcNextId(refStructureManager);
-				G1 tmpItem = refStructureManager.addItemWithControlPoints(tmpId, tmpPainter.getControlPoints());
+				G1 tmpItem = refStructureManager.addItemWithControlPoints(tmpId, tmpPainter.getPoints());
 
 				// Set it as the selected and activated item
 				List<G1> tmpL = ImmutableList.of(tmpItem);
@@ -357,7 +358,7 @@ public class ControlPointsPicker<G1 extends PolyLine> extends Picker implements 
 
 		// Clear the painter
 		VtkControlPointPainter tmpPainter = refStructureManager.getControlPointPainter();
-		tmpPainter.setControlPoints(newPointL);
+		tmpPainter.setPoints(newPointL);
 
 		refStructureManager.notifyModelChanged();
 	}

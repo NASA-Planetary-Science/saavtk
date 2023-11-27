@@ -1,122 +1,220 @@
 package edu.jhuapl.saavtk.structure.vtk;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.structure.PolyLineMode;
+import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.Polygon;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
-import vtk.vtkCleanPolyData;
-import vtk.vtkClipPolyData;
-import vtk.vtkPoints;
+import edu.jhuapl.saavtk.vtk.VtkDrawUtil;
 import vtk.vtkPolyData;
 import vtk.vtkQuadricClustering;
-import vtk.vtkSelectPolyData;
 
 /**
- * Class which contains the logic to render a single polygon using the VTK
- * framework.
- * <P>
- * This class supports the following configurable state:
- * <UL>
- * <LI>Filled / unfilled interior
- * <LI>TODO: Fill color
- * <LI>TODO: Outline width
- * </UL>
- * Note this class will update the reference {@link Polygon}'s "surface area"
- * during relevant VTK state updates.
+ * Class which contains the logic to render a single {@link Polygon} using the VTK framework.
+ * <p>
+ * This class supports the following:
+ * <ul>
+ * <li>Update / Refresh mechanism
+ * <li>VTK state management
+ * <li>Exterior rendering
+ * <li>Interior rendering
+ * </ul>
+ * Note this class will update the reference structure's {@link RenderState} during a VTK state update.
  *
  * @author lopeznr1
  */
-public class VtkPolygonPainter extends VtkPolyLinePainter<Polygon>
+public class VtkPolygonPainter implements VtkStructurePainter
 {
 	// Ref vars
-	private final Polygon refItem;
 	private final PolyhedralModel refSmallBody;
+	private final Polygon refItem;
 
 	// VTK vars
-	private vtkPolyData vInteriorRegPD;
+	private final vtkPolyData vExteriorDecPD;
+	private final vtkPolyData vExteriorRegPD;
+	private final vtkPolyData vInteriorRegPD;
 	private final vtkPolyData vInteriorDecPD;
+	private final vtkPolyData vEmptyPD;
+	private boolean vIsStale;
 
-	/**
-	 * Standard Constructor
-	 */
-	public VtkPolygonPainter(Polygon aItem, PolyhedralModel aSmallBody)
+	// Cache vars
+	private ImmutableMap<Segment, Segment> cSegmentM;
+	private ImmutableList<Vector3D> cPointL;
+
+	/** Standard Constructor */
+	public VtkPolygonPainter(PolyhedralModel aSmallBody, Polygon aItem)
 	{
-		super(aSmallBody, aItem, PolyLineMode.CLOSED);
-
-		refItem = aItem;
 		refSmallBody = aSmallBody;
+		refItem = aItem;
 
+		vExteriorDecPD = new vtkPolyData();
+		vExteriorRegPD = new vtkPolyData();
 		vInteriorRegPD = new vtkPolyData();
 		vInteriorDecPD = new vtkPolyData();
+		vEmptyPD = new vtkPolyData();
+		vIsStale = true;
+
+		cSegmentM = ImmutableMap.of();
+		cPointL = ImmutableList.of();
 	}
 
-	// TODO: Add comments
-	public vtkPolyData getVtkInteriorDecPD()
+	/**
+	 * Return the list of 3D points that are a function of the reference {@link PolyLine}'s control points.
+	 */
+	public ImmutableList<Vector3D> getXyzPointList()
 	{
+		return cPointL;
+	}
+
+	@Override
+	public void vtkDispose()
+	{
+		PolyDataUtil.clearPolyData(vExteriorDecPD);
+		PolyDataUtil.clearPolyData(vExteriorRegPD);
+		PolyDataUtil.clearPolyData(vInteriorDecPD);
+		PolyDataUtil.clearPolyData(vInteriorRegPD);
+
+		// Release VTK resources
+		vExteriorDecPD.Delete();
+		vExteriorRegPD.Delete();
+		vInteriorDecPD.Delete();
+		vInteriorRegPD.Delete();
+		vEmptyPD.Delete();
+	}
+
+	@Override
+	public vtkPolyData vtkGetExteriorDecPD()
+	{
+		return vExteriorDecPD;
+	}
+
+	@Override
+	public vtkPolyData vtkGetExteriorRegPD()
+	{
+		return vExteriorRegPD;
+	}
+
+	@Override
+	public vtkPolyData vtkGetInteriorDecPD()
+	{
+		if (refItem.getShowInterior() == false)
+			return vEmptyPD;
+
 		return vInteriorDecPD;
 	}
 
-	// TODO: Add comments
-	public vtkPolyData getVtkInteriorRegPD()
+	@Override
+	public vtkPolyData vtkGetInteriorRegPD()
 	{
+		if (refItem.getShowInterior() == false)
+			return vEmptyPD;
+
 		return vInteriorRegPD;
 	}
 
-	public void setShowInterior(boolean aShowInterior)
+	@Override
+	public void vtkMarkStale()
 	{
-		updateInteriorPolydata();
-
-		if (aShowInterior == true)
-		{
-			// Decimate interiorPolyData for LODs
-			vtkQuadricClustering decimator = new vtkQuadricClustering();
-			decimator.SetInputData(vInteriorRegPD);
-			decimator.AutoAdjustNumberOfDivisionsOn();
-			decimator.CopyCellDataOn();
-			decimator.Update();
-			vInteriorDecPD.DeepCopy(decimator.GetOutput());
-			decimator.Delete();
-		}
-		else
-		{
-			PolyDataUtil.clearPolyData(vInteriorRegPD);
-			PolyDataUtil.clearPolyData(vInteriorDecPD);
-		}
+		vIsStale = true;
 	}
 
-	public void updateInteriorPolydata()
+	@Override
+	public void vtkUpdateState()
 	{
-		// Bail if no interior
-		if (refItem.getShowInterior() == false)
+		// Bail if not stale
+		if (vIsStale == false)
 			return;
+		vIsStale = false;
 
-		vtkPoints pts = new vtkPoints();
-		for (Vector3D aPoint : xyzPointL)
-			pts.InsertNextPoint(aPoint.toArray());
+		// Refresh the Segment cache
+		var oldSegmentM = ImmutableMap.copyOf(cSegmentM);
 
-		// Clean the poly data here before selecting the interior facets.
-		vtkCleanPolyData cleanPoly = new vtkCleanPolyData();
-		cleanPoly.SetInputData(refSmallBody.getSmallBodyPolyData());
-		cleanPoly.Update();
-		vtkPolyData cleanPolyData = cleanPoly.GetOutput();
+		var fullPointL = new ArrayList<Vector3D>();
+		var controlPtL = refItem.getControlPoints();
+		var prevLL = controlPtL.get(0);
+		var tmpSegmentM = new LinkedHashMap<Segment, Segment>();
+		var lastSegment = (Segment) null;
 
-		vtkSelectPolyData loop = new vtkSelectPolyData();
-		loop.SetInputData(cleanPolyData);
-		loop.SetLoop(pts);
-		loop.GenerateSelectionScalarsOn();
-		loop.SetSelectionModeToSmallestRegion();
-		loop.Update();
-		vtkClipPolyData clipper = new vtkClipPolyData();
-		clipper.SetInputData(loop.GetOutput());
-		clipper.InsideOutOn();
-		clipper.GenerateClipScalarsOff();
-		clipper.Update();
-		vInteriorRegPD = clipper.GetOutput();
+		// Iterate through each segment:
+		// - Ensure the segment is up to date
+		// - Extract all of the 3D points from each segment
+		for (var aIdx = 1; aIdx <= controlPtL.size(); aIdx++)
+		{
+			// Wrap to the 1st ControlPoint when we reach the end
+			var tmpIdx = aIdx;
+			if (tmpIdx == controlPtL.size())
+				tmpIdx = 0;
+			var nextLL = controlPtL.get(tmpIdx);
 
-		double tmpSurfaceArea = PolyDataUtil.computeSurfaceArea(vInteriorRegPD);
-		refItem.setSurfaceArea(tmpSurfaceArea);
+			// Retrieve (or create) the segment, update it, and then cache it
+			var tmpSegment = new Segment(prevLL, nextLL);
+			var currSegment = oldSegmentM.get(tmpSegment);
+			if (currSegment == null)
+				currSegment = tmpSegment;
+
+			currSegment.update(refSmallBody);
+			tmpSegmentM.put(currSegment, currSegment);
+
+			// Grab the first n-1 points from each segment
+			var tmpPointL = currSegment.getPoints3D();
+			fullPointL.addAll(tmpPointL.subList(0, tmpPointL.size() - 1));
+
+			prevLL = nextLL;
+			lastSegment = currSegment;
+		}
+		cSegmentM = ImmutableMap.copyOf(tmpSegmentM);
+
+		// Note we need to add the very last connecting point (from the last segment)
+		var lastPointIdx = lastSegment.getPoints3D().size() - 1;
+		fullPointL.add(lastSegment.getPoints3D().get(lastPointIdx));
+
+		// Draw the (high quality) polygon
+		var vTmpInteriorRegPD = vInteriorRegPD;
+		if (refItem.getShowInterior() == false)
+			vTmpInteriorRegPD = null;
+
+		VtkDrawUtil.drawPolygonOn(refSmallBody.getSmallBodyPolyData(), refSmallBody.getPointLocator(), fullPointL,
+				vTmpInteriorRegPD, vExteriorRegPD);
+
+		// Update the Polygon's RenderState
+		var surfaceArea = Double.NaN;
+		if (refItem.getShowInterior() == true)
+			surfaceArea = PolyDataUtil.computeSurfaceArea(vInteriorRegPD);
+
+		var renderState = RenderState.fromSegments(cSegmentM.values(), surfaceArea);
+		refItem.setRenderState(renderState);
+
+		// Setup decimator
+		var decimator = new vtkQuadricClustering();
+
+		// Decimate interior
+		decimator.SetInputData(vInteriorRegPD);
+		decimator.AutoAdjustNumberOfDivisionsOn();
+		decimator.CopyCellDataOn();
+		decimator.Update();
+		vInteriorDecPD.DeepCopy(decimator.GetOutput());
+
+		// Decimate exterior
+		decimator.SetInputData(vExteriorRegPD);
+		decimator.SetNumberOfXDivisions(2);
+		decimator.SetNumberOfYDivisions(2);
+		decimator.SetNumberOfZDivisions(2);
+		decimator.CopyCellDataOn();
+		decimator.Update();
+		vExteriorDecPD.DeepCopy(decimator.GetOutput());
+
+		// Destroy decimator
+		decimator.Delete();
+
+		// Update the list of Vtk3D points
+		cPointL = ImmutableList.copyOf(fullPointL);
 	}
 
 }
