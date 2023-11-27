@@ -17,6 +17,7 @@ public class IconUtil
 	private static Icon cIconActionAbort = null;
 	private static Icon cIconActionCenter = null;
 	private static Icon cIconActionConfig = null;
+	private static Icon cIconActionFolder = null;
 	private static Icon cIconActionInfo = null;
 	private static Icon cIconActionReset = null;
 
@@ -31,13 +32,13 @@ public class IconUtil
 	private static Icon cIconSelectAll = null;
 	private static Icon cIconSelectNone = null;
 	private static Icon cIconSelectInvert = null;
-	
+
 	private static Icon cIconShow = null;
 	private static Icon cIconHide = null;
-	
-	private static Icon cIconZoomIn = null; 
-	private static Icon cIconZoomOut = null; 
-	
+
+	private static Icon cIconZoomIn = null;
+	private static Icon cIconZoomOut = null;
+
 	private static Icon cIconRecord = null;
 	private static Icon cIconStop = null;
 
@@ -81,6 +82,17 @@ public class IconUtil
 			cIconActionConfig = IconUtil.loadIcon("resources/icons/ActionConfig.24.png");
 
 		return cIconActionConfig;
+	}
+
+	/**
+	 * Returns the icon that should be used for "Pick Folder" action buttons
+	 */
+	public static Icon getActionFolder()
+	{
+		if (cIconActionFolder == null)
+			cIconActionFolder = IconUtil.loadIcon("resources/icons/ActionFolder.24.png");
+
+		return cIconActionFolder;
 	}
 
 	/**
@@ -253,7 +265,7 @@ public class IconUtil
 
 		return cIconSelectNone;
 	}
-	
+
 	//Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>
 	/**
 	 * Returns the icon that should be used for "Show" buttons
@@ -265,7 +277,7 @@ public class IconUtil
 
 		return cIconShow;
 	}
-	
+
 	public static Icon getItemHide()
 	{
 		if (cIconHide == null)
@@ -273,7 +285,7 @@ public class IconUtil
 
 		return cIconHide;
 	}
-	
+
 	//Icons made by <a href="https://www.flaticon.com/authors/google" title="Google">Google</a> from www.flaticon.com
 	public static Icon getRecord()
 	{
@@ -282,7 +294,7 @@ public class IconUtil
 
 		return cIconRecord;
 	}
-	
+
 	//Icons made by <a href="https://www.flaticon.com/authors/pixel-perfect" title="Pixel perfect">Pixel perfect</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
 	public static Icon getStop()
 	{
@@ -291,16 +303,16 @@ public class IconUtil
 
 		return cIconStop;
 	}
-	
+
 	//<div>Icons made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
 	public static Icon getFont()
 	{
 		if (cIconFont == null)
 			cIconFont = IconUtil.loadIcon("resources/icons/font.png");
 
-		return cIconFont; 
+		return cIconFont;
 	}
-	
+
 	//<div>Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
 	public static Icon getColor()
 	{
@@ -309,7 +321,7 @@ public class IconUtil
 
 		return cIconColor;
 	}
-	
+
 	public static Icon getLayers()
 	{
 		if (cIconLayer == null)
@@ -317,7 +329,7 @@ public class IconUtil
 
 		return cIconLayer;
 	}
-	
+
 	//<a href="https://www.flaticon.com/free-icons/area" title="area icons">Area icons created by Freepik - Flaticon</a>
 	public static Icon getShowBorder()
 	{
@@ -326,7 +338,7 @@ public class IconUtil
 
 		return cIconBorder;
 	}
-	
+
 	//Modified with permission from license at <a href="https://www.flaticon.com/free-icons/area" title="area icons">Area icons created by Freepik - Flaticon</a>
 	public static Icon getHideBorder()
 	{
@@ -335,7 +347,7 @@ public class IconUtil
 
 		return cIconHideBorder;
 	}
-	
+
 	//<a href="https://www.flaticon.com/free-icons/gallery" title="gallery icons">Gallery icons created by Freepik - Flaticon</a>
 	public static Icon getGallery()
 	{
@@ -344,7 +356,7 @@ public class IconUtil
 
 		return cIconGallery;
 	}
-	
+
 	//<a href="https://www.flaticon.com/free-icons/back" title="back icons">Back icons created by Becris - Flaticon</a>
 	public static Icon getBack()
 	{
@@ -353,7 +365,7 @@ public class IconUtil
 
 		return cIconBack;
 	}
-	
+
 	//<a href="https://www.flaticon.com/free-icons/next" title="next icons">Next icons created by Becris - Flaticon</a>
 	public static Icon getForward()
 	{
@@ -362,7 +374,7 @@ public class IconUtil
 
 		return cIconForward;
 	}
-	
+
 	public static Icon getZoomIn()
 	{
 		if (cIconZoomIn == null)
@@ -379,10 +391,10 @@ public class IconUtil
 		{
 			cIconZoomOut = IconUtil.loadIcon("resources/icons/zoom-out-32x32.png");
 		}
-		
-		return cIconZoomOut; 
+
+		return cIconZoomOut;
 	}
-	
+
 	/**
 	 * Utility helper method to load an icon from the specified resource.
 	 */
