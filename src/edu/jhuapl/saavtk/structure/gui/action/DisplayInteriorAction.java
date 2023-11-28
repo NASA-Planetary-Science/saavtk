@@ -38,11 +38,8 @@ public class DisplayInteriorAction extends PopAction<Structure>
 	@Override
 	public void executeAction(List<Structure> aItemL)
 	{
-		if (refManager instanceof AnyStructureManager aManager)
-		{
-			var pickS = aManager.getSelectedItems();
-			aManager.setShowInterior(pickS, nextIsShown);
-		}
+		var pickS = refManager.getSelectedItems();
+		refManager.setShowInterior(pickS, nextIsShown);
 	}
 
 	@Override
