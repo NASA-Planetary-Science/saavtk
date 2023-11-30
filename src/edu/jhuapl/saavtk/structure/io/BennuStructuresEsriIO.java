@@ -6,32 +6,32 @@ import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.util.Map;
 
-import javax.measure.unit.NonSI;
-import javax.measure.unit.SI;
-
 import org.apache.commons.io.FilenameUtils;
-import org.geotools.data.DataStore;
-import org.geotools.data.DataStoreFinder;
-import org.geotools.data.FeatureSource;
+import org.geotools.api.data.DataStore;
+import org.geotools.api.data.DataStoreFinder;
+import org.geotools.api.data.FeatureSource;
+import org.geotools.api.feature.simple.SimpleFeature;
+import org.geotools.api.feature.simple.SimpleFeatureType;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.crs.CRSFactory;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.cs.AxisDirection;
+import org.geotools.api.referencing.cs.CSFactory;
+import org.geotools.api.referencing.cs.CoordinateSystemAxis;
+import org.geotools.api.referencing.cs.EllipsoidalCS;
+import org.geotools.api.referencing.datum.DatumFactory;
+import org.geotools.api.referencing.datum.Ellipsoid;
+import org.geotools.api.referencing.datum.GeodeticDatum;
+import org.geotools.api.referencing.datum.PrimeMeridian;
 import org.geotools.data.shapefile.ShapefileDumper;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.referencing.ReferencingFactoryFinder;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CRSFactory;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.cs.AxisDirection;
-import org.opengis.referencing.cs.CSFactory;
-import org.opengis.referencing.cs.CoordinateSystemAxis;
-import org.opengis.referencing.cs.EllipsoidalCS;
-import org.opengis.referencing.datum.DatumFactory;
-import org.opengis.referencing.datum.Ellipsoid;
-import org.opengis.referencing.datum.GeodeticDatum;
-import org.opengis.referencing.datum.PrimeMeridian;
 
 import com.google.common.collect.Maps;
+
+import si.uom.NonSI;
+import si.uom.SI;
 
 public class BennuStructuresEsriIO
 {
@@ -67,7 +67,7 @@ public class BennuStructuresEsriIO
 
             hm.clear();
             hm.put("name", "bennu 256m sphere");
-            Ellipsoid bennuEllipsoid = datumFactory.createEllipsoid(hm, 0.256, 0.256, SI.KILOMETER); // TODO: replace this with data from shape model input file
+            Ellipsoid bennuEllipsoid = datumFactory.createEllipsoid(hm, 0.256, 0.256, SI.METRE.multiply(1000)); // TODO: replace this with data from shape model input file
 
             hm.clear();
             hm.put("name", "bennu body-fixed height datum");

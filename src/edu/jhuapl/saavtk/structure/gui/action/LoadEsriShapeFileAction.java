@@ -11,10 +11,10 @@ import java.util.List;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 
+import org.geotools.api.feature.Feature;
+import org.geotools.api.feature.simple.SimpleFeature;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
-import org.opengis.feature.Feature;
-import org.opengis.feature.simple.SimpleFeature;
 
 import com.google.common.collect.Lists;
 
