@@ -4,7 +4,7 @@
 	<groupId>edu.jhuapl.ses.srn.saavtk</groupId>
 	<artifactId>saavtk</artifactId>
 	<packaging>jar</packaging>
-	<version>1.2.1.81-b3-SNAPSHOT</version>  
+	<version>1.2.1.81-b3-SNAPSHOT</version>   
 	<name>saavtk</name>
 	<description>VTK Support library</description>
     <organization>
@@ -41,7 +41,7 @@
 			    <dependency>
 					<groupId>org.jzy3d</groupId>
 					<artifactId>vtk-java-all</artifactId>
-					<version>1.0.0.18</version>
+					<version>1.0.0.25</version>
 					<exclusions>
 		                <exclusion>
 		                    <groupId>org.jzy3d</groupId>
@@ -71,7 +71,7 @@
 		    	<dependency>
 					<groupId>org.jzy3d</groupId>
 					<artifactId>vtk-java-all</artifactId>
-					<version>1.0.0.18</version>
+					<version>1.0.0.25</version>
 					<exclusions>
 		                <exclusion>
 		                    <groupId>org.jzy3d</groupId>
@@ -101,7 +101,7 @@
 		    	<dependency>
 					<groupId>org.jzy3d</groupId>
 					<artifactId>vtk-java-all</artifactId>
-					<version>1.0.0.18</version>
+					<version>1.0.0.25</version>
 					<exclusions>
 		                <exclusion>
 		                    <groupId>org.jzy3d</groupId>
@@ -130,7 +130,7 @@
 		    	<dependency>
 					<groupId>org.jzy3d</groupId>
 					<artifactId>vtk-java-all</artifactId>
-					<version>1.0.0.18</version>
+					<version>1.0.0.25</version>
 					<exclusions>
 		                <exclusion>
 		                    <groupId>org.jzy3d</groupId>
