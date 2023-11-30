@@ -559,8 +559,11 @@ public class GenericPolyhedralModel extends PolyhedralModel
         {
             int numberElements = (int)coloringValues[i].GetNumberOfTuples();
             ImmutableList<String> elementNames = ImmutableList.of(coloringNames[i]);
+            
+            String coloringName = coloringNames[i] != null ? coloringNames[i] : "";
+            String coloringUnit = coloringUnits[i] != null ? coloringUnits[i] : "";
 
-            coloringDataManager.addBuiltIn(ColoringDataFactory.of(coloringNames[i], coloringUnits[i], numberElements, elementNames, false, coloringValues[i]));
+            coloringDataManager.addBuiltIn(ColoringDataFactory.of(coloringName, coloringUnit, numberElements, elementNames, false, coloringValues[i]));
         }
         this.coloringValueType = coloringValueType;
 

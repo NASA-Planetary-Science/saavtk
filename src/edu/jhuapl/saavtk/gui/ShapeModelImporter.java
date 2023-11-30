@@ -121,15 +121,15 @@ public class ShapeModelImporter
             configMap.put(ShapeModel.CUSTOM_SHAPE_MODEL_PATH, modelPath);
             
             // Set format based on file extension from modelPath
-            if (modelPath.endsWith(".pds"))
+            if (modelPath.toLowerCase().endsWith(".pds"))
             	format = FormatType.PDS;
-            else if (modelPath.endsWith(".obj"))
+            else if (modelPath.toLowerCase().endsWith(".obj"))
             	format = FormatType.OBJ;
-            else if (modelPath.endsWith(".vtk"))
+            else if (modelPath.toLowerCase().endsWith(".vtk"))
             	format = FormatType.VTK;
-            else if (modelPath.endsWith(".fits") || modelPath.endsWith(".fit") || modelPath.endsWith(".fts"))
+            else if (modelPath.toLowerCase().endsWith(".fits") || modelPath.toLowerCase().endsWith(".fit") || modelPath.toLowerCase().endsWith(".fts"))
             	format = FormatType.FITS;
-            else if (modelPath.endsWith(".stl"))
+            else if (modelPath.toLowerCase().endsWith(".stl"))
             	format = FormatType.STL;
             else
             	format = null;
