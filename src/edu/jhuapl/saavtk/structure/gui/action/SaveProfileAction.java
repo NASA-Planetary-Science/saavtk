@@ -1,21 +1,18 @@
 package edu.jhuapl.saavtk.structure.gui.action;
 
 import java.awt.Component;
-import java.io.File;
 import java.util.Collection;
 import java.util.List;
 
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.structure.LineModel;
+import edu.jhuapl.saavtk.structure.AnyStructureManager;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.Structure;
-import edu.jhuapl.saavtk.structure.StructureManager;
+import edu.jhuapl.saavtk.structure.StructureType;
 import edu.jhuapl.saavtk.structure.io.StructureSaveUtil;
 import glum.gui.action.PopAction;
 
@@ -24,20 +21,20 @@ import glum.gui.action.PopAction;
  * {@link PolyLine}.
  * <P>
  * The {@link PolyLine} must have only 2 points.
- * 
+ *
  * @author lopeznr1
  */
-public class SaveProfileAction<G1 extends Structure> extends PopAction<G1>
+public class SaveProfileAction extends PopAction<Structure>
 {
 	// Ref vars
-	private final StructureManager<G1> refManager;
+	private final AnyStructureManager refManager;
 	private final PolyhedralModel refSmallBody;
 	private final Component refParent;
 
 	/**
 	 * Standard Constructor
 	 */
-	public SaveProfileAction(StructureManager<G1> aManager, PolyhedralModel aSmallBody, Component aParent)
+	public SaveProfileAction(AnyStructureManager aManager, PolyhedralModel aSmallBody, Component aParent)
 	{
 		refManager = aManager;
 		refSmallBody = aSmallBody;
@@ -45,14 +42,14 @@ public class SaveProfileAction<G1 extends Structure> extends PopAction<G1>
 	}
 
 	@Override
-	public void executeAction(List<G1> aItemL)
+	public void executeAction(List<Structure> aItemL)
 	{
 		// Bail if a single item is not selected
 		if (aItemL.size() != 1)
 			return;
 
 		// Prompt the user for a file
-		File file = CustomFileChooser.showSaveDialog(refParent, "Save Profile", "profile.csv");
+		var file = CustomFileChooser.showSaveDialog(refParent, "Save Profile", "profile.csv");
 		if (file == null)
 			return;
 
@@ -64,7 +61,7 @@ public class SaveProfileAction<G1 extends Structure> extends PopAction<G1>
 				throw new Exception("Line must contain exactly 2 control points.");
 
 			// Delegate actual saving
-			List<Vector3D> xyzPointL = ((LineModel<PolyLine>) refManager).getXyzPointsFor(tmpLine);
+			var xyzPointL = refManager.getXyzPointsFor(tmpLine);
 			StructureSaveUtil.saveProfile(file, refSmallBody, xyzPointL);
 		}
 		catch (Exception aExp)
@@ -78,12 +75,13 @@ public class SaveProfileAction<G1 extends Structure> extends PopAction<G1>
 	}
 
 	@Override
-	public void setChosenItems(Collection<G1> aItemC, JMenuItem aAssocMI)
+	public void setChosenItems(Collection<Structure> aItemC, JMenuItem aAssocMI)
 	{
 		super.setChosenItems(aItemC, aAssocMI);
 
-		// Enable the item if the number of selected items == 1
-		boolean isEnabled = aItemC.size() == 1;
+		// Enable the item only if 1 item and the type is a Path
+		var isEnabled = aItemC.size() == 1;
+		isEnabled &= aItemC.iterator().next().getType() == StructureType.Path;
 		aAssocMI.setEnabled(isEnabled);
 	}
 

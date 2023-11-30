@@ -4,7 +4,7 @@ import java.awt.Color;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
+import edu.jhuapl.saavtk.structure.vtk.RenderState;
 import edu.jhuapl.saavtk.vtk.font.FontAttr;
 
 /**
@@ -12,12 +12,12 @@ import edu.jhuapl.saavtk.vtk.font.FontAttr;
  *
  * @author lopeznr1
  */
-public class Ellipse implements Structure
+public class Ellipse implements Structure, ClosedShape
 {
 	// Attributes
 	private final int id;
 	private final Object source;
-	private final Mode mode;
+	private final StructureType type;
 
 	// State vars
 	private Vector3D center;
@@ -33,16 +33,18 @@ public class Ellipse implements Structure
 	private String label;
 
 	private String shapeModelId;
+	private boolean showInterior;
 
-	/**
-	 * Standard Constructor
-	 */
-	public Ellipse(int aId, Object aSource, Mode aMode, Vector3D aCenter, double aRadius, double aAngle,
-			double aFlattening, Color aColor, String aLabel)
+	// Render vars
+	private RenderState renderState;
+
+	/** Standard Constructor */
+	public Ellipse(int aId, Object aSource, StructureType aType, Vector3D aCenter, double aRadius, double aAngle,
+			double aFlattening, Color aColor)
 	{
 		id = aId;
 		source = aSource;
-		mode = aMode;
+		type = aType;
 
 		center = aCenter;
 		radius = aRadius;
@@ -50,13 +52,22 @@ public class Ellipse implements Structure
 		flattening = aFlattening;
 
 		name = "default";
-		label = aLabel;
+		label = "";
 
 		color = aColor;
 		labelFA = FontAttr.Default;
 		visible = true;
 
 		shapeModelId = null;
+		showInterior = false;
+
+		renderState = RenderState.Invalid;
+	}
+
+	/** Simplified Constructor: Circle */
+	public Ellipse(int aId, Object aSource, Vector3D aCenter, double aRadius, Color aColor)
+	{
+		this(aId, aSource, StructureType.Circle, aCenter, aRadius, 0.0, 1.0, aColor);
 	}
 
 	public double getAngle()
@@ -72,11 +83,6 @@ public class Ellipse implements Structure
 	public double getFlattening()
 	{
 		return flattening;
-	}
-
-	public Mode getMode()
-	{
-		return mode;
 	}
 
 	public double getRadius()
@@ -135,6 +141,12 @@ public class Ellipse implements Structure
 	}
 
 	@Override
+	public RenderState getRenderState()
+	{
+		return renderState;
+	}
+
+	@Override
 	public String getShapeModelId()
 	{
 		return shapeModelId;
@@ -144,6 +156,24 @@ public class Ellipse implements Structure
 	public Object getSource()
 	{
 		return source;
+	}
+
+	@Override
+	public boolean getShowInterior()
+	{
+		return showInterior;
+	}
+
+	@Override
+	public double getSurfaceArea()
+	{
+		return renderState.surfaceArea();
+	}
+
+	@Override
+	public StructureType getType()
+	{
+		return type;
 	}
 
 	@Override
@@ -177,9 +207,21 @@ public class Ellipse implements Structure
 	}
 
 	@Override
+	public void setRenderState(RenderState aRenderState)
+	{
+		renderState = aRenderState;
+	}
+
+	@Override
 	public void setShapeModelId(String aShapeModelId)
 	{
 		shapeModelId = aShapeModelId;
+	}
+
+	@Override
+	public void setShowInterior(boolean aBool)
+	{
+		showInterior = aBool;
 	}
 
 	@Override
@@ -187,7 +229,7 @@ public class Ellipse implements Structure
 	{
 		visible = aBool;
 	}
-	
+
 	@Override
 	public String toString()
 	{

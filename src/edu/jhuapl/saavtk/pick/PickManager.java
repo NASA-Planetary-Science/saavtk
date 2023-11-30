@@ -9,9 +9,7 @@ import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.swing.JComponent;
 import javax.swing.event.MouseInputListener;
@@ -19,53 +17,40 @@ import javax.swing.event.MouseInputListener;
 import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.model.ModelManager;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
+import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.util.Preferences;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
 
 /**
- * Object that manages a collection of Pickers.
+ * Object that manages a collection of {@link Picker}s..
  * <p>
  * The PickManager supports the following:
  * <ul>
- * <li>A default Picker which is always active
- * <li>A set of non-default Pickers of which at most only 1 is active at any
- * time.
- * <li>The non-default Picker is enabled via the method
- * {@link #setPickMode(PickMode)}.
+ * <li>A {@link DefaultPicker} which is always active
+ * <li>A shared/common {@link SelectionPicker}
+ * <li>Any custom {@link Picker}
  * </ul>
- * This class still relies on VTK's Interactor to accomplish manipulation of the
- * ShapeModel. It would be ideal to do away with the reliance of this VTK code
- * and have a custom "Picker" that performs the manipulations natively via Java.
+ * Only 1 non-default {@link Picker}s may be active at any time.The non-default {@link Picker}s are are activated via
+ * {@link #setActivePicker(Picker)}.
+ * <p>
+ * This class still relies on VTK's Interactor to accomplish manipulation of the ShapeModel. It would be ideal to do
+ * away with the reliance of this VTK code and have a custom "Picker" that performs the manipulations natively via Java.
  *
  * @author lopeznr1
  */
 public class PickManager
 {
-	/**
-	 * TODO: This enum will eventually go away as we transition away from a shared
-	 * (coupled) Picker system to a decoupled Picker system.
-	 */
-	public enum PickMode
-	{
-		DEFAULT,
-
-		CIRCLE_SELECTION;
-	}
-
 	// Ref vars
 	private Renderer refRenderer;
 	private vtkJoglPanelComponent refRenWin;
 
 	// State vars
-	private List<PickManagerListener> listenerL;
+	private final List<PickManagerListener> listenerL;
+	private final DefaultPicker defaultPicker;
+	private final SelectionPicker selectionPicker;
 	private Picker activePicker;
-	private DefaultPicker defaultPicker;
-	private PickMode pickMode;
 	private boolean currExclusiveMode;
 	private double pickTolerance;
-
-	@Deprecated
-	private Map<PickMode, Picker> nondefaultPickers;
 
 	/** Standard Constructor */
 	public PickManager(Renderer aRenderer, PolyhedralModel aSmallBody)
@@ -74,13 +59,11 @@ public class PickManager
 		refRenWin = aRenderer.getRenderWindowPanel();
 
 		listenerL = new ArrayList<>();
-		activePicker = NonePicker.Instance;
 		defaultPicker = new DefaultPicker(aRenderer, aSmallBody);
-		pickMode = PickMode.DEFAULT;
+		selectionPicker = null; // Note: There is no shared/common SelectionPicker
+		activePicker = NonePicker.Instance;
 		currExclusiveMode = false;
 		pickTolerance = Picker.DEFAULT_PICK_TOLERANCE;
-
-		nondefaultPickers = new HashMap<>();
 
 		// Set the pick tolerance to the default value
 		double tmpPickTolerance = Preferences.getInstance().getAsDouble(Preferences.PICK_TOLERANCE,
@@ -92,19 +75,18 @@ public class PickManager
 	}
 
 	/** Legacy Constructor */
-	public PickManager(Renderer aRenderer, ModelManager aModelManager)
+	public PickManager(Renderer aRenderer, StatusNotifier aStatusNotifier, PolyhedralModel aSmallBody,
+			ModelManager aModelManager)
 	{
 		refRenderer = aRenderer;
 		refRenWin = aRenderer.getRenderWindowPanel();
 
 		listenerL = new ArrayList<>();
-		activePicker = NonePicker.Instance;
 		defaultPicker = new DefaultPicker(aRenderer, aModelManager);
-		pickMode = PickMode.DEFAULT;
+		selectionPicker = new SelectionPicker(aRenderer, aStatusNotifier, aSmallBody);
+		activePicker = NonePicker.Instance;
 		currExclusiveMode = false;
 		pickTolerance = Picker.DEFAULT_PICK_TOLERANCE;
-
-		nondefaultPickers = PickUtil.formNonDefaultPickerMap(aRenderer, aModelManager);
 
 		// Set the pick tolerance to the default value
 		double tmpPickTolerance = Preferences.getInstance().getAsDouble(Preferences.PICK_TOLERANCE,
@@ -132,43 +114,19 @@ public class PickManager
 	}
 
 	/**
-	 * Returns the Picker that corresponds to the specified PickMode
-	 * <p>
-	 * Method to support the transition away from a shared (coupled) Picker system
-	 * to a decoupled Picker system.
-	 */
-	@Deprecated
-	public Picker getPickerForPickMode(PickMode aPickMode)
-	{
-		return nondefaultPickers.get(aPickMode);
-	}
-
-	/**
-	 * Sets the PickMode which will activate the corresponding (non-default) Picker.
-	 * <p>
-	 * This method will eventually go away. Please use
-	 * {@link #setActivePicker(Picker)}
-	 *
-	 * @param aMode
-	 */
-	@Deprecated
-	public void setPickMode(PickMode aMode)
-	{
-		// Bail if the PickMode has not changed
-		if (pickMode == aMode)
-			return;
-		pickMode = aMode;
-
-		// Delegate
-		setActivePicker(nondefaultPickers.get(pickMode));
-	}
-
-	/**
 	 * Returns the active Picker
 	 */
 	public Picker getActivePicker()
 	{
 		return activePicker;
+	}
+
+	/**
+	 * Returns the shared/common {@link SelectionPicker} used for selecting a region.
+	 */
+	public SelectionPicker getSelectionPicker()
+	{
+		return selectionPicker;
 	}
 
 	/**
@@ -220,16 +178,15 @@ public class PickManager
 		pickTolerance = aPickTolerance;
 
 		defaultPicker.setTolerance(aPickTolerance);
-		for (PickMode pm : nondefaultPickers.keySet())
-			nondefaultPickers.get(pm).setTolerance(aPickTolerance);
+		if (selectionPicker != null)
+			selectionPicker.setTolerance(aPickTolerance);
 	}
 
 	/**
-	 * Helper method that determines if the active Picker has entered into an
-	 * activated state.
+	 * Helper method that determines if the active Picker has entered into an activated state.
 	 * <p>
-	 * An activated state is a state where the Picker is in the process of a complex
-	 * action and wants exclusive "control" of the mouse / keyboard.
+	 * An activated state is a state where the Picker is in the process of a complex action and wants exclusive "control"
+	 * of the mouse / keyboard.
 	 */
 	private void updateActiveState()
 	{
@@ -258,8 +215,8 @@ public class PickManager
 	}
 
 	/**
-	 * Helper method that will properly register our private event handler with the
-	 * component associated with the vtkJoglPanelComponent.
+	 * Helper method that will properly register our private event handler with the component associated with the
+	 * vtkJoglPanelComponent.
 	 */
 	private void registerEventHandler()
 	{
@@ -312,8 +269,7 @@ public class PickManager
 	}
 
 	/**
-	 * Internal class used to process and dispatch all keyboard / mouse events to
-	 * the actual Pickers.
+	 * Internal class used to process and dispatch all keyboard / mouse events to the actual Pickers.
 	 */
 	private class EventHandler implements KeyListener, MouseInputListener, MouseWheelListener
 	{
@@ -419,9 +375,8 @@ public class PickManager
 	/**
 	 * Picker which is equivalent to a no-operation Picker.
 	 * <p>
-	 * This class (should have) has no state data and thus is a singleton. Currently
-	 * since Picker is an class (with implementation details) rather than an
-	 * interface this is not strictly true.
+	 * This class (should have) has no state data and thus is a singleton. Currently since Picker is an class (with
+	 * implementation details) rather than an interface this is not strictly true.
 	 */
 	private static class NonePicker extends Picker
 	{

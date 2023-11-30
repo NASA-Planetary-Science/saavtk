@@ -11,13 +11,16 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
+import edu.jhuapl.saavtk.structure.AnyStructureManager;
 import edu.jhuapl.saavtk.structure.Ellipse;
+import edu.jhuapl.saavtk.structure.Point;
+import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
+import edu.jhuapl.saavtk.structure.StructureType;
 import edu.jhuapl.saavtk.structure.util.EllipseUtil;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
+import glum.task.Task;
 
 /**
  * Collection of utility methods for serializing structures (or aspects of a
@@ -34,27 +37,27 @@ import edu.jhuapl.saavtk.util.MathUtil;
 public class StructureSaveUtil
 {
 	/**
-	 * Utility method for saving the content of a list of {@link Ellipse}s.
+	 * Utility method for saving the content of a list of {@link Ellipse}s or {@link Point}s.
 	 * <p>
 	 * This method originated from (~2019Oct07):
 	 * edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.java
 	 */
-	public static void saveModel(File aFile, AbstractEllipsePolygonModel aManager, List<Ellipse> aStructureL,
+	public static void saveModel(Task aTask, File aFile, AnyStructureManager aManager, List<Structure> aStructureL,
 			PolyhedralModel aSmallBody) throws IOException
 	{
 		FileWriter fstream = new FileWriter(aFile);
 		BufferedWriter out = new BufferedWriter(fstream);
 
-		String[] standardColoringUnitArr = EllipseUtil.getStandardColoringUnits(aSmallBody);
+		var standardColoringUnitArr = EllipseUtil.getStandardColoringUnits(aSmallBody);
 
 		// Write the header comments
-		Mode tmpMode = aManager.getMode();
-		writeHeaderComments(out, tmpMode, standardColoringUnitArr);
+		var tmpType = aStructureL.get(0).getType();
+		writeHeaderComments(out, tmpType, standardColoringUnitArr);
 
 		// Write the data content
-		for (Ellipse aEllipse : aStructureL)
+		for (var aItem : aStructureL)
 		{
-			String name = aEllipse.getName();
+			String name = aItem.getName();
 			if (name.length() == 0)
 				name = "default";
 			else if (name.matches(".*\\s.*") == true)
@@ -63,19 +66,38 @@ public class StructureSaveUtil
 			// Since tab is used as the delimiter, replace any tabs in the name with spaces.
 			name = name.replace('\t', ' ');
 
-			LatLon llr = MathUtil.reclat(aEllipse.getCenter().toArray());
+			var center = (Vector3D)null;
+			var radius = 0.0;
+			var flattening = 1.0;
+			var angle = 0.0;
+			if (aItem instanceof Point aPoint)
+			{
+				center = aPoint.getCenter();
+				radius = EllipseUtil.getPointSizeDef(aSmallBody);
+			}
+			else if (aItem instanceof Ellipse aEllipse)
+			{
+				center = aEllipse.getCenter();
+				radius = aEllipse.getRadius();
+				angle = aEllipse.getAngle();
+				flattening = aEllipse.getFlattening();
+			}
+			else
+				throw new Error("Unsupported structure: " + aItem);
+
+			LatLon llr = MathUtil.reclat(center.toArray());
 			double lat = llr.lat * 180.0 / Math.PI;
 			double lon = llr.lon * 180.0 / Math.PI;
 			if (lon < 0.0)
 				lon += 360.0;
 
-			double[] centerArr = aEllipse.getCenter().toArray();
-			String str = "" + aEllipse.getId() + "\t" + name + "\t" + centerArr[0] + "\t" + centerArr[1] + "\t"
+			double[] centerArr = center.toArray();
+			String str = "" + aItem.getId() + "\t" + name + "\t" + centerArr[0] + "\t" + centerArr[1] + "\t"
 					+ centerArr[2] + "\t" + lat + "\t" + lon + "\t" + llr.rad;
 
 			str += "\t";
 
-			double[] values = EllipseUtil.getStandardColoringValues(aManager, aEllipse, aSmallBody);
+			double[] values = EllipseUtil.getStandardColoringValues(aTask, aManager, aItem, aSmallBody);
 			for (int i = 0; i < values.length; ++i)
 			{
 				str += Double.isNaN(values[i]) ? "NA" : values[i];
@@ -83,23 +105,23 @@ public class StructureSaveUtil
 					str += "\t";
 			}
 
-			str += "\t" + 2.0 * aEllipse.getRadius(); // save out as diameter, not radius
+			str += "\t" + 2.0 * radius; // save out as diameter, not radius
 
-			str += "\t" + aEllipse.getFlattening() + "\t" + aEllipse.getAngle();
+			str += "\t" + flattening + "\t" +angle;
 
-			Color color = aEllipse.getColor();
+			Color color = aItem.getColor();
 			str += "\t" + color.getRed() + "," + color.getGreen() + "," + color.getBlue();
 
-			if (tmpMode == Mode.ELLIPSE_MODE)
+			if (tmpType == StructureType.Ellipse)
 			{
-				Double gravityAngle = EllipseUtil.getEllipseAngleRelativeToGravityVector(aEllipse, aSmallBody);
+				Double gravityAngle = EllipseUtil.getEllipseAngleRelativeToGravityVector((Ellipse)aItem, aSmallBody);
 				if (gravityAngle != null)
 					str += "\t" + gravityAngle;
 				else
 					str += "\t" + "NA";
 			}
 
-			str += "\t" + "\"" + aEllipse.getLabel() + "\"";
+			str += "\t" + "\"" + aItem.getLabel() + "\"";
 
 			// String labelcolorStr="\tlc:"+pol.labelcolor[0] + "," + pol.labelcolor[1] +
 			// "," + pol.labelcolor[2];
@@ -224,39 +246,39 @@ public class StructureSaveUtil
 	 *
 	 * @param aBW                      {@link BufferedWriter} where comments will be
 	 *                                 written to.
-	 * @param aMode                    The mode associated with the associated round
+	 * @param aType                    The type associated with the associated round
 	 *                                 structures.
 	 * @param aStandardColoringUnitArr 4-element array containing the standard
 	 *                                 coloring units. If the standard coloring
 	 *                                 units are not available then null should be
 	 *                                 at the relevant index.
 	 */
-	private static void writeHeaderComments(BufferedWriter aBW, Mode aMode, String[] aStandardColoringUnitArr)
+	private static void writeHeaderComments(BufferedWriter aBW, StructureType aType, String[] aStandardColoringUnitArr)
 			throws IOException
 	{
 		// Extract the text to utilize as the coloring unit info string
 		String unitStrArr[] = new String[4];
 		for (int c1 = 0; c1 < aStandardColoringUnitArr.length; c1++)
 		{
-			String tmpStr = "NA";
+			var tmpStr = "NA";
 			if (aStandardColoringUnitArr[c1] != null)
 				tmpStr = aStandardColoringUnitArr[c1];
 			unitStrArr[c1] = tmpStr;
 		}
-		String coloringUnitStr = String.format("slope (%s), elevation (%s), acceleration (%s), potential (%s)",
+		var coloringUnitStr = String.format("slope (%s), elevation (%s), acceleration (%s), potential (%s)",
 				unitStrArr[0], unitStrArr[1], unitStrArr[2], unitStrArr[3]);
 
-		String dataTypeStr = "ellipse";
-		if (aMode == Mode.CIRCLE_MODE)
+		var dataTypeStr = "ellipse";
+		if (aType == StructureType.Circle)
 			dataTypeStr = "circle";
-		else if (aMode == Mode.POINT_MODE)
+		else if (aType == StructureType.Point)
 			dataTypeStr = "point";
 
-		boolean alwaysTrue = true;
-		boolean isEllipseF = aMode != Mode.ELLIPSE_MODE;
-		boolean isEllipseT = aMode == Mode.ELLIPSE_MODE;
+		var alwaysTrue = true;
+		var isEllipseF = aType != StructureType.Ellipse;
+		var isEllipseT = aType == StructureType.Ellipse;
 
-		String columnDefStr = "<id> <name> <centerXYZ[3]> <centerLLR[3]> <coloringValue[4]> <diameter> <flattening> <regularAngle> <colorRGB> <gravityAngle> <label>";
+		var columnDefStr = "<id> <name> <centerXYZ[3]> <centerLLR[3]> <coloringValue[4]> <diameter> <flattening> <regularAngle> <colorRGB> <gravityAngle> <label>";
 		if (isEllipseF == true)
 			columnDefStr = "<id> <name> <centerXYZ[3]> <centerLLR[3]> <coloringValue[4]> <diameter> <flattening> <regularAngle> <colorRGB> <label>";
 

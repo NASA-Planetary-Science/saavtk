@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.structure.PolyLine;
-import edu.jhuapl.saavtk.structure.PolyLineMode;
+import edu.jhuapl.saavtk.structure.StructureType;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
 import edu.jhuapl.saavtk.vtk.VtkDrawUtil;
@@ -21,17 +21,17 @@ import vtk.vtkPolyData;
 /**
  * Class which contains the logic to render a single {@link PolyLine} using the
  * VTK framework.
- * <P>
+ * <p>
  * This class supports the following configurable state:
- * <UL>
- * <LI>Closed / Unclosed
- * <LI>Draw color
- * <LI>TODO: Outline width
- * <LI>TODO: Clean up logic that handles mutation of xyzPointL and
+ * <ul>
+ * <li>Closed / Unclosed
+ * <li>Draw color
+ * <li>TODO: Outline width
+ * <li>TODO: Clean up logic that handles mutation of xyzPointL and
  * controlPointIdL
- * <LI>TODO: Clean up very convoluted processing in
+ * <li>TODO: Clean up very convoluted processing in
  * {@link #updateSegmentAt(int, List)}
- * </UL>
+ * </ul>
  * Note this class will update the reference {@link PolyLine}'s "path length"
  * during relevant VTK state updates.
  *
@@ -42,7 +42,6 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 	// Reference vars
 	private final PolyhedralModel refSmallBody;
 	private final PolyLine refItem;
-	private final PolyLineMode refMode;
 
 	// Note xyzPointList is what's displayed. There will usually be more of these
 	// points than controlPointL in order to ensure the line is right above the
@@ -54,14 +53,11 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 	private int vDrawId;
 	private boolean vIsStale;
 
-	/**
-	 * Standard Constructor
-	 */
-	public VtkPolyLinePainter(PolyhedralModel aSmallBody, PolyLine aItem, PolyLineMode aMode)
+	/** Standard Constructor */
+	public VtkPolyLinePainter(PolyhedralModel aSmallBody, PolyLine aItem)
 	{
 		refSmallBody = aSmallBody;
 		refItem = aItem;
-		refMode = aMode;
 
 		xyzPointL = ImmutableList.of();
 		controlPointIdL = new ArrayList<>();
@@ -145,7 +141,7 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 			else
 			{
 				updateSegmentAt(evalIdx, tmpPointL);
-				if (refMode == PolyLineMode.CLOSED)
+				if (refItem.getType() == StructureType.Polygon)
 					updateSegmentAt(evalIdx + 1, tmpPointL);
 			}
 		}
@@ -184,7 +180,7 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 				for (int i = 0; i < controlPointIdL.size(); ++i)
 					controlPointIdL.set(i, controlPointIdL.get(i) - numberPointsRemoved);
 
-				if (refMode == PolyLineMode.CLOSED)
+				if (refItem.getType() == StructureType.Polygon)
 				{
 					int id = controlPointIdL.get(controlPointIdL.size() - 1);
 					numberPointsRemoved = tmpPointL.size() - id - 1;
@@ -198,7 +194,7 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 			// Remove final point
 			else if (aIdx == controlPointIdL.size() - 1)
 			{
-				if (refMode == PolyLineMode.CLOSED)
+				if (refItem.getType() == StructureType.Polygon)
 				{
 					int id = controlPointIdL.get(controlPointIdL.size() - 1);
 					int numberPointsRemoved = tmpPointL.size() - id - 1;
@@ -215,7 +211,7 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 				}
 				controlPointIdL.remove(aIdx);
 
-				if (refMode == PolyLineMode.CLOSED)
+				if (refItem.getType() == StructureType.Polygon)
 				{
 					// redraw segment connecting last point to first
 					updateSegmentAt(controlPointIdL.size() - 1, tmpPointL);
@@ -267,13 +263,13 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 		else if (aIdx == numVertices - 1)
 		{
 			updateSegmentAt(aIdx - 1, tmpPointL);
-			if (refMode == PolyLineMode.CLOSED)
+			if (refItem.getType() == StructureType.Polygon)
 				updateSegmentAt(aIdx, tmpPointL);
 		}
 		// If we're modifying the first vertex
 		else if (aIdx == 0)
 		{
-			if (refMode == PolyLineMode.CLOSED)
+			if (refItem.getType() == StructureType.Polygon)
 				updateSegmentAt(numVertices - 1, tmpPointL);
 			updateSegmentAt(aIdx, tmpPointL);
 		}
@@ -288,18 +284,16 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 		updatePathLength();
 	}
 
-	/**
-	 * Notification that the VTK state is stale.
-	 */
-	public void markStale()
-	{
-		vIsStale = true;
-	}
-
 	@Override
 	public void vtkDispose()
 	{
 		; // Nothing to do
+	}
+
+	@Override
+	public void vtkMarkStale()
+	{
+		vIsStale = true;
 	}
 
 	@Override
@@ -337,7 +331,7 @@ public class VtkPolyLinePainter<G1 extends PolyLine> implements VtkResource
 			length += dist;
 		}
 
-		refItem.setPathLength(length);
+		refItem.setRenderState(new RenderState(Vector3D.NaN, length, Double.NaN));
 	}
 
 	/**

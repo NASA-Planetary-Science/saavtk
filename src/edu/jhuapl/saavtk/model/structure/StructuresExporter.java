@@ -15,8 +15,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
-import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.esri.LineSegment;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
 import edu.jhuapl.saavtk.model.structure.esri.LineStyle;
@@ -24,42 +22,20 @@ import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
 import edu.jhuapl.saavtk.model.structure.esri.PointStyle;
 import edu.jhuapl.saavtk.model.structure.esri.ShapefileUtil;
 import edu.jhuapl.saavtk.model.structure.esri.VtkFileUtil;
-import edu.jhuapl.saavtk.structure.Ellipse;
+import edu.jhuapl.saavtk.structure.AnyStructureManager;
 import edu.jhuapl.saavtk.structure.PolyLine;
-import edu.jhuapl.saavtk.structure.StructureManager;
+import edu.jhuapl.saavtk.structure.Polygon;
+import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.util.MathUtil;
 
 public class StructuresExporter
 {
-
-	public static void exportToShapefile(StructureManager<?> model, Path shapeFile) throws IOException
-	{
-		if (model instanceof LineModel || model instanceof PolygonModel)
-		{
-			exportToShapefile((LineModel) model, shapeFile);
-			return;
-		}
-		if (model instanceof AbstractEllipsePolygonModel aModel)
-		{
-			if (aModel.getMode() == Mode.POINT_MODE)
-				exportPointsToShapefile(aModel, shapeFile);
-			else
-				exportToShapefile(aModel, shapeFile);
-			return;
-		}
-	}
-
-	public static void exportPointsToShapefile(AbstractEllipsePolygonModel aPointManager, Path aShapeFile) throws IOException
+	public static void exportPointsToShapefile(AnyStructureManager aPointManager, Collection<Structure> aItemC, Path aShapeFile) throws IOException
 	{
 		List<PointStructure> structuresToWrite = new ArrayList<>();
 
-		// Determine the structures to be exported
-		Collection<Ellipse> tmpC = aPointManager.getSelectedItems();
-		if (tmpC.isEmpty() == true)
-			tmpC = aPointManager.getAllItems();
-
 		// Export the structures
-		for (Ellipse aItem : tmpC)
+		for (var aItem : aItemC)
 		{
 			Color c = aItem.getColor();
 			double sz = aPointManager.getDiameter(aItem);
@@ -92,7 +68,7 @@ public class StructuresExporter
 				continue;
 
 			Color c = aItem.getColor();
-			double w = aLineManager.getLineWidth();
+			double w = aLineManager.getRenderAttr().lineWidth();
 			LineStyle style = new LineStyle(c, w);
 
 			//int nSegments=closed?line.xyzPointList.size():(line.xyzPointList.size()-1);
@@ -115,54 +91,28 @@ public class StructuresExporter
 		ShapefileUtil.writeLineStructures(structuresToWrite, aShapeFile);
 	}
 
-	public static void exportToShapefile(AbstractEllipsePolygonModel model, Path shapeFile) throws IOException
-	{
-		ShapefileUtil.writeEllipseStructures(EllipseStructure.fromSbmtStructure(model), shapeFile);
-	}
-
-
     public static String generateDefaultShapefileName(PolyhedralModel body, String modelName)
     {
 
     	return body.getModelName().replaceAll(" ", "_").replaceAll("/", "-")+"."+modelName+".shp";
     }
 
-    public static void exportToVtkFile(AbstractEllipsePolygonModel aPointManager, Path vtkFile, boolean multipleFiles)
+    public static void exportToVtkFile(AnyStructureManager aManager, Collection<Structure> aItemC, Path vtkFile, boolean multipleFiles)
     {
- 		// Determine the structures to be exported
- 		Collection<Ellipse> tmpC = aPointManager.getSelectedItems();
- 		if (tmpC.isEmpty() == true)
- 			tmpC = aPointManager.getAllItems();
-
-    	Map<Integer, PointStructure> structuresToWrite = new HashMap<>();
-
-    	// Export the structures
- 		for (Ellipse aItem : tmpC)
-		{
-			Vector3D center=aPointManager.getCenter(aItem);
-			Color color=aPointManager.getColor(aItem);
-			// TODO: finish this
-		}
-    }
-
-    public static void exportToVtkFile(LineModel<PolyLine> aLineManager, Path vtkFile, boolean multipleFiles)
-    {
- 		// Determine the structures to be exported
- 		Collection<PolyLine> tmpC = aLineManager.getSelectedItems();
- 		if (tmpC.isEmpty() == true)
- 			tmpC = aLineManager.getAllItems();
-
 		Map<Integer, LineStructure> structuresToWrite = new HashMap<>();
 
  		// Export the structures
- 		for (PolyLine aItem : tmpC)
+ 		for (var aItem : aItemC)
  		{
- 			List<Vector3D> xyzPointL = aLineManager.getXyzPointsFor(aItem);
+ 			if (aItem instanceof PolyLine == false)
+ 				return;
+
+ 			List<Vector3D> xyzPointL = aManager.getXyzPointsFor(aItem);
 
 			if (xyzPointL.size()<2)
 				continue;
 			Color c = aItem.getColor();
-			double w = aLineManager.getLineWidth();
+			double w = aManager.getRenderAttr().lineWidth();
 			LineStyle style = new LineStyle(c, w);
 
 			//int nSegments=closed?line.xyzPointList.size():(line.xyzPointList.size()-1);
@@ -179,11 +129,15 @@ public class StructuresExporter
 			String label = aItem.getLabel();
 
 
-			List<Vector3D> controlPoints=Lists.newArrayList();
-			for (int j=0; j<aItem.getControlPoints().size(); j++)
-			{
-				controlPoints.add(new Vector3D(MathUtil.latrec(aItem.getControlPoints().get(j))));
-			}
+			var controlPoints = new ArrayList<Vector3D>();
+			if (aItem instanceof PolyLine aPolyLine)
+				for (int j = 0; j < aPolyLine.getControlPoints().size(); j++)
+					controlPoints.add(new Vector3D(MathUtil.latrec(aPolyLine.getControlPoints().get(j))));
+			else if (aItem instanceof Polygon aPolygon)
+				for (int j = 0; j < aPolygon.getControlPoints().size(); j++)
+					controlPoints.add(new Vector3D(MathUtil.latrec(aPolygon.getControlPoints().get(j))));
+			else
+				throw new Error("Unsupported structure: " + aItem);
 
 			LineStructure ls=new LineStructure(segments, controlPoints);
 			ls.setLineStyle(style);

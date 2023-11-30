@@ -1,11 +1,10 @@
 package edu.jhuapl.saavtk.structure.gui;
 
 import java.awt.Color;
-import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
+import edu.jhuapl.saavtk.structure.ClosedShape;
 import edu.jhuapl.saavtk.structure.Ellipse;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.Polygon;
@@ -13,10 +12,11 @@ import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.StructureManager;
 import edu.jhuapl.saavtk.structure.io.XmlLoadUtil;
 import glum.gui.panel.itemList.BasicItemHandler;
+import glum.gui.panel.itemList.ItemHandler;
 import glum.gui.panel.itemList.query.QueryComposer;
 
 /**
- * ItemHandler used to process {@link Structure}
+ * {@link ItemHandler} used to process {@link Structure}s.
  *
  * @author lopeznr1
  */
@@ -25,9 +25,7 @@ public class StructureItemHandler<G1 extends Structure> extends BasicItemHandler
 	// Ref vars
 	private final StructureManager<G1> refManager;
 
-	/**
-	 * Standard Constructor
-	 */
+	/** Standard Constructor */
 	public StructureItemHandler(StructureManager<G1> aManager, QueryComposer<LookUp> aComposer)
 	{
 		super(aComposer);
@@ -57,19 +55,33 @@ public class StructureItemHandler<G1 extends Structure> extends BasicItemHandler
 
 			// Specific to hard-edge items
 			case Length:
-				return ((PolyLine) aItem).getPathLength();
+				if (aItem instanceof PolyLine aPolyLine)
+					return aPolyLine.getRenderState().pathLength();
+				else if (aItem instanceof Ellipse aEllipse)
+					return 2 * Math.PI * aEllipse.getRadius();
+				return null;
 			case Area:
-				return ((Polygon) aItem).getSurfaceArea();
+				if (aItem instanceof ClosedShape aClosedShape)
+					return aClosedShape.getSurfaceArea();
+				return null;
 			case VertexCount:
-				return ((PolyLine) aItem).getControlPoints().size();
+				if (aItem instanceof PolyLine aPolyLine)
+					return aPolyLine.getControlPoints().size();
+				return null;
 
 			// Specific to round-edge items
 			case Angle:
-				return ((Ellipse) aItem).getAngle();
+				if (aItem instanceof Ellipse aEllipse)
+					return aEllipse.getAngle();
+				return null;
 			case Diameter:
-				return ((Ellipse) aItem).getRadius() * 2.0;
+				if (aItem instanceof Ellipse aEllipse)
+					return aEllipse.getRadius() * 2;
+				return null;
 			case Flattening:
-				return ((Ellipse) aItem).getFlattening();
+				if (aItem instanceof Ellipse aEllipse)
+					return aEllipse.getFlattening();
+				return null;
 
 			default:
 				break;
@@ -81,7 +93,7 @@ public class StructureItemHandler<G1 extends Structure> extends BasicItemHandler
 	@Override
 	public void setColumnValue(G1 aItem, LookUp aEnum, Object aValue)
 	{
-		List<G1> itemL = ImmutableList.of(aItem);
+		var itemL = ImmutableList.of(aItem);
 		if (aEnum == LookUp.IsVisible)
 			refManager.setIsVisible(itemL, (boolean) aValue);
 		else if (aEnum == LookUp.Color)
@@ -96,8 +108,6 @@ public class StructureItemHandler<G1 extends Structure> extends BasicItemHandler
 
 	/**
 	 * Returns the string that should be used for the type column.
-	 *
-	 * @return
 	 */
 	private Object getTypeString(G1 aItem)
 	{
@@ -105,13 +115,10 @@ public class StructureItemHandler<G1 extends Structure> extends BasicItemHandler
 			return XmlLoadUtil.RAW_TYPE_POLYGON;
 		else if (aItem instanceof PolyLine)
 			return XmlLoadUtil.RAW_TYPE_PATH;
+		else if (aItem != null)
+			return ("" + aItem.getType()).toLowerCase();
 
-		if (aItem instanceof Ellipse == false)
-			return "unknown";
-
-		Ellipse tmpItem = (Ellipse) aItem;
-		Mode tmpMode = tmpItem.getMode();
-		return tmpMode.getLabel().toLowerCase();
+		return null;
 	}
 
 }

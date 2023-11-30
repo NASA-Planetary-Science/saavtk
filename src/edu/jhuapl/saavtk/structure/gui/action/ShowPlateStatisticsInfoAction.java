@@ -2,63 +2,73 @@ package edu.jhuapl.saavtk.structure.gui.action;
 
 import java.awt.Component;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
+
+import javax.swing.JMenuItem;
 
 import edu.jhuapl.saavtk.gui.plateColoring.ColoringInfoWindow;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.plateColoring.FacetColoringData;
 import edu.jhuapl.saavtk.model.structure.PlateUtil;
+import edu.jhuapl.saavtk.structure.AnyStructureManager;
+import edu.jhuapl.saavtk.structure.ClosedShape;
 import edu.jhuapl.saavtk.structure.Structure;
-import edu.jhuapl.saavtk.structure.StructureManager;
 import glum.gui.action.PopAction;
 import glum.task.SilentTask;
-import glum.task.Task;
-import vtk.vtkPolyData;
 
 /**
- * {@link PopAction} that will show the statistics of plate data associated with
- * the list of {@link Structure}s.
- * 
+ * {@link PopAction} that will show the statistics of plate data associated with the list of {@link Structure}s.
+ *
  * @author lopeznr1
  */
-public class ShowPlateStatisticsInfoAction<G1 extends Structure> extends PopAction<G1>
+public class ShowPlateStatisticsInfoAction extends PopAction<Structure>
 {
 	// Ref vars
-	private final StructureManager<G1> refManager;
+	private final AnyStructureManager refManager;
 	private final PolyhedralModel refSmallBody;
-	private final Component refParent;
 
-	/**
-	 * Standard Constructor
-	 */
-	public ShowPlateStatisticsInfoAction(StructureManager<G1> aManager, PolyhedralModel aSmallBody, Component aParent)
+	/** Standard Constructor */
+	public ShowPlateStatisticsInfoAction(AnyStructureManager aManager, PolyhedralModel aSmallBody, Component aParent)
 	{
 		refManager = aManager;
 		refSmallBody = aSmallBody;
-		refParent = aParent;
 	}
 
 	@Override
-	public void executeAction(List<G1> aItemL)
+	public void executeAction(List<Structure> aItemL)
 	{
-		Task tmpTask = new SilentTask();
+		var tmpTask = new SilentTask();
 
 		// Retrieve the unified vtkPolyData associated with the structures
-		vtkPolyData tmpPolyData = PlateUtil.formUnifiedStructurePolyData(tmpTask, refManager, aItemL);
+		var tmpPolyData = PlateUtil.formUnifiedStructurePolyData(tmpTask, refManager, aItemL);
 		if (tmpPolyData == null)
 			return;
 
-		// Transform vtkPolyData into FacetColoringData
-		FacetColoringData[] data = refSmallBody.getPlateDataInsidePolydata(tmpPolyData);
-
 		try
 		{
+			// Transform vtkPolyData into FacetColoringData
+			var data = refSmallBody.getPlateDataInsidePolydata(tmpPolyData);
+
 			ColoringInfoWindow window = new ColoringInfoWindow(data);
 		}
 		catch (IOException aExp)
 		{
 			aExp.printStackTrace();
 		}
+	}
+
+	@Override
+	public void setChosenItems(Collection<Structure> aItemC, JMenuItem aAssocMI)
+	{
+		super.setChosenItems(aItemC, aAssocMI);
+
+		// Enable if at least 1 item is a ClosedShape (with an interior shown)
+		var isEnabled = aItemC.size() >= 1;
+		if (isEnabled == true)
+			isEnabled &= aItemC.stream().anyMatch(aItem -> aItem instanceof ClosedShape aClosedShape //
+					&& aClosedShape.getShowInterior()) == true;
+
+		aAssocMI.setEnabled(isEnabled);
 	}
 
 }

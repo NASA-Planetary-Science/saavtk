@@ -12,8 +12,8 @@ import javax.swing.border.BevelBorder;
 
 import com.google.common.collect.Multimap;
 
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.structure.Structure;
+import edu.jhuapl.saavtk.structure.StructureType;
 import glum.gui.FocusUtil;
 import glum.gui.GuiUtil;
 import glum.gui.action.ClickAction;
@@ -23,34 +23,31 @@ import net.miginfocom.swing.MigLayout;
 
 /**
  * Load panel that provides a custom UI for loading up structues.
- * <P>
+ * <p>
  * This panel provides the following features:
- * <UL>
- * <LI>Textual listing of the files and associated number of (ambiguous) items.
- * <LI>Prompt for how to load ambiguous structures (either as circles or points)
- * into the system.
- * </UL>
+ * <ul>
+ * <li>Textual listing of the files and associated number of (ambiguous) items.
+ * <li>Prompt for how to load ambiguous structures (either as circles or points) into the system.
+ * </ul>
  *
  * @author lopeznr1
  */
 public class AmbiguousRoundStructurePanel extends GlassPanel implements ActionListener, GenericCodes
 {
 	// State vars
-	private Mode pickMode;
+	private StructureType pickType;
 
 	// GUI vars
 	private JLabel titleL;
 	private JTextArea infoTA;
 	private JButton cancelB, circleB, pointB;
 
-	/**
-	 * Standard Constructor
-	 */
+	/** Standard Constructor */
 	public AmbiguousRoundStructurePanel(Component aParent, int aSizeX, int aSizeY)
 	{
 		super(aParent);
 
-		pickMode = null;
+		pickType = null;
 
 		// Form the GUI
 		setLayout(new MigLayout("", "[right][grow][][]", "[][grow][]"));
@@ -80,12 +77,11 @@ public class AmbiguousRoundStructurePanel extends GlassPanel implements ActionLi
 	}
 
 	/**
-	 * Returns the {@link Mode} the user selected. Returns null if the user pressed
-	 * cancel.
+	 * Returns the {@link StructureType} the user selected. Returns null if the user pressed cancel.
 	 */
-	public Mode getSelection()
+	public StructureType getSelection()
 	{
-		return pickMode;
+		return pickType;
 	}
 
 	/**
@@ -108,19 +104,19 @@ public class AmbiguousRoundStructurePanel extends GlassPanel implements ActionLi
 		Object source = aEvent.getSource();
 		if (source == cancelB)
 		{
-			pickMode = null;
+			pickType = null;
 			setVisible(false);
 			notifyListeners(this, ID_CANCEL, "Cancel");
 		}
 		else if (source == circleB)
 		{
-			pickMode = Mode.CIRCLE_MODE;
+			pickType = StructureType.Circle;
 			setVisible(false);
 			notifyListeners(this, ID_ACCEPT, "Accept");
 		}
 		else
 		{
-			pickMode = Mode.POINT_MODE;
+			pickType = StructureType.Point;
 			setVisible(false);
 			notifyListeners(this, ID_ACCEPT, "Accept");
 		}
@@ -131,7 +127,7 @@ public class AmbiguousRoundStructurePanel extends GlassPanel implements ActionLi
 	{
 		// Reset the panel
 		if (isVisible == true)
-			pickMode = null;
+			pickType = null;
 
 		super.setVisible(isVisible);
 	}

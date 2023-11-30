@@ -14,6 +14,11 @@ import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
 import edu.jhuapl.saavtk.gui.render.VtkPropProvider;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.structure.Ellipse;
+import edu.jhuapl.saavtk.structure.Point;
+import edu.jhuapl.saavtk.structure.PolyLine;
+import edu.jhuapl.saavtk.structure.Polygon;
+import edu.jhuapl.saavtk.structure.RenderAttr;
+import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
 import edu.jhuapl.saavtk.view.lod.LodMode;
 import edu.jhuapl.saavtk.view.lod.VtkLodActor;
@@ -26,7 +31,7 @@ import vtk.vtkProp;
 import vtk.vtkUnsignedCharArray;
 
 /**
- * Class used to render multiple ellipse objects via the VTK framework.
+ * Class used to render multiple {@link Structure} objects via the VTK framework.
  * <p>
  * This class supports the following configurable state:
  * <ul>
@@ -37,30 +42,26 @@ import vtk.vtkUnsignedCharArray;
  *
  * @author lopeznr1
  */
-public class VtkEllipseMultiPainter implements VtkPropProvider
+public class VtkStructureMultiPainter implements VtkPropProvider
 {
 	// Reference vars
 	private final SceneChangeNotifier refSceneChangeNotifier;
 	private final PolyhedralModel refSmallBody;
 
-	// Attributes
-	private final int numSides;
-
 	// State vars
-	private ImmutableList<Ellipse> workItemL;
-	private ImmutableSet<Ellipse> pickItemS;
-	private ImmutableSet<Ellipse> dimmedItemS;
+	private ImmutableSet<Structure> workItemS;
+	private ImmutableSet<Structure> pickItemS;
+	private ImmutableSet<Structure> dimmedItemS;
 
+	private RenderAttr renderAttr;
 	private Color drawColor;
 	private Color pickColor;
 	private double interiorOpacity;
-	private double lineWidth;
-	private double offset;
 
-	private final Map<Ellipse, VtkCompositePainter<Ellipse, VtkEllipsePainter>> vPainterM;
+	private final Map<Structure, VtkCompositePainter<Structure, VtkStructurePainter>> vPainterM;
 
 	// Attributes
-	private Map<Ellipse, VtkDrawState> drawM;
+	private Map<Structure, VtkDrawState> drawM;
 
 	// VTK vars
 	private final List<vtkProp> actorL;
@@ -88,22 +89,20 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 	private vtkPolyData vEmptyPD;
 
 	/** Standard Constructor */
-	public VtkEllipseMultiPainter(SceneChangeNotifier aSceneChangeNotifier, PolyhedralModel aSmallBody, int aNumSides)
+	public VtkStructureMultiPainter(SceneChangeNotifier aSceneChangeNotifier, PolyhedralModel aSmallBody,
+			RenderAttr aRenderAttr)
 	{
 		refSceneChangeNotifier = aSceneChangeNotifier;
 		refSmallBody = aSmallBody;
 
-		numSides = aNumSides;
-
-		workItemL = ImmutableList.of();
+		workItemS = ImmutableSet.of();
 		pickItemS = ImmutableSet.of();
 		dimmedItemS = ImmutableSet.of();
 
+		renderAttr = aRenderAttr;
 		drawColor = null;
 		pickColor = new Color(0, 0, 255);
 		interiorOpacity = 0.3;
-		lineWidth = 2.0;
-		offset = 5.0 * refSmallBody.getMinShiftAmount();
 
 		vPainterM = new HashMap<>();
 
@@ -132,7 +131,7 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 		vExteriorActor = new VtkLodActor(this);
 		var exteriorProperty = vExteriorActor.GetProperty();
 		exteriorProperty.LightingOff();
-		exteriorProperty.SetLineWidth((float)lineWidth);
+		exteriorProperty.SetLineWidth((float) renderAttr.lineWidth());
 
 		vInteriorRegPD = new vtkPolyData();
 		vInteriorDecPD = new vtkPolyData();
@@ -163,28 +162,13 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 		return interiorOpacity;
 	}
 
-	public double getLineWidth()
-	{
-		return lineWidth;
-	}
-
-	public int getNumberOfSides()
-	{
-		return numSides;
-	}
-
-	public double getOffset()
-	{
-		return offset;
-	}
-
 	/**
 	 * Sets the items that should be rendered in a deemphasized state.
 	 */
-	public void setDimmedItems(Collection<Ellipse> aItemC)
+	public void setDimmedItems(Collection<? extends Structure> aItemC)
 	{
 		// Keep track of all items that will need to have updated coloring
-		var updateItemL = new ArrayList<Ellipse>();
+		var updateItemL = new ArrayList<Structure>();
 		updateItemL.addAll(dimmedItemS);
 		updateItemL.addAll(aItemC);
 
@@ -207,22 +191,35 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 		notifyVtkStateChange();
 	}
 
-	public void setLineWidth(double aWidth)
+	/**
+	 * Sets the {@link RenderAttr} used by this painter.
+	 */
+	public void setRenderAttr(RenderAttr aRenderAttr)
 	{
-		// Ignore invalid line width
-		if (aWidth < 1.0)
-			return;
+		// Update the lineWidth only if it is valid and has changed
+		var lineWidth = aRenderAttr.lineWidth();
+		if (lineWidth >= 1.0 && lineWidth != renderAttr.lineWidth())
+		{
+			var exteriorProperty = vExteriorActor.GetProperty();
+			exteriorProperty.SetLineWidth((float) lineWidth);
+			notifyVtkStateChange();
+		}
 
-		lineWidth = aWidth;
+		// Update the VtkPointPainters
+		var isVtkStateStale = false;
+		for (var aCompPainter : vPainterM.values())
+		{
+			if (aCompPainter.getMainPainter() instanceof VtkPointPainter aMainPainter)
+			{
+				aMainPainter.setRenderAttr(aRenderAttr);
+				isVtkStateStale = true;
+			}
+		}
 
-		var boundaryProperty = vExteriorActor.GetProperty();
-		boundaryProperty.SetLineWidth((float)lineWidth);
-		notifyVtkStateChange();
-	}
+		if (isVtkStateStale == true)
+			updatePolyData();
 
-	public void setOffset(double aOffset)
-	{
-		offset = aOffset;
+		renderAttr = aRenderAttr;
 	}
 
 	/**
@@ -230,7 +227,7 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 	 * <p>
 	 * Many cells are associated with each item, thus we need to determine which item the selected cell corresponds to.
 	 */
-	public Ellipse getItemFromCellId(vtkProp aProp, int aCellId)
+	public Structure getItemFromCellId(vtkProp aProp, int aCellId)
 	{
 		// Bail if we are not associated with the vtkProp
 		if (aProp != vInteriorActor && aProp != vExteriorActor)
@@ -238,7 +235,7 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 
 		// Locate the item corresponding to aCellId
 		int fullCellCnt = 0;
-		for (var aItem : workItemL)
+		for (var aItem : workItemS)
 		{
 			// Skip over invisible items
 			if (aItem.getVisible() == false)
@@ -250,9 +247,9 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 				continue;
 
 			if (aProp == vInteriorActor)
-				fullCellCnt += tmpPainter.getVtkInteriorPolyData().GetNumberOfCells();
+				fullCellCnt += tmpPainter.vtkGetInteriorRegPD().GetNumberOfCells();
 			else
-				fullCellCnt += tmpPainter.getVtkExteriorPolyData().GetNumberOfCells();
+				fullCellCnt += tmpPainter.vtkGetExteriorRegPD().GetNumberOfCells();
 
 			if (fullCellCnt > aCellId)
 				return aItem;
@@ -266,7 +263,7 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 	 * <p>
 	 * A painter will be instantiated if necessary.
 	 */
-	public VtkCompositePainter<Ellipse, VtkEllipsePainter> getOrCreateVtkPainterFor(Ellipse aItem,
+	public VtkCompositePainter<Structure, VtkStructurePainter> getOrCreateVtkPainterFor(Structure aItem,
 			PolyhedralModel aSmallBody)
 	{
 		var retPainter = vPainterM.get(aItem);
@@ -284,7 +281,7 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 	 * <p>
 	 * A painter will not be instantiated, but rather null will be returned.
 	 */
-	public VtkCompositePainter<Ellipse, VtkEllipsePainter> getVtkCompPainter(Ellipse aItem)
+	public VtkCompositePainter<Structure, VtkStructurePainter> getVtkCompPainter(Structure aItem)
 	{
 		return vPainterM.get(aItem);
 	}
@@ -293,7 +290,7 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 	 * Returns the {@link VtkLabelPainter} for the specified item. This is the painter responsible for the rendering of
 	 * label.
 	 */
-	public VtkLabelPainter<?> getVtkTextPainter(Ellipse aItem)
+	public VtkLabelPainter<?> getVtkTextPainter(Structure aItem)
 	{
 		var tmpPainter = vPainterM.get(aItem);
 		if (tmpPainter == null)
@@ -303,9 +300,17 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 	}
 
 	/**
+	 * Returns all of the items this painter is responsible for.
+	 */
+	public ImmutableSet<Structure> getWorkItems()
+	{
+		return workItemS;
+	}
+
+	/**
 	 * Notifies this painter of items that are in a "picked" state.
 	 */
-	public void setPickedItems(Collection<Ellipse> aItemC)
+	public void setPickedItems(Collection<? extends Structure> aItemC)
 	{
 		pickItemS = ImmutableSet.copyOf(aItemC);
 	}
@@ -313,9 +318,9 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 	/**
 	 * Sets in the items this painter is responsible for.
 	 */
-	public void setWorkItems(Collection<Ellipse> aItemC)
+	public void setWorkItems(Collection<? extends Structure> aItemC)
 	{
-		workItemL = ImmutableList.copyOf(aItemC);
+		workItemS = ImmutableSet.copyOf(aItemC);
 
 		updatePolyData();
 
@@ -328,14 +333,16 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 	 */
 	public void updatePolyData()
 	{
+		var radialOffset = renderAttr.radialOffset();
+
 		actorL.clear();
 
-		if (workItemL.size() > 0)
+		if (workItemS.size() > 0)
 		{
-			vExteriorFilterRegAPD.SetNumberOfInputs(workItemL.size());
-			vExteriorFilterDecAPD.SetNumberOfInputs(workItemL.size());
-			vInteriorFilterRegAPD.SetNumberOfInputs(workItemL.size());
-			vInteriorFilterDecAPD.SetNumberOfInputs(workItemL.size());
+			vExteriorFilterRegAPD.SetNumberOfInputs(workItemS.size());
+			vExteriorFilterDecAPD.SetNumberOfInputs(workItemS.size());
+			vInteriorFilterRegAPD.SetNumberOfInputs(workItemS.size());
+			vInteriorFilterDecAPD.SetNumberOfInputs(workItemS.size());
 
 			// Keep track of the begin idx for each item (and corresponding PolyData)
 			drawM = new HashMap<>();
@@ -344,16 +351,16 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 			int intCurrCntDec = 0;
 			int intCurrCntReg = 0;
 			int idx = 0;
-			for (var aItem : workItemL)
+			for (var aItem : workItemS)
 			{
 				var tmpPainter = getOrCreateVtkPainterFor(aItem, refSmallBody);
 				tmpPainter.vtkUpdateState();
 
 				var mainPainter = tmpPainter.getMainPainter();
-				var extRegPD = mainPainter.getVtkExteriorPolyData();
-				var extDecPD = mainPainter.getVtkExteriorDecPolyData();
-				var intRegPD = mainPainter.getVtkInteriorPolyData();
-				var intDecPD = mainPainter.getVtkInteriorDecPolyData();
+				var extRegPD = mainPainter.vtkGetExteriorRegPD();
+				var extDecPD = mainPainter.vtkGetExteriorDecPD();
+				var intRegPD = mainPainter.vtkGetInteriorRegPD();
+				var intDecPD = mainPainter.vtkGetInteriorDecPD();
 				if (aItem.getVisible() == false)
 				{
 					extRegPD = vEmptyPD;
@@ -396,17 +403,17 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 			vInteriorRegPD.DeepCopy(interiorFilterAppendRegOutput);
 			vInteriorDecPD.DeepCopy(interiorFilterAppendDecOutput);
 
-			refSmallBody.shiftPolyLineInNormalDirection(vExteriorRegPD, offset);
-			refSmallBody.shiftPolyLineInNormalDirection(vExteriorDecPD, offset);
-			PolyDataUtil.shiftPolyDataInNormalDirection(vInteriorRegPD, offset);
-			PolyDataUtil.shiftPolyDataInNormalDirection(vInteriorDecPD, offset);
+			refSmallBody.shiftPolyLineInNormalDirection(vExteriorRegPD, radialOffset);
+			refSmallBody.shiftPolyLineInNormalDirection(vExteriorDecPD, radialOffset);
+			PolyDataUtil.shiftPolyDataInNormalDirection(vInteriorRegPD, radialOffset);
+			PolyDataUtil.shiftPolyDataInNormalDirection(vInteriorDecPD, radialOffset);
 
 			vExteriorColorsRegUCA.SetNumberOfTuples(vExteriorRegPD.GetNumberOfCells());
 			vExteriorColorsDecUCA.SetNumberOfTuples(vExteriorDecPD.GetNumberOfCells());
 			vInteriorColorsRegUCA.SetNumberOfTuples(vInteriorRegPD.GetNumberOfCells());
 			vInteriorColorsDecUCA.SetNumberOfTuples(vInteriorDecPD.GetNumberOfCells());
 
-			updateVtkColorsFor(workItemL, false);
+			updateVtkColorsFor(workItemS, false);
 
 			var exteriorRegCD = vExteriorRegPD.GetCellData();
 			var exteriorDecCD = vExteriorDecPD.GetCellData();
@@ -462,7 +469,7 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 	 * @param aItemC
 	 *    The items of interest.
 	 */
-	public void updateVtkColorsFor(Collection<Ellipse> aItemC, boolean aSendNotification)
+	public void updateVtkColorsFor(Collection<? extends Structure> aItemC, boolean aSendNotification)
 	{
 		// Update internal VTK state
 		for (var aItem : aItemC)
@@ -504,22 +511,22 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 			int begIdx, endIdx;
 
 			begIdx = vDrawState.extBegIdxReg;
-			endIdx = begIdx + (int)tmpPainter.getVtkExteriorPolyData().GetNumberOfCells();
+			endIdx = begIdx + (int) tmpPainter.vtkGetExteriorRegPD().GetNumberOfCells();
 			for (int aIdx = begIdx; aIdx < endIdx; aIdx++)
 				VtkUtil.setColorOnUCA4(vExteriorColorsRegUCA, aIdx, tmpColor);
 
 			begIdx = vDrawState.extBegIdxDec;
-			endIdx = begIdx + (int)tmpPainter.getVtkExteriorDecPolyData().GetNumberOfCells();
+			endIdx = begIdx + (int) tmpPainter.vtkGetExteriorDecPD().GetNumberOfCells();
 			for (int aIdx = begIdx; aIdx < endIdx; aIdx++)
 				VtkUtil.setColorOnUCA4(vExteriorColorsDecUCA, aIdx, tmpColor);
 
 			begIdx = vDrawState.intBegIdxReg;
-			endIdx = begIdx + (int)tmpPainter.getVtkInteriorPolyData().GetNumberOfCells();
+			endIdx = begIdx + (int) tmpPainter.vtkGetInteriorRegPD().GetNumberOfCells();
 			for (int aIdx = begIdx; aIdx < endIdx; aIdx++)
 				VtkUtil.setColorOnUCA4(vInteriorColorsRegUCA, aIdx, tmpColor);
 
 			begIdx = vDrawState.intBegIdxDec;
-			endIdx = begIdx + (int)tmpPainter.getVtkInteriorDecPolyData().GetNumberOfCells();
+			endIdx = begIdx + (int) tmpPainter.vtkGetInteriorDecPD().GetNumberOfCells();
 			for (int aIdx = begIdx; aIdx < endIdx; aIdx++)
 				VtkUtil.setColorOnUCA4(vInteriorColorsDecUCA, aIdx, tmpColor);
 		}
@@ -545,16 +552,25 @@ public class VtkEllipseMultiPainter implements VtkPropProvider
 	/**
 	 * Helper method to create a painter for the specified item.
 	 */
-	private VtkEllipsePainter createPainter(Ellipse aItem)
+	private VtkStructurePainter createPainter(Structure aItem)
 	{
-		return new VtkEllipsePainter(refSmallBody, aItem, numSides);
+		if (aItem instanceof Point aPoint)
+			return new VtkPointPainter(refSmallBody, aPoint, renderAttr);
+		else if (aItem instanceof Ellipse aEllipse)
+			return new VtkEllipsePainter(refSmallBody, aEllipse, renderAttr);
+		else if (aItem instanceof Polygon aPolygon)
+			return new VtkPolygonPainter(refSmallBody, aPolygon);
+		else if (aItem instanceof PolyLine aPolyLine)
+			return new VtkPolyLinePainter2(refSmallBody, aPolyLine);
+
+		throw new Error("Unsupported Structure: " + aItem.getClass() + " -> type: " + aItem.getType());
 	}
 
 	/**
 	 * Helper method that returns the primary painter for the specified item. This is the painter responsible for
 	 * rendering a structure's shape.
 	 */
-	private VtkEllipsePainter getVtkMainPainter(Ellipse aItem)
+	private VtkStructurePainter getVtkMainPainter(Structure aItem)
 	{
 		var tmpPainter = vPainterM.get(aItem);
 		if (tmpPainter == null)

@@ -1,17 +1,17 @@
 package edu.jhuapl.saavtk.model.structure.esri;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
 
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
+import edu.jhuapl.saavtk.structure.AnyStructureManager;
 import edu.jhuapl.saavtk.structure.Ellipse;
 import vtk.vtkCellArray;
 import vtk.vtkPoints;
-import vtk.vtkPolyData;
 
 public class EllipseStructure extends LineStructure
 {
@@ -41,42 +41,53 @@ public class EllipseStructure extends LineStructure
 		this.params = params;
 	}
 
-	public static List<EllipseStructure> fromSbmtStructure(AbstractEllipsePolygonModel crappySbmtStructureModel)
+	public static List<EllipseStructure> fromSbmtStructure(AnyStructureManager aEllipseManager)
 	{
-		List<EllipseStructure> structures = Lists.newArrayList();
-		for (int i = 0; i < crappySbmtStructureModel.getNumItems(); i++)
+		var structures = new ArrayList<EllipseStructure>();
+
+		for (var aItem : aEllipseManager.getAllItems())
 		{
-			Ellipse poly = crappySbmtStructureModel.getItem(i);
-			Color c = poly.getColor();
-			double w = crappySbmtStructureModel.getLineWidth();
-			LineStyle style = new LineStyle(c, w);
-			String label = poly.getLabel();
-			//
-
-			vtkPolyData tmpPolyData = crappySbmtStructureModel.getVtkExteriorPolyDataFor(poly);
-			vtkCellArray cells = tmpPolyData.GetLines();
-			List<LineSegment> segments = Lists.newArrayList();
-			for (int j = 0; j < cells.GetNumberOfCells(); j++)
-			{
-				vtkPoints points = tmpPolyData.GetCell(j).GetPoints();
-				if (points.GetNumberOfPoints() < 2)
-					continue;
-				for (int k = 0; k < points.GetNumberOfPoints() - 1; k++)
-				{
-					double[] start = points.GetPoint(k);
-					double[] end = points.GetPoint(k + 1);
-					segments.add(new LineSegment(new Vector3D(start), new Vector3D(end)));
-				}
-			}
-
-			Parameters params = new Parameters(poly.getCenter(), poly.getRadius(), poly.getFlattening(), poly.getAngle());
-			EllipseStructure es = new EllipseStructure(segments, params);
-			es.setLineStyle(style);
-			es.setLabel(label);
-			structures.add(es);
-
+			if (aItem instanceof Ellipse aEllipse)
+				structures.add(fromSbmtStructure(aEllipseManager, aEllipse));
 		}
+
 		return structures;
+	}
+
+	/**
+	 * Utility method that takes an {@link Ellipse} (and it's manager) and returns the corresponding
+	 * {@link EllipseStructure}.
+	 */
+	public static EllipseStructure fromSbmtStructure(AnyStructureManager aManager, Ellipse aEllipse)
+	{
+		Color c = aEllipse.getColor();
+		double w = aManager.getRenderAttr().lineWidth();
+		LineStyle style = new LineStyle(c, w);
+		String label = aEllipse.getLabel();
+		//
+
+		var tmpPolyData = aManager.getVtkExteriorPolyDataFor(aEllipse);
+		vtkCellArray cells = tmpPolyData.GetLines();
+		List<LineSegment> segments = Lists.newArrayList();
+		for (int j = 0; j < cells.GetNumberOfCells(); j++)
+		{
+			vtkPoints points = tmpPolyData.GetCell(j).GetPoints();
+			if (points.GetNumberOfPoints() < 2)
+				continue;
+			for (int k = 0; k < points.GetNumberOfPoints() - 1; k++)
+			{
+				double[] start = points.GetPoint(k);
+				double[] end = points.GetPoint(k + 1);
+				segments.add(new LineSegment(new Vector3D(start), new Vector3D(end)));
+			}
+		}
+
+		var params = new Parameters(aEllipse.getCenter(), aEllipse.getRadius(), aEllipse.getFlattening(),
+				aEllipse.getAngle());
+		var retItem = new EllipseStructure(segments, params);
+		retItem.setLineStyle(style);
+		retItem.setLabel(label);
+		return retItem;
 	}
 
 	public Parameters getParameters()
