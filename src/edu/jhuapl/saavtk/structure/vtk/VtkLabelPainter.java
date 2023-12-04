@@ -6,6 +6,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.structure.Ellipse;
+import edu.jhuapl.saavtk.structure.Point;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.Structure;
 import edu.jhuapl.saavtk.structure.util.ControlPointUtil;
@@ -78,14 +79,6 @@ public class VtkLabelPainter<G1 extends Structure> implements VtkResource
 	}
 
 	/**
-	 * Notification that the VTK state is stale.
-	 */
-	public void markStale()
-	{
-		vIsStale = true;
-	}
-
-	/**
 	 * Sets the opacity of this painter.
 	 */
 	public void setOpacity(double aOpacity)
@@ -104,6 +97,12 @@ public class VtkLabelPainter<G1 extends Structure> implements VtkResource
 
 		vLabelCA.VisibilityOff();
 		vLabelCA.Delete();
+	}
+
+	@Override
+	public void vtkMarkStale()
+	{
+		vIsStale = true;
 	}
 
 	@Override
@@ -158,7 +157,17 @@ public class VtkLabelPainter<G1 extends Structure> implements VtkResource
 	 */
 	private void refreshCetroid()
 	{
-		if (refItem instanceof Ellipse aEllipse)
+		if (refItem instanceof Point aPoint)
+		{
+			var tmpCenter = aPoint.getCenter();
+			if (tmpCenter.equals(cCentroidBasis) == false)
+			{
+				cCentroidBasis = tmpCenter;
+				cCentroid = refSmallBody.findClosestPoint(tmpCenter);
+				vIsStale = true;
+			}
+		}
+		else if (refItem instanceof Ellipse aEllipse)
 		{
 			var tmpCenter = aEllipse.getCenter();
 			if (tmpCenter.equals(cCentroidBasis) == false)

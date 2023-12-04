@@ -63,8 +63,6 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	private Map<PolyLine, Vector3D> propM;
 
 	private final PolyLineMode mode;
-	private double offset;
-	private double lineWidth;
 	private G1 activatedLine;
 	private int activatedControlPointIdx;
 
@@ -99,7 +97,6 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		propM = new HashMap<>();
 
 		mode = aMode;
-		offset = 5.0 * refSmallBody.getMinShiftAmount();
 		activatedLine = null;
 		activatedControlPointIdx = -1;
 
@@ -116,8 +113,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		vLineActor = new VtkLodActor(this);
 		vtkProperty lineProperty = vLineActor.GetProperty();
 
-		lineWidth = 2.0;
-		lineProperty.SetLineWidth((float)lineWidth);
+		lineProperty.SetLineWidth((float)getRenderAttr().lineWidth());
 		if (hasProfileMode() == true)
 			lineProperty.SetLineWidth(3.0f);
 
@@ -379,9 +375,8 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		if (activatedLine != null)
 			retL.add(vLineActivationActor);
 
-		vtkActor tmpActor = activationPainter.getActor();
-		if (tmpActor != null)
-			retL.add(tmpActor);
+		if (activationPainter.getPoints().size() > 0)
+			retL.add(activationPainter.getActor());
 
 		return retL;
 	}
@@ -638,12 +633,6 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	}
 
 	@Override
-	public boolean supportsActivation()
-	{
-		return true;
-	}
-
-	@Override
 	public G1 getItemFromCellId(int aCellId, vtkProp aProp)
 	{
 		if (aProp == vLineActor)
@@ -732,7 +721,8 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	@Override
 	public void setOffset(double aOffset)
 	{
-		offset = aOffset;
+		var tmpDefaultAttr = getRenderAttr().withRadialOffset(aOffset);
+		setRenderAttr(tmpDefaultAttr);
 
 		// Clear out cache vars
 		propM.clear();
@@ -744,87 +734,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	@Override
 	public double getOffset()
 	{
-		return offset;
-	}
-
-	public void generateProfile(List<Vector3D> aPointL, List<Double> profileValues, List<Double> profileDistances,
-			int coloringIndex) throws Exception
-	{
-		profileValues.clear();
-		profileDistances.clear();
-
-		// For each point in xyzPointList, find the cell containing that
-		// point and then, using barycentric coordinates find the value
-		// of the height at that point
-		//
-		// To compute the distance, assume we have a straight line connecting the first
-		// and last points of xyzPointList. For each point, p, in xyzPointList, find the
-		// point on the line closest to p. The distance from p to the start of the line
-		// is what is placed in heights. Use SPICE's nplnpt function for this.
-
-		double[] first = aPointL.get(0).toArray();
-		double[] last = aPointL.get(aPointL.size() - 1).toArray();
-		double[] lindir = new double[3];
-		lindir[0] = last[0] - first[0];
-		lindir[1] = last[1] - first[1];
-		lindir[2] = last[2] - first[2];
-
-		// The following can be true if the user clicks on the same point twice
-		boolean zeroLineDir = MathUtil.vzero(lindir);
-
-		double[] pnear = new double[3];
-		double[] notused = new double[1];
-
-		double distance = 0.0;
-		double val = 0.0;
-
-		for (Vector3D aPt : aPointL)
-		{
-			double[] xyzArr = aPt.toArray();
-
-			distance = 0.0;
-			if (!zeroLineDir)
-			{
-				MathUtil.nplnpt(first, lindir, xyzArr, pnear, notused);
-				distance = 1000.0 * MathUtil.distanceBetween(first, pnear);
-			}
-
-			// Save out the distance
-			profileDistances.add(distance);
-
-			// Save out the profile value
-			if (coloringIndex >= 0)
-			{
-				// Base the value off the plate coloring
-				val = 1000.0 * refSmallBody.getColoringValue(coloringIndex, xyzArr);
-			}
-			else
-			{
-				// Base the value off the radius (m)
-				val = 1000.0 * 1000.0 * MathUtil.reclat(xyzArr).rad;
-			}
-			profileValues.add(val);
-		}
-	}
-
-	@Override
-	public double getLineWidth()
-	{
-		return lineWidth;
-	}
-
-	@Override
-	public void setLineWidth(double aWidth)
-	{
-		if (aWidth >= 1.0)
-		{
-			lineWidth = aWidth;
-			vtkProperty lineProperty = vLineActor.GetProperty();
-			lineProperty.SetLineWidth((float)lineWidth);
-
-			notifyListeners(this, ItemEventType.ItemsMutated);
-			notifyVtkStateChange();
-		}
+		return getRenderAttr().radialOffset();
 	}
 
 	@Override
@@ -865,15 +775,9 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 	}
 
 	@Override
-	public void setCenter(G1 aItem, Vector3D aCenter)
-	{
-		throw new UnsupportedOperationException("Not implemented");
-	}
-
-	@Override
 	protected VtkPolyLinePainter<G1> createPainter(G1 aItem)
 	{
-		return new VtkPolyLinePainter<>(refSmallBody, aItem, mode);
+		return new VtkPolyLinePainter<>(refSmallBody, aItem);
 	}
 
 	/**
@@ -900,7 +804,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 		vtkUnsignedCharArray decColorUCA = (vtkUnsignedCharArray) decCD.GetScalars();
 
 		// Update internal VTK state
-		for (G1 aItem : aItemC)
+		for (var aItem : aItemC)
 		{
 			// Skip to next if not visible
 			if (aItem.getVisible() == false)
@@ -991,7 +895,7 @@ public class LineModel<G1 extends PolyLine> extends BaseStructureManager<G1, Vtk
 
 			VtkPolyLinePainter<?> tmpPainter = getVtkMainPainter(aItem);
 			if (tmpPainter != null)
-				tmpPainter.markStale();
+				tmpPainter.vtkMarkStale();
 		}
 		notifyListeners(this, ItemEventType.ItemsMutated);
 

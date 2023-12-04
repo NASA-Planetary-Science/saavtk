@@ -30,6 +30,7 @@ import edu.jhuapl.saavtk.pick.PickUtil;
 import edu.jhuapl.saavtk.status.StatusNotifier;
 import edu.jhuapl.saavtk.structure.gui.StructureGuiUtil;
 import edu.jhuapl.saavtk.structure.io.StructureMiscUtil;
+import edu.jhuapl.saavtk.structure.util.EllipseUtil;
 import edu.jhuapl.saavtk.structure.vtk.VtkCompositePainter;
 import edu.jhuapl.saavtk.structure.vtk.VtkLabelPainter;
 import edu.jhuapl.saavtk.vtk.VtkResource;
@@ -63,6 +64,7 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 
 	// State vars
 	private DecimalFormat decimalFormat;
+	private RenderAttr renderAttr;
 
 	// VTK vars
 	private final Map<G1, VtkCompositePainter<G1, G2>> vPainterM;
@@ -76,6 +78,9 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 		refSmallBody = aSmallBody;
 
 		decimalFormat = new DecimalFormat("#.#####");
+
+		var radialOffset = EllipseUtil.getRadialOffsetDef(aSmallBody);
+		renderAttr = new RenderAttr(2.0, radialOffset, 20, 4, Double.NaN);
 
 		vPainterM = new HashMap<>();
 	}
@@ -105,12 +110,11 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 	protected abstract void updateVtkColorsFor(Collection<G1> aItemC, boolean aSendNotification);
 
 	/**
-	 * Removes all of the items from this manager.
+	 * Sets this manager's {@link RenderAttr}.
 	 */
-	public void removeAllStructures()
+	public void setRenderAttr(RenderAttr aRenderAttr)
 	{
-		// Delegate
-		removeItems(getAllItems());
+		renderAttr = aRenderAttr;
 	}
 
 	@Override
@@ -130,15 +134,9 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 	}
 
 	@Override
-	public Color getColor(G1 aItem)
+	public RenderAttr getRenderAttr()
 	{
-		return aItem.getColor();
-	}
-
-	@Override
-	public boolean getIsVisible(G1 aItem)
-	{
-		return aItem.getVisible();
+		return renderAttr;
 	}
 
 	@Override
@@ -287,7 +285,7 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 		// Update the appropriate painter
 		VtkLabelPainter<?> tmpPainter = getVtkTextPainter(aItem);
 		if (tmpPainter != null)
-			tmpPainter.markStale();
+			tmpPainter.vtkMarkStale();
 
 		updatePolyData();
 		notifyListeners(this, ItemEventType.ItemsMutated);
@@ -305,7 +303,7 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 			// Update the appropriate painter
 			VtkLabelPainter<?> tmpPainter = getVtkTextPainter(aItem);
 			if (tmpPainter != null)
-				tmpPainter.markStale();
+				tmpPainter.vtkMarkStale();
 		}
 
 		updatePolyData();
@@ -325,7 +323,7 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 			// Update the appropriate painter
 			VtkLabelPainter<?> tmpPainter = getVtkTextPainter(aItem);
 			if (tmpPainter != null)
-				tmpPainter.markStale();
+				tmpPainter.vtkMarkStale();
 		}
 
 		updatePolyData();
@@ -345,7 +343,7 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 			// Update the appropriate painter
 			VtkLabelPainter<?> tmpPainter = getVtkTextPainter(aItem);
 			if (tmpPainter != null)
-				tmpPainter.markStale();
+				tmpPainter.vtkMarkStale();
 		}
 
 		updatePolyData();
@@ -364,7 +362,7 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 			// Update the appropriate painter
 			VtkLabelPainter<?> tmpPainter = getVtkTextPainter(aItem);
 			if (tmpPainter != null)
-				tmpPainter.markStale();
+				tmpPainter.vtkMarkStale();
 		}
 
 		updatePolyData();
@@ -374,7 +372,7 @@ public abstract class BaseStructureManager<G1 extends Structure, G2 extends VtkR
 	@Override
 	public double getDefaultOffset()
 	{
-		return 5.0 * refSmallBody.getMinShiftAmount();
+		return renderAttr.radialOffset();
 	}
 
 	@Override

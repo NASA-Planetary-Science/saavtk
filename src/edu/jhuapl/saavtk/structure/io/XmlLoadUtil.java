@@ -4,9 +4,9 @@ import java.awt.Color;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -25,20 +25,19 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.structure.PolyLine;
 import edu.jhuapl.saavtk.structure.Polygon;
 import edu.jhuapl.saavtk.structure.Structure;
+import edu.jhuapl.saavtk.structure.StructureType;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.vtk.font.FontAttr;
 import glum.io.ParseUtil;
 
 /**
- * Collection of utility methods to support (de)serialization of SBMT structures
- * from/to XML files.
- * <P>
- * Note some methods in this class have been refactored out so as to keep
- * serialization code separate from model based classes.
+ * Collection of utility methods to support (de)serialization of SBMT structures from/to XML files.
+ * <p>
+ * Note some methods in this class have been refactored out so as to keep serialization code separate from model based
+ * classes.
  *
  * @author lopeznr1
  */
@@ -59,9 +58,8 @@ public class XmlLoadUtil
 	public static final String RAW_TYPE_POLYGON = "polygon";
 
 	/**
-	 * Utility method that will load a list of lines / polygons from the specified
-	 * {@link Element}.
-	 * <P>
+	 * Utility method that will load a list of lines / polygons from the specified {@link Element}.
+	 * <p>
 	 * Returns the list of loaded lines / polygons.
 	 */
 	public static List<Structure> loadPolyLinesFromElement(Object aSource, Element aElement)
@@ -113,11 +111,13 @@ public class XmlLoadUtil
 				tmpItem.setColor(new Color(rVal, gVal, bVal));
 			}
 
-			if (tmpItem instanceof Polygon && tmpE.hasAttribute(XML_ATTR_AREA) == true)
+			if (tmpItem instanceof Polygon aPolygon && tmpE.hasAttribute(XML_ATTR_AREA) == true)
 			{
 				tmpStr = tmpE.getAttribute(XML_ATTR_AREA);
-				double surfaceArea = Double.parseDouble(tmpE.getAttribute(XML_ATTR_AREA));
-				((Polygon) tmpItem).setSurfaceArea(surfaceArea);
+				var surfaceArea = Double.parseDouble(tmpE.getAttribute(XML_ATTR_AREA));
+				if (surfaceArea > 0)
+					aPolygon.setShowInterior(true);
+				tmpItem.setRenderState(tmpItem.getRenderState().withSurfaceArea(surfaceArea));
 			}
 
 			retL.add(tmpItem);
@@ -128,7 +128,7 @@ public class XmlLoadUtil
 
 	/**
 	 * Retrieves the "shape model name" from the specified document.
-	 * <P>
+	 * <p>
 	 * Returns null if there is no "shape model name".
 	 */
 	public static String getShapeModelNameFrom(Element aElement)
@@ -141,7 +141,7 @@ public class XmlLoadUtil
 
 	/**
 	 * Takes the provided XML file and returns the top level element.
-	 * <P>
+	 * <p>
 	 * On failure an {@link IOException} will be thrown.
 	 */
 	public static Element loadRoot(File aFile) throws IOException
@@ -169,14 +169,24 @@ public class XmlLoadUtil
 	}
 
 	/**
-	 * Utility method that will save the content of the specified {@link LineModel}
-	 * to the provided file.
-	 * <P>
+	 * Utility method that will save the content of the specified items to the provided file.
+	 * <p>
+	 * It is mandatory that all items are either a {@link Polygon} or {@link PolyLine}.
+	 * <p>
 	 * The output format of the file will be XML.
 	 */
-	public static <G1 extends PolyLine> void saveManager(File aFile, LineModel<G1> aManager, PolyhedralModel aSmallBody)
+	public static <G1 extends PolyLine> void saveManager(File aFile, Collection<G1> aItemC, PolyhedralModel aSmallBody)
 			throws Exception
 	{
+		var tmpType = aItemC.iterator().next().getType();
+		var typeStr = "";
+		if (tmpType == StructureType.Path)
+			typeStr = "lines";
+		else if (tmpType == StructureType.Polygon)
+			typeStr = "polygons";
+		else
+			throw new Error("Unsupported type:" + tmpType);
+
 		// get an instance of factory
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
@@ -186,16 +196,15 @@ public class XmlLoadUtil
 		// create an instance of DOM
 		Document dom = db.newDocument();
 
-		Element rootElement = dom.createElement(aManager.getType());
+		Element rootElement = dom.createElement(typeStr);
 		if (aSmallBody.getModelName() != null)
 			rootElement.setAttribute(XML_ATTR_SHAPE_MODEL_NAME, aSmallBody.getModelName());
 
-		savePolyLinesToElement(rootElement, aManager.getAllItems());
+		savePolyLinesToElement(rootElement, aItemC);
 		dom.appendChild(rootElement);
 
-		try
+		try (var aStream = new FileOutputStream(aFile))
 		{
-			OutputStream aStream = new FileOutputStream(aFile);
 			Result result = new StreamResult(new OutputStreamWriter(aStream, "utf-8"));
 
 			TransformerFactory tf = TransformerFactory.newInstance();
@@ -214,20 +223,18 @@ public class XmlLoadUtil
 	}
 
 	/**
-	 * Utility helper method that will save a list of lines / polygons to the
-	 * specified {@link Element}.
+	 * Utility helper method that will save a list of lines / polygons to the specified {@link Element}.
 	 */
-	public static <G1 extends PolyLine> void savePolyLinesToElement(Element aElement, List<G1> aItemL)
+	public static <G1 extends PolyLine> void savePolyLinesToElement(Element aElement, Collection<G1> aItemC)
 	{
 		Document tmpDoc = aElement.getOwnerDocument();
-		for (G1 aItem : aItemL)
+		for (G1 aItem : aItemC)
 			aElement.appendChild(formElementForPolyLine(tmpDoc, aItem));
 	}
 
 	/**
-	 * Utility helper method that will return an {@link Element} with the content of
-	 * the specified line / polygon.
-	 * <P>
+	 * Utility helper method that will return an {@link Element} with the content of the specified line / polygon.
+	 * <p>
 	 * The element is expected to have an attribute with the name of: vertices
 	 */
 	private static Element formElementForPolyLine(Document aDoc, PolyLine aItem)
@@ -239,7 +246,7 @@ public class XmlLoadUtil
 		retElement.setAttribute(XML_ATTR_LABEL, aItem.getLabel());
 //		String labelcolorStr=labelcolor[0] + "," + labelcolor[1] + "," + labelcolor[2];
 //		linEle.setAttribute(LABELCOLOR, labelcolorStr);
-		retElement.setAttribute(XML_ATTR_LENGTH, String.valueOf(aItem.getPathLength()));
+		retElement.setAttribute(XML_ATTR_LENGTH, String.valueOf(aItem.getRenderState().pathLength()));
 
 		Color color = aItem.getColor();
 		String colorStr = color.getRed() + "," + color.getGreen() + "," + color.getBlue();
@@ -265,18 +272,21 @@ public class XmlLoadUtil
 		retElement.setAttribute(XML_ATTR_VERTICES, vertices);
 
 		// Polygon specific code
-		if (aItem instanceof Polygon)
-			retElement.setAttribute(XML_ATTR_AREA, String.valueOf(((Polygon) aItem).getSurfaceArea()));
+		if (aItem instanceof Polygon aPolygon)
+		{
+			var surfaceArea = 0.0;
+			if (aPolygon.getShowInterior() == true)
+				surfaceArea = aPolygon.getSurfaceArea();
+			retElement.setAttribute(XML_ATTR_AREA, String.valueOf(surfaceArea));
+		}
 
 		return retElement;
 	}
 
 	/**
-	 * Utility helper method that returns the string used to describe the specified
-	 * structure.
-	 * <P>
-	 * Note that this string is used in serialized packets and thus should not
-	 * change.
+	 * Utility helper method that returns the string used to describe the specified structure.
+	 * <p>
+	 * Note that this string is used in serialized packets and thus should not change.
 	 */
 	private static String getTypeFor(Structure aItem)
 	{
@@ -290,9 +300,8 @@ public class XmlLoadUtil
 	}
 
 	/**
-	 * Utility helper method that will read the list of vertices from the specified
-	 * element.
-	 * <P>
+	 * Utility helper method that will read the list of vertices from the specified element.
+	 * <p>
 	 * The element is expected to have an attribute with the name of: vertices
 	 */
 	private static List<LatLon> readControlPointsFrom(Element aElement)

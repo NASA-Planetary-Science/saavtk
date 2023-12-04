@@ -9,47 +9,41 @@ import edu.jhuapl.saavtk.util.LatLon;
  *
  * @author lopeznr1
  */
-public class Polygon extends PolyLine
+public class Polygon extends PolyLine implements ClosedShape
 {
 	// State vars
 	private boolean showInterior;
-	private double surfaceArea;
 
-	/**
-	 * Standard Constructor
-	 */
+	/** Standard Constructor */
 	public Polygon(int aId, Object aSource, List<LatLon> aLatLonL)
 	{
 		super(aId, aSource, aLatLonL);
 
 		showInterior = false;
-		surfaceArea = 0.0;
 	}
 
+	@Override
 	public boolean getShowInterior()
 	{
 		return showInterior;
 	}
 
+	@Override
 	public double getSurfaceArea()
 	{
-		return surfaceArea;
+		return getRenderState().surfaceArea();
 	}
 
-	/**
-	 * Sets whether the interior should be shown.
-	 */
+	@Override
+	public StructureType getType()
+	{
+		return StructureType.Polygon;
+	}
+
+	@Override
 	public void setShowInterior(boolean aBool)
 	{
 		showInterior = aBool;
-	}
-
-	/**
-	 * Sets whether the surface area should be shown.
-	 */
-	public void setSurfaceArea(double aValue)
-	{
-		surfaceArea = aValue;
 	}
 
 	@Override

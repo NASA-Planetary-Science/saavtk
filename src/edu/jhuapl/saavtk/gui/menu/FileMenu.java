@@ -32,16 +32,12 @@ import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.preferences.PreferencesController;
 import edu.jhuapl.saavtk.gui.dialog.preferences.PreferencesDialog;
 import edu.jhuapl.saavtk.gui.render.RenderIoUtil;
-import edu.jhuapl.saavtk.gui.util.FileExtensionsAndDescriptions;
-import edu.jhuapl.saavtk.model.ModelNames;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel;
-import edu.jhuapl.saavtk.model.structure.LineModel;
 import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
 import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
 import edu.jhuapl.saavtk.model.structure.esri.ShapefileUtil;
-import edu.jhuapl.saavtk.structure.StructureManager;
+import edu.jhuapl.saavtk.structure.AnyStructureManager;
 import edu.jhuapl.saavtk.structure.io.StructureLegacyUtil;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
@@ -276,13 +272,13 @@ public class FileMenu extends JMenu
 		}
 	}
 
-	private class SaveSceneAsOBJAction extends AbstractAction 
+	private class SaveSceneAsOBJAction extends AbstractAction
 	{
-		public SaveSceneAsOBJAction() 
+		public SaveSceneAsOBJAction()
 		{
 			super("Export Scene to OBJs");
 		}
-		
+
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
@@ -542,12 +538,12 @@ public class FileMenu extends JMenu
 				String fname = files[i].getName().toLowerCase();
 				String oname = FilenameUtils.removeExtension(files[i].getName()) + ".shp";
 				System.out.println(fname + "  -->  " + opath.resolve(oname));
-				StructureManager<?> model = null;
+				AnyStructureManager model;
 				if (fname.endsWith("circles"))
 					try
 					{
-						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.CIRCLE_STRUCTURES, body);
-						ShapefileUtil.writeEllipseStructures(Lists.newArrayList(EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) model)), opath.resolve(oname));
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], body);
+						ShapefileUtil.writeEllipseStructures(Lists.newArrayList(EllipseStructure.fromSbmtStructure(model)), opath.resolve(oname));
 
 					}
 					catch (IOException ex)
@@ -561,8 +557,8 @@ public class FileMenu extends JMenu
 				else if (fname.endsWith("ellipses"))
 					try
 					{
-						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.ELLIPSE_STRUCTURES, body);
-						ShapefileUtil.writeEllipseStructures(Lists.newArrayList(EllipseStructure.fromSbmtStructure((AbstractEllipsePolygonModel) model)), opath.resolve(oname));
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], body);
+						ShapefileUtil.writeEllipseStructures(Lists.newArrayList(EllipseStructure.fromSbmtStructure(model)), opath.resolve(oname));
 					}
 					catch (IOException ex)
 					{
@@ -575,8 +571,8 @@ public class FileMenu extends JMenu
 				else if (fname.endsWith("points"))
 					try
 					{
-						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.POINT_STRUCTURES, body);
-						ShapefileUtil.writePointStructures(Lists.newArrayList(PointStructure.fromSbmtStructure((AbstractEllipsePolygonModel) model)), opath.resolve(oname));
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], body);
+						ShapefileUtil.writePointStructures(Lists.newArrayList(PointStructure.fromSbmtStructure(model)), opath.resolve(oname));
 
 					}
 					catch (IOException ex)
@@ -592,8 +588,8 @@ public class FileMenu extends JMenu
 				{
 					try
 					{
-						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.POLYGON_STRUCTURES, body);
-						ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure((LineModel<?>) model), opath.resolve(oname));
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], body);
+						ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure(model), opath.resolve(oname));
 
 					}
 					catch (IOException ex)
@@ -604,8 +600,8 @@ public class FileMenu extends JMenu
 					{
 						try
 						{
-							model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.LINE_STRUCTURES, body);
-							ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure((LineModel<?>) model), opath.resolve(oname));
+							model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], body);
+							ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure(model), opath.resolve(oname));
 						}
 						catch (Exception e1)
 						{
@@ -619,8 +615,8 @@ public class FileMenu extends JMenu
 				else if (fname.endsWith("polygons")) // user can employ the .polygons extension instead of .xml... this if clause also catches the case where the file itself is named "polygons"
 					try
 					{
-						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.POLYGON_STRUCTURES, body);
-						ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure((LineModel<?>) model), opath.resolve(oname));
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], body);
+						ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure(model), opath.resolve(oname));
 					}
 					catch (IOException ex)
 					{
@@ -633,8 +629,8 @@ public class FileMenu extends JMenu
 				else if (fname.endsWith("paths")) // user can employ the .paths extension instead of .xml... this if clause also catches the case where the file itself is named "polygons"
 					try
 					{
-						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], ModelNames.LINE_STRUCTURES, body);
-						ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure((LineModel<?>) model), opath.resolve(oname));
+						model = StructureLegacyUtil.loadStructureManagerFromFile(files[i], body);
+						ShapefileUtil.writeLineStructures(LineStructure.fromSbmtStructure(model), opath.resolve(oname));
 					}
 					catch (IOException ex)
 					{

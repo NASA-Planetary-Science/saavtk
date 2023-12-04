@@ -11,23 +11,15 @@ import glum.item.ItemManager;
 import glum.task.Task;
 
 /**
- * Interface that provides defines methods to support management logic for a
- * collection of {@link Structure}s.
- * <P>
+ * Interface that defines a collection of methods to support management logic for a collection of {@link Structure}s.
+ * <p>
  * The following features are supported:
- * <UL>
- * <LI>Event handling via {@link ItemEventListener} mechanism
- * <LI>Management of items
- * <LI>Support for item selection
- * <LI>Configuration of various rendering properties
- * <LI>Support for editing structures via an activation mechanism.
- * </UL>
- * <P>
- * TODO: Improvements to be added:
- * <UL>
- * <LI>Add support for individual line widths
- * <LI>Decoupling VTK painting from structure management
- * </UL>
+ * <ul>
+ * <li>Event handling via {@link ItemEventListener} mechanism
+ * <li>Management of items
+ * <li>Support for item selection
+ * <li>Configuration of various rendering properties
+ * </ul>
  *
  * @author lopeznr1
  */
@@ -35,7 +27,7 @@ public interface StructureManager<G1 extends Structure> extends ItemManager<G1>
 {
 	/**
 	 * Returns the structure at the specified index.
-	 * <P>
+	 * <p>
 	 * Returns null if there are no items in the manager.
 	 */
 	public G1 getItem(int aIdx);
@@ -51,27 +43,14 @@ public interface StructureManager<G1 extends Structure> extends ItemManager<G1>
 	public Vector3D getCentroid(G1 aItem);
 
 	/**
-	 * Returns the color of the specified structure.
+	 * Returns the {@link RenderAttr}.
 	 */
-	public Color getColor(G1 aItem);
+	public RenderAttr getRenderAttr();
 
 	/**
 	 * Returns the diameter of the structure.
 	 */
 	public double getDiameter(G1 aItem);
-
-	/**
-	 * Returns true if the the specified structure is visible.
-	 */
-	public boolean getIsVisible(G1 aItem);
-
-	/**
-	 * Returns the line width associated with the manager.
-	 * <P>
-	 * TODO: This method will eventually be specific to a specific structure rather
-	 * than all the structures associated with this manager.
-	 */
-	public double getLineWidth();
 
 	/**
 	 * Returns the normal corresponding to the structure's center.
@@ -91,15 +70,12 @@ public interface StructureManager<G1 extends Structure> extends ItemManager<G1>
 	public void notifyItemsMutated(Collection<G1> aItemC);
 
 	/**
-	 * Sets the center of the specified {@link Structure}.
-	 */
-	public void setCenter(G1 aItem, Vector3D aCenter);
-
-	/**
 	 * Sets the color of the specified structures.
 	 *
-	 * @param aItemC The collection of structures to change.
-	 * @param aColor The color that the structures will be changed to.
+	 * @param aItemC
+	 *    The collection of structures to change.
+	 * @param aColor
+	 *    The color that the structures will be changed to.
 	 */
 	public void setColor(Collection<G1> aItemC, Color aColor);
 
@@ -116,25 +92,29 @@ public interface StructureManager<G1 extends Structure> extends ItemManager<G1>
 	/**
 	 * Sets the color of the labels associated with the specified structures.
 	 *
-	 * @param aItemC The collection of structures to change.
-	 * @param aColor The color that the labels will be changed to.
+	 * @param aItemC
+	 *    The collection of structures to change.
+	 * @param aColor
+	 *    The color that the labels will be changed to.
 	 */
 	public void setLabelColor(Collection<G1> aItemC, Color aColor);
 
 	/**
 	 * Sets the font face of the label associated with the specified structures.
 	 *
-	 * @param aItemC      The collection of structures to change.
-	 * @param aFontFamily The font family to switch to. Currently the only supported
-	 *                    families are: [Times, Arial, Courier]. A
-	 *                    {@link RuntimeException} will be thrown if not supported.
+	 * @param aItemC
+	 *    The collection of structures to change.
+	 * @param aFontFamily
+	 *    The font family to switch to. Currently the only supported families are: [Times, Arial, Courier]. A
+	 *    {@link RuntimeException} will be thrown if not supported.
 	 */
 	public void setLabelFontFamily(Collection<G1> aItemC, String aFontFamily);
 
 	/**
 	 * Sets the font size of the labels associated with the specified structures.
 	 *
-	 * @param aItemC    The collection of structures to change.
+	 * @param aItemC
+	 *    The collection of structures to change.
 	 * @param aFontSize
 	 */
 	public void setLabelFontSize(Collection<G1> aItemC, int aFontSize);
@@ -142,28 +122,21 @@ public interface StructureManager<G1 extends Structure> extends ItemManager<G1>
 	/**
 	 * Sets the visibility of the labels associated with the specified structures.
 	 *
-	 * @param aItemC The collection of structures to change.
-	 * @param aBool  Flag which defines whether to show the labels or not.
+	 * @param aItemC
+	 *    The collection of structures to change.
+	 * @param aBool
+	 *    Flag which defines whether to show the labels or not.
 	 */
 	public void setLabelVisible(Collection<G1> aItemC, boolean aBool);
 
 	/**
-	 * Sets the line width associated with the manager.
-	 * <P>
-	 * TODO: This method will eventually be specific to a specific structure rather
-	 * than all the structures associated with this manager.
-	 */
-	public void setLineWidth(double width);
-
-	/**
 	 * Sets the visibility of the specified structures.
 	 *
-	 * @param aItemC The collection of structures to change.
-	 * @param aBool  Flag which defines whether to show the labels or not.
+	 * @param aItemC
+	 *    The collection of structures to change.
+	 * @param aBool
+	 *    Flag which defines whether to show the labels or not.
 	 */
 	public void setIsVisible(Collection<G1> aItemC, boolean aBool);
-
-	// TODO: Bad design
-	public boolean supportsActivation();
 
 }

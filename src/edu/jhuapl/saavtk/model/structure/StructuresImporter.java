@@ -10,15 +10,14 @@ import java.util.List;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
-import edu.jhuapl.saavtk.model.structure.AbstractEllipsePolygonModel.Mode;
 import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure;
 import edu.jhuapl.saavtk.model.structure.esri.LineSegment;
 import edu.jhuapl.saavtk.model.structure.esri.LineStructure;
-import edu.jhuapl.saavtk.model.structure.esri.PointStructure;
 import edu.jhuapl.saavtk.model.structure.esri.ShapefileUtil;
+import edu.jhuapl.saavtk.structure.AnyStructureManager;
 import edu.jhuapl.saavtk.structure.Ellipse;
 import edu.jhuapl.saavtk.structure.PolyLine;
-import edu.jhuapl.saavtk.structure.StructureManager;
+import edu.jhuapl.saavtk.structure.StructureType;
 import edu.jhuapl.saavtk.structure.io.StructureMiscUtil;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.MathUtil;
@@ -26,45 +25,6 @@ import edu.jhuapl.saavtk.util.MathUtil;
 @Deprecated // ... for the moment... see AbstractStructureMappingControlPanel... nested class LoadEsriShapeFileAction
 public class StructuresImporter
 {
-
-	public static void importFromShapefile(StructureManager<?> model, Path shapeFile, GenericPolyhedralModel body) throws IOException
-	{
-		if (model instanceof AbstractEllipsePolygonModel aManager && aManager.getMode() == Mode.POINT_MODE)
-		{
-			importFromShapefile(aManager, shapeFile);
-			return;
-		}
-		if (model instanceof LineModel)
-		{
-			importFromShapeFile((LineModel<PolyLine>) model, shapeFile, body);
-			return;
-		}
-		if (model instanceof AbstractEllipsePolygonModel)
-		{
-			importFromShapeFile((AbstractEllipsePolygonModel) model, shapeFile, body);
-			return;
-		}
-	}
-
-	public static void importFromShapefile(AbstractEllipsePolygonModel aPointManager, Path shapeFile) throws IOException
-	{
-		Collection<PointStructure> sc = ShapefileUtil.readPointStructures(shapeFile);
-		for (PointStructure s : sc)
-		{
-			Color color = s.getPointStyle().getColor();
-			String label = s.getLabel();
-			if (label == null)
-				label = "";
-			//
-			aPointManager.addNewStructure(s.getCentroid());
-			int id = aPointManager.getNumItems() - 1;
-			Ellipse tmpItem = aPointManager.getItem(id);
-
-			aPointManager.setColor(tmpItem, color);
-			aPointManager.setLabel(tmpItem, label);
-		}
-	}
-
 	public static void importFromShapeFile(LineModel<PolyLine> aLineManager, Path aFile, GenericPolyhedralModel aBody)
 			throws IOException
 	{
@@ -125,14 +85,14 @@ public class StructuresImporter
 		aLineManager.setAllItems(fullL);
 	}
 
-	public static void importFromShapeFile(AbstractEllipsePolygonModel aEllipseManager, Path shapeFile,
+	public static void importFromShapeFile(AnyStructureManager aEllipseManager, Path shapeFile,
 			GenericPolyhedralModel body) throws IOException
 	{
 		Collection<EllipseStructure> sc = ShapefileUtil.readEllipseStructures(shapeFile, body);
 		for (EllipseStructure s : sc)
 		{
 			Color color = s.getLineStyle().getColor();
-			double w = s.getLineStyle().getWidth();
+//			double w = s.getLineStyle().getWidth();
 			String label = s.getLabel();
 			if (label == null)
 				label = "";
@@ -150,13 +110,15 @@ public class StructuresImporter
 			double flattening = s.getParameters().flattening;
 			double angle = s.getParameters().angle;
 
-			aEllipseManager.addNewStructure(center, majorRadius, flattening, angle);
 			int id = aEllipseManager.getNumItems() - 1;
-			Ellipse tmpItem = aEllipseManager.getItem(id);
+			var tmpItem = new Ellipse(id, null, StructureType.Ellipse, center, majorRadius, angle, flattening, color);
+			tmpItem.setLabel(label);
+			aEllipseManager.addItem(tmpItem);
+
 
 			aEllipseManager.setColor(tmpItem, color);
 			aEllipseManager.setLabel(tmpItem, label);
-			aEllipseManager.setLineWidth(w);
+//			aEllipseManager.setLineWidth(w);
 		}
 
 //			vtkAppendPolyData append=new vtkAppendPolyData();

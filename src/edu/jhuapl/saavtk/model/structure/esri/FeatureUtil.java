@@ -24,7 +24,7 @@ import com.vividsolutions.jts.geom.MultiLineString;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
 
-import edu.jhuapl.saavtk.model.GenericPolyhedralModel;
+import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.esri.EllipseStructure.Parameters;
 import edu.jhuapl.saavtk.util.LatLon;
 import edu.jhuapl.saavtk.util.LinearSpace;
@@ -162,7 +162,7 @@ public class FeatureUtil
 	    pointBuilder.add(StructureUtil.colorToHex(Color.LIGHT_GRAY));
 	    pointBuilder.add(1);
 	    return pointBuilder.buildFeature(null);
-		    
+
 		}*/
 
 	public static SimpleFeature createFeatureFrom(LineStructure ls)
@@ -220,7 +220,7 @@ public class FeatureUtil
 	static final Color defaultColor = Color.CYAN;
 	static final double defaultLineWidth = 1;
 
-	public static EllipseStructure createEllipseStructureFrom(SimpleFeature feature, GenericPolyhedralModel body)
+	public static EllipseStructure createEllipseStructureFrom(SimpleFeature feature, PolyhedralModel body)
 	{
 		String label = defaultLabel;
 		Color lineColor = defaultColor;
@@ -274,7 +274,7 @@ public class FeatureUtil
 		Vector3D center = Vector3D.ZERO;
 		for (int i = 0; i < pts.size(); i++)
 			center = center.add(pts.get(i));
-		center = center.scalarMultiply(1. / (double) pts.size());
+		center = center.scalarMultiply(1. / pts.size());
 		//
 		try
 		{
@@ -346,7 +346,7 @@ public class FeatureUtil
 
 	}
 
-	protected static List<LineSegment> parse(MultiLineString mls, MathTransform transform, GenericPolyhedralModel body) throws TransformException
+	protected static List<LineSegment> parse(MultiLineString mls, MathTransform transform, PolyhedralModel body) throws TransformException
 	{
 
 		List<LineSegment> segments = Lists.newArrayList();
@@ -361,7 +361,7 @@ public class FeatureUtil
 		return segments;
 	}
 
-	protected static List<LineSegment> parse(MultiPolygon mp, MathTransform transform, GenericPolyhedralModel body) throws TransformException
+	protected static List<LineSegment> parse(MultiPolygon mp, MathTransform transform, PolyhedralModel body) throws TransformException
 	{
 		List<LineSegment> segments = Lists.newArrayList();
 
@@ -374,7 +374,7 @@ public class FeatureUtil
 		return segments;
 	}
 
-	protected static List<LineSegment> convertCoordsToSegments(Coordinate[] coords, MathTransform transform, boolean closed, GenericPolyhedralModel body) throws TransformException // TODO: this needs to interpret coords.x=lon and coords.y=lat and coords.z=derived from radial body-ray intersection, not cartesian x,y,z
+	protected static List<LineSegment> convertCoordsToSegments(Coordinate[] coords, MathTransform transform, boolean closed, PolyhedralModel body) throws TransformException // TODO: this needs to interpret coords.x=lon and coords.y=lat and coords.z=derived from radial body-ray intersection, not cartesian x,y,z
 	{
 		List<LineSegment> segments = Lists.newArrayList();
 		//        for (int j = 0; j < coords.length; j++)
@@ -413,7 +413,7 @@ public class FeatureUtil
 		return segments;
 	}
 
-	public static PointStructure createPointStructureFrom(SimpleFeature feature, GenericPolyhedralModel body)
+	public static PointStructure createPointStructureFrom(SimpleFeature feature, PolyhedralModel body)
 	{
 		String label = defaultLabel;
 		double size = defaultLineWidth;
@@ -463,7 +463,7 @@ public class FeatureUtil
 		//
 	}
 
-	public static LineStructure createLineStructureFrom(SimpleFeature feature, GenericPolyhedralModel body)
+	public static LineStructure createLineStructureFrom(SimpleFeature feature, PolyhedralModel body)
 	{
 		String label = defaultLabel;
 		double lineWidth = defaultLineWidth;
@@ -509,7 +509,7 @@ public class FeatureUtil
 		//        List<LineSegment> subsegments=Lists.newArrayList();
 		//        for (LineSegment seg : segments)
 		//        	{
-		//        		
+		//
 		//        		subsegments.addAll(forceCylindricalProjection(seg, body, Math.sqrt(body.getMeanCellArea())/2.));
 		//        	}
 
@@ -528,7 +528,7 @@ public class FeatureUtil
 	//		trySplit(segment, body, result, minLength);
 	//		return result;
 	//	}
-	//	
+	//
 	//	private static void trySplit(LineSegment segment, GenericPolyhedralModel body, List<LineSegment> result, double minLength)
 	//	{
 	//		if (segment.getLength()<minLength)
@@ -672,7 +672,7 @@ public class FeatureUtil
 	    }
 	    //
 	}
-	
+
 	public static LineStructure createLineStructureFrom(SimpleFeature feature)
 	{
 	    String label = defaultLabel;
@@ -700,14 +700,14 @@ public class FeatureUtil
 	    catch (Exception e)
 	    {
 	    }
-	
+
 	    List<LineSegment> segments = Lists.newArrayList();
-	
+
 	    MathTransform transform = null;
 	    try
 	    {
 	        transform = CRS.findMathTransform(feature.getType().getCoordinateReferenceSystem(), DefaultGeocentricCRS.CARTESIAN, true);
-	
+
 	        Geometry geom = (Geometry) feature.getAttribute("the_geom");
 	        if (geom instanceof MultiLineString)
 	            segments = parse((MultiLineString) geom, transform);
@@ -719,20 +719,20 @@ public class FeatureUtil
 	        // TODO Auto-generated catch block
 	        e.printStackTrace();
 	    }
-	
+
 	    LineStyle style = new LineStyle(lineColor, lineWidth);
 	    LineSegment[] segs = new LineSegment[segments.size()];
 	    for (int i = 0; i < segments.size(); i++)
 	        segs[i] = segments.get(i);
 	    return new LineStructure(segs, style, label);
-	
+
 	}
-	
+
 	@Deprecated
 	protected static List<LineSegment> parse(MultiPolygon mp, MathTransform transform) throws TransformException // assumes cartesian coords not lon lat
 	{
 	    List<LineSegment> segments = Lists.newArrayList();
-	
+
 	    for (int i = 0; i < mp.getNumGeometries(); i++)
 	    {
 	        Polygon p = (Polygon) mp.getGeometryN(i);
@@ -741,23 +741,23 @@ public class FeatureUtil
 	    }
 	    return segments;
 	}
-	
+
 	@Deprecated
 	protected static List<LineSegment> parse(MultiLineString mls, MathTransform transform) throws TransformException    // assumes cartesian coords not lon lat
 	{
-	
+
 	    List<LineSegment> segments = Lists.newArrayList();
-	
+
 	    for (int i = 0; i < mls.getNumGeometries(); i++)
 	    {
 	        LineString ls = (LineString) mls.getGeometryN(i);
 	        Coordinate[] coords = ls.getCoordinates();
 	        segments.addAll(convertCoordsToSegments(coords, transform, false));
 	    }
-	
+
 	    return segments;
 	}
-	
+
 	@Deprecated
 	protected static List<LineSegment> convertCoordsToSegments(Coordinate[] coords, MathTransform transform, boolean closed) throws TransformException // TODO: this needs to interpret coords.x=lon and coords.y=lat and coords.z=derived from radial body-ray intersection, not cartesian x,y,z
 	{
@@ -792,11 +792,11 @@ public class FeatureUtil
 	    }
 	    return segments;
 	}
-	
+
 	static final String defaultLabel = "";
 	static final Color defaultColor = Color.CYAN;
 	static final double defaultLineWidth = 1;
-	
+
 	public static EllipseStructure createEllipseStructureFrom(SimpleFeature feature)
 	{
 	    String label = defaultLabel;
@@ -810,7 +810,7 @@ public class FeatureUtil
 	    {
 	        e.printStackTrace();
 	    }
-	
+
 	    try
 	    {
 	        lineColor = StructureUtil.hexToColor((String) feature.getAttribute("linecolor"));
@@ -819,7 +819,7 @@ public class FeatureUtil
 	    {
 	        // TODO: handle exception
 	    }
-	
+
 	    try
 	    {
 	        lineWidth = (Double) feature.getAttribute("linewidth");
@@ -830,31 +830,31 @@ public class FeatureUtil
 	    }
 	    LineStyle style = new LineStyle(lineColor, lineWidth);
 	    //
-	
+
 	    List<LineSegment> segments = Lists.newArrayList();
-	
+
 	    try
 	    {
 	        MathTransform transform = CRS.findMathTransform(feature.getType().getCoordinateReferenceSystem(), DefaultGeocentricCRS.CARTESIAN, true);
-	
+
 	        Geometry geom = (Geometry) feature.getAttribute("the_geom");
 	        if (geom instanceof MultiLineString)
 	            segments = parse((MultiLineString) geom, transform);
 	        else if (geom instanceof MultiPolygon)
 	            segments = parse((MultiPolygon) geom, transform);
 	        //
-	
+
 	    }
 	    catch (FactoryException | TransformException e)
 	    {
 	        e.printStackTrace();
 	        return null;
 	    }
-	
+
 	    List<Vector3D> pts = Lists.newArrayList();
 	    for (int i = 0; i < segments.size(); i++)
 	        pts.add(new Vector3D(segments.get(i).start));
-	
+
 	    Vector3D center = Vector3D.ZERO;
 	    for (int i = 0; i < pts.size(); i++)
 	        center = center.add(pts.get(i));
@@ -870,7 +870,7 @@ public class FeatureUtil
 	    catch (Exception e)
 	    {
 	    }
-	
+
 	    Vector3D normal = Vector3D.ZERO;
 	    for (int i = 0; i < pts.size(); i++)
 	    {
@@ -880,7 +880,7 @@ public class FeatureUtil
 	        normal = normal.add(radial.crossProduct(tangent));
 	    }
 	    normal = normal.normalize();
-	
+
 	    double majorRadius = Double.NEGATIVE_INFINITY;
 	    double minorRadius = Double.POSITIVE_INFINITY;
 	    for (int i = 0; i < pts.size(); i++)
@@ -891,16 +891,16 @@ public class FeatureUtil
 	        if (r < minorRadius)
 	            minorRadius = r;
 	    }
-	
+
 	    try
 	    {
 	        majorRadius = (Double) feature.getAttribute("majorRad");
 	    }
 	    catch (Exception e)
 	    {
-	
+
 	    }
-	
+
 	    double flattening = minorRadius / majorRadius;//(majorRadius - minorRadius) / majorRadius;
 	    try
 	    {
@@ -908,9 +908,9 @@ public class FeatureUtil
 	    }
 	    catch (Exception e)
 	    {
-	
+
 	    }
-	
+
 	    double angle = Math.acos(minorRadius / majorRadius);
 	    try
 	    {
@@ -918,18 +918,18 @@ public class FeatureUtil
 	    }
 	    catch (Exception e)
 	    {
-	
+
 	    }
-	
+
 	    Parameters params = new Parameters(center.toArray(), majorRadius, flattening, angle);
 	    //
 	    LineSegment[] segs = new LineSegment[segments.size()];
 	    for (int i = 0; i < segments.size(); i++)
 	        segs[i] = segments.get(i);
 	    return new EllipseStructure(segs, style, label, params);
-	
+
 	}
-	
+
 	//    	public static PatchStructure createPatchStructureFrom(SimpleFeature feature)
 	//    	{
 	//    		String label = (String) feature.getAttribute("label");
@@ -941,9 +941,9 @@ public class FeatureUtil
 	//    		PatchStyle patchStyle = new PatchStyle(fillColor, lineStyle);
 	//    		double[][] points = pointsFromCoordinates(geom.getCoordinates());
 	//    		return new PatchStructure(points, patchStyle, label);
-	//    
+	//
 	//    	}
-	
+
 	@Deprecated
 	public static double[][] pointsFromCoordinates(Coordinate[] coords) // TODO: this needs to interpret coords.x=lon and coords.y=lat and coords.z=derived from radial body-ray intersection, not cartesian x,y,z
 	{
