@@ -23,6 +23,12 @@ public enum FileExtensionsAndDescriptions
 	{
 		return this.extension;
 	}
+	
+	@Override
+	public String toString()
+	{
+		return getExtension().substring(1);
+	}
 
 	public String getDescription(boolean includeExt)
 	{
