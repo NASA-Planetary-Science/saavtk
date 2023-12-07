@@ -9,6 +9,6 @@ public class ScreenUtil
 		double openGlHeight = aRenComp.getComponent().getSurfaceHeight();
 		double javaHeight = aRenComp.getComponent().getHeight();
 		double scale = openGlHeight / javaHeight;
-		return Math.max(scale, 1.0);
+		return Math.max(Math.ceil(scale), 1.0);
 	}
 }
