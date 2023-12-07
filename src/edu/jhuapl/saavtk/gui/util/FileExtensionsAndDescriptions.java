@@ -1,5 +1,7 @@
 package edu.jhuapl.saavtk.gui.util;
 
+import edu.jhuapl.saavtk.util.Configuration;
+
 public enum FileExtensionsAndDescriptions
 {
 	TEXT(".txt", "Text File"), //
@@ -22,6 +24,15 @@ public enum FileExtensionsAndDescriptions
 	public String getExtension()
 	{
 		return this.extension;
+	}
+	
+	@Override
+	public String toString()
+	{
+		if (Configuration.isWindows() || Configuration.isLinux())
+			return getExtension();
+		else
+			return getExtension().substring(1);
 	}
 
 	public String getDescription(boolean includeExt)
