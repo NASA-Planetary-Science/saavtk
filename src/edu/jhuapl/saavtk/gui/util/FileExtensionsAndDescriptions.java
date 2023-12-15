@@ -9,7 +9,8 @@ public enum FileExtensionsAndDescriptions
 	PDF(".pdf", "PDF Document"), //
 	LIGER(".liger", "Liger File"), //
 	SBMT(".sbmt", "SBMT File"), //
-	SHAPE(".shp", "Shape File")//
+	SHAPE(".shp", "Shape File"),//
+	SCENE(".scene", "Scene File")
 	;
 
 	private final String extension;
