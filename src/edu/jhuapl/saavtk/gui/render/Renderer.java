@@ -26,6 +26,8 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.google.common.collect.Lists;
@@ -324,6 +326,10 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		String path = file.getAbsolutePath();
 		String base = path.substring(0, path.lastIndexOf('.'));
 		String ext = path.substring(path.lastIndexOf('.'));
+		if (FilenameUtils.getExtension(path).isEmpty())	//added for windows?!
+		{
+			ext = ".png";
+		}
 
 		File[] sixFiles = new File[6];
 		sixFiles[0] = new File(base + "+x" + ext);
@@ -365,7 +371,7 @@ public class Renderer extends JPanel implements ActionListener, CameraActionList
 		{
 			File f = sixFiles[i];
 			AxisType at = sixAxes[i];
-			CameraFrame frame = RenderIoUtil.createCameraFrameInDirectionOfAxis(refSmallBody, mainCanvas, at, true, f, 1, sixAxisXOffset, sixAxisYOffset, sixAxisZOffset);
+			CameraFrame frame = RenderIoUtil.createCameraFrameInDirectionOfAxis(refSmallBody, mainCanvas, at, true, f, 1, 0,0,sixAxisZOffset); //sixAxisXOffset, sixAxisYOffset, sixAxisZOffset);
 			cameraFrameQueue.add(frame);
 		}
 
