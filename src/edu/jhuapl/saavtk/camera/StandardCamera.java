@@ -36,6 +36,7 @@ public class StandardCamera implements Camera
 	private Vector3D homeFocalPoint;
 	private Double homeRoll;
 	private Double homeViewAngle;
+	private Vector3D homeUpView;
 	private boolean homeSet = false;
 
 	/**
@@ -111,7 +112,7 @@ public class StandardCamera implements Camera
 		vtkCamera vCamera = getVtkCamera();
 		return vCamera.GetViewAngle();
 	}
-
+	
 	@Override
 	public CoordinateSystem getCoordinateSystem()
 	{
@@ -154,6 +155,7 @@ public class StandardCamera implements Camera
 			tmpVtkCamera.SetPosition(homePosition.getX(), homePosition.getY(), homePosition.getZ());
 			tmpVtkCamera.SetRoll(homeRoll);
 			tmpVtkCamera.SetViewAngle(homeViewAngle);
+			tmpVtkCamera.SetViewUp(homeUpView.toArray());
 			refPanel.getVTKLock().unlock();
 			refPanel.resetCameraClippingRange();
 			fireCameraEvent();
@@ -287,6 +289,7 @@ public class StandardCamera implements Camera
 		homeFocalPoint = getFocalPoint();
 		homeRoll = getRoll();
 		homeViewAngle = getViewAngle();
+		homeUpView = getUpUnit();
 		homeSet = true;
 	}
 
