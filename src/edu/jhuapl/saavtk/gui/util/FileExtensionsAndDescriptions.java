@@ -1,5 +1,7 @@
 package edu.jhuapl.saavtk.gui.util;
 
+import edu.jhuapl.saavtk.util.Configuration;
+
 public enum FileExtensionsAndDescriptions
 {
 	TEXT(".txt", "Text File"), //
@@ -7,7 +9,8 @@ public enum FileExtensionsAndDescriptions
 	PDF(".pdf", "PDF Document"), //
 	LIGER(".liger", "Liger File"), //
 	SBMT(".sbmt", "SBMT File"), //
-	SHAPE(".shp", "Shape File")//
+	SHAPE(".shp", "Shape File"),//
+	SCENE(".scene", "Scene File")
 	;
 
 	private final String extension;
@@ -27,7 +30,10 @@ public enum FileExtensionsAndDescriptions
 	@Override
 	public String toString()
 	{
-		return getExtension().substring(1);
+		if (Configuration.isWindows() || Configuration.isLinux())
+			return getExtension();
+		else
+			return getExtension().substring(1);
 	}
 
 	public String getDescription(boolean includeExt)

@@ -128,22 +128,22 @@ public class CustomFileChooser extends FileChooserBase
 
 	public static File showUserFilterableOpenDialog(Component parent, String title)
 	{
-		return showOpenDialog(parent, title, null, null);
+		return showUserFilterableOpenDialog(parent, title, null, null);
 	}
 
 	public static File showUserFilterableOpenDialog(Component parent, String title, String defaultFileName)
 	{
-		return showOpenDialog(parent, title, null, defaultFileName);
+		return showUserFilterableOpenDialog(parent, title, null, defaultFileName);
 	}
 
 	public static File showUserFilterableOpenDialog(Component parent, String title, List<?> extensions)
 	{
-		return showOpenDialog(parent, title, extensions, null);
+		return showUserFilterableOpenDialog(parent, title, extensions, null);
 	}
 
 	public static File showUserFilterableOpenDialog(Component parent, String title, List<?> extensions, String defaultFileName)
 	{
-		File[] files = showOpenDialog(parent, title, extensions, false, defaultFileName);
+		File[] files = showUserFilterableOpenDialog(parent, title, extensions, false, defaultFileName);
 		if (files == null || files.length < 1)
 			return null;
 		else
@@ -152,7 +152,7 @@ public class CustomFileChooser extends FileChooserBase
 
 	public static File[] showUserFilterableOpenDialog(Component parent, String title, List<?> extensions, boolean multiSelectionEnabled)
 	{
-		return showOpenDialog(parent, title, extensions, multiSelectionEnabled, null);
+		return showUserFilterableOpenDialog(parent, title, extensions, multiSelectionEnabled, null);
 	}
 
 	public static File[] showUserFilterableOpenDialog(Component parent, String title, List<?> extensions, boolean multiSelectionEnabled, String defaultFileName)
@@ -161,7 +161,6 @@ public class CustomFileChooser extends FileChooserBase
 
 		jfc.setDialogTitle(title);
 		jfc.setMultiSelectionEnabled(multiSelectionEnabled);
-
 		if (extensions != null)
 		{
 			for (Object extension : extensions)

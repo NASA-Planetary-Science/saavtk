@@ -62,7 +62,7 @@ public class RenderIoUtil
 		double[] posArr = cam.GetPosition();
 		double cameraDistance = MathUtil.vnorm(posArr);
 
-		result.focalPoint = new double[] { 0.0, 0.0, 0.0 };
+		result.focalPoint = new double[] { 0.0, 0.0, zOffset };
 
 		if (aAxisType == AxisType.NEGATIVE_X)
 		{
