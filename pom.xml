@@ -243,11 +243,13 @@
 			<artifactId>gt-main</artifactId>
 			<version>30.0</version>
 		</dependency>
+		<!--
 		<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-data</artifactId>
 			<version>15.1</version>
 		</dependency>
+		-->
 		<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-shapefile</artifactId>
