@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +83,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 {
 	//This is a placeholder for enabling a series of diagnostic tools we hope to bring into the renderer.  Currently in place but with no UI hooks to enable it (yet) is a
 	//block of code that can display the body cubes used during a database search that allows you to see what exactly it is you're choosing.
-	private boolean diagnosticModeEnabled = false;
+	private boolean diagnosticModeEnabled = true;
 	private List<vtkProp> diagnosticCubes = new ArrayList<>();
 
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
@@ -541,8 +542,11 @@ public class GenericPolyhedralModel extends PolyhedralModel
     		initializeLocators();
             initializeCellIds();
             getCellNormals();
-            lowResSmallBodyPolyData = smallBodyPolyData;
-            lowResPointLocator = pointLocator;
+            if (resolutionLevel == 0)
+            {
+            	lowResSmallBodyPolyData = smallBodyPolyData;
+            	lowResPointLocator = pointLocator;
+            }
     		this.pcs.firePropertyChange(Properties.MODEL_POSITION_CHANGED, null, null);
         }
     }
@@ -570,8 +574,11 @@ public class GenericPolyhedralModel extends PolyhedralModel
         initializeLocators();
         initializeCellIds();
         getCellNormals();
-        lowResSmallBodyPolyData = smallBodyPolyDataAtPosition;
-        lowResPointLocator = getPointLocator();
+        if (resolutionLevel == 0)
+        {
+        	lowResSmallBodyPolyData = smallBodyPolyDataAtPosition;
+        	lowResPointLocator = getPointLocator();
+        }
     }
 
     private void initializeCellIds()
