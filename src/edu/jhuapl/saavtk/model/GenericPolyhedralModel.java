@@ -83,7 +83,7 @@ public class GenericPolyhedralModel extends PolyhedralModel
 {
 	//This is a placeholder for enabling a series of diagnostic tools we hope to bring into the renderer.  Currently in place but with no UI hooks to enable it (yet) is a
 	//block of code that can display the body cubes used during a database search that allows you to see what exactly it is you're choosing.
-	private boolean diagnosticModeEnabled = true;
+	private boolean diagnosticModeEnabled = false;
 	private List<vtkProp> diagnosticCubes = new ArrayList<>();
 
     private static final SafeURLPaths SAFE_URL_PATHS = SafeURLPaths.instance();
