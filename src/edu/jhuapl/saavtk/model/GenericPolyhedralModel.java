@@ -542,10 +542,9 @@ public class GenericPolyhedralModel extends PolyhedralModel
     		initializeLocators();
             initializeCellIds();
             getCellNormals();
-            if (resolutionLevel == 0)
+            if (resolutionLevel == 0 && lowResPointLocator == null)
             {
-            	lowResSmallBodyPolyData = smallBodyPolyData;
-            	lowResPointLocator = pointLocator;
+            	getLowResSmallBodyPolyData();
             }
     		this.pcs.firePropertyChange(Properties.MODEL_POSITION_CHANGED, null, null);
         }
@@ -1209,16 +1208,9 @@ public class GenericPolyhedralModel extends PolyhedralModel
 		double angle = 0.0;
 
 		// Determine the VTK vars to use (ensure low res data)
-		vtkPolyData vSurfacePD = smallBodyPolyDataAtPosition;
-		vtkPointLocator vSurfacePL = getPointLocator();
-
-		if (resolutionLevel != 0)
-		{
-			initializeLowResData();
-
-			vSurfacePD = lowResSmallBodyPolyData;
-			vSurfacePL = lowResPointLocator;
-		}
+		
+		vtkPolyData vSurfacePD = getLowResSmallBodyPolyData();
+		vtkPointLocator vSurfacePL = lowResPointLocator;
 
 		// Render the circle
 		VtkDrawUtil.drawEllipseOn(vSurfacePD, vSurfacePL, center, aRadius, flattening, angle, aNumSides,
