@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -541,8 +542,10 @@ public class GenericPolyhedralModel extends PolyhedralModel
     		initializeLocators();
             initializeCellIds();
             getCellNormals();
-            lowResSmallBodyPolyData = smallBodyPolyData;
-            lowResPointLocator = pointLocator;
+            if (resolutionLevel == 0 && lowResPointLocator == null)
+            {
+            	getLowResSmallBodyPolyData();
+            }
     		this.pcs.firePropertyChange(Properties.MODEL_POSITION_CHANGED, null, null);
         }
     }
@@ -570,8 +573,11 @@ public class GenericPolyhedralModel extends PolyhedralModel
         initializeLocators();
         initializeCellIds();
         getCellNormals();
-        lowResSmallBodyPolyData = smallBodyPolyDataAtPosition;
-        lowResPointLocator = getPointLocator();
+        if (resolutionLevel == 0)
+        {
+        	lowResSmallBodyPolyData = smallBodyPolyDataAtPosition;
+        	lowResPointLocator = getPointLocator();
+        }
     }
 
     private void initializeCellIds()
@@ -1202,16 +1208,9 @@ public class GenericPolyhedralModel extends PolyhedralModel
 		double angle = 0.0;
 
 		// Determine the VTK vars to use (ensure low res data)
-		vtkPolyData vSurfacePD = smallBodyPolyDataAtPosition;
-		vtkPointLocator vSurfacePL = getPointLocator();
-
-		if (resolutionLevel != 0)
-		{
-			initializeLowResData();
-
-			vSurfacePD = lowResSmallBodyPolyData;
-			vSurfacePL = lowResPointLocator;
-		}
+		
+		vtkPolyData vSurfacePD = getLowResSmallBodyPolyData();
+		vtkPointLocator vSurfacePL = lowResPointLocator;
 
 		// Render the circle
 		VtkDrawUtil.drawEllipseOn(vSurfacePD, vSurfacePL, center, aRadius, flattening, angle, aNumSides,
