@@ -83,13 +83,17 @@ public class RenderAttrPanel extends GlassPanel implements ActionListener
 
 		lineWidthResetB = GuiUtil.formButton(this, IconUtil.getActionReset());
 		lineWidthResetB.setToolTipText(ToolTipUtil.getItemResetMsg(floatNU.getString(lineWidthDef)));
+		
 		var lineWidthL = new JLabel("Line Width:");
 		lineWidthS = new GSlider(this, lineWidthRange, 100);
 		lineWidthNF = new GNumberField(this, floatNU, lineWidthRange);
+		lineWidthNF.setEnabled(false);
 		add(lineWidthResetB, "w 24!,h 24!");
 		add(lineWidthL, "");
 		add(lineWidthNF, "w 60!");
 		add(lineWidthS, "growx,pushx,wrap");
+		lineWidthResetB.setEnabled(false);
+		lineWidthS.setEnabled(false);
 
 		radialOffsetResetB = GuiUtil.formButton(this, IconUtil.getActionReset());
 		radialOffsetResetB.setToolTipText(ToolTipUtil.getItemResetMsg(floatNU.getString(radialOffsetDef)));
@@ -232,10 +236,10 @@ public class RenderAttrPanel extends GlassPanel implements ActionListener
 	{
 		var tmpRenderAttr = getAttr();
 
-		var isEnabled = tmpRenderAttr.lineWidth() != 2.0;
-		lineWidthResetB.setEnabled(isEnabled);
+//		var isEnabled = tmpRenderAttr.lineWidth() != 2.0;
+//		lineWidthResetB.setEnabled(isEnabled);
 
-		isEnabled = tmpRenderAttr.radialOffset() != EllipseUtil.getRadialOffsetDef(refSmallBody);
+		var isEnabled = tmpRenderAttr.radialOffset() != EllipseUtil.getRadialOffsetDef(refSmallBody);
 		radialOffsetResetB.setEnabled(isEnabled);
 
 		isEnabled = tmpRenderAttr.pointRadius() != EllipseUtil.getPointSizeDef(refSmallBody);

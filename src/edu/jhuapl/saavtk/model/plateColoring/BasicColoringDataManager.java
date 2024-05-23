@@ -278,7 +278,7 @@ public class BasicColoringDataManager implements ColoringDataManager
 				Integer numberElements = resolutions.get(index);
 				if (has(name, numberElements))
 				{
-					builder.append(index);
+					builder.append(numberElements);
 				}
 				startingLoop = false;
 			}

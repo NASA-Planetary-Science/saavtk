@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import org.apache.commons.io.FilenameUtils;
+
 import com.google.common.base.Preconditions;
 
 import edu.jhuapl.saavtk.util.file.DataFileReader.IncorrectFileFormatException;
@@ -34,6 +36,11 @@ final class VtkColoringDataIO implements ColoringDataIO
     {
         Preconditions.checkNotNull(file);
 
+        if (!FilenameUtils.getExtension(file.getAbsolutePath()).equals("vtk"))
+        {
+        	throw new IncorrectFileFormatException("Unable to load coloring data from poly data in file " + file.toString());
+        }
+        
         if (!file.isFile())
         {
             throw new FileNotFoundException(file.toString());
