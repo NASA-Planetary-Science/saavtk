@@ -83,6 +83,7 @@ public enum ShapeModelBody
     DIDYMOS_SYSTEM("65803 Didymos System"),
     DIDYMOS("Didymos"),
     DIMORPHOS("Dimorphos"),
+    DINKINESH("152830 Dinkinesh"),
     PSYCHE("16 Psyche")
 	;
 
