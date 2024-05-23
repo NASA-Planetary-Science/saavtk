@@ -84,7 +84,8 @@ public enum ShapeModelBody
     DIDYMOS("Didymos"),
     DIMORPHOS("Dimorphos"),
     DINKINESH("152830 Dinkinesh"),
-    PSYCHE("16 Psyche")
+    PSYCHE("16 Psyche"),
+    MOON("Moon");
 	;
 
 	final private String str;
