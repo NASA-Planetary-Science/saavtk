@@ -25,8 +25,8 @@ import org.apache.commons.io.FilenameUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import crucible.crust.metadata.api.Serializer;
-import crucible.crust.metadata.impl.gson.Serializers;
+import edu.jhuapl.ses.jsqrl.api.Serializer;
+import edu.jhuapl.ses.jsqrl.impl.gson.Serializers;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.preferences.PreferencesController;
