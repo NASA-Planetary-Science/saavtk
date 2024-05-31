@@ -303,13 +303,13 @@
 		<dependency>
 			<groupId>edu.jhuapl.ses.saa</groupId>
 			<artifactId>crucible-core</artifactId>
-			<version>1.0.0-b23-b505c84b</version>
+			<version>1.0.0-b81-8908db6b</version>
 			<type>pom</type>
 		</dependency>
 		<dependency>
 			<groupId>edu.jhuapl.ses.saa</groupId>
 			<artifactId>crucible-crust</artifactId>
-			<version>1.0.0-b23-b505c84b</version>
+			<version>1.0.0-b81-8908db6b</version>
 			<exclusions>
                 <exclusion>
                     <groupId>com.jidesoft</groupId>
@@ -320,7 +320,7 @@
 		<dependency>
 			<groupId>edu.jhuapl.ses.saa</groupId>
 			<artifactId>crucible-mantle</artifactId>
-			<version>1.0.0-b23-b505c84b</version>
+			<version>1.0.0-b81-8908db6b</version>
 			<exclusions>
                 <exclusion>
                     <groupId>com.jidesoft</groupId>
