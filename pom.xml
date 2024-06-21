@@ -336,7 +336,14 @@
           <name>libs-snapshot</name>
           <url>https://surfshop:8081/artifactory/libs-snapshot</url>
         </repository>
-
+        <repository>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+          <id>thirdparty</id>
+          <name>libs-3rdparty-local</name>
+          <url>https://surfshop.jhuapl.edu:8081/artifactory/libs-3rdparty-local</url>
+        </repository>
         <repository>
           <snapshots>
             <enabled>false</enabled>
