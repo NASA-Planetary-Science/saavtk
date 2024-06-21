@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import crucible.core.math.Statistics;
+import picante.math.Statistics;
 
 /**
  * Simple class to time the execution of arbitrary sections of code, possibly
