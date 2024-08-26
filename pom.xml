@@ -291,7 +291,7 @@
 		<dependency>
 			<groupId>edu.jhuapl.ses.jsqrl</groupId>
 			<artifactId>jsqrl</artifactId>
-			<version>0.0.1</version>
+			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
             <groupId>edu.jhuapl.ses</groupId>
@@ -320,8 +320,6 @@
 	</issueManagement>
 	<!-- Repositories, so can be built on checkout without settings.xml file in place -->
 	<repositories>
-
-    
         <repository>
           <snapshots>
             <enabled>false</enabled>
