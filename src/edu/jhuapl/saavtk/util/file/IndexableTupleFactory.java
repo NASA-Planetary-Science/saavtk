@@ -6,8 +6,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Doubles;
 
-import crucible.core.data.list.indexable.Indexable;
-
 /**
  * Factory that adapts input collection-or-array-type objects to provide
  * implmentations of {@link IndexableTuple}. This class has several method

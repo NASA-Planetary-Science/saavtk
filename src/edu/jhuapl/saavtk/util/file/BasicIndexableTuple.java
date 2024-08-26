@@ -1,7 +1,5 @@
 package edu.jhuapl.saavtk.util.file;
 
-import crucible.core.data.list.indexable.Indexable;
-
 /**
  * A basic abstract implementation of {@link IndexableTuple} that leaves
  * abstract the way that values are retrieved. Extend this to adapt any type of

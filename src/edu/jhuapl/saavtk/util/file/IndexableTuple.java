@@ -1,7 +1,5 @@
 package edu.jhuapl.saavtk.util.file;
 
-import crucible.core.data.list.indexable.Indexable;
-
 /**
  * Extends {@link Indexable}<{@link Tuple}> and adds methods to get the number
  * of fields in each {@link Tuple} as well as the names of the fields and their
