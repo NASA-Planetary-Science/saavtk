@@ -7,10 +7,39 @@
 	<version>2.0.4.109-b1-SNAPSHOT</version>   
 	<name>saavtk</name>
 	<description>VTK Support library</description>
+	
+	<url>https://github.com/JHUAPL/jsqrl</url>
+
+    <inceptionYear>2024</inceptionYear>
     <organization>
-	  <name>Johns Hopkins University Applied Physics Lab</name>
-	  <url>https://www.jhuapl.edu</url>
+        <name>Johns Hopkins University Applied Physics Laboratory</name>
+        <url>https://www.jhuapl.edu/</url>
     </organization>
+    
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/license/mit/</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>james-peachey</id>
+            <name>James Peachey</name>
+            <email>James.Peachey@jhuapl.edu</email>
+            <organization>JHUAPL</organization>
+            <organizationUrl>https://www.jhuapl.edu/</organizationUrl>
+        </developer>
+        <developer>
+            <id>joshsteeleAPL</id>
+            <name>Josh Steele</name>
+            <email>Josh.Steele@jhuapl.edu</email>
+            <organization>JHUAPL</organization>
+            <organizationUrl>https://www.jhuapl.edu/</organizationUrl>
+        </developer>
+    </developers>
+	
     <distributionManagement>
   	  <repository>
 		<id>central</id>
@@ -318,85 +347,6 @@
 		<system>Quiver</system>
 		<url>https://quiver.jhuapl.edu/saavtk/issues</url>
 	</issueManagement>
-	<!-- Repositories, so can be built on checkout without settings.xml file in place -->
-	<!--
-	<repositories>
-        <repository>
-          <snapshots>
-            <enabled>false</enabled>
-          </snapshots>
-          <id>central</id>
-          <name>libs-release</name>
-          <url>https://surfshop:8081/artifactory/libs-release</url>
-        </repository>
-        <repository>
-          <snapshots />
-          <id>snapshots</id>
-          <name>libs-snapshot</name>
-          <url>https://surfshop:8081/artifactory/libs-snapshot</url>
-        </repository>
-        <repository>
-          <snapshots>
-            <enabled>false</enabled>
-          </snapshots>
-          <id>thirdparty</id>
-          <name>libs-3rdparty-local</name>
-          <url>https://surfshop.jhuapl.edu:8081/artifactory/libs-3rdparty-local</url>
-        </repository>
-        <repository>
-          <snapshots>
-            <enabled>false</enabled>
-          </snapshots>
-          <id>OSGeo</id>
-          <name>release</name>
-          <url>https://repo.osgeo.org/repository/release/</url>
-        </repository>
-        <repository>
-           <snapshots>
-              <enabled>false</enabled>
-           </snapshots>
-           <id>central2</id>
-           <name>libs-release</name>
-           <url>https://repo1.maven.org/maven2/</url>
-        </repository>
-        <repository>
-           <snapshots />
-           <id>snapshots2</id>
-           <name>libs-snapshot</name>
-           <url>https://repo1.maven.org/maven2/</url>
-        </repository>
-    </repositories>
-    <pluginRepositories>
-        <pluginRepository>
-          <snapshots>
-            <enabled>false</enabled>
-          </snapshots>
-          <id>central</id>
-          <name>libs-release</name>
-          <url>https://surfshop:8081/artifactory/libs-release</url>
-        </pluginRepository>
-        <pluginRepository>
-          <snapshots />
-          <id>snapshots</id>
-          <name>libs-snapshot</name>
-          <url>https://surfshop:8081/artifactory/libs-snapshot</url>
-        </pluginRepository>
-        <pluginRepository>
-          <snapshots>
-              <enabled>false</enabled>
-          </snapshots>
-          <id>central2</id>
-          <name>plugins-release</name>
-          <url>https://repo1.maven.org/maven2/</url>
-        </pluginRepository>
-        <pluginRepository>
-          <snapshots />
-          <id>snapshots2</id>
-          <name>plugins-snapshot</name>
-          <url>https://repo1.maven.org/maven2/</url>
-        </pluginRepository>
-    </pluginRepositories>
---> 
 	<build>
 		<sourceDirectory>src</sourceDirectory>
 		<plugins>
