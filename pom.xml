@@ -4,7 +4,7 @@
 	<groupId>edu.jhuapl.ses.srn.saavtk</groupId>
 	<artifactId>saavtk</artifactId>
 	<packaging>jar</packaging>
-	<version>2.0.4.109-b1-SNAPSHOT</version>   
+	<version>2.0.4-b1-SNAPSHOT</version>   
 	<name>saavtk</name>
 	<description>VTK Support library</description>
 	
