@@ -318,9 +318,9 @@
 			<version>2.8.0</version>
 		</dependency>		
 		<dependency>
-			<groupId>edu.jhuapl.ses.jsqrl</groupId>
+			<groupId>edu.jhuapl.ses</groupId>
 			<artifactId>jsqrl</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>1.0.1</version>
 		</dependency>
 		<dependency>
             <groupId>edu.jhuapl.ses</groupId>
