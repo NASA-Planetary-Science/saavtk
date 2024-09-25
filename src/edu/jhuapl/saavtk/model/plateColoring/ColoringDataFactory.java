@@ -3,7 +3,7 @@ package edu.jhuapl.saavtk.model.plateColoring;
 import java.io.File;
 
 import com.google.common.base.Preconditions;
-import crucible.crust.metadata.api.Metadata;
+import edu.jhuapl.ses.jsqrl.api.Metadata;
 import edu.jhuapl.saavtk.util.file.IndexableTuple;
 import vtk.vtkDataArray;
 

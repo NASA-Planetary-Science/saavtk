@@ -77,7 +77,7 @@ public class AnyStructureManager extends BaseItemManager<Structure>
 		refStatusNotifier = aStatusNotifier;
 		refSmallBody = aSmallBody;
 
-		var lineWidth = 2.0;
+		var lineWidth = 1.0;
 		var radialOffset = EllipseUtil.getRadialOffsetDef(aSmallBody);
 		var pointRadius = EllipseUtil.getPointSizeDef(aSmallBody);
 		renderAttr = new RenderAttr(lineWidth, radialOffset, 20, 4, pointRadius);

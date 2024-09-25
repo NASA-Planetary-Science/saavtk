@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import crucible.crust.metadata.api.Metadata;
+import edu.jhuapl.ses.jsqrl.api.Metadata;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.file.IndexableTuple;
 

@@ -2,13 +2,9 @@ package edu.jhuapl.saavtk.grid.painter;
 
 import java.util.List;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Doubles;
 
-import Jama.Matrix;
-import crucible.core.math.vectorspace.MatrixIJK;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.structure.OccludingCaptionActor;
 import edu.jhuapl.saavtk.util.Configuration;
@@ -18,10 +14,8 @@ import edu.jhuapl.saavtk.vtk.VtkUtil;
 import vtk.vtkAppendPolyData;
 import vtk.vtkCaptionActor2D;
 import vtk.vtkCone;
-import vtk.vtkConeSource;
 import vtk.vtkCutter;
 import vtk.vtkImplicitFunction;
-import vtk.vtkMatrix4x4;
 import vtk.vtkPlane;
 import vtk.vtkPolyData;
 import vtk.vtkTransform;

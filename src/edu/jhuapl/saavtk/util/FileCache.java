@@ -118,15 +118,15 @@ public final class FileCache
             {
                 if (fileState.isUrlUnauthorized())
                 {
-                    exception = new UnauthorizedAccessException("Cannot get file: access is restricted to URL: " + url, url);
+                    exception = new UnauthorizedAccessException("Cannot get file: access is restricted to URL: ", url);
                 }
                 else if (!fileState.getUrlState().wasCheckedOnline())
                 {
-                    exception = new NoInternetAccessException("Cannot get file: unable to connect to server for file " + url, url);
+                    exception = new NoInternetAccessException("Cannot get file: unable to connect to server for file ", url);
                 }
                 else if (fileState.isURLNotFound())
                 {
-                    exception = new NonexistentRemoteFile("Remote file was not found: " + url, url);
+                    exception = new NonexistentRemoteFile("Remote file was not found: ", url);
                 }
                 else
                 {

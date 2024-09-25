@@ -33,7 +33,7 @@ public class LightCfgPanel extends GPanel implements ActionListener, ItemListene
 {
 	// Constants
 	private static final Range<Double> LatRange = Range.closed(-90.0, 90.0);
-	private static final Range<Double> LonRange = Range.closed(0.0, 360.0);
+	private static final Range<Double> LonRange = Range.closed(-180.0, 180.0);
 	private static final Range<Double> IntensityRange = Range.closed(0.0, 1.0);
 	private static final int NumCols = 6;
 
