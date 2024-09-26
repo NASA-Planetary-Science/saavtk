@@ -65,6 +65,14 @@
         <maven.compiler.target>16</maven.compiler.target>
         <vtkVersion>9.2.6.0</vtkVersion>
     </properties>
+    
+    <repositories>
+        <repository>
+          <id>mavencentral</id>
+          <name>mavencentral</name>
+          <url>https://repo.maven.apache.org/maven2/</url>
+        </repository>
+    </repositories>
 
 
     <profiles>
