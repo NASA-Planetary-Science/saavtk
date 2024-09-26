@@ -3,8 +3,6 @@ package edu.jhuapl.saavtk.illum;
 import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-import org.apache.commons.math3.transform.FastHadamardTransformer;
-import org.apache.commons.math3.util.FastMath;
 
 import com.google.common.collect.Lists;
 

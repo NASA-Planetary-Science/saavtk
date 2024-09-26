@@ -3,16 +3,11 @@ package edu.jhuapl.saavtk.model.plateColoring;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.saavtk.util.Configuration;
-import edu.jhuapl.saavtk.util.NativeLibraryLoader;
 import vtk.vtkCellArray;
 import vtk.vtkFloatArray;
-import vtk.vtkJavaGarbageCollector;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataReader;
 import vtk.vtkPolyDataWriter;

@@ -1,7 +1,6 @@
 package edu.jhuapl.saavtk.gui;
 
 import java.awt.Component;
-import java.awt.EventQueue;
 import java.awt.IllegalComponentStateException;
 import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeEvent;
@@ -16,7 +15,6 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JRadioButtonMenuItem;
 
 import edu.jhuapl.saavtk.gui.dialog.ShapeModelImporterManagerDialog;

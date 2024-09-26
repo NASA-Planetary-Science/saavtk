@@ -8,7 +8,6 @@ import java.util.Map;
 
 import com.github.davidmoten.guavamini.Lists;
 
-import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.preferences.sections.colorMap.PreferencesSectionColorMapController;
 import edu.jhuapl.saavtk.gui.dialog.preferences.sections.colors.PreferencesSectionColorsController;
@@ -16,7 +15,6 @@ import edu.jhuapl.saavtk.gui.dialog.preferences.sections.pickTolerance.Preferenc
 import edu.jhuapl.saavtk.gui.dialog.preferences.sections.proxy.PreferencesSectionProxyController;
 import edu.jhuapl.saavtk.gui.dialog.preferences.sections.windowSize.PreferencesSectionWindowSizeController;
 import edu.jhuapl.saavtk.gui.render.RenderPanel;
-import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.util.Preferences;
 
 public class PreferencesController

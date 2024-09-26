@@ -5,16 +5,14 @@ import java.util.LinkedHashMap;
 
 import org.apache.commons.io.FileUtils;
 
+import edu.jhuapl.saavtk.util.Configuration;
+import edu.jhuapl.saavtk.util.MapUtil;
+import edu.jhuapl.saavtk.util.PolyDataUtil;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataWriter;
 import vtk.vtkSphereSource;
 import vtk.vtkTransform;
 import vtk.vtkTransformPolyDataFilter;
-import edu.jhuapl.saavtk.model.Graticule;
-import edu.jhuapl.saavtk.model.ShapeModel;
-import edu.jhuapl.saavtk.util.Configuration;
-import edu.jhuapl.saavtk.util.MapUtil;
-import edu.jhuapl.saavtk.util.PolyDataUtil;
 
 public class ShapeModelImporter
 {

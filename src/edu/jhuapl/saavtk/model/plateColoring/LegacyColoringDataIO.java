@@ -6,9 +6,9 @@ import java.io.IOException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import edu.jhuapl.saavtk.util.file.DataFileReader.IncorrectFileFormatException;
 import edu.jhuapl.saavtk.util.file.FieldNotFoundException;
 import edu.jhuapl.saavtk.util.file.IndexableTuple;
-import edu.jhuapl.saavtk.util.file.DataFileReader.IncorrectFileFormatException;
 
 /**
  * 

@@ -375,7 +375,7 @@ public class PolyDataUtil
 
 		vtkIdList idList = new vtkIdList();
 		idList.SetNumberOfIds(0);
-		double[] viewDir = new double[3];
+//		double[] viewDir = new double[3];
 //		Logger.getAnonymousLogger().log(Level.INFO, "For loop starting");
 		for (int i = 0; i < numCells; ++i)
 		{
@@ -409,7 +409,7 @@ public class PolyDataUtil
 		tmpPolyData.DeepCopy(cleanPolyOutput);
 //		Logger.getAnonymousLogger().log(Level.INFO, "Cleaning done");
 		
-		vtkGenericCell cell = new vtkGenericCell();
+//		vtkGenericCell cell = new vtkGenericCell();
 
 		points = tmpPolyData.GetPoints();
 		int numPoints = (int)points.GetNumberOfPoints();
@@ -417,12 +417,12 @@ public class PolyDataUtil
 		int[] numberOfObscuredPointsPerCell = new int[(int)tmpPolyData.GetNumberOfCells()];
 		Arrays.fill(numberOfObscuredPointsPerCell, 0);
 
-		double tol = 1e-6;
-		double[] t = new double[1];
-		double[] x = new double[3];
-		double[] pcoords = new double[3];
-		int[] subId = new int[1];
-		int[] cell_id = new int[1];
+//		double tol = 1e-6;
+//		double[] t = new double[1];
+//		double[] x = new double[3];
+//		double[] pcoords = new double[3];
+//		int[] subId = new int[1];
+//		int[] cell_id = new int[1];
 		
 		final List<Future<Void>> resultList;
 		List<Callable<Void>> taskList = new ArrayList<>();
@@ -3246,14 +3246,17 @@ public class PolyDataUtil
 		// Check to see if x,y,z planes were all defined
 		if (xIdx < 0)
 		{
+			f.close();
 			throw new IOException("FITS file does not contain plane for X coordinate");
 		}
 		else if (yIdx < 0)
 		{
+			f.close();
 			throw new IOException("FITS file does not contain plane for Y coordinate");
 		}
 		else if (zIdx < 0)
 		{
+			f.close();
 			throw new IOException("FITS file does not contain plane for Z coordinate");
 		}
 
@@ -3330,6 +3333,7 @@ public class PolyDataUtil
 			}
 
 		addPointNormalsToShapeModel(shapeModel);
+		f.close();
 		return shapeModel;
 	}
 

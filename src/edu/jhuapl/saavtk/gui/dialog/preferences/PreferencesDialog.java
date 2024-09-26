@@ -82,7 +82,6 @@ public class PreferencesDialog extends JDialog
     /**
      * This method is called from within the constructor to initialize the form.
      */
-    @SuppressWarnings("unchecked")
     private void initComponents()
     {
         GridBagConstraints gridBagConstraints;

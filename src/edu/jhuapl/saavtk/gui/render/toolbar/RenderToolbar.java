@@ -3,8 +3,6 @@ package edu.jhuapl.saavtk.gui.render.toolbar;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
 
 import javax.swing.JButton;

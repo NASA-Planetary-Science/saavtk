@@ -12,8 +12,6 @@ import edu.jhuapl.saavtk.gui.panel.PolyhedralModelControlPanel;
 import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
 import edu.jhuapl.saavtk.model.plateColoring.LoadableColoringData;
-import edu.jhuapl.saavtk.model.plateColoring.ColoringData;
-import edu.jhuapl.saavtk.model.plateColoring.LoadableColoringData;
 
 /**
  * Collection of legacy utility methods for working with the legacy design

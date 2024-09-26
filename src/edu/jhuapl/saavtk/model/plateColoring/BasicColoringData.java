@@ -8,8 +8,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.file.IndexableTuple;
 import vtk.vtkDataArray;
+import vtk.vtkObject;
 
 /**
  * A basic abstract implementation of {@link ColoringData} that uses

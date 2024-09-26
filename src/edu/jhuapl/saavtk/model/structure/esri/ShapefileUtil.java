@@ -106,7 +106,7 @@ public class ShapefileUtil
 
     public static Collection<PointStructure> readPointStructures(Path shapeFile) throws IOException
     {
-        Collection<SimpleFeature> sfc = read(shapeFile);
+//        Collection<SimpleFeature> sfc = read(shapeFile);
         Set<PointStructure> ps = Sets.newHashSet();
 //      for (SimpleFeature sf : sfc)
 //          ps.add(FeatureUtil.createPointStructureFrom(sf, body));
@@ -115,13 +115,13 @@ public class ShapefileUtil
 
     public static Collection<LineStructure> readLineStructures(Path shapeFile) throws IOException
     {
-        Collection<SimpleFeature> sfc = read(shapeFile);
+//        Collection<SimpleFeature> sfc = read(shapeFile);
         Set<LineStructure> ls = Sets.newHashSet();
-        for (SimpleFeature sf : sfc)
-        {
+//        for (SimpleFeature sf : sfc)
+//        {
 //          LineStructure s=FeatureUtil.createLineStructureFrom(sf);
 //          ls.add(s);
-        }
+//        }
         return ls;
     }
 
@@ -209,13 +209,13 @@ public class ShapefileUtil
         {
             Path pointsShapeFile = Paths.get("/Users/zimmemi1/Desktop/shape/myPoints.shp");
             ShapefileUtil.writePointStructures(points, pointsShapeFile);
-            Collection<PointStructure> pointsRead = ShapefileUtil.readPointStructures(pointsShapeFile);
+//            Collection<PointStructure> pointsRead = ShapefileUtil.readPointStructures(pointsShapeFile);
 //          for (PointStructure ps : pointsRead)
 //              System.out.println(ps);
 
             Path linesShapeFile = Paths.get("/Users/zimmemi1/Desktop/shape/myLines.shp");
             ShapefileUtil.writeLineStructures(lines, linesShapeFile);
-            Collection<LineStructure> linesRead = ShapefileUtil.readLineStructures(linesShapeFile);
+//            Collection<LineStructure> linesRead = ShapefileUtil.readLineStructures(linesShapeFile);
 //          for (LineStructure ls : linesRead)
 //              System.out.println(ls);
 
@@ -295,13 +295,13 @@ public class ShapefileUtil
         {
             Path pointsShapeFile = Paths.get("/Users/zimmemi1/Desktop/shape/myPoints.shp");
             ShapefileUtil.writePointStructures(points, pointsShapeFile);
-            Collection<PointStructure> pointsRead = ShapefileUtil.readPointStructures(pointsShapeFile);
+//            Collection<PointStructure> pointsRead = ShapefileUtil.readPointStructures(pointsShapeFile);
 //          for (PointStructure ps : pointsRead)
 //              System.out.println(ps);
 
             Path linesShapeFile = Paths.get("/Users/zimmemi1/Desktop/shape/myLines.shp");
             ShapefileUtil.writeLineStructures(lines, linesShapeFile);
-            Collection<LineStructure> linesRead = ShapefileUtil.readLineStructures(linesShapeFile);
+//            Collection<LineStructure> linesRead = ShapefileUtil.readLineStructures(linesShapeFile);
 //          for (LineStructure ls : linesRead)
 //              System.out.println(ls);
 

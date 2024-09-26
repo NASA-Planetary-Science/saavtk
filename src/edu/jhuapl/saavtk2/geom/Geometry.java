@@ -3,11 +3,8 @@ package edu.jhuapl.saavtk2.geom;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
 import edu.jhuapl.saavtk2.geom.euclidean.Line;
 import vtk.vtkActor;
-import vtk.vtkCellLocator;
 import vtk.vtkOBBTree;
 import vtk.vtkPointLocator;
 import vtk.vtkPolyData;

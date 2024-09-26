@@ -2,8 +2,8 @@ package edu.jhuapl.saavtk.util;
 
 import java.util.Arrays;
 
-import org.apache.commons.math3.complex.Quaternion;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationConvention;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 
@@ -685,7 +685,7 @@ public class MathUtil
     {
     	Rotation r1=new Rotation(start, end);
     	double angle=r1.getAngle();
-    	Rotation r2=new Rotation(r1.getAxis(), angle*t);
+    	Rotation r2=new Rotation(r1.getAxis(RotationConvention.VECTOR_OPERATOR), angle*t, RotationConvention.VECTOR_OPERATOR);
     	Vector3D result=r2.applyTo(start);
     	//
 //    	Vector3D cphat=start.crossProduct(end).normalize();

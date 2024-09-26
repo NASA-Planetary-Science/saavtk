@@ -1,6 +1,5 @@
 package edu.jhuapl.saavtk.gui.dialog.preferences.sections.axes;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import edu.jhuapl.saavtk.gui.dialog.preferences.IPreferencesSection;

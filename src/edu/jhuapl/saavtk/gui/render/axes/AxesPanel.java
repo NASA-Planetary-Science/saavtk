@@ -1,8 +1,6 @@
 package edu.jhuapl.saavtk.gui.render.axes;
 
 import java.awt.Color;
-import java.awt.Dimension;
-import java.util.Properties;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 

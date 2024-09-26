@@ -1,18 +1,14 @@
 package edu.jhuapl.saavtk.gui.render.axes;
 
 import java.awt.Color;
-import java.util.Arrays;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import vtk.vtkActor;
 import vtk.vtkAxes;
 import vtk.vtkCaptionActor2D;
-import vtk.vtkFloatArray;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataMapper;
-import vtk.vtkTextActor;
-import vtk.vtkTextActor3D;
 import vtk.vtkUnsignedCharArray;
 
 public class Axes

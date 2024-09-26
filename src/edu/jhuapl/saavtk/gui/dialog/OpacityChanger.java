@@ -15,8 +15,8 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import net.miginfocom.swing.MigLayout;
 import edu.jhuapl.saavtk.model.Model;
+import net.miginfocom.swing.MigLayout;
 
 public class OpacityChanger extends JDialog implements ChangeListener
 {

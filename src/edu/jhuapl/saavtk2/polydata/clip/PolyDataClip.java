@@ -3,8 +3,6 @@ package edu.jhuapl.saavtk2.polydata.clip;
 import edu.jhuapl.saavtk2.polydata.PolyDataModifier;
 import vtk.vtkClipPolyData;
 import vtk.vtkImplicitFunction;
-import vtk.vtkOBBTree;
-import vtk.vtkPointLocator;
 import vtk.vtkPolyData;
 
 public class PolyDataClip implements PolyDataModifier

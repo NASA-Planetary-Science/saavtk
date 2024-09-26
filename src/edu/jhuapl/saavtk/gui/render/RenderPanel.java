@@ -1,10 +1,6 @@
 package edu.jhuapl.saavtk.gui.render;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Point;
 import java.awt.Window;
-import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
@@ -13,15 +9,12 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-import javax.swing.BorderFactory;
-import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.gui.MainWindow;
-import edu.jhuapl.saavtk.gui.render.axes.AxesPanel;
 import edu.jhuapl.saavtk.util.NativeLibraryLoader;
 import vtk.vtkActor;
 import vtk.vtkConeSource;

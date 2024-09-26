@@ -3,8 +3,8 @@ package edu.jhuapl.saavtk.util;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.List;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 // Implementation of a map that's always backed up to a file on disk.

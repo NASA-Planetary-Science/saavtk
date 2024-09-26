@@ -5,14 +5,11 @@ import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-
 import com.google.common.collect.Lists;
 
 import vtk.vtkAbstractPointLocator;
 import vtk.vtkGenericCell;
 import vtk.vtkIdList;
-import vtk.vtkPointLocator;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
 import vtk.vtksbCellLocator;

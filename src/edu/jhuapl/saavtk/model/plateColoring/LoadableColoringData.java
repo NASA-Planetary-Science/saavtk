@@ -5,16 +5,17 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.List;
 import java.util.Objects;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import edu.jhuapl.saavtk.util.FileCache;
+import edu.jhuapl.saavtk.util.file.IndexableTuple;
 import edu.jhuapl.ses.jsqrl.api.Key;
 import edu.jhuapl.ses.jsqrl.api.Metadata;
 import edu.jhuapl.ses.jsqrl.api.Version;
 import edu.jhuapl.ses.jsqrl.impl.FixedMetadata;
 import edu.jhuapl.ses.jsqrl.impl.SettableMetadata;
-import edu.jhuapl.saavtk.util.FileCache;
-import edu.jhuapl.saavtk.util.file.IndexableTuple;
 
 /**
  * Extension of {@link BasicColoringData} that adds an association with a

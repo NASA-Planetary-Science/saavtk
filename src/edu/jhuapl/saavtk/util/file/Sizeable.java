@@ -1,5 +1,7 @@
 package edu.jhuapl.saavtk.util.file;
 
+import picante.data.list.Retrievable;
+
 /**
  * Simple expression of the size retrieval method.
  * <p>

@@ -2,7 +2,6 @@ package edu.jhuapl.saavtk.gui.dialog.preferences.sections.windowSize;
 
 import java.awt.Dimension;
 import java.awt.GraphicsEnvironment;
-import java.awt.Toolkit;
 import java.util.Map;
 
 import javax.swing.JPanel;

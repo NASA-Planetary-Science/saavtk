@@ -10,8 +10,6 @@ import com.google.common.collect.Lists;
 
 import edu.jhuapl.saavtk2.geom.euclidean.Line;
 import vtk.vtkActor;
-import vtk.vtkCell;
-import vtk.vtkCellLocator;
 import vtk.vtkDataArray;
 import vtk.vtkIdList;
 import vtk.vtkOBBTree;

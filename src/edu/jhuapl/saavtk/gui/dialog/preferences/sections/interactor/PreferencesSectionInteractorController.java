@@ -44,7 +44,7 @@ public class PreferencesSectionInteractorController implements IPreferencesContr
 	@Override
 	public boolean updateProperties(Map<String, String> newPropertiesList)
 	{
-		View view = ViewManager.getGlobalViewManager().getCurrentView();
+//		View view = ViewManager.getGlobalViewManager().getCurrentView();
 		
 		return interactorModel.updateProperties(newPropertiesList);
 	}

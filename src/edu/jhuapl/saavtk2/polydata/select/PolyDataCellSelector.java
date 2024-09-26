@@ -1,9 +1,6 @@
 package edu.jhuapl.saavtk2.polydata.select;
 
-import vtk.vtkIdTypeArray;
 import vtk.vtkPolyData;
-import vtk.vtkSelection;
-import vtk.vtkSelectionNode;
 
 public abstract class PolyDataCellSelector extends GenericPolyDataSelector
 {

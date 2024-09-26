@@ -2,12 +2,9 @@ package edu.jhuapl.saavtk.camera.gui;
 
 import java.awt.Component;
 import java.awt.Frame;
-import java.awt.HeadlessException;
 import java.awt.event.ActionEvent;
 import java.awt.event.HierarchyEvent;
 import java.awt.event.HierarchyListener;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowStateListener;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,7 +45,7 @@ public class CameraRecorderAction extends AbstractAction implements HierarchyLis
 	public void actionPerformed(ActionEvent aEvent)
 	{
 		Renderer tmpRenderer = refViewManager.getCurrentView().getRenderer();
-		vtkCamera camera = tmpRenderer.getRenderWindowPanel().getRenderer().GetActiveCamera();
+//		vtkCamera camera = tmpRenderer.getRenderWindowPanel().getRenderer().GetActiveCamera();
 		JDialog tmpDialog = viewM.get(tmpRenderer);
 		if (tmpDialog == null)
 		{

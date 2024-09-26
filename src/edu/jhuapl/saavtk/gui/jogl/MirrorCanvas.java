@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk.gui.jogl;
 
 
+import edu.jhuapl.saavtk.util.Preferences;
 import vtk.vtkAxesActor;
 import vtk.vtkCamera;
 import vtk.vtkCaptionActor2D;
@@ -9,7 +10,6 @@ import vtk.vtkProperty;
 import vtk.vtkRenderer;
 import vtk.vtkTextProperty;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
-import edu.jhuapl.saavtk.util.Preferences;
 
 public class MirrorCanvas extends vtkJoglPanelComponent
 {

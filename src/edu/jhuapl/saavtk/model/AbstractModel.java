@@ -4,6 +4,9 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.List;
 
+import edu.jhuapl.saavtk.util.LatLon;
+import edu.jhuapl.saavtk.util.MathUtil;
+import edu.jhuapl.saavtk.util.Properties;
 import vtk.vtkAbstractTransform;
 import vtk.vtkAlgorithmOutput;
 import vtk.vtkAppendPolyData;
@@ -14,9 +17,6 @@ import vtk.vtkPolyData;
 import vtk.vtkProp;
 import vtk.vtkSphericalTransform;
 import vtk.vtkTransformPolyDataFilter;
-import edu.jhuapl.saavtk.util.LatLon;
-import edu.jhuapl.saavtk.util.MathUtil;
-import edu.jhuapl.saavtk.util.Properties;
 
 public abstract class AbstractModel implements Model
 {

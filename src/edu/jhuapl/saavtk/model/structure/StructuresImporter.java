@@ -38,7 +38,7 @@ public class StructuresImporter
 		for (LineStructure aErsiLine : loadL)
 		{
 			Color color = aErsiLine.getLineStyle().getColor();
-			double w = aErsiLine.getLineStyle().getWidth();
+//			double w = aErsiLine.getLineStyle().getWidth();
 			String label = aErsiLine.getLabel();
 			if (label == null)
 				label = "";

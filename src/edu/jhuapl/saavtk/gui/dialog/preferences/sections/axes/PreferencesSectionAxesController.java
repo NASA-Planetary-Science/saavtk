@@ -1,13 +1,10 @@
 package edu.jhuapl.saavtk.gui.dialog.preferences.sections.axes;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import javax.swing.JPanel;
 
-import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.dialog.preferences.IPreferencesController;
-import edu.jhuapl.saavtk.gui.render.Renderer;
 
 public class PreferencesSectionAxesController implements IPreferencesController
 {

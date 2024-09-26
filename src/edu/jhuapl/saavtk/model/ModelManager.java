@@ -10,14 +10,14 @@ import java.util.Map.Entry;
 
 import com.google.common.collect.ImmutableMap;
 
+import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
+import edu.jhuapl.saavtk.gui.render.VtkPropProvider;
+import edu.jhuapl.saavtk.util.Properties;
 import edu.jhuapl.ses.jsqrl.api.Key;
 import edu.jhuapl.ses.jsqrl.api.Metadata;
 import edu.jhuapl.ses.jsqrl.api.MetadataManager;
 import edu.jhuapl.ses.jsqrl.api.Version;
 import edu.jhuapl.ses.jsqrl.impl.SettableMetadata;
-import edu.jhuapl.saavtk.gui.render.SceneChangeNotifier;
-import edu.jhuapl.saavtk.gui.render.VtkPropProvider;
-import edu.jhuapl.saavtk.util.Properties;
 import vtk.vtkProp;
 
 public class ModelManager extends AbstractModel

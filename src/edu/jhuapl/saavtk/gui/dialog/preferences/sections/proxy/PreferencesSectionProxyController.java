@@ -7,9 +7,7 @@ import java.util.Map;
 
 import javax.swing.JPanel;
 
-import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.dialog.preferences.IPreferencesController;
-import edu.jhuapl.saavtk.gui.render.Renderer;
 import edu.jhuapl.saavtk.util.Preferences;
 
 public class PreferencesSectionProxyController implements IPreferencesController

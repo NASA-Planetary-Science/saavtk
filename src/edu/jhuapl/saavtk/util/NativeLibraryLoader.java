@@ -1,7 +1,7 @@
 package edu.jhuapl.saavtk.util;
 
-import static ch.unibas.cs.gravis.vtkjavanativelibs.VtkNativeLibraries.MAJOR_VERSION;
-import static ch.unibas.cs.gravis.vtkjavanativelibs.VtkNativeLibraries.MINOR_VERSION;
+import static edu.jhuapl.ses.vtkjavanativelibs.VtkNativeLibraries.MAJOR_VERSION;
+import static edu.jhuapl.ses.vtkjavanativelibs.VtkNativeLibraries.MINOR_VERSION;
 
 import java.awt.EventQueue;
 import java.awt.HeadlessException;
@@ -13,11 +13,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.jogamp.common.jvm.JNILibLoaderBase;
 
-import ch.unibas.cs.gravis.vtkjavanativelibs.Platform;
-import ch.unibas.cs.gravis.vtkjavanativelibs.Util;
-import ch.unibas.cs.gravis.vtkjavanativelibs.VtkJavaNativeLibraryException;
-import ch.unibas.cs.gravis.vtkjavanativelibs.VtkNativeLibraries;
-import ch.unibas.cs.gravis.vtkjavanativelibs.VtkNativeLibrariesImpl;
+import edu.jhuapl.ses.vtkjavanativelibs.Platform;
+import edu.jhuapl.ses.vtkjavanativelibs.Util;
+import edu.jhuapl.ses.vtkjavanativelibs.VtkJavaNativeLibraryException;
+import edu.jhuapl.ses.vtkjavanativelibs.VtkNativeLibraries;
+import edu.jhuapl.ses.vtkjavanativelibs.VtkNativeLibrariesImpl;
 import vtk.vtkNativeLibrary;
 
 /**

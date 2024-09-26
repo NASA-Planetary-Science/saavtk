@@ -3,7 +3,6 @@ package edu.jhuapl.saavtk.gui;
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
-import java.util.spi.LocaleServiceProvider;
 
 import org.apache.commons.io.FileUtils;
 

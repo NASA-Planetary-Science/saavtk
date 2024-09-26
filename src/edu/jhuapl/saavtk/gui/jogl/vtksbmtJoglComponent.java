@@ -1,7 +1,5 @@
 package edu.jhuapl.saavtk.gui.jogl;
 
-import java.lang.reflect.Method;
-
 import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.GLContext;
 import com.jogamp.opengl.GLEventListener;

@@ -37,7 +37,7 @@ public class OccludingCaptionActor extends vtkCaptionActor2D
     		e.printStackTrace();
     	}
     	vtkTriangle tri=(vtkTriangle)smallBodyModel.getSmallBodyPolyDataAtPosition().GetCell(cellId[0]);
-    	double area=tri.ComputeArea();
+//    	double area=tri.ComputeArea();
     	double[] faceCenter=new double[3];
     	tri.TriangleCenter(tri.GetPoints().GetPoint(0), tri.GetPoints().GetPoint(1), tri.GetPoints().GetPoint(2), faceCenter);
     	double[] triBounds=tri.GetBounds();
