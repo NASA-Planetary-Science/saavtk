@@ -25,8 +25,6 @@ import org.apache.commons.io.FilenameUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import edu.jhuapl.ses.jsqrl.api.Serializer;
-import edu.jhuapl.ses.jsqrl.impl.gson.Serializers;
 import edu.jhuapl.saavtk.gui.ViewManager;
 import edu.jhuapl.saavtk.gui.dialog.CustomFileChooser;
 import edu.jhuapl.saavtk.gui.dialog.preferences.PreferencesController;
@@ -41,6 +39,8 @@ import edu.jhuapl.saavtk.structure.AnyStructureManager;
 import edu.jhuapl.saavtk.structure.io.StructureLegacyUtil;
 import edu.jhuapl.saavtk.util.Configuration;
 import edu.jhuapl.saavtk.util.PolyDataUtil;
+import edu.jhuapl.ses.jsqrl.api.Serializer;
+import edu.jhuapl.ses.jsqrl.impl.gson.Serializers;
 import vtk.vtkOBJExporter;
 import vtk.vtkOBJReader;
 import vtk.vtkPolyData;

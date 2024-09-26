@@ -9,13 +9,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import edu.jhuapl.saavtk.util.FileCache;
+import edu.jhuapl.saavtk.util.file.IndexableTuple;
 import edu.jhuapl.ses.jsqrl.api.Key;
 import edu.jhuapl.ses.jsqrl.api.Metadata;
 import edu.jhuapl.ses.jsqrl.api.Version;
 import edu.jhuapl.ses.jsqrl.impl.FixedMetadata;
 import edu.jhuapl.ses.jsqrl.impl.SettableMetadata;
-import edu.jhuapl.saavtk.util.FileCache;
-import edu.jhuapl.saavtk.util.file.IndexableTuple;
 
 /**
  * This class is not exactly deprecated, but its use should not be expanded, nor

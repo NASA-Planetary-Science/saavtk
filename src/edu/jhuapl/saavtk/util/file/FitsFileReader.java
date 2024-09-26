@@ -9,11 +9,11 @@ import java.util.zip.GZIPInputStream;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.ses.jsqrl.api.Version;
 import edu.jhuapl.saavtk.util.file.DataFileInfo.FileFormat;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo.Description;
 import edu.jhuapl.saavtk.util.file.DataObjectInfo.InfoRow;
 import edu.jhuapl.saavtk.util.file.TableInfo.ColumnInfo;
+import edu.jhuapl.ses.jsqrl.api.Version;
 import nom.tam.fits.BasicHDU;
 import nom.tam.fits.Fits;
 import nom.tam.fits.FitsException;

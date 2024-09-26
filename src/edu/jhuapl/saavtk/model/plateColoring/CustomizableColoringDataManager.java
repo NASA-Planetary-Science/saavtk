@@ -7,13 +7,13 @@ import java.io.IOException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import edu.jhuapl.saavtk.util.SafeURLPaths;
 import edu.jhuapl.ses.jsqrl.api.Key;
 import edu.jhuapl.ses.jsqrl.api.Metadata;
 import edu.jhuapl.ses.jsqrl.api.MetadataManager;
 import edu.jhuapl.ses.jsqrl.api.Version;
 import edu.jhuapl.ses.jsqrl.impl.SettableMetadata;
 import edu.jhuapl.ses.jsqrl.impl.gson.Serializers;
-import edu.jhuapl.saavtk.util.SafeURLPaths;
 
 public final class CustomizableColoringDataManager implements ColoringDataManager
 {

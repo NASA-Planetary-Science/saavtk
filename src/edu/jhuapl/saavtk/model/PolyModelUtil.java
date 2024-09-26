@@ -1,9 +1,5 @@
 package edu.jhuapl.saavtk.model;
 
-import java.awt.EventQueue;
-
-import javax.swing.JOptionPane;
-
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import vtk.vtkFloatArray;

@@ -4,10 +4,7 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 
-import vtk.vtkIdTypeArray;
 import vtk.vtkPolyData;
-import vtk.vtkSelection;
-import vtk.vtkSelectionNode;
 
 public abstract class GenericPolyDataSelector implements PolyDataSelector
 {

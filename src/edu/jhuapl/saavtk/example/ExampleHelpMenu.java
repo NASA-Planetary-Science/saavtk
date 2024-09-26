@@ -1,17 +1,11 @@
 package edu.jhuapl.saavtk.example;
 
-import java.awt.event.ActionEvent;
 import java.io.IOException;
-import java.io.InputStream;
 
-import javax.swing.AbstractAction;
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 import edu.jhuapl.saavtk.gui.menu.HelpMenu;
-import edu.jhuapl.saavtk.util.Configuration;
 
 
 public class ExampleHelpMenu extends HelpMenu
@@ -36,7 +30,7 @@ public class ExampleHelpMenu extends HelpMenu
 
     protected void showHelp()
     {
-        String helpRootUrl = Configuration.getHelpRootURL();
+//        String helpRootUrl = Configuration.getHelpRootURL();
         try
         {
             java.awt.Desktop.getDesktop().browse(java.net.URI.create("http://www.jhuapl.edu"));
@@ -49,7 +43,7 @@ public class ExampleHelpMenu extends HelpMenu
 
     protected void showDataSources()
     {
-        String helpRootUrl = Configuration.getHelpRootURL();
+//        String helpRootUrl = Configuration.getHelpRootURL();
         try
         {
             java.awt.Desktop.getDesktop().browse(java.net.URI.create("http://www.jhuapl.edu"));
@@ -62,7 +56,7 @@ public class ExampleHelpMenu extends HelpMenu
 
     protected void showRecentChanges()
     {
-        String helpRootUrl = Configuration.getHelpRootURL();
+//        String helpRootUrl = Configuration.getHelpRootURL();
         try
         {
            java.awt.Desktop.getDesktop().browse(java.net.URI.create("http://www.jhuapl.edu"));
@@ -75,7 +69,7 @@ public class ExampleHelpMenu extends HelpMenu
 
     protected void showTutorial()
     {
-        String helpRootUrl = Configuration.getHelpRootURL();
+//        String helpRootUrl = Configuration.getHelpRootURL();
         try
         {
            java.awt.Desktop.getDesktop().browse(java.net.URI.create("http://www.jhuapl.edu"));

@@ -4,23 +4,14 @@ import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
-import org.apache.commons.io.EndianUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Files;
 import com.google.common.io.LittleEndianDataInputStream;
-
-import vtk.vtkNativeLibrary;
-import vtk.vtkPLYReader;
-import vtk.vtkPolyData;
-import vtk.vtkUnstructuredGridWriter;
 
 public abstract class PlyReader implements PolyDataReader {
 

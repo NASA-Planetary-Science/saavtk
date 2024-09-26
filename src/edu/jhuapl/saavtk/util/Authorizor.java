@@ -1,7 +1,6 @@
 package edu.jhuapl.saavtk.util;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -12,10 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiFunction;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Supplier;
 
 /**
  * Facility for wetting up user-name/password-based authentication using

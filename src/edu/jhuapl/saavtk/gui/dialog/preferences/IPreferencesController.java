@@ -4,8 +4,6 @@ import java.util.Map;
 
 import javax.swing.JPanel;
 
-import edu.jhuapl.saavtk.gui.View;
-
 public interface IPreferencesController
 {		
 	public JPanel getView();

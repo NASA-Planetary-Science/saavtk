@@ -2,14 +2,12 @@ package edu.jhuapl.saavtk.gui.dialog.preferences.sections.font;
 
 import java.awt.Color;
 import java.awt.event.ActionEvent;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
-import edu.jhuapl.saavtk.gui.View;
 import edu.jhuapl.saavtk.gui.dialog.ColorChooser;
 import edu.jhuapl.saavtk.gui.dialog.preferences.IPreferencesController;
 import edu.jhuapl.saavtk.util.ColorIcon;

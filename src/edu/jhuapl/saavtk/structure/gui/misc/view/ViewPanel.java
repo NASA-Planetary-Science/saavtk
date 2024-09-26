@@ -8,7 +8,7 @@ import edu.jhuapl.saavtk.structure.AnyStructurePicker;
 import net.miginfocom.swing.MigLayout;
 
 /**
- * UI component that allows creation of a {@link Structure}.
+ * UI component that allows creation of a Structure.
  *
  * @author lopeznr1
  */

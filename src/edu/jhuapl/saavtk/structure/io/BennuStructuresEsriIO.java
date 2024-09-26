@@ -14,7 +14,6 @@ import org.geotools.api.feature.simple.SimpleFeature;
 import org.geotools.api.feature.simple.SimpleFeatureType;
 import org.geotools.api.referencing.FactoryException;
 import org.geotools.api.referencing.crs.CRSFactory;
-import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
 import org.geotools.api.referencing.cs.AxisDirection;
 import org.geotools.api.referencing.cs.CSFactory;
 import org.geotools.api.referencing.cs.CoordinateSystemAxis;
@@ -45,19 +44,19 @@ public class BennuStructuresEsriIO
 
   //      System.out.println(collection.getSchema().getCoordinateReferenceSystem().toString());
         
-        CoordinateReferenceSystem worldCRS = null;
+//        CoordinateReferenceSystem worldCRS = null;
 
-        CRSFactory crsFactory = ReferencingFactoryFinder.getCRSFactory(null);
+//        CRSFactory crsFactory = ReferencingFactoryFinder.getCRSFactory(null);
         DatumFactory datumFactory = ReferencingFactoryFinder.getDatumFactory(null);
-        CSFactory csFactory = ReferencingFactoryFinder.getCSFactory(null);
+//        CSFactory csFactory = ReferencingFactoryFinder.getCSFactory(null);
         Map<String, Object> hm = Maps.newConcurrentMap();
         try
         {
             hm.put("name", "N");
-            CoordinateSystemAxis northAxis = csFactory.createCoordinateSystemAxis(hm, "N", AxisDirection.NORTH, NonSI.DEGREE_ANGLE);
+//            CoordinateSystemAxis northAxis = csFactory.createCoordinateSystemAxis(hm, "N", AxisDirection.NORTH, NonSI.DEGREE_ANGLE);
             hm.clear();
             hm.put("name", "E");
-            CoordinateSystemAxis eastAxis = csFactory.createCoordinateSystemAxis(hm, "E", AxisDirection.EAST, NonSI.DEGREE_ANGLE);
+//            CoordinateSystemAxis eastAxis = csFactory.createCoordinateSystemAxis(hm, "E", AxisDirection.EAST, NonSI.DEGREE_ANGLE);
             hm.clear();
             //            hm.put("name", "U");
             //            CoordinateSystemAxis upAxis=csFactory.createCoordinateSystemAxis(hm, "U", AxisDirection.UP, SI.METER);
@@ -71,10 +70,10 @@ public class BennuStructuresEsriIO
 
             hm.clear();
             hm.put("name", "bennu body-fixed height datum");
-            GeodeticDatum bennuDatum = datumFactory.createGeodeticDatum(hm, bennuEllipsoid, bennuPrimeMeridian);
+//            GeodeticDatum bennuDatum = datumFactory.createGeodeticDatum(hm, bennuEllipsoid, bennuPrimeMeridian);
             hm.clear();
             hm.put("name", "bennu body-fixed coord sys");
-            EllipsoidalCS cs = csFactory.createEllipsoidalCS(hm, eastAxis, northAxis);
+//            EllipsoidalCS cs = csFactory.createEllipsoidalCS(hm, eastAxis, northAxis);
 
             // lon-lats (-180-180 lon)
             // TODO: draw structures on earth model and output with default crs -- send to erika

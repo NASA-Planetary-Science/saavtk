@@ -6,21 +6,18 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationConvention;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import vtk.vtkAppendPolyData;
 import vtk.vtkCell;
 import vtk.vtkCubeSource;
-import vtk.vtkDoubleArray;
 import vtk.vtkFloatArray;
 import vtk.vtkIdList;
 import vtk.vtkImageData;
-import vtk.vtkLine;
 import vtk.vtkPNGWriter;
-import vtk.vtkPoints;
 import vtk.vtkPolyData;
 import vtk.vtkPolyDataNormals;
-import vtk.vtkPolyLine;
 import vtk.vtkTransform;
 import vtk.vtkTransformFilter;
 import vtk.vtkTriangleFilter;
@@ -233,7 +230,7 @@ public class ObjUtil
 	    if (line.getNorm()!=0)
 	    {
 	        Rotation rotation=new Rotation(Vector3D.PLUS_I, line.normalize());
-	        transform.RotateWXYZ(Math.toDegrees(rotation.getAngle()), rotation.getAxis().toArray());
+	        transform.RotateWXYZ(Math.toDegrees(rotation.getAngle()), rotation.getAxis(RotationConvention.VECTOR_OPERATOR).toArray());
 	    }
 	    transform.Translate(center.toArray());
 	    transform.Update();

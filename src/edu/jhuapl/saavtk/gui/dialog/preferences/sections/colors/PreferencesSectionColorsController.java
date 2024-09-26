@@ -3,7 +3,6 @@ package edu.jhuapl.saavtk.gui.dialog.preferences.sections.colors;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 

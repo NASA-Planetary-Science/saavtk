@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationConvention;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.util.Point3D;
@@ -137,7 +138,7 @@ public class WireframeUtil {
 	    if (line.getNorm()!=0)
 	    {
 	        Rotation rotation=new Rotation(Vector3D.PLUS_I, line.normalize());
-	        transform.RotateWXYZ(Math.toDegrees(rotation.getAngle()), rotation.getAxis().toArray());
+	        transform.RotateWXYZ(Math.toDegrees(rotation.getAngle()), rotation.getAxis(RotationConvention.VECTOR_OPERATOR).toArray());
 	    }
 	    transform.Translate(center.toArray());
 	    transform.Update();

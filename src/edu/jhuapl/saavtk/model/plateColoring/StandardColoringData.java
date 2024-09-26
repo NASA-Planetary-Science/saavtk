@@ -6,9 +6,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.jhuapl.ses.jsqrl.api.Metadata;
+import edu.jhuapl.saavtk.model.PolyhedralModel;
 import edu.jhuapl.saavtk.util.FileCache;
 import edu.jhuapl.saavtk.util.file.IndexableTuple;
+import edu.jhuapl.ses.jsqrl.api.Metadata;
 
 class StandardColoringData extends LoadableColoringData
 {

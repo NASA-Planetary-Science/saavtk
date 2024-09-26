@@ -3,12 +3,10 @@ package edu.jhuapl.saavtk.model;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 
-import vtk.vtkProp;
-
 import edu.jhuapl.saavtk.util.Properties;
-
 import glum.item.BaseItemManager;
 import glum.item.ItemManager;
+import vtk.vtkProp;
 
 /**
  * Base ItemManager class that provides the standard functionality for an

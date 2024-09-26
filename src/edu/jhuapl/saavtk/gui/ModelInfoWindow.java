@@ -6,10 +6,9 @@ import java.beans.PropertyChangeListener;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 
+import edu.jhuapl.saavtk.model.Model;
 import vtk.vtkPropPicker;
 import vtk.rendering.jogl.vtkJoglPanelComponent;
-import edu.jhuapl.saavtk.gui.jogl.vtksbmtJoglCanvas;
-import edu.jhuapl.saavtk.model.Model;
 
 public abstract class ModelInfoWindow extends JFrame implements PropertyChangeListener
 {

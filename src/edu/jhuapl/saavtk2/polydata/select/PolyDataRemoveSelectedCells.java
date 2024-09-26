@@ -2,8 +2,6 @@ package edu.jhuapl.saavtk2.polydata.select;
 
 import java.util.List;
 
-import com.google.common.collect.Lists;
-
 import edu.jhuapl.saavtk2.polydata.PolyDataModifier;
 import vtk.vtkExtractSelection;
 import vtk.vtkGeometryFilter;

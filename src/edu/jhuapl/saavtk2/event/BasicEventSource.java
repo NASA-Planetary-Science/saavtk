@@ -2,9 +2,7 @@ package edu.jhuapl.saavtk2.event;
 
 import java.util.List;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 
 public class BasicEventSource implements EventSource {
 

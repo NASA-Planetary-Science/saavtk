@@ -1,6 +1,7 @@
 package edu.jhuapl.saavtk2.polydata.clip;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationConvention;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import edu.jhuapl.saavtk.util.NativeLibraryLoader;
@@ -25,7 +26,7 @@ public class PolyDataClipWithCone extends PolyDataClip
     {
         Rotation rot = new Rotation(Vector3D.PLUS_I, axis);
         vtkTransform transform = new vtkTransform();
-        transform.RotateWXYZ(Math.toDegrees(rot.getAngle()), rot.getAxis().negate().toArray());
+        transform.RotateWXYZ(Math.toDegrees(rot.getAngle()), rot.getAxis(RotationConvention.VECTOR_OPERATOR).negate().toArray());
         transform.Update();
         return transform;
     }
