@@ -483,9 +483,7 @@
         <!--                </executions>-->
         <!--            </plugin>-->
         <!--        </plugins>-->
-    </build>
-
-    <plugins>
+        <plugins>
         <plugin>
             <artifactId>maven-compiler-plugin</artifactId>
         </plugin>
@@ -514,6 +512,7 @@
             <artifactId>nexus-staging-maven-plugin</artifactId>
         </plugin>
     </plugins>
+    </build>
 
     <dependencies>
         <dependency>
